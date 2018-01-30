@@ -501,6 +501,7 @@ EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPip
 
     // Construct the event instance.
     EventPipeEventInstance *pInstance = new EventPipeEventInstance(
+        *EventPipe::s_pSession,
         *m_pMetadataEvent,
         GetCurrentThreadId(),
         pInstancePayload,

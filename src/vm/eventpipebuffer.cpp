@@ -47,7 +47,7 @@ EventPipeBuffer::~EventPipeBuffer()
     }
 }
 
-bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)
+bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)
 {
     CONTRACTL
     {
@@ -75,6 +75,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, EventPi
     {
         // Placement-new the EventPipeEventInstance.
         EventPipeEventInstance *pInstance = new (m_pCurrent) EventPipeEventInstance(
+            session,
             event,
             pThread->GetOSThreadId(),
             pDataDest,
