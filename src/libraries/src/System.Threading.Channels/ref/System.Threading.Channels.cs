@@ -26,8 +26,6 @@ namespace System.Threading.Channels
         public static System.Threading.Channels.Channel<T> CreateBounded<T>(System.Threading.Channels.BoundedChannelOptions options) { throw null; }
         public static System.Threading.Channels.Channel<T> CreateUnbounded<T>() { throw null; }
         public static System.Threading.Channels.Channel<T> CreateUnbounded<T>(System.Threading.Channels.UnboundedChannelOptions options) { throw null; }
-        public static System.Threading.Channels.Channel<T> CreateUnbuffered<T>() { throw null; }
-        public static System.Threading.Channels.Channel<T> CreateUnbuffered<T>(System.Threading.Channels.UnbufferedChannelOptions options) { throw null; }
     }
     public partial class ChannelClosedException : System.InvalidOperationException
     {
@@ -75,9 +73,5 @@ namespace System.Threading.Channels
     public sealed partial class UnboundedChannelOptions : System.Threading.Channels.ChannelOptions
     {
         public UnboundedChannelOptions() { }
-    }
-    public sealed partial class UnbufferedChannelOptions : System.Threading.Channels.ChannelOptions
-    {
-        public UnbufferedChannelOptions() { }
     }
 }
