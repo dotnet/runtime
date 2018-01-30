@@ -1128,10 +1128,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe bool TryCopyTo(char* src, int length, Span<char> destination, out int charsWritten)
         {
-            if (length <= destination.Length)
+            if (new ReadOnlySpan<char>(src, length).TryCopyTo(destination))
             {
-                bool copied = new ReadOnlySpan<char>(src, length).TryCopyTo(destination);
-                Debug.Assert(copied);
                 charsWritten = length;
                 return true;
             }
@@ -1708,8 +1706,7 @@ namespace System
                         if (thousandsSepCtr >= thousandsSepPos.Length)
                         {
                             var newThousandsSepPos = new int[thousandsSepPos.Length * 2];
-                            bool copied = thousandsSepPos.TryCopyTo(newThousandsSepPos);
-                            Debug.Assert(copied, "Expect copy to succeed, as the new array is larger than the original");
+                            thousandsSepPos.CopyTo(newThousandsSepPos);
                             thousandsSepPos = newThousandsSepPos;
                         }
 
