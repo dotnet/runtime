@@ -1083,7 +1083,7 @@ public:
         {
             // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_LOCKADD, GT_FIELD_LIST, GT_COMMA) || OperIsCompare() || OperIsLong() ||
-                   OperIsSIMD());
+                   OperIsSIMD() || OperIsHWIntrinsic());
             return false;
         }
 
@@ -1591,6 +1591,20 @@ public:
     bool OperIsSIMD() const
     {
         return OperIsSIMD(gtOper);
+    }
+
+    static bool OperIsHWIntrinsic(genTreeOps gtOper)
+    {
+#ifdef FEATURE_HW_INTRINSICS
+        return gtOper == GT_HWIntrinsic;
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
+    bool OperIsHWIntrinsic() const
+    {
+        return OperIsHWIntrinsic(gtOper);
     }
 
 #ifdef FEATURE_HW_INTRINSICS

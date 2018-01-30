@@ -37,8 +37,8 @@ static bool genIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsi
 {
     // TODO - make more categories to the table-driven framework
     // HW_Category_Helper and HW_Flag_MultiIns usually need manual codegen
-    const bool tableDrivenCategory =
-        category == HW_Category_SimpleSIMD || category == HW_Category_MemoryLoad || category == HW_Category_SIMDScalar;
+    const bool tableDrivenCategory = category == HW_Category_SimpleSIMD || category == HW_Category_MemoryLoad ||
+                                     category == HW_Category_MemoryStore || category == HW_Category_SIMDScalar;
     const bool tableDrivenFlag = (flags & HW_Flag_MultiIns) == 0;
     return tableDrivenCategory && tableDrivenFlag;
 }
@@ -94,7 +94,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case 2:
                 genConsumeOperands(node);
-                if (ival != -1)
+                if (category == HW_Category_MemoryStore)
+                {
+                    emit->emitIns_AR_R(ins, emitTypeSize(TYP_SIMD16), op2->gtRegNum, op1->gtRegNum, 0);
+                }
+                else if (ival != -1)
                 {
                     genHWIntrinsic_R_R_RM_I(node, ins);
                 }
