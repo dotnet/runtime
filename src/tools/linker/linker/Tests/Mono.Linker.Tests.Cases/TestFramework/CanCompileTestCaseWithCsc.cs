@@ -10,7 +10,7 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 
 	// Use all of the compiler setup attributes so that we can verify they all work
 	// when roslyn is used
-	[SetupCompileArgument ("/debug:pdbonly")]
+	[SetupCompileArgument ("/debug:portable")]
 	[SetupCompileResource ("Dependencies/CanCompileTestCaseWithCsc.txt")]
 	[Define ("VERIFY_DEFINE_WORKS")]
 	[Reference ("System.dll")]
