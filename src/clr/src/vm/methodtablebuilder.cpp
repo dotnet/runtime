@@ -10821,7 +10821,7 @@ BOOL MethodTableBuilder::HasDefaultInterfaceImplementation(MethodDesc *pDeclMD)
                 if (pMD->IsMethodImpl())
                 {
                     MethodImpl::Iterator it(pMD);
-                    while (it.IsValid())
+                    for (; it.IsValid(); it.Next())
                     {
                         if (it.GetMethodDesc() == pDeclMD)
                             return TRUE;
