@@ -403,6 +403,30 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> Or(Vector128<float> left, Vector128<float> right) => Or(left, right);
 
         /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHT0 m8
+        /// </summary>
+        public static unsafe void Prefetch0(byte* address) => Prefetch0(address);
+
+        /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHT1 m8
+        /// </summary>
+        public static unsafe void Prefetch1(byte* address) => Prefetch1(address);
+
+        /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHT2 m8
+        /// </summary>
+        public static unsafe void Prefetch2(byte* address) => Prefetch2(address);
+
+        /// <summary>
+        /// void _mm_prefetch(char* p, int i);
+        ///   PREFETCHNTA m8
+        /// </summary>
+        public static unsafe void PrefetchNonTemporal(byte* address) => PrefetchNonTemporal(address);
+
+        /// <summary>
         /// __m128 _mm_rcp_ps (__m128 a);
         ///   RCPPS xmm, xmm/m128
         /// </summary>
@@ -526,6 +550,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVUPS m128, xmm
         /// </summary>
         public static unsafe void Store(float* address, Vector128<float> source) => Store(address, source);
+
+        /// <summary>
+        /// void _mm_sfence(void);
+        ///   SFENCE
+        /// </summary>
+        public static void StoreFence() => StoreFence();
 
         /// <summary>
         /// void _mm_store_ss (float* mem_addr, __m128 a);

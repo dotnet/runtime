@@ -730,6 +730,12 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<double> LoadAlignedVector128(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// void _mm_lfence(void);
+        ///   LFENCE
+        /// </summary>
+        public static void LoadFence() { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128d _mm_loadh_pd (__m128d a, double const* mem_addr);
         ///   MOVHPD xmm, m64
         /// </summary>
@@ -814,6 +820,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   MAXSD xmm, xmm/m64
         /// </summary>
         public static Vector128<double> MaxScalar(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_mfence(void);
+        ///   MFENCE
+        /// </summary>
+        public static void MemoryFence() { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_min_epu8 (__m128i a,  __m128i b);
@@ -1535,6 +1547,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVLPD m64, xmm
         /// </summary>
         public static unsafe void StoreLow(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_stream_si32(int *p, int a);
+        ///   MOVNTI m32, r32
+        /// </summary>
+        public static unsafe void StoreNonTemporal(int* address, int value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// void _mm_stream_si32(int *p, int a);
+        ///   MOVNTI m32, r32
+        /// </summary>
+        public static unsafe void StoreNonTemporal(uint* address, uint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_stream_si64(__int64 *p, __int64 a);
+        ///   MOVNTI m64, r64
+        /// </summary>
+        public static unsafe void StoreNonTemporal(long* address, long value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// void _mm_stream_si64(__int64 *p, __int64 a);
+        ///   MOVNTI m64, r64
+        /// </summary>
+        public static unsafe void StoreNonTemporal(ulong* address, ulong value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_sub_epi8 (__m128i a,  __m128i b);
