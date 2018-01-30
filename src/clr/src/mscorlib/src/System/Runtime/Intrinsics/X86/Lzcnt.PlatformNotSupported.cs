@@ -16,10 +16,12 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// unsigned int _lzcnt_u32 (unsigned int a)
+        ///   LZCNT reg, reg/m32
         /// </summary>
         public static uint LeadingZeroCount(uint value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)
+        ///   LZCNT reg, reg/m64
         /// </summary>
         public static ulong LeadingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
     }
