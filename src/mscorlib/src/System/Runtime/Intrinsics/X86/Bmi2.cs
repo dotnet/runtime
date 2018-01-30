@@ -49,6 +49,6 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// unsigned __int64 _pext_u64 (unsigned __int64 a, unsigned __int64 mask)
         /// </summary>
-        public static ulong ParallelBitExtract(ulong value, ulong mask) => ParallelBitExtract(value, mask);        
+        public static ulong ParallelBitExtract(ulong value, ulong mask) => ParallelBitExtract(value, mask);
     }
 }
