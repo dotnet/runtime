@@ -420,6 +420,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     int                 numArgs  = sig->numArgs;
     var_types           retType  = JITtype2varType(sig->retType);
     var_types           baseType = TYP_UNKNOWN;
+
     if (retType == TYP_STRUCT && featureSIMD)
     {
         unsigned int sizeBytes;
@@ -480,6 +481,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
         }
+    }
+
+    if ((flags & HW_Flag_NoFloatingPointUsed) == 0)
+    {
+        // Set `compFloatingPointUsed` to cover the scenario where an intrinsic is being on SIMD fields, but
+        // where no SIMD local vars are in use. This is the same logic as is used for FEATURE_SIMD.
+        compFloatingPointUsed = true;
     }
 
     // table-driven importer of simple intrinsics

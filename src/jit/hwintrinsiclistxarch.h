@@ -176,7 +176,7 @@ HARDWARE_INTRINSIC(SSE41_BlendVariable,                              "BlendVaria
 
 //  SSE42 Intrinsics
 HARDWARE_INTRINSIC(SSE42_IsSupported,                                "get_IsSupported",                                  SSE42,      -1,           0,            0,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_IsSupportedProperty,               HW_Flag_NoFlag)
-HARDWARE_INTRINSIC(SSE42_Crc32,                                      "Crc32",                                            SSE42,      -1,           0,            2,           {INS_invalid,   INS_crc32,     INS_invalid,   INS_crc32,     INS_invalid,   INS_crc32,     INS_invalid,   INS_crc32,     INS_invalid,   INS_invalid},           HW_Category_Scalar,                            HW_Flag_NoFlag)
+HARDWARE_INTRINSIC(SSE42_Crc32,                                      "Crc32",                                            SSE42,      -1,           0,            2,           {INS_invalid,   INS_crc32,     INS_invalid,   INS_crc32,     INS_invalid,   INS_crc32,     INS_invalid,   INS_crc32,     INS_invalid,   INS_invalid},           HW_Category_Scalar,                            HW_Flag_NoFloatingPointUsed)
 
 //  AVX Intrinsics
 //  TODO-XArch When implementing SetZeroVector256 add case to switch table in gentree.cpp
@@ -207,14 +207,14 @@ HARDWARE_INTRINSIC(FMA_IsSupported,                                  "get_IsSupp
 
 //  LZCNT Intrinsics
 HARDWARE_INTRINSIC(LZCNT_IsSupported,                                "get_IsSupported",                                  LZCNT,      -1,           0,            0,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_IsSupportedProperty,               HW_Flag_NoFlag)
-HARDWARE_INTRINSIC(LZCNT_LeadingZeroCount,                           "LeadingZeroCount",                                 LZCNT,      -1,           0,            1,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_lzcnt,     INS_invalid,   INS_lzcnt,     INS_invalid,   INS_invalid},           HW_Category_Scalar,                            HW_Flag_NoFlag)
+HARDWARE_INTRINSIC(LZCNT_LeadingZeroCount,                           "LeadingZeroCount",                                 LZCNT,      -1,           0,            1,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_lzcnt,     INS_invalid,   INS_lzcnt,     INS_invalid,   INS_invalid},           HW_Category_Scalar,                            HW_Flag_NoFloatingPointUsed)
 
 //  PCLMULQDQ Intrinsics
 HARDWARE_INTRINSIC(PCLMULQDQ_IsSupported,                            "get_IsSupported",                                  PCLMULQDQ,  -1,           0,            0,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_IsSupportedProperty,               HW_Flag_NoFlag)
 
 //  POPCNT Intrinsics
 HARDWARE_INTRINSIC(POPCNT_IsSupported,                               "get_IsSupported",                                  POPCNT,     -1,           0,            0,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_IsSupportedProperty,               HW_Flag_NoFlag)
-HARDWARE_INTRINSIC(POPCNT_PopCount,                                  "PopCount",                                         POPCNT,     -1,           0,            1,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_popcnt,    INS_invalid,   INS_popcnt,    INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_Scalar,                            HW_Flag_NoFlag)
+HARDWARE_INTRINSIC(POPCNT_PopCount,                                  "PopCount",                                         POPCNT,     -1,           0,            1,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_popcnt,    INS_invalid,   INS_popcnt,    INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_Scalar,                            HW_Flag_NoFloatingPointUsed)
 #endif // FEATURE_HW_INTRINSIC
 
 #undef HARDWARE_INTRINSIC

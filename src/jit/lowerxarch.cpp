@@ -2297,6 +2297,65 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 
 #ifdef FEATURE_HW_INTRINSICS
 //----------------------------------------------------------------------------------------------
+// IsContainableHWIntrinsicOp: Return true if 'node' is a containable HWIntrinsic op.
+//
+//  Arguments:
+//     containingNode - The hardware intrinsic node which contains 'node'
+//     node - The node to check
+//
+// Return Value:
+//    true if 'node' is a containable hardware intrinsic node; otherwise, false.
+//
+bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, GenTree* node)
+{
+    if (!node->OperIsHWIntrinsic())
+    {
+        // non-HWIntrinsic nodes are assumed to be unaligned loads, which are only
+        // supported by the VEX encoding.
+        return comp->canUseVexEncoding() && IsContainableMemoryOp(node);
+    }
+
+    bool isContainable = false;
+
+    // TODO-XArch: Update this to be table driven, if possible.
+
+    NamedIntrinsic      containingIntrinsicID = containingNode->gtHWIntrinsicId;
+    HWIntrinsicCategory containingCategory    = Compiler::categoryOfHWIntrinsic(containingIntrinsicID);
+    NamedIntrinsic      intrinsicID           = node->AsHWIntrinsic()->gtHWIntrinsicId;
+
+    switch (intrinsicID)
+    {
+        // Non-VEX encoded instructions require aligned memory ops, so we can fold them.
+        // However, we cannot do the same for the VEX-encoding as it changes an observable
+        // side-effect and may mask an Access Violation that would otherwise occur.
+        case NI_SSE_LoadAlignedVector128:
+            isContainable = (containingCategory == HW_Category_SimpleSIMD) && !comp->canUseVexEncoding();
+            break;
+
+        // Only fold a scalar load into a SIMD scalar intrinsic to ensure the number of bits
+        // read remains the same. Likewise, we can't fold a larger load into a SIMD scalar
+        // intrinsic as that would read fewer bits that requested.
+        case NI_SSE_LoadScalarVector128:
+            isContainable = (containingCategory == HW_Category_SIMDScalar);
+            break;
+
+        // VEX encoding supports unaligned memory ops, so we can fold them
+        case NI_SSE_LoadVector128:
+            isContainable = (containingCategory == HW_Category_SimpleSIMD) && comp->canUseVexEncoding();
+            break;
+
+        default:
+            return false;
+    }
+
+    // For containable nodes, the base type of the original node and the base type of the contained node
+    // should be the same. This helps ensure we aren't reading too many or too few bits.
+    assert(!isContainable || (containingNode->gtSIMDBaseType == node->AsHWIntrinsic()->gtSIMDBaseType));
+
+    return isContainable;
+}
+
+//----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
 //  Arguments:
@@ -2311,25 +2370,45 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*            op1         = node->gtGetOp1();
     GenTree*            op2         = node->gtGetOp2();
 
-    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
-    // TODO-XArch-CQ: Non-VEX encoded instructions require memory ops to be aligned
-
-    if (comp->canUseVexEncoding() && numArgs == 2 && (flags & HW_Flag_NoContainment) == 0 &&
-        category == HW_Category_SimpleSIMD)
+    if ((flags & HW_Flag_NoContainment) != 0)
     {
-        if (IsContainableMemoryOp(op2))
-        {
-            MakeSrcContained(node, op2);
-        }
-        else
-        {
-            // TODO-XArch-CQ: Commutative operations can have op1 be contained
-            op2->SetRegOptional();
-        }
+        // Exit early if containment isn't supported
+        return;
     }
 
-    // TODO - change to all IMM intrinsics
-    if (intrinsicID == NI_SSE_Shuffle)
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
+    if (numArgs == 2)
+    {
+        switch (category)
+        {
+            case HW_Category_SimpleSIMD:
+            case HW_Category_SIMDScalar:
+                if (IsContainableHWIntrinsicOp(node, op2))
+                {
+                    MakeSrcContained(node, op2);
+                }
+                else if (((flags & HW_Flag_Commutative) != 0) && IsContainableHWIntrinsicOp(node, op1))
+                {
+                    MakeSrcContained(node, op1);
+
+                    // Swap the operands here to make the containment checks in codegen significantly simpler
+                    node->gtOp1 = op2;
+                    node->gtOp2 = op1;
+                }
+                else if (comp->canUseVexEncoding())
+                {
+                    // We can only mark as reg optional when using the VEX encoding
+                    // since that supports unaligned mem operands and non-VEX doesn't
+                    op2->SetRegOptional();
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+    else if (intrinsicID == NI_SSE_Shuffle) // TODO - change to all IMM intrinsics
     {
         assert(op1->OperIsList());
         GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();

@@ -215,6 +215,9 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
+        assert((Compiler::flagsOfHWIntrinsic(node->gtHWIntrinsicId) & HW_Flag_NoContainment) == 0);
+        assert(compiler->m_pLowering->IsContainableHWIntrinsicOp(node, op2) || op2->IsRegOptional());
+
         TempDsc* tmpDsc = nullptr;
         unsigned varNum = BAD_VAR_NUM;
         unsigned offset = (unsigned)-1;
@@ -229,6 +232,11 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 
             compiler->tmpRlsTemp(tmpDsc);
         }
+        else if (op2->OperIsHWIntrinsic())
+        {
+            emit->emitIns_SIMD_R_R_AR(ins, simdSize, targetReg, op1Reg, op2->gtGetOp1()->gtRegNum);
+            return;
+        }
         else if (op2->isIndir())
         {
             GenTreeIndir* memIndir = op2->AsIndir();
@@ -242,7 +250,6 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
                     offset = 0;
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(memBase->gtRegNum == REG_NA);
                     assert(!memIndir->HasIndex());
                     assert(memIndir->Scale() == 1);
                     assert(memIndir->Offset() == 0);
@@ -310,6 +317,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     regNumber targetReg  = node->gtRegNum;
     GenTree*  op1        = node->gtGetOp1();
     GenTree*  op2        = node->gtGetOp2();
+    emitAttr  simdSize   = (emitAttr)(node->gtSIMDSize);
     int       ival       = Compiler::ivalOfHWIntrinsic(node->gtHWIntrinsicId);
     emitter*  emit       = getEmitter();
 
@@ -323,6 +331,9 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
 
     if (op2->isContained() || op2->isUsedFromSpillTemp())
     {
+        assert((Compiler::flagsOfHWIntrinsic(node->gtHWIntrinsicId) & HW_Flag_NoContainment) == 0);
+        assert(compiler->m_pLowering->IsContainableHWIntrinsicOp(node, op2) || op2->IsRegOptional());
+
         TempDsc* tmpDsc = nullptr;
         unsigned varNum = BAD_VAR_NUM;
         unsigned offset = (unsigned)-1;
@@ -337,6 +348,11 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
 
             compiler->tmpRlsTemp(tmpDsc);
         }
+        else if (op2->OperIsHWIntrinsic())
+        {
+            emit->emitIns_SIMD_R_R_AR_I(ins, simdSize, targetReg, op1Reg, op2->gtGetOp1()->gtRegNum, ival);
+            return;
+        }
         else if (op2->isIndir())
         {
             GenTreeIndir* memIndir = op2->AsIndir();
@@ -350,7 +366,6 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
                     offset = 0;
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(memBase->gtRegNum == REG_NA);
                     assert(!memIndir->HasIndex());
                     assert(memIndir->Scale() == 1);
                     assert(memIndir->Offset() == 0);
@@ -360,14 +375,14 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_SIMD_R_R_C_I(ins, emitTypeSize(targetType), targetReg, op1Reg,
-                                               memBase->gtClsVar.gtClsVarHnd, 0, ival);
+                    emit->emitIns_SIMD_R_R_C_I(ins, simdSize, targetReg, op1Reg, memBase->gtClsVar.gtClsVarHnd, 0,
+                                               ival);
                     return;
                 }
 
                 default:
                 {
-                    emit->emitIns_SIMD_R_R_A_I(ins, emitTypeSize(targetType), targetReg, op1Reg, memIndir, ival);
+                    emit->emitIns_SIMD_R_R_A_I(ins, simdSize, targetReg, op1Reg, memIndir, ival);
                     return;
                 }
             }
@@ -405,11 +420,11 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
         assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
         assert(offset != (unsigned)-1);
 
-        emit->emitIns_SIMD_R_R_S_I(ins, emitTypeSize(targetType), targetReg, op1Reg, varNum, offset, ival);
+        emit->emitIns_SIMD_R_R_S_I(ins, simdSize, targetReg, op1Reg, varNum, offset, ival);
     }
     else
     {
-        emit->emitIns_SIMD_R_R_R_I(ins, emitTypeSize(targetType), targetReg, op1Reg, op2->gtRegNum, ival);
+        emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op2->gtRegNum, ival);
     }
 }
 
