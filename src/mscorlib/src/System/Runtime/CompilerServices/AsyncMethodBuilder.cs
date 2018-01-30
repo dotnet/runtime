@@ -413,8 +413,8 @@ namespace System.Runtime.CompilerServices
             }
             else if ((null != (object)default(TAwaiter)) && (awaiter is IConfiguredValueTaskAwaiter))
             {
-                (Task task, bool continueOnCapturedContext) t = ((IConfiguredValueTaskAwaiter)awaiter).GetTask();
-                TaskAwaiter.UnsafeOnCompletedInternal(t.task, box, t.continueOnCapturedContext);
+                Task t = ((IConfiguredValueTaskAwaiter)awaiter).GetTask(out bool continueOnCapturedContext);
+                TaskAwaiter.UnsafeOnCompletedInternal(t, box, continueOnCapturedContext);
             }
             // The awaiter isn't specially known. Fall back to doing a normal await.
             else
