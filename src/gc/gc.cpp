@@ -816,7 +816,7 @@ public:
 
     inline void fire_event (int heap, join_time time, join_type type, int join_id)
     {
-        FireEtwGCJoin_V2(heap, time, type, GetClrInstanceId(), join_id);
+        FIRE_EVENT(GCJoin_V2, heap, time, type, join_id);
     }
 
     void join (gc_heap* gch, int join_id)
@@ -3028,13 +3028,12 @@ void gc_heap::fire_pevents()
     settings.record (&gc_data_global);
     gc_data_global.print();
 
-    FireEtwGCGlobalHeapHistory_V2(gc_data_global.final_youngest_desired, 
+    FIRE_EVENT(GCGlobalHeapHistory_V2, gc_data_global.final_youngest_desired, 
                                   gc_data_global.num_heaps, 
                                   gc_data_global.condemned_generation, 
                                   gc_data_global.gen0_reduction_count, 
                                   gc_data_global.reason, 
                                   gc_data_global.global_mechanims_p, 
-                                  GetClrInstanceId(),
                                   gc_data_global.pause_mode, 
                                   gc_data_global.mem_pressure);
 
@@ -4677,10 +4676,9 @@ gc_heap::soh_get_segment_to_expand()
         }
 #endif //BACKGROUND_GC
 
-        FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(result), 
-                                  (size_t)(heap_segment_reserved (result) - heap_segment_mem(result)), 
-                                  ETW::GCLog::ETW_GC_INFO::SMALL_OBJECT_HEAP, 
-                                  GetClrInstanceId());
+        FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(result),
+                                  (size_t)(heap_segment_reserved (result) - heap_segment_mem(result)),
+                                  gc_etw_segment_small_object_heap);
     }
 
     get_gc_data_per_heap()->set_mechanism (gc_heap_expand, (result ? expand_new_seg : expand_no_memory));
@@ -4846,7 +4844,7 @@ gc_heap::get_segment (size_t size, BOOL loh_p)
 void release_segment (heap_segment* sg)
 {
     ptrdiff_t delta = 0;
-    FireEtwGCFreeSegment_V1((size_t)heap_segment_mem(sg), GetClrInstanceId());
+    FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     virtual_free (sg, (uint8_t*)heap_segment_reserved (sg)-(uint8_t*)sg);
 }
 
@@ -4867,7 +4865,7 @@ heap_segment* gc_heap::get_segment_for_loh (size_t size
 #endif //MULTIPLE_HEAPS
         res->flags |= heap_segment_flags_loh;
 
-        FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(res), (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)), ETW::GCLog::ETW_GC_INFO::LARGE_OBJECT_HEAP, GetClrInstanceId());
+        FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(res), (size_t)(heap_segment_reserved (res) - heap_segment_mem(res)), gc_etw_segment_large_object_heap);
 
         GCToEEInterface::DiagUpdateGenerationBounds();
 
@@ -7837,7 +7835,7 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
         set_ro_segment_in_range (seg);
     }
 
-    FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(seg), (size_t)(heap_segment_reserved (seg) - heap_segment_mem(seg)), ETW::GCLog::ETW_GC_INFO::READ_ONLY_HEAP, GetClrInstanceId());
+    FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(seg), (size_t)(heap_segment_reserved (seg) - heap_segment_mem(seg)), gc_etw_segment_read_only_heap);
 
     leave_spin_lock (&gc_heap::gc_lock);
     return TRUE;
@@ -10448,10 +10446,9 @@ gc_heap::init_gc_heap (int  h_number)
     if (!seg)
         return 0;
 
-    FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(seg), 
-                              (size_t)(heap_segment_reserved (seg) - heap_segment_mem(seg)), 
-                              ETW::GCLog::ETW_GC_INFO::SMALL_OBJECT_HEAP, 
-                              GetClrInstanceId());
+    FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(seg),
+                              (size_t)(heap_segment_reserved (seg) - heap_segment_mem(seg)),
+                              gc_etw_segment_small_object_heap);
     
 #ifdef SEG_MAPPING_TABLE
     seg_mapping_table_add_segment (seg, __this);
@@ -10514,10 +10511,9 @@ gc_heap::init_gc_heap (int  h_number)
         return 0;
     lseg->flags |= heap_segment_flags_loh;
 
-    FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(lseg), 
-                              (size_t)(heap_segment_reserved (lseg) - heap_segment_mem(lseg)), 
-                              ETW::GCLog::ETW_GC_INFO::LARGE_OBJECT_HEAP, 
-                              GetClrInstanceId());
+    FIRE_EVENT(GCCreateSegment_V1, heap_segment_mem(lseg),
+                              (size_t)(heap_segment_reserved (lseg) - heap_segment_mem(lseg)),
+                              gc_etw_segment_large_object_heap);
 
 #ifdef SEG_MAPPING_TABLE
     seg_mapping_table_add_segment (lseg, __this);
@@ -13229,9 +13225,8 @@ int gc_heap::try_allocate_more_space (alloc_context* acontext, size_t size,
         if (etw_allocation_running_amount[etw_allocation_index] > etw_allocation_tick)
         {
 #ifdef FEATURE_REDHAWK
-            FireEtwGCAllocationTick_V1((uint32_t)etw_allocation_running_amount[etw_allocation_index], 
-                                    ((gen_number == 0) ? ETW::GCLog::ETW_GC_INFO::AllocationSmall : ETW::GCLog::ETW_GC_INFO::AllocationLarge), 
-                                    GetClrInstanceId());
+            FIRE_EVENT(GCAllocationTick_V1, (uint32_t)etw_allocation_running_amount[etw_allocation_index],
+                                            (gen_number == 0) ? gc_etw_alloc_soh : gc_etw_alloc_loh);
 #else
             // Unfortunately some of the ETW macros do not check whether the ETW feature is enabled.
             // The ones that do are much less efficient.
@@ -19163,7 +19158,7 @@ void gc_heap::get_memory_info (uint32_t* memory_load,
 void fire_mark_event (int heap_num, int root_type, size_t bytes_marked)
 {
     dprintf (DT_LOG_0, ("-----------[%d]mark %d: %Id", heap_num, root_type, bytes_marked));
-    FireEtwGCMarkWithType (heap_num, GetClrInstanceId(), root_type, bytes_marked);
+    FIRE_EVENT(GCMarkWithType, heap_num, root_type, bytes_marked);
 }
 
 //returns TRUE is an overflow happened.
@@ -26702,7 +26697,7 @@ BOOL gc_heap::prepare_bgc_thread(gc_heap* gh)
     gh->bgc_threads_timeout_cs.Leave();
 
     if(thread_created)
-        FireEtwGCCreateConcurrentThread_V1(GetClrInstanceId());
+        FIRE_EVENT(GCCreateConcurrentThread_V1);
 
     return success;
 }
@@ -27044,7 +27039,7 @@ void gc_heap::bgc_thread_function()
         //gc_heap::disable_preemptive (current_thread, TRUE);
     }
 
-    FireEtwGCTerminateConcurrentThread_V1(GetClrInstanceId());
+    FIRE_EVENT(GCTerminateConcurrentThread_V1);
 
     dprintf (3, ("bgc_thread thread exiting"));
     return;
@@ -35081,7 +35076,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
     // We want to get a stack from the user thread that triggered the GC
     // instead of on the GC thread which is the case for Server GC.
     // But we are doing it for Workstation GC as well to be uniform.
-    FireEtwGCTriggered((int) reason, GetClrInstanceId());
+    FIRE_EVENT(GCTriggered, static_cast<uint32_t>(reason));
 
 #ifdef MULTIPLE_HEAPS
     GcCondemnedGeneration = condemned_generation_number;
