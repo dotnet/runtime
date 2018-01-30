@@ -100,10 +100,8 @@ namespace System
         {
             string s = m_value ? TrueLiteral : FalseLiteral;
 
-            if (s.Length <= destination.Length)
+            if (s.AsReadOnlySpan().TryCopyTo(destination))
             {
-                bool copied = s.AsReadOnlySpan().TryCopyTo(destination);
-                Debug.Assert(copied);
                 charsWritten = s.Length;
                 return true;
             }
