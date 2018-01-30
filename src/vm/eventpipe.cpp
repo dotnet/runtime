@@ -545,6 +545,12 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
         return;
     }
 
+    // If the activity id isn't specified, pull it from the current thread.
+    if(pActivityId == NULL)
+    {
+        pActivityId = pThread->GetActivityId();
+    }
+
     if(!s_pConfig->RundownEnabled() && s_pBufferManager != NULL)
     {
         if(!s_pBufferManager->WriteEvent(pThread, *s_pSession, event, payload, pActivityId, pRelatedActivityId))
@@ -962,6 +968,67 @@ void QCALLTYPE EventPipeInternal::DeleteProvider(
     }
 
     END_QCALL;
+}
+
+int QCALLTYPE EventPipeInternal::EventActivityIdControl(
+    uint controlCode,
+    GUID *pActivityId)
+{
+
+    QCALL_CONTRACT;
+
+    int retVal = 0;
+
+    BEGIN_QCALL;
+
+    Thread *pThread = GetThread();
+    if(pThread == NULL || pActivityId == NULL)
+    {
+        retVal = 1;
+    }
+    else
+    {
+        ActivityControlCode activityControlCode = (ActivityControlCode)controlCode;
+        GUID currentActivityId;
+        switch(activityControlCode)
+        {
+            case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_ID:
+
+                *pActivityId = *pThread->GetActivityId();
+                break;
+
+            case ActivityControlCode::EVENT_ACTIVITY_CONTROL_SET_ID:
+
+                pThread->SetActivityId(pActivityId);
+                break;
+
+            case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
+
+                CoCreateGuid(pActivityId);
+                break;
+
+            case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
+
+                currentActivityId = *pThread->GetActivityId();
+                pThread->SetActivityId(pActivityId);
+                *pActivityId = currentActivityId;
+
+                break;
+
+            case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
+
+                *pActivityId = *pThread->GetActivityId();
+                CoCreateGuid(&currentActivityId);
+                pThread->SetActivityId(&currentActivityId);
+                break;
+
+            default:
+                retVal = 1;
+        };
+    }
+
+    END_QCALL;
+    return retVal;
 }
 
 void QCALLTYPE EventPipeInternal::WriteEvent(
