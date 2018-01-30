@@ -1,0 +1,60 @@
+﻿<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core.dll" #>
+<#@ Assembly Name="System.Xml.dll" #>
+<#@ Assembly Name="System.Xml.Linq.dll" #>
+<#@ Assembly Name="System.Windows.Forms.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Xml.Linq" #>
+<#@ import namespace="System.Collections" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Runtime.InteropServices" #>
+<#@ include file="GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+
+using System.Runtime.CompilerServices;
+
+namespace System.Numerics
+{
+    internal class ConstantHelper
+    {
+<#    foreach (var type in supportedTypes)
+    {
+        string hexValue = "0x" + new string('f', Marshal.SizeOf(type) * 2);
+#>
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static <#= type.Name #> Get<#= type.Name #>WithAllBitsSet()
+        {
+            <#= type.Name #> value = 0;
+            unsafe
+            {
+                unchecked
+                {
+                    *((<#= GetIntegralEquivalent(type).Name #>*)&value) = (<#=GetIntegralEquivalent(type).Name#>)<#= hexValue #>;
+                }
+            }
+            return value;
+        }
+<#
+    }
+#>
+    }
+}<#+
+    public Type GetIntegralEquivalent(Type type)
+    {
+        if (type == typeof(Single))
+        {
+            return typeof(Int32);
+        }
+        else if (type == typeof(double))
+        {
+            return typeof(Int64);
+        }
+        else 
+        {
+            return type;
+        }
+    }
+#>
