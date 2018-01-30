@@ -681,7 +681,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_load_sd (double const* mem_address);
         ///   MOVSD xmm, m64
         /// </summary>
-        public static unsafe Vector128<double> LoadScalar(double* address) => LoadScalar(address);
+        public static unsafe Vector128<double> LoadScalarVector128(double* address) => LoadScalarVector128(address);
 
         /// <summary>
         /// __m128i _mm_load_si128 (__m128i const* mem_address);
@@ -745,42 +745,42 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<sbyte> LoadScalar(sbyte* address) => LoadScalar(address);
+        public static unsafe Vector128<sbyte> LoadScalarVector128(sbyte* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<byte> LoadScalar(byte* address) => LoadScalar(address);
+        public static unsafe Vector128<byte> LoadScalarVector128(byte* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<short> LoadScalar(short* address) => LoadScalar(address);
+        public static unsafe Vector128<short> LoadScalarVector128(short* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<ushort> LoadScalar(ushort* address) => LoadScalar(address);
+        public static unsafe Vector128<ushort> LoadScalarVector128(ushort* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<int> LoadScalar(int* address) => LoadScalar(address);
+        public static unsafe Vector128<int> LoadScalarVector128(int* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<uint> LoadScalar(uint* address) => LoadScalar(address);
+        public static unsafe Vector128<uint> LoadScalarVector128(uint* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<long> LoadScalar(long* address) => LoadScalar(address);
+        public static unsafe Vector128<long> LoadScalarVector128(long* address) => LoadScalarVector128(address);
         /// <summary>
         /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr);
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static unsafe Vector128<ulong> LoadScalar(ulong* address) => LoadScalar(address);
+        public static unsafe Vector128<ulong> LoadScalarVector128(ulong* address) => LoadScalarVector128(address);
 
         /// <summary>
         /// void _mm_maskmoveu_si128 (__m128i a,  __m128i mask, char* mem_address);
