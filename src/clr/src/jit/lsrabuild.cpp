@@ -2614,6 +2614,11 @@ int LinearScan::GetOperandInfo(GenTree* node)
         const unsigned srcCount = GetIndirInfo(node->AsIndir());
         return srcCount;
     }
+    if (node->OperIsHWIntrinsic())
+    {
+        appendLocationInfoToList(node->gtGetOp1());
+        return 1;
+    }
 
     return 0;
 }

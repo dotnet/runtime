@@ -848,7 +848,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
                 else if (!comp->isAddrOfSIMDType(node->AsBlk()->Addr()))
                 {
                     GenTree* dataSrc = parent->gtGetOp2();
-                    if (!dataSrc->IsLocal() && (dataSrc->OperGet() != GT_SIMD))
+                    if (!dataSrc->IsLocal() && (dataSrc->OperGet() != GT_SIMD) && (!dataSrc->OperIsHWIntrinsic()))
                     {
                         noway_assert(dataSrc->OperIsIndir());
                         keepBlk = !comp->isAddrOfSIMDType(dataSrc->AsIndir()->Addr());

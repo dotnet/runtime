@@ -1297,6 +1297,10 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeReg(tree->gtGetOp1());
         }
+        else if (tree->OperIsHWIntrinsic())
+        {
+            genConsumeReg(tree->gtGetOp1());
+        }
         else
         {
 #ifdef FEATURE_SIMD

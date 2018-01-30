@@ -4009,6 +4009,28 @@ void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenT
     emitCurIGsize += sz;
 }
 
+void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, regNumber base, int offs, int ival)
+{
+    noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+    assert(IsSSEOrAVXInstruction(ins));
+
+    instrDesc* id = emitNewInstrAmdCns(attr, offs, ival);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+
+    id->idInsFmt(IF_RRW_ARD_CNS);
+    id->idAddr()->iiaAddrMode.amBaseReg = base;
+    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    // Plus one for the 1-byte immediate (ival)
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins)) + 1;
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 void emitter::emitIns_R_C_I(
     instruction ins, emitAttr attr, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival)
 {
@@ -4196,6 +4218,30 @@ void emitter::emitIns_R_R_A_I(
 
     emitHandleMemOp(indir, id, fmt, ins);
 
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins)) + 1;
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+void emitter::emitIns_R_R_AR_I(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, int ival)
+{
+    assert(IsSSEOrAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins));
+
+    instrDesc* id = emitNewInstrAmdCns(attr, offs, ival);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    id->idInsFmt(IF_RWR_RRD_ARD_CNS);
+    id->idAddr()->iiaAddrMode.amBaseReg = base;
+    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    // Plus one for the 1-byte immediate (ival)
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeRM(ins)) + 1;
     id->idCodeSize(sz);
 
@@ -5393,6 +5439,23 @@ void emitter::emitIns_SIMD_R_R_A_I(
             emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
         emitIns_R_A_I(ins, attr, reg, indir, ival);
+    }
+}
+
+void emitter::emitIns_SIMD_R_R_AR_I(
+    instruction ins, emitAttr attr, regNumber reg, regNumber reg1, regNumber base, int ival)
+{
+    if (UseVEXEncoding())
+    {
+        emitIns_R_R_AR_I(ins, attr, reg, reg1, base, 0, ival);
+    }
+    else
+    {
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
+        }
+        emitIns_R_AR_I(ins, attr, reg, base, 0, ival);
     }
 }
 
