@@ -888,9 +888,17 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
-    GenTree*       op1         = node->gtOp.gtOp1;
-    GenTree*       op2         = node->gtOp.gtOp2;
+    NamedIntrinsic  intrinsicID = node->gtHWIntrinsicId;
+    GenTreeArgList* argList     = nullptr;
+    GenTree*        op1         = node->gtOp.gtOp1;
+    GenTree*        op2         = node->gtOp.gtOp2;
+
+    if (op1->OperIs(GT_LIST))
+    {
+        argList = op1->AsArgList();
+        op1     = argList->Current();
+        op2     = argList->Rest()->Current();
+    }
 
     switch (comp->getHWIntrinsicInfo(node->gtHWIntrinsicId).form)
     {
@@ -898,6 +906,28 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op2->IsCnsIntOrI())
             {
                 MakeSrcContained(node, op2);
+            }
+            break;
+
+        case HWIntrinsicInfo::SimdInsertOp:
+            if (op2->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, op2);
+
+                GenTree* op3 = argList->Rest()->Rest()->Current();
+
+#if NYI_ARM64_HW_INTRINSIC_CONTAINMENT
+                // TODO-ARM64-CQ Support containing NI_ARM64_SIMD_GetItem (vector element to element move)
+                if (op3->OperIs(GT_HWIntrinsic) && (op3->AsHWIntrinsic()->gtHWIntrinsicId == NI_ARM64_SIMD_GetItem))
+                {
+                    ContainCheckHWIntrinsic(op3->AsHWIntrinsic());
+
+                    if (op3->gtOp.gtOp2->isContained())
+                    {
+                        MakeSrcContained(node, op3);
+                    }
+                }
+#endif // NYI_ARM64_HW_INTRINSIC_CONTAINMENT
             }
             break;
 
