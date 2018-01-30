@@ -52,25 +52,5 @@ namespace System.Threading.Channels
 
             return new BoundedChannel<T>(options.Capacity, options.FullMode, !options.AllowSynchronousContinuations);
         }
-
-        /// <summary>Creates a channel that doesn't buffer any items.</summary>
-        /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
-        /// <returns>The created channel.</returns>
-        public static Channel<T> CreateUnbuffered<T>() =>
-            new UnbufferedChannel<T>();
-
-        /// <summary>Creates a channel that doesn't buffer any items.</summary>
-        /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
-        /// <param name="options">Options that guide the behavior of the channel.</param>
-        /// <returns>The created channel.</returns>
-        public static Channel<T> CreateUnbuffered<T>(UnbufferedChannelOptions options)
-        {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            return new UnbufferedChannel<T>();
-        }
     }
 }

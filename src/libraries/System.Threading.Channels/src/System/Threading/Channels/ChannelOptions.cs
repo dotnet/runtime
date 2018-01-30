@@ -99,9 +99,4 @@ namespace System.Threading.Channels
     public sealed class UnboundedChannelOptions : ChannelOptions
     {
     }
-
-    /// <summary>Provides options that control the behavior of <see cref="UnbufferedChannel{T}"/> instances.</summary>
-    public sealed class UnbufferedChannelOptions : ChannelOptions
-    {
-    }
 }

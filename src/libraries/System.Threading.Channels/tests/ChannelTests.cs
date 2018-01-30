@@ -50,9 +50,6 @@ namespace System.Threading.Channels.Tests
             Assert.NotNull(Channel.CreateBounded<int>(1));
             Assert.NotNull(Channel.CreateBounded<int>(new BoundedChannelOptions(1)));
 
-            Assert.NotNull(Channel.CreateUnbuffered<int>());
-            Assert.NotNull(Channel.CreateUnbuffered<int>(new UnbufferedChannelOptions()));
-
             Assert.NotNull(Channel.CreateUnbounded<int>());
             Assert.NotNull(Channel.CreateUnbounded<int>(new UnboundedChannelOptions()));
         }
@@ -61,7 +58,6 @@ namespace System.Threading.Channels.Tests
         public void Create_NullOptions_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentNullException>("options", () => Channel.CreateUnbounded<int>(null));
-            AssertExtensions.Throws<ArgumentNullException>("options", () => Channel.CreateUnbuffered<int>(null));
             AssertExtensions.Throws<ArgumentNullException>("options", () => Channel.CreateBounded<int>(null));
         }
 

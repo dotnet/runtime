@@ -22,11 +22,6 @@ namespace System.Threading.Channels.Tests
         public override Channel<int> CreateChannel() => Channel.CreateBounded<int>(10);
     }
 
-    public sealed class Perf_UnbufferedChannelTests : Perf_Tests
-    {
-        public override Channel<int> CreateChannel() => Channel.CreateUnbuffered<int>();
-    }
-
     public abstract class Perf_BufferingTests : Perf_Tests
     {
         [Benchmark(InnerIterationCount = 1_000_000), MeasureGCAllocations]
