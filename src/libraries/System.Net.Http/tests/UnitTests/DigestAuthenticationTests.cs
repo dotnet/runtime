@@ -51,5 +51,16 @@ namespace System.Net.Http.Tests
 
             Assert.True(await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false));
         }
+
+        [Theory]
+        [InlineData("nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", qop=\"auth\", stale=false")]
+        public async void DigestResponse_AuthToken_Fails(string response)
+        {
+            NetworkCredential credential = new NetworkCredential("foo","bar");
+            AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
+
+            Assert.False(await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false));
+        }
     }
 }

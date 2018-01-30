@@ -95,9 +95,15 @@ namespace System.Net.Http
                 return null;
             }
 
-            string opaque = digestResponse.Parameters.ContainsKey(Opaque) ? digestResponse.Parameters[Opaque] : null;
+            // opaque token may or may not exist
+            string opaque;
+            digestResponse.Parameters.TryGetValue(Opaque, out opaque);
 
-            string realm = digestResponse.Parameters.ContainsKey(Realm) ? digestResponse.Parameters[Realm] : string.Empty;
+            string realm;
+            if (!digestResponse.Parameters.TryGetValue(Realm, out realm))
+            {
+                return null;
+            }
 
             // Add username
             string userhash;
