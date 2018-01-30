@@ -77,7 +77,6 @@ void GCHeap::UpdatePreGCCounters()
 
 #endif //ENABLE_PERF_COUNTERS
 
-#ifdef FEATURE_EVENT_TRACE
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
     gc_mechanisms *pSettings = &gc_heap::g_heaps[0]->settings;
@@ -85,27 +84,28 @@ void GCHeap::UpdatePreGCCounters()
     gc_mechanisms *pSettings = &gc_heap::settings;
 #endif //MULTIPLE_HEAPS
 
-    ETW::GCLog::ETW_GC_INFO Info;
-
-    Info.GCStart.Count = (uint32_t)pSettings->gc_index;
-    Info.GCStart.Depth = (uint32_t)pSettings->condemned_generation;
-    Info.GCStart.Reason = (ETW::GCLog::ETW_GC_INFO::GC_REASON)((int)(pSettings->reason));
-
-    Info.GCStart.Type = ETW::GCLog::ETW_GC_INFO::GC_NGC;
+    uint32_t count = (uint32_t)pSettings->gc_index;
+    uint32_t depth = (uint32_t)pSettings->condemned_generation;
+    uint32_t reason = (uint32_t)pSettings->reason;
+    gc_etw_type type = gc_etw_type_ngc;
     if (pSettings->concurrent)
     {
-        Info.GCStart.Type = ETW::GCLog::ETW_GC_INFO::GC_BGC;
+        type = gc_etw_type_bgc;
     }
 #ifdef BACKGROUND_GC
-    else if (Info.GCStart.Depth < max_generation)
+    else if (depth < max_generation && pSettings->background_p)
     {
-        if (pSettings->background_p)
-            Info.GCStart.Type = ETW::GCLog::ETW_GC_INFO::GC_FGC;
+        type = gc_etw_type_fgc;
     }
-#endif //BACKGROUND_GC
+#endif // BACKGROUND_GC
 
-    ETW::GCLog::FireGcStartAndGenerationRanges(&Info);
-#endif // FEATURE_EVENT_TRACE
+    FIRE_EVENT(GCStart_V2, count, depth, reason, static_cast<uint32_t>(type));
+    g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+    {
+        uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
+        uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
+        FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
+    }, nullptr);
 }
 
 void GCHeap::UpdatePostGCCounters()
@@ -195,50 +195,34 @@ void GCHeap::UpdatePostGCCounters()
 #endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_EVENT_TRACE
-    ETW::GCLog::ETW_GC_INFO Info;
-
-    Info.GCEnd.Depth = condemned_gen;
-    Info.GCEnd.Count = (uint32_t)pSettings->gc_index;
-    ETW::GCLog::FireGcEndAndGenerationRanges(Info.GCEnd.Count, Info.GCEnd.Depth);
-
-    ETW::GCLog::ETW_GC_INFO HeapInfo;
-    ZeroMemory(&HeapInfo, sizeof(HeapInfo));
-
-    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
+    g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
     {
-        HeapInfo.HeapStats.GenInfo[gen_index].GenerationSize = g_GenerationSizes[gen_index];
-        HeapInfo.HeapStats.GenInfo[gen_index].TotalPromotedSize = g_GenerationPromotedSizes[gen_index];
-    }
+        uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
+        uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
+        FIRE_EVENT(GCGenerationRange, generation, rangeStart, range, rangeReserved);
+    }, nullptr);
+
+    FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
     dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)", 
-        Info.GCEnd.Count,
-        HeapInfo.HeapStats.GenInfo[0].GenerationSize,
-        HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
-        HeapInfo.HeapStats.GenInfo[1].GenerationSize,
-        HeapInfo.HeapStats.GenInfo[1].TotalPromotedSize,
-        HeapInfo.HeapStats.GenInfo[2].GenerationSize,
-        HeapInfo.HeapStats.GenInfo[2].TotalPromotedSize,
-        HeapInfo.HeapStats.GenInfo[3].GenerationSize,
-        HeapInfo.HeapStats.GenInfo[3].TotalPromotedSize));
+        pSettings->gc_index,
+        g_GenerationSizes[0], g_GenerationPromotedSizes[0],
+        g_GenerationSizes[1], g_GenerationPromotedSizes[1],
+        g_GenerationSizes[2], g_GenerationPromotedSizes[2],
+        g_GenerationSizes[3], g_GenerationPromotedSizes[3]));
 #endif //SIMPLE_DPRINTF
 
-    HeapInfo.HeapStats.FinalizationPromotedSize = promoted_finalization_mem;
-    HeapInfo.HeapStats.FinalizationPromotedCount = GetFinalizablePromotedCount();
-    HeapInfo.HeapStats.PinnedObjectCount = (uint32_t)total_num_pinned_objects;
-    HeapInfo.HeapStats.SinkBlockCount =  total_num_sync_blocks;
-    HeapInfo.HeapStats.GCHandleCount =  (uint32_t)total_num_gc_handles;
-
-    FireEtwGCHeapStats_V1(HeapInfo.HeapStats.GenInfo[0].GenerationSize, HeapInfo.HeapStats.GenInfo[0].TotalPromotedSize,
-                    HeapInfo.HeapStats.GenInfo[1].GenerationSize, HeapInfo.HeapStats.GenInfo[1].TotalPromotedSize,
-                    HeapInfo.HeapStats.GenInfo[2].GenerationSize, HeapInfo.HeapStats.GenInfo[2].TotalPromotedSize,
-                    HeapInfo.HeapStats.GenInfo[3].GenerationSize, HeapInfo.HeapStats.GenInfo[3].TotalPromotedSize,
-                    HeapInfo.HeapStats.FinalizationPromotedSize,
-                    HeapInfo.HeapStats.FinalizationPromotedCount,
-                    HeapInfo.HeapStats.PinnedObjectCount,
-                    HeapInfo.HeapStats.SinkBlockCount,
-                    HeapInfo.HeapStats.GCHandleCount, 
-                    GetClrInstanceId());
+    FIRE_EVENT(GCHeapStats_V1,
+        g_GenerationSizes[0], g_GenerationPromotedSizes[0],
+        g_GenerationSizes[1], g_GenerationPromotedSizes[1],
+        g_GenerationSizes[2], g_GenerationPromotedSizes[2],
+        g_GenerationSizes[3], g_GenerationPromotedSizes[3],
+        promoted_finalization_mem,
+        GetFinalizablePromotedCount(),
+        static_cast<uint32_t>(total_num_pinned_objects),
+        total_num_sync_blocks,
+        static_cast<uint32_t>(total_num_gc_handles));
 #endif // FEATURE_EVENT_TRACE
 
 #if defined(ENABLE_PERF_COUNTERS)
@@ -458,70 +442,13 @@ bool GCHeap::IsConcurrentGCInProgress()
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_number, uint8_t* object_address)
 {
-    void * typeId = nullptr;
-    const WCHAR * name = nullptr;
-#ifdef FEATURE_REDHAWK
-    typeId = RedhawkGCInterface::GetLastAllocEEType();
-#else
-    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
-
-    EX_TRY
-    {
-        TypeHandle th = GCToEEInterface::GetThread()->GetTHAllocContextObj();
-
-        if (th != 0)
-        {
-            th.GetName(strTypeName);
-            name = strTypeName.GetUnicode();
-            typeId = th.GetMethodTable();
-        }
-    }
-    EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions)
-#endif
-
-    if (typeId != nullptr)
-    {
-        FireEtwGCAllocationTick_V3((uint32_t)allocation_amount,
-                                   ((gen_number == 0) ? ETW::GCLog::ETW_GC_INFO::AllocationSmall : ETW::GCLog::ETW_GC_INFO::AllocationLarge), 
-                                   GetClrInstanceId(),
-                                   allocation_amount,
-                                   typeId, 
-                                   name,
-                                   heap_number,
-                                   object_address
-                                   );
-    }
+    gc_etw_alloc_kind kind = gen_number == 0 ? gc_etw_alloc_soh : gc_etw_alloc_loh;
+    FIRE_EVENT(GCAllocationTick_V3, static_cast<uint64_t>(allocation_amount), kind, heap_number, object_address);
 }
+
 void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
 {
-#ifdef FEATURE_REDHAWK
-    UNREFERENCED_PARAMETER(object);
-    UNREFERENCED_PARAMETER(ppObject);
-#else
-    Object* obj = (Object*)object;
-
-    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName; 
-   
-    EX_TRY
-    {
-        FAULT_NOT_FATAL();
-
-        TypeHandle th = obj->GetGCSafeTypeHandleIfPossible();
-        if(th != NULL)
-        {
-            th.GetName(strTypeName);
-        }
-
-        FireEtwPinObjectAtGCTime(ppObject,
-                             object,
-                             obj->GetSize(),
-                             strTypeName.GetUnicode(),
-                             GetClrInstanceId());
-    }
-    EX_CATCH {}
-    EX_END_CATCH(SwallowAllExceptions)
-#endif // FEATURE_REDHAWK
+    FIRE_EVENT(PinObjectAtGCTime, object, ppObject);
 }
 #endif // FEATURE_EVENT_TRACE
 
@@ -600,22 +527,18 @@ void GCHeap::DiagTraceGCSegments()
 
         for (seg = generation_start_segment (h->generation_of (max_generation)); seg != 0; seg = heap_segment_next(seg))
         {
-            ETW::GCLog::ETW_GC_INFO Info;
-            Info.GCCreateSegment.Address = (size_t)heap_segment_mem(seg);
-            Info.GCCreateSegment.Size = (size_t)(heap_segment_reserved (seg) - heap_segment_mem(seg));
-            Info.GCCreateSegment.Type = (heap_segment_read_only_p (seg) ? 
-                                         ETW::GCLog::ETW_GC_INFO::READ_ONLY_HEAP :
-                                         ETW::GCLog::ETW_GC_INFO::SMALL_OBJECT_HEAP);
-            FireEtwGCCreateSegment_V1(Info.GCCreateSegment.Address, Info.GCCreateSegment.Size, Info.GCCreateSegment.Type, GetClrInstanceId());
+            uint8_t* address = heap_segment_mem (seg);
+            size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
+            gc_etw_segment_type type = heap_segment_read_only_p (seg) ? gc_etw_segment_read_only_heap : gc_etw_segment_small_object_heap;
+            FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(type));
         }
 
         // large obj segments
         for (seg = generation_start_segment (h->generation_of (max_generation+1)); seg != 0; seg = heap_segment_next(seg))
         {
-            FireEtwGCCreateSegment_V1((size_t)heap_segment_mem(seg), 
-                                   (size_t)(heap_segment_reserved (seg) - heap_segment_mem(seg)), 
-                                   ETW::GCLog::ETW_GC_INFO::LARGE_OBJECT_HEAP, 
-                                   GetClrInstanceId());
+            uint8_t* address = heap_segment_mem (seg);
+            size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
+            FIRE_EVENT(GCCreateSegment_V1, address, size, static_cast<uint32_t>(gc_etw_segment_large_object_heap));
         }
     }
 #endif // FEATURE_EVENT_TRACE
@@ -623,9 +546,7 @@ void GCHeap::DiagTraceGCSegments()
 
 void GCHeap::DiagDescrGenerations (gen_walk_fn fn, void *context)
 {
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     pGenGCHeap->descr_generations_to_profiler(fn, context);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
 segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
