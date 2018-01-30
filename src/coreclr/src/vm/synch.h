@@ -219,6 +219,12 @@ private:
             return *this;
         }
 
+        Counts VolatileLoadWithoutBarrier() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ::VolatileLoadWithoutBarrier(&data);
+        }
+
         Counts CompareExchange(Counts toCounts, Counts fromCounts)
         {
             LIMITED_METHOD_CONTRACT;
@@ -264,7 +270,11 @@ public:
 
 private:
     BYTE __padding1[MAX_CACHE_LINE_SIZE]; // padding to ensure that m_counts gets its own cache line
+
+    // Take care to use 'm_counts.VolatileLoadWithoutBarrier()` when loading this value into a local variable that will be
+    // reused. See AwareLock::m_lockState for details.
     Counts m_counts;
+
     BYTE __padding2[MAX_CACHE_LINE_SIZE]; // padding to ensure that m_counts gets its own cache line
 
 #if defined(DEBUG)

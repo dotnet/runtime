@@ -644,7 +644,7 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
 
     _ASSERTE(timeoutMs != 0);
     _ASSERTE(m_handle != nullptr);
-    _ASSERTE(m_counts.waiterCount != (UINT16)0);
+    _ASSERTE(m_counts.VolatileLoadWithoutBarrier().waiterCount != (UINT16)0);
 
     while (true)
     {
@@ -680,7 +680,7 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
         }
 
         // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
-        Counts counts = m_counts;
+        Counts counts = m_counts.VolatileLoadWithoutBarrier();
         while (true)
         {
             _ASSERTE(counts.waiterCount != (UINT16)0);
@@ -719,7 +719,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs)
     _ASSERTE(m_handle != nullptr);
 
     // Acquire the semaphore or register as a waiter
-    Counts counts = m_counts;
+    Counts counts = m_counts.VolatileLoadWithoutBarrier();
     while (true)
     {
         _ASSERTE(counts.signalCount <= m_maximumSignalCount);
@@ -762,7 +762,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
     }
 
     // Try to acquire the semaphore or register as a spinner
-    Counts counts = m_counts;
+    Counts counts = m_counts.VolatileLoadWithoutBarrier();
     while (true)
     {
         Counts newCounts = counts;
@@ -809,7 +809,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
         ClrSleepEx(0, false);
 
         // Try to acquire the semaphore and unregister as a spinner
-        counts = m_counts;
+        counts = m_counts.VolatileLoadWithoutBarrier();
         while (true)
         {
             _ASSERTE(counts.spinnerCount != (UINT8)0);
@@ -868,7 +868,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
         }
 
         // Try to acquire the semaphore and unregister as a spinner
-        counts = m_counts;
+        counts = m_counts.VolatileLoadWithoutBarrier();
         while (true)
         {
             _ASSERTE(counts.spinnerCount != (UINT8)0);
@@ -893,7 +893,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
 #endif // _TARGET_ARM64_
 
     // Unregister as a spinner, and acquire the semaphore or register as a waiter
-    counts = m_counts;
+    counts = m_counts.VolatileLoadWithoutBarrier();
     while (true)
     {
         _ASSERTE(counts.spinnerCount != (UINT8)0);
@@ -934,7 +934,7 @@ void CLRLifoSemaphore::Release(INT32 releaseCount)
     _ASSERTE(m_handle != INVALID_HANDLE_VALUE);
 
     INT32 countOfWaitersToWake;
-    Counts counts = m_counts;
+    Counts counts = m_counts.VolatileLoadWithoutBarrier();
     while (true)
     {
         Counts newCounts = counts;
