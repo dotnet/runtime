@@ -538,42 +538,42 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128d _mm_cvtsi32_sd (__m128d a, int b)
         ///   CVTSI2SD xmm, reg/m64
         /// </summary>
-        public static Vector128<double> ConvertToVector128DoubleScalar(Vector128<double> upper, int value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, int value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_cvtsi64_sd (__m128d a, int b)
         ///   CVTSI2SD xmm, reg/m64
         /// </summary>
-        public static Vector128<double> ConvertToVector128DoubleScalar(Vector128<double> upper, long value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, long value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_cvtss_sd (__m128d a, __m128 b)
         ///   CVTSS2SD xmm, xmm/m32
         /// </summary>
-        public static Vector128<double> ConvertToVector128DoubleScalar(Vector128<double> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_cvtsi32_si128 (int a)
         ///   MOVD xmm, reg/m32
         /// </summary>
-        public static Vector128<int> ConvertToVector128Int32Scalar(int value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> ConvertScalarToVector128Int32(int value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_cvtsi64_si128 (__int64 a)
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static Vector128<long> ConvertToVector128Int64Scalar(long value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> ConvertScalarToVector128Int64(long value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_cvtsd_ss (__m128 a, __m128d b)
         ///   CVTSD2SS xmm, xmm/m64
         /// </summary>
-        public static Vector128<float> ConvertToVector128SingleScalar(Vector128<float> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_cvtsi32_si128 (int a)
         ///   MOVD xmm, reg/m32
         /// </summary>
-        public static Vector128<uint> ConvertToVector128UInt32Scalar(uint value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> ConvertScalarToVector128UInt32Scalar(uint value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_cvtsi64_si128 (__int64 a)
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static Vector128<ulong> ConvertToVector128UInt64Scalar(ulong value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_cvttps_epi32 (__m128 a)
