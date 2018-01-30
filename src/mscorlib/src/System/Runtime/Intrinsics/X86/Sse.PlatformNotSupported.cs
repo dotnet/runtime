@@ -276,12 +276,12 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
         ///   CVTSI2SS xmm, reg/m32
         /// </summary>
-        public static Vector128<float> ConvertToVector128SingleScalar(Vector128<float> upper, int value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
         ///   CVTSI2SS xmm, reg/m64
         /// </summary>
-        public static Vector128<float> ConvertToVector128SingleScalar(Vector128<float> upper, long value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_cvttss_si32 (__m128 a)
