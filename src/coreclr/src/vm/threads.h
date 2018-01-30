@@ -5256,6 +5256,10 @@ private:
     // True if the thread was in cooperative mode.  False if it was in preemptive when the suspension started.
     Volatile<ULONG> m_gcModeOnSuspension;
 
+    // The activity ID for the current thread.
+    // An activity ID of zero means the thread is not executing in the context of an activity.
+    GUID m_activityId;
+
 public:
     EventPipeBufferList* GetEventPipeBufferList()
     {
@@ -5296,6 +5300,20 @@ public:
     void ClearGCModeOnSuspension()
     {
         m_gcModeOnSuspension = 0;
+    }
+
+    LPCGUID GetActivityId() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_activityId;
+    }
+
+    void SetActivityId(LPCGUID pActivityId)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pActivityId != NULL);
+
+        m_activityId = *pActivityId;
     }
 #endif // FEATURE_PERFTRACING
 
