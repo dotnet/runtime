@@ -162,6 +162,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     switch (getHWIntrinsicInfo(intrinsic).form)
     {
         case HWIntrinsicInfo::SimdBinaryOp:
+        case HWIntrinsicInfo::SimdSelectOp:
         case HWIntrinsicInfo::SimdUnaryOp:
             simdClass = sig->retTypeClass;
             break;
@@ -199,6 +200,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack(simdType);
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, op2, intrinsic, simdBaseType, simdSizeBytes);
+
+        case HWIntrinsicInfo::SimdSelectOp:
+            // op1 is the first operand
+            // op2 is the second operand
+            // op3 is the third operand
+            op3 = impSIMDPopStack(simdType);
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+
+            return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
 
         case HWIntrinsicInfo::SimdUnaryOp:
             op1 = impSIMDPopStack(simdType);
