@@ -1687,6 +1687,7 @@ Thread::Thread()
 #ifdef FEATURE_PERFTRACING
     m_pEventPipeBufferList = NULL;
     m_eventWriteInProgress = false;
+    memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
     m_HijackReturnKind = RT_Illegal;
 }
