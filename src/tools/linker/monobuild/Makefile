@@ -14,6 +14,7 @@ prepare:
 	# A hack for project.assets.json issues
 	rm -f ../cecil/obj/project.assets.json
 	rm -f ../cecil/symbols/pdb/obj/project.assets.json
+	rm -f ../cecil/symbols/mdb/obj/project.assets.json
 	rm -f ../linker/obj/project.assets.json
 
 check: prepare
