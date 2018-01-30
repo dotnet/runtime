@@ -27,7 +27,7 @@ namespace Internal.Cryptography
                 case HashAlgorithmNames.MD5:
                     return new EvpHashProvider(Interop.Crypto.EvpMd5());
             }
-            throw new CryptographicException();
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
         public static unsafe HashProvider CreateMacProvider(string hashAlgorithmId, byte[] key)
@@ -45,7 +45,7 @@ namespace Internal.Cryptography
                 case HashAlgorithmNames.MD5:
                     return new HmacHashProvider(Interop.Crypto.EvpMd5(), key);
             }
-            throw new CryptographicException();
+            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
         }
 
         // -----------------------------
