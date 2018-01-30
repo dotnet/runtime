@@ -106,13 +106,13 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Memory.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\MemoryDebugView.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\ReadOnlyMemory.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\SpanDebugView.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IRetainable.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\MemoryHandle.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\OwnedMemory.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Runtime\InteropServices\MemoryMarshal.cs" />
     <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\Span.cs" />
-    <Compile Include="System\SpanDebugView.cs" />
     <Compile Include="System\MemoryExtensions.Portable.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
