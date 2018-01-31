@@ -47,6 +47,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.DeleteService.cs">
       <Link>Common\Interop\Windows\Interop.DeleteService.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="System.ServiceProcess.ServiceController.TestService.runtimeconfig.json">

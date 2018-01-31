@@ -128,7 +128,10 @@ namespace System.ServiceProcess.Tests
             try
             {
                 if (_client != null)
+                {
                     _client.Dispose();
+                    _client = null;
+                }
 
                 TestServiceInstaller testServiceInstaller = new TestServiceInstaller();
                 testServiceInstaller.ServiceName = TestServiceName;
