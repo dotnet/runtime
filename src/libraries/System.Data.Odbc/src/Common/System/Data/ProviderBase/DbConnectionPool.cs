@@ -382,9 +382,11 @@ namespace System.Data.ProviderBase
         }
 
         private Timer CreateCleanupTimer()
-        {
-            return (new Timer(new TimerCallback(this.CleanupCallback), null, _cleanupWait, _cleanupWait));
-        }
+            => ADP.UnsafeCreateTimer(
+                new TimerCallback(CleanupCallback),
+                null,
+                _cleanupWait,
+                _cleanupWait);
 
         private DbConnectionInternal CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
         {

@@ -121,10 +121,11 @@ namespace System.Data.ProviderBase
         }
 
         private Timer CreatePruningTimer()
-        {
-            TimerCallback callback = new TimerCallback(PruneConnectionPoolGroups);
-            return new Timer(callback, null, PruningDueTime, PruningPeriod);
-        }
+            => ADP.UnsafeCreateTimer(
+                new TimerCallback(PruneConnectionPoolGroups),
+                null,
+                PruningDueTime,
+                PruningPeriod);
 
         protected DbConnectionOptions FindConnectionOptions(DbConnectionPoolKey key)
         {
