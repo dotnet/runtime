@@ -4970,6 +4970,17 @@ instruction CodeGen::getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types ins
     return compiler->getHWIntrinsicInfo(intrinsicID).instrs[instrTypeIndex];
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsic: Produce code for a GT_HWIntrinsic node.
+//
+// This is the main routine which in turn calls the genHWIntrinsicXXX() routines.
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -5005,6 +5016,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicUnaryOp:
+//
+// Produce code for a GT_HWIntrinsic node with form UnaryOp.
+//
+// Consumes one scalar operand produces a scalar
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node)
 {
     GenTree*  op1       = node->gtGetOp1();
@@ -5026,11 +5050,39 @@ void CodeGen::genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicCrcOp:
+//
+// Produce code for a GT_HWIntrinsic node with form CrcOp.
+//
+// Consumes two scalar operands and produces a scalar result
+//
+// This form differs from BinaryOp because the attr depends on the size of op2
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicCrcOp(GenTreeHWIntrinsic* node)
 {
     NYI("genHWIntrinsicCrcOp not implemented");
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdBinaryOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdBinaryOp.
+//
+// Consumes two SIMD operands and produces a SIMD result
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
 {
     GenTree*  op1       = node->gtGetOp1();
@@ -5377,6 +5429,19 @@ void CodeGen::genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdUnaryOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdUnaryOp.
+//
+// Consumes single SIMD operand and produces a SIMD result
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node)
 {
     GenTree*  op1       = node->gtGetOp1();
