@@ -1,0 +1,45 @@
+name: dotnet-runtime-11
+version: 1.1.6
+summary: Cross-Platform .NET Core Runtime. 
+description: |
+  .NET Core 1.1.6 Runtime. https://dot.net/core.
+
+grade: devel
+confinement: devmode
+
+apps:
+  dotnet:
+    command: dotnet
+    plugs:
+      - network
+      - network-bind
+      - removable-media
+      - home
+
+slots:
+  # This is how we make a part of this snap readable by other
+  # snaps. Consumers will need to access the runtime as well
+  # as various libs contained in this snap, so share the entire
+  # $SNAP
+  dotnet-runtime-11:
+    content: dotnet-runtime-11
+    interface: content
+    read: [/shared/Microsoft.NETCore.App/1.1.6]
+
+parts:
+  dotnet-runtime:
+      plugin: dump
+      source: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/1.1.6/dotnet-ubuntu.16.04-x64.1.1.6.tar.gz
+      source-checksum: sha512/bc8aa9990a99df631338af0d796ca0e51e452001e0593e22d3835621a45f7e3404f1214395e36cf64793d829702dddd4724c66ad841069dcac495ea4b57375db
+      stage-packages:
+        - libicu55
+        - libssl1.0.0
+        - libc6
+        - libcurl3
+        - libgssapi-krb5-2
+        - liblttng-ust0
+        - libstdc++6
+        - zlib1g
+        - libgcc1
+        - lldb
+        - libunwind8
