@@ -7539,7 +7539,7 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
                 copy = gtNewFieldRef(tree->TypeGet(), tree->gtField.gtFldHnd, objp, tree->gtField.gtFldOffset);
                 copy->gtField.gtFldMayOverlap = tree->gtField.gtFldMayOverlap;
             }
-            else if (tree->gtOper == GT_ADD)
+            else if (tree->OperIs(GT_ADD, GT_SUB))
             {
                 GenTreePtr op1 = tree->gtOp.gtOp1;
                 GenTreePtr op2 = tree->gtOp.gtOp2;
@@ -7557,7 +7557,7 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
                         return nullptr;
                     }
 
-                    copy = gtNewOperNode(GT_ADD, tree->TypeGet(), op1, op2);
+                    copy = gtNewOperNode(tree->OperGet(), tree->TypeGet(), op1, op2);
                 }
                 else
                 {
