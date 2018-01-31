@@ -475,6 +475,7 @@ namespace Span
         }
         #endregion
 
+#if false // netcoreapp specific API https://github.com/dotnet/coreclr/issues/16126
         #region TestSpanCreate<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
@@ -514,6 +515,7 @@ namespace Span
             }
         }
         #endregion
+#endif
 
         #region TestMemoryMarshalGetReference<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
