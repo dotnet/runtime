@@ -125,7 +125,7 @@ namespace System.Threading
         public static IAsyncLocalValueMap Empty { get; } = new EmptyAsyncLocalValueMap();
 
         // Instance without any key/value pairs.  Used as a singleton/
-        private sealed class EmptyAsyncLocalValueMap : IAsyncLocalValueMap
+        internal sealed class EmptyAsyncLocalValueMap : IAsyncLocalValueMap
         {
             public IAsyncLocalValueMap Set(IAsyncLocal key, object value)
             {
@@ -144,7 +144,7 @@ namespace System.Threading
         }
 
         // Instance with one key/value pair.
-        private sealed class OneElementAsyncLocalValueMap : IAsyncLocalValueMap
+        internal sealed class OneElementAsyncLocalValueMap : IAsyncLocalValueMap
         {
             private readonly IAsyncLocal _key1;
             private readonly object _value1;

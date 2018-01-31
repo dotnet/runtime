@@ -896,9 +896,9 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
     {
-        private WaitCallback callback;
-        private readonly ExecutionContext context;
-        private readonly Object state;
+        private WaitCallback _callback;
+        private readonly ExecutionContext _context;
+        private readonly Object _state;
 
 #if DEBUG
         private volatile int executed;
@@ -921,9 +921,9 @@ namespace System.Threading
 
         internal QueueUserWorkItemCallback(WaitCallback waitCallback, Object stateObj, ExecutionContext ec)
         {
-            callback = waitCallback;
-            state = stateObj;
-            context = ec;
+            _callback = waitCallback;
+            _state = stateObj;
+            _context = ec;
         }
 
         void IThreadPoolWorkItem.ExecuteWorkItem()
@@ -932,15 +932,16 @@ namespace System.Threading
             MarkExecuted(aborted: false);
 #endif
             // call directly if it is an unsafe call OR EC flow is suppressed
+            ExecutionContext context = _context;
             if (context == null)
             {
-                WaitCallback cb = callback;
-                callback = null;
-                cb(state);
+                WaitCallback cb = _callback;
+                _callback = null;
+                cb(_state);
             }
             else
             {
-                ExecutionContext.Run(context, ccb, this);
+                ExecutionContext.RunInternal(context, ccb, this);
             }
         }
 
@@ -958,9 +959,9 @@ namespace System.Threading
         private static void WaitCallback_Context(Object state)
         {
             QueueUserWorkItemCallback obj = (QueueUserWorkItemCallback)state;
-            WaitCallback wc = obj.callback;
+            WaitCallback wc = obj._callback;
             Debug.Assert(null != wc);
-            wc(obj.state);
+            wc(obj._state);
         }
     }
 
@@ -999,7 +1000,8 @@ namespace System.Threading
 #if DEBUG
             MarkExecuted(aborted: false);
 #endif
-            ExecutionContext.Run(ExecutionContext.Default, ccb, this);
+            // null executionContext on RunInternal is Default context
+            ExecutionContext.RunInternal(executionContext: null, ccb, this);
         }
 
         void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
@@ -1061,14 +1063,15 @@ namespace System.Threading
             _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
             Debug.Assert(helper != null, "Null state passed to PerformWaitOrTimerCallback!");
             // call directly if it is an unsafe call OR EC flow is suppressed
-            if (helper._executionContext == null)
+            ExecutionContext context = helper._executionContext;
+            if (context == null)
             {
                 WaitOrTimerCallback callback = helper._waitOrTimerCallback;
                 callback(helper._state, timedOut);
             }
             else
             {
-                ExecutionContext.Run(helper._executionContext, timedOut ? _ccbt : _ccbf, helper);
+                ExecutionContext.Run(context, timedOut ? _ccbt : _ccbf, helper);
             }
         }
     }
@@ -1284,7 +1287,7 @@ namespace System.Threading
 
             ExecutionContext context = ExecutionContext.Capture();
 
-            IThreadPoolWorkItem tpcallBack = context == ExecutionContext.Default ?
+            IThreadPoolWorkItem tpcallBack = (context != null && context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
 
