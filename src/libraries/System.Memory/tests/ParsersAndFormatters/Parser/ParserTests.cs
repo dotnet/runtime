@@ -131,33 +131,6 @@ namespace System.Buffers.Text.Tests
             ReadOnlySpan<byte> utf8Text = text.ToUtf8Span();
             Utf8Parser.TryParse(utf8Text, out DateTimeOffset dto, out int bytesConsumed, formatSymbol);
         }
-
-        [Theory]
-        [MemberData(nameof(TestData.IntegerTypesTheoryData), MemberType = typeof(TestData))]
-        public static void FakeTestParserIntegerN(Type integerType)
-        {
-            //
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/24986 - UTF8Parser parsing integers with 'N' format not implemented.")]
-            //
-            // This "test" may look ludicrous but it serves two useful purposes:
-            //
-            //  - It maintains Utf8Parser code coverage at 100% so that endless dev cycles aren't wasted drilling down into it to inspect for code coverage regressions.
-            //
-            //  - As a guide to enabling the 'N' tests when the parsing is implemented.
-            //
-            try
-            {
-                if (integerType == typeof(int))
-                    return;
-
-                TryParseUtf8(integerType, Array.Empty<byte>(), out _, out _, 'N');
-                Assert.False(true,
-                    $"Thank you for implementing the TryParse 'N' format. You can now disable this test and change {nameof(TestData.IsParsingImplemented)}() so it no longer suppresses 'N' testing.");
-            }
-            catch (NotImplementedException)
-            {
-            }
-        }
     }
 }
 
