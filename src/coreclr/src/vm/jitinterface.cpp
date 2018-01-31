@@ -8689,7 +8689,7 @@ CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
-// This method should probably be renamed to something like "isSIMDType"
+// TODO: This method should probably be renamed to something like "isSIMDType"
 bool CEEInfo::isInSIMDModule(CORINFO_CLASS_HANDLE classHnd)
 {
 CONTRACTL {

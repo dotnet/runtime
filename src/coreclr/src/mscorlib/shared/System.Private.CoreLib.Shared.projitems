@@ -632,7 +632,6 @@
       <LastGenOutput>ConstantHelper.cs</LastGenOutput>
     </Content>
     <None Include="$(MSBuildThisFileDirectory)System\Numerics\GenerationConfig.ttinclude" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\JitIntrinsicAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Register.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
