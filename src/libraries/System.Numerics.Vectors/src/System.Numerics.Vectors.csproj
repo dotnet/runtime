@@ -32,8 +32,8 @@
       <DependentUpon>ConstantHelper.tt</DependentUpon>
       <Link>System\Numerics\ConstantHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\JitIntrinsicAttribute.cs">
-      <Link>System\Numerics\JitIntrinsicAttribute.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
+      <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Register.cs">
       <AutoGen>True</AutoGen>
