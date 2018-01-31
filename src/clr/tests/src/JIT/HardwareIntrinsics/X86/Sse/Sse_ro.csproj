@@ -57,6 +57,10 @@
     <Compile Include="CompareUnorderedScalar.Single.cs" />
     <Compile Include="Divide.Single.cs" />
     <Compile Include="DivideScalar.Single.cs" />
+    <Compile Include="Max.Single.cs" />
+    <Compile Include="MaxScalar.Single.cs" />
+    <Compile Include="Min.Single.cs" />
+    <Compile Include="MinScalar.Single.cs" />
     <Compile Include="Multiply.Single.cs" />
     <Compile Include="MultiplyScalar.Single.cs" />
     <Compile Include="Or.Single.cs" />
