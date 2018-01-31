@@ -524,9 +524,9 @@ namespace System.Numerics
         /// <summary>
         /// Returns whether or not vector operations are subject to hardware acceleration through JIT intrinsic support.
         /// </summary>
-        [JitIntrinsic]
         public static bool IsHardwareAccelerated
         {
+            [Intrinsic]
             get
             {
                 return false;
