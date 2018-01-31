@@ -122,10 +122,10 @@ socket_data_destroy (MonoFDHandle *fdhandle)
 void
 mono_w32socket_initialize (void)
 {
-	MonoFDHandleCallback socket_data_callbacks = {
-		.close = socket_data_close,
-		.destroy = socket_data_destroy
-	};
+	MonoFDHandleCallback socket_data_callbacks;
+	memset (&socket_data_callbacks, 0, sizeof (socket_data_callbacks));
+	socket_data_callbacks.close = socket_data_close;
+	socket_data_callbacks.destroy = socket_data_destroy;
 
 	mono_fdhandle_register (MONO_FDTYPE_SOCKET, &socket_data_callbacks);
 }

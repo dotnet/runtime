@@ -213,8 +213,8 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 }
 
 static ThreadPoolIOBackend backend_poll = {
-	.init = poll_init,
-	.register_fd = poll_register_fd,
-	.remove_fd = poll_remove_fd,
-	.event_wait = poll_event_wait,
+	poll_init,
+	poll_register_fd,
+	poll_remove_fd,
+	poll_event_wait,
 };

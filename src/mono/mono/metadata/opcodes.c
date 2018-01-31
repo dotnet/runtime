@@ -40,7 +40,7 @@ static const struct msgstr_t {
 #undef OPDEF
 };
 static const int16_t opidx [] = {
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) [MONO_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "mono/cil/opcode.def"
 #undef OPDEF
 };

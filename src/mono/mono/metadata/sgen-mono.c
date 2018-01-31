@@ -1624,11 +1624,11 @@ report_handle_stack_root (gpointer *ptr, gpointer user_data)
 static void
 report_handle_stack_roots (GCRootReport *report, SgenThreadInfo *info, gboolean precise)
 {
-	ReportHandleStackRoot ud = {
-		.precise = precise,
-		.report = report,
-		.info = info,
-	};
+	ReportHandleStackRoot ud;
+	memset (&ud, 0, sizeof (ud));
+	ud.precise = precise;
+	ud.report = report;
+	ud.info = info;
 
 	mono_handle_stack_scan ((HandleStack *) info->client_info.info.handle_stack, report_handle_stack_root, &ud, ud.precise, FALSE);
 }
@@ -2248,9 +2248,10 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			if (precise)
 				mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, (GcScanFunc)ctx.ops->copy_or_mark_object, ctx.queue, precise, TRUE);
 			else {
-				PinHandleStackInteriorPtrData ud = { .start_nursery = start_nursery,
-								     .end_nursery = end_nursery,
-				};
+				PinHandleStackInteriorPtrData ud;
+				memset (&ud, 0, sizeof (ud));
+				ud.start_nursery = (void**)start_nursery;
+				ud.end_nursery = (void**)end_nursery;
 				mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, pin_handle_stack_interior_ptrs, &ud, precise, FALSE);
 			}
 		}

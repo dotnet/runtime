@@ -53,7 +53,7 @@ static const struct msgstr_t {
 #undef WRAPPER
 };
 static const gint16 opidx [] = {
-#define WRAPPER(a,b) [MONO_WRAPPER_ ## a] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define WRAPPER(a,b) offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "wrapper-types.h"
 #undef WRAPPER
 };

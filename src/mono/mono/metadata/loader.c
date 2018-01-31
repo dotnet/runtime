@@ -1836,7 +1836,10 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		return NULL;
 	}
 
-	MonoGenericContext inflated_method_ctx = { .class_inst = NULL, .method_inst = NULL };
+	MonoGenericContext inflated_method_ctx;
+	memset (&inflated_method_ctx, 0, sizeof (inflated_method_ctx));
+	inflated_method_ctx.class_inst = NULL;
+	inflated_method_ctx.method_inst = NULL;
 	gboolean inflated_generic_method = FALSE;
 	if (method->is_inflated) {
 		MonoGenericContext *method_ctx = mono_method_get_context (method);

@@ -539,8 +539,17 @@ typedef union {
 #define SPECIAL_STATIC_OFFSET_TYPE_THREAD 0
 #define SPECIAL_STATIC_OFFSET_TYPE_CONTEXT 1
 
-#define MAKE_SPECIAL_STATIC_OFFSET(idx, off, ty) \
-	((SpecialStaticOffset) { .fields = { .index = (idx), .offset = (off), .type = (ty) } }.raw)
+static guint32
+MAKE_SPECIAL_STATIC_OFFSET (guint32 index, guint32 offset, guint32 type)
+{
+	SpecialStaticOffset special_static_offset;
+	memset (&special_static_offset, 0, sizeof (special_static_offset));
+	special_static_offset.fields.index = index;
+	special_static_offset.fields.offset = offset;
+	special_static_offset.fields.type = type;
+	return special_static_offset.raw;
+}
+
 #define ACCESS_SPECIAL_STATIC_OFFSET(x,f) \
 	(((SpecialStaticOffset *) &(x))->fields.f)
 

@@ -354,14 +354,14 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 				srcfile = sinfo->source_file;
 			}
 
-			MonoProfilerCoverageData data = {
-				.method = method,
-				.il_offset = sp->il_offset,
-				.counter = 0,
-				.file_name = srcfile,
-				.line = sp->line,
-				.column = 0,
-			};
+			MonoProfilerCoverageData data;
+			memset (&data, 0, sizeof (data));
+			data.method = method;
+			data.il_offset = sp->il_offset;
+			data.counter = 0;
+			data.file_name = srcfile;
+			data.line = sp->line;
+			data.column = 0;
 
 			cb (handle->prof, &data);
 		}
@@ -379,13 +379,13 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 		if (cil_code && cil_code >= start && cil_code < end) {
 			guint32 offset = cil_code - start;
 
-			MonoProfilerCoverageData data = {
-				.method = method,
-				.il_offset = offset,
-				.counter = info->data [i].count,
-				.line = 1,
-				.column = 1,
-			};
+			MonoProfilerCoverageData data;
+			memset (&data, 0, sizeof (data));
+			data.method = method;
+			data.il_offset = offset;
+			data.counter = info->data [i].count;
+			data.line = 1;
+			data.column = 1;
 
 			if (minfo) {
 				MonoDebugSourceLocation *loc = mono_debug_method_lookup_location (minfo, offset);

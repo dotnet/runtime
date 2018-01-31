@@ -30,19 +30,19 @@
 #include "number-ms.h"
 #include "utils/mono-compiler.h"
 
-static const MonoDouble_double NaN = { .s = { .sign = 0x0, .exp = 0x7FF, .mantHi = 0x80000, .mantLo = 0x0 } };
+static const MonoDouble_double NaN = { MONO_INIT_DOUBLE (0, 0x7FF, 0x80000, 0) };
 
 /* +Infinity */
-static const MonoDouble_double PInfinity = { .s = { .sign = 0x0, .exp = 0x7FF, .mantHi = 0x0, .mantLo = 0x0 } };
+static const MonoDouble_double PInfinity = { MONO_INIT_DOUBLE (0, 0x7FF, 0, 0) };
 
 /* -Infinity */
-static const MonoDouble_double MInfinity = { .s = { .sign = 0x1, .exp = 0x7FF, .mantHi = 0x0, .mantLo = 0x0 } };
+static const MonoDouble_double MInfinity = { MONO_INIT_DOUBLE (1, 0x7FF, 0, 0) };
 
 /* +1 */
-static const MonoDouble_double POne = { .s = { .sign = 0x0, .exp = 0x3FF, .mantHi = 0x0, .mantLo = 0x0 } };
+static const MonoDouble_double POne = { MONO_INIT_DOUBLE (0, 0x3FF, 0, 0) };
 
 /* -1 */
-static const MonoDouble_double MOne = { .s = { .sign = 0x1, .exp = 0x3FF, .mantHi = 0x0, .mantLo = 0x0 } };
+static const MonoDouble_double MOne = { MONO_INIT_DOUBLE (1, 0x3FF, 0, 0) };
 
 static MONO_ALWAYS_INLINE gboolean
 isplusinfinity (gdouble d)

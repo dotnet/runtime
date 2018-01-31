@@ -123,10 +123,10 @@ epoll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), g
 }
 
 static ThreadPoolIOBackend backend_epoll = {
-	.init = epoll_init,
-	.register_fd = epoll_register_fd,
-	.remove_fd = epoll_remove_fd,
-	.event_wait = epoll_event_wait,
+	epoll_init,
+	epoll_register_fd,
+	epoll_remove_fd,
+	epoll_event_wait,
 };
 
 #endif

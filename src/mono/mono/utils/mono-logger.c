@@ -23,12 +23,7 @@ static GQueue		*level_stack		= NULL;
 static const char	*mono_log_domain	= "Mono";
 static MonoPrintCallback print_callback, printerr_callback;
 
-static MonoLogCallParm logCallback = {
-	.opener = NULL,
-	.writer = NULL,
-	.closer = NULL,
-	.header = FALSE
-};
+static MonoLogCallParm logCallback;
 
 typedef struct {
    MonoLogCallback legacy_callback;
