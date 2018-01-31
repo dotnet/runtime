@@ -53,9 +53,9 @@ namespace System.Numerics
         /// <summary>
         /// Returns the number of elements stored in the vector. This value is hardware dependent.
         /// </summary>
-        [JitIntrinsic]
         public static int Count
         {
+            [Intrinsic]
             get
             {
                 return s_count;
@@ -66,19 +66,31 @@ namespace System.Numerics
         /// <summary>
         /// Returns a vector containing all zeroes.
         /// </summary>
-        [JitIntrinsic]
-        public static Vector<T> Zero { get { return zero; } }
-        private static readonly Vector<T> zero = new Vector<T>(GetZeroValue());
+        public static Vector<T> Zero
+        { 
+            [Intrinsic]
+            get
+            {
+                return s_zero;
+            } 
+        }
+        private static readonly Vector<T> s_zero = new Vector<T>();
 
         /// <summary>
         /// Returns a vector containing all ones.
         /// </summary>
-        [JitIntrinsic]
-        public static Vector<T> One { get { return one; } }
-        private static readonly Vector<T> one = new Vector<T>(GetOneValue());
+        public static Vector<T> One
+        {
+            [Intrinsic]
+            get
+            { 
+                return s_one;
+            }
+        }
+        private static readonly Vector<T> s_one = new Vector<T>(GetOneValue());
 
-        internal static Vector<T> AllOnes { get { return allOnes; } }
-        private static readonly Vector<T> allOnes = new Vector<T>(GetAllBitsSetValue());
+        internal static Vector<T> AllOnes { get { return s_allOnes; } }
+        private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
 
         #region Static Initialization
@@ -120,7 +132,7 @@ namespace System.Numerics
         /// <summary>
         /// Constructs a vector whose components are all <code>value</code>
         /// </summary>
-        [JitIntrinsic]
+        [Intrinsic]
         public unsafe Vector(T value)
             : this()
         {
@@ -168,7 +180,7 @@ namespace System.Numerics
         /// <summary>
         /// Constructs a vector from the given array. The size of the given array must be at least Vector'T.Count.
         /// </summary>
-        [JitIntrinsic]
+        [Intrinsic]
         public unsafe Vector(T[] values) : this(values, 0) { }
 
         /// <summary>
@@ -279,7 +291,7 @@ namespace System.Numerics
         /// <param name="destination">The destination array which the values are copied into</param>
         /// <exception cref="ArgumentNullException">If the destination array is null</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
-        [JitIntrinsic]
+        [Intrinsic]
         public unsafe void CopyTo(T[] destination)
         {
             CopyTo(destination, 0);
@@ -293,7 +305,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentNullException">If the destination array is null</exception>
         /// <exception cref="ArgumentOutOfRangeException">If index is greater than end of the array or index is less than zero</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
-        [JitIntrinsic]
+        [Intrinsic]
         public unsafe void CopyTo(T[] destination, int startIndex)
         {
             if (destination == null)
@@ -359,9 +371,9 @@ namespace System.Numerics
         /// <summary>
         /// Returns the element at the given index.
         /// </summary>
-        [JitIntrinsic]
         public unsafe T this[int index]
         {
+            [Intrinsic]
             get
             {
                 if (index >= Count || index < 0)
@@ -408,7 +420,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
-        [JitIntrinsic]
+        [Intrinsic]
         public bool Equals(Vector<T> other)
         {
             if (Vector.IsHardwareAccelerated)
@@ -891,7 +903,7 @@ namespace System.Numerics
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
         /// <returns>The resultant vector.</returns>
-        [JitIntrinsic]
+        [Intrinsic]
         public static unsafe Vector<T> operator &(Vector<T> left, Vector<T> right)
         {
             Vector<T> result = new Vector<T>();
@@ -922,7 +934,7 @@ namespace System.Numerics
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
         /// <returns>The resultant vector.</returns>
-        [JitIntrinsic]
+        [Intrinsic]
         public static unsafe Vector<T> operator |(Vector<T> left, Vector<T> right)
         {
             Vector<T> result = new Vector<T>();
@@ -953,7 +965,7 @@ namespace System.Numerics
         /// <param name="left">The first source vector.</param>
         /// <param name="right">The second source vector.</param>
         /// <returns>The resultant vector.</returns>
-        [JitIntrinsic]
+        [Intrinsic]
         public static unsafe Vector<T> operator ^(Vector<T> left, Vector<T> right)
         {
             Vector<T> result = new Vector<T>();
@@ -1033,7 +1045,7 @@ namespace System.Numerics
 <#
         }
 #>
-        [JitIntrinsic]
+        [Intrinsic]
         public static explicit operator Vector<<#=type.Name#>>(Vector<T> value)
         {
             return new Vector<<#=type.Name#>>(ref value.register);
@@ -1045,7 +1057,7 @@ namespace System.Numerics
         #endregion Conversions
 
         #region Internal Comparison Methods
-        [JitIntrinsic]
+        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector<T> Equals(Vector<T> left, Vector<T> right)
         {
@@ -1099,7 +1111,7 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector<T> LessThan(Vector<T> left, Vector<T> right)
         {
@@ -1153,7 +1165,7 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector<T> GreaterThan(Vector<T> left, Vector<T> right)
         {
@@ -1207,19 +1219,19 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static Vector<T> GreaterThanOrEqual(Vector<T> left, Vector<T> right)
         {
             return Equals(left, right) | GreaterThan(left, right);
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static Vector<T> LessThanOrEqual(Vector<T> left, Vector<T> right)
         {
             return Equals(left, right) | LessThan(left, right);
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static Vector<T> ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right)
         {
             return (left & condition) | (Vector.AndNot(right, condition));
@@ -1227,7 +1239,7 @@ namespace System.Numerics
         #endregion Comparison Methods
 
         #region Internal Math Methods
-        [JitIntrinsic]
+        [Intrinsic]
         internal static unsafe Vector<T> Abs(Vector<T> value)
         {
 <#
@@ -1295,7 +1307,7 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static unsafe Vector<T> Min(Vector<T> left, Vector<T> right)
         {
             if (Vector.IsHardwareAccelerated)
@@ -1348,7 +1360,7 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static unsafe Vector<T> Max(Vector<T> left, Vector<T> right)
         {
             if (Vector.IsHardwareAccelerated)
@@ -1401,12 +1413,12 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static T DotProduct(Vector<T> left, Vector<T> right)
         {
             if (Vector.IsHardwareAccelerated)
             {
-                T product = GetZeroValue();
+                T product = default;
                 for (int g = 0; g < Count; g++)
                 {
                     product = ScalarAdd(product, ScalarMultiply(left[g], right[g]));
@@ -1441,7 +1453,7 @@ namespace System.Numerics
             }
         }
 
-        [JitIntrinsic]
+        [Intrinsic]
         internal static unsafe Vector<T> SquareRoot(Vector<T> value)
         {
             if (Vector.IsHardwareAccelerated)
@@ -1629,26 +1641,6 @@ namespace System.Numerics
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        private static T GetZeroValue()
-        {
-<# foreach (Type type in supportedTypes)
-   {
-#>
-            <#=GenerateIfStatementHeader(type)#>
-            {
-                <#=type.Name#> value = 0;
-                return (T)(object)value;
-            }
-<#
-   }
-#>
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-        }
-
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         private static T GetOneValue()
         {
 <# foreach (Type type in supportedTypes)
@@ -1710,7 +1702,7 @@ namespace System.Numerics
 <#
         }
 #>
-        [JitIntrinsic]
+        [Intrinsic]
         public static unsafe void Widen(Vector<<#=type.Name#>> source, out Vector<<#=widenTarget.Name#>> low, out Vector<<#=widenTarget.Name#>> high)
         {
             int elements = Vector<<#=type.Name#>>.Count;
@@ -1750,7 +1742,7 @@ namespace System.Numerics
 <#
         }
 #>
-        [JitIntrinsic]
+        [Intrinsic]
         public static unsafe Vector<<#=narrowTarget.Name#>> Narrow(Vector<<#=narrowSource.Name#>> low, Vector<<#=narrowSource.Name#>> high)
         {
 		    unchecked
@@ -1792,7 +1784,7 @@ namespace System.Numerics
 <#
         }
 #>
-        [JitIntrinsic]
+        [Intrinsic]
         public static unsafe Vector<<#=pair.Value.Name#>> ConvertTo<#=pair.Value.Name#>(Vector<<#=pair.Key.Name#>> value)
         {
 			unchecked
