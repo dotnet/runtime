@@ -117,30 +117,42 @@ namespace System.Threading.Channels
                 // Dequeue an item.
                 T item = parent._items.DequeueHead();
 
-                // If we're now empty and we're done writing, complete the channel.
-                if (parent._doneWriting != null && parent._items.IsEmpty)
+                if (parent._doneWriting != null)
                 {
-                    ChannelUtilities.Complete(parent._completion, parent._doneWriting);
-                }
-
-                // If there are any writers blocked, there's now room for at least one
-                // to be promoted to have its item moved into the items queue.  We need
-                // to loop while trying to complete the writer in order to find one that
-                // hasn't yet been canceled (canceled writers transition to canceled but
-                // remain in the physical queue).
-                while (!parent._blockedWriters.IsEmpty)
-                {
-                    WriterInteractor<T> w = parent._blockedWriters.DequeueHead();
-                    if (w.Success(default))
+                    // We're done writing, so if we're now empty, complete the channel.
+                    if (parent._items.IsEmpty)
                     {
-                        parent._items.EnqueueTail(w.Item);
-                        return item;
+                        ChannelUtilities.Complete(parent._completion, parent._doneWriting);
                     }
                 }
+                else
+                {
+                    // If there are any writers blocked, there's now room for at least one
+                    // to be promoted to have its item moved into the items queue.  We need
+                    // to loop while trying to complete the writer in order to find one that
+                    // hasn't yet been canceled (canceled writers transition to canceled but
+                    // remain in the physical queue).
+                    //
+                    // (It's possible for _doneWriting to be non-null due to Complete
+                    // having been called but for there to still be blocked/waiting writers.
+                    // This is a temporary condition, after which Complete has set _doneWriting
+                    // and then exited the lock; at that point it'll proceed to clean this up,
+                    // so we just ignore them.)
 
-                // There was no blocked writer, so see if there's a WaitToWriteAsync
-                // we should wake up.
-                ChannelUtilities.WakeUpWaiters(ref parent._waitingWriters, result: true);
+                    while (!parent._blockedWriters.IsEmpty)
+                    {
+                        WriterInteractor<T> w = parent._blockedWriters.DequeueHead();
+                        if (w.Success(default))
+                        {
+                            parent._items.EnqueueTail(w.Item);
+                            return item;
+                        }
+                    }
+
+                    // There was no blocked writer, so see if there's a WaitToWriteAsync
+                    // we should wake up.
+                    ChannelUtilities.WakeUpWaiters(ref parent._waitingWriters, result: true);
+                }
 
                 // Return the item
                 return item;
@@ -187,11 +199,9 @@ namespace System.Threading.Channels
                 // will be the one to transition from _doneWriting false to true.  As such, we can
                 // freely manipulate them without any concurrency concerns.
 
-                 // The following 3 line are not safe to do it outside the lock https://github.com/dotnet/corefx/issues/26587
-                 ChannelUtilities.FailInteractors<WriterInteractor<T>, VoidResult>(parent._blockedWriters, ChannelUtilities.CreateInvalidCompletionException(error));
-                 ChannelUtilities.WakeUpWaiters(ref parent._waitingReaders, result: false, error: error);
-                 ChannelUtilities.WakeUpWaiters(ref parent._waitingWriters, result: false, error: error);
-
+                ChannelUtilities.FailInteractors<WriterInteractor<T>, VoidResult>(parent._blockedWriters, ChannelUtilities.CreateInvalidCompletionException(error));
+                ChannelUtilities.WakeUpWaiters(ref parent._waitingReaders, result: false, error: error);
+                ChannelUtilities.WakeUpWaiters(ref parent._waitingWriters, result: false, error: error);
 
                 // Successfully transitioned to completed.
                 return true;
