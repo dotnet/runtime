@@ -102,19 +102,6 @@ namespace System
             _length = length;
         }
 
-        /// <summary>
-        /// Create a new read-only span over a portion of a regular managed object. This can be useful
-        /// if part of a managed object represents a "fixed array." This is dangerous because neither the
-        /// <paramref name="length"/> is checked, nor <paramref name="obj"/> being null, nor the fact that
-        /// "rawPointer" actually lies within <paramref name="obj"/>.
-        /// </summary>
-        /// <param name="obj">The managed object that contains the data to span over.</param>
-        /// <param name="objectData">A reference to data within that object.</param>
-        /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length) => new ReadOnlySpan<T>(ref objectData, length);
-
         // Constructor for internal use only.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlySpan(ref T ptr, int length)
@@ -123,17 +110,6 @@ namespace System
 
             _pointer = new ByReference<T>(ref ptr);
             _length = length;
-        }
-
-        /// <summary>
-        /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
-        /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        internal ref readonly T DangerousGetPinnableReference()
-        {
-            return ref _pointer.Value;
         }
 
         /// <summary>
@@ -207,7 +183,7 @@ namespace System
 
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
             }
             else
             {
@@ -227,7 +203,7 @@ namespace System
             bool retVal = false;
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination.DangerousGetPinnableReference(), ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
                 retVal = true;
             }
             return retVal;
