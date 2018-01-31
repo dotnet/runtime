@@ -369,29 +369,32 @@ void EventPipe::Disable()
         QueryPerformanceCounter(&disableTimeStamp);
         s_pBufferManager->WriteAllBuffersToFile(s_pFile, disableTimeStamp);
 
-        // Before closing the file, do rundown.
-        const unsigned int numRundownProviders = 2;
-        EventPipeProviderConfiguration rundownProviders[] =
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeRundown) > 0)
         {
-            { W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) }, // Public provider.
-            { W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) } // Rundown provider.
-        };
-        // The circular buffer size doesn't matter because all events are written synchronously during rundown.
-        s_pSession = s_pConfig->CreateSession(1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
-        s_pConfig->EnableRundown(s_pSession);
+            // Before closing the file, do rundown.
+            const unsigned int numRundownProviders = 2;
+            EventPipeProviderConfiguration rundownProviders[] =
+            {
+                { W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) }, // Public provider.
+                { W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) } // Rundown provider.
+            };
+            // The circular buffer size doesn't matter because all events are written synchronously during rundown.
+            s_pSession = s_pConfig->CreateSession(1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
+            s_pConfig->EnableRundown(s_pSession);
 
-        // Ask the runtime to emit rundown events.
-        if(g_fEEStarted && !g_fEEShutDown)
-        {
-            ETW::EnumerationLog::EndRundown();
+            // Ask the runtime to emit rundown events.
+            if(g_fEEStarted && !g_fEEShutDown)
+            {
+                ETW::EnumerationLog::EndRundown();
+            }
+
+            // Disable the event pipe now that rundown is complete.
+            s_pConfig->Disable(s_pSession);
+
+            // Delete the rundown session.
+            s_pConfig->DeleteSession(s_pSession);
+            s_pSession = NULL;
         }
-
-        // Disable the event pipe now that rundown is complete.
-        s_pConfig->Disable(s_pSession);
-
-        // Delete the rundown session.
-        s_pConfig->DeleteSession(s_pSession);
-        s_pSession = NULL;
 
         if(s_pFile != NULL)
         {
