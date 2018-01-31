@@ -1170,7 +1170,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     STANDARD_VM_CONTRACT;
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-    if (!GetAssembly()->IsSIMDVectorAssembly())
+    if (!(GetAssembly()->IsSIMDVectorAssembly() || GetModule()->IsSystem()))
         return false;
 
     if (bmtFP->NumInstanceFieldBytes != 16)
@@ -10432,7 +10432,8 @@ MethodTableBuilder::SetupMethodTable2(
     // Currently, only SIMD types have [Intrinsic] attribute
     //
     // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
-    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && IsValueClass() && bmtGenerics->HasInstantiation())
+    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && 
+        ((IsValueClass() && bmtGenerics->HasInstantiation()) || (IsAbstract() && IsSealed())))
     {
         HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(), 
             g_CompilerServicesIntrinsicAttribute, 

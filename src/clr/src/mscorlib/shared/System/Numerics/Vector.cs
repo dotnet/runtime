@@ -38,6 +38,7 @@ namespace System.Numerics
     /// This struct only supports numerical types. This type is intended to be used as a building block for vectorizing
     /// large algorithms. This type is immutable, individual elements cannot be modified.
     /// </summary>
+    [Intrinsic]
     public struct Vector<T> : IEquatable<Vector<T>>, IFormattable where T : struct
     {
         #region Fields
@@ -4953,6 +4954,7 @@ namespace System.Numerics
         #endregion
     }
 
+    [Intrinsic]
     public static partial class Vector
     {
         #region Widen/Narrow
