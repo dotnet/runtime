@@ -32,6 +32,9 @@
     <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.cs">
       <Link>Common\System\Data\Common\AdapterUtil.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Data\Common\AdapterUtil.Drivers.cs">
+      <Link>System\Data\Common\AdapterUtil.Drivers.cs</Link>
+    </Compile>
     <Compile Include="Common\System\Data\Common\AdapterUtil.Odbc.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionOptions.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionOptions.Common.cs">
