@@ -4429,10 +4429,10 @@ CorInfoType CEEInfo::getTypeForPrimitiveValueClass(
 CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
         CORINFO_CLASS_HANDLE clsHnd)
 {
-    CONTRACTL {
+    CONTRACTL{
         SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -4446,21 +4446,40 @@ CorInfoType CEEInfo::getTypeForPrimitiveNumericClass(
     CorElementType ty = th.GetSignatureCorElementType();
     switch (ty)
     {
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
-            result = asCorInfoType(ty);
-            break;
+    case ELEMENT_TYPE_I1:
+        result = CORINFO_TYPE_BYTE;
+        break;
+    case ELEMENT_TYPE_U1:
+        result = CORINFO_TYPE_UBYTE;
+        break;
+    case ELEMENT_TYPE_I2:
+        result = CORINFO_TYPE_SHORT;
+        break;
+    case ELEMENT_TYPE_U2:
+        result = CORINFO_TYPE_USHORT;
+        break;
+    case ELEMENT_TYPE_I4:
+        result = CORINFO_TYPE_INT;
+        break;
+    case ELEMENT_TYPE_U4:
+        result = CORINFO_TYPE_UINT;
+        break;
+    case ELEMENT_TYPE_I8:
+        result = CORINFO_TYPE_LONG;
+        break;
+    case ELEMENT_TYPE_U8:
+        result = CORINFO_TYPE_ULONG;
+        break;
+    case ELEMENT_TYPE_R4:
+        result = CORINFO_TYPE_FLOAT;
+        break;
+    case ELEMENT_TYPE_R8:
+        result = CORINFO_TYPE_DOUBLE;
+        break;
 
-        default:
-            break;
+    default:
+        // Error case, we will return CORINFO_TYPE_UNDEF
+        break;
     }
 
     JIT_TO_EE_TRANSITION_LEAF();
