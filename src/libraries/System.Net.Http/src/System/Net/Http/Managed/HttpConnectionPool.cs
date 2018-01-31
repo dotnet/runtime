@@ -166,28 +166,20 @@ namespace System.Net.Http
             { 
                 // Loop on connection failures and retry if possible.
 
-                HttpConnection connection = await GetConnectionAsync(request, cancellationToken);
+                HttpConnection connection = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
 
                 if (connection.IsNewConnection)
                 {
-                    return await connection.SendAsync(request, cancellationToken);
+                    return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 }
 
                 try
                 {
-                    return await connection.SendAsync(request, cancellationToken);
+                    return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 }
-                catch (HttpRequestException e)
+                catch (HttpRequestException e) when (e.InnerException is IOException && connection.CanRetry)
                 {
-                    if (!(e.InnerException is IOException))
-                    {
-                        throw;
-                    }
-
-                    if (!connection.CanRetry)
-                    {
-                        throw;
-                    }
+                    // Eat exception and try again.
                 }
             }
         }
@@ -199,7 +191,7 @@ namespace System.Net.Http
             TransportContext transportContext = null;
             if (_key.IsSecure)
             {
-                SslStream sslStream = await ConnectHelper.EstablishSslConnection(_pools.Settings, _key.SslHostName, request, stream, cancellationToken).ConfigureAwait(false);
+                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_pools.Settings, _key.SslHostName, request, stream, cancellationToken).ConfigureAwait(false);
                 stream = sslStream;
                 transportContext = sslStream.TransportContext;
             }

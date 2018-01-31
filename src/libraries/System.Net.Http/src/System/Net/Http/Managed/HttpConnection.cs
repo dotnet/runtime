@@ -1001,8 +1001,7 @@ namespace System.Net.Http
                 _readLength = remaining;
             }
 
-            ValueTask<int> vt = _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength), cancellationToken);
-            int bytesRead = vt.IsCompletedSuccessfully ? vt.Result : await vt.AsTask().ConfigureAwait(false);
+            int bytesRead = await _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength), cancellationToken).ConfigureAwait(false);
 
             if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
