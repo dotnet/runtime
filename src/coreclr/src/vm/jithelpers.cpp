@@ -4969,6 +4969,24 @@ HCIMPL0(void, JIT_ThrowPlatformNotSupportedException)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL0(void, JIT_ThrowTypeNotSupportedException)
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+    COMPlusThrow(kNotSupportedException, W("Arg_TypeNotSupported"));
+
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL0(void, JIT_Overflow)
 {
     FCALL_CONTRACT;
