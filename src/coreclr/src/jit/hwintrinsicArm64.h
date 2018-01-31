@@ -34,7 +34,8 @@ struct HWIntrinsicInfo
     // Reduce the number of forms
     enum Flags
     {
-        None
+        None          = 0,
+        LowerCmpUZero = (1UL << 0), // Unsigned zero compare form must be lowered
     };
 
     NamedIntrinsic intrinsicID;
