@@ -975,6 +975,52 @@ AC_ARG_WITH(wasm,                [  --with-wasm=yes,no                  If you w
 
 
 AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode,unreal   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no   If you want to build the runtime with compiler flags that enable Spectre mitigation (defaults to no)], [], [with_spectre_mitigation=default])
+AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
+AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
+
+dnl
+dnl Spectre compiler mitigation flag checks
+dnl
+if test "x$with_spectre_mitigation" = "xyes"; then
+   AC_MSG_NOTICE([Compiler Spectre mitigation support checks])
+   SPECTRE_CFLAGS=
+   SPECTRE_INDIRECT_BRANCH_KIND=
+   case "x$with_spectre_indirect_branch_choice" in
+       xkeep) SPECTRE_INDIRECT_BRANCH_KIND=keep ;;
+       xthunk) SPECTRE_INDIRECT_BRANCH_KIND=thunk ;;
+       xinline) SPECTRE_INDIRECT_BRANCH_KIND=thunk-inline ;;
+       xextern) SPECTRE_INDIRECT_BRANCH_KIND=thunk-extern ;;
+       *) AC_MSG_ERROR([Invalid indirect jump thunk kind ($with_spectre_indirect_branch_choice)]) ;;
+   esac
+
+   SPECTRE_FUNCTION_RETURN_KIND=""
+   case "x$with_spectre_function_return_choice" in
+       xkeep) SPECTRE_FUNCTION_RETURN_KIND=keep ;;
+       xthunk) SPECTRE_FUNCTION_RETURN_KIND=thunk ;;
+       xinline) SPECTRE_FUNCTION_RETURN_KIND=thunk-inline ;;
+       xextern) SPECTRE_FUNCTION_RETURN_KIND=thunk-extern ;;
+       *) AC_MSG_ERROR([Invalid function return thunk kind ($with_spectre_function_return_choice)]) ;;
+   esac
+
+   AX_CHECK_COMPILE_FLAG(
+	[ -mindirect-branch=$SPECTRE_INDIRECT_BRANCH_KIND ],
+	[ SPECTRE_CFLAGS="$SPECTRE_CFLAGS -mindirect-branch=$SPECTRE_INDIRECT_BRANCH_KIND" ]
+   )
+
+   AX_CHECK_COMPILE_FLAG(
+	[ -mfunction-return=$SPECTRE_FUNCTION_RETURN_KIND ],
+	[ SPECTRE_CFLAGS="$SPECTRE_CFLAGS -mfunction-return=$SPECTRE_FUNCTION_RETURN_KIND" ]
+   )
+
+   if test "x$SPECTRE_CFLAGS" != "x" ; then
+        CFLAGS="$CFLAGS $SPECTRE_CFLAGS"
+	CXXFLAGS="$CXXFLAGS $SPECTRE_CFLAGS"
+	spectre_mitigation_status="mitigation enabled"
+   fi
+else
+	spectre_mitigation_status="no mitigation"
+fi
 
 dnl
 dnl Profile defaults
@@ -4955,6 +5001,7 @@ echo "
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
+	Spectre:       $spectre_mitigation_status
 
    Libraries:
 	.NET 4.x:        $with_profile4_x
