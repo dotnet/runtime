@@ -11309,21 +11309,14 @@ static char*
 profread_string (FILE *infile)
 {
 	int len, res;
-	char buf [1024];
 	char *pbuf;
 
 	len = profread_int (infile);
-	if (len + 1 > 1024)
-		pbuf = g_malloc (len + 1);
-	else
-		pbuf = buf;
+	pbuf = (char*)g_malloc (len + 1);
 	res = fread (pbuf, 1, len, infile);
 	g_assert (res == len);
 	pbuf [len] = '\0';
-	if (pbuf == buf)
-		return g_strdup (buf);
-	else
-		return pbuf;
+	return pbuf;
 }
 
 static void
