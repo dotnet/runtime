@@ -29,13 +29,11 @@ namespace System.Buffers.Text.Tests
         public static bool IsParsingImplemented<T>(this SupportedFormat f) => f.IsParsingImplemented(typeof(T));
 
         //
-        // Used to disable automatic generation of ParserTestData from FormatterTestData
+        // Used to disable automatic generation of ParserTestData from FormatterTestData. Useful for bringing up new
+        // formats as you can use this shutoff valve to bring up formatting without having to bring up parsing at the same time.
         //
         public static bool IsParsingImplemented(this SupportedFormat f, Type t)
         {
-            if (IntegerTypes.Contains(t) && t != typeof(int) && (f.Symbol == 'N' || f.Symbol == 'n'))
-                return false;
-
             return true;
         }
 
