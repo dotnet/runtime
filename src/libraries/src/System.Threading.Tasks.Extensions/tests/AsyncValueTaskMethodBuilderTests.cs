@@ -13,14 +13,14 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void Create_ReturnsDefaultInstance()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             Assert.Equal(default(AsyncValueTaskMethodBuilder<int>), b); // implementation detail being verified
         }
 
         [Fact]
         public void SetResult_BeforeAccessTask_ValueTaskContainsValue()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             b.SetResult(42);
             ValueTask<int> vt = b.Task;
             Assert.True(vt.IsCompletedSuccessfully);
@@ -31,7 +31,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void SetResult_AfterAccessTask_ValueTaskContainsValue()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             ValueTask<int> vt = b.Task;
             b.SetResult(42);
             Assert.True(vt.IsCompletedSuccessfully);
@@ -42,7 +42,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void SetException_BeforeAccessTask_FaultsTask()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             var e = new FormatException();
             b.SetException(e);
             ValueTask<int> vt = b.Task;
@@ -53,7 +53,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void SetException_AfterAccessTask_FaultsTask()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             var e = new FormatException();
             ValueTask<int> vt = b.Task;
             b.SetException(e);
@@ -64,7 +64,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void SetException_OperationCanceledException_CancelsTask()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             var e = new OperationCanceledException();
             ValueTask<int> vt = b.Task;
             b.SetException(e);
@@ -75,7 +75,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public void Start_InvokesMoveNext()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             int invokes = 0;
             var dsm = new DelegateStateMachine { MoveNextDelegate = () => invokes++ };
             b.Start(ref dsm);
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(2, true)]
         public void AwaitOnCompleted_ForcesTaskCreation(int numAwaits, bool awaitUnsafe)
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
 
             var dsm = new DelegateStateMachine();
             TaskAwaiter<int> t = new TaskCompletionSource<int>().Task.GetAwaiter();
@@ -117,7 +117,7 @@ namespace System.Threading.Tasks.Tests
         [ActiveIssue("https://github.com/dotnet/corefx/issues/22506", TargetFrameworkMonikers.UapAot)]
         public void SetStateMachine_InvalidArgument_ThrowsException()
         {
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             AssertExtensions.Throws<ArgumentNullException>("stateMachine", () => b.SetStateMachine(null));
         }
 
@@ -144,7 +144,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(2, al.Value);
             Assert.Equal(2, calls);
 
-            AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();
+            AsyncValueTaskMethodBuilder<int> b = default;
             b.Start(ref dsm);
             Assert.Equal(2, al.Value); // change should not be visible
             Assert.Equal(3, calls);
