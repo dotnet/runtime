@@ -402,5 +402,88 @@ namespace System.Tests
             Assert.True(!typeof(TypeTestsExtended).IsContextful);
             Assert.True(!typeof(ContextBoundClass).IsContextful);
         }
+
+#region GetInterfaceMap tests
+        public static IEnumerable<object[]> GetInterfaceMap_TestData()
+        {
+            yield return new object[]
+            {
+                typeof(ISimpleInterface),
+                typeof(SimpleType),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("Method"), typeof(SimpleType).GetMethod("Method")),
+                    new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("GenericMethod"), typeof(SimpleType).GetMethod("GenericMethod"))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(IGenericInterface<object>),
+                typeof(DerivedType),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(IGenericInterface<object>).GetMethod("Method"), typeof(DerivedType).GetMethod("Method", new Type[] { typeof(object) })),
+                }
+            };
+            yield return new object[]
+            {
+                typeof(IGenericInterface<string>),
+                typeof(DerivedType),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(IGenericInterface<string>).GetMethod("Method"), typeof(DerivedType).GetMethod("Method", new Type[] { typeof(string) })),
+                }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetInterfaceMap_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Type.GetInterfaceMap() is not supported on UapAot")]
+        public static void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
+        {
+            InterfaceMapping actualMapping = classType.GetInterfaceMap(interfaceType);
+
+            Assert.Equal(interfaceType, actualMapping.InterfaceType);
+            Assert.Equal(classType, actualMapping.TargetType);
+
+            Assert.Equal(expectedMap.Length, actualMapping.InterfaceMethods.Length);
+            Assert.Equal(expectedMap.Length, actualMapping.TargetMethods.Length);
+
+            for (int i = 0; i < expectedMap.Length; i++)
+            {
+                Assert.Contains(expectedMap[i].Item1, actualMapping.InterfaceMethods);
+
+                int index = Array.IndexOf(actualMapping.InterfaceMethods, expectedMap[i].Item1);
+                Assert.Equal(expectedMap[i].Item2, actualMapping.TargetMethods[index]);
+            }
+        }
+
+        interface ISimpleInterface
+        {
+            void Method();
+            void GenericMethod<T>();
+        }
+
+        class SimpleType : ISimpleInterface
+        {
+            public void Method() { }
+            public void GenericMethod<T>() { }
+        }
+
+        interface IGenericInterface<T>
+        {
+            void Method(T arg);
+        }
+
+        class GenericBaseType<T> : IGenericInterface<T>
+        {
+            public void Method(T arg) { }
+        }
+
+        class DerivedType : GenericBaseType<object>, IGenericInterface<string>
+        {
+            public void Method(string arg) { }
+        }
+#endregion
     }
 }
