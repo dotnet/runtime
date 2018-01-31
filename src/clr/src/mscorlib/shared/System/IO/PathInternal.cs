@@ -22,10 +22,8 @@ namespace System.IO
         /// it is not safe for being used to index
         /// the string without additional verification.
         /// </remarks>
-        internal static int FindFileNameIndex(string path)
+        internal static int FindFileNameIndex(ReadOnlySpan<char> path)
         {
-            Debug.Assert(path != null);
-
             for (int i = path.Length - 1; i >= 0; i--)
             {
                 char ch = path[i];
@@ -134,6 +132,17 @@ namespace System.IO
 
                 searchPattern = searchPattern.Substring(index + 2);
             }
+        }
+
+        internal static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
+        {
+            int root = GetRootLength(path);
+            int i = path.Length;
+            if (i <= root)
+                return -1;
+
+            while (i > root && !IsDirectorySeparator(path[--i]));
+            return i;
         }
     }
 }

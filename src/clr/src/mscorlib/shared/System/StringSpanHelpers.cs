@@ -125,5 +125,20 @@ namespace System
             source.Slice(startIndex + count).CopyTo(result.Slice(startIndex));
             return result;
         }
+
+        // Returns the index of the last occurrence of a specified character in the current instance.
+        public static int LastIndexOf(this ReadOnlySpan<char> source, char value)
+        {
+            if (source.Length == 0)
+                return -1;
+
+            for (int i = source.Length - 1; i >= 0; i--)
+            {
+                if (source[i] == value)
+                    return i;
+            }
+
+            return -1;
+        }
     }
 }
