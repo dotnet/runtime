@@ -94,7 +94,7 @@ namespace System.Threading
                 overlapped = OverlappedData.GetOverlappedFromNative(pOVERLAP).m_overlapped;
                 helper = overlapped.iocbHelper;
 
-                if (helper == null || helper._executionContext == null || helper._executionContext == ExecutionContext.Default)
+                if (helper == null || helper._executionContext == null || helper._executionContext.IsDefault)
                 {
                     // We got here because of UnsafePack (or) Pack with EC flow supressed
                     IOCompletionCallback callback = overlapped.UserCallback;
@@ -106,7 +106,7 @@ namespace System.Threading
                     helper._errorCode = errorCode;
                     helper._numBytes = numBytes;
                     helper._pOVERLAP = pOVERLAP;
-                    ExecutionContext.Run(helper._executionContext, _ccb, helper);
+                    ExecutionContext.RunInternal(helper._executionContext, _ccb, helper);
                 }
 
                 //Quickly check the VM again, to see if a packet has arrived.
