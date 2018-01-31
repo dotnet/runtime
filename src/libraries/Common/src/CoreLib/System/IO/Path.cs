@@ -80,16 +80,25 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             path = PathInternal.NormalizeDirectorySeparators(path);
-            int root = PathInternal.GetRootLength(path);
+            int end = PathInternal.GetDirectoryNameOffset(path);
+            return end >= 0 ? path.Substring(0, end) : null;
+        }
 
-            int i = path.Length;
-            if (i > root)
-            {
-                while (i > root && !PathInternal.IsDirectorySeparator(path[--i])) ;
-                return path.Substring(0, i);
-            }
-            
-            return null;
+        /// <summary>
+        /// Returns the directory path of a file path.
+        /// The returned value the an empty ReadOnlySpan if path is empty or 
+        /// if the file path denotes as root  (such as "\", "C:", or "\\server\share"). 
+        /// </summary>
+        /// <remarks>
+        /// Unlike the string overload, this method will not normalize directory separators.
+        /// </remarks>
+        public static ReadOnlySpan<char> GetDirectoryName(ReadOnlySpan<char> path)
+        {
+            if (PathInternal.IsEffectivelyEmpty(path))
+                return ReadOnlySpan<char>.Empty;
+
+            int end = PathInternal.GetDirectoryNameOffset(path);
+            return end >= 0 ? path.Slice(0, end) : ReadOnlySpan<char>.Empty;
         }
 
         // Returns the extension of the given path. The returned value includes the
@@ -101,21 +110,33 @@ namespace System.IO
             if (path == null)
                 return null;
 
+            return new string(GetExtension(path.AsReadOnlySpan()));
+        }
+
+        /// <summary>
+        /// Returns the extension of the given path.
+        /// </summary>
+        /// <remarks> 
+        /// The returned value is an empty ReadOnlySpan if the given path doesnot include an extension.
+        /// </remarks>
+        public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
+        {
             int length = path.Length;
+
             for (int i = length - 1; i >= 0; i--)
             {
                 char ch = path[i];
                 if (ch == '.')
                 {
                     if (i != length - 1)
-                        return path.Substring(i, length - i);
+                        return path.Slice(i, length - i);
                     else
-                        return string.Empty;
+                        return ReadOnlySpan<char>.Empty;
                 }
                 if (PathInternal.IsDirectoryOrVolumeSeparator(ch))
                     break;
             }
-            return string.Empty;
+            return ReadOnlySpan<char>.Empty;
         }
 
         // Returns the name and extension parts of the given path. The resulting
@@ -126,9 +147,21 @@ namespace System.IO
             if (path == null)
                 return null;
 
+            ReadOnlySpan<char> result = GetFileName(path.AsReadOnlySpan());
+            if (path.Length == result.Length)
+                return path;
+
+            return new string(result);
+        }
+
+        /// <summary> 
+        /// The returned ReadOnlySpan contains the characters of the path that follows the last separator in path.
+        /// </summary>
+        public static ReadOnlySpan<char> GetFileName(ReadOnlySpan<char> path)
+        {
             int offset = PathInternal.FindFileNameIndex(path);
             int count = path.Length - offset;
-            return path.Substring(offset, count);
+            return path.Slice(offset, count);
         }
 
         public static string GetFileNameWithoutExtension(string path)
@@ -136,13 +169,25 @@ namespace System.IO
             if (path == null)
                 return null;
 
+            ReadOnlySpan<char> result = GetFileNameWithoutExtension(path.AsReadOnlySpan());
+            if (path.Length == result.Length)
+                return path;
+
+            return new string(result);
+        }
+
+        /// <summary>
+        /// Returns the characters between the last separator and last (.) in the path.
+        /// </summary>
+        public static ReadOnlySpan<char> GetFileNameWithoutExtension(ReadOnlySpan<char> path)
+        {
             int length = path.Length;
             int offset = PathInternal.FindFileNameIndex(path);
 
-            int end = path.LastIndexOf('.', length - 1, length - offset);
+            int end = path.Slice(offset, length - offset).LastIndexOf('.');
             return end == -1 ?
-                path.Substring(offset) : // No extension was found
-                path.Substring(offset, end - offset);
+                path.Slice(offset) : // No extension was found
+                path.Slice(offset, end);
         }
 
         // Returns a cryptographically strong random 8.3 string that can be 
@@ -179,6 +224,11 @@ namespace System.IO
             {
                 throw new ArgumentNullException(nameof(path));
             }
+            return IsPathFullyQualified(path.AsReadOnlySpan());
+        }
+
+        public static bool IsPathFullyQualified(ReadOnlySpan<char> path)
+        {
             return !PathInternal.IsPartiallyQualified(path);
         }
 
@@ -190,15 +240,22 @@ namespace System.IO
         {
             if (path != null)
             {
-                for (int i = path.Length - 1; i >= 0; i--)
+                return HasExtension(path.AsReadOnlySpan());
+            }
+            return false;
+        }
+
+        public static bool HasExtension(ReadOnlySpan<char> path)
+        {
+            for (int i = path.Length - 1; i >= 0; i--)
+            {
+                char ch = path[i];
+                if (ch == '.')
                 {
-                    char ch = path[i];
-                    if (ch == '.')
-                    {
-                        return i != path.Length - 1;
-                    }
-                    if (PathInternal.IsDirectoryOrVolumeSeparator(ch)) break;
+                    return i != path.Length - 1;
                 }
+                if (PathInternal.IsDirectoryOrVolumeSeparator(ch))
+                    break;
             }
             return false;
         }
