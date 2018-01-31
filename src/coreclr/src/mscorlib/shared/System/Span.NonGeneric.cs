@@ -132,58 +132,6 @@ namespace System
         }
 
         /// <summary>
-        /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
-        /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
-        /// </summary>
-        /// <remarks>
-        /// Supported only for platforms that support misaligned memory access.
-        /// </remarks>
-        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
-            where TFrom : struct
-            where TTo : struct
-        {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
-
-            return new Span<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref source.DangerousGetPinnableReference()),
-                checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
-        }
-
-        /// <summary>
-        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
-        /// These types may not contain pointers or references. This is checked at runtime in order to preserve type safety.
-        /// </summary>
-        /// <remarks>
-        /// Supported only for platforms that support misaligned memory access.
-        /// </remarks>
-        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
-        /// <exception cref="System.ArgumentException">
-        /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
-        /// </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
-            where TFrom : struct
-            where TTo : struct
-        {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TFrom>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TFrom));
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<TTo>())
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(TTo));
-
-            return new ReadOnlySpan<TTo>(
-                ref Unsafe.As<TFrom, TTo>(ref MemoryMarshal.GetReference(source)),
-                checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
-        }
-
-        /// <summary>
         /// Creates a new readonly span over the portion of the target string.
         /// </summary>
         /// <param name="text">The target string.</param>
