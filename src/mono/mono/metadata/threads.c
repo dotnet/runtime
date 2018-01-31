@@ -775,7 +775,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	internal->thread_info = info;
 	internal->small_id = info->small_id;
 
-	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Setting current_object_key to %p", __func__, mono_native_thread_id_get (), internal));
+	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Setting current_object_key to %p", __func__, mono_native_thread_id_get (), internal));
 
 	SET_CURRENT_OBJECT (internal);
 
@@ -829,7 +829,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	set_current_thread_for_domain (domain, internal, thread);
 
-	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, internal->tid, internal->handle));
+	THREAD_DEBUG (g_message ("%s: Attached thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, internal->tid, internal->handle));
 
 	return TRUE;
 
@@ -867,7 +867,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	info = thread->thread_info;
 	g_assert (info);
 
-	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%" G_GSIZE_FORMAT ")", __func__, thread, (gsize)thread->tid));
 
 	MONO_PROFILER_RAISE (thread_stopping, (thread->tid));
 
@@ -1062,7 +1062,7 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 	internal = thread->internal_thread;
 	domain = mono_object_domain (start_info->thread);
 
-	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper", __func__, mono_native_thread_id_get ()));
+	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper", __func__, mono_native_thread_id_get ()));
 
 	if (!mono_thread_attach_internal (thread, start_info->force_attach, FALSE)) {
 		start_info->failed = TRUE;
@@ -1160,7 +1160,7 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 	 * call mono_thread_detach_internal() on this thread's behalf.
 	 */
 
-	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Start wrapper terminating", __func__, mono_native_thread_id_get ()));
+	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper terminating", __func__, mono_native_thread_id_get ()));
 
 	/* Do any cleanup needed for apartment state. This
 	 * cannot be done in mono_thread_detach_internal since
@@ -1280,7 +1280,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 
 	internal->stack_size = (int) stack_set_size;
 
-	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Launching thread %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
+	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Launching thread %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 
 	/*
 	 * Wait for the thread to set up its TLS data etc, so
@@ -1291,7 +1291,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 
 	mono_coop_sem_wait (&start_info->registered, MONO_SEM_FLAGS_NONE);
 
-	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Done launching thread %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
+	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Done launching thread %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 
 	ret = !start_info->failed;
 
@@ -1413,7 +1413,7 @@ mono_thread_attach (MonoDomain *domain)
 			mono_thread_info_sleep (10000, NULL);
 	}
 
-	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, internal->handle));
+	THREAD_DEBUG (g_message ("%s: Attached thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, tid, internal->handle));
 
 	if (mono_thread_attach_cb)
 		mono_thread_attach_cb (MONO_NATIVE_THREAD_ID_TO_UINT (tid), info->stack_end);
@@ -1476,7 +1476,7 @@ mono_thread_exit (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
-	THREAD_DEBUG (g_message ("%s: mono_thread_exit for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: mono_thread_exit for %p (%" G_GSIZE_FORMAT ")", __func__, thread, (gsize)thread->tid));
 
 	mono_thread_detach_internal (thread);
 
@@ -1573,7 +1573,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle thread
 
 	internal->state &= ~ThreadState_Unstarted;
 
-	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread));
+	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, tid, thread));
 
 	UNLOCK_THREAD (internal);
 	return TRUE;
@@ -2502,7 +2502,7 @@ request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state, gbool
 
 	thread->abort_exc = NULL;
 
-	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), thread, (gsize)thread->tid));
+	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Abort requested for %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), thread, (gsize)thread->tid));
 
 	/* During shutdown, we can't wait for other threads */
 	if (!shutting_down)
@@ -3370,22 +3370,22 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		/* Ignore background threads, we abort them later */
 		/* Do not lock here since it is not needed and the caller holds threads_lock */
 		if (thread->state & ThreadState_Background) {
-			THREAD_DEBUG (g_message ("%s: ignoring background thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: ignoring background thread %" G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return; /* just leave, ignore */
 		}
 		
 		if (mono_gc_is_finalizer_internal_thread (thread)) {
-			THREAD_DEBUG (g_message ("%s: ignoring finalizer thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: ignoring finalizer thread %" G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
 		}
 
 		if (thread == mono_thread_internal_current ()) {
-			THREAD_DEBUG (g_message ("%s: ignoring current thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: ignoring current thread %" G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
 		}
 
 		if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread)) {
-			THREAD_DEBUG (g_message ("%s: ignoring main thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: ignoring main thread %" G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 			return;
 		}
 
@@ -3400,9 +3400,9 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 			wait->threads[wait->num]=thread;
 			wait->num++;
 
-			THREAD_DEBUG (g_message ("%s: adding thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: adding thread %" G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 		} else {
-			THREAD_DEBUG (g_message ("%s: ignoring (because of callback) thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			THREAD_DEBUG (g_message ("%s: ignoring (because of callback) thread %" G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 		}
 		
 		
@@ -3435,7 +3435,7 @@ abort_threads (gpointer key, gpointer value, gpointer user)
 	wait->threads[wait->num] = thread;
 	wait->num++;
 
-	THREAD_DEBUG (g_print ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid));
+	THREAD_DEBUG (g_print ("%s: Aborting id: %" G_GSIZE_FORMAT "\n", __func__, (gsize)thread->tid));
 	mono_thread_internal_abort (thread, FALSE);
 }
 
@@ -4103,7 +4103,7 @@ mono_thread_push_appdomain_ref (MonoDomain *domain)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	if (thread) {
-		/* printf ("PUSH REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
+		/* printf ("PUSH REF: %" G_GSIZE_FORMAT " -> %s.\n", (gsize)thread->tid, domain->friendly_name); */
 		SPIN_LOCK (thread->lock_thread_id);
 		if (thread->appdomain_refs == NULL)
 			thread->appdomain_refs = ref_stack_new (16);
@@ -4118,7 +4118,7 @@ mono_thread_pop_appdomain_ref (void)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 
 	if (thread) {
-		/* printf ("POP REF: %"G_GSIZE_FORMAT" -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
+		/* printf ("POP REF: %" G_GSIZE_FORMAT " -> %s.\n", (gsize)thread->tid, ((MonoDomain*)(thread->appdomain_refs->data))->friendly_name); */
 		SPIN_LOCK (thread->lock_thread_id);
 		ref_stack_pop ((RefStack *)thread->appdomain_refs);
 		SPIN_UNLOCK (thread->lock_thread_id);
