@@ -33,16 +33,28 @@
     <Compile Include="AndNot.Single.cs" />
     <Compile Include="CompareEqual.Single.cs" />
     <Compile Include="CompareEqualScalar.Single.cs" />
+    <Compile Include="CompareEqualOrderedScalar.Single.cs" />
+    <Compile Include="CompareEqualUnorderedScalar.Single.cs" />
     <Compile Include="CompareGreaterThan.Single.cs" />
     <Compile Include="CompareGreaterThanScalar.Single.cs" />
+    <Compile Include="CompareGreaterThanOrderedScalar.Single.cs" />
+    <Compile Include="CompareGreaterThanUnorderedScalar.Single.cs" />
     <Compile Include="CompareGreaterThanOrEqual.Single.cs" />
     <Compile Include="CompareGreaterThanOrEqualScalar.Single.cs" />
+    <Compile Include="CompareGreaterThanOrEqualOrderedScalar.Single.cs" />
+    <Compile Include="CompareGreaterThanOrEqualUnorderedScalar.Single.cs" />
     <Compile Include="CompareLessThan.Single.cs" />
     <Compile Include="CompareLessThanScalar.Single.cs" />
+    <Compile Include="CompareLessThanOrderedScalar.Single.cs" />
+    <Compile Include="CompareLessThanUnorderedScalar.Single.cs" />
     <Compile Include="CompareLessThanOrEqual.Single.cs" />
     <Compile Include="CompareLessThanOrEqualScalar.Single.cs" />
+    <Compile Include="CompareLessThanOrEqualOrderedScalar.Single.cs" />
+    <Compile Include="CompareLessThanOrEqualUnorderedScalar.Single.cs" />
     <Compile Include="CompareNotEqual.Single.cs" />
     <Compile Include="CompareNotEqualScalar.Single.cs" />
+    <Compile Include="CompareNotEqualOrderedScalar.Single.cs" />
+    <Compile Include="CompareNotEqualUnorderedScalar.Single.cs" />
     <Compile Include="CompareNotGreaterThan.Single.cs" />
     <Compile Include="CompareNotGreaterThanScalar.Single.cs" />
     <Compile Include="CompareNotGreaterThanOrEqual.Single.cs" />
@@ -68,6 +80,7 @@
     <Compile Include="SubtractScalar.Single.cs" />
     <Compile Include="Xor.Single.cs" />
     <Compile Include="Program.Sse.cs" />
+    <Compile Include="..\Shared\BooleanCmpOpTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
