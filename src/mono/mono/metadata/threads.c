@@ -1421,7 +1421,7 @@ ves_icall_System_Threading_Thread_GetCurrentThread (MonoError *error)
 	return MONO_HANDLE_NEW (MonoThreadObject, mono_thread_current ());
 }
 
-HANDLE
+MonoBoolean
 ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 												   MonoObject *start)
 {
@@ -1440,19 +1440,19 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 	if ((internal->state & ThreadState_Unstarted) == 0) {
 		UNLOCK_THREAD (internal);
 		mono_set_pending_exception (mono_get_exception_thread_state ("Thread has already been started."));
-		return NULL;
+		return FALSE;
 	}
 
 	if ((internal->state & ThreadState_Aborted) != 0) {
 		UNLOCK_THREAD (internal);
-		return this_obj;
+		return TRUE;
 	}
 
 	res = create_thread (this_obj, internal, start, NULL, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	if (!res) {
 		mono_error_cleanup (error);
 		UNLOCK_THREAD (internal);
-		return NULL;
+		return FALSE;
 	}
 
 	internal->state &= ~ThreadState_Unstarted;
@@ -1460,7 +1460,7 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 	THREAD_DEBUG (g_message ("%s: Started thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, thread));
 
 	UNLOCK_THREAD (internal);
-	return internal->handle;
+	return TRUE;
 }
 
 /*

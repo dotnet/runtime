@@ -82,7 +82,8 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 
 void ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this_obj);
-gpointer ves_icall_System_Threading_Thread_Thread_internal(MonoThread *this_obj, MonoObject *start);
+MonoBoolean
+ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj, MonoObject *start);
 void ves_icall_System_Threading_InternalThread_Thread_free_internal(MonoInternalThread *this_obj);
 void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms);
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms);
