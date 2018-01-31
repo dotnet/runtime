@@ -77,6 +77,7 @@ struct _SgenClientThreadInfo {
 
 extern void mono_sgen_register_moved_object (void *obj, void *destination);
 extern void mono_sgen_gc_event_moves (void);
+extern void mono_sgen_gc_event_resize (void);
 
 extern void mono_sgen_init_stw (void);
 
