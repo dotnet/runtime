@@ -103,7 +103,7 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<SslStream> EstablishSslConnection(HttpConnectionSettings settings, string host, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
+        public static async ValueTask<SslStream> EstablishSslConnectionAsync(HttpConnectionSettings settings, string host, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
         {
             RemoteCertificateValidationCallback callback = null;
             if (settings._serverCertificateCustomValidationCallback != null)
