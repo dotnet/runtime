@@ -158,11 +158,11 @@ export ILASMCOMPILER_VERSION=$__ILASM_VERSION
 export NATIVE_TOOLS_RID=$__ILASM_RID
 
 echo "Initializing BuildTools..."
-echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR" >> $__init_tools_log
+echo "Running: $__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR $__PACKAGES_DIR" >> $__init_tools_log
 
 # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
 chmod +x $__BUILD_TOOLS_PATH/init-tools.sh
-$__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR >> $__init_tools_log
+$__BUILD_TOOLS_PATH/init-tools.sh $__scriptpath $__DOTNET_CMD $__TOOLRUNTIME_DIR $__PACKAGES_DIR >> $__init_tools_log
 if [ "$?" != "0" ]; then
     echo "ERROR: An error occurred when trying to initialize the tools." 1>&2
     display_error_message
