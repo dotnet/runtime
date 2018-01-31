@@ -27,14 +27,12 @@ namespace System.IO
         /// <summary>
         /// Gets the length of the root of the path (drive, share, etc.).
         /// </summary>
-        internal unsafe static int GetRootLength(ref StringBuffer path)
+        internal static int GetRootLength(ref StringBuffer path)
         {
-            if (path.Length == 0) return 0;
+            if (path.Length == 0)
+                return 0;
 
-            fixed (char* value = path.UnderlyingArray)
-            {
-                return GetRootLength(value, path.Length);
-            }
+            return GetRootLength(new ReadOnlySpan<char>(path.UnderlyingArray, 0, path.Length));
         }
 
         /// <summary>
