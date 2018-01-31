@@ -163,6 +163,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         case HWIntrinsicInfo::SimdBinaryOp:
         case HWIntrinsicInfo::SimdSelectOp:
+        case HWIntrinsicInfo::SimdSetAllOp:
         case HWIntrinsicInfo::SimdUnaryOp:
             simdClass = sig->retTypeClass;
             break;
@@ -211,10 +212,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
 
+        case HWIntrinsicInfo::SimdSetAllOp:
+            op1 = impPopStack().val;
+
+            return gtNewSimdHWIntrinsicNode(simdType, op1, intrinsic, simdBaseType, simdSizeBytes);
+
         case HWIntrinsicInfo::SimdUnaryOp:
             op1 = impSIMDPopStack(simdType);
 
-            return gtNewSimdHWIntrinsicNode(simdType, op1, nullptr, intrinsic, simdBaseType, simdSizeBytes);
+            return gtNewSimdHWIntrinsicNode(simdType, op1, intrinsic, simdBaseType, simdSizeBytes);
 
         case HWIntrinsicInfo::SimdExtractOp:
             if (!mustExpand && !impCheckImmediate(impStackTop(0).val, getSIMDVectorLength(simdSizeBytes, simdBaseType)))

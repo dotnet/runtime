@@ -4994,6 +4994,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case HWIntrinsicInfo::SimdSelectOp:
             genHWIntrinsicSimdSelectOp(node);
             break;
+        case HWIntrinsicInfo::SimdSetAllOp:
+            genHWIntrinsicSimdSetAllOp(node);
+            break;
         case HWIntrinsicInfo::SimdUnaryOp:
             genHWIntrinsicSimdUnaryOp(node);
             break;
@@ -5319,6 +5322,56 @@ void CodeGen::genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node)
         // use bit select
         // targetReg = op3 ^ (targetReg & (op2 ^ op3))
         getEmitter()->emitIns_R_R_R(INS_bsl, attr, targetReg, op2Reg, op3Reg);
+    }
+
+    genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdSetAllOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdSetAllOp.
+//
+// Consumes single scalar operand and produces a SIMD result
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node)
+{
+    GenTree*  op1       = node->gtGetOp1();
+    var_types baseType  = node->gtSIMDBaseType;
+    regNumber targetReg = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+    var_types targetType = node->TypeGet();
+
+    genConsumeOperands(node);
+
+    regNumber op1Reg = op1->gtRegNum;
+
+    assert(genIsValidFloatReg(targetReg));
+    assert(genIsValidIntReg(op1Reg) || genIsValidFloatReg(op1Reg));
+
+    instruction ins = getOpForHWIntrinsic(node, baseType);
+    assert(ins != INS_invalid);
+
+    bool     is16Byte = (node->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+
+    // TODO-ARM64-CQ Support contained immediate cases
+
+    if (genIsValidIntReg(op1Reg))
+    {
+        getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
+    }
+    else
+    {
+        getEmitter()->emitIns_R_R_I(ins, attr, targetReg, op1Reg, 0, opt);
     }
 
     genProduceReg(node);
