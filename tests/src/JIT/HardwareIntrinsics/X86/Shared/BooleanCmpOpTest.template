@@ -1,0 +1,196 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace JIT.HardwareIntrinsics.X86
+{{
+    public static partial class Program
+    {{
+        private static void {1}{2}()
+        {{
+            var test = new BooleanComparisonOpTest__{1}{2}();
+
+            if (test.IsSupported)
+            {{
+                // Validates basic functionality works
+                test.RunBasicScenario();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
+
+                // Validates passing a static member works
+                test.RunClsVarScenario();
+
+                // Validates passing a local works
+                test.RunLclVarScenario();
+
+                // Validates passing the field of a local works
+                test.RunLclFldScenario();
+
+                // Validates passing an instance member works
+                test.RunFldScenario();
+            }}
+            else
+            {{
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }}
+
+            if (!test.Succeeded)
+            {{
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }}
+        }}
+    }}
+
+    public sealed unsafe class BooleanComparisonOpTest__{1}{2}
+    {{
+        private const int VectorSize = {4};
+        private const int ElementCount = VectorSize / sizeof({2});
+
+        private static {2}[] _data1 = new {2}[ElementCount];
+        private static {2}[] _data2 = new {2}[ElementCount];
+
+        private static {3}<{2}> _clsVar1;
+        private static {3}<{2}> _clsVar2;
+
+        private {3}<{2}> _fld1;
+        private {3}<{2}> _fld2;
+
+        private BooleanComparisonOpTest__DataTable<{2}> _dataTable;
+
+        static BooleanComparisonOpTest__{1}{2}()
+        {{
+            var random = new Random();
+
+            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {5}; _data2[i] = {5}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}<{2}>, byte>(ref _clsVar1), ref Unsafe.As<{2}, byte>(ref _data2[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}<{2}>, byte>(ref _clsVar2), ref Unsafe.As<{2}, byte>(ref _data1[0]), VectorSize);
+        }}
+
+        public BooleanComparisonOpTest__{1}{2}()
+        {{
+            Succeeded = true;
+
+            var random = new Random();
+
+            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {5}; _data2[i] = {5}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}<{2}>, byte>(ref _fld1), ref Unsafe.As<{2}, byte>(ref _data1[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}<{2}>, byte>(ref _fld2), ref Unsafe.As<{2}, byte>(ref _data2[0]), VectorSize);
+
+            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {5}; _data2[i] = {5}; }}
+            _dataTable = new BooleanComparisonOpTest__DataTable<{2}>(_data1, _data2);
+        }}
+
+        public bool IsSupported => {0}.IsSupported;
+
+        public bool Succeeded {{ get; set; }}
+
+        public void RunBasicScenario()
+        {{
+            var result = {0}.{1}(
+                Unsafe.Read<{3}<{2}>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<{3}<{2}>>(_dataTable.inArray2Ptr)
+            );
+
+            ValidateResult(_dataTable.inArray1, _dataTable.inArray2, result);
+        }}
+
+        public void RunReflectionScenario()
+        {{
+            var result = typeof({0}).GetMethod(nameof({0}.{1}), new Type[] {{ typeof({3}<{2}>), typeof({3}<{2}>) }})
+                                     .Invoke(null, new object[] {{
+                                        Unsafe.Read<{3}<{2}>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<{3}<{2}>>(_dataTable.inArray2Ptr)
+                                     }});
+
+            ValidateResult(_dataTable.inArray1, _dataTable.inArray2, (bool)(result));
+        }}
+
+        public void RunClsVarScenario()
+        {{
+            var result = {0}.{1}(
+                _clsVar1,
+                _clsVar2
+            );
+
+            ValidateResult(_clsVar1, _clsVar2, result);
+        }}
+
+        public void RunLclVarScenario()
+        {{
+            var left = Unsafe.Read<{3}<{2}>>(_dataTable.inArray1Ptr);
+            var right = Unsafe.Read<{3}<{2}>>(_dataTable.inArray2Ptr);
+            var result = {0}.{1}(left, right);
+
+            ValidateResult(left, right, result);
+        }}
+
+        public void RunLclFldScenario()
+        {{
+            var test = new BooleanComparisonOpTest__{1}{2}();
+            var result = {0}.{1}(test._fld1, test._fld2);
+
+            ValidateResult(test._fld1, test._fld2, result);
+        }}
+
+        public void RunFldScenario()
+        {{
+            var result = {0}.{1}(_fld1, _fld2);
+
+            ValidateResult(_fld1, _fld2, result);
+        }}
+
+        public void RunUnsupportedScenario()
+        {{
+            Succeeded = false;
+
+            try
+            {{
+                RunBasicScenario();
+            }}
+            catch (PlatformNotSupportedException)
+            {{
+                Succeeded = true;
+            }}
+        }}
+
+        private void ValidateResult({3}<{2}> left, {3}<{2}> right, bool result, [CallerMemberName] string method = "")
+        {{
+            {2}[] inArray1 = new {2}[ElementCount];
+            {2}[] inArray2 = new {2}[ElementCount];
+
+            Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
+            Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
+
+            ValidateResult(inArray1, inArray2, result, method);
+        }}
+
+        private void ValidateResult({2}[] left, {2}[] right, bool result, [CallerMemberName] string method = "")
+        {{
+            if ({6})
+            {{
+                Succeeded = false;
+
+                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{1})}}<{2}>: {{method}} failed:");
+                Console.WriteLine($"    left: ({{string.Join(", ", left)}})");
+                Console.WriteLine($"   right: ({{string.Join(", ", right)}})");
+                Console.WriteLine($"  result: ({{string.Join(", ", result)}})");
+                Console.WriteLine();
+            }}
+        }}
+    }}
+}}
