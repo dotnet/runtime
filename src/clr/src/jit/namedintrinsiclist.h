@@ -46,10 +46,10 @@ enum HWIntrinsicFlag : unsigned int
 
     // Generic
     // - must throw NotSupportException if the type argument is not numeric type
-    HW_Flag_Generic = 0x4,
+    HW_Flag_OneTypeGeneric = 0x4,
     // Two-type Generic
     // - the intrinsic has two type parameters
-    HW_Flag_TwoTypeGeneric = 0xC,
+    HW_Flag_TwoTypeGeneric = 0x8,
 
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
