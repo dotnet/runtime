@@ -42,6 +42,32 @@ namespace System.Diagnostics
         private static TimeSync timeSync = new TimeSync();
 
         // sync DateTime and Stopwatch ticks every 2 hours
-        private static Timer syncTimeUpdater = new Timer(s => { Sync(); }, null, 0, 7200000);
+        private static Timer syncTimeUpdater = InitalizeSyncTimer();
+
+        [System.Security.SecuritySafeCritical]
+        private static Timer InitalizeSyncTimer()
+        {
+            Timer timer;
+            // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
+            bool restoreFlow = false;
+            try
+            {
+                if (!ExecutionContext.IsFlowSuppressed())
+                {
+                    ExecutionContext.SuppressFlow();
+                    restoreFlow = true;
+                }
+
+                timer = new Timer(s => { Sync(); }, null, 0, 7200000);
+            }
+            finally
+            {
+                // Restore the current ExecutionContext
+                if (restoreFlow)
+                    ExecutionContext.RestoreFlow();
+            }
+
+            return timer;
+        }
     }
 }
