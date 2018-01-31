@@ -21,6 +21,8 @@ namespace System.Net.Mime
             public const string Rtf = "application/rtf";
             public const string Pdf = "application/pdf";
             public const string Zip = "application/zip";
+            public const string Json = "application/json";
+            public const string Xml = "application/xml";
         }
 
         public static class Image
