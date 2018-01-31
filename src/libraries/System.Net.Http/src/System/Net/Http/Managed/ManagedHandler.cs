@@ -264,7 +264,7 @@ namespace System.Net.Http
             HttpMessageHandler handler = new HttpConnectionHandler(_settings);
 
             if (_settings._useProxy &&
-                (_settings._proxy != null || HttpProxyConnectionHandler.EnvironmentProxyConfigured))
+                (_settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
             {
                 handler = new HttpProxyConnectionHandler(_settings, handler);
             }

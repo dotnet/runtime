@@ -147,6 +147,14 @@
     <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
     <Compile Include="System\Net\Http\Managed\RawConnectionStream.cs" />
   </ItemGroup>
+  <!-- Managed HttpClientHandler platform parts -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.Unix.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpEnvironmentProxy.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.Windows.cs" />
+  </ItemGroup>
   <!-- Common -->
   <ItemGroup>
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
