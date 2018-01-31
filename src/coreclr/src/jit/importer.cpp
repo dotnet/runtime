@@ -12054,6 +12054,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
                 }
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
