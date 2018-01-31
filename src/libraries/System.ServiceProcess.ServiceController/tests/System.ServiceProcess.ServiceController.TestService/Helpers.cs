@@ -15,22 +15,4 @@ namespace System.ServiceProcess.Tests
         Stop = 3,
         OnCustomCommand = 4
     };
-
-    public static class TaskTimeoutExtensions
-    {
-        public static async Task TimeoutAfter(this Task task, int millisecondsTimeout)
-        {
-            var cts = new CancellationTokenSource();
-
-            if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout, cts.Token)))
-            {
-                cts.Cancel();
-                await task;
-            }
-            else
-            {
-                throw new TimeoutException($"Task timed out after {millisecondsTimeout}");
-            }
-        }
-    }
 }
