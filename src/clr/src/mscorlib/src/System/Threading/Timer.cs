@@ -600,13 +600,14 @@ namespace System.Threading
                 FrameworkEventSource.Log.ThreadTransferReceiveObj(this, 1, string.Empty);
 
             // call directly if EC flow is suppressed
-            if (m_executionContext == null)
+            ExecutionContext context = m_executionContext;
+            if (context == null)
             {
                 m_timerCallback(m_state);
             }
             else
             {
-                ExecutionContext.Run(m_executionContext, s_callCallbackInContext, this);
+                ExecutionContext.RunInternal(context, s_callCallbackInContext, this);
             }
         }
 

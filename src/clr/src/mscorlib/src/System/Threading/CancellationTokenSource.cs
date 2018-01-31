@@ -924,9 +924,10 @@ namespace System.Threading
 
             public void ExecuteCallback()
             {
-                if (ExecutionContext != null)
+                ExecutionContext context = ExecutionContext;
+                if (context != null)
                 {
-                    ExecutionContext.Run(ExecutionContext, s =>
+                    ExecutionContext.RunInternal(context, s =>
                     {
                         CallbackNode n = (CallbackNode)s;
                         n.Callback(n.CallbackState);
