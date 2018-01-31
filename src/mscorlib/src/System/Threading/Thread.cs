@@ -65,9 +65,10 @@ namespace System.Threading
         internal void ThreadStart(object obj)
         {
             _startArg = obj;
-            if (_executionContext != null)
+            ExecutionContext context = _executionContext;
+            if (context != null)
             {
-                ExecutionContext.Run(_executionContext, _ccb, (Object)this);
+                ExecutionContext.RunInternal(context, _ccb, (Object)this);
             }
             else
             {
@@ -78,9 +79,10 @@ namespace System.Threading
         // call back helper
         internal void ThreadStart()
         {
-            if (_executionContext != null)
+            ExecutionContext context = _executionContext;
+            if (context != null)
             {
-                ExecutionContext.Run(_executionContext, _ccb, (Object)this);
+                ExecutionContext.RunInternal(context, _ccb, (Object)this);
             }
             else
             {

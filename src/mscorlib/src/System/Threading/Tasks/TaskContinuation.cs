@@ -640,14 +640,15 @@ namespace System.Threading.Tasks
                 // We're on a thread pool thread with no higher-level callers, so exceptions can just propagate.
 
                 // If there's no execution context, just invoke the delegate.
-                if (m_capturedContext == null)
+                ExecutionContext context = m_capturedContext;
+                if (context == null)
                 {
                     m_action();
                 }
                 // If there is an execution context, get the cached delegate and run the action under the context.
                 else
                 {
-                    ExecutionContext.Run(m_capturedContext, GetInvokeActionCallback(), m_action);
+                    ExecutionContext.RunInternal(context, GetInvokeActionCallback(), m_action);
                 }
             }
             finally
@@ -708,10 +709,17 @@ namespace System.Threading.Tasks
             {
                 if (prevCurrentTask != null) currentTask = null;
 
-                // If there's no captured context, just run the callback directly.
-                if (m_capturedContext == null) callback(state);
-                // Otherwise, use the captured context to do so.
-                else ExecutionContext.Run(m_capturedContext, callback, state);
+                ExecutionContext context = m_capturedContext;
+                if (context == null)
+                {
+                    // If there's no captured context, just run the callback directly.
+                    callback(state);
+                }
+                else
+                {
+                    // Otherwise, use the captured context to do so.
+                    ExecutionContext.RunInternal(context, callback, state);
+                }
             }
             catch (Exception exc) // we explicitly do not request handling of dangerous exceptions like AVs
             {

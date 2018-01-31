@@ -49,8 +49,9 @@ namespace System.Runtime.CompilerServices
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
-            _builder.Start(ref stateMachine);
+            AsyncMethodBuilder.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -198,8 +199,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         [DebuggerStepThrough]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
-            m_builder.Start(ref stateMachine);
+            AsyncMethodBuilder.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -312,29 +314,9 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         [DebuggerStepThrough]
-        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
-        {
-            if (stateMachine == null) // TStateMachines are generally non-nullable value types, so this check will be elided
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stateMachine);
-            }
-
-            // Run the MoveNext method within a copy-on-write ExecutionContext scope.
-            // This allows us to undo any ExecutionContext changes made in MoveNext,
-            // so that they won't "leak" out of the first await.
-
-            Thread currentThread = Thread.CurrentThread;
-            ExecutionContextSwitcher ecs = default(ExecutionContextSwitcher);
-            try
-            {
-                ExecutionContext.EstablishCopyOnWriteScope(currentThread, ref ecs);
-                stateMachine.MoveNext();
-            }
-            finally
-            {
-                ecs.Undo(currentThread);
-            }
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
+            AsyncMethodBuilder.Start(ref stateMachine);
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
@@ -548,13 +530,14 @@ namespace System.Runtime.CompilerServices
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
-                if (Context == null)
+                ExecutionContext context = Context;
+                if (context == null)
                 {
                     StateMachine.MoveNext();
                 }
                 else
                 {
-                    ExecutionContext.Run(Context, s_callback, this);
+                    ExecutionContext.RunInternal(context, s_callback, this);
                 }
 
                 // In case this is a state machine box with a finalizer, suppress its finalization

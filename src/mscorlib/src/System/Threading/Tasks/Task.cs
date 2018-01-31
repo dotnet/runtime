@@ -2437,7 +2437,7 @@ namespace System.Threading.Tasks
                     else
                     {
                         // Invoke it under the captured ExecutionContext
-                        ExecutionContext.Run(ec, s_ecCallback, this);
+                        ExecutionContext.RunInternal(ec, s_ecCallback, this);
                     }
                 }
                 catch (Exception exn)
