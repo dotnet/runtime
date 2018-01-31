@@ -87,7 +87,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-
                     emit->emitIns_R_R(ins, simdSize, targetReg, op1Reg);
                 }
                 break;
@@ -98,7 +97,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     emit->emitIns_AR_R(ins, emitTypeSize(TYP_SIMD16), op2->gtRegNum, op1->gtRegNum, 0);
                 }
-                else if (ival != -1)
+                else if ((ival != -1) && varTypeIsFloating(baseType))
                 {
                     genHWIntrinsic_R_R_RM_I(node, ins);
                 }
@@ -677,13 +676,59 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
+    GenTree*       op1         = node->gtGetOp1();
+    GenTree*       op2         = node->gtGetOp2();
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
-    instruction    ins         = INS_invalid;
+    instruction    ins         = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+    regNumber      op1Reg      = REG_NA;
+    regNumber      op2Reg      = REG_NA;
+    emitter*       emit        = getEmitter();
+    int            ival        = -1;
 
-    genConsumeOperands(node);
+    if ((op1 != nullptr) && !op1->OperIsList())
+    {
+        op1Reg = op1->gtRegNum;
+        genConsumeOperands(node);
+    }
 
     switch (intrinsicID)
     {
+        // All integer overloads are handled by table codegen
+        case NI_SSE2_CompareLessThan:
+        {
+            assert(op1 != nullptr);
+            assert(op2 != nullptr);
+            assert(baseType == TYP_DOUBLE);
+
+            op2Reg = op2->gtRegNum;
+            ival   = Compiler::ivalOfHWIntrinsic(intrinsicID);
+            emit->emitIns_SIMD_R_R_R_I(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op2Reg, ival);
+
+            break;
+        }
+
+        case NI_SSE2_MoveMask:
+        {
+            assert(op2 == nullptr);
+            assert(baseType == TYP_BYTE || baseType == TYP_UBYTE || baseType == TYP_DOUBLE);
+
+            emit->emitIns_R_R(ins, emitTypeSize(TYP_INT), targetReg, op1Reg);
+            break;
+        }
+
+        case NI_SSE2_SetZeroVector128:
+        {
+            assert(baseType != TYP_FLOAT);
+            assert(baseType >= TYP_BYTE && baseType <= TYP_DOUBLE);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+
+            emit->emitIns_SIMD_R_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, targetReg, targetReg);
+            break;
+        }
+
         default:
             unreached();
             break;
