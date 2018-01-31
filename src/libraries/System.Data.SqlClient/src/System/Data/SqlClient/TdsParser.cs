@@ -2499,9 +2499,6 @@ namespace System.Data.SqlClient
             ushort status;
             int count;
 
-            // Can't retry TryProcessDone
-            stateObj._syncOverAsync = true;
-
             // status
             // command
             // rowcount (valid only if DONE_COUNT bit is set)
