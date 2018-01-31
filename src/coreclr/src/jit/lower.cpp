@@ -260,7 +260,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_SIMD:
             LowerSIMD(node->AsSIMD());
             break;
-#endif //
+#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWIntrinsic:
