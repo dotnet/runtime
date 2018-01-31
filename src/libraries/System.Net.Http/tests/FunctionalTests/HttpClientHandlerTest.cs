@@ -2102,8 +2102,17 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(CredentialsForProxy))]
-        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
+        [MemberData(nameof(CredentialsForProxyRfcCompliant))]
+        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_RfcCompliant(ICredentials creds, bool wrapCredsInCache)
+        {
+            await Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_Implementation(creds, wrapCredsInCache);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [MemberData(nameof(CredentialsForProxyNonRfcCompliant))]
+        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_NonRfcCompliant(ICredentials creds, bool wrapCredsInCache)
         {
             if (UseManagedHandler)
             {
@@ -2111,6 +2120,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            await Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_Implementation(creds, wrapCredsInCache);
+        }
+
+        private async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_Implementation(ICredentials creds, bool wrapCredsInCache)
+        {
             int port;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
                 out port,
@@ -2201,7 +2215,16 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { new UseSpecifiedUriWebProxy(new Uri($"http://{Guid.NewGuid().ToString().Substring(0, 15)}:12345"), bypass: true) };
         }
 
-        private static IEnumerable<object[]> CredentialsForProxy()
+        private static IEnumerable<object[]> CredentialsForProxyRfcCompliant()
+        {
+            foreach (bool wrapCredsInCache in new[] { true, false })
+            {
+                yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
+                yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
+            }
+        }
+
+        private static IEnumerable<object[]> CredentialsForProxyNonRfcCompliant()
         {
             yield return new object[] { null, false };
             foreach (bool wrapCredsInCache in new[] { true, false })
@@ -2210,6 +2233,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { new NetworkCredential("username", "password", "dom:\\ain"), wrapCredsInCache };
             }
         }
+
         #endregion
 
         #region Uri wire transmission encoding tests
