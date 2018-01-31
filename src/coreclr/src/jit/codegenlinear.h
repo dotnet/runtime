@@ -143,6 +143,7 @@ void genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node);
 template <typename HWIntrinsicSwitchCaseBody>
 void genHWIntrinsicSwitchTable(regNumber swReg, regNumber tmpReg, int swMax, HWIntrinsicSwitchCaseBody emitSwCase);
