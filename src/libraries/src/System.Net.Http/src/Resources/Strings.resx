@@ -378,6 +378,9 @@
   <data name="net_http_unsupported_chunking" xml:space="preserve">
     <value>HTTP 1.0 does not support chunking.</value>
   </data>
+  <data name="net_http_unsupported_version" xml:space="preserve">
+    <value>Request HttpVersion 0.X is not supported.  Use 1.0 or above.</value>
+  </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
