@@ -29,6 +29,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "lsra.h"
 
+#ifdef FEATURE_HW_INTRINSICS
+#include "hwintrinsicArm64.h"
+#endif
+
 //------------------------------------------------------------------------
 // IsCallTargetInRange: Can a call target address be encoded in-place?
 //
@@ -514,6 +518,48 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    auto intrinsicID   = node->gtHWIntrinsicId;
+    auto intrinsicInfo = comp->getHWIntrinsicInfo(node->gtHWIntrinsicId);
+
+    if ((intrinsicInfo.flags & HWIntrinsicInfo::LowerCmpUZero) && varTypeIsUnsigned(node->gtSIMDBaseType))
+    {
+        auto setAllVector = node->gtSIMDSize > 8 ? NI_ARM64_SIMD_SetAllVector128 : NI_ARM64_SIMD_SetAllVector64;
+
+        auto origOp1 = node->gtOp.gtOp1;
+
+        switch (intrinsicID)
+        {
+            case NI_ARM64_SIMD_GE_ZERO:
+                // Always true
+                node->gtHWIntrinsicId = setAllVector;
+                node->gtOp.gtOp1      = comp->gtNewLconNode(~0ULL);
+                BlockRange().InsertBefore(node, node->gtOp.gtOp1);
+                BlockRange().Remove(origOp1);
+                break;
+            case NI_ARM64_SIMD_GT_ZERO:
+                // Same as !EQ
+                node->gtOp.gtOp1 =
+                    comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), node->gtOp.gtOp1, NI_ARM64_SIMD_EQ_ZERO,
+                                                   node->gtSIMDBaseType, node->gtSIMDSize);
+                node->gtHWIntrinsicId = NI_ARM64_SIMD_BitwiseNot;
+                BlockRange().InsertBefore(node, node->gtOp.gtOp1);
+                break;
+            case NI_ARM64_SIMD_LE_ZERO:
+                // Same as EQ
+                node->gtHWIntrinsicId = NI_ARM64_SIMD_EQ_ZERO;
+                break;
+            case NI_ARM64_SIMD_LT_ZERO:
+                // Always false
+                node->gtHWIntrinsicId = setAllVector;
+                node->gtOp.gtOp1      = comp->gtNewIconNode(0);
+                BlockRange().InsertBefore(node, node->gtOp.gtOp1);
+                BlockRange().Remove(origOp1);
+                break;
+            default:
+                assert(!"Unhandled LowerCmpUZero case");
+        }
+    }
+
     ContainCheckHWIntrinsic(node);
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -828,7 +874,6 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
-#include "hwintrinsicArm64.h"
 //----------------------------------------------------------------------------------------------
 // ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
