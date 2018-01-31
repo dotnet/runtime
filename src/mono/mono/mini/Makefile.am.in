@@ -83,12 +83,12 @@ endif
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmini.la $(interp_libs) $(sgen_libs)
+sgen_static_libraries = libmini.la $(interp_libs_with_mini) $(sgen_libs)
 endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmonoboehm-2.0.la
-boehm_static_libraries = libmini.la $(interp_libs) $(boehm_libs)
+boehm_static_libraries = libmini.la $(interp_libs_with_mini) $(boehm_libs)
 boehm_binaries  = mono-boehm
 endif
 
@@ -138,8 +138,12 @@ endif
 
 lib_LTLIBRARIES = $(shared_libraries)
 
+if DISABLE_INTERPRETER
+lib_LTLIBRARIES += $(interp_libs)
+endif
+
 if SHARED_MONO
-mini_common_lib = libmini.la $(interp_libs)
+mini_common_lib = libmini.la
 else
 mini_common_lib = 
 endif
@@ -373,10 +377,10 @@ interp_sources =	\
 	interp/mintops.c	\
 	interp/transform.c
 
-if DISABLE_INTERPRETER
-interp_libs =
-else
 interp_libs = libmono-ee-interp.la
+
+if !DISABLE_INTERPRETER
+interp_libs_with_mini = $(interp_libs)
 endif
 
 if ENABLE_LLVM
@@ -636,12 +640,12 @@ libmini_la_CFLAGS = $(mono_CFLAGS)
 
 libmonoboehm_2_0_la_SOURCES =
 libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
-libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
+libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 
 libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
+libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
