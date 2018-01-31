@@ -598,7 +598,7 @@
   </ItemGroup>
   <ItemGroup>
     <!--
-    These are files are also added to CoreLib.Shared.projitems, but they don't show up in
+    These files are also added to CoreLib.Shared.projitems, but they don't show up in
     Visual Studio Solution Explorer. Adding them here as well so developers can
     edit them and regenerate the .cs files.
     -->
