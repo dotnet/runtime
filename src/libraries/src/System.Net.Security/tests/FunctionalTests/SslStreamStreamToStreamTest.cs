@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -303,6 +304,51 @@ namespace System.Net.Security.Tests
                 await clientSslStream.WriteAsync(new byte[] { 2 }, 0, 1);
                 await readTask;
                 Assert.Equal(2, serverBuffer[0]);
+            }
+        }
+
+        [Fact]
+        public async Task SslStream_StreamToStream_Dispose_Throws()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
+            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
+            using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
+            {
+                var serverSslStream = new SslStream(serverStream);
+                await DoHandshake(clientSslStream, serverSslStream);
+
+                var serverBuffer = new byte[1];
+                Task serverReadTask = serverSslStream.ReadAsync(serverBuffer, 0, serverBuffer.Length);
+                await serverSslStream.WriteAsync(new byte[] { 1 }, 0, 1)
+                    .TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+
+                // Shouldn't throw, the context is diposed now.
+                // Since the server read task is in progress, the read buffer is not returned to ArrayPool.
+                serverSslStream.Dispose();
+
+                // Read in client
+                var clientBuffer = new byte[1];
+                await clientSslStream.ReadAsync(clientBuffer, 0, clientBuffer.Length);
+                Assert.Equal(1, clientBuffer[0]);
+
+                await clientSslStream.WriteAsync(new byte[] { 2 }, 0, 1);
+
+                if (PlatformDetection.IsFullFramework)
+                {
+                    await Assert.ThrowsAsync<ObjectDisposedException>(() => serverReadTask);
+                }
+                else
+                {
+                    IOException serverException = await Assert.ThrowsAsync<IOException>(() => serverReadTask);
+                    Assert.IsType<ObjectDisposedException>(serverException.InnerException);
+                }
+
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => serverSslStream.ReadAsync(serverBuffer, 0, serverBuffer.Length));
+
+                // Now, there is no pending read, so the internal buffer will be returned to ArrayPool.
+                serverSslStream.Dispose();
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => serverSslStream.ReadAsync(serverBuffer, 0, serverBuffer.Length));
             }
         }
 
