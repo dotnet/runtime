@@ -45,7 +45,6 @@ namespace System.Net.Http
         private static readonly byte[] s_httpSchemeAndDelimiter = Encoding.ASCII.GetBytes(Uri.UriSchemeHttp + Uri.SchemeDelimiter);
 
         private readonly HttpConnectionPool _pool;
-        private readonly HttpConnectionKey _key;
         private readonly Stream _stream;
         private readonly TransportContext _transportContext;
         private readonly bool _usingProxy;
@@ -62,29 +61,23 @@ namespace System.Net.Http
         private int _readOffset;
         private int _readLength;
 
+        private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
         private int _disposed; // 1 yes, 0 no
 
         public HttpConnection(
             HttpConnectionPool pool,
-            HttpConnectionKey key,
-            string requestIdnHost,
             Stream stream, 
-            TransportContext transportContext, 
-            bool usingProxy)
+            TransportContext transportContext)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
 
             _pool = pool;
-            _key = key;
             _stream = stream;
             _transportContext = transportContext;
-            _usingProxy = usingProxy;
-            if (requestIdnHost != null)
-            {
-                _idnHostAsciiBytes = Encoding.ASCII.GetBytes(requestIdnHost);
-            }
+            _usingProxy = pool.Pools.UsingProxy;
+            _idnHostAsciiBytes = pool.IdnHostAsciiBytes;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _readBuffer = new byte[InitialReadBufferSize];
@@ -94,7 +87,8 @@ namespace System.Net.Http
                 if (_stream is SslStream sslStream)
                 {
                     Trace(
-                        $"Secure connection created to {key.Host}:{key.Port}. " +
+                        $"Secure connection created to {pool.Key.Host}:{pool.Key.Port}. " +
+                        $"SslHostName:{pool.Key.SslHostName}. " +
                         $"SslProtocol:{sslStream.SslProtocol}, " +
                         $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
                         $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
@@ -103,7 +97,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    Trace($"Connection created to {key.Host}:{key.Port}.");
+                    Trace($"Connection created to {pool.Key.Host}:{pool.Key.Port}.");
                 }
             }
         }
@@ -126,6 +120,26 @@ namespace System.Net.Http
             {
                 Debug.Assert(_readAheadTask != null, $"{nameof(_readAheadTask)} should have been initialized");
                 return _readAheadTask.IsCompleted;
+            }
+        }
+
+        public bool IsNewConnection
+        {
+            get
+            {
+                // This is only valid when we are not actually processing a request.
+                Debug.Assert(_currentRequest == null);
+                return (_readAheadTask == null);
+            }
+        }
+
+        public bool CanRetry
+        {
+            get
+            {
+                // Should only be called when we have been disposed.
+                Debug.Assert(_disposed != 0);
+                return _canRetry;
             }
         }
 
@@ -202,6 +216,10 @@ namespace System.Net.Http
             TaskCompletionSource<bool> allowExpect100ToContinue = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             _currentRequest = request;
+
+            Debug.Assert(!_canRetry);
+            _canRetry = true;
+
             try
             {
                 // Our max supported version is 1.1, so if Version > 1.1, degrade to 1.1.
@@ -301,6 +319,8 @@ namespace System.Net.Http
 
                     if (!request.HasHeaders || request.Headers.ExpectContinue != true)
                     {
+                        _canRetry = false;
+
                         // Start the copy from the request.  We do this here in case it synchronously throws
                         // an exception, e.g. StreamContent throwing for non-rewindable content, and because if
                         // we did it in SendRequestContentAsync, that exception would get trapped in the returned
@@ -325,6 +345,38 @@ namespace System.Net.Http
                         _sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(request, allowExpect100ToContinue.Task, stream, expect100Timer);
                     }
                 }
+
+                // Start to read response.
+
+                // We should not have any buffered data here; if there was, it should have been treated as an error
+                // by the previous request handling.  (Note we do not support HTTP pipelining.)
+                Debug.Assert(_readOffset == _readLength);
+
+                // When the connection was put back into the pool, a pre-emptive read was performed
+                // into the read buffer.  That read should not complete prior to us using the
+                // connection again, as that would mean the connection was either closed or had
+                // erroneous data sent on it by the server in response to no request from us.
+                // We need to consume that read prior to issuing another read request.
+                Task<int> t = _readAheadTask;
+                if (t != null)
+                {
+                    _readAheadTask = null;
+
+                    int bytesRead = await t.ConfigureAwait(false);
+                    if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+
+                    if (bytesRead == 0)
+                    {
+                        throw new IOException(SR.net_http_invalid_response);
+                    }
+
+                    _readOffset = 0;
+                    _readLength = bytesRead;
+                }
+
+                // The request is no longer retryable; either we received data from the _readAheadTask, 
+                // or there was no _readAheadTask because this is the first request on the connection.
+                _canRetry = false;
 
                 // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionContent(CancellationToken.None) };
@@ -499,6 +551,8 @@ namespace System.Net.Http
             if (sendRequestContent)
             {
                 if (NetEventSource.IsEnabled) Trace($"Sending request content for Expect: 100-continue.");
+
+                _canRetry = false;
                 await SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream).ConfigureAwait(false);
             }
             else
@@ -932,6 +986,8 @@ namespace System.Net.Http
         // Throws IOException on EOF.  This is only called when we expect more data.
         private async Task FillAsync(CancellationToken cancellationToken)
         {
+            Debug.Assert(_readAheadTask == null);
+
             int remaining = _readLength - _readOffset;
             Debug.Assert(remaining >= 0);
 
@@ -963,31 +1019,14 @@ namespace System.Net.Http
                 _readLength = remaining;
             }
 
-            // When the connection was put back into the pool, a pre-emptive read was performed
-            // into the read buffer.  That read should not complete prior to us using the
-            // connection again, as that would mean the connection was either closed or had
-            // erroneous data sent on it by the server in response to no request from us.
-            // We need to consume that read prior to issuing another read request.
-            Task<int> t = _readAheadTask;
-            int bytesRead;
-            if (t != null)
-            {
-                Debug.Assert(_readOffset == 0);
-                Debug.Assert(_readLength == 0);
-                _readAheadTask = null;
-                bytesRead = await t.ConfigureAwait(false);
-            }
-            else
-            {
-                ValueTask<int> vt = _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength), cancellationToken);
-                bytesRead = vt.IsCompletedSuccessfully ? vt.Result : await vt.AsTask().ConfigureAwait(false);
-            }
+            int bytesRead = await _stream.ReadAsync(new Memory<byte>(_readBuffer, _readLength, _readBuffer.Length - _readLength), cancellationToken).ConfigureAwait(false);
 
             if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
                 throw new IOException(SR.net_http_invalid_response);
             }
+
             _readLength += bytesRead;
         }
 
@@ -1174,6 +1213,7 @@ namespace System.Net.Http
                     // at any point to understand if the connection has been closed or if errant data
                     // has been sent on the connection by the server, either of which would mean we
                     // should close the connection and not use it for subsequent requests.
+                    Debug.Assert(_readLength == _readOffset);
                     _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
 
                     // Put connection back in the pool.
@@ -1210,7 +1250,7 @@ namespace System.Net.Http
             return true;
         }
 
-        public override string ToString() => $"{nameof(HttpConnection)}(Host:{_key.Host})"; // Description for diagnostic purposes
+        public override string ToString() => $"{nameof(HttpConnection)}({_pool.Key})"; // Description for diagnostic purposes
 
         private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
 
