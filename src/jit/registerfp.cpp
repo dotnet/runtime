@@ -75,7 +75,7 @@ void CodeGen::genFloatMath(GenTree* tree, RegSet::RegisterPreference* pref)
 {
     assert(tree->OperGet() == GT_INTRINSIC);
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
+    GenTree* op1 = tree->gtOp.gtOp1;
 
     // get tree into a register
     genCodeForTreeFloat(op1, pref);
@@ -161,7 +161,7 @@ void CodeGen::genFloatSimple(GenTree* tree, RegSet::RegisterPreference* pref)
 
         case GT_NEG:
         {
-            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTree* op1 = tree->gtOp.gtOp1;
 
             // get the tree into a register
             genCodeForTreeFloat(op1, pref);
@@ -214,7 +214,7 @@ void CodeGen::genFloatSimple(GenTree* tree, RegSet::RegisterPreference* pref)
 
         case GT_RETURN:
         {
-            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTree* op1 = tree->gtOp.gtOp1;
             assert(op1);
 
             pref->best = (type == TYP_DOUBLE) ? RBM_DOUBLERET : RBM_FLOATRET;
@@ -242,8 +242,8 @@ void CodeGen::genFloatSimple(GenTree* tree, RegSet::RegisterPreference* pref)
 
         case GT_COMMA:
         {
-            GenTreePtr op1 = tree->gtOp.gtOp1;
-            GenTreePtr op2 = tree->gtGetOp2IfPresent();
+            GenTree* op1 = tree->gtOp.gtOp1;
+            GenTree* op2 = tree->gtGetOp2IfPresent();
 
             if (tree->gtFlags & GTF_REVERSE_OPS)
             {
@@ -278,7 +278,7 @@ void CodeGen::genFloatCheckFinite(GenTree* tree, RegSet::RegisterPreference* pre
     TempDsc* temp;
     int      offs;
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
+    GenTree* op1 = tree->gtOp.gtOp1;
 
     // Offset of the DWord containing the exponent
     offs = (op1->gtType == TYP_FLOAT) ? 0 : sizeof(int);
@@ -316,9 +316,9 @@ void CodeGen::genFloatCheckFinite(GenTree* tree, RegSet::RegisterPreference* pre
 
 void CodeGen::genFloatAssign(GenTree* tree)
 {
-    var_types  type = tree->TypeGet();
-    GenTreePtr op1  = tree->gtGetOp1();
-    GenTreePtr op2  = tree->gtGetOp2IfPresent();
+    var_types type = tree->TypeGet();
+    GenTree*  op1  = tree->gtGetOp1();
+    GenTree*  op2  = tree->gtGetOp2IfPresent();
 
     regMaskTP needRegOp1 = RBM_ALLINT;
     regMaskTP addrReg    = RBM_NONE;
@@ -610,7 +610,7 @@ DONE_ASG:
         siCheckVarScope(lclVarNum, lclILoffs);
 }
 
-void CodeGen::genCodeForTreeFloat(GenTreePtr tree, RegSet::RegisterPreference* pref)
+void CodeGen::genCodeForTreeFloat(GenTree* tree, RegSet::RegisterPreference* pref)
 {
     genTreeOps oper;
     unsigned   kind;
@@ -681,7 +681,7 @@ void CodeGen::genFloatLeaf(GenTree* tree, RegSet::RegisterPreference* pref)
     return;
 }
 
-void CodeGen::genLoadFloat(GenTreePtr tree, regNumber reg)
+void CodeGen::genLoadFloat(GenTree* tree, regNumber reg)
 {
     if (tree->IsRegVar())
     {
@@ -780,12 +780,12 @@ void CodeGen::genLoadFloat(GenTreePtr tree, regNumber reg)
     }
 }
 
-void CodeGen::genCodeForTreeFloat_DONE(GenTreePtr tree, regNumber reg)
+void CodeGen::genCodeForTreeFloat_DONE(GenTree* tree, regNumber reg)
 {
     return genCodeForTree_DONE(tree, reg);
 }
 
-void CodeGen::genFloatAsgArith(GenTreePtr tree)
+void CodeGen::genFloatAsgArith(GenTree* tree)
 {
     // Set Flowgraph.cpp, line 13750
     // arm VFP has tons of regs, 3-op instructions, and no addressing modes
@@ -793,8 +793,7 @@ void CodeGen::genFloatAsgArith(GenTreePtr tree)
     noway_assert(!"Not Reachable for _TARGET_ARM_");
 }
 
-regNumber CodeGen::genAssignArithFloat(
-    genTreeOps oper, GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg)
+regNumber CodeGen::genAssignArithFloat(genTreeOps oper, GenTree* dst, regNumber dstreg, GenTree* src, regNumber srcreg)
 {
     regNumber result;
 
@@ -841,12 +840,12 @@ regNumber CodeGen::genAssignArithFloat(
     return result;
 }
 
-void CodeGen::genFloatArith(GenTreePtr tree, RegSet::RegisterPreference* tgtPref)
+void CodeGen::genFloatArith(GenTree* tree, RegSet::RegisterPreference* tgtPref)
 {
     var_types  type = tree->TypeGet();
     genTreeOps oper = tree->OperGet();
-    GenTreePtr op1  = tree->gtGetOp1();
-    GenTreePtr op2  = tree->gtGetOp2IfPresent();
+    GenTree*   op1  = tree->gtGetOp1();
+    GenTree*   op2  = tree->gtGetOp2IfPresent();
 
     regNumber  tgtReg;
     unsigned   varNum;
@@ -929,7 +928,7 @@ void CodeGen::genFloatArith(GenTreePtr tree, RegSet::RegisterPreference* tgtPref
 }
 
 regNumber CodeGen::genArithmFloat(
-    genTreeOps oper, GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg, bool bReverse)
+    genTreeOps oper, GenTree* dst, regNumber dstreg, GenTree* src, regNumber srcreg, bool bReverse)
 {
     regNumber result = REG_NA;
 
@@ -967,7 +966,7 @@ regNumber CodeGen::genArithmFloat(
     return result;
 }
 
-void CodeGen::genKeepAddressableFloat(GenTreePtr tree, regMaskTP* regMaskIntPtr, regMaskTP* regMaskFltPtr)
+void CodeGen::genKeepAddressableFloat(GenTree* tree, regMaskTP* regMaskIntPtr, regMaskTP* regMaskFltPtr)
 {
     regMaskTP regMaskInt, regMaskFlt;
 
@@ -1019,7 +1018,7 @@ void CodeGen::genKeepAddressableFloat(GenTreePtr tree, regMaskTP* regMaskIntPtr,
     }
 }
 
-void CodeGen::genComputeAddressableFloat(GenTreePtr      tree,
+void CodeGen::genComputeAddressableFloat(GenTree*        tree,
                                          regMaskTP       addrRegInt,
                                          regMaskTP       addrRegFlt,
                                          RegSet::KeepReg keptReg,
@@ -1057,7 +1056,7 @@ void CodeGen::genComputeAddressableFloat(GenTreePtr      tree,
     }
 }
 
-void CodeGen::genDoneAddressableFloat(GenTreePtr      tree,
+void CodeGen::genDoneAddressableFloat(GenTree*        tree,
                                       regMaskTP       addrRegInt,
                                       regMaskTP       addrRegFlt,
                                       RegSet::KeepReg keptReg)
@@ -1085,10 +1084,10 @@ void CodeGen::genDoneAddressableFloat(GenTreePtr      tree,
     }
 }
 
-GenTreePtr CodeGen::genMakeAddressableFloat(GenTreePtr tree,
-                                            regMaskTP* regMaskIntPtr,
-                                            regMaskTP* regMaskFltPtr,
-                                            bool       bCollapseConstantDoubles)
+GenTree* CodeGen::genMakeAddressableFloat(GenTree*   tree,
+                                          regMaskTP* regMaskIntPtr,
+                                          regMaskTP* regMaskFltPtr,
+                                          bool       bCollapseConstantDoubles)
 {
     *regMaskIntPtr = *regMaskFltPtr = 0;
 
@@ -1114,8 +1113,8 @@ GenTreePtr CodeGen::genMakeAddressableFloat(GenTreePtr tree,
             }
             else
             {
-                GenTreePtr addr = tree;
-                tree            = tree->gtOp.gtOp1;
+                GenTree* addr = tree;
+                tree          = tree->gtOp.gtOp1;
                 genCodeForTree(tree, 0);
                 regSet.rsMarkRegUsed(tree, addr);
 
@@ -1139,9 +1138,9 @@ GenTreePtr CodeGen::genMakeAddressableFloat(GenTreePtr tree,
 
 void CodeGen::genCodeForTreeCastFloat(GenTree* tree, RegSet::RegisterPreference* pref)
 {
-    GenTreePtr op1  = tree->gtOp.gtOp1;
-    var_types  from = op1->gtType;
-    var_types  to   = tree->gtType;
+    GenTree*  op1  = tree->gtOp.gtOp1;
+    var_types from = op1->gtType;
+    var_types to   = tree->gtType;
 
     if (varTypeIsFloating(from))
         genCodeForTreeCastFromFloat(tree, pref);
@@ -1151,10 +1150,10 @@ void CodeGen::genCodeForTreeCastFloat(GenTree* tree, RegSet::RegisterPreference*
 
 void CodeGen::genCodeForTreeCastFromFloat(GenTree* tree, RegSet::RegisterPreference* pref)
 {
-    GenTreePtr op1          = tree->gtOp.gtOp1;
-    var_types  from         = op1->gtType;
-    var_types  final        = tree->gtType;
-    var_types  intermediate = tree->CastToType();
+    GenTree*  op1          = tree->gtOp.gtOp1;
+    var_types from         = op1->gtType;
+    var_types final        = tree->gtType;
+    var_types intermediate = tree->CastToType();
 
     regNumber srcReg;
     regNumber dstReg;
@@ -1230,7 +1229,7 @@ void CodeGen::genCodeForTreeCastFromFloat(GenTree* tree, RegSet::RegisterPrefere
     genCodeForTree_DONE(tree, dstReg);
 }
 
-void CodeGen::genCodeForTreeCastToFloat(GenTreePtr tree, RegSet::RegisterPreference* pref)
+void CodeGen::genCodeForTreeCastToFloat(GenTree* tree, RegSet::RegisterPreference* pref)
 {
     regNumber srcReg;
     regNumber dstReg;
@@ -1238,7 +1237,7 @@ void CodeGen::genCodeForTreeCastToFloat(GenTreePtr tree, RegSet::RegisterPrefere
 
     regMaskTP addrReg;
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
+    GenTree* op1   = tree->gtOp.gtOp1;
     op1            = genCodeForCommaTree(op1); // Trim off any comma expressions.
     var_types from = op1->gtType;
     var_types to   = tree->gtType;
@@ -1342,7 +1341,7 @@ void CodeGen::genCodeForTreeCastToFloat(GenTreePtr tree, RegSet::RegisterPrefere
     }
 }
 
-void CodeGen::genRoundFloatExpression(GenTreePtr op, var_types type)
+void CodeGen::genRoundFloatExpression(GenTree* op, var_types type)
 {
     // Do nothing with memory resident opcodes - these are the right precision
     if (type == TYP_UNDEF)
@@ -1477,14 +1476,14 @@ instruction genFloatJumpInstr(genTreeOps cmp, bool isUnordered)
     }
 }
 
-void CodeGen::genCondJumpFloat(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* jumpFalse)
+void CodeGen::genCondJumpFloat(GenTree* cond, BasicBlock* jumpTrue, BasicBlock* jumpFalse)
 {
     assert(jumpTrue && jumpFalse);
     assert(!(cond->gtFlags & GTF_REVERSE_OPS)); // Done in genCondJump()
     assert(varTypeIsFloating(cond->gtOp.gtOp1->gtType));
 
-    GenTreePtr op1         = cond->gtOp.gtOp1;
-    GenTreePtr op2         = cond->gtOp.gtOp2;
+    GenTree*   op1         = cond->gtOp.gtOp1;
+    GenTree*   op2         = cond->gtOp.gtOp2;
     genTreeOps cmp         = cond->OperGet();
     bool       isUnordered = cond->gtFlags & GTF_RELOP_NAN_UN ? true : false;
 

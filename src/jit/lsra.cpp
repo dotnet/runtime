@@ -127,7 +127,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Return Value:
 //    None
 //
-void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
+void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 {
     if (regIdx == 0)
     {
@@ -170,8 +170,8 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
 //    Weight of ref position.
 unsigned LinearScan::getWeight(RefPosition* refPos)
 {
-    unsigned   weight;
-    GenTreePtr treeNode = refPos->treeNode;
+    unsigned weight;
+    GenTree* treeNode = refPos->treeNode;
 
     if (treeNode != nullptr)
     {
@@ -2695,7 +2695,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             LsraLocation loc = currentRefPosition->nodeLocation;
 
             // We should always have a tree node for a localVar, except for the "special" RefPositions.
-            GenTreePtr tree = currentRefPosition->treeNode;
+            GenTree* tree = currentRefPosition->treeNode;
             assert(tree != nullptr || currentRefPosition->refType == RefTypeExpUse ||
                    currentRefPosition->refType == RefTypeDummyDef);
 
@@ -8467,7 +8467,7 @@ void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, Regi
 // NICE: Consider tracking whether an Interval is always in the same location (register/stack)
 // in which case it will require no resolution.
 //
-void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosition* currentRefPosition)
+void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPosition* currentRefPosition)
 {
     assert((block == nullptr) == (treeNode == nullptr));
     assert(enregisterLocalVars);
@@ -8762,7 +8762,7 @@ void LinearScan::writeRegisters(RefPosition* currentRefPosition, GenTree* tree)
 // and the unspilling code automatically reuses the same register, and does the reload when it notices that flag
 // when considering a node's operands.
 //
-void LinearScan::insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned multiRegIdx, RefPosition* refPosition)
+void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned multiRegIdx, RefPosition* refPosition)
 {
     LIR::Range& blockRange = LIR::AsRange(block);
 
@@ -8840,7 +8840,7 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned
 //                        It will be a call or some node that turns into a call.
 //    refPosition       - The RefTypeUpperVectorSaveDef RefPosition.
 //
-void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* refPosition, BasicBlock* block)
+void LinearScan::insertUpperVectorSaveAndReload(GenTree* tree, RefPosition* refPosition, BasicBlock* block)
 {
     Interval* lclVarInterval = refPosition->getInterval()->relatedInterval;
     assert(lclVarInterval->isLocalVar == true);
@@ -8861,8 +8861,8 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // First, insert the save before the call.
 
-    GenTreePtr saveLcl = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
-    saveLcl->gtRegNum  = lclVarReg;
+    GenTree* saveLcl  = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
+    saveLcl->gtRegNum = lclVarReg;
     SetLsraAdded(saveLcl);
 
     GenTreeSIMD* simdNode =
@@ -8879,8 +8879,8 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // Now insert the restore after the call.
 
-    GenTreePtr restoreLcl = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
-    restoreLcl->gtRegNum  = lclVarReg;
+    GenTree* restoreLcl  = compiler->gtNewLclvNode(lclVarInterval->varNum, varDsc->lvType);
+    restoreLcl->gtRegNum = lclVarReg;
     SetLsraAdded(restoreLcl);
 
     simdNode = new (compiler, GT_SIMD) GenTreeSIMD(varDsc->lvType, restoreLcl, nullptr, SIMDIntrinsicUpperRestore,
@@ -9016,7 +9016,7 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
             else
 #endif // !FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             {
-                GenTreePtr treeNode = refPosition->treeNode;
+                GenTree* treeNode = refPosition->treeNode;
                 if (treeNode == nullptr)
                 {
                     assert(RefTypeIsUse(refType));
@@ -9175,7 +9175,7 @@ void LinearScan::resolveRegisters()
     }
 
     BasicBlock* insertionBlock = compiler->fgFirstBB;
-    GenTreePtr  insertionPoint = LIR::AsRange(insertionBlock).FirstNonPhiNode();
+    GenTree*    insertionPoint = LIR::AsRange(insertionBlock).FirstNonPhiNode();
 
     // write back assignments
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
@@ -9628,7 +9628,7 @@ void LinearScan::resolveRegisters()
 //    If fromReg or toReg is REG_STK, then move from/to memory, respectively.
 
 void LinearScan::insertMove(
-    BasicBlock* block, GenTreePtr insertionPoint, unsigned lclNum, regNumber fromReg, regNumber toReg)
+    BasicBlock* block, GenTree* insertionPoint, unsigned lclNum, regNumber fromReg, regNumber toReg)
 {
     LclVarDsc* varDsc = compiler->lvaTable + lclNum;
     // the lclVar must be a register candidate
@@ -9641,7 +9641,7 @@ void LinearScan::insertMove(
     // This var can't be marked lvRegister now
     varDsc->lvRegNum = REG_STK;
 
-    GenTreePtr src = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+    GenTree* src = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
     SetLsraAdded(src);
 
     // There are three cases we need to handle:
@@ -9712,7 +9712,7 @@ void LinearScan::insertMove(
 }
 
 void LinearScan::insertSwap(
-    BasicBlock* block, GenTreePtr insertionPoint, unsigned lclNum1, regNumber reg1, unsigned lclNum2, regNumber reg2)
+    BasicBlock* block, GenTree* insertionPoint, unsigned lclNum1, regNumber reg1, unsigned lclNum2, regNumber reg2)
 {
 #ifdef DEBUG
     if (VERBOSE)
@@ -9731,16 +9731,16 @@ void LinearScan::insertSwap(
     LclVarDsc* varDsc2 = compiler->lvaTable + lclNum2;
     assert(reg1 != REG_STK && reg1 != REG_NA && reg2 != REG_STK && reg2 != REG_NA);
 
-    GenTreePtr lcl1 = compiler->gtNewLclvNode(lclNum1, varDsc1->TypeGet());
-    lcl1->gtRegNum  = reg1;
+    GenTree* lcl1  = compiler->gtNewLclvNode(lclNum1, varDsc1->TypeGet());
+    lcl1->gtRegNum = reg1;
     SetLsraAdded(lcl1);
 
-    GenTreePtr lcl2 = compiler->gtNewLclvNode(lclNum2, varDsc2->TypeGet());
-    lcl2->gtRegNum  = reg2;
+    GenTree* lcl2  = compiler->gtNewLclvNode(lclNum2, varDsc2->TypeGet());
+    lcl2->gtRegNum = reg2;
     SetLsraAdded(lcl2);
 
-    GenTreePtr swap = compiler->gtNewOperNode(GT_SWAP, TYP_VOID, lcl1, lcl2);
-    swap->gtRegNum  = REG_NA;
+    GenTree* swap  = compiler->gtNewOperNode(GT_SWAP, TYP_VOID, lcl1, lcl2);
+    swap->gtRegNum = REG_NA;
     SetLsraAdded(swap);
 
     lcl1->gtNext = lcl2;
@@ -9881,7 +9881,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock* fromBlock, BasicBlock*
 //    It inserts at least one move and updates incoming parameter 'location'.
 //
 void LinearScan::addResolutionForDouble(BasicBlock*     block,
-                                        GenTreePtr      insertionPoint,
+                                        GenTree*        insertionPoint,
                                         Interval**      sourceIntervals,
                                         regNumberSmall* location,
                                         regNumber       toReg,
@@ -9951,7 +9951,7 @@ void LinearScan::addResolutionForDouble(BasicBlock*     block,
 //    in which case fromReg will be REG_STK, and we insert at the top.
 
 void LinearScan::addResolution(
-    BasicBlock* block, GenTreePtr insertionPoint, Interval* interval, regNumber toReg, regNumber fromReg)
+    BasicBlock* block, GenTree* insertionPoint, Interval* interval, regNumber toReg, regNumber fromReg)
 {
 #ifdef DEBUG
     const char* insertionPointString = "top";
@@ -10573,7 +10573,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     memset(&stackToRegIntervals, 0, sizeof(stackToRegIntervals));
 
     // Get the starting insertion point for the "to" resolution
-    GenTreePtr insertionPoint = nullptr;
+    GenTree* insertionPoint = nullptr;
     if (resolveType == ResolveSplit || resolveType == ResolveCritical)
     {
         insertionPoint = LIR::AsRange(block).FirstNonPhiNode();
@@ -11480,7 +11480,7 @@ void LinearScan::lsraDumpIntervals(const char* msg)
 
 // Dumps a tree node as a destination or source operand, with the style
 // of dump dependent on the mode
-void LinearScan::lsraGetOperandString(GenTreePtr        tree,
+void LinearScan::lsraGetOperandString(GenTree*          tree,
                                       LsraTupleDumpMode mode,
                                       char*             operandString,
                                       unsigned          operandStringLength)
@@ -11518,7 +11518,7 @@ void LinearScan::lsraGetOperandString(GenTreePtr        tree,
             break;
     }
 }
-void LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasDest)
+void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDest)
 {
     Compiler*      compiler            = JitTls::GetCompiler();
     const unsigned operandStringLength = 16;

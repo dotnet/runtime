@@ -454,8 +454,8 @@ void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
 
     RecordOperBashing(OperGet(), src->OperGet()); // nop unless NODEBASH_STATS is enabled
 
-    GenTreePtr prev = gtPrev;
-    GenTreePtr next = gtNext;
+    GenTree* prev = gtPrev;
+    GenTree* next = gtNext;
     // The VTable pointer is copied intentionally here
     memcpy((void*)this, (void*)src, src->GetNodeSize());
     this->gtPrev = prev;
@@ -648,7 +648,7 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 
     for (block = fgFirstBB; block; block = block->bbNext)
     {
-        GenTreePtr tree;
+        GenTree* tree;
 
         for (tree = block->bbTreeList; tree; tree = tree->gtNext)
         {
@@ -667,7 +667,7 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
 //
 // Return Value:
 //     None
-void GenTree::CopyReg(GenTreePtr from)
+void GenTree::CopyReg(GenTree* from)
 {
     // To do the copy, use _gtRegPair, which must be bigger than _gtRegNum. Note that the values
     // might be undefined (so gtRegTag == GT_REGTAG_NONE).
@@ -1204,7 +1204,7 @@ unsigned GenTreePutArgStk::getArgSize()
  *  Returns non-zero if the two trees are identical.
  */
 
-bool GenTree::Compare(GenTreePtr op1, GenTreePtr op2, bool swapOK)
+bool GenTree::Compare(GenTree* op1, GenTree* op2, bool swapOK)
 {
     genTreeOps oper;
     unsigned   kind;
@@ -1348,7 +1348,7 @@ AGAIN:
     {
         if (IsExOp(kind))
         {
-            // ExOp operators extend unary operator with extra, non-GenTreePtr members.  In many cases,
+            // ExOp operators extend unary operator with extra, non-GenTree* members.  In many cases,
             // these should be included in the comparison.
             switch (oper)
             {
@@ -1386,7 +1386,7 @@ AGAIN:
     {
         if (IsExOp(kind))
         {
-            // ExOp operators extend unary operator with extra, non-GenTreePtr members.  In many cases,
+            // ExOp operators extend unary operator with extra, non-GenTree* members.  In many cases,
             // these should be included in the hash code.
             switch (oper)
             {
@@ -1617,7 +1617,7 @@ AGAIN:
  *  Returns non-zero if the given tree contains a use of a local #lclNum.
  */
 
-bool Compiler::gtHasRef(GenTreePtr tree, ssize_t lclNum, bool defOnly)
+bool Compiler::gtHasRef(GenTree* tree, ssize_t lclNum, bool defOnly)
 {
     genTreeOps oper;
     unsigned   kind;
@@ -1865,10 +1865,10 @@ struct AddrTakenDsc
 };
 
 /* static */
-Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalkData* data)
 {
-    GenTreePtr tree = *pTree;
-    Compiler*  comp = data->compiler;
+    GenTree*  tree = *pTree;
+    Compiler* comp = data->compiler;
 
     if (tree->gtOper == GT_LCL_VAR)
     {
@@ -1891,7 +1891,7 @@ Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTreePtr* pTree, fgWa
  *  flag(s) set.
  */
 
-bool Compiler::gtHasLocalsWithAddrOp(GenTreePtr tree)
+bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
 {
     AddrTakenDsc desc;
 
@@ -1932,7 +1932,7 @@ unsigned Compiler::gtHashValue(GenTree* tree)
 
     unsigned hash = 0;
 
-    GenTreePtr temp;
+    GenTree* temp;
 
 AGAIN:
     assert(tree);
@@ -2012,7 +2012,7 @@ AGAIN:
 
     /* Is it a 'simple' unary/binary operator? */
 
-    GenTreePtr op1;
+    GenTree* op1;
 
     if (kind & GTK_UNOP)
     {
@@ -2021,7 +2021,7 @@ AGAIN:
 
         if (GenTree::IsExOp(kind))
         {
-            // ExOp operators extend operators with extra, non-GenTreePtr members.  In many cases,
+            // ExOp operators extend operators with extra, non-GenTree* members.  In many cases,
             // these should be included in the hash code.
             switch (oper)
             {
@@ -2074,7 +2074,7 @@ AGAIN:
     {
         if (GenTree::IsExOp(kind))
         {
-            // ExOp operators extend operators with extra, non-GenTreePtr members.  In many cases,
+            // ExOp operators extend operators with extra, non-GenTree* members.  In many cases,
             // these should be included in the hash code.
             switch (oper)
             {
@@ -2126,8 +2126,8 @@ AGAIN:
             }
         }
 
-        op1            = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtOp.gtOp2;
+        op1          = tree->gtOp.gtOp1;
+        GenTree* op2 = tree->gtOp.gtOp2;
 
         /* Is there a second sub-operand? */
 
@@ -2288,7 +2288,7 @@ DONE:
  *  If we encounter an expression that is equal to *findPtr we set *findPtr
  *  to NULL.
  */
-bool Compiler::lvaLclVarRefs(GenTreePtr tree, GenTreePtr* findPtr, varRefKinds* refsPtr, void* result)
+bool Compiler::lvaLclVarRefs(GenTree* tree, GenTree** findPtr, varRefKinds* refsPtr, void* result)
 {
     genTreeOps   oper;
     unsigned     kind;
@@ -2558,7 +2558,7 @@ AGAIN:
 }
 
 bool Compiler::lvaLclVarRefsAccum(
-    GenTreePtr tree, GenTreePtr* findPtr, varRefKinds* refsPtr, ALLVARSET_TP* allVars, VARSET_TP* trkdVars)
+    GenTree* tree, GenTree** findPtr, varRefKinds* refsPtr, ALLVARSET_TP* allVars, VARSET_TP* trkdVars)
 {
     if (findPtr)
     {
@@ -2583,7 +2583,7 @@ bool Compiler::lvaLclVarRefsAccum(
     return true;
 }
 
-void Compiler::lvaLclVarRefsAccumIntoRes(GenTreePtr*         findPtr,
+void Compiler::lvaLclVarRefsAccumIntoRes(GenTree**           findPtr,
                                          void*               result,
                                          ALLVARSET_VALARG_TP allVars,
                                          VARSET_VALARG_TP    trkdVars)
@@ -2685,7 +2685,7 @@ genTreeOps GenTree::SwapRelop(genTreeOps relop)
  *  Reverse the meaning of the given test condition.
  */
 
-GenTreePtr Compiler::gtReverseCond(GenTree* tree)
+GenTree* Compiler::gtReverseCond(GenTree* tree)
 {
     if (tree->OperIsCompare())
     {
@@ -2733,8 +2733,8 @@ bool GenTree::gtIsValid64RsltMul()
         return false;
     }
 
-    GenTreePtr op1 = gtOp.gtOp1;
-    GenTreePtr op2 = gtOp.gtOp2;
+    GenTree* op1 = gtOp.gtOp1;
+    GenTree* op2 = gtOp.gtOp2;
 
     if (TypeGet() != TYP_LONG || op1->TypeGet() != TYP_LONG || op2->TypeGet() != TYP_LONG)
     {
@@ -2811,7 +2811,7 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
 
         list = listNodes.Pop();
         assert(list && list->OperIsAnyList());
-        GenTreePtr next = list->gtOp.gtOp2;
+        GenTree* next = list->gtOp.gtOp2;
 
         unsigned level = 0;
         unsigned ftreg = 0;
@@ -2836,8 +2836,8 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
             costSz += next->gtCostSz;
         }
 
-        GenTreePtr op1 = list->gtOp.gtOp1;
-        unsigned   lvl = gtSetEvalOrder(op1);
+        GenTree* op1 = list->gtOp.gtOp1;
+        unsigned lvl = gtSetEvalOrder(op1);
 
 #if FEATURE_STACK_FP_X87
         // restore the FP level
@@ -2956,8 +2956,8 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
 //
 void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool constOnly)
 {
-    GenTreePtr op1 = *op1WB;
-    GenTreePtr op2 = *op2WB;
+    GenTree* op1 = *op1WB;
+    GenTree* op2 = *op2WB;
 
     op1 = op1->gtEffectiveVal();
 
@@ -2977,7 +2977,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
         // (Why? Also, presumably op2 is not a GT_NOP in this case?)
         if (op1->gtOper == GT_NOP)
         {
-            GenTreePtr tmp;
+            GenTree* tmp;
 
             tmp = op1;
             op1 = op2;
@@ -3019,7 +3019,7 @@ void Compiler::gtWalkOp(GenTree** op1WB, GenTree** op2WB, GenTree* base, bool co
  * Here, we are planning to generate the address mode [edx+4*eax], where eax = idx and edx = the GT_COMMA expression.
  * To check adr equivalence with op2, we need to walk down the GT_ADD tree just like gtWalkOp() does.
  */
-GenTreePtr Compiler::gtWalkOpEffectiveVal(GenTreePtr op)
+GenTree* Compiler::gtWalkOpEffectiveVal(GenTree* op)
 {
     for (;;)
     {
@@ -3429,8 +3429,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         int      lvlb; // preference for op2
         unsigned lvl2; // scratch variable
 
-        GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtGetOp2IfPresent();
+        GenTree* op1 = tree->gtOp.gtOp1;
+        GenTree* op2 = tree->gtGetOp2IfPresent();
 
         costEx = 0;
         costSz = 0;
@@ -3645,9 +3645,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // If we have a GT_ADDR of an GT_IND we can just copy the costs from indOp1
                     if (op1->OperGet() == GT_IND)
                     {
-                        GenTreePtr indOp1 = op1->gtOp.gtOp1;
-                        costEx            = indOp1->gtCostEx;
-                        costSz            = indOp1->gtCostSz;
+                        GenTree* indOp1 = op1->gtOp.gtOp1;
+                        costEx          = indOp1->gtCostEx;
+                        costSz          = indOp1->gtCostSz;
                     }
                     break;
 
@@ -3720,13 +3720,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #if SCALED_ADDR_MODES
                         unsigned mul;
 #endif
-                        unsigned   cns;
-                        GenTreePtr base;
-                        GenTreePtr idx;
+                        unsigned cns;
+                        GenTree* base;
+                        GenTree* idx;
 
                         // See if we can form a complex addressing mode.
 
-                        GenTreePtr addr = op1->gtEffectiveVal();
+                        GenTree* addr = op1->gtEffectiveVal();
 
                         bool doAddrMode = true;
                         // See if we can form a complex addressing mode.
@@ -3825,7 +3825,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 //
                                 addrmodeCount--;
 
-                                GenTreePtr tmp = addr;
+                                GenTree* tmp = addr;
                                 while (addrmodeCount > 0)
                                 {
                                     // decrement the gtCosts for the interior GT_ADD or GT_LSH node by the remaining
@@ -3835,8 +3835,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                     addrmodeCount--;
                                     if (addrmodeCount > 0)
                                     {
-                                        GenTreePtr tmpOp1 = tmp->gtOp.gtOp1;
-                                        GenTreePtr tmpOp2 = tmp->gtGetOp2();
+                                        GenTree* tmpOp1 = tmp->gtOp.gtOp1;
+                                        GenTree* tmpOp2 = tmp->gtGetOp2();
                                         assert(tmpOp2 != nullptr);
 
                                         if ((tmpOp1 != base) && (tmpOp1->OperGet() == GT_ADD))
@@ -3947,7 +3947,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             assert(base != NULL);
 #endif
 
-                            INDEBUG(GenTreePtr op1Save = addr);
+                            INDEBUG(GenTree* op1Save = addr);
 
                             // Walk 'addr' identifying non-overflow ADDs that will be part of the address mode.
                             // Note that we will be modifying 'op1' and 'op2' so that eventually they should
@@ -4004,7 +4004,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                     op2->gtFlags |= GTF_ADDRMODE_NO_CSE;
                                     // We may have eliminated multiple shifts and multiplies in the addressing mode,
                                     // so navigate down through them to get to "idx".
-                                    GenTreePtr op2op1 = op2->gtOp.gtOp1;
+                                    GenTree* op2op1 = op2->gtOp.gtOp1;
                                     while ((op2op1->gtOper == GT_LSH || op2op1->gtOper == GT_MUL) && op2op1 != idx)
                                     {
                                         op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
@@ -4355,7 +4355,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         bool bReverseInAssignment = false;
         if (GenTree::OperIsAssignment(oper))
         {
-            GenTreePtr op1Val = op1;
+            GenTree* op1Val = op1;
 
             if (tree->gtOper == GT_ASG)
             {
@@ -4518,8 +4518,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         }
 
         /* We try to swap operands if the second one is more expensive */
-        bool       tryToSwap;
-        GenTreePtr opA, opB;
+        bool     tryToSwap;
+        GenTree* opA;
+        GenTree* opB;
 
         if (tree->gtFlags & GTF_REVERSE_OPS)
         {
@@ -4697,7 +4698,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             if (tree->gtCall.gtCallObjp)
             {
-                GenTreePtr thisVal = tree->gtCall.gtCallObjp;
+                GenTree* thisVal = tree->gtCall.gtCallObjp;
 
                 lvl2 = gtSetEvalOrder(thisVal);
                 if (level < lvl2)
@@ -4761,7 +4762,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 assert(tree->gtCall.gtCallCookie == nullptr || tree->gtCall.gtCallCookie->gtOper == GT_CNS_INT ||
                        tree->gtCall.gtCallCookie->gtOper == GT_IND);
 
-                GenTreePtr indirect = tree->gtCall.gtCallAddr;
+                GenTree* indirect = tree->gtCall.gtCallAddr;
 
                 lvl2 = gtSetEvalOrder(indirect);
                 if (level < lvl2)
@@ -5044,7 +5045,7 @@ DONE:
 #if FEATURE_STACK_FP_X87
 
 /*****************************************************************************/
-void Compiler::gtComputeFPlvls(GenTreePtr tree)
+void Compiler::gtComputeFPlvls(GenTree* tree)
 {
     genTreeOps oper;
     unsigned   kind;
@@ -5072,8 +5073,8 @@ void Compiler::gtComputeFPlvls(GenTreePtr tree)
 
     if (kind & GTK_SMPOP)
     {
-        GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtGetOp2IfPresent();
+        GenTree* op1 = tree->gtOp.gtOp1;
+        GenTree* op2 = tree->gtGetOp2IfPresent();
 
         /* Check for some special cases */
 
@@ -5363,7 +5364,7 @@ unsigned GenTree::GetScaledIndex()
  *  "*addr" to the other argument.
  */
 
-bool GenTree::IsAddWithI32Const(GenTreePtr* addr, int* offset)
+bool GenTree::IsAddWithI32Const(GenTree** addr, int* offset)
 {
     if (OperGet() == GT_ADD)
     {
@@ -5407,7 +5408,7 @@ bool GenTree::IsAddWithI32Const(GenTreePtr* addr, int* offset)
 //    later gets converted to a GT_FIELD_LIST with two GT_LCL_FLDs in Lower/LowerXArch.
 //
 
-GenTreePtr* GenTree::gtGetChildPointer(GenTreePtr parent) const
+GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
 
 {
     switch (parent->OperGet())
@@ -5529,11 +5530,11 @@ GenTreePtr* GenTree::gtGetChildPointer(GenTreePtr parent) const
             }
             if (this == call->gtCallArgs)
             {
-                return reinterpret_cast<GenTreePtr*>(&(call->gtCallArgs));
+                return reinterpret_cast<GenTree**>(&(call->gtCallArgs));
             }
             if (this == call->gtCallLateArgs)
             {
-                return reinterpret_cast<GenTreePtr*>(&(call->gtCallLateArgs));
+                return reinterpret_cast<GenTree**>(&(call->gtCallLateArgs));
             }
             if (this == call->gtControlExpr)
             {
@@ -5928,7 +5929,7 @@ void GenTree::ReplaceOperand(GenTree** useEdge, GenTree* replacement)
 //
 // Arguments:
 
-//    parentChildPointer - A pointer to a GenTreePtr* (yes, that's three
+//    parentChildPointer - A pointer to a GenTree** (yes, that's three
 //                         levels, i.e. GenTree ***), which if non-null,
 //                         will be set to point to the field in the parent
 //                         that points to this node.
@@ -5941,11 +5942,11 @@ void GenTree::ReplaceOperand(GenTree** useEdge, GenTree* replacement)
 //    To enable the child to be replaced, it accepts an argument, parentChildPointer that, if non-null,
 //    will be set to point to the child pointer in the parent that points to this node.
 
-GenTreePtr GenTree::gtGetParent(GenTreePtr** parentChildPtrPtr) const
+GenTree* GenTree::gtGetParent(GenTree*** parentChildPtrPtr) const
 {
     // Find the parent node; it must be after this node in the execution order.
-    GenTreePtr* parentChildPtr = nullptr;
-    GenTreePtr  parent;
+    GenTree** parentChildPtr = nullptr;
+    GenTree*  parent;
     for (parent = gtNext; parent != nullptr; parent = parent->gtNext)
     {
         parentChildPtr = gtGetChildPointer(parent);
@@ -5984,7 +5985,7 @@ bool GenTree::OperRequiresAsgFlag()
 
 bool GenTree::OperMayThrow(Compiler* comp)
 {
-    GenTreePtr op;
+    GenTree* op;
 
     switch (gtOper)
     {
@@ -6193,7 +6194,7 @@ void GenTree::SetVtableForOper(genTreeOps oper)
 }
 #endif // DEBUGGABLE_GENTREE
 
-GenTreePtr Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTreePtr op1, GenTreePtr op2)
+GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2)
 {
     assert(op1 != nullptr);
     assert(op2 != nullptr);
@@ -6202,12 +6203,12 @@ GenTreePtr Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTreePtr o
     // should call the appropriate constructor for the extended type.
     assert(!GenTree::IsExOp(GenTree::OperKind(oper)));
 
-    GenTreePtr node = new (this, oper) GenTreeOp(oper, type, op1, op2);
+    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, op2);
 
     return node;
 }
 
-GenTreePtr Compiler::gtNewQmarkNode(var_types type, GenTreePtr cond, GenTreePtr colon)
+GenTree* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
 {
     compQmarkUsed   = true;
     GenTree* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
@@ -6220,7 +6221,7 @@ GenTreePtr Compiler::gtNewQmarkNode(var_types type, GenTreePtr cond, GenTreePtr 
     return result;
 }
 
-GenTreeQmark::GenTreeQmark(var_types type, GenTreePtr cond, GenTreePtr colonOp, Compiler* comp)
+GenTreeQmark::GenTreeQmark(var_types type, GenTree* cond, GenTree* colonOp, Compiler* comp)
     : GenTreeOp(GT_QMARK, type, cond, colonOp)
 #ifdef LEGACY_BACKEND
     , gtThenLiveSet(VarSetOps::UninitVal())
@@ -6250,9 +6251,9 @@ GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 }
 
 #ifndef LEGACY_BACKEND
-GenTreePtr Compiler::gtNewJmpTableNode()
+GenTree* Compiler::gtNewJmpTableNode()
 {
-    GenTreePtr node                   = new (this, GT_JMPTABLE) GenTreeJumpTable(TYP_INT);
+    GenTree* node                     = new (this, GT_JMPTABLE) GenTreeJumpTable(TYP_INT);
     node->gtJumpTable.gtJumpTableAddr = 0;
     return node;
 }
@@ -6310,10 +6311,10 @@ unsigned Compiler::gtTokenToIconFlags(unsigned token)
 //    If the indType is GT_REF we also mark the indNode as GTF_GLOB_REF
 //
 
-GenTreePtr Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsigned iconFlags, bool isInvariant)
+GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, unsigned iconFlags, bool isInvariant)
 {
-    GenTreePtr addrNode = gtNewIconHandleNode(addr, iconFlags);
-    GenTreePtr indNode  = gtNewOperNode(GT_IND, indType, addrNode);
+    GenTree* addrNode = gtNewIconHandleNode(addr, iconFlags);
+    GenTree* indNode  = gtNewOperNode(GT_IND, indType, addrNode);
 
     // This indirection won't cause an exception.
     //
@@ -6345,10 +6346,10 @@ GenTreePtr Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, un
  *  If the handle needs to be accessed via an indirection, pValue points to it.
  */
 
-GenTreePtr Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned iconFlags, void* compileTimeHandle)
+GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned iconFlags, void* compileTimeHandle)
 {
-    GenTreePtr iconNode;
-    GenTreePtr handleNode;
+    GenTree* iconNode;
+    GenTree* handleNode;
 
     if (value != nullptr)
     {
@@ -6390,9 +6391,9 @@ GenTreePtr Compiler::gtNewIconEmbHndNode(void* value, void* pValue, unsigned ico
 }
 
 /*****************************************************************************/
-GenTreePtr Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
+GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 {
-    GenTreePtr tree = nullptr;
+    GenTree* tree = nullptr;
 
     switch (iat)
     {
@@ -6428,25 +6429,25 @@ GenTreePtr Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
 /*****************************************************************************/
 
-GenTreePtr Compiler::gtNewLconNode(__int64 value)
+GenTree* Compiler::gtNewLconNode(__int64 value)
 {
 #ifdef _TARGET_64BIT_
-    GenTreePtr node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
+    GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
 #else
-    GenTreePtr node = new (this, GT_CNS_LNG) GenTreeLngCon(value);
+    GenTree* node = new (this, GT_CNS_LNG) GenTreeLngCon(value);
 #endif
 
     return node;
 }
 
-GenTreePtr Compiler::gtNewDconNode(double value)
+GenTree* Compiler::gtNewDconNode(double value)
 {
-    GenTreePtr node = new (this, GT_CNS_DBL) GenTreeDblCon(value);
+    GenTree* node = new (this, GT_CNS_DBL) GenTreeDblCon(value);
 
     return node;
 }
 
-GenTreePtr Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
+GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
 {
 
 #if SMALL_TREE_NODES
@@ -6455,17 +6456,17 @@ GenTreePtr Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
 
     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_CNS_STR]);
 
-    GenTreePtr node = new (this, GT_CALL) GenTreeStrCon(CPX, scpHandle DEBUGARG(/*largeNode*/ true));
+    GenTree* node = new (this, GT_CALL) GenTreeStrCon(CPX, scpHandle DEBUGARG(/*largeNode*/ true));
 #else
-    GenTreePtr node = new (this, GT_CNS_STR) GenTreeStrCon(CPX, scpHandle DEBUGARG(/*largeNode*/ true));
+    GenTree* node = new (this, GT_CNS_STR) GenTreeStrCon(CPX, scpHandle DEBUGARG(/*largeNode*/ true));
 #endif
 
     return node;
 }
 
-GenTreePtr Compiler::gtNewZeroConNode(var_types type)
+GenTree* Compiler::gtNewZeroConNode(var_types type)
 {
-    GenTreePtr zero;
+    GenTree* zero;
     switch (type)
     {
         case TYP_INT:
@@ -6501,7 +6502,7 @@ GenTreePtr Compiler::gtNewZeroConNode(var_types type)
     return zero;
 }
 
-GenTreePtr Compiler::gtNewOneConNode(var_types type)
+GenTree* Compiler::gtNewOneConNode(var_types type)
 {
     switch (type)
     {
@@ -6515,8 +6516,8 @@ GenTreePtr Compiler::gtNewOneConNode(var_types type)
 
         case TYP_FLOAT:
         {
-            GenTreePtr one = gtNewDconNode(1.0);
-            one->gtType    = type;
+            GenTree* one = gtNewDconNode(1.0);
+            one->gtType  = type;
             return one;
         }
 
@@ -6537,7 +6538,7 @@ GenTreePtr Compiler::gtNewOneConNode(var_types type)
 //    simdType  -  simd vector type
 //    baseType  -  element type of vector
 //    size      -  size of vector in bytes
-GenTreePtr Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size)
+GenTree* Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType, unsigned size)
 {
     baseType         = genActualType(baseType);
     GenTree* initVal = gtNewZeroConNode(baseType);
@@ -6552,7 +6553,7 @@ GenTreePtr Compiler::gtNewSIMDVectorZero(var_types simdType, var_types baseType,
 //    simdType  -  simd vector type
 //    baseType  -  element type of vector
 //    size      -  size of vector in bytes
-GenTreePtr Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
+GenTree* Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size)
 {
     GenTree* initVal;
     if (varTypeIsSmallInt(baseType))
@@ -6580,7 +6581,7 @@ GenTreePtr Compiler::gtNewSIMDVectorOne(var_types simdType, var_types baseType, 
 }
 #endif // FEATURE_SIMD
 
-GenTreeCall* Compiler::gtNewIndCallNode(GenTreePtr addr, var_types type, GenTreeArgList* args, IL_OFFSETX ilOffset)
+GenTreeCall* Compiler::gtNewIndCallNode(GenTree* addr, var_types type, GenTreeArgList* args, IL_OFFSETX ilOffset)
 {
     return gtNewCallNode(CT_INDIRECT, (CORINFO_METHOD_HANDLE)addr, type, args, ilOffset);
 }
@@ -6683,7 +6684,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     return node;
 }
 
-GenTreePtr Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs)
+GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs)
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -6695,7 +6696,7 @@ GenTreePtr Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILo
         assert(type == lvaTable[lnum].lvType ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
     }
-    GenTreePtr node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs);
+    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs);
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -6705,7 +6706,7 @@ GenTreePtr Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILo
     return node;
 }
 
-GenTreePtr Compiler::gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs)
+GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs)
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -6722,9 +6723,9 @@ GenTreePtr Compiler::gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILo
 
     // assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
 
-    GenTreePtr node = new (this, GT_CALL) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
+    GenTree* node = new (this, GT_CALL) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
 #else
-    GenTreePtr node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
+    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
 #endif
 
     return node;
@@ -6743,12 +6744,12 @@ GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned
     return node;
 }
 
-GenTreePtr Compiler::gtNewInlineCandidateReturnExpr(GenTreePtr inlineCandidate, var_types type)
+GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type)
 
 {
     assert(GenTree::s_gtNodeSizes[GT_RET_EXPR] == TREE_NODE_SZ_LARGE);
 
-    GenTreePtr node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
+    GenTree* node = new (this, GT_RET_EXPR) GenTreeRetExpr(type);
 
     node->gtRetExpr.gtInlineCandidate = inlineCandidate;
 
@@ -6765,7 +6766,7 @@ GenTreePtr Compiler::gtNewInlineCandidateReturnExpr(GenTreePtr inlineCandidate, 
     return node;
 }
 
-GenTreeArgList* Compiler::gtNewListNode(GenTreePtr op1, GenTreeArgList* op2)
+GenTreeArgList* Compiler::gtNewListNode(GenTree* op1, GenTreeArgList* op2)
 {
     assert((op1 != nullptr) && (op1->OperGet() != GT_LIST));
 
@@ -6777,7 +6778,7 @@ GenTreeArgList* Compiler::gtNewListNode(GenTreePtr op1, GenTreeArgList* op2)
  *  Create a list out of one value.
  */
 
-GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg)
+GenTreeArgList* Compiler::gtNewArgList(GenTree* arg)
 {
     return new (this, GT_LIST) GenTreeArgList(arg);
 }
@@ -6787,7 +6788,7 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg)
  *  Create a list out of the two values.
  */
 
-GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2)
+GenTreeArgList* Compiler::gtNewArgList(GenTree* arg1, GenTree* arg2)
 {
     return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2));
 }
@@ -6797,7 +6798,7 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2)
  *  Create a list out of the three values.
  */
 
-GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTreePtr arg3)
+GenTreeArgList* Compiler::gtNewArgList(GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
     return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3));
 }
@@ -6807,7 +6808,7 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTree
  *  Create a list out of the three values.
  */
 
-GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTreePtr arg3, GenTreePtr arg4)
+GenTreeArgList* Compiler::gtNewArgList(GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4)
 {
     return new (this, GT_LIST) GenTreeArgList(arg1, gtNewArgList(arg2, arg3, arg4));
 }
@@ -6845,7 +6846,7 @@ fgArgTabEntry* Compiler::gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum)
  *  that has the matching node and return the fgArgTableEntryPtr
  */
 
-fgArgTabEntry* Compiler::gtArgEntryByNode(GenTreeCall* call, GenTreePtr node)
+fgArgTabEntry* Compiler::gtArgEntryByNode(GenTreeCall* call, GenTree* node)
 {
     fgArgInfo* argInfo = call->fgArgInfo;
     noway_assert(argInfo != nullptr);
@@ -6922,7 +6923,7 @@ bool Compiler::gtArgIsThisPtr(fgArgTabEntry* argEntry)
  *  Create a node that will assign 'src' to 'dst'.
  */
 
-GenTreePtr Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src)
+GenTree* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 {
     /* Mark the target as being assigned */
 
@@ -6939,7 +6940,7 @@ GenTreePtr Compiler::gtNewAssignNode(GenTreePtr dst, GenTreePtr src)
 
     /* Create the assignment node */
 
-    GenTreePtr asg = gtNewOperNode(GT_ASG, dst->TypeGet(), dst, src);
+    GenTree* asg = gtNewOperNode(GT_ASG, dst->TypeGet(), dst, src);
 
     /* Mark the expression as containing an assignment */
 
@@ -7049,7 +7050,7 @@ void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 // Return Value:
 //    A block, object or local node that represents the struct value pointed to by 'addr'.
 
-GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTreePtr addr)
+GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
 {
     if (addr->gtOper == GT_ADDR)
     {
@@ -7078,7 +7079,7 @@ GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTreePtr add
 // Return Value:
 //    A block, object or local node that represents the block value pointed to by 'addr'.
 
-GenTree* Compiler::gtNewBlockVal(GenTreePtr addr, unsigned size)
+GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
 {
     // By default we treat this as an opaque struct type with known size.
     var_types blkType = TYP_STRUCT;
@@ -7120,14 +7121,11 @@ GenTree* Compiler::gtNewBlockVal(GenTreePtr addr, unsigned size)
 //               if FEATURE_SIMD is enabled and the source has a SIMD type.
 //  isVolatile - Is this marked as volatile memory?
 
-GenTree* Compiler::gtNewCpObjNode(GenTreePtr           dstAddr,
-                                  GenTreePtr           srcAddr,
-                                  CORINFO_CLASS_HANDLE structHnd,
-                                  bool                 isVolatile)
+GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
 {
-    GenTreePtr lhs = gtNewStructVal(structHnd, dstAddr);
-    GenTree*   src = nullptr;
-    unsigned   size;
+    GenTree* lhs = gtNewStructVal(structHnd, dstAddr);
+    GenTree* src = nullptr;
+    unsigned size;
 
     if (lhs->OperIsBlk())
     {
@@ -7219,7 +7217,7 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
 //    This procedure centralizes all the logic to both enforce proper structure and
 //    to properly construct any InitBlk/CpBlk node.
 
-void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile)
+void Compiler::gtBlockOpInit(GenTree* result, GenTree* dst, GenTree* srcOrFillVal, bool isVolatile)
 {
     if (!result->OperIsBlkOp())
     {
@@ -7274,8 +7272,8 @@ void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOr
     */
     if (result->OperIsCopyBlkOp())
     {
-        GenTreePtr currSrc = srcOrFillVal;
-        GenTreePtr currDst = dst;
+        GenTree* currSrc = srcOrFillVal;
+        GenTree* currDst = dst;
 
         if (currSrc->OperIsBlk() && (currSrc->AsBlk()->Addr()->OperGet() == GT_ADDR))
         {
@@ -7360,8 +7358,7 @@ void Compiler::gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOr
 //    If size is zero, the dst must be a GT_OBJ with the class handle.
 //    'dst' must be a block node or lclVar.
 //
-GenTree* Compiler::gtNewBlkOpNode(
-    GenTreePtr dst, GenTreePtr srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock)
+GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock)
 {
     assert(dst->OperIsBlk() || dst->OperIsLocal());
     if (isCopyBlock)
@@ -7404,16 +7401,16 @@ GenTree* Compiler::gtNewBlkOpNode(
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, GenTreeOp on all the other archs.
 //
-GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg)
+GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg)
 {
     assert(arg != nullptr);
 
-    GenTreePtr node = nullptr;
+    GenTree* node = nullptr;
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
     // A PUTARG_REG could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
 #else
-    node            = gtNewOperNode(GT_PUTARG_REG, type, arg);
+    node          = gtNewOperNode(GT_PUTARG_REG, type, arg);
 #endif
     node->gtRegNum = argReg;
 
@@ -7434,16 +7431,16 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber ar
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, as GenTreeOp on all the other archs.
 //
-GenTreePtr Compiler::gtNewBitCastNode(var_types type, GenTreePtr arg)
+GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {
     assert(arg != nullptr);
 
-    GenTreePtr node = nullptr;
+    GenTree* node = nullptr;
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
     // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
 #else
-    node            = gtNewOperNode(GT_BITCAST, type, arg);
+    node          = gtNewOperNode(GT_BITCAST, type, arg);
 #endif
 
     return node;
@@ -7461,9 +7458,9 @@ GenTreePtr Compiler::gtNewBitCastNode(var_types type, GenTreePtr arg)
  *  complete job if you can't handle this function failing.
  */
 
-GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
+GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 {
-    GenTreePtr copy;
+    GenTree* copy;
 
     switch (tree->gtOper)
     {
@@ -7522,7 +7519,7 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
 
             if (tree->gtOper == GT_FIELD)
             {
-                GenTreePtr objp;
+                GenTree* objp;
 
                 // copied from line 9850
 
@@ -7541,8 +7538,8 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
-                GenTreePtr op1 = tree->gtOp.gtOp1;
-                GenTreePtr op2 = tree->gtOp.gtOp2;
+                GenTree* op1 = tree->gtOp.gtOp1;
+                GenTree* op2 = tree->gtOp.gtOp2;
 
                 if (op1->OperIsLeaf() && op2->OperIsLeaf())
                 {
@@ -7566,7 +7563,7 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
             }
             else if (tree->gtOper == GT_ADDR)
             {
-                GenTreePtr op1 = gtClone(tree->gtOp.gtOp1);
+                GenTree* op1 = gtClone(tree->gtOp.gtOp1);
                 if (op1 == nullptr)
                 {
                     return nullptr;
@@ -7611,7 +7608,7 @@ GenTreePtr Compiler::gtClone(GenTree* tree, bool complexOK)
 //    the explicit `deepVarNum` and `deepVarVal` parameters; those are used in
 //    recursive invocations to avoid replacing defs.
 
-GenTreePtr Compiler::gtCloneExpr(
+GenTree* Compiler::gtCloneExpr(
     GenTree* tree, unsigned addFlags, unsigned varNum, int varVal, unsigned deepVarNum, int deepVarVal)
 {
     if (tree == nullptr)
@@ -8164,7 +8161,7 @@ GenTreePtr Compiler::gtCloneExpr(
 
         case GT_ARR_ELEM:
         {
-            GenTreePtr inds[GT_ARR_MAX_RANK];
+            GenTree* inds[GT_ARR_MAX_RANK];
             for (unsigned dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
             {
                 inds[dim] = gtCloneExpr(tree->gtArrElem.gtArrInds[dim], addFlags, deepVarNum, deepVarVal);
@@ -8306,15 +8303,15 @@ DONE:
 //    but this method will sequence 'replacementTree', and insert it into the
 //    proper place in the statement sequence.
 
-GenTreePtr Compiler::gtReplaceTree(GenTreePtr stmt, GenTreePtr tree, GenTreePtr replacementTree)
+GenTree* Compiler::gtReplaceTree(GenTree* stmt, GenTree* tree, GenTree* replacementTree)
 {
     assert(fgStmtListThreaded);
     assert(tree != nullptr);
     assert(stmt != nullptr);
     assert(replacementTree != nullptr);
 
-    GenTreePtr* treePtr    = nullptr;
-    GenTreePtr  treeParent = tree->gtGetParent(&treePtr);
+    GenTree** treePtr    = nullptr;
+    GenTree*  treeParent = tree->gtGetParent(&treePtr);
 
     assert(treeParent != nullptr || tree == stmt->gtStmt.gtStmtExpr);
 
@@ -8349,10 +8346,10 @@ GenTreePtr Compiler::gtReplaceTree(GenTreePtr stmt, GenTreePtr tree, GenTreePtr 
         assert(useEdge == treePtr);
 #endif // DEBUG
 
-        GenTreePtr treeFirstNode = fgGetFirstNode(tree);
-        GenTreePtr treeLastNode  = tree;
-        GenTreePtr treePrevNode  = treeFirstNode->gtPrev;
-        GenTreePtr treeNextNode  = treeLastNode->gtNext;
+        GenTree* treeFirstNode = fgGetFirstNode(tree);
+        GenTree* treeLastNode  = tree;
+        GenTree* treePrevNode  = treeFirstNode->gtPrev;
+        GenTree* treeNextNode  = treeLastNode->gtNext;
 
         treeParent->ReplaceOperand(treePtr, replacementTree);
 
@@ -8613,7 +8610,7 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
     return false;
 }
 
-GenTreePtr Compiler::gtGetThisArg(GenTreeCall* call)
+GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 {
     if (call->gtCallObjp != nullptr)
     {
@@ -8630,12 +8627,12 @@ GenTreePtr Compiler::gtGetThisArg(GenTreeCall* call)
             regNumber      thisReg         = REG_ARG_0;
             unsigned       argNum          = 0;
             fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
-            GenTreePtr     result          = thisArgTabEntry->node;
+            GenTree*       result          = thisArgTabEntry->node;
 
 #if !FEATURE_FIXED_OUT_ARGS
-            GenTreePtr lateArgs = call->gtCallLateArgs;
-            regList    list     = call->regArgList;
-            int        index    = 0;
+            GenTree* lateArgs = call->gtCallLateArgs;
+            regList  list     = call->regArgList;
+            int      index    = 0;
             while (lateArgs != NULL)
             {
                 assert(lateArgs->gtOper == GT_LIST);
@@ -8950,7 +8947,7 @@ unsigned GenTree::NumChildren()
     }
 }
 
-GenTreePtr GenTree::GetChild(unsigned childNum)
+GenTree* GenTree::GetChild(unsigned childNum)
 {
     assert(childNum < NumChildren()); // Precondition.
     assert(NumChildren() <= MAX_CHILDREN);
@@ -10012,7 +10009,7 @@ void Compiler::gtDispVN(GenTree* tree)
 //    'indentStack' may be null, in which case no indentation or arcs are printed
 //    'msg' may be null
 
-void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z __in_opt const char* msg, bool isLIR)
+void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z __in_opt const char* msg, bool isLIR)
 {
     bool printPointer = true; // always true..
     bool printFlags   = true; // always true..
@@ -11284,7 +11281,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 //    'msg' has a default value of null
 //    'topOnly' is an optional argument that defaults to false
 
-void Compiler::gtDispChild(GenTreePtr           child,
+void Compiler::gtDispChild(GenTree*             child,
                            IndentStack*         indentStack,
                            IndentInfo           arcType,
                            __in_opt const char* msg,     /* = nullptr  */
@@ -11309,7 +11306,7 @@ extern const char* getHWIntrinsicName(NamedIntrinsic intrinsic);
 
 /*****************************************************************************/
 
-void Compiler::gtDispTree(GenTreePtr   tree,
+void Compiler::gtDispTree(GenTree*     tree,
                           IndentStack* indentStack,                 /* = nullptr */
                           __in __in_z __in_opt const char* msg,     /* = nullptr  */
                           bool                             topOnly, /* = false */
@@ -11797,7 +11794,7 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                 for (GenTreeArgList* lateArgs = call->gtCallLateArgs; lateArgs;
                      (lateArgIndex++, lateArgs = lateArgs->Rest()))
                 {
-                    GenTreePtr argx;
+                    GenTree* argx;
 
                     argx = lateArgs->Current();
 
@@ -11920,7 +11917,7 @@ void Compiler::gtDispTree(GenTreePtr   tree,
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
 void Compiler::gtGetArgMsg(
-    GenTreeCall* call, GenTreePtr arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
+    GenTreeCall* call, GenTree* arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
 {
     if (call->gtCallLateArgs != nullptr)
     {
@@ -12038,7 +12035,7 @@ void Compiler::gtGetArgMsg(
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
 void Compiler::gtGetLateArgMsg(
-    GenTreeCall* call, GenTreePtr argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
+    GenTreeCall* call, GenTree* argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
 {
     assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
 
@@ -12219,7 +12216,7 @@ void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
 // Assumptions:
 //    'tree' must be a GT_LIST node
 
-void Compiler::gtDispTreeList(GenTreePtr tree, IndentStack* indentStack /* = nullptr */)
+void Compiler::gtDispTreeList(GenTree* tree, IndentStack* indentStack /* = nullptr */)
 {
     for (/*--*/; tree != nullptr; tree = tree->gtNext)
     {
@@ -12441,7 +12438,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
  *  and call the methods to perform the folding
  */
 
-GenTreePtr Compiler::gtFoldExpr(GenTreePtr tree)
+GenTree* Compiler::gtFoldExpr(GenTree* tree)
 {
     unsigned kind = tree->OperKind();
 
@@ -12460,7 +12457,7 @@ GenTreePtr Compiler::gtFoldExpr(GenTreePtr tree)
         return tree;
     }
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
+    GenTree* op1 = tree->gtOp.gtOp1;
 
     /* Filter out non-foldable trees that can have constant children */
 
@@ -12488,7 +12485,7 @@ GenTreePtr Compiler::gtFoldExpr(GenTreePtr tree)
              // Don't take out conditionals for debugging
              !((opts.compDbgCode || opts.MinOpts()) && tree->OperIsCompare()))
     {
-        GenTreePtr op2 = tree->gtOp.gtOp2;
+        GenTree* op2 = tree->gtOp.gtOp2;
 
         // The atomic operations are exempted here because they are never computable statically;
         // one of their arguments is an address.
@@ -12515,14 +12512,14 @@ GenTreePtr Compiler::gtFoldExpr(GenTreePtr tree)
         {
             assert(tree->OperGet() == GT_QMARK);
 
-            GenTreePtr colon_op1 = op2->gtOp.gtOp1;
-            GenTreePtr colon_op2 = op2->gtOp.gtOp2;
+            GenTree* colon_op1 = op2->gtOp.gtOp1;
+            GenTree* colon_op2 = op2->gtOp.gtOp2;
 
             if (gtCompareTree(colon_op1, colon_op2))
             {
                 // Both sides of the GT_COLON are the same tree
 
-                GenTreePtr sideEffList = nullptr;
+                GenTree* sideEffList = nullptr;
                 gtExtractSideEffList(op1, &sideEffList);
 
                 fgUpdateRefCntForExtract(op1, sideEffList);   // Decrement refcounts for op1, Keeping any side-effects
@@ -12683,10 +12680,10 @@ GenTree* Compiler::gtFoldTypeEqualityCall(CorInfoIntrinsics methodID, GenTree* o
  *
  */
 
-GenTreePtr Compiler::gtFoldExprCompare(GenTreePtr tree)
+GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
 {
-    GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtOp.gtOp2;
+    GenTree* op1 = tree->gtOp.gtOp1;
+    GenTree* op2 = tree->gtOp.gtOp2;
 
     assert(tree->OperIsCompare());
 
@@ -12706,7 +12703,7 @@ GenTreePtr Compiler::gtFoldExprCompare(GenTreePtr tree)
         return tree; /* return unfolded tree */
     }
 
-    GenTreePtr cons;
+    GenTree* cons;
 
     switch (tree->gtOper)
     {
@@ -13034,14 +13031,15 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
  *  multiply with 1, etc
  */
 
-GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
+GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 {
-    GenTreePtr op1  = tree->gtOp.gtOp1;
-    GenTreePtr op2  = tree->gtOp.gtOp2;
+    GenTree*   op1  = tree->gtOp.gtOp1;
+    GenTree*   op2  = tree->gtOp.gtOp2;
     genTreeOps oper = tree->OperGet();
 
-    GenTreePtr op, cons;
-    ssize_t    val;
+    GenTree* op;
+    GenTree* cons;
+    ssize_t  val;
 
     assert(tree->OperKind() & GTK_BINOP);
 
@@ -13820,7 +13818,7 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
-GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
+GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 {
     unsigned kind = tree->OperKind();
 
@@ -13833,8 +13831,8 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
 
     assert(kind & (GTK_UNOP | GTK_BINOP));
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtGetOp2IfPresent();
+    GenTree* op1 = tree->gtOp.gtOp1;
+    GenTree* op2 = tree->gtGetOp2IfPresent();
 
     if (!opts.OptEnabled(CLFLG_CONSTANTFOLD))
     {
@@ -15238,7 +15236,7 @@ DONE:
 //    May set compFloatingPointUsed.
 //
 
-GenTreePtr Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
+GenTree* Compiler::gtNewTempAssign(unsigned tmp, GenTree* val)
 {
     // Self-assignment is a nop.
     if (val->OperGet() == GT_LCL_VAR && val->gtLclVarCommon.gtLclNum == tmp)
@@ -15313,8 +15311,8 @@ GenTreePtr Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
 
     /* Create the assignment node */
 
-    GenTreePtr asg;
-    GenTreePtr dest = gtNewLclvNode(tmp, dstTyp);
+    GenTree* asg;
+    GenTree* dest = gtNewLclvNode(tmp, dstTyp);
     dest->gtFlags |= GTF_VAR_DEF;
 
     // With first-class structs, we should be propagating the class handle on all non-primitive
@@ -15325,7 +15323,7 @@ GenTreePtr Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
     if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
         // The GT_OBJ may be be a child of a GT_COMMA.
-        GenTreePtr valx = val->gtEffectiveVal(/*commaOnly*/ true);
+        GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
 
         if (valx->gtOper == GT_OBJ)
         {
@@ -15357,13 +15355,13 @@ GenTreePtr Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
  *  an assignment and 'assg' is the new value).
  */
 
-GenTreePtr Compiler::gtNewRefCOMfield(GenTreePtr              objPtr,
-                                      CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                      CORINFO_ACCESS_FLAGS    access,
-                                      CORINFO_FIELD_INFO*     pFieldInfo,
-                                      var_types               lclTyp,
-                                      CORINFO_CLASS_HANDLE    structType,
-                                      GenTreePtr              assg)
+GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
+                                    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                    CORINFO_ACCESS_FLAGS    access,
+                                    CORINFO_FIELD_INFO*     pFieldInfo,
+                                    var_types               lclTyp,
+                                    CORINFO_CLASS_HANDLE    structType,
+                                    GenTree*                assg)
 {
     assert(pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER ||
            pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_ADDR_HELPER ||
@@ -15415,7 +15413,7 @@ GenTreePtr Compiler::gtNewRefCOMfield(GenTreePtr              objPtr,
         args = gtNewListNode(gtNewIconEmbClsHndNode(pFieldInfo->structType), args);
     }
 
-    GenTreePtr fieldHnd = impTokenToHandle(pResolvedToken);
+    GenTree* fieldHnd = impTokenToHandle(pResolvedToken);
     if (fieldHnd == nullptr)
     { // compDonotInline()
         return nullptr;
@@ -15432,7 +15430,7 @@ GenTreePtr Compiler::gtNewRefCOMfield(GenTreePtr              objPtr,
         args = gtNewListNode(objPtr, args);
     }
 
-    GenTreePtr tree = gtNewHelperCallNode(pFieldInfo->helper, genActualType(helperType), args);
+    GenTree* tree = gtNewHelperCallNode(pFieldInfo->helper, genActualType(helperType), args);
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
@@ -15497,7 +15495,7 @@ GenTreePtr Compiler::gtNewRefCOMfield(GenTreePtr              objPtr,
  *  assignments too.
  */
 
-bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
+bool Compiler::gtNodeHasSideEffects(GenTree* tree, unsigned flags)
 {
     if (flags & GTF_ASG)
     {
@@ -15566,7 +15564,7 @@ bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
  * Returns true if the expr tree has any side effects.
  */
 
-bool Compiler::gtTreeHasSideEffects(GenTreePtr tree, unsigned flags /* = GTF_SIDE_EFFECT*/)
+bool Compiler::gtTreeHasSideEffects(GenTree* tree, unsigned flags /* = GTF_SIDE_EFFECT*/)
 {
     // These are the side effect flags that we care about for this tree
     unsigned sideEffectFlags = tree->gtFlags & flags;
@@ -15616,7 +15614,7 @@ bool Compiler::gtTreeHasSideEffects(GenTreePtr tree, unsigned flags /* = GTF_SID
     return true;
 }
 
-GenTreePtr Compiler::gtBuildCommaList(GenTreePtr list, GenTreePtr expr)
+GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
 {
     // 'list' starts off as null,
     //        and when it is null we haven't started the list yet.
@@ -15624,7 +15622,7 @@ GenTreePtr Compiler::gtBuildCommaList(GenTreePtr list, GenTreePtr expr)
     if (list != nullptr)
     {
         // Create a GT_COMMA that appends 'expr' in front of the remaining set of expressions in (*list)
-        GenTreePtr result = gtNewOperNode(GT_COMMA, TYP_VOID, expr, list);
+        GenTree* result = gtNewOperNode(GT_COMMA, TYP_VOID, expr, list);
 
         // Set the flags in the comma node
         result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
@@ -15675,10 +15673,10 @@ GenTreePtr Compiler::gtBuildCommaList(GenTreePtr list, GenTreePtr expr)
  *  level tree node as having side-effect.
  */
 
-void Compiler::gtExtractSideEffList(GenTreePtr  expr,
-                                    GenTreePtr* pList,
-                                    unsigned    flags /* = GTF_SIDE_EFFECT*/,
-                                    bool        ignoreRoot /* = false */)
+void Compiler::gtExtractSideEffList(GenTree*  expr,
+                                    GenTree** pList,
+                                    unsigned  flags /* = GTF_SIDE_EFFECT*/,
+                                    bool      ignoreRoot /* = false */)
 {
     assert(expr);
     assert(expr->gtOper != GT_STMT);
@@ -15726,8 +15724,8 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
 
     if (kind & GTK_SMPOP)
     {
-        GenTreePtr op1 = expr->gtOp.gtOp1;
-        GenTreePtr op2 = expr->gtGetOp2IfPresent();
+        GenTree* op1 = expr->gtOp.gtOp1;
+        GenTree* op2 = expr->gtGetOp2IfPresent();
 
         if (flags & GTF_EXCEPT)
         {
@@ -15792,7 +15790,7 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
         // We can remove this Helper call, but there still could be
         // side-effects in the arguments that we may need to keep
         //
-        GenTreePtr args;
+        GenTree* args;
         for (args = expr->gtCall.gtCallArgs; args; args = args->gtOp.gtOp2)
         {
             assert(args->OperIsList());
@@ -15834,10 +15832,10 @@ void Compiler::gtExtractSideEffList(GenTreePtr  expr,
 
 #ifdef DEBUG
 
-void dispNodeList(GenTreePtr list, bool verbose)
+void dispNodeList(GenTree* list, bool verbose)
 {
-    GenTreePtr last = nullptr;
-    GenTreePtr next;
+    GenTree* last = nullptr;
+    GenTree* next;
 
     if (!list)
     {
@@ -15873,7 +15871,7 @@ void dispNodeList(GenTreePtr list, bool verbose)
  */
 
 /* static */
-Compiler::fgWalkResult Compiler::gtAssertColonCond(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::gtAssertColonCond(GenTree** pTree, fgWalkData* data)
 {
     assert(data->pCallbackData == nullptr);
 
@@ -15889,7 +15887,7 @@ Compiler::fgWalkResult Compiler::gtAssertColonCond(GenTreePtr* pTree, fgWalkData
  */
 
 /* static */
-Compiler::fgWalkResult Compiler::gtMarkColonCond(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::gtMarkColonCond(GenTree** pTree, fgWalkData* data)
 {
     assert(data->pCallbackData == nullptr);
 
@@ -15906,9 +15904,9 @@ Compiler::fgWalkResult Compiler::gtMarkColonCond(GenTreePtr* pTree, fgWalkData* 
  */
 
 /* static */
-Compiler::fgWalkResult Compiler::gtClearColonCond(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::gtClearColonCond(GenTree** pTree, fgWalkData* data)
 {
-    GenTreePtr tree = *pTree;
+    GenTree* tree = *pTree;
 
     assert(data->pCallbackData == nullptr);
 
@@ -15924,15 +15922,15 @@ Compiler::fgWalkResult Compiler::gtClearColonCond(GenTreePtr* pTree, fgWalkData*
 
 struct FindLinkData
 {
-    GenTreePtr  nodeToFind;
-    GenTreePtr* result;
+    GenTree*  nodeToFind;
+    GenTree** result;
 };
 
 /*****************************************************************************
  *
  *  Callback used by the tree walker to implement fgFindLink()
  */
-static Compiler::fgWalkResult gtFindLinkCB(GenTreePtr* pTree, Compiler::fgWalkData* cbData)
+static Compiler::fgWalkResult gtFindLinkCB(GenTree** pTree, Compiler::fgWalkData* cbData)
 {
     FindLinkData* data = (FindLinkData*)cbData->pCallbackData;
     if (*pTree == data->nodeToFind)
@@ -15944,7 +15942,7 @@ static Compiler::fgWalkResult gtFindLinkCB(GenTreePtr* pTree, Compiler::fgWalkDa
     return Compiler::WALK_CONTINUE;
 }
 
-GenTreePtr* Compiler::gtFindLink(GenTreePtr stmt, GenTreePtr node)
+GenTree** Compiler::gtFindLink(GenTree* stmt, GenTree* node)
 {
     assert(stmt->gtOper == GT_STMT);
 
@@ -15968,13 +15966,13 @@ GenTreePtr* Compiler::gtFindLink(GenTreePtr stmt, GenTreePtr node)
  *  Callback that checks if a tree node has oper type GT_CATCH_ARG
  */
 
-static Compiler::fgWalkResult gtFindCatchArg(GenTreePtr* pTree, Compiler::fgWalkData* /* data */)
+static Compiler::fgWalkResult gtFindCatchArg(GenTree** pTree, Compiler::fgWalkData* /* data */)
 {
     return ((*pTree)->OperGet() == GT_CATCH_ARG) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
 }
 
 /*****************************************************************************/
-bool Compiler::gtHasCatchArg(GenTreePtr tree)
+bool Compiler::gtHasCatchArg(GenTree* tree)
 {
     if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && (fgWalkTreePre(&tree, gtFindCatchArg) == WALK_ABORT))
     {
@@ -16033,7 +16031,7 @@ bool Compiler::gtHasCatchArg(GenTreePtr tree)
 //    of parent nodes. Both of these generally requires that
 //    we are performing a recursive tree walk using struct fgWalkData
 //------------------------------------------------------------------------
-void Compiler::gtCheckQuirkAddrExposedLclVar(GenTreePtr tree, GenTreeStack* parentStack)
+void Compiler::gtCheckQuirkAddrExposedLclVar(GenTree* tree, GenTreeStack* parentStack)
 {
 #ifdef _TARGET_64BIT_
     // We only need to Quirk for _TARGET_64BIT_
@@ -16155,7 +16153,7 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
 }
 
-bool Compiler::gtIsActiveCSE_Candidate(GenTreePtr tree)
+bool Compiler::gtIsActiveCSE_Candidate(GenTree* tree)
 {
     return (optValnumCSE_phase && IS_CSE_INDEX(tree->gtCSEnum));
 }
@@ -16171,7 +16169,7 @@ struct ComplexityStruct
     }
 };
 
-static Compiler::fgWalkResult ComplexityExceedsWalker(GenTreePtr* pTree, Compiler::fgWalkData* data)
+static Compiler::fgWalkResult ComplexityExceedsWalker(GenTree** pTree, Compiler::fgWalkData* data)
 {
     ComplexityStruct* pComplexity = (ComplexityStruct*)data->pCallbackData;
     if (++pComplexity->m_numNodes > pComplexity->m_nodeLimit)
@@ -16184,7 +16182,7 @@ static Compiler::fgWalkResult ComplexityExceedsWalker(GenTreePtr* pTree, Compile
     }
 }
 
-bool Compiler::gtComplexityExceeds(GenTreePtr* tree, unsigned limit)
+bool Compiler::gtComplexityExceeds(GenTree** tree, unsigned limit)
 {
     ComplexityStruct complexity(limit);
     if (fgWalkTreePre(tree, &ComplexityExceedsWalker, &complexity) == WALK_ABORT)
@@ -16216,7 +16214,7 @@ bool GenTree::IsPhiDefnStmt()
     {
         return false;
     }
-    GenTreePtr asg = gtStmt.gtStmtExpr;
+    GenTree* asg = gtStmt.gtStmtExpr;
     return asg->IsPhiDefn();
 }
 
@@ -16259,7 +16257,7 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         }
         else if (gtOp.gtOp1->OperGet() == GT_IND)
         {
-            GenTreePtr indArg = gtOp.gtOp1->gtOp.gtOp1;
+            GenTree* indArg = gtOp.gtOp1->gtOp.gtOp1;
             return indArg->DefinesLocalAddr(comp, genTypeSize(gtOp.gtOp1->TypeGet()), pLclVarTree, pIsEntire);
         }
         else if (gtOp.gtOp1->OperIsBlk())
@@ -16273,13 +16271,13 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     }
     if (blkNode != nullptr)
     {
-        GenTreePtr destAddr = blkNode->Addr();
-        unsigned   width    = blkNode->gtBlkSize;
+        GenTree* destAddr = blkNode->Addr();
+        unsigned width    = blkNode->gtBlkSize;
         // Do we care about whether this assigns the entire variable?
         if (pIsEntire != nullptr && width == 0)
         {
             assert(blkNode->gtOper == GT_DYN_BLK);
-            GenTreePtr blockWidth = blkNode->AsDynBlk()->gtDynamicSize;
+            GenTree* blockWidth = blkNode->AsDynBlk()->gtDynamicSize;
             if (blockWidth->IsCnsIntOrI())
             {
                 if (blockWidth->IsIconHandle())
@@ -16315,7 +16313,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
 {
     if (OperGet() == GT_ADDR || OperGet() == GT_LCL_VAR_ADDR)
     {
-        GenTreePtr addrArg = this;
+        GenTree* addrArg = this;
         if (OperGet() == GT_ADDR)
         {
             addrArg = gtOp.gtOp1;
@@ -16386,7 +16384,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
-        GenTreePtr index = gtOp.gtOp2;
+        GenTree* index = gtOp.gtOp2;
         if (index != nullptr)
         {
             assert(!index->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire));
@@ -16394,7 +16392,7 @@ bool GenTree::DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarComm
 #endif // DEBUG
 
         // base
-        GenTreePtr base = gtOp.gtOp1;
+        GenTree* base = gtOp.gtOp1;
         if (base != nullptr)
         {
             // Lea could have an Indir as its base.
@@ -16475,7 +16473,7 @@ bool GenTree::IsLocalAddrExpr(Compiler* comp, GenTreeLclVarCommon** pLclVarTree,
     if (OperGet() == GT_ADDR)
     {
         assert(!comp->compRationalIRForm);
-        GenTreePtr addrArg = gtOp.gtOp1;
+        GenTree* addrArg = gtOp.gtOp1;
         if (addrArg->IsLocal()) // Note that this covers "GT_LCL_FLD."
         {
             *pLclVarTree = addrArg->AsLclVarCommon();
@@ -16685,9 +16683,9 @@ bool GenTreeIndir::HasIndex()
     return Index() != nullptr;
 }
 
-GenTreePtr GenTreeIndir::Base()
+GenTree* GenTreeIndir::Base()
 {
-    GenTreePtr addr = Addr();
+    GenTree* addr = Addr();
 
     if (isIndirAddrMode())
     {
@@ -16871,10 +16869,10 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 }
 #endif //_TARGET_X86_
 
-bool GenTree::IsFieldAddr(Compiler* comp, GenTreePtr* pObj, GenTreePtr* pStatic, FieldSeqNode** pFldSeq)
+bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
 {
     FieldSeqNode* newFldSeq    = nullptr;
-    GenTreePtr    baseAddr     = nullptr;
+    GenTree*      baseAddr     = nullptr;
     bool          mustBeStatic = false;
 
     FieldSeqNode* statStructFldSeq = nullptr;
@@ -16883,7 +16881,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTreePtr* pObj, GenTreePtr* pStatic,
         // Recognize struct static field patterns...
         if (OperGet() == GT_IND)
         {
-            GenTreePtr     addr = gtOp.gtOp1;
+            GenTree*       addr = gtOp.gtOp1;
             GenTreeIntCon* icon = nullptr;
             if (addr->OperGet() == GT_CNS_INT)
             {
@@ -17171,7 +17169,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandle(GenTree* tree)
 //    isNonNull set true if tree value is known not to be null,
 //        otherwise a null value is possible.
 
-CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTreePtr tree, bool* isExact, bool* isNonNull)
+CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* isExact, bool* isNonNull)
 {
     // Set default values for our out params.
     *isNonNull                    = false;
@@ -17194,7 +17192,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTreePtr tree, bool* isExact, 
     }
 
     // Tunnel through commas.
-    GenTreePtr       obj   = tree->gtEffectiveVal(false);
+    GenTree*         obj   = tree->gtEffectiveVal(false);
     const genTreeOps objOp = obj->OperGet();
 
     switch (objOp)
@@ -17238,8 +17236,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTreePtr tree, bool* isExact, 
         {
             // If we see a RET_EXPR, recurse through to examine the
             // return value expression.
-            GenTreePtr retExpr = tree->gtRetExpr.gtInlineCandidate;
-            objClass           = gtGetClassHandle(retExpr, isExact, isNonNull);
+            GenTree* retExpr = tree->gtRetExpr.gtInlineCandidate;
+            objClass         = gtGetClassHandle(retExpr, isExact, isNonNull);
             break;
         }
 
@@ -17342,7 +17340,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTreePtr tree, bool* isExact, 
             GenTreeIndir* indir = obj->AsIndir();
             if (indir->HasBase() && !indir->HasIndex())
             {
-                GenTreePtr           base = indir->Base();
+                GenTree*             base = indir->Base();
                 GenTreeLclVarCommon* lcl  = base->IsLocalAddrExpr();
 
                 if ((lcl != nullptr) && (base->OperGet() != GT_ADD))
@@ -17380,7 +17378,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTreePtr tree, bool* isExact, 
 }
 
 void GenTree::ParseArrayAddress(
-    Compiler* comp, ArrayInfo* arrayInfo, GenTreePtr* pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq)
+    Compiler* comp, ArrayInfo* arrayInfo, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq)
 {
     *pArr                = nullptr;
     ValueNum      inxVN  = ValueNumStore::NoVN;
@@ -17519,7 +17517,7 @@ void GenTree::ParseArrayAddress(
 }
 
 void GenTree::ParseArrayAddressWork(
-    Compiler* comp, ssize_t inputMul, GenTreePtr* pArr, ValueNum* pInxVN, ssize_t* pOffset, FieldSeqNode** pFldSeq)
+    Compiler* comp, ssize_t inputMul, GenTree** pArr, ValueNum* pInxVN, ssize_t* pOffset, FieldSeqNode** pFldSeq)
 {
     if (TypeGet() == TYP_REF)
     {
@@ -17549,8 +17547,8 @@ void GenTree::ParseArrayAddressWork(
             case GT_MUL:
             {
                 // If one op is a constant, continue parsing down.
-                ssize_t    subMul   = 0;
-                GenTreePtr nonConst = nullptr;
+                ssize_t  subMul   = 0;
+                GenTree* nonConst = nullptr;
                 if (gtOp.gtOp1->IsCnsIntOrI())
                 {
                     // If the other arg is an int constant, and is a "not-a-field", choose
@@ -17635,7 +17633,7 @@ bool GenTree::ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqN
         }
 
         // Otherwise...
-        GenTreePtr addr = AsIndir()->Addr();
+        GenTree* addr = AsIndir()->Addr();
         return addr->ParseArrayElemAddrForm(comp, arrayInfo, pFldSeq);
     }
     else
@@ -17650,8 +17648,8 @@ bool GenTree::ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, Field
     {
         case GT_ADD:
         {
-            GenTreePtr arrAddr = nullptr;
-            GenTreePtr offset  = nullptr;
+            GenTree* arrAddr = nullptr;
+            GenTree* offset  = nullptr;
             if (gtOp.gtOp1->TypeGet() == TYP_BYREF)
             {
                 arrAddr = gtOp.gtOp1;
@@ -17675,7 +17673,7 @@ bool GenTree::ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, Field
 
         case GT_ADDR:
         {
-            GenTreePtr addrArg = gtOp.gtOp1;
+            GenTree* addrArg = gtOp.gtOp1;
             if (addrArg->OperGet() != GT_IND)
             {
                 return false;
@@ -17876,7 +17874,7 @@ bool FieldSeqNode::IsPseudoField()
 
 #ifdef FEATURE_SIMD
 GenTreeSIMD* Compiler::gtNewSIMDNode(
-    var_types type, GenTreePtr op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
+    var_types type, GenTree* op1, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
 {
     assert(op1 != nullptr);
     SetOpLclRelatedToSIMDIntrinsic(op1);
@@ -17885,7 +17883,7 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(
 }
 
 GenTreeSIMD* Compiler::gtNewSIMDNode(
-    var_types type, GenTreePtr op1, GenTreePtr op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
+    var_types type, GenTree* op1, GenTree* op2, SIMDIntrinsicID simdIntrinsicID, var_types baseType, unsigned size)
 {
     assert(op1 != nullptr);
     SetOpLclRelatedToSIMDIntrinsic(op1);
@@ -17901,7 +17899,7 @@ GenTreeSIMD* Compiler::gtNewSIMDNode(
 // Arguments:
 //     op - The tree, to be an operand of a new GT_SIMD node, to check.
 //
-void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTreePtr op)
+void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
 {
     if (op != nullptr)
     {

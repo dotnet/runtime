@@ -61,7 +61,7 @@ int RangeCheck::GetArrLength(ValueNum vn)
 }
 
 // Check if the computed range is within bounds.
-bool RangeCheck::BetweenBounds(Range& range, int lower, GenTreePtr upper)
+bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -194,7 +194,7 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTreePtr upper)
     return false;
 }
 
-void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreePtr treeParent)
+void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTree* stmt, GenTree* treeParent)
 {
     // Check if we are dealing with a bounds check node.
     if (treeParent->OperGet() != GT_COMMA)
@@ -203,7 +203,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     }
 
     // If we are not looking at array bounds check, bail.
-    GenTreePtr tree = treeParent->gtOp.gtOp1;
+    GenTree* tree = treeParent->gtOp.gtOp1;
     if (!tree->OperIsBoundsCheck())
     {
         return;
@@ -211,7 +211,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
 
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
     m_pCurBndsChk             = bndsChk;
-    GenTreePtr treeIndex      = bndsChk->gtIndex;
+    GenTree* treeIndex        = bndsChk->gtIndex;
 
     // Take care of constant index first, like a[2], for example.
     ValueNum idxVn    = treeIndex->gtVNPair.GetConservative();
@@ -297,7 +297,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     return;
 }
 
-void RangeCheck::Widen(BasicBlock* block, GenTreePtr tree, Range* pRange)
+void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -361,7 +361,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     }
 }
 
-bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr)
+bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr)
 {
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
@@ -761,7 +761,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 
 // Merge assertions from the pred edges of the block, i.e., check for any assertions about "op's" value numbers for phi
 // arguments. If not a phi argument, check if we assertions about local variables.
-void RangeCheck::MergeAssertion(BasicBlock* block, GenTreePtr op, Range* pRange DEBUGARG(int indent))
+void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of BB%02d for op [%06d] $%03x\n", block->bbNum, Compiler::dspTreeID(op),
             op->gtVNPair.GetConservative());
@@ -1065,11 +1065,11 @@ bool RangeCheck::DoesVarDefOverflow(GenTreeLclVarCommon* lcl)
     return true;
 }
 
-bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr expr)
+bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTree* expr)
 {
     for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
     {
-        GenTreePtr arg = args->Current();
+        GenTree* arg = args->Current();
         if (m_pSearchPath->Lookup(arg))
         {
             continue;
@@ -1082,7 +1082,7 @@ bool RangeCheck::DoesPhiOverflow(BasicBlock* block, GenTreePtr expr)
     return false;
 }
 
-bool RangeCheck::DoesOverflow(BasicBlock* block, GenTreePtr expr)
+bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr)
 {
     bool overflows = false;
     if (!GetOverflowMap()->Lookup(expr, &overflows))
@@ -1092,7 +1092,7 @@ bool RangeCheck::DoesOverflow(BasicBlock* block, GenTreePtr expr)
     return overflows;
 }
 
-bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr expr)
+bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
 {
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
     m_pSearchPath->Set(expr, block);
@@ -1135,7 +1135,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr expr)
 // value as "dependent" (dep).
 // If the loop is proven to be "monotonic", then make liberal decisions while merging phi node.
 // eg.: merge((0, dep), (dep, dep)) = (0, dep)
-Range RangeCheck::ComputeRange(BasicBlock* block, GenTreePtr expr, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent))
 {
     bool  newlyAdded = !m_pSearchPath->Set(expr, block);
     Range range      = Limit(Limit::keUndef);
@@ -1238,7 +1238,7 @@ void Indent(int indent)
 #endif
 
 // Get the range, if it is already computed, use the cached range value, else compute it.
-Range RangeCheck::GetRange(BasicBlock* block, GenTreePtr expr, bool monotonic DEBUGARG(int indent))
+Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent))
 {
 #ifdef DEBUG
     if (m_pCompiler->verbose)
@@ -1308,14 +1308,14 @@ struct MapMethodDefsData
 {
     RangeCheck* rc;
     BasicBlock* block;
-    GenTreePtr  stmt;
+    GenTree*    stmt;
 
-    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, GenTreePtr stmt) : rc(rc), block(block), stmt(stmt)
+    MapMethodDefsData(RangeCheck* rc, BasicBlock* block, GenTree* stmt) : rc(rc), block(block), stmt(stmt)
     {
     }
 };
 
-Compiler::fgWalkResult MapMethodDefsVisitor(GenTreePtr* ptr, Compiler::fgWalkData* data)
+Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData* data)
 {
     GenTree*           tree = *ptr;
     MapMethodDefsData* rcd  = ((MapMethodDefsData*)data->pCallbackData);
@@ -1333,7 +1333,7 @@ void RangeCheck::MapMethodDefs()
     // First, gather where all definitions occur in the program and store it in a map.
     for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
     {
-        for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+        for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
             MapMethodDefsData data(this, block, stmt);
             m_pCompiler->fgWalkTreePre(&stmt->gtStmt.gtStmtExpr, MapMethodDefsVisitor, &data, false, true);
@@ -1362,9 +1362,9 @@ void RangeCheck::OptimizeRangeChecks()
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
     for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
     {
-        for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+        for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
                 if (IsOverBudget())
                 {

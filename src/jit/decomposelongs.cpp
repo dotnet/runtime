@@ -877,12 +877,12 @@ GenTree* DecomposeLongs::DecomposeInd(LIR::Use& use)
     indLow->gtType = TYP_INT;
 
     // Create tree of ind(addr+4)
-    GenTreePtr addrBase     = indLow->gtGetOp1();
-    GenTreePtr addrBaseHigh = new (m_compiler, GT_LCL_VAR)
+    GenTree* addrBase     = indLow->gtGetOp1();
+    GenTree* addrBaseHigh = new (m_compiler, GT_LCL_VAR)
         GenTreeLclVar(GT_LCL_VAR, addrBase->TypeGet(), addrBase->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
-    GenTreePtr addrHigh =
+    GenTree* addrHigh =
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
-    GenTreePtr indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
+    GenTree* indHigh = new (m_compiler, GT_IND) GenTreeIndir(GT_IND, TYP_INT, addrHigh, nullptr);
     indHigh->gtFlags |= (indLow->gtFlags & (GTF_GLOB_REF | GTF_EXCEPT | GTF_IND_FLAGS));
 
     m_compiler->lvaIncRefCnts(addrBaseHigh);

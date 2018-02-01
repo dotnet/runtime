@@ -27,14 +27,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //      This tree produces GT_INDEX node, the caller is supposed to morph it appropriately
 //      so it can be codegen'ed.
 //
-GenTreePtr LC_Array::ToGenTree(Compiler* comp)
+GenTree* LC_Array::ToGenTree(Compiler* comp)
 {
     // If jagged array
     if (type == Jagged)
     {
         // Create a a[i][j][k].length type node.
-        GenTreePtr arr  = comp->gtNewLclvNode(arrIndex->arrLcl, comp->lvaTable[arrIndex->arrLcl].lvType);
-        int        rank = GetDimRank();
+        GenTree* arr  = comp->gtNewLclvNode(arrIndex->arrLcl, comp->lvaTable[arrIndex->arrLcl].lvType);
+        int      rank = GetDimRank();
         for (int i = 0; i < rank; ++i)
         {
             arr = comp->gtNewIndexRef(TYP_REF, arr, comp->gtNewLclvNode(arrIndex->indLcls[i],
@@ -43,7 +43,7 @@ GenTreePtr LC_Array::ToGenTree(Compiler* comp)
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
-            GenTreePtr arrLen = comp->gtNewArrLen(TYP_INT, arr, offsetof(CORINFO_Array, length));
+            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, offsetof(CORINFO_Array, length));
             return arrLen;
         }
         else
@@ -70,7 +70,7 @@ GenTreePtr LC_Array::ToGenTree(Compiler* comp)
 //      Returns the gen tree representation for either a constant or a variable or an arrLen operation
 //      defined by the "type" member
 //
-GenTreePtr LC_Ident::ToGenTree(Compiler* comp)
+GenTree* LC_Ident::ToGenTree(Compiler* comp)
 {
     // Convert to GenTree nodes.
     switch (type)
@@ -101,7 +101,7 @@ GenTreePtr LC_Ident::ToGenTree(Compiler* comp)
 //      Returns the gen tree representation for either a constant or a variable or an arrLen operation
 //      defined by the "type" member
 //
-GenTreePtr LC_Expr::ToGenTree(Compiler* comp)
+GenTree* LC_Expr::ToGenTree(Compiler* comp)
 {
     // Convert to GenTree nodes.
     switch (type)
@@ -124,7 +124,7 @@ GenTreePtr LC_Expr::ToGenTree(Compiler* comp)
 // Return Values:
 //      Returns the gen tree representation for the conditional operator on lhs and rhs trees
 //
-GenTreePtr LC_Condition::ToGenTree(Compiler* comp)
+GenTree* LC_Condition::ToGenTree(Compiler* comp)
 {
     GenTree* op1Tree = op1.ToGenTree(comp);
     GenTree* op2Tree = op2.ToGenTree(comp);
@@ -676,7 +676,7 @@ void LoopCloneContext::CondToStmtInBlock(Compiler*                          comp
     noway_assert(conds.Size() > 0);
 
     // Get the first condition.
-    GenTreePtr cond = conds[0].ToGenTree(comp);
+    GenTree* cond = conds[0].ToGenTree(comp);
     for (unsigned i = 1; i < conds.Size(); ++i)
     {
         // Append all conditions using AND operator.
@@ -687,7 +687,7 @@ void LoopCloneContext::CondToStmtInBlock(Compiler*                          comp
     cond = comp->gtNewOperNode(reverse ? GT_NE : GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
 
     // Add jmpTrue "cond == 0" to slow path.
-    GenTreePtr stmt = comp->fgNewStmtFromTree(comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond));
+    GenTree* stmt = comp->fgNewStmtFromTree(comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond));
 
     // Add stmt to the block.
     comp->fgInsertStmtAtEnd(block, stmt);

@@ -35,13 +35,13 @@ public:
     virtual void genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode);
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(GenTreePtr  addr,
-                                   int         mode,
-                                   bool        fold,
-                                   regMaskTP   regMask,
-                                   bool*       revPtr,
-                                   GenTreePtr* rv1Ptr,
-                                   GenTreePtr* rv2Ptr,
+    virtual bool genCreateAddrMode(GenTree*  addr,
+                                   int       mode,
+                                   bool      fold,
+                                   regMaskTP regMask,
+                                   bool*     revPtr,
+                                   GenTree** rv1Ptr,
+                                   GenTree** rv2Ptr,
 #if SCALED_ADDR_MODES
                                    unsigned* mulPtr,
 #endif
@@ -64,7 +64,7 @@ private:
     CORINFO_FIELD_HANDLE u8ToDblBitmask;
 
     // Generates SSE2 code for the given tree as "Operand BitWiseOp BitMask"
-    void genSSE2BitwiseOp(GenTreePtr treeNode);
+    void genSSE2BitwiseOp(GenTree* treeNode);
 
     // Generates SSE41 code for the given tree as a round operation
     void genSSE41RoundOp(GenTreeOp* treeNode);
@@ -110,7 +110,7 @@ private:
     // 'true' label corresponds to jump target of the current basic block i.e. the target to
     // branch to on compare condition being true.  'false' label corresponds to the target to
     // branch to on condition being false.
-    static void genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
+    static void genJumpKindsForTree(GenTree* cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
 
     static bool genShouldRoundFP();
 
@@ -200,13 +200,13 @@ private:
 #endif
 
 #ifdef LEGACY_BACKEND
-    regMaskTP genNewLiveRegMask(GenTreePtr first, GenTreePtr second);
+    regMaskTP genNewLiveRegMask(GenTree* first, GenTree* second);
 
     // During codegen, determine the LiveSet after tree.
     // Preconditions: must be called during codegen, when compCurLife and
     // compCurLifeTree are being maintained, and tree must occur in the current
     // statement.
-    VARSET_VALRET_TP genUpdateLiveSetForward(GenTreePtr tree);
+    VARSET_VALRET_TP genUpdateLiveSetForward(GenTree* tree);
 #endif
 
     //-------------------------------------------------------------------------
@@ -254,7 +254,7 @@ protected:
 #ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
 
-    void genStressRegs(GenTreePtr tree);
+    void genStressRegs(GenTree* tree);
 #endif // DEBUG
 
     void genCodeForBBlist();
@@ -262,7 +262,7 @@ protected:
 public:
 #ifndef LEGACY_BACKEND
     // genSpillVar is called by compUpdateLifeVar in the !LEGACY_BACKEND case
-    void genSpillVar(GenTreePtr tree);
+    void genSpillVar(GenTree* tree);
 #endif // !LEGACY_BACKEND
 
 protected:
@@ -272,7 +272,7 @@ protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize);
 #endif
 
-    void genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
@@ -285,12 +285,12 @@ protected:
     void genExitCode(BasicBlock* block);
 
 #ifdef LEGACY_BACKEND
-    GenTreePtr genMakeConst(const void* cnsAddr, var_types cnsType, GenTreePtr cnsTree, bool dblAlign);
+    GenTree* genMakeConst(const void* cnsAddr, var_types cnsType, GenTree* cnsTree, bool dblAlign);
 #endif
 
-    void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, GenTreePtr failBlk = nullptr);
+    void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, GenTree* failBlk = nullptr);
 
-    void genCheckOverflow(GenTreePtr tree);
+    void genCheckOverflow(GenTree* tree);
 
     //-------------------------------------------------------------------------
     //
@@ -868,25 +868,25 @@ public:
                           size_t       argSize,
                           emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
-    void instEmit_RM(instruction ins, GenTreePtr tree, GenTreePtr addr, unsigned offs);
+    void instEmit_RM(instruction ins, GenTree* tree, GenTree* addr, unsigned offs);
 
-    void instEmit_RM_RV(instruction ins, emitAttr size, GenTreePtr tree, regNumber reg, unsigned offs);
+    void instEmit_RM_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg, unsigned offs);
 
-    void instEmit_RV_RM(instruction ins, emitAttr size, regNumber reg, GenTreePtr tree, unsigned offs);
+    void instEmit_RV_RM(instruction ins, emitAttr size, regNumber reg, GenTree* tree, unsigned offs);
 
     void instEmit_RV_RIA(instruction ins, regNumber reg1, regNumber reg2, unsigned offs);
 
-    void inst_TT(instruction ins, GenTreePtr tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
+    void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
 
     void inst_TT_RV(instruction ins,
-                    GenTreePtr  tree,
+                    GenTree*    tree,
                     regNumber   reg,
                     unsigned    offs  = 0,
                     emitAttr    size  = EA_UNKNOWN,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
 
     void inst_TT_IV(instruction ins,
-                    GenTreePtr  tree,
+                    GenTree*    tree,
                     ssize_t     val,
                     unsigned    offs  = 0,
                     emitAttr    size  = EA_UNKNOWN,
@@ -896,30 +896,30 @@ public:
                     emitAttr    size,
                     var_types   type,
                     regNumber   reg,
-                    GenTreePtr  tree,
+                    GenTree*    tree,
                     unsigned    offs  = 0,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
 
-    void inst_AT_IV(instruction ins, emitAttr size, GenTreePtr baseTree, int icon, unsigned offs = 0);
+    void inst_AT_IV(instruction ins, emitAttr size, GenTree* baseTree, int icon, unsigned offs = 0);
 
     void inst_RV_TT(instruction ins,
                     regNumber   reg,
-                    GenTreePtr  tree,
+                    GenTree*    tree,
                     unsigned    offs  = 0,
                     emitAttr    size  = EA_UNKNOWN,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
 
-    void inst_RV_TT_IV(instruction ins, regNumber reg, GenTreePtr tree, int val);
+    void inst_RV_TT_IV(instruction ins, regNumber reg, GenTree* tree, int val);
 
-    void inst_FS_TT(instruction ins, GenTreePtr tree);
+    void inst_FS_TT(instruction ins, GenTree* tree);
 
     void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, unsigned val, insFlags flags = INS_FLAGS_DONT_CARE);
 
-    void inst_TT_SH(instruction ins, GenTreePtr tree, unsigned val, unsigned offs = 0);
+    void inst_TT_SH(instruction ins, GenTree* tree, unsigned val, unsigned offs = 0);
 
     void inst_RV_CL(instruction ins, regNumber reg, var_types type = TYP_I_IMPL);
 
-    void inst_TT_CL(instruction ins, GenTreePtr tree, unsigned offs = 0);
+    void inst_TT_CL(instruction ins, GenTree* tree, unsigned offs = 0);
 
 #if defined(_TARGET_XARCH_)
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
@@ -927,13 +927,13 @@ public:
 
     void inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);
 
-    void inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTreePtr tree);
+    void inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree* tree);
 
-    void inst_mov_RV_ST(regNumber reg, GenTreePtr tree);
+    void inst_mov_RV_ST(regNumber reg, GenTree* tree);
 
-    void instGetAddrMode(GenTreePtr addr, regNumber* baseReg, unsigned* indScale, regNumber* indReg, unsigned* cns);
+    void instGetAddrMode(GenTree* addr, regNumber* baseReg, unsigned* indScale, regNumber* indReg, unsigned* cns);
 
-    void inst_set_SV_var(GenTreePtr tree);
+    void inst_set_SV_var(GenTree* tree);
 
 #ifdef _TARGET_ARM_
     bool arm_Valid_Imm_For_Instr(instruction ins, ssize_t imm, insFlags flags);
@@ -1012,7 +1012,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *  a tree (which has been made addressable).
  */
 
-inline void CodeGen::inst_FS_TT(instruction ins, GenTreePtr tree)
+inline void CodeGen::inst_FS_TT(instruction ins, GenTree* tree)
 {
     assert(instIsFP(ins));
 

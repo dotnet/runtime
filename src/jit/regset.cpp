@@ -274,7 +274,7 @@ regMaskTP RegSet::rsRegMaskCanGrab()
     // Load all the variable arguments in registers back to their registers.
     for (regNumber reg = REG_ARG_FIRST; reg <= REG_ARG_LAST; reg = REG_NEXT(reg))
     {
-        GenTreePtr regHolds = rsUsedTree[reg];
+        GenTree* regHolds = rsUsedTree[reg];
         if ((regHolds != NULL) && (regHolds->TypeGet() == TYP_STRUCT))
         {
             structArgMask |= genRegMask(reg);
@@ -532,7 +532,7 @@ bool RegTracker::rsTrackIsLclVarLng(regValKind rvKind)
 /*****************************************************************************/
 
 // inline
-void RegTracker::rsTrackRegClsVar(regNumber reg, GenTreePtr clsVar)
+void RegTracker::rsTrackRegClsVar(regNumber reg, GenTree* clsVar)
 {
     rsTrackRegTrash(reg);
 }
@@ -840,7 +840,7 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
  *  be marked if the register is ever spilled.
  */
 
-void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
+void RegSet::rsMarkRegUsed(GenTree* tree, GenTree* addr)
 {
     var_types type;
     regNumber regNum;
@@ -909,7 +909,7 @@ void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
     rsUsedAddr[regNum] = addr;
 }
 
-void RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, regNumber regNum, bool isGCRef)
+void RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTree* promotedStructArg, regNumber regNum, bool isGCRef)
 {
     regMaskTP regMask;
 
@@ -971,7 +971,7 @@ void RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, re
  *  Marks the register pair that holds the given operand value as 'used'.
  */
 
-void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
+void RegSet::rsMarkRegPairUsed(GenTree* tree)
 {
     regNumber regLo;
     regNumber regHi;
@@ -1062,7 +1062,7 @@ void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
  *  to search rsMultiDesc[reg].
  */
 
-bool RegSet::rsIsTreeInReg(regNumber reg, GenTreePtr tree)
+bool RegSet::rsIsTreeInReg(regNumber reg, GenTree* tree)
 {
     /* First do the trivial check */
 
@@ -1097,7 +1097,7 @@ bool RegSet::rsIsTreeInReg(regNumber reg, GenTreePtr tree)
  *  Finds the SpillDsc corresponding to 'tree' assuming it was spilled from 'reg'.
  */
 
-RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTreePtr tree,
+RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTree*   tree,
                                          regNumber  reg,
                                          SpillDsc** pPrevDsc
 #ifdef LEGACY_BACKEND
@@ -1182,7 +1182,7 @@ void RegSet::rsMarkRegFree(regMaskTP regMask)
                 printf("\n");
             }
 #endif
-            GenTreePtr usedTree = rsUsedTree[regNum];
+            GenTree* usedTree = rsUsedTree[regNum];
             assert(usedTree != NULL);
             rsUsedTree[regNum] = NULL;
             rsUsedAddr[regNum] = NULL;
@@ -1216,7 +1216,7 @@ void RegSet::rsMarkRegFree(regMaskTP regMask)
  *  it will still be marked as used, else it will be completely free.
  */
 
-void RegSet::rsMarkRegFree(regNumber reg, GenTreePtr tree)
+void RegSet::rsMarkRegFree(regNumber reg, GenTree* tree)
 {
     assert(rsIsTreeInReg(reg, tree));
     regMaskTP regMask = genRegMask(reg);
@@ -1474,7 +1474,7 @@ void RegTracker::rsTrackRegCopy(regNumber reg1, regNumber reg2)
  *  One of the operands of this complex address mode has been spilled
  */
 
-void rsAddrSpillOper(GenTreePtr addr)
+void rsAddrSpillOper(GenTree* addr)
 {
     if (addr)
     {
@@ -1491,7 +1491,7 @@ void rsAddrSpillOper(GenTreePtr addr)
     }
 }
 
-void rsAddrUnspillOper(GenTreePtr addr)
+void rsAddrUnspillOper(GenTree* addr)
 {
     if (addr)
     {
@@ -1537,7 +1537,7 @@ void RegSet::rsSpillRegIfUsed(regNumber reg)
 //    caller of this method is expected to clear GTF_SPILL flag on call
 //    node after all of its registers marked for spilling are spilled.
 //
-void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 */)
+void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 {
     assert(tree != nullptr);
 
@@ -1842,7 +1842,7 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
 void RegSet::rsSpillReg(regNumber reg)
 {
     /* We must know the value in the register that we are spilling */
-    GenTreePtr tree = rsUsedTree[reg];
+    GenTree* tree = rsUsedTree[reg];
 
 #ifdef _TARGET_ARM_
     if (tree == NULL && genIsValidFloatReg(reg) && !genIsValidDoubleReg(reg))
@@ -2203,7 +2203,7 @@ TempDsc* RegSet::rsGetSpillTempWord(regNumber reg, SpillDsc* dsc, SpillDsc* prev
  *      again as needed.
  */
 
-regNumber RegSet::rsUnspillOneReg(GenTreePtr tree, regNumber oldReg, KeepReg willKeepNewReg, regMaskTP needReg)
+regNumber RegSet::rsUnspillOneReg(GenTree* tree, regNumber oldReg, KeepReg willKeepNewReg, regMaskTP needReg)
 {
     /* Was oldReg multi-used when it was spilled? */
 
@@ -2403,7 +2403,7 @@ regNumber RegSet::rsUnspillOneReg(GenTreePtr tree, regNumber oldReg, KeepReg wil
 //     itself after ensuring there are no outstanding regs in GTF_SPILLED
 //     state.
 //
-TempDsc* RegSet::rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned regIdx /* =0 */)
+TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regIdx /* =0 */)
 {
     assert(!isRegPairType(tree->gtType));
 
@@ -2465,7 +2465,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned re
  *  is set to KEEP_REG, we'll mark the new register as used.
  */
 
-void RegSet::rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
+void RegSet::rsUnspillReg(GenTree* tree, regMaskTP needReg, KeepReg keepReg)
 {
     assert(!isRegPairType(tree->gtType)); // use rsUnspillRegPair()
     regNumber oldReg = tree->gtRegNum;
@@ -2479,7 +2479,7 @@ void RegSet::rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
      * the reg was part of an address mode
      */
 
-    GenTreePtr unspillAddr = spillDsc->spillAddr;
+    GenTree* unspillAddr = spillDsc->spillAddr;
 
     /* Pick a new home for the value */
 
@@ -2510,7 +2510,7 @@ void RegSet::rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
 }
 #endif // LEGACY_BACKEND
 
-void RegSet::rsMarkSpill(GenTreePtr tree, regNumber reg)
+void RegSet::rsMarkSpill(GenTree* tree, regNumber reg)
 {
 #ifdef LEGACY_BACKEND
     tree->SetInReg(false);
@@ -2520,7 +2520,7 @@ void RegSet::rsMarkSpill(GenTreePtr tree, regNumber reg)
 
 #ifdef LEGACY_BACKEND
 
-void RegSet::rsMarkUnspill(GenTreePtr tree, regNumber reg)
+void RegSet::rsMarkUnspill(GenTree* tree, regNumber reg)
 {
 #ifndef _TARGET_AMD64_
     assert(tree->gtType != TYP_LONG);
@@ -2697,7 +2697,7 @@ AGAIN:
  *  any spillage, of course).
  */
 
-void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg)
+void RegSet::rsUnspillRegPair(GenTree* tree, regMaskTP needReg, KeepReg keepReg)
 {
     assert(isRegPairType(tree->gtType));
 

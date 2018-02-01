@@ -3359,8 +3359,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 //
 void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeInd, GenTree* src)
 {
-    GenTreePtr addr = storeInd->Addr();
-    addr            = addr->gtSkipReloadOrCopy();
+    GenTree* addr = storeInd->Addr();
+    addr          = addr->gtSkipReloadOrCopy();
     assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_LEA ||
            addr->OperGet() == GT_CLS_VAR_ADDR || addr->OperGet() == GT_CNS_INT);
 
@@ -3423,8 +3423,8 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 //
 void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeInd)
 {
-    GenTreePtr addr = storeInd->Addr();
-    addr            = addr->gtSkipReloadOrCopy();
+    GenTree* addr = storeInd->Addr();
+    addr          = addr->gtSkipReloadOrCopy();
     assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_CLS_VAR_ADDR ||
            addr->OperGet() == GT_LEA || addr->OperGet() == GT_CNS_INT);
 

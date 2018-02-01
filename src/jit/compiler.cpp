@@ -476,7 +476,7 @@ var_types Compiler::getJitGCType(BYTE gcType)
 //
 // Note that for ARM64 there will alwys be exactly two pointer sized fields
 
-void Compiler::getStructGcPtrsFromOp(GenTreePtr op, BYTE* gcPtrsOut)
+void Compiler::getStructGcPtrsFromOp(GenTree* op, BYTE* gcPtrsOut)
 {
     assert(op->TypeGet() == TYP_STRUCT);
 
@@ -1945,7 +1945,7 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif // MEASURE_MEM_ALLOC
 
 #ifdef LEGACY_BACKEND
-        compQMarks = new (this, CMK_Unknown) JitExpandArrayStack<GenTreePtr>(getAllocator());
+        compQMarks = new (this, CMK_Unknown) JitExpandArrayStack<GenTree*>(getAllocator());
 #endif
     }
 
@@ -2305,7 +2305,7 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
         // maybe var is marked dead, but still used (last use)
         if (!isFloatReg && codeGen->regSet.rsUsedTree[reg] != NULL)
         {
-            GenTreePtr nodePtr;
+            GenTree* nodePtr;
 
             if (GenTree::OperIsUnary(codeGen->regSet.rsUsedTree[reg]->OperGet()))
             {
@@ -5110,7 +5110,7 @@ void Compiler::ResetOptAnnotations()
         {
             stmt->gtFlags &= ~GTF_STMT_HAS_CSE;
 
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
                 tree->ClearVN();
                 tree->ClearAssertion();
@@ -7121,9 +7121,9 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->gtNext)
+        for (GenTree* stmt = block->FirstNonPhiDef(); stmt != nullptr; stmt = stmt->gtNext)
         {
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
                 TestLabelAndNum tlAndN;
 
@@ -7135,11 +7135,11 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                     unsigned        i    = 0;
                     while (args != nullptr)
                     {
-                        GenTreePtr arg = args->Current();
+                        GenTree* arg = args->Current();
                         if (arg->gtFlags & GTF_LATE_ARG)
                         {
                             // Find the corresponding late arg.
-                            GenTreePtr lateArg = call->fgArgInfo->GetLateArg(i);
+                            GenTree* lateArg = call->fgArgInfo->GetLateArg(i);
                             if (GetNodeTestData()->Lookup(lateArg, &tlAndN))
                             {
                                 reachable->Set(lateArg, 0);
@@ -7160,7 +7160,7 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
     return reachable;
 }
 
-void Compiler::TransferTestDataToNode(GenTreePtr from, GenTreePtr to)
+void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
 {
     TestLabelAndNum tlAndN;
     // We can't currently associate multiple annotations with a single node.
@@ -7180,7 +7180,7 @@ void Compiler::TransferTestDataToNode(GenTreePtr from, GenTreePtr to)
     }
 }
 
-void Compiler::CopyTestDataToCloneTree(GenTreePtr from, GenTreePtr to)
+void Compiler::CopyTestDataToCloneTree(GenTree* from, GenTree* to)
 {
     if (m_nodeTestData == nullptr)
     {
@@ -7357,12 +7357,12 @@ void Compiler::compJitStats()
 
 void Compiler::compCallArgStats()
 {
-    GenTreePtr args;
-    GenTreePtr argx;
+    GenTree* args;
+    GenTree* argx;
 
     BasicBlock* block;
-    GenTreePtr  stmt;
-    GenTreePtr  call;
+    GenTree*    stmt;
+    GenTree*    call;
 
     unsigned argNum;
 
@@ -11463,7 +11463,7 @@ HelperCallProperties Compiler::s_helperCallProperties;
 // Return Value:
 //    true       - tree kills GC refs on callee save registers
 //    false      - tree doesn't affect GC refs on callee save registers
-bool Compiler::killGCRefs(GenTreePtr tree)
+bool Compiler::killGCRefs(GenTree* tree)
 {
     if (tree->IsCall())
     {

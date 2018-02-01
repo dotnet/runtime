@@ -142,12 +142,12 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*   dstAddr       = blkNode->Addr();
-    unsigned   size          = blkNode->gtBlkSize;
-    GenTree*   source        = blkNode->Data();
-    Compiler*  compiler      = comp;
-    GenTreePtr srcAddrOrFill = nullptr;
-    bool       isInitBlk     = blkNode->OperIsInitBlkOp();
+    GenTree*  dstAddr       = blkNode->Addr();
+    unsigned  size          = blkNode->gtBlkSize;
+    GenTree*  source        = blkNode->Data();
+    Compiler* compiler      = comp;
+    GenTree*  srcAddrOrFill = nullptr;
+    bool      isInitBlk     = blkNode->OperIsInitBlkOp();
 
     if (!isInitBlk)
     {
@@ -556,7 +556,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     }
 #endif // _TARGET_X86_
 
-    GenTreePtr src = putArgStk->gtOp1;
+    GenTree* src = putArgStk->gtOp1;
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     if (src->TypeGet() != TYP_STRUCT)
@@ -590,8 +590,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    GenTreePtr dst     = putArgStk;
-    GenTreePtr srcAddr = nullptr;
+    GenTree* dst     = putArgStk;
+    GenTree* srcAddr = nullptr;
 
     bool haveLocalAddr = false;
     if ((src->OperGet() == GT_OBJ) || (src->OperGet() == GT_IND))
@@ -698,10 +698,10 @@ void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
 
-    GenTreePtr castOp     = tree->gtCast.CastOp();
-    var_types  castToType = tree->CastToType();
-    var_types  srcType    = castOp->TypeGet();
-    var_types  tmpType    = TYP_UNDEF;
+    GenTree*  castOp     = tree->gtCast.CastOp();
+    var_types castToType = tree->CastToType();
+    var_types srcType    = castOp->TypeGet();
+    var_types tmpType    = TYP_UNDEF;
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (tree->gtFlags & GTF_UNSIGNED)
@@ -748,7 +748,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tmpType != TYP_UNDEF)
     {
-        GenTreePtr tmp = comp->gtNewCastNode(tmpType, castOp, tmpType);
+        GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tmpType);
         tmp->gtFlags |= (tree->gtFlags & (GTF_UNSIGNED | GTF_OVERFLOW | GTF_EXCEPT));
 
         tree->gtFlags &= ~GTF_UNSIGNED;
@@ -973,7 +973,7 @@ bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
 // Return Value
 //     True if 'tree' is part of a RMW memory operation pattern
 //
-bool Lowering::IsBinOpInRMWStoreInd(GenTreePtr tree)
+bool Lowering::IsBinOpInRMWStoreInd(GenTree* tree)
 {
     // Must be a non floating-point type binary operator since SSE2 doesn't support RMW memory ops
     assert(!varTypeIsFloating(tree));
@@ -995,8 +995,8 @@ bool Lowering::IsBinOpInRMWStoreInd(GenTreePtr tree)
     // Since it is not relatively cheap to recognize RMW memory op pattern, we
     // cache the result in GT_STOREIND node so that while lowering GT_STOREIND
     // we can use the result.
-    GenTreePtr indirCandidate = nullptr;
-    GenTreePtr indirOpSource  = nullptr;
+    GenTree* indirCandidate = nullptr;
+    GenTree* indirOpSource  = nullptr;
     return IsRMWMemOpRootedAtStoreInd(use.User(), &indirCandidate, &indirOpSource);
 }
 
@@ -1046,7 +1046,7 @@ bool Lowering::IsBinOpInRMWStoreInd(GenTreePtr tree)
 //     Otherwise, returns false with indirCandidate and indirOpSource set to null.
 //     Also updates flags of GT_STOREIND tree with its RMW status.
 //
-bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr* outIndirCandidate, GenTreePtr* outIndirOpSource)
+bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTree* tree, GenTree** outIndirCandidate, GenTree** outIndirOpSource)
 {
     assert(!varTypeIsFloating(tree));
     assert(outIndirCandidate != nullptr);
@@ -1062,8 +1062,8 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr* outIndirC
         return false;
     }
 
-    GenTreePtr indirDst = storeInd->gtGetOp1();
-    GenTreePtr indirSrc = storeInd->gtGetOp2();
+    GenTree*   indirDst = storeInd->gtGetOp1();
+    GenTree*   indirSrc = storeInd->gtGetOp2();
     genTreeOps oper     = indirSrc->OperGet();
 
     // Early out if it is already known to be a RMW memory op
@@ -1452,7 +1452,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckIndir(GenTreeIndir* node)
 {
-    GenTreePtr addr = node->Addr();
+    GenTree* addr = node->Addr();
 
     // If this is the rhs of a block copy it will be handled when we handle the store.
     if (node->TypeGet() == TYP_STRUCT)
@@ -1573,14 +1573,14 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
         return;
     }
 
-    bool       isUnsignedMultiply    = ((node->gtFlags & GTF_UNSIGNED) != 0);
-    bool       requiresOverflowCheck = node->gtOverflowEx();
-    bool       useLeaEncoding        = false;
-    GenTreePtr memOp                 = nullptr;
+    bool     isUnsignedMultiply    = ((node->gtFlags & GTF_UNSIGNED) != 0);
+    bool     requiresOverflowCheck = node->gtOverflowEx();
+    bool     useLeaEncoding        = false;
+    GenTree* memOp                 = nullptr;
 
     bool                 hasImpliedFirstOperand = false;
     GenTreeIntConCommon* imm                    = nullptr;
-    GenTreePtr           other                  = nullptr;
+    GenTree*             other                  = nullptr;
 
     // Multiply should never be using small types
     assert(!varTypeIsSmall(node->TypeGet()));
@@ -1691,7 +1691,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
 #ifdef _TARGET_X86_
-    GenTreePtr source = node->gtOp1;
+    GenTree* source = node->gtOp1;
     if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
     {
         assert(source->OperGet() == GT_LONG);
@@ -1758,9 +1758,9 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-    GenTreePtr castOp     = node->CastOp();
-    var_types  castToType = node->CastToType();
-    var_types  srcType    = castOp->TypeGet();
+    GenTree*  castOp     = node->CastOp();
+    var_types castToType = node->CastToType();
+    var_types srcType    = castOp->TypeGet();
 
     // force the srcType to unsigned if GT_UNSIGNED flag is set
     if (node->gtFlags & GTF_UNSIGNED)
@@ -1813,10 +1813,10 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
     assert(cmp->OperIsCompare() || cmp->OperIs(GT_CMP));
 
-    GenTreePtr op1     = cmp->gtOp.gtOp1;
-    GenTreePtr op2     = cmp->gtOp.gtOp2;
-    var_types  op1Type = op1->TypeGet();
-    var_types  op2Type = op2->TypeGet();
+    GenTree*  op1     = cmp->gtOp.gtOp1;
+    GenTree*  op2     = cmp->gtOp.gtOp2;
+    var_types op1Type = op1->TypeGet();
+    var_types op2Type = op2->TypeGet();
 
     // If either of op1 or op2 is floating point values, then we need to use
     // ucomiss or ucomisd to compare, both of which support the following form:
@@ -1842,7 +1842,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             reverseOps = cmp->OperIs(GT_LT, GT_LE);
         }
 
-        GenTreePtr otherOp;
+        GenTree* otherOp;
         if (reverseOps)
         {
             otherOp = op1;
@@ -1939,8 +1939,8 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
     // indirCandidate = memory read i.e. a gtInd of an addr mode
     // indirOpSource = source operand used in binary/unary op (i.e. source operand of indirSrc node)
 
-    GenTreePtr indirCandidate = nullptr;
-    GenTreePtr indirOpSource  = nullptr;
+    GenTree* indirCandidate = nullptr;
+    GenTree* indirOpSource  = nullptr;
 
     if (!IsRMWMemOpRootedAtStoreInd(storeInd, &indirCandidate, &indirOpSource))
     {
@@ -1950,8 +1950,8 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         return false;
     }
 
-    GenTreePtr indirDst = storeInd->gtGetOp1();
-    GenTreePtr indirSrc = storeInd->gtGetOp2();
+    GenTree*   indirDst = storeInd->gtGetOp1();
+    GenTree*   indirSrc = storeInd->gtGetOp2();
     genTreeOps oper     = indirSrc->OperGet();
 
     // At this point we have successfully detected a RMW memory op of one of the following forms
@@ -1997,7 +1997,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
     indirSrc->SetContained();
     indirCandidate->SetContained();
 
-    GenTreePtr indirCandidateChild = indirCandidate->gtGetOp1();
+    GenTree* indirCandidateChild = indirCandidate->gtGetOp1();
     indirCandidateChild->SetContained();
 
     if (indirCandidateChild->OperGet() == GT_LEA)
@@ -2068,9 +2068,9 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     // In case of memory-op, we can encode it directly provided its type matches with 'tree' type.
     // This is because during codegen, type of 'tree' is used to determine emit Type size. If the types
     // do not match, they get normalized (i.e. sign/zero extended) on load into a register.
-    bool       directlyEncodable = false;
-    bool       binOpInRMW        = false;
-    GenTreePtr operand           = nullptr;
+    bool     directlyEncodable = false;
+    bool     binOpInRMW        = false;
+    GenTree* operand           = nullptr;
 
     if (IsContainableImmed(node, op2))
     {
@@ -2126,7 +2126,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
     assert(node->OperIsBoundsCheck());
-    GenTreePtr other;
+    GenTree* other;
     if (CheckImmedAndMakeContained(node, node->gtIndex))
     {
         other = node->gtArrLen;

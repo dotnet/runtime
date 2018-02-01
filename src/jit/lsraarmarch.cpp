@@ -106,7 +106,7 @@ void LinearScan::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc, TreeNod
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree, TreeNodeInfo* info)
+void LinearScan::TreeNodeInfoInitCmp(GenTree* tree, TreeNodeInfo* info)
 {
     info->srcCount = appendBinaryLocationInfoToList(tree->AsOp());
 
@@ -116,9 +116,9 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree, TreeNodeInfo* info)
 
 void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree, TreeNodeInfo* info)
 {
-    GenTreePtr            dst      = tree;
-    GenTreePtr            addr     = tree->gtOp.gtOp1;
-    GenTreePtr            src      = tree->gtOp.gtOp2;
+    GenTree*              dst      = tree;
+    GenTree*              addr     = tree->gtOp.gtOp1;
+    GenTree*              src      = tree->gtOp.gtOp2;
     LocationInfoListNode* addrInfo = getLocationInfo(addr);
     LocationInfoListNode* srcInfo  = getLocationInfo(src);
 
@@ -249,8 +249,8 @@ void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree, TreeNodeInfo* in
 //
 int LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree, TreeNodeInfo* info)
 {
-    GenTreePtr source  = tree->gtOp.gtOp1;
-    GenTreePtr shiftBy = tree->gtOp.gtOp2;
+    GenTree* source  = tree->gtOp.gtOp1;
+    GenTree* shiftBy = tree->gtOp.gtOp2;
     assert(info->dstCount == 1);
     if (!shiftBy->isContained())
     {
@@ -471,11 +471,11 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
     // Each register argument corresponds to one source.
     bool callHasFloatRegArgs = false;
 
-    for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
+    for (GenTree* list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
         assert(list->OperIsList());
 
-        GenTreePtr argNode = list->Current();
+        GenTree* argNode = list->Current();
 
 #ifdef DEBUG
         // During TreeNodeInfoInit, we only use the ArgTabEntry for validation,
@@ -578,10 +578,10 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    GenTreePtr args = call->gtCallArgs;
+    GenTree* args = call->gtCallArgs;
     while (args)
     {
-        GenTreePtr arg = args->gtOp.gtOp1;
+        GenTree* arg = args->gtOp.gtOp1;
 
         // Skip arguments that have been moved to the Late Arg list
         if (!(args->gtFlags & GTF_LATE_ARG))
@@ -651,7 +651,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, TreeNodeIn
 {
     assert(argNode->gtOper == GT_PUTARG_STK);
 
-    GenTreePtr putArgChild = argNode->gtOp.gtOp1;
+    GenTree* putArgChild = argNode->gtOp.gtOp1;
 
     info->srcCount = 0;
     info->dstCount = 0;
@@ -684,7 +684,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, TreeNodeIn
             if (putArgChild->OperGet() == GT_OBJ)
             {
                 assert(putArgChild->isContained());
-                GenTreePtr objChild = putArgChild->gtOp.gtOp1;
+                GenTree* objChild = putArgChild->gtOp.gtOp1;
                 if (objChild->OperGet() == GT_LCL_VAR_ADDR)
                 {
                     // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
@@ -732,7 +732,7 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNo
 {
     assert(argNode->gtOper == GT_PUTARG_SPLIT);
 
-    GenTreePtr putArgChild = argNode->gtOp.gtOp1;
+    GenTree* putArgChild = argNode->gtOp.gtOp1;
 
     // Registers for split argument corresponds to source
     info->dstCount = argNode->gtNumRegs;
@@ -760,7 +760,7 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNo
         for (GenTreeFieldList* fieldListPtr = putArgChild->AsFieldList(); fieldListPtr != nullptr;
              fieldListPtr                   = fieldListPtr->Rest())
         {
-            GenTreePtr node = fieldListPtr->gtGetOp1();
+            GenTree* node = fieldListPtr->gtGetOp1();
             assert(!node->isContained());
             LocationInfoListNode* nodeInfo        = getLocationInfo(node);
             unsigned              currentRegCount = nodeInfo->info.dstCount;
@@ -789,7 +789,7 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNo
         regMaskTP internalMask = RBM_ALLINT & ~argMask;
         info->setInternalCandidates(this, internalMask);
 
-        GenTreePtr objChild = putArgChild->gtOp.gtOp1;
+        GenTree* objChild = putArgChild->gtOp.gtOp1;
         if (objChild->OperGet() == GT_LCL_VAR_ADDR)
         {
             // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
@@ -833,8 +833,8 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode, TreeNodeInfo* i
         dstAddrInfo = getLocationInfo(dstAddr);
     }
     assert(info->dstCount == 0);
-    GenTreePtr srcAddrOrFill = nullptr;
-    bool       isInitBlk     = blkNode->OperIsInitBlkOp();
+    GenTree* srcAddrOrFill = nullptr;
+    bool     isInitBlk     = blkNode->OperIsInitBlkOp();
 
     regMaskTP dstAddrRegMask = RBM_NONE;
     regMaskTP sourceRegMask  = RBM_NONE;
@@ -845,7 +845,7 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode, TreeNodeInfo* i
 
     if (isInitBlk)
     {
-        GenTreePtr initVal = source;
+        GenTree* initVal = source;
         if (initVal->OperIsInitVal())
         {
             assert(initVal->isContained());

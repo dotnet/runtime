@@ -718,7 +718,7 @@ void Compiler::optPrintLoopInfo(unsigned lnum)
 //     The 'init' tree is checked if its lhs is a local and rhs is either
 //     a const or a local.
 //
-bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTreePtr init, unsigned iterVar)
+bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTree* init, unsigned iterVar)
 {
     // Operator should be =
     if (init->gtOper != GT_ASG)
@@ -726,8 +726,8 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTreePtr init, unsigned i
         return false;
     }
 
-    GenTreePtr lhs = init->gtOp.gtOp1;
-    GenTreePtr rhs = init->gtOp.gtOp2;
+    GenTree* lhs = init->gtOp.gtOp1;
+    GenTree* rhs = init->gtOp.gtOp2;
     // LHS has to be local and should equal iterVar.
     if (lhs->gtOper != GT_LCL_VAR || lhs->gtLclVarCommon.gtLclNum != iterVar)
     {
@@ -772,10 +772,10 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, GenTreePtr init, unsigned i
 //      if the test condition doesn't involve iterVar.
 //
 bool Compiler::optCheckIterInLoopTest(
-    unsigned loopInd, GenTreePtr test, BasicBlock* from, BasicBlock* to, unsigned iterVar)
+    unsigned loopInd, GenTree* test, BasicBlock* from, BasicBlock* to, unsigned iterVar)
 {
     // Obtain the relop from the "test" tree.
-    GenTreePtr relop;
+    GenTree* relop;
     if (test->gtOper == GT_JTRUE)
     {
         relop = test->gtGetOp1();
@@ -788,11 +788,11 @@ bool Compiler::optCheckIterInLoopTest(
 
     noway_assert(relop->OperKind() & GTK_RELOP);
 
-    GenTreePtr opr1 = relop->gtOp.gtOp1;
-    GenTreePtr opr2 = relop->gtOp.gtOp2;
+    GenTree* opr1 = relop->gtOp.gtOp1;
+    GenTree* opr2 = relop->gtOp.gtOp2;
 
-    GenTreePtr iterOp;
-    GenTreePtr limitOp;
+    GenTree* iterOp;
+    GenTree* limitOp;
 
     // Make sure op1 or op2 is the iterVar.
     if (opr1->gtOper == GT_LCL_VAR && opr1->gtLclVarCommon.gtLclNum == iterVar)
@@ -859,7 +859,7 @@ bool Compiler::optCheckIterInLoopTest(
 //  Return Value:
 //      iterVar local num if the iterVar is found, otherwise BAD_VAR_NUM.
 //
-unsigned Compiler::optIsLoopIncrTree(GenTreePtr incr)
+unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 {
     GenTree*   incrVal;
     genTreeOps updateOper;
@@ -906,7 +906,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTreePtr incr)
 //      Check if the "incr" tree is a "v=v+1 or v+=1" type tree and make sure it is not
 //      assigned in the loop.
 //
-bool Compiler::optComputeIterInfo(GenTreePtr incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar)
+bool Compiler::optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar)
 {
 
     unsigned iterVar = optIsLoopIncrTree(incr);
@@ -946,20 +946,20 @@ bool Compiler::optComputeIterInfo(GenTreePtr incr, BasicBlock* from, BasicBlock*
 //      This method just retrieves what it thinks is the "test" node,
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
-bool Compiler::optIsLoopTestEvalIntoTemp(GenTreePtr testStmt, GenTreePtr* newTest)
+bool Compiler::optIsLoopTestEvalIntoTemp(GenTree* testStmt, GenTree** newTest)
 {
-    GenTreePtr test = testStmt->gtStmt.gtStmtExpr;
+    GenTree* test = testStmt->gtStmt.gtStmtExpr;
 
     if (test->gtOper != GT_JTRUE)
     {
         return false;
     }
 
-    GenTreePtr relop = test->gtGetOp1();
+    GenTree* relop = test->gtGetOp1();
     noway_assert(relop->OperIsCompare());
 
-    GenTreePtr opr1 = relop->gtOp.gtOp1;
-    GenTreePtr opr2 = relop->gtOp.gtOp2;
+    GenTree* opr1 = relop->gtOp.gtOp1;
+    GenTree* opr2 = relop->gtOp.gtOp2;
 
     // Make sure we have jtrue (vtmp != 0)
     if ((relop->OperGet() == GT_NE) && (opr1->OperGet() == GT_LCL_VAR) && (opr2->OperGet() == GT_CNS_INT) &&
@@ -967,17 +967,17 @@ bool Compiler::optIsLoopTestEvalIntoTemp(GenTreePtr testStmt, GenTreePtr* newTes
     {
         // Get the previous statement to get the def (rhs) of Vtmp to see
         // if the "test" is evaluated into Vtmp.
-        GenTreePtr prevStmt = testStmt->gtPrev;
+        GenTree* prevStmt = testStmt->gtPrev;
         if (prevStmt == nullptr)
         {
             return false;
         }
 
-        GenTreePtr tree = prevStmt->gtStmt.gtStmtExpr;
+        GenTree* tree = prevStmt->gtStmt.gtStmtExpr;
         if (tree->OperGet() == GT_ASG)
         {
-            GenTreePtr lhs = tree->gtOp.gtOp1;
-            GenTreePtr rhs = tree->gtOp.gtOp2;
+            GenTree* lhs = tree->gtOp.gtOp1;
+            GenTree* rhs = tree->gtOp.gtOp2;
 
             // Return as the new test node.
             if (lhs->gtOper == GT_LCL_VAR && lhs->AsLclVarCommon()->GetLclNum() == opr1->AsLclVarCommon()->GetLclNum())
@@ -1029,7 +1029,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(GenTreePtr testStmt, GenTreePtr* newTes
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
 bool Compiler::optExtractInitTestIncr(
-    BasicBlock* head, BasicBlock* bottom, BasicBlock* top, GenTreePtr* ppInit, GenTreePtr* ppTest, GenTreePtr* ppIncr)
+    BasicBlock* head, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
 {
     assert(ppInit != nullptr);
     assert(ppTest != nullptr);
@@ -1038,10 +1038,10 @@ bool Compiler::optExtractInitTestIncr(
     // Check if last two statements in the loop body are the increment of the iterator
     // and the loop termination test.
     noway_assert(bottom->bbTreeList != nullptr);
-    GenTreePtr test = bottom->bbTreeList->gtPrev;
+    GenTree* test = bottom->bbTreeList->gtPrev;
     noway_assert(test != nullptr && test->gtNext == nullptr);
 
-    GenTreePtr newTest;
+    GenTree* newTest;
     if (optIsLoopTestEvalIntoTemp(test, &newTest))
     {
         test = newTest;
@@ -1049,7 +1049,7 @@ bool Compiler::optExtractInitTestIncr(
 
     // Check if we have the incr tree before the test tree, if we don't,
     // check if incr is part of the loop "top".
-    GenTreePtr incr = test->gtPrev;
+    GenTree* incr = test->gtPrev;
     if (incr == nullptr || optIsLoopIncrTree(incr->gtStmt.gtStmtExpr) == BAD_VAR_NUM)
     {
         if (top == nullptr || top->bbTreeList == nullptr || top->bbTreeList->gtPrev == nullptr)
@@ -1058,7 +1058,7 @@ bool Compiler::optExtractInitTestIncr(
         }
 
         // If the prev stmt to loop test is not incr, then check if we have loop test evaluated into a tmp.
-        GenTreePtr topLast = top->bbTreeList->gtPrev;
+        GenTree* topLast = top->bbTreeList->gtPrev;
         if (optIsLoopIncrTree(topLast->gtStmt.gtStmtExpr) != BAD_VAR_NUM)
         {
             incr = topLast;
@@ -1073,13 +1073,13 @@ bool Compiler::optExtractInitTestIncr(
 
     // Find the last statement in the loop pre-header which we expect to be the initialization of
     // the loop iterator.
-    GenTreePtr phdr = head->bbTreeList;
+    GenTree* phdr = head->bbTreeList;
     if (phdr == nullptr)
     {
         return false;
     }
 
-    GenTreePtr init = phdr->gtPrev;
+    GenTree* init = phdr->gtPrev;
     noway_assert(init != nullptr && (init->gtNext == nullptr));
 
     // If it is a duplicated loop condition, skip it.
@@ -1225,9 +1225,9 @@ bool Compiler::optRecordLoop(BasicBlock*   head,
     //
     if (bottom->bbJumpKind == BBJ_COND)
     {
-        GenTreePtr init;
-        GenTreePtr test;
-        GenTreePtr incr;
+        GenTree* init;
+        GenTree* test;
+        GenTree* incr;
         if (!optExtractInitTestIncr(head, bottom, top, &init, &test, &incr))
         {
             goto DONE_LOOP;
@@ -3855,9 +3855,9 @@ void Compiler::optUnrollLoops()
                         // Remove the test; we're doing a full unroll.
 
                         GenTreeStmt* testCopyStmt = newBlock->lastStmt();
-                        GenTreePtr   testCopyExpr = testCopyStmt->gtStmt.gtStmtExpr;
+                        GenTree*     testCopyExpr = testCopyStmt->gtStmt.gtStmtExpr;
                         assert(testCopyExpr->gtOper == GT_JTRUE);
-                        GenTreePtr sideEffList = nullptr;
+                        GenTree* sideEffList = nullptr;
                         gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
                         if (sideEffList == nullptr)
                         {
@@ -4083,13 +4083,13 @@ bool Compiler::optReachWithoutCall(BasicBlock* topBB, BasicBlock* botBB)
  * Find the loop termination test at the bottom of the loop
  */
 
-static GenTreePtr optFindLoopTermTest(BasicBlock* bottom)
+static GenTree* optFindLoopTermTest(BasicBlock* bottom)
 {
-    GenTreePtr testt = bottom->bbTreeList;
+    GenTree* testt = bottom->bbTreeList;
 
     assert(testt && testt->gtOper == GT_STMT);
 
-    GenTreePtr result = testt->gtPrev;
+    GenTree* result = testt->gtPrev;
 
 #ifdef DEBUG
     while (testt->gtNext)
@@ -4191,7 +4191,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
         return;
     }
 
-    GenTreePtr condStmt = optFindLoopTermTest(bTest);
+    GenTree* condStmt = optFindLoopTermTest(bTest);
 
     // bTest must only contain only a jtrue with no other stmts, we will only clone
     // the conditional, so any other statements will not get cloned
@@ -4206,7 +4206,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
 
     noway_assert(condStmt->gtOper == GT_STMT);
 
-    GenTreePtr condTree = condStmt->gtStmt.gtStmtExpr;
+    GenTree* condTree = condStmt->gtStmt.gtStmtExpr;
     noway_assert(condTree->gtOper == GT_JTRUE);
 
     condTree = condTree->gtOp.gtOp1;
@@ -4326,7 +4326,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     /* Create a statement entry out of the condition and
        append the condition test at the end of 'block' */
 
-    GenTreePtr copyOfCondStmt = fgInsertStmtAtEnd(block, condTree);
+    GenTree* copyOfCondStmt = fgInsertStmtAtEnd(block, condTree);
 
     copyOfCondStmt->gtFlags |= GTF_STMT_CMPADD;
 
@@ -4946,14 +4946,14 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
 //      block        - the block in which the helper call needs to be inserted.
 //      insertBefore - the tree before which the helper call will be inserted.
 //
-void Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTreePtr insertBefore)
+void Compiler::optDebugLogLoopCloning(BasicBlock* block, GenTree* insertBefore)
 {
     if (JitConfig.JitDebugLogLoopCloning() == 0)
     {
         return;
     }
-    GenTreePtr logCall = gtNewHelperCallNode(CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, TYP_VOID);
-    GenTreePtr stmt    = fgNewStmtFromTree(logCall);
+    GenTree* logCall = gtNewHelperCallNode(CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, TYP_VOID);
+    GenTree* stmt    = fgNewStmtFromTree(logCall);
     fgInsertStmtBefore(block, insertBefore, stmt);
     fgMorphBlockStmt(block, stmt->AsStmt() DEBUGARG("Debug log loop cloning"));
 }
@@ -5596,7 +5596,7 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight)
  *  get called with 'doit' being true, we actually perform the narrowing.
  */
 
-bool Compiler::optNarrowTree(GenTreePtr tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit)
+bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit)
 {
     genTreeOps oper;
     unsigned   kind;
@@ -5764,9 +5764,9 @@ bool Compiler::optNarrowTree(GenTreePtr tree, var_types srct, var_types dstt, Va
 
     if (kind & (GTK_BINOP | GTK_UNOP))
     {
-        GenTreePtr op1;
+        GenTree* op1;
         op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2;
+        GenTree* op2;
         op2 = tree->gtOp.gtOp2;
 
         switch (tree->gtOper)
@@ -5957,13 +5957,13 @@ bool Compiler::optNarrowTree(GenTreePtr tree, var_types srct, var_types dstt, Va
  *  somewhere in a list of basic blocks (or in an entire loop).
  */
 
-Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* data)
 {
-    GenTreePtr tree = *pTree;
+    GenTree* tree = *pTree;
 
     if (tree->OperIsAssignment())
     {
-        GenTreePtr dest     = tree->gtOp.gtOp1;
+        GenTree*   dest     = tree->gtOp.gtOp1;
         genTreeOps destOper = dest->OperGet();
 
         isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
@@ -6026,7 +6026,7 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTreePtr* pTree, fgWalkData* d
 
 /*****************************************************************************/
 
-bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTreePtr skip, unsigned var)
+bool Compiler::optIsVarAssigned(BasicBlock* beg, BasicBlock* end, GenTree* skip, unsigned var)
 {
     bool         result;
     isVarAssgDsc desc;
@@ -6199,7 +6199,7 @@ int Compiler::optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKi
     return 0;
 }
 
-void Compiler::optPerformHoistExpr(GenTreePtr origExpr, unsigned lnum)
+void Compiler::optPerformHoistExpr(GenTree* origExpr, unsigned lnum)
 {
 #ifdef DEBUG
     if (verbose)
@@ -6217,13 +6217,13 @@ void Compiler::optPerformHoistExpr(GenTreePtr origExpr, unsigned lnum)
     assert(optLoopTable[lnum].lpFlags & LPFLG_HOISTABLE);
 
     // Create a copy of the expression and mark it for CSE's.
-    GenTreePtr hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
+    GenTree* hoistExpr = gtCloneExpr(origExpr, GTF_MAKE_CSE);
 
     // At this point we should have a cloned expression, marked with the GTF_MAKE_CSE flag
     assert(hoistExpr != origExpr);
     assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
 
-    GenTreePtr hoist = hoistExpr;
+    GenTree* hoist = hoistExpr;
     // The value of the expression isn't used (unless it's an assignment).
     if (hoistExpr->OperGet() != GT_ASG)
     {
@@ -6248,18 +6248,18 @@ void Compiler::optPerformHoistExpr(GenTreePtr origExpr, unsigned lnum)
 
     hoist = fgMorphTree(hoist);
 
-    GenTreePtr hoistStmt = gtNewStmt(hoist);
+    GenTree* hoistStmt = gtNewStmt(hoist);
     hoistStmt->gtFlags |= GTF_STMT_CMPADD;
 
     /* simply append the statement at the end of the preHead's list */
 
-    GenTreePtr treeList = preHead->bbTreeList;
+    GenTree* treeList = preHead->bbTreeList;
 
     if (treeList)
     {
         /* append after last statement */
 
-        GenTreePtr last = treeList->gtPrev;
+        GenTree* last = treeList->gtPrev;
         assert(last->gtNext == nullptr);
 
         last->gtNext      = hoistStmt;
@@ -6442,7 +6442,7 @@ void Compiler::optHoistLoopCode()
     for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
     {
         TestLabelAndNum tlAndN;
-        GenTreePtr      node = ki.Get();
+        GenTree*        node = ki.Get();
         bool            b    = testData->Lookup(node, &tlAndN);
         assert(b);
         if (tlAndN.m_tl != TL_LoopHoist)
@@ -6710,9 +6710,9 @@ void Compiler::optHoistLoopExprsForBlock(BasicBlock* blk, unsigned lnum, LoopHoi
 
     for (GenTreeStmt* stmt = blk->FirstNonPhiDef(); stmt; stmt = stmt->gtNextStmt)
     {
-        GenTreePtr stmtTree = stmt->gtStmtExpr;
-        bool       hoistable;
-        bool       cctorDependent;
+        GenTree* stmtTree = stmt->gtStmtExpr;
+        bool     hoistable;
+        bool     cctorDependent;
         (void)optHoistLoopExprsForTree(stmtTree, lnum, hoistCtxt, &firstBlockAndBeforeSideEffect, &hoistable,
                                        &cctorDependent);
         if (hoistable)
@@ -6723,7 +6723,7 @@ void Compiler::optHoistLoopExprsForBlock(BasicBlock* blk, unsigned lnum, LoopHoi
     }
 }
 
-bool Compiler::optIsProfitableToHoistableTree(GenTreePtr tree, unsigned lnum)
+bool Compiler::optIsProfitableToHoistableTree(GenTree* tree, unsigned lnum)
 {
     LoopDsc* pLoopDsc = &optLoopTable[lnum];
 
@@ -6825,7 +6825,7 @@ bool Compiler::optIsProfitableToHoistableTree(GenTreePtr tree, unsigned lnum)
 //  hoisted (even if '*pHoistable' is true) unless a preceding corresponding cctor init helper
 //  call is also hoisted.
 //
-bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
+bool Compiler::optHoistLoopExprsForTree(GenTree*          tree,
                                         unsigned          lnum,
                                         LoopHoistContext* hoistCtxt,
                                         bool*             pFirstBlockAndBeforeSideEffect,
@@ -6871,7 +6871,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
             // Check for the case where we can stop propagating cctor-dependent upwards.
             if (tree->OperIs(GT_COMMA) && (childNum == 1))
             {
-                GenTreePtr op1 = tree->gtGetOp1();
+                GenTree* op1 = tree->gtGetOp1();
                 if (op1->OperIs(GT_CALL))
                 {
                     GenTreeCall* call = op1->AsCall();
@@ -6990,7 +6990,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
         else if (tree->OperIsAssignment())
         {
             // If the LHS of the assignment has a global reference, then assume it's a global side effect.
-            GenTreePtr lhs = tree->gtOp.gtOp1;
+            GenTree* lhs = tree->gtOp.gtOp1;
             if (lhs->gtFlags & GTF_GLOB_REF)
             {
                 *pFirstBlockAndBeforeSideEffect = false;
@@ -6998,7 +6998,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
         }
         else if (tree->OperIsCopyBlkOp())
         {
-            GenTreePtr args = tree->gtOp.gtOp1;
+            GenTree* args = tree->gtOp.gtOp1;
             assert(args->OperGet() == GT_LIST);
             if (args->gtOp.gtOp1->gtFlags & GTF_GLOB_REF)
             {
@@ -7024,7 +7024,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
                     continue;
                 }
 
-                GenTreePtr child = tree->GetChild(childNum);
+                GenTree* child = tree->GetChild(childNum);
 
                 // We try to hoist this 'child' tree
                 optHoistCandidate(child, lnum, hoistCtxt);
@@ -7037,7 +7037,7 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
     return treeIsInvariant;
 }
 
-void Compiler::optHoistCandidate(GenTreePtr tree, unsigned lnum, LoopHoistContext* hoistCtxt)
+void Compiler::optHoistCandidate(GenTree* tree, unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     if (lnum == BasicBlock::NOT_IN_LOOP)
     {
@@ -7185,7 +7185,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNToBoolMap* loo
     return res;
 }
 
-bool Compiler::optTreeIsValidAtLoopHead(GenTreePtr tree, unsigned lnum)
+bool Compiler::optTreeIsValidAtLoopHead(GenTree* tree, unsigned lnum)
 {
     if (tree->OperIsLocal())
     {
@@ -7346,14 +7346,14 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // into the phi via the loop header block will now flow through the preheader
     // block from the header block.
 
-    for (GenTreePtr stmt = top->bbTreeList; stmt; stmt = stmt->gtNext)
+    for (GenTree* stmt = top->bbTreeList; stmt; stmt = stmt->gtNext)
     {
-        GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+        GenTree* tree = stmt->gtStmt.gtStmtExpr;
         if (tree->OperGet() != GT_ASG)
         {
             break;
         }
-        GenTreePtr op2 = tree->gtGetOp2();
+        GenTree* op2 = tree->gtGetOp2();
         if (op2->OperGet() != GT_PHI)
         {
             break;
@@ -7588,9 +7588,9 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
     MemoryKindSet memoryHavoc = emptyMemoryKindSet;
 
     // Now iterate over the remaining statements, and their trees.
-    for (GenTreePtr stmts = blk->FirstNonPhiDef(); (stmts != nullptr); stmts = stmts->gtNext)
+    for (GenTree* stmts = blk->FirstNonPhiDef(); (stmts != nullptr); stmts = stmts->gtNext)
     {
-        for (GenTreePtr tree = stmts->gtStmt.gtStmtList; (tree != nullptr); tree = tree->gtNext)
+        for (GenTree* tree = stmts->gtStmt.gtStmtList; (tree != nullptr); tree = tree->gtNext)
         {
             genTreeOps oper = tree->OperGet();
 
@@ -7623,11 +7623,11 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
             if (GenTree::OperIsAssignment(oper))
             {
-                GenTreePtr lhs = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree* lhs = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
 
                 if (lhs->OperGet() == GT_IND)
                 {
-                    GenTreePtr    arg           = lhs->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree*      arg           = lhs->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                     FieldSeqNode* fldSeqArrElem = nullptr;
 
                     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
@@ -7677,8 +7677,8 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         // We are only interested in IsFieldAddr()'s fldSeq out parameter.
                         //
-                        GenTreePtr    obj          = nullptr; // unused
-                        GenTreePtr    staticOffset = nullptr; // unused
+                        GenTree*      obj          = nullptr; // unused
+                        GenTree*      staticOffset = nullptr; // unused
                         FieldSeqNode* fldSeq       = nullptr;
 
                         if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq) &&
@@ -7726,7 +7726,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 else if (lhs->OperGet() == GT_LCL_VAR)
                 {
                     GenTreeLclVar* lhsLcl = lhs->AsLclVar();
-                    GenTreePtr     rhs    = tree->gtOp.gtOp2;
+                    GenTree*       rhs    = tree->gtOp.gtOp2;
                     ValueNum       rhsVN  = rhs->gtVNPair.GetLiberal();
                     // If we gave the RHS a value number, propagate it.
                     if (rhsVN != ValueNumStore::NoVN)
@@ -7757,7 +7757,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     case GT_ADDR:
                         // Is it an addr of a array index expression?
                         {
-                            GenTreePtr addrArg = tree->gtOp.gtOp1;
+                            GenTree* addrArg = tree->gtOp.gtOp1;
                             if (addrArg->OperGet() == GT_IND)
                             {
                                 // Is the LHS an array index expression?
@@ -7910,22 +7910,22 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLAS
  */
 
 /* static */
-Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTree** pTree, fgWalkData* data)
 {
-    GenTreePtr tree     = *pTree;
-    Compiler*  comp     = data->compiler;
-    GenTreePtr keepList = (GenTreePtr)(data->pCallbackData);
+    GenTree*  tree     = *pTree;
+    Compiler* comp     = data->compiler;
+    GenTree*  keepList = (GenTree*)(data->pCallbackData);
 
     // We may have a non-NULL side effect list that is being kept
     //
     if (keepList)
     {
-        GenTreePtr keptTree = keepList;
+        GenTree* keptTree = keepList;
         while (keptTree->OperGet() == GT_COMMA)
         {
             assert(keptTree->OperKind() & GTK_SMPOP);
-            GenTreePtr op1 = keptTree->gtOp.gtOp1;
-            GenTreePtr op2 = keptTree->gtGetOp2();
+            GenTree* op1 = keptTree->gtOp.gtOp1;
+            GenTree* op2 = keptTree->gtGetOp2();
 
             // For the GT_COMMA case the op1 is part of the orginal CSE tree
             // that is being kept because it contains some side-effect
@@ -7948,7 +7948,7 @@ Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTreePtr* pTree, fgWalkD
         }
     }
 
-    // This node is being removed from the graph of GenTreePtr
+    // This node is being removed from the graph of GenTree*
 
     // Look for any local variable references
 
@@ -7988,7 +7988,7 @@ Compiler::fgWalkResult Compiler::optRemoveTreeVisitor(GenTreePtr* pTree, fgWalkD
  *  'deadTree' as we need to fetch the block weight when decrementing the ref counts.
  */
 
-void Compiler::optRemoveTree(GenTreePtr deadTree, GenTreePtr keepList)
+void Compiler::optRemoveTree(GenTree* deadTree, GenTree* keepList)
 {
     // We communicate this value using the walkData.pCallbackData field
     //
@@ -8002,7 +8002,7 @@ void Compiler::optRemoveTree(GenTreePtr deadTree, GenTreePtr keepList)
 //    tree   -  Range check tree
 //    stmt   -  Statement the tree belongs to
 
-void Compiler::optRemoveRangeCheck(GenTreePtr tree, GenTreePtr stmt)
+void Compiler::optRemoveRangeCheck(GenTree* tree, GenTree* stmt)
 {
 #if !REARRANGE_ADDS
     noway_assert(!"can't remove range checks without REARRANGE_ADDS right now");
@@ -8025,7 +8025,7 @@ void Compiler::optRemoveRangeCheck(GenTreePtr tree, GenTreePtr stmt)
     }
 #endif
 
-    GenTreePtr sideEffList = nullptr;
+    GenTree* sideEffList = nullptr;
 
     gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
 
@@ -8063,7 +8063,7 @@ void Compiler::optRemoveRangeCheck(GenTreePtr tree, GenTreePtr stmt)
  * multiplication node.
  */
 
-ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTreePtr mul, GenTreePtr* pIndex DEBUGARG(bool bRngChk))
+ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk))
 {
     assert(mul);
     assert(mul->gtOper == GT_MUL || mul->gtOper == GT_LSH);
@@ -8076,7 +8076,7 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTreePtr mul, GenTreePtr* pIndex
         scale = ((ssize_t)1) << scale;
     }
 
-    GenTreePtr index = mul->gtOp.gtOp1;
+    GenTree* index = mul->gtOp.gtOp1;
 
     if (index->gtOper == GT_MUL && index->gtOp.gtOp2->IsCnsIntOrI())
     {
@@ -8106,10 +8106,10 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTreePtr mul, GenTreePtr* pIndex
  *
  */
 
-GenTreePtr Compiler::optFindLocalInit(BasicBlock* block,
-                                      GenTreePtr  local,
-                                      VARSET_TP*  pKilledInOut,
-                                      bool*       pLhsRhsKilledAfterInit)
+GenTree* Compiler::optFindLocalInit(BasicBlock* block,
+                                    GenTree*    local,
+                                    VARSET_TP*  pKilledInOut,
+                                    bool*       pLhsRhsKilledAfterInit)
 {
     assert(pKilledInOut);
     assert(pLhsRhsKilledAfterInit);
@@ -8118,14 +8118,14 @@ GenTreePtr Compiler::optFindLocalInit(BasicBlock* block,
 
     unsigned LclNum = local->gtLclVarCommon.gtLclNum;
 
-    GenTreePtr list = block->bbTreeList;
+    GenTree* list = block->bbTreeList;
     if (list == nullptr)
     {
         return nullptr;
     }
 
-    GenTreePtr rhs  = nullptr;
-    GenTreePtr stmt = list;
+    GenTree* rhs  = nullptr;
+    GenTree* stmt = list;
     do
     {
         stmt = stmt->gtPrev;
@@ -8134,7 +8134,7 @@ GenTreePtr Compiler::optFindLocalInit(BasicBlock* block,
             break;
         }
 
-        GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+        GenTree* tree = stmt->gtStmt.gtStmtExpr;
         // If we encounter an assignment to a local variable,
         if (tree->OperIsAssignment() && tree->gtOp.gtOp1->gtOper == GT_LCL_VAR)
         {
@@ -8309,7 +8309,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
     }
 
 #ifdef DEBUG
-    GenTreePtr op1 = pLoop->lpIterator();
+    GenTree* op1 = pLoop->lpIterator();
     noway_assert((op1->gtOper == GT_LCL_VAR) && (op1->gtLclVarCommon.gtLclNum == ivLclNum));
 #endif
 
@@ -8320,7 +8320,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
     for (BasicBlock* block = beg; block != end->bbNext; block = block->bbNext)
     {
         compCurBB = block;
-        for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+        for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
             info.stmt               = stmt;
             const bool lclVarsOnly  = false;
@@ -8373,13 +8373,13 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
 //    [000000001AF829F0] -A-XG-------               =         int
 //    [000000001AF82978] D------N----                  lclVar    int    V06 tmp0
 //
-bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lhsNum)
+bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
 {
     if (tree->gtOper != GT_COMMA)
     {
         return false;
     }
-    GenTreePtr before = tree->gtGetOp1();
+    GenTree* before = tree->gtGetOp1();
     if (before->gtOper != GT_ARR_BOUNDS_CHECK)
     {
         return false;
@@ -8410,7 +8410,7 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
 
     unsigned indLcl = arrBndsChk->gtIndex->gtLclVarCommon.gtLclNum;
 
-    GenTreePtr after = tree->gtGetOp2();
+    GenTree* after = tree->gtGetOp2();
 
     if (after->gtOper != GT_IND)
     {
@@ -8427,13 +8427,13 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
         return false;
     }
 
-    GenTreePtr sibo = after->gtGetOp1();
+    GenTree* sibo = after->gtGetOp1();
     if (sibo->gtOper != GT_ADD)
     {
         return false;
     }
-    GenTreePtr sib = sibo->gtGetOp1();
-    GenTreePtr ofs = sibo->gtGetOp2();
+    GenTree* sib = sibo->gtGetOp1();
+    GenTree* ofs = sibo->gtGetOp2();
     if (ofs->gtOper != GT_CNS_INT)
     {
         return false;
@@ -8442,8 +8442,8 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
     {
         return false;
     }
-    GenTreePtr si   = sib->gtGetOp2();
-    GenTreePtr base = sib->gtGetOp1();
+    GenTree* si   = sib->gtGetOp2();
+    GenTree* base = sib->gtGetOp1();
     if (si->gtOper != GT_LSH)
     {
         return false;
@@ -8452,8 +8452,8 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
     {
         return false;
     }
-    GenTreePtr scale = si->gtGetOp2();
-    GenTreePtr index = si->gtGetOp1();
+    GenTree* scale = si->gtGetOp2();
+    GenTree* index = si->gtGetOp1();
     if (scale->gtOper != GT_CNS_INT)
     {
         return false;
@@ -8463,9 +8463,9 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
     {
         return false;
     }
-    GenTreePtr indexVar = index->gtGetOp1();
+    GenTree* indexVar = index->gtGetOp1();
 #else
-    GenTreePtr indexVar = index;
+    GenTree* indexVar = index;
 #endif
     if (indexVar->gtOper != GT_LCL_VAR || indexVar->gtLclVarCommon.gtLclNum != indLcl)
     {
@@ -8520,7 +8520,7 @@ bool Compiler::optExtractArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lh
 //  Assumption:
 //      The method extracts only if the array base and indices are GT_LCL_VAR.
 //
-bool Compiler::optReconstructArrIndex(GenTreePtr tree, ArrIndex* result, unsigned lhsNum)
+bool Compiler::optReconstructArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum)
 {
     // If we can extract "tree" (which is a top level comma) return.
     if (optExtractArrIndex(tree, result, lhsNum))
@@ -8530,22 +8530,22 @@ bool Compiler::optReconstructArrIndex(GenTreePtr tree, ArrIndex* result, unsigne
     // We have a comma (check if array base expr is computed in "before"), descend further.
     else if (tree->OperGet() == GT_COMMA)
     {
-        GenTreePtr before = tree->gtGetOp1();
+        GenTree* before = tree->gtGetOp1();
         // "before" should evaluate an array base for the "after" indexing.
         if (before->OperGet() != GT_ASG)
         {
             return false;
         }
-        GenTreePtr lhs = before->gtGetOp1();
-        GenTreePtr rhs = before->gtGetOp2();
+        GenTree* lhs = before->gtGetOp1();
+        GenTree* rhs = before->gtGetOp2();
 
         // "rhs" should contain an GT_INDEX
         if (!lhs->IsLocal() || !optReconstructArrIndex(rhs, result, lhsNum))
         {
             return false;
         }
-        unsigned   lhsNum = lhs->gtLclVarCommon.gtLclNum;
-        GenTreePtr after  = tree->gtGetOp2();
+        unsigned lhsNum = lhs->gtLclVarCommon.gtLclNum;
+        GenTree* after  = tree->gtGetOp2();
         // Pass the "lhsNum", so we can verify if indeed it is used as the array base.
         return optExtractArrIndex(after, result, lhsNum);
     }
@@ -8553,7 +8553,7 @@ bool Compiler::optReconstructArrIndex(GenTreePtr tree, ArrIndex* result, unsigne
 }
 
 /* static */
-Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTreePtr* pTree, Compiler::fgWalkData* data)
+Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloningVisitor(GenTree** pTree, Compiler::fgWalkData* data)
 {
     return data->compiler->optCanOptimizeByLoopCloning(*pTree, (LoopCloneVisitorInfo*)data->pCallbackData);
 }
@@ -8599,7 +8599,7 @@ bool Compiler::optIsStackLocalInvariant(unsigned loopNum, unsigned lclNum)
 //  Return Value:
 //      Skip sub trees if the optimization candidate is identified or else continue walking
 //
-Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTreePtr tree, LoopCloneVisitorInfo* info)
+Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info)
 {
     ArrIndex arrIndex(getAllocator());
 
@@ -8674,9 +8674,9 @@ struct optRangeCheckDsc
     Walk to make sure that only locals and constants are contained in the index
     for a range check
 */
-Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTree** pTree, fgWalkData* data)
 {
-    GenTreePtr        tree  = *pTree;
+    GenTree*          tree  = *pTree;
     optRangeCheckDsc* pData = (optRangeCheckDsc*)data->pCallbackData;
 
     if (tree->gtOper == GT_IND || tree->gtOper == GT_CLS_VAR || tree->gtOper == GT_FIELD || tree->gtOper == GT_LCL_FLD)
@@ -8702,16 +8702,16 @@ Compiler::fgWalkResult Compiler::optValidRangeCheckIndex(GenTreePtr* pTree, fgWa
     that the array is a local array (non subject to racing conditions) and that the
     index is either a constant or a local
 */
-bool Compiler::optIsRangeCheckRemovable(GenTreePtr tree)
+bool Compiler::optIsRangeCheckRemovable(GenTree* tree)
 {
     noway_assert(tree->gtOper == GT_ARR_BOUNDS_CHECK);
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-    GenTreePtr        pArray  = bndsChk->GetArray();
+    GenTree*          pArray  = bndsChk->GetArray();
     if (pArray == nullptr && !bndsChk->gtArrLen->IsCnsIntOrI())
     {
         return false;
     }
-    GenTreePtr pIndex = bndsChk->gtIndex;
+    GenTree* pIndex = bndsChk->gtIndex;
 
     // The length must be a constant (the pArray == NULL case) or the array reference must be a local.
     // Otherwise we can be targeted by malicious race-conditions.
@@ -8789,14 +8789,14 @@ void Compiler::optOptimizeBoolsGcStress(BasicBlock* condBlock)
     }
 
     noway_assert(condBlock->bbJumpKind == BBJ_COND);
-    GenTreePtr condStmt = condBlock->bbTreeList->gtPrev->gtStmt.gtStmtExpr;
+    GenTree* condStmt = condBlock->bbTreeList->gtPrev->gtStmt.gtStmtExpr;
 
     noway_assert(condStmt->gtOper == GT_JTRUE);
 
-    bool       isBool;
-    GenTreePtr relop;
+    bool     isBool;
+    GenTree* relop;
 
-    GenTreePtr comparand = optIsBoolCond(condStmt, &relop, &isBool);
+    GenTree* comparand = optIsBoolCond(condStmt, &relop, &isBool);
 
     if (comparand == nullptr || !varTypeIsGC(comparand->TypeGet()))
     {
@@ -8808,7 +8808,7 @@ void Compiler::optOptimizeBoolsGcStress(BasicBlock* condBlock)
         return;
     }
 
-    GenTreePtr comparandClone = gtCloneExpr(comparand);
+    GenTree* comparandClone = gtCloneExpr(comparand);
 
     // Bump up the ref-counts of any variables in 'comparandClone'
     compCurBB = condBlock;
@@ -9005,22 +9005,22 @@ void Compiler::optOptimizeBools()
 
             /* The second block must contain a single statement */
 
-            GenTreePtr s2 = b2->bbTreeList;
+            GenTree* s2 = b2->bbTreeList;
             if (s2->gtPrev != s2)
             {
                 continue;
             }
 
             noway_assert(s2->gtOper == GT_STMT);
-            GenTreePtr t2 = s2->gtStmt.gtStmtExpr;
+            GenTree* t2 = s2->gtStmt.gtStmtExpr;
             noway_assert(t2->gtOper == GT_JTRUE);
 
             /* Find the condition for the first block */
 
-            GenTreePtr s1 = b1->bbTreeList->gtPrev;
+            GenTree* s1 = b1->bbTreeList->gtPrev;
 
             noway_assert(s1->gtOper == GT_STMT);
-            GenTreePtr t1 = s1->gtStmt.gtStmtExpr;
+            GenTree* t1 = s1->gtStmt.gtStmtExpr;
             noway_assert(t1->gtOper == GT_JTRUE);
 
             if (b2->countOfInEdges() > 1)
@@ -9032,13 +9032,13 @@ void Compiler::optOptimizeBools()
 
             bool bool1, bool2;
 
-            GenTreePtr c1 = optIsBoolCond(t1, &t1, &bool1);
+            GenTree* c1 = optIsBoolCond(t1, &t1, &bool1);
             if (!c1)
             {
                 continue;
             }
 
-            GenTreePtr c2 = optIsBoolCond(t2, &t2, &bool2);
+            GenTree* c2 = optIsBoolCond(t2, &t2, &bool2);
             if (!c2)
             {
                 continue;
@@ -9156,7 +9156,7 @@ void Compiler::optOptimizeBools()
             //
             // Now update the trees
             //
-            GenTreePtr cmpOp1 = gtNewOperNode(foldOp, foldType, c1, c2);
+            GenTree* cmpOp1 = gtNewOperNode(foldOp, foldType, c1, c2);
             if (bool1 && bool2)
             {
                 /* When we 'OR'/'AND' two booleans, the result is boolean as well */
@@ -9169,7 +9169,7 @@ void Compiler::optOptimizeBools()
 
 #if FEATURE_SET_FLAGS
             // For comparisons against zero we will have the GTF_SET_FLAGS set
-            // and this can cause an assert to fire in fgMoveOpsLeft(GenTreePtr tree)
+            // and this can cause an assert to fire in fgMoveOpsLeft(GenTree* tree)
             // during the CSE phase.
             //
             // So make sure to clear any GTF_SET_FLAGS bit on these operations
