@@ -457,7 +457,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if ((flags & HW_Flag_Generic) != 0)
+    if ((flags & (HW_Flag_OneTypeGeneric | HW_Flag_TwoTypeGeneric)) != 0)
     {
         assert(baseType != TYP_UNKNOWN);
         // When the type argument is not a numeric type (and we are not being forced to expand), we need to
