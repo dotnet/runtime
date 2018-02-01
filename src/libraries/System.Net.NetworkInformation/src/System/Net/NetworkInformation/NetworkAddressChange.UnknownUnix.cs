@@ -4,7 +4,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    public class NetworkChange
+    public partial class NetworkChange
     {
         public static event NetworkAddressChangedEventHandler NetworkAddressChanged
         {
