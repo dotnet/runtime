@@ -361,6 +361,39 @@ enum set_pause_mode_status
     set_pause_mode_no_gc = 1 // NoGCRegion is in progress, can't change pause mode.
 };
 
+/*
+ Latency modes required user to have specific GC knowledge (eg, budget, full blocking GC).
+ We are trying to move away from them as it makes a lot more sense for users to tell 
+ us what's the most important out of the perf aspects that make sense to them. 
+
+ In general there are 3 such aspects:
+
+ + memory footprint
+ + throughput
+ + pause predictibility
+
+ Currently the following levels are supported. We may (and will likely) add more
+ in the future.
+
+ +----------+--------------------+---------------------------------------+
+ | Level    | Optimization Goals | Latency Charactaristics               |
+ +==========+====================+=======================================+
+ | 0        | memory footprint   | pauses can be long and more frequent  |
+ +----------+--------------------+---------------------------------------+
+ | 1        | balanced           | pauses are more predictable and more  |
+ |          |                    | frequent. the longest pauses are      |
+ |          |                    | shorter than 1.                       |
+ +----------+--------------------+---------------------------------------+
+*/
+enum gc_latency_level
+{
+    latency_level_first = 0,
+    latency_level_memory_footprint = latency_level_first,
+    latency_level_balanced = 1,
+    latency_level_last = latency_level_balanced,
+    latency_level_default = latency_level_balanced
+};
+
 enum gc_tuning_point
 {
     tuning_deciding_condemned_gen,
@@ -730,12 +763,26 @@ static_assert(offsetof(dac_generation, allocation_context) == offsetof(generatio
 static_assert(offsetof(dac_generation, start_segment) == offsetof(generation, start_segment), "DAC generation offset mismatch");
 static_assert(offsetof(dac_generation, allocation_start) == offsetof(generation, allocation_start), "DAC generation offset mismatch");
 
+// static data remains the same after it's initialized.
+// It's per generation.
+// TODO: for gen_time_tuning, we should put the multipliers in static data.
+struct static_data
+{
+    size_t min_size;
+    size_t max_size;
+    size_t fragmentation_limit;
+    float fragmentation_burden_limit;
+    float limit;
+    float max_limit;
+    size_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
+    size_t gc_clock; // nubmer of gcs after which to collect generation
+};
 
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
 // physical data (like fragmentation)
-// const data (like min_gc_size), initialized at the beginning
+// const data (sdata), initialized at the beginning
 class dynamic_data
 {
 public:
@@ -772,15 +819,9 @@ public:
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
     float     gc_speed;         //  speed in bytes/msec for the gc to complete
 
-    // min_size is always the same as min_gc_size..
-    size_t    min_gc_size;
-    size_t    max_size;
     size_t    min_size;
-    size_t    default_new_allocation;
-    size_t    fragmentation_limit;
-    float     fragmentation_burden_limit;
-    float     limit;
-    float     max_limit;
+
+    static_data* sdata;
 };
 
 #define ro_in_entry 0x1
@@ -2407,6 +2448,12 @@ protected:
     void save_ephemeral_generation_starts();
 
     PER_HEAP
+    void set_static_data();
+
+    PER_HEAP_ISOLATED
+    void init_static_data();
+
+    PER_HEAP
     bool init_dynamic_data ();
     PER_HEAP
     float surv_to_growth (float cst, float limit, float max_limit);
@@ -2892,6 +2939,9 @@ public:
     size_t allocation_running_amount;
 
 #endif //MULTIPLE_HEAPS
+
+    PER_HEAP_ISOLATED
+    gc_latency_level latency_level;
 
     PER_HEAP_ISOLATED
     gc_mechanisms settings;
@@ -3797,22 +3847,17 @@ size_t& dd_promoted_size (dynamic_data* inst)
 inline
 float& dd_limit (dynamic_data* inst)
 {
-  return inst->limit;
+  return inst->sdata->limit;
 }
 inline
 float& dd_max_limit (dynamic_data* inst)
 {
-  return inst->max_limit;
-}
-inline
-size_t& dd_min_gc_size (dynamic_data* inst)
-{
-  return inst->min_gc_size;
+  return inst->sdata->max_limit;
 }
 inline
 size_t& dd_max_size (dynamic_data* inst)
 {
-  return inst->max_size;
+  return inst->sdata->max_size;
 }
 inline
 size_t& dd_min_size (dynamic_data* inst)
@@ -3830,19 +3875,14 @@ ptrdiff_t& dd_gc_new_allocation (dynamic_data* inst)
   return inst->gc_new_allocation;
 }
 inline
-size_t& dd_default_new_allocation (dynamic_data* inst)
-{
-  return inst->default_new_allocation;
-}
-inline
 size_t& dd_fragmentation_limit (dynamic_data* inst)
 {
-  return inst->fragmentation_limit;
+  return inst->sdata->fragmentation_limit;
 }
 inline
 float& dd_fragmentation_burden_limit (dynamic_data* inst)
 {
-  return inst->fragmentation_burden_limit;
+  return inst->sdata->fragmentation_burden_limit;
 }
 inline
 float dd_v_fragmentation_burden_limit (dynamic_data* inst)
@@ -3864,6 +3904,17 @@ inline
 size_t& dd_time_clock (dynamic_data* inst)
 {
   return inst->time_clock;
+}
+
+inline
+size_t& dd_gc_clock_interval (dynamic_data* inst)
+{
+  return inst->sdata->gc_clock;
+}
+inline
+size_t& dd_time_clock_interval (dynamic_data* inst)
+{
+  return inst->sdata->time_clock;
 }
 
 inline

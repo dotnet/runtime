@@ -83,6 +83,9 @@ public:
   INT_CONFIG(LatencyMode,   "GCLatencyMode", -1,                                               \
       "Specifies the GC latency mode - batch, interactive or low latency (note that the same " \
       "thing can be specified via API which is the supported way")                             \
+  INT_CONFIG(LatencyLevel,  "GCLatencyLevel", 1,                                               \
+      "Specifies the GC latency level that you want to optimize for. Must be a number from 0"  \
+      "3. See documentation for more details on each level.")                                  \
   INT_CONFIG(LogFileSize,   "GCLogFileSize", 0, "Specifies the GC log file size")              \
   INT_CONFIG(CompactRatio,  "GCCompactRatio", 0,                                               \
       "Specifies the ratio compacting GCs vs sweeping")                                        \
