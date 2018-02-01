@@ -216,11 +216,9 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
         case INS_movlpd:
         case INS_movlps:
         case INS_movss:
-        case INS_rcpps:
         case INS_rcpss:
         case INS_roundsd:
         case INS_roundss:
-        case INS_rsqrtps:
         case INS_rsqrtss:
         case INS_sqrtsd:
         case INS_sqrtss:
