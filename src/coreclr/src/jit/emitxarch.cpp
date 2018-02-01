@@ -12043,7 +12043,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_SRD:
         case IF_RWR_SRD:
         case IF_RRW_SRD:
-        case IF_RWR_RRD_SRD:
             code = insCodeRM(ins);
 
             // 4-byte AVX instructions are special cased inside emitOutputSV
@@ -12058,15 +12057,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
-                    regNumber src1 = id->idReg2();
-
-                    if (id->idInsFmt() != IF_RWR_RRD_SRD)
-                    {
-                        src1 = id->idReg1();
-                    }
-
                     // encode source operand reg in 'vvvv' bits in 1's compliement form
-                    code = insEncodeReg3456(ins, src1, size, code);
+                    code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -12074,8 +12066,37 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             break;
 
+        case IF_RWR_RRD_SRD:
+        {
+            // This should only be called on AVX instructions
+            assert(IsAVXInstruction(ins));
+
+            code = insCodeRM(ins);
+
+            // 4-byte AVX instructions are special cased inside emitOutputSV
+            // since they do not have space to encode ModRM byte.
+            if (Is4ByteAVXInstruction(ins))
+            {
+                dst = emitOutputSV(dst, id, code);
+            }
+            else
+            {
+                code = AddVexPrefixIfNeeded(ins, code, size);
+
+                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                code = insEncodeReg3456(ins, id->idReg2(), size, code);
+
+                regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputSV(dst, id, code | regcode);
+            }
+            break;
+        }
+
         case IF_RWR_RRD_SRD_CNS:
         {
+            // This should only be called on AVX instructions
+            assert(IsAVXInstruction(ins));
+
             emitGetInsCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -12089,11 +12110,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                if (IsDstDstSrcAVXInstruction(ins))
-                {
-                    // encode source operand reg in 'vvvv' bits in 1's compliement form
-                    code = insEncodeReg3456(ins, id->idReg1(), size, code);
-                }
+                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                code = insEncodeReg3456(ins, id->idReg2(), size, code);
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode, &cnsVal);
@@ -12188,7 +12206,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRD_MRD:
         case IF_RWR_MRD:
         case IF_RRW_MRD:
-        case IF_RWR_RRD_MRD:
             code = insCodeRM(ins);
             // Special case 4-byte AVX instructions
             if (Is4ByteAVXInstruction(ins))
@@ -12201,15 +12218,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
-                    regNumber src1 = id->idReg2();
-
-                    if (id->idInsFmt() != IF_RWR_RRD_MRD)
-                    {
-                        src1 = id->idReg1();
-                    }
-
                     // encode source operand reg in 'vvvv' bits in 1's compliement form
-                    code = insEncodeReg3456(ins, src1, size, code);
+                    code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -12218,8 +12228,37 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz = emitSizeOfInsDsc(id);
             break;
 
+        case IF_RWR_RRD_MRD:
+        {
+            // This should only be called on AVX instructions
+            assert(IsAVXInstruction(ins));
+
+            code = insCodeRM(ins);
+
+            // Special case 4-byte AVX instructions
+            if (Is4ByteAVXInstruction(ins))
+            {
+                dst = emitOutputCV(dst, id, code);
+            }
+            else
+            {
+                code = AddVexPrefixIfNeeded(ins, code, size);
+
+                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                code = insEncodeReg3456(ins, id->idReg2(), size, code);
+
+                regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
+            }
+            sz = emitSizeOfInsDsc(id);
+            break;
+        }
+
         case IF_RWR_RRD_MRD_CNS:
         {
+            // This should only be called on AVX instructions
+            assert(IsAVXInstruction(ins));
+
             emitGetInsCns(id, &cnsVal);
             code = insCodeRM(ins);
 
@@ -12232,11 +12271,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                if (IsDstDstSrcAVXInstruction(ins))
-                {
-                    // encode source operand reg in 'vvvv' bits in 1's compliement form
-                    code = insEncodeReg3456(ins, id->idReg1(), size, code);
-                }
+                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                code = insEncodeReg3456(ins, id->idReg2(), size, code);
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500, &cnsVal);
