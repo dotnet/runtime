@@ -195,7 +195,7 @@
   <Target Name="SetCecilConfiguration"
           AfterTargets="AssignProjectConfiguration">
     <ItemGroup>
-      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.csproj' Or '%(Filename)%(Extension)' == 'Mono.Cecil.Pdb.csproj' ">
+      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.csproj' Or '%(Filename)%(Extension)' == 'Mono.Cecil.Pdb.csproj' Or '%(Filename)%(Extension)' == 'Mono.Cecil.Mdb.csproj' ">
         <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_$(Configuration)</SetConfiguration>
         <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">Configuration=netstandard_$(Configuration)</SetConfiguration>
       </ProjectReferenceWithConfiguration>

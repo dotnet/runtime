@@ -45,6 +45,12 @@
         <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Release' ">Configuration=net_4_0_Release</SetConfiguration>
         <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
       </ProjectReferenceWithConfiguration>
+      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.Mdb.csproj' ">
+        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Debug' ">Configuration=net_4_0_Debug</SetConfiguration>
+        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Release' ">Configuration=net_4_0_Release</SetConfiguration>
+        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
+      </ProjectReferenceWithConfiguration>
     </ItemGroup>
   </Target>
 </Project>
