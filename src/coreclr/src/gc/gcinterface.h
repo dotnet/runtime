@@ -202,9 +202,6 @@ extern uint8_t* g_GCShadowEnd;
 extern uint8_t* g_shadow_lowest_address;
 #endif
 
-// For low memory notification from host
-extern int32_t g_bLowMemoryFromHost;
-
 // Event levels corresponding to events that can be fired by the GC.
 enum GCEventLevel
 {
