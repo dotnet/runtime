@@ -43,6 +43,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.ThrowsAny<SocketException>(() => NameResolutionPal.GetHostByName(hostName));
         }
 
+        [ActiveIssue(20245, TestPlatforms.AnyUnix)]
         [Fact]
         public void GetHostByName_HostName()
         {
@@ -116,6 +117,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostEntry.Aliases);
         }
 
+        [ActiveIssue(20245, TestPlatforms.AnyUnix)]
         [Fact]
         public void TryGetAddrInfo_HostName()
         {
