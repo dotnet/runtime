@@ -1865,8 +1865,8 @@ public:
 private:
     PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
     PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
-    PCODE GetPrecompiledNgenCode();
-    PCODE GetPrecompiledR2RCode();
+    PCODE GetPrecompiledNgenCode(PrepareCodeConfig* pConfig);
+    PCODE GetPrecompiledR2RCode(PrepareCodeConfig* pConfig);
     PCODE GetMulticoreJitCode();
     COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
     COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
@@ -1891,12 +1891,18 @@ public:
     virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
+    BOOL ProfilerRejectedPrecompiledCode();
+    BOOL ReadyToRunRejectedPrecompiledCode();
+    void SetProfilerRejectedPrecompiledCode();
+    void SetReadyToRunRejectedPrecompiledCode();
     
 protected:
     MethodDesc* m_pMethodDesc;
     NativeCodeVersion m_nativeCodeVersion;
     BOOL m_needsMulticoreJitNotification;
     BOOL m_mayUsePrecompiledCode;
+    BOOL m_ProfilerRejectedPrecompiledCode;
+    BOOL m_ReadyToRunRejectedPrecompiledCode;
 };
 
 #ifdef FEATURE_CODE_VERSIONING
