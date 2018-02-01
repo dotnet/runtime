@@ -467,11 +467,9 @@ namespace System.Net.Security
         //
         internal void Close()
         {
-            _exception = ExceptionDispatchInfo.Capture(new ObjectDisposedException("SslStream"));
-            if (Context != null)
-            {
-                Context.Close();
-            }
+            _exception = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream)));
+            Context?.Close();
+            _secureStream?.Dispose();
         }
 
         internal SecurityStatusPal EncryptData(ReadOnlyMemory<byte> buffer, ref byte[] outBuffer, out int outSize)
