@@ -44,6 +44,7 @@ public:
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
     static void SyncBlockCacheDemote(int max_gen);
     static void SyncBlockCachePromotionsGranted(int max_gen);
+    static uint32_t GetActiveSyncBlockCount();
 
     // Thread functions
     static bool IsPreemptiveGCDisabled(Thread * pThread);

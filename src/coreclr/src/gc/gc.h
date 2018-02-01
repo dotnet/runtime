@@ -122,6 +122,12 @@ class DacHeapWalker;
 extern "C" uint32_t* g_gc_card_bundle_table;
 #endif
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+// Note this is not updated in a thread safe way so the value may not be accurate. We get
+// it accurately in full GCs if the handle count is requested.
+extern DWORD g_dwHandles;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;

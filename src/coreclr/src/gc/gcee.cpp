@@ -132,7 +132,7 @@ void GCHeap::UpdatePostGCCounters()
     memset (g_GenerationPromotedSizes, 0, sizeof (g_GenerationPromotedSizes));
     
     size_t total_num_gc_handles = g_dwHandles;
-    uint32_t total_num_sync_blocks = SyncBlockCache::GetSyncBlockCache()->GetActiveCount();
+    uint32_t total_num_sync_blocks = GCToEEInterface::GetActiveSyncBlockCount();
 
     // Note this is however for perf counter only, for legacy reasons. What we showed 
     // in perf counters for "gen0 size" was really the gen0 budget which made

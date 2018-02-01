@@ -21,6 +21,10 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+DWORD g_dwHandles = 0;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 /****************************************************************************
  *
  * FORWARD DECLARATIONS
@@ -342,6 +346,10 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
         HandleQuickSetUserData(handle, lExtraInfo);
     }
 
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles++;
+#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+
     // store the reference
     HndAssignHandle(handle, object);
     STRESS_LOG2(LF_GC, LL_INFO1000, "CreateHandle: %p, type=%d\n", handle, uType);
@@ -464,6 +472,10 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
 
     // return the handle to the table's cache
     TableFreeSingleHandleToCache(pTable, uType, handle);
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles--;
+#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 }
 
 
