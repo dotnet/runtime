@@ -201,10 +201,65 @@ namespace Arm64intrisicsTest
             }
         }
 
+        static void testPermuteOp<TBaseType, TVectorType>(String testCaseDescription,
+                                                      Func<TVectorType, TVectorType, TVectorType> binOp,
+                                                      Func<int, TBaseType[], TBaseType[], TBaseType> check)
+            where TBaseType : struct, IComparable
+            where TVectorType : new()
+        {
+            bool failed = false;
+            try
+            {
+                var vLeft  = DataSet<TBaseType, TVectorType>.vectorX;
+                var vRight = DataSet<TBaseType, TVectorType>.vectorY;
+
+                var vResult = binOp(vLeft, vRight);
+
+                var result = writeVector<TBaseType, TVectorType>(vResult);
+
+                var left   = DataSet<TBaseType, TVectorType>.arrayX;
+                var right  = DataSet<TBaseType, TVectorType>.arrayY;
+
+                for (int i = 0; i < result.Length; i++)
+                {
+                    var expected = check(i, left, right);
+
+                    if (result[i].CompareTo(expected) != 0)
+                    {
+                        if(!failed)
+                        {
+                            Console.WriteLine($"testPermuteOp<{typeof(TBaseType).Name}, {typeof(TVectorType).Name} >{testCaseDescription}: Check Failed");
+                        }
+                        Console.WriteLine($"check({left[i]}, {right[i]}) : result[{i}] = {result[i]}, expected {expected}");
+                        failed = true;
+                    }
+                }
+            }
+            catch
+            {
+                Console.WriteLine($"testPermuteOp<{typeof(TBaseType).Name}, {typeof(TVectorType).Name} >{testCaseDescription}: Unexpected exception");
+                throw;
+            }
+
+            if (failed)
+            {
+                throw new Exception($"testPermuteOp<{typeof(TBaseType).Name}, {typeof(TVectorType).Name} >{testCaseDescription}: Failed");
+            }
+        }
+
         static void testThrowsArgumentOutOfRangeException<TBaseType, TVectorType>(String testCaseDescription,
                                                                 Func<TVectorType, TVectorType, TBaseType> binOp)
             where TBaseType : struct
             where TVectorType : struct
+        {
+            testThrowsArgumentOutOfRangeException<TBaseType, TVectorType, TBaseType>(testCaseDescription, binOp);
+        }
+
+        static void testThrowsArgumentOutOfRangeException<TBaseType, TVectorType, TReturnType>(String testCaseDescription,
+                                                                Func<TVectorType, TVectorType, TReturnType> binOp)
+            where TBaseType : struct
+            where TVectorType : struct
+            where TReturnType : struct
         {
             var v = DataSet<TBaseType, TVectorType>.vectorX;
 
@@ -1484,6 +1539,100 @@ namespace Arm64intrisicsTest
 #endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
+        static void TestInsert()
+        {
+#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
+            String name = "Insert";
+
+            if (Simd.IsSupported)
+            {
+                testPermuteOp<float,  Vector128<float >>(name, (x, y) => Simd.Insert(x, 1, (float )2), (i, x, y) => (float )(i != 1 ? x[i] : 2));
+                testPermuteOp<double, Vector128<double>>(name, (x, y) => Simd.Insert(x, 1, (double)2), (i, x, y) => (double)(i != 1 ? x[i] : 2));
+                testPermuteOp<sbyte,  Vector128<sbyte >>(name, (x, y) => Simd.Insert(x, 1, (sbyte )2), (i, x, y) => (sbyte )(i != 1 ? x[i] : 2));
+                testPermuteOp<byte,   Vector128<byte  >>(name, (x, y) => Simd.Insert(x, 1, (byte  )2), (i, x, y) => (byte  )(i != 1 ? x[i] : 2));
+                testPermuteOp<short,  Vector128<short >>(name, (x, y) => Simd.Insert(x, 1, (short )2), (i, x, y) => (short )(i != 1 ? x[i] : 2));
+                testPermuteOp<ushort, Vector128<ushort>>(name, (x, y) => Simd.Insert(x, 1, (ushort)2), (i, x, y) => (ushort)(i != 1 ? x[i] : 2));
+                testPermuteOp<int,    Vector128<int   >>(name, (x, y) => Simd.Insert(x, 1, (int   )2), (i, x, y) => (int   )(i != 1 ? x[i] : 2));
+                testPermuteOp<uint,   Vector128<uint  >>(name, (x, y) => Simd.Insert(x, 1, (uint  )2), (i, x, y) => (uint  )(i != 1 ? x[i] : 2));
+                testPermuteOp<long,   Vector128<long  >>(name, (x, y) => Simd.Insert(x, 1, (long  )2), (i, x, y) => (long  )(i != 1 ? x[i] : 2));
+                testPermuteOp<ulong,  Vector128<ulong >>(name, (x, y) => Simd.Insert(x, 1, (ulong )2), (i, x, y) => (ulong )(i != 1 ? x[i] : 2));
+                testPermuteOp<float,  Vector64< float >>(name, (x, y) => Simd.Insert(x, 1, (float )2), (i, x, y) => (float )(i != 1 ? x[i] : 2));
+                testPermuteOp<sbyte,  Vector64< sbyte >>(name, (x, y) => Simd.Insert(x, 1, (sbyte )2), (i, x, y) => (sbyte )(i != 1 ? x[i] : 2));
+                testPermuteOp<byte,   Vector64< byte  >>(name, (x, y) => Simd.Insert(x, 1, (byte  )2), (i, x, y) => (byte  )(i != 1 ? x[i] : 2));
+                testPermuteOp<short,  Vector64< short >>(name, (x, y) => Simd.Insert(x, 1, (short )2), (i, x, y) => (short )(i != 1 ? x[i] : 2));
+                testPermuteOp<ushort, Vector64< ushort>>(name, (x, y) => Simd.Insert(x, 1, (ushort)2), (i, x, y) => (ushort)(i != 1 ? x[i] : 2));
+                testPermuteOp<int,    Vector64< int   >>(name, (x, y) => Simd.Insert(x, 1, (int   )2), (i, x, y) => (int   )(i != 1 ? x[i] : 2));
+                testPermuteOp<uint,   Vector64< uint  >>(name, (x, y) => Simd.Insert(x, 1, (uint  )2), (i, x, y) => (uint  )(i != 1 ? x[i] : 2));
+
+                testPermuteOp<float,  Vector128<float >>(name, (x, y) => Simd.Insert(x, 3, Simd.Extract(y, 1)), (i, x, y) => (float )(i != 3 ? x[i] : y[1]));
+                testPermuteOp<double, Vector128<double>>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (double)(i != 0 ? x[i] : y[1]));
+                testPermuteOp<sbyte,  Vector128<sbyte >>(name, (x, y) => Simd.Insert(x, 9, Simd.Extract(y, 1)), (i, x, y) => (sbyte )(i != 9 ? x[i] : y[1]));
+                testPermuteOp<byte,   Vector128<byte  >>(name, (x, y) => Simd.Insert(x, 9, Simd.Extract(y, 1)), (i, x, y) => (byte  )(i != 9 ? x[i] : y[1]));
+                testPermuteOp<short,  Vector128<short >>(name, (x, y) => Simd.Insert(x, 5, Simd.Extract(y, 1)), (i, x, y) => (short )(i != 5 ? x[i] : y[1]));
+                testPermuteOp<ushort, Vector128<ushort>>(name, (x, y) => Simd.Insert(x, 5, Simd.Extract(y, 1)), (i, x, y) => (ushort)(i != 5 ? x[i] : y[1]));
+                testPermuteOp<int,    Vector128<int   >>(name, (x, y) => Simd.Insert(x, 2, Simd.Extract(y, 1)), (i, x, y) => (int   )(i != 2 ? x[i] : y[1]));
+                testPermuteOp<uint,   Vector128<uint  >>(name, (x, y) => Simd.Insert(x, 2, Simd.Extract(y, 1)), (i, x, y) => (uint  )(i != 2 ? x[i] : y[1]));
+                testPermuteOp<long,   Vector128<long  >>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (long  )(i != 0 ? x[i] : y[1]));
+                testPermuteOp<ulong,  Vector128<ulong >>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (ulong )(i != 0 ? x[i] : y[1]));
+                testPermuteOp<float,  Vector64< float >>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (float )(i != 0 ? x[i] : y[1]));
+                testPermuteOp<sbyte,  Vector64< sbyte >>(name, (x, y) => Simd.Insert(x, 7, Simd.Extract(y, 1)), (i, x, y) => (sbyte )(i != 7 ? x[i] : y[1]));
+                testPermuteOp<byte,   Vector64< byte  >>(name, (x, y) => Simd.Insert(x, 7, Simd.Extract(y, 1)), (i, x, y) => (byte  )(i != 7 ? x[i] : y[1]));
+                testPermuteOp<short,  Vector64< short >>(name, (x, y) => Simd.Insert(x, 2, Simd.Extract(y, 1)), (i, x, y) => (short )(i != 2 ? x[i] : y[1]));
+                testPermuteOp<ushort, Vector64< ushort>>(name, (x, y) => Simd.Insert(x, 2, Simd.Extract(y, 1)), (i, x, y) => (ushort)(i != 2 ? x[i] : y[1]));
+                testPermuteOp<int,    Vector64< int   >>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (int   )(i != 0 ? x[i] : y[1]));
+                testPermuteOp<uint,   Vector64< uint  >>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (uint  )(i != 0 ? x[i] : y[1]));
+
+                testThrowsArgumentOutOfRangeException<float,  Vector128<float >, Vector128<float >>(name, (x, y) => Simd.Insert(x, 4, (float )1));
+                testThrowsArgumentOutOfRangeException<double, Vector128<double>, Vector128<double>>(name, (x, y) => Simd.Insert(x, 2, (double)1));
+                testThrowsArgumentOutOfRangeException<sbyte,  Vector128<sbyte >, Vector128<sbyte >>(name, (x, y) => Simd.Insert(x,16, (sbyte )1));
+                testThrowsArgumentOutOfRangeException<byte,   Vector128<byte  >, Vector128<byte  >>(name, (x, y) => Simd.Insert(x,16, (byte  )1));
+                testThrowsArgumentOutOfRangeException<short,  Vector128<short >, Vector128<short >>(name, (x, y) => Simd.Insert(x, 8, (short )1));
+                testThrowsArgumentOutOfRangeException<ushort, Vector128<ushort>, Vector128<ushort>>(name, (x, y) => Simd.Insert(x, 8, (ushort)1));
+                testThrowsArgumentOutOfRangeException<int,    Vector128<int   >, Vector128<int   >>(name, (x, y) => Simd.Insert(x, 4, (int   )1));
+                testThrowsArgumentOutOfRangeException<uint,   Vector128<uint  >, Vector128<uint  >>(name, (x, y) => Simd.Insert(x, 4, (uint  )1));
+                testThrowsArgumentOutOfRangeException<long,   Vector128<long  >, Vector128<long  >>(name, (x, y) => Simd.Insert(x, 2, (long  )1));
+                testThrowsArgumentOutOfRangeException<ulong,  Vector128<ulong >, Vector128<ulong >>(name, (x, y) => Simd.Insert(x, 2, (ulong )1));
+                testThrowsArgumentOutOfRangeException<float,  Vector64< float >, Vector64< float >>(name, (x, y) => Simd.Insert(x, 2, (float )1));
+                testThrowsArgumentOutOfRangeException<sbyte,  Vector64< sbyte >, Vector64< sbyte >>(name, (x, y) => Simd.Insert(x, 8, (sbyte )1));
+                testThrowsArgumentOutOfRangeException<byte,   Vector64< byte  >, Vector64< byte  >>(name, (x, y) => Simd.Insert(x, 8, (byte  )1));
+                testThrowsArgumentOutOfRangeException<short,  Vector64< short >, Vector64< short >>(name, (x, y) => Simd.Insert(x, 4, (short )1));
+                testThrowsArgumentOutOfRangeException<ushort, Vector64< ushort>, Vector64< ushort>>(name, (x, y) => Simd.Insert(x, 4, (ushort)1));
+                testThrowsArgumentOutOfRangeException<int,    Vector64< int   >, Vector64< int   >>(name, (x, y) => Simd.Insert(x, 2, (int   )1));
+                testThrowsArgumentOutOfRangeException<uint,   Vector64< uint  >, Vector64< uint  >>(name, (x, y) => Simd.Insert(x, 2, (uint  )1));
+
+                testThrowsTypeNotSupported<Vector128<bool >>(name, (x, y) => Simd.Insert(x, 1,      true));
+                testThrowsTypeNotSupported<Vector64< long >>(name, (x, y) => Simd.Insert(x, 1, ( long )5));
+                testThrowsTypeNotSupported<Vector64< ulong>>(name, (x, y) => Simd.Insert(x, 1, ( ulong)5));
+                testThrowsTypeNotSupported<Vector64<double>>(name, (x, y) => Simd.Insert(x, 1, (double)5));
+            }
+            else
+            {
+                testThrowsPlatformNotSupported<Vector64< float >>(name, (x, y) => Simd.Insert(x, 1, (float )1));
+                testThrowsPlatformNotSupported<Vector64< double>>(name, (x, y) => Simd.Insert(x, 1, (double)1));
+                testThrowsPlatformNotSupported<Vector64< sbyte >>(name, (x, y) => Simd.Insert(x, 1, (sbyte )1));
+                testThrowsPlatformNotSupported<Vector64< byte  >>(name, (x, y) => Simd.Insert(x, 1, (byte  )1));
+                testThrowsPlatformNotSupported<Vector64< short >>(name, (x, y) => Simd.Insert(x, 1, (short )1));
+                testThrowsPlatformNotSupported<Vector64< ushort>>(name, (x, y) => Simd.Insert(x, 1, (ushort)1));
+                testThrowsPlatformNotSupported<Vector64< int   >>(name, (x, y) => Simd.Insert(x, 1, (int   )1));
+                testThrowsPlatformNotSupported<Vector64< uint  >>(name, (x, y) => Simd.Insert(x, 1, (uint  )1));
+                testThrowsPlatformNotSupported<Vector64< long  >>(name, (x, y) => Simd.Insert(x, 1, (long  )1));
+                testThrowsPlatformNotSupported<Vector64< ulong >>(name, (x, y) => Simd.Insert(x, 1, (ulong )1));
+                testThrowsPlatformNotSupported<Vector128<float >>(name, (x, y) => Simd.Insert(x, 1, (float )1));
+                testThrowsPlatformNotSupported<Vector128<double>>(name, (x, y) => Simd.Insert(x, 1, (double)1));
+                testThrowsPlatformNotSupported<Vector128<sbyte >>(name, (x, y) => Simd.Insert(x, 1, (sbyte )1));
+                testThrowsPlatformNotSupported<Vector128<byte  >>(name, (x, y) => Simd.Insert(x, 1, (byte  )1));
+                testThrowsPlatformNotSupported<Vector128<short >>(name, (x, y) => Simd.Insert(x, 1, (short )1));
+                testThrowsPlatformNotSupported<Vector128<ushort>>(name, (x, y) => Simd.Insert(x, 1, (ushort)1));
+                testThrowsPlatformNotSupported<Vector128<int   >>(name, (x, y) => Simd.Insert(x, 1, (int   )1));
+                testThrowsPlatformNotSupported<Vector128<uint  >>(name, (x, y) => Simd.Insert(x, 1, (uint  )1));
+                testThrowsPlatformNotSupported<Vector128<long  >>(name, (x, y) => Simd.Insert(x, 1, (long  )1));
+                testThrowsPlatformNotSupported<Vector128<ulong >>(name, (x, y) => Simd.Insert(x, 1, (ulong )1));
+            }
+
+            Console.WriteLine($"Test{name} passed");
+#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
+        }
+
         static void TestLeadingSignCount()
         {
 #if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
@@ -2192,7 +2341,7 @@ namespace Arm64intrisicsTest
             TestCompareTest();
             TestDivide();
             TestExtract();
-            //TestInsert();
+            TestInsert();
             TestLeadingSignCount();
             TestLeadingZeroCount();
             TestMax();
