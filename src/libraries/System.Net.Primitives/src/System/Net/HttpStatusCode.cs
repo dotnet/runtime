@@ -10,6 +10,8 @@ namespace System.Net
         // Informational 1xx
         Continue = 100,
         SwitchingProtocols = 101,
+        Processing = 102,
+        EarlyHints = 103,
 
         // Successful 2xx
         OK = 200,
@@ -19,6 +21,10 @@ namespace System.Net
         NoContent = 204,
         ResetContent = 205,
         PartialContent = 206,
+        MultiStatus = 207,
+        AlreadyReported = 208,
+
+        IMUsed = 226,
 
         // Redirection 3xx
         MultipleChoices = 300,
@@ -34,6 +40,7 @@ namespace System.Net
         Unused = 306,
         TemporaryRedirect = 307,
         RedirectKeepVerb = 307,
+        PermanentRedirect = 308,
 
         // Client Error 4xx
         BadRequest = 400,
@@ -54,8 +61,24 @@ namespace System.Net
         UnsupportedMediaType = 415,
         RequestedRangeNotSatisfiable = 416,
         ExpectationFailed = 417,
+        // From the discussion thread on #4382:
+        // "It would be a mistake to add it to .NET now. See golang/go#21326,
+        // nodejs/node#14644, requests/requests#4238 and aspnet/HttpAbstractions#915".
+        // ImATeapot = 418
+
+        MisdirectedRequest = 421,
+        UnprocessableEntity = 422,
+        Locked = 423,
+        FailedDependency = 424,
 
         UpgradeRequired = 426,
+
+        PreconditionRequired = 428,
+        TooManyRequests = 429,
+
+        RequestHeaderFieldsTooLarge = 431,
+
+        UnavailableForLegalReasons = 451,
 
         // Server Error 5xx
         InternalServerError = 500,
@@ -64,5 +87,11 @@ namespace System.Net
         ServiceUnavailable = 503,
         GatewayTimeout = 504,
         HttpVersionNotSupported = 505,
+        VariantAlsoNegotiates = 506,
+        InsufficientStorage = 507,
+        LoopDetected = 508,
+
+        NotExtended = 510,
+        NetworkAuthenticationRequired = 511
     }
 }
