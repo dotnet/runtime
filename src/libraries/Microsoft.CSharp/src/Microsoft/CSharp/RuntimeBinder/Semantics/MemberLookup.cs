@@ -112,44 +112,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Loop through symbols.
             Symbol symCur;
-            for (symCur = GetSymbolLoader().LookupAggMember(_name, typeCur.OwningAggregate, symbmask_t.MASK_ALL);
+            for (symCur = GetSymbolLoader().LookupAggMember(_name, typeCur.OwningAggregate, symbmask_t.MASK_Member);
                  symCur != null;
-                 symCur = SymbolLoader.LookupNextSym(symCur, typeCur.OwningAggregate, symbmask_t.MASK_ALL))
+                 symCur = SymbolLoader.LookupNextSym(symCur, typeCur.OwningAggregate, symbmask_t.MASK_Member))
             {
+                Debug.Assert(!(symCur is AggregateSymbol));
                 // Check for arity.
-                switch (symCur.getKind())
+                // For non-zero arity, only methods of the correct arity are considered.
+                // For zero arity, don't filter out any methods since we do type argument
+                // inferencing.
+                // All others are only considered when arity is zero.
+                if (_arity > 0 && (!(symCur is MethodSymbol curMeth) || curMeth.typeVars.Count != _arity))
                 {
-                    case SYMKIND.SK_MethodSymbol:
-                        // For non-zero arity, only methods of the correct arity are considered.
-                        // For zero arity, don't filter out any methods since we do type argument
-                        // inferencing.
-                        if (_arity > 0 && ((MethodSymbol)symCur).typeVars.Count != _arity)
-                        {
-                            if (!_swtBadArity)
-                                _swtBadArity.Set(symCur, typeCur);
-                            continue;
-                        }
-                        break;
+                    if (!_swtBadArity)
+                    {
+                        _swtBadArity.Set(symCur, typeCur);
+                    }
 
-                    case SYMKIND.SK_AggregateSymbol:
-                        // For types, always filter on arity.
-                        if (((AggregateSymbol)symCur).GetTypeVars().Count != _arity)
-                        {
-                            if (!_swtBadArity)
-                                _swtBadArity.Set(symCur, typeCur);
-                            continue;
-                        }
-                        break;
-
-                    default:
-                        // All others are only considered when arity is zero.
-                        if (_arity > 0)
-                        {
-                            if (!_swtBadArity)
-                                _swtBadArity.Set(symCur, typeCur);
-                            continue;
-                        }
-                        break;
+                    continue;
                 }
 
                 // Check for user callability.
@@ -672,23 +652,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (_swtBadArity)
             {
-                int cvar;
-
-                switch (_swtBadArity.Sym.getKind())
+                Debug.Assert(_arity != 0);
+                Debug.Assert(!(_swtBadArity.Sym is AggregateSymbol));
+                if (_swtBadArity.Sym is MethodSymbol badMeth)
                 {
-                    case SYMKIND.SK_MethodSymbol:
-                        Debug.Assert(_arity != 0);
-                        cvar = ((MethodSymbol)_swtBadArity.Sym).typeVars.Count;
-                        return GetErrorContext().Error(cvar > 0 ? ErrorCode.ERR_BadArity : ErrorCode.ERR_HasNoTypeVars, _swtBadArity, new ErrArgSymKind(_swtBadArity.Sym), cvar);
-
-                    case SYMKIND.SK_AggregateSymbol:
-                        cvar = ((AggregateSymbol)_swtBadArity.Sym).GetTypeVars().Count;
-                        return GetErrorContext().Error(cvar > 0 ? ErrorCode.ERR_BadArity : ErrorCode.ERR_HasNoTypeVars, _swtBadArity, new ErrArgSymKind(_swtBadArity.Sym), cvar);
-
-                    default:
-                        Debug.Assert(_arity != 0);
-                        return GetErrorContext().Error(ErrorCode.ERR_TypeArgsNotAllowed, _swtBadArity, new ErrArgSymKind(_swtBadArity.Sym));
+                    int cvar = badMeth.typeVars.Count;
+                    return GetErrorContext().Error(cvar > 0 ? ErrorCode.ERR_BadArity : ErrorCode.ERR_HasNoTypeVars, _swtBadArity, new ErrArgSymKind(_swtBadArity.Sym), cvar);
                 }
+
+                return GetErrorContext().Error(ErrorCode.ERR_TypeArgsNotAllowed, _swtBadArity, new ErrArgSymKind(_swtBadArity.Sym));
             }
 
             return GetErrorContext().Error(ErrorCode.ERR_NoSuchMember, _typeSrc, _name);
