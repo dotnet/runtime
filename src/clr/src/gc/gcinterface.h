@@ -914,7 +914,7 @@ struct ScanContext
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;
 #else
-    int _unused3;
+    EtwGCRootKind _unused3;
 #endif // GC_PROFILING || FEATURE_EVENT_TRACE
     
     ScanContext()
@@ -929,9 +929,9 @@ struct ScanContext
 #ifdef GC_PROFILING
         pMD = NULL;
 #endif //GC_PROFILING
-#ifdef FEATURE_EVENT_TRACE
+#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
         dwEtwRootKind = kEtwGCRootKindOther;
-#endif // FEATURE_EVENT_TRACE
+#endif
     }
 };
 

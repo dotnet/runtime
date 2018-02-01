@@ -21,6 +21,7 @@
 #include "eeprofinterfaces.h"
 #include "shash.h"
 #include "eventtracebase.h"
+#include "gcinterface.h"
 
 class SimpleRWLock;
 

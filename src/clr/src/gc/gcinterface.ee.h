@@ -5,6 +5,21 @@
 #ifndef _GCINTERFACE_EE_H_
 #define _GCINTERFACE_EE_H_
 
+enum EtwGCRootFlags
+{
+    kEtwGCRootFlagsPinning =            0x1,
+    kEtwGCRootFlagsWeakRef =            0x2,
+    kEtwGCRootFlagsInterior =           0x4,
+    kEtwGCRootFlagsRefCounted =         0x8,
+};
+
+enum EtwGCRootKind
+{
+    kEtwGCRootKindStack =               0,
+    kEtwGCRootKindFinalizer =           1,
+    kEtwGCRootKindHandle =              2,
+    kEtwGCRootKindOther =               3,
+};
 
 // This interface provides functions that the GC can use to fire events.
 // Events fired on this interface are split into two categories: "known"
@@ -202,6 +217,9 @@ public:
     // Indicates to the EE that the GC has granted promotion to objects in the sync block cache.
     virtual
     void SyncBlockCachePromotionsGranted(int max_gen) = 0;
+
+    virtual
+    uint32_t GetActiveSyncBlockCount() = 0;
 
     // Queries whether or not the given thread has preemptive GC disabled.
     virtual

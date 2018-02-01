@@ -48,10 +48,6 @@ void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef)
 
 void DiagHandleCreated(OBJECTHANDLE handle, OBJECTREF objRef)
 {
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles++;
-#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-
 #ifdef GC_PROFILING
     BEGIN_PIN_PROFILER(CORProfilerTrackGC());
     g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(objRef));
@@ -71,8 +67,4 @@ void DiagHandleDestroyed(OBJECTHANDLE handle)
 #else
     UNREFERENCED_PARAMETER(handle);
 #endif // GC_PROFILING
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles--;
-#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 }
