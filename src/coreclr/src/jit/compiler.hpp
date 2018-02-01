@@ -176,7 +176,7 @@ inline BOOL genMaxOneBit(unsigned value)
 */
 
 template <typename T>
-inline BOOL genExactlyOneBit(T value)
+inline bool genExactlyOneBit(T value)
 {
     return ((value != 0) && genMaxOneBit(value));
 }
@@ -186,7 +186,7 @@ inline BOOL genExactlyOneBit(T value)
 *  Return true if the given 32-bit value has exactly zero or one bits set.
 */
 
-inline BOOL genExactlyOneBit(unsigned value)
+inline bool genExactlyOneBit(unsigned value)
 {
     return ((value != 0) && genMaxOneBit(value));
 }
