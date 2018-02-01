@@ -5122,7 +5122,7 @@ void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
 // In cases where an instruction only supports const immediate operands, we
 // need to generate functionally correct code when the operand is not constant
 //
-// This is required by the HW Intrinsic design to handle:
+// This is required by the HW Intrinsic design to handle indirect calls, such as:
 //   debugger calls
 //   reflection
 //   call backs
