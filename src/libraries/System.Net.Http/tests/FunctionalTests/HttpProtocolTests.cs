@@ -14,6 +14,7 @@ namespace System.Net.Http.Functional.Tests
     public class HttpProtocolTests : HttpClientTestBase
     {
         protected virtual Stream GetStream(Stream s) => s;
+        protected virtual Stream GetStream_ClientDisconnectOk(Stream s) => s;
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Uap does not support 1.0
         [Fact]
@@ -91,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<List<string>> serverTask =
                         LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
-                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream_ClientDisconnectOk });
 
                     if (exceptionType == null)
                     {
@@ -134,7 +135,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<List<string>> serverTask =
                         LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
-                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream_ClientDisconnectOk });
 
                     if (exceptionType == null)
                     {
@@ -244,7 +245,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<List<string>> serverTask =
                         LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/0.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
-                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream_ClientDisconnectOk });
 
                     if (reportAs10)
                     {
@@ -301,7 +302,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<List<string>> serverTask =
                         LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n",
-                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+                            new LoopbackServer.Options { ResponseStreamWrapper = GetStream_ClientDisconnectOk });
 
                     if (reportAs00)
                     {
@@ -482,19 +483,31 @@ namespace System.Net.Http.Functional.Tests
     public class HttpProtocolTests_Dribble : HttpProtocolTests
     {
         protected override Stream GetStream(Stream s) => new DribbleStream(s);
+        protected override Stream GetStream_ClientDisconnectOk(Stream s) => new DribbleStream(s, true);
 
         private sealed class DribbleStream : Stream
         {
             private readonly Stream _wrapped;
+            private readonly bool _clientDisconnectAllowed;
 
-            public DribbleStream(Stream wrapped) => _wrapped = wrapped;
+            public DribbleStream(Stream wrapped, bool clientDisconnectAllowed = false)
+            {
+                _wrapped = wrapped;
+                _clientDisconnectAllowed = clientDisconnectAllowed;
+            }
 
             public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                for (int i = 0; i < count; i++)
+                try
                 {
-                    await _wrapped.WriteAsync(buffer, offset + i, 1);
-                    await Task.Yield(); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
+                    for (int i = 0; i < count; i++)
+                    {
+                        await _wrapped.WriteAsync(buffer, offset + i, 1);
+                        await Task.Yield(); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
+                    }
+                }
+                catch (IOException) when (_clientDisconnectAllowed)
+                {
                 }
             }
 
