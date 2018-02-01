@@ -107,7 +107,7 @@ static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
         termios->c_lflag &= static_cast<uint32_t>(~ISIG);
 }
 
-// In order to support Console.ReadKey(intecept: true), we need to disable echo and canonical mode.
+// In order to support Console.ReadKey(intercept: true), we need to disable echo and canonical mode.
 // We have two main choices: do so for the entire app, or do so only while in the Console.ReadKey(true).
 // The former has a huge downside: the terminal is in a non-echo state, so anything else that runs
 // in the same terminal won't echo even if it expects to, e.g. using Process.Start to launch an interactive,
