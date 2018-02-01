@@ -70,32 +70,14 @@ platform_sources += threadpool-worker-default.c
 endif
 
 if SUPPORT_SGEN
-if DISABLE_EXECUTABLES
-shared_sgen_libraries = libmonoruntimesgen.la 
-else
-if SHARED_MONO
-shared_sgen_libraries = libmonoruntimesgen.la 
-endif
-endif
-sgen_libraries = $(shared_sgen_libraries)
+sgen_libraries = libmonoruntimesgen.la
 endif
 
 if SUPPORT_BOEHM
-if DISABLE_EXECUTABLES
-shared_boehm_libraries = libmonoruntime.la
-else
-if SHARED_MONO
-shared_boehm_libraries = libmonoruntime.la
-endif
-endif
-boehm_libraries = $(shared_boehm_libraries)
+boehm_libraries = libmonoruntime.la
 endif
 
-if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES = libmonoruntime-config.la $(shared_sgen_libraries) $(shared_boehm_libraries)
-else
 noinst_LTLIBRARIES = libmonoruntime-config.la $(boehm_libraries) $(sgen_libraries)
-endif
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
