@@ -36,7 +36,7 @@ namespace System.Globalization
 
         NoCurrentDateDefault = 0x00000008,
         // When parsing a date/time string, if a timezone specifier ("GMT","Z","+xxxx", "-xxxx" exists), we will
-        // ajdust the parsed time based to GMT.
+        // adjust the parsed time based to GMT.
 
         AdjustToUniversal = 0x00000010,
 
