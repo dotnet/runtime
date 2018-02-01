@@ -521,6 +521,12 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     auto intrinsicID   = node->gtHWIntrinsicId;
     auto intrinsicInfo = comp->getHWIntrinsicInfo(node->gtHWIntrinsicId);
 
+    //
+    // Lower unsupported Unsigned Compare Zero intrinsics to their trivial transformations
+    //
+    // ARM64 does not support most forms of compare zero for Unsigned values
+    // This is because some are non-sensical, and the rest are trivial transformations of other operators
+    //
     if ((intrinsicInfo.flags & HWIntrinsicInfo::LowerCmpUZero) && varTypeIsUnsigned(node->gtSIMDBaseType))
     {
         auto setAllVector = node->gtSIMDSize > 8 ? NI_ARM64_SIMD_SetAllVector128 : NI_ARM64_SIMD_SetAllVector64;
@@ -530,14 +536,14 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         switch (intrinsicID)
         {
             case NI_ARM64_SIMD_GE_ZERO:
-                // Always true
+                // Unsigned >= 0 ==> Always true
                 node->gtHWIntrinsicId = setAllVector;
                 node->gtOp.gtOp1      = comp->gtNewLconNode(~0ULL);
                 BlockRange().InsertBefore(node, node->gtOp.gtOp1);
                 BlockRange().Remove(origOp1);
                 break;
             case NI_ARM64_SIMD_GT_ZERO:
-                // Same as !EQ
+                // Unsigned > 0 ==> !(Unsigned == 0)
                 node->gtOp.gtOp1 =
                     comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), node->gtOp.gtOp1, NI_ARM64_SIMD_EQ_ZERO,
                                                    node->gtSIMDBaseType, node->gtSIMDSize);
@@ -545,11 +551,11 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 BlockRange().InsertBefore(node, node->gtOp.gtOp1);
                 break;
             case NI_ARM64_SIMD_LE_ZERO:
-                // Same as EQ
+                // Unsigned <= 0 ==> Unsigned == 0
                 node->gtHWIntrinsicId = NI_ARM64_SIMD_EQ_ZERO;
                 break;
             case NI_ARM64_SIMD_LT_ZERO:
-                // Always false
+                // Unsigned < 0 ==> Always false
                 node->gtHWIntrinsicId = setAllVector;
                 node->gtOp.gtOp1      = comp->gtNewIconNode(0);
                 BlockRange().InsertBefore(node, node->gtOp.gtOp1);
