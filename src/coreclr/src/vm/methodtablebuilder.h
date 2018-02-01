@@ -218,8 +218,7 @@ private:
     BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
     BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; } 
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
-    BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
-    BOOL IsSealed() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsSealed(); }
+    BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); } 
     BOOL HasLayout() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasLayout(); } 
     BOOL IsDelegate() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsDelegate(); } 
     BOOL IsNested() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsNested(); } 
@@ -1334,6 +1333,7 @@ private:
         bool fDynamicStatics;                   // Set to true if the statics will be allocated in the dynamic
         bool fGenericsStatics;                  // Set to true if the there are per-instantiation statics
 
+        bool fIsIntrinsicType;                  // Set to true if the type has an [Intrinsic] attribute on it
         bool fIsHardwareIntrinsic;              // Set to true if the class is a hardware intrinsic
 
         DWORD dwNonGCRegularStaticFieldBytes;
