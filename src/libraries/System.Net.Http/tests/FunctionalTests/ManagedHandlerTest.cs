@@ -110,6 +110,10 @@ namespace System.Net.Http.Functional.Tests
         protected override bool SupportsIdna => true;
     }
 
+    public sealed class ManagedHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
+    {
+        protected override bool UseManagedHandler => true;
+    }
 
     // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
     // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's

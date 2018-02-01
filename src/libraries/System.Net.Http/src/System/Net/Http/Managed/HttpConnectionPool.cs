@@ -4,8 +4,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,10 +20,16 @@ namespace System.Net.Http
         /// <summary>Maximum number of milliseconds a connection is allowed to be idle in the pool before we remove it.</summary>
         private const int MaxIdleTimeMilliseconds = 100_000;
 
+        private readonly HttpConnectionPools _pools;
+        private readonly HttpConnectionKey _key;
+
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
         /// <summary>The maximum number of connections allowed to be associated with the pool.</summary>
         private readonly int _maxConnections;
+
+        /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
+        private readonly byte[] _idnHostAsciiBytes;
 
         /// <summary>The head of a list of waiters waiting for a connection.  Null if no one's waiting.</summary>
         private ConnectionWaiter _waitersHead;
@@ -36,16 +45,34 @@ namespace System.Net.Http
         
         /// <summary>Initializes the pool.</summary>
         /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
-        public HttpConnectionPool(int maxConnections = int.MaxValue) // int.MaxValue treated as infinite
+        public HttpConnectionPool(HttpConnectionPools pools, HttpConnectionKey key, int maxConnections = int.MaxValue) // int.MaxValue treated as infinite
         {
+            _pools = pools;
+            _key = key;
             _maxConnections = maxConnections;
+
+            // Precalculate ASCII bytes for header name
+            // We don't do this for proxy connections because the actual host header varies on a proxy connection.
+            if (!pools.UsingProxy)
+            {
+                // CONSIDER: Cache more than just host name -- port, header name, etc
+                _idnHostAsciiBytes = Encoding.ASCII.GetBytes(key.Host);
+            }
+            else
+            {
+                // Proxy connections should never use SSL
+                Debug.Assert(!key.IsSecure);
+            }
         }
+
+        public HttpConnectionKey Key => _key;
+        public HttpConnectionPools Pools => _pools;
+        public byte[] IdnHostAsciiBytes => _idnHostAsciiBytes;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        public ValueTask<HttpConnection> GetConnectionAsync<TState>(
-            Func<TState, CancellationToken, ValueTask<HttpConnection>> createConnection, TState state, CancellationToken cancellationToken)
+        private ValueTask<HttpConnection> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -61,6 +88,7 @@ namespace System.Net.Http
                 {
                     CachedConnection cachedConnection = list[list.Count - 1];
                     HttpConnection conn = cachedConnection._connection;
+                    Debug.Assert(!conn.IsNewConnection);
 
                     list.RemoveAt(list.Count - 1);
                     if (cachedConnection.IsUsable())
@@ -85,7 +113,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.IsEnabled) Trace("Creating new connection for pool.");
                     IncrementConnectionCountNoLock();
-                    return WaitForCreatedConnectionAsync(createConnection(state, cancellationToken));
+                    return WaitForCreatedConnectionAsync(CreateConnectionAsync(request, cancellationToken));
                 }
                 else
                 {
@@ -97,7 +125,7 @@ namespace System.Net.Http
                     // space is available and the provided creation func has successfully
                     // created the connection to be used.
                     if (NetEventSource.IsEnabled) Trace("Limit reached.  Waiting to create new connection.");
-                    var waiter = new ConnectionWaiter<TState>(this, createConnection, state, cancellationToken);
+                    var waiter = new ConnectionWaiter(this, request, cancellationToken);
                     EnqueueWaiter(waiter);
                     if (cancellationToken.CanBeCanceled)
                     {
@@ -130,6 +158,45 @@ namespace System.Net.Http
                 // try returning such connections to whatever pool is currently considered
                 // current for that endpoint, if there is one.
             }
+        }
+
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            while (true)
+            { 
+                // Loop on connection failures and retry if possible.
+
+                HttpConnection connection = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+
+                if (connection.IsNewConnection)
+                {
+                    return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+
+                try
+                {
+                    return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+                catch (HttpRequestException e) when (e.InnerException is IOException && connection.CanRetry)
+                {
+                    // Eat exception and try again.
+                }
+            }
+        }
+
+        private async ValueTask<HttpConnection> CreateConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Stream stream = await ConnectHelper.ConnectAsync(_key, cancellationToken).ConfigureAwait(false);
+
+            TransportContext transportContext = null;
+            if (_key.IsSecure)
+            {
+                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_pools.Settings, _key.SslHostName, request, stream, cancellationToken).ConfigureAwait(false);
+                stream = sslStream;
+                transportContext = sslStream.TransportContext;
+            }
+
+            return new HttpConnection(this, stream, transportContext);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
@@ -525,54 +592,19 @@ namespace System.Net.Http
             public override int GetHashCode() => _connection?.GetHashCode() ?? 0;
         }
 
-        /// <summary>Provides a waiter object that supports a generic function and state type for creating connections.</summary>
-        private sealed class ConnectionWaiter<TState> : ConnectionWaiter
-        {
-            /// <summary>The function to invoke if/when <see cref="CreateConnectionAsync"/> is invoked.</summary>
-            private readonly Func<TState, CancellationToken, ValueTask<HttpConnection>> _createConnectionAsync;
-            /// <summary>The state to pass to <paramref name="func"/> when it's invoked.</summary>
-            private readonly TState _state;
-
-            /// <summary>Initializes the waiter.</summary>
-            /// <param name="func">The function to invoke if/when <see cref="CreateConnectionAsync"/> is invoked.</param>
-            /// <param name="state">The state to pass to <paramref name="func"/> when it's invoked.</param>
-            public ConnectionWaiter(HttpConnectionPool pool, Func<TState, CancellationToken, ValueTask<HttpConnection>> func, TState state, CancellationToken cancellationToken) :
-                base(pool, cancellationToken)
-            {
-                _createConnectionAsync = func;
-                _state = state;
-            }
-
-            /// <summary>Creates a connection by invoking <see cref="_createConnectionAsync"/> with <see cref="_state"/>.</summary>
-            public override ValueTask<HttpConnection> CreateConnectionAsync()
-            {
-                try
-                {
-                    return _createConnectionAsync(_state, _cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    return new ValueTask<HttpConnection>(Threading.Tasks.Task.FromException<HttpConnection>(e));
-                }
-            }
-        }
-
         /// <summary>
         /// Provides a waiter object that's used when we've reached the limit on connections
         /// associated with the pool.  When a connection is available or created, it's stored
         /// into the waiter as a result, and if no connection is available from the pool,
         /// this waiter's logic is used to create the connection.
         /// </summary>
-        /// <remarks>
-        /// Implemented as a non-generic base type with a generic derived type to support
-        /// passing in arbitrary funcs and associated state while minimizing allocations.
-        /// The <see cref="CreateConnectionAsync"/> method will be implemented on the derived
-        /// type that is able to work with the supplied state generically.
-        /// </remarks>
-        private abstract class ConnectionWaiter : TaskCompletionSource<HttpConnection>
+        private class ConnectionWaiter : TaskCompletionSource<HttpConnection>
         {
             /// <summary>The pool with which this waiter is associated.</summary>
             internal readonly HttpConnectionPool _pool;
+            /// <summary>Request to use to create the connection.</summary>
+            private readonly HttpRequestMessage _request;
+
             /// <summary>Cancellation token for the waiter.</summary>
             internal readonly CancellationToken _cancellationToken;
             /// <summary>Registration that removes the waiter from the registration list.</summary>
@@ -583,15 +615,26 @@ namespace System.Net.Http
             internal ConnectionWaiter _prev;
 
             /// <summary>Initializes the waiter.</summary>
-            public ConnectionWaiter(HttpConnectionPool pool, CancellationToken cancellationToken) : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            public ConnectionWaiter(HttpConnectionPool pool, HttpRequestMessage request, CancellationToken cancellationToken) : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 Debug.Assert(pool != null, "Expected non-null pool");
                 _pool = pool;
+                _request = request;
                 _cancellationToken = cancellationToken;
             }
-            
+
             /// <summary>Creates a connection.</summary>
-            public abstract ValueTask<HttpConnection> CreateConnectionAsync();
+            public ValueTask<HttpConnection> CreateConnectionAsync()
+            {
+                try
+                {
+                    return _pool.CreateConnectionAsync(_request, _cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    return new ValueTask<HttpConnection>(Threading.Tasks.Task.FromException<HttpConnection>(e));
+                }
+            }
         }
     }
 }
