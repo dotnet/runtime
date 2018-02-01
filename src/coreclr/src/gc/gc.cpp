@@ -13231,7 +13231,7 @@ int gc_heap::try_allocate_more_space (alloc_context* acontext, size_t size,
             // Unfortunately some of the ETW macros do not check whether the ETW feature is enabled.
             // The ones that do are much less efficient.
 #if defined(FEATURE_EVENT_TRACE)
-            if (EventEnabledGCAllocationTick_V3())
+            if (EVENT_ENABLED(GCAllocationTick_V3))
             {
                 fire_etw_allocation_event (etw_allocation_running_amount[etw_allocation_index], gen_number, acontext->alloc_ptr);
             }
@@ -19972,7 +19972,7 @@ void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject, uint8_t* low, uint8_t*
         set_pinned (o);
 
 #ifdef FEATURE_EVENT_TRACE        
-        if(EventEnabledPinObjectAtGCTime())
+        if(EVENT_ENABLED(PinObjectAtGCTime))
         {
             fire_etw_pin_object_event(o, ppObject);
         }
@@ -31352,7 +31352,9 @@ void gc_heap::background_sweep()
 #endif //MULTIPLE_HEAPS
     {
 #ifdef FEATURE_EVENT_TRACE
-        bgc_heap_walk_for_etw_p = ETW::GCLog::ShouldTrackMovementForEtw();
+        bgc_heap_walk_for_etw_p = GCEventStatus::IsEnabled(GCEventProvider_Default, 
+                                                           GCEventKeyword_GCHeapSurvivalAndMovement, 
+                                                           GCEventLevel_Information);
 #endif //FEATURE_EVENT_TRACE
 
         leave_spin_lock (&gc_lock);
