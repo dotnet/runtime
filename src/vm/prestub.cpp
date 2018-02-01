@@ -319,13 +319,13 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
     PCODE pCode = NULL;
 
 #ifdef FEATURE_PREJIT 
-    pCode = GetPrecompiledNgenCode();
+    pCode = GetPrecompiledNgenCode(pConfig);
 #endif
 
 #ifdef FEATURE_READYTORUN
     if (pCode == NULL)
     {
-        pCode = GetPrecompiledR2RCode();
+        pCode = GetPrecompiledR2RCode(pConfig);
         if (pCode != NULL)
         {
             pConfig->SetNativeCode(pCode, &pCode);
@@ -336,7 +336,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
-PCODE MethodDesc::GetPrecompiledNgenCode()
+PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
     PCODE pCode = NULL;
@@ -371,6 +371,7 @@ PCODE MethodDesc::GetPrecompiledNgenCode()
         {
             SetNativeCodeInterlocked(NULL, pCode);
             _ASSERTE(!IsPreImplemented());
+            pConfig->SetProfilerRejectedPrecompiledCode();
             pCode = NULL;
         }
     }
@@ -423,7 +424,7 @@ PCODE MethodDesc::GetPrecompiledNgenCode()
 }
 
 
-PCODE MethodDesc::GetPrecompiledR2RCode()
+PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
 
@@ -432,7 +433,7 @@ PCODE MethodDesc::GetPrecompiledR2RCode()
     Module * pModule = GetModule();
     if (pModule->IsReadyToRun())
     {
-        pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this);
+        pCode = pModule->GetReadyToRunInfo()->GetEntryPoint(this, pConfig);
     }
 #endif
     return pCode;
@@ -725,7 +726,9 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
                 &methodName,
                 &methodSignature,
                 pCode,
-                pConfig->GetCodeVersion().GetVersionId());
+                pConfig->GetCodeVersion().GetVersionId(),
+                pConfig->ProfilerRejectedPrecompiledCode(),
+                pConfig->ReadyToRunRejectedPrecompiledCode());
         }
 
     }
@@ -910,7 +913,9 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
     m_pMethodDesc(codeVersion.GetMethodDesc()),
     m_nativeCodeVersion(codeVersion),
     m_needsMulticoreJitNotification(needsMulticoreJitNotification),
-    m_mayUsePrecompiledCode(mayUsePrecompiledCode)
+    m_mayUsePrecompiledCode(mayUsePrecompiledCode),
+    m_ProfilerRejectedPrecompiledCode(FALSE),
+    m_ReadyToRunRejectedPrecompiledCode(FALSE)
 {}
 
 MethodDesc* PrepareCodeConfig::GetMethodDesc()
@@ -929,6 +934,30 @@ BOOL PrepareCodeConfig::NeedsMulticoreJitNotification()
 {
     LIMITED_METHOD_CONTRACT;
     return m_needsMulticoreJitNotification;
+}
+
+BOOL PrepareCodeConfig::ProfilerRejectedPrecompiledCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_ProfilerRejectedPrecompiledCode;
+}
+
+void PrepareCodeConfig::SetProfilerRejectedPrecompiledCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_ProfilerRejectedPrecompiledCode = TRUE;
+}
+
+BOOL PrepareCodeConfig::ReadyToRunRejectedPrecompiledCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_ReadyToRunRejectedPrecompiledCode;
+}
+
+void PrepareCodeConfig::SetReadyToRunRejectedPrecompiledCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_ReadyToRunRejectedPrecompiledCode = TRUE;
 }
 
 NativeCodeVersion PrepareCodeConfig::GetCodeVersion()

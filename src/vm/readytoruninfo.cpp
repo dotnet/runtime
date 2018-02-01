@@ -15,6 +15,7 @@
 #include "compile.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
+#include "method.hpp"
 
 using namespace NativeFormat;
 
@@ -673,7 +674,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
     return true;
 }
 
-PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
+PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups /*=TRUE*/)
 {
     STANDARD_VM_CONTRACT;
 
@@ -727,6 +728,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
         }
         if (!fShouldSearchCache)
         {
+            pConfig->SetProfilerRejectedPrecompiledCode();
             return NULL;
         }
 #endif // PROFILING_SUPPORTED
@@ -747,7 +749,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, BOOL fFixups /*=TRUE*/)
         if (fFixups)
         {
             if (!m_pModule->FixupDelayList(dac_cast<TADDR>(m_pLayout->GetBase()) + offset))
+            {
+#ifndef CROSSGEN_COMPILE
+                pConfig->SetReadyToRunRejectedPrecompiledCode();
+#endif // CROSSGEN_COMPILE
                 return NULL;
+            }
         }
 
         id >>= 2;

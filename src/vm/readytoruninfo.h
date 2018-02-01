@@ -17,6 +17,8 @@
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
+class PrepareCodeConfig;
+
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 class ReadyToRunInfo
 {
@@ -50,7 +52,7 @@ public:
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
 
-    PCODE GetEntryPoint(MethodDesc * pMD, BOOL fFixups = TRUE);
+    PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups = TRUE);
 
     MethodDesc * GetMethodDescForEntryPoint(PCODE entryPoint);
 
