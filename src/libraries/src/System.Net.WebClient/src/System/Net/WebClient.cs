@@ -875,6 +875,11 @@ namespace System.Net
                     }
                     writeStream.SetLength(copyBuffer.Length);
                 }
+                
+                if (contentLength >= 0)
+                {
+                    _progress.TotalBytesToReceive = contentLength;
+                }
 
                 using (writeStream)
                 using (Stream readStream = response.GetResponseStream())

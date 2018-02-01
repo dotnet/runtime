@@ -476,6 +476,8 @@ namespace System.Net.Tests
 
     public abstract class WebClientTestBase
     {
+        public const int TimeoutMilliseconds = 30 * 1000;
+
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
         const string ExpectedText =
             "To be, or not to be, that is the question:" +
@@ -548,7 +550,11 @@ namespace System.Net.Tests
                         "\r\n" +
                         $"{ExpectedText}");
                 Assert.Equal(ExpectedText, Encoding.ASCII.GetString(await download));
-                Assert.True(!IsAsync || await downloadProgressInvoked.Task, "Expected download progress callback to be invoked");
+
+                if (IsAsync)
+                {
+                    await downloadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+                }
             });
         }
 
@@ -559,7 +565,16 @@ namespace System.Net.Tests
             {
                 string largeText = GetRandomText(1024 * 1024);
 
+                var downloadProgressInvokedWithContentLength = new TaskCompletionSource<bool>();
                 var wc = new WebClient();
+                wc.DownloadProgressChanged += (s, e) =>
+                {
+                    if (e.TotalBytesToReceive == largeText.Length && e.BytesReceived < e.TotalBytesToReceive)
+                    {
+                        downloadProgressInvokedWithContentLength.TrySetResult(true);
+                    }
+                };
+
                 Task<byte[]> download = DownloadDataAsync(wc, url.ToString());
                 await LoopbackServer.ReadRequestAndSendResponseAsync(server,
                         "HTTP/1.1 200 OK\r\n" +
@@ -568,6 +583,11 @@ namespace System.Net.Tests
                         "\r\n" +
                         $"{largeText}");
                 Assert.Equal(largeText, Encoding.ASCII.GetString(await download));
+
+                if (IsAsync)
+                {
+                    await downloadProgressInvokedWithContentLength.Task.TimeoutAfter(TimeoutMilliseconds);
+                }
             });
         }
 
@@ -644,7 +664,10 @@ namespace System.Net.Tests
 
             byte[] result = await UploadDataAsync(wc, echoServer.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
             Assert.Contains(ExpectedText, Encoding.UTF8.GetString(result));
-            Assert.True(!IsAsync || await uploadProgressInvoked.Task, "Expected upload progress callback to be invoked");
+            if(IsAsync)
+            {
+                await uploadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
+            }
         }
 
         [OuterLoop("Networking test talking to remote server: issue #11345")]
