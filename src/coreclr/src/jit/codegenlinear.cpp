@@ -690,7 +690,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Return Value:
 //    The assigned regNumber
 //
-regNumber CodeGenInterface::genGetAssignedReg(GenTreePtr tree)
+regNumber CodeGenInterface::genGetAssignedReg(GenTree* tree)
 {
     return tree->gtRegNum;
 }
@@ -707,7 +707,7 @@ regNumber CodeGenInterface::genGetAssignedReg(GenTreePtr tree)
 // Assumptions:
 //    The lclVar must be a register candidate (lvRegCandidate)
 
-void CodeGen::genSpillVar(GenTreePtr tree)
+void CodeGen::genSpillVar(GenTree* tree)
 {
     unsigned   varNum = tree->gtLclVarCommon.gtLclNum;
     LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
@@ -790,7 +790,7 @@ void CodeGen::genSpillVar(GenTreePtr tree)
 //    tree   - the lclVar node
 //
 // inline
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTreePtr tree)
+void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
 {
     assert(tree->OperIsScalarLocal() || (tree->gtOper == GT_COPY));
     varDsc->lvRegNum = tree->gtRegNum;
@@ -816,8 +816,8 @@ GenTree* sameRegAsDst(GenTree* tree, GenTree*& other /*out*/)
         return nullptr;
     }
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtOp.gtOp2;
+    GenTree* op1 = tree->gtOp.gtOp1;
+    GenTree* op2 = tree->gtOp.gtOp2;
     if (op1->gtRegNum == tree->gtRegNum)
     {
         other = op2;

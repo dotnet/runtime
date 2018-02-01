@@ -208,13 +208,13 @@ struct LcMdArrayOptInfo : public LcOptInfo
  */
 struct LcJaggedArrayOptInfo : public LcOptInfo
 {
-    unsigned dim;        // "dim" represents upto what level of the rank this optimization applies to.
-                         //    For example, a[i][j][k] could be the jagged array but if "dim" is 2,
-                         //    then this node is treated as though it were a[i][j]
-    ArrIndex   arrIndex; // ArrIndex representation of the array.
-    GenTreePtr stmt;     // "stmt" where the optimization opportunity occurs.
+    unsigned dim;      // "dim" represents upto what level of the rank this optimization applies to.
+                       //    For example, a[i][j][k] could be the jagged array but if "dim" is 2,
+                       //    then this node is treated as though it were a[i][j]
+    ArrIndex arrIndex; // ArrIndex representation of the array.
+    GenTree* stmt;     // "stmt" where the optimization opportunity occurs.
 
-    LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, GenTreePtr stmt)
+    LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, GenTree* stmt)
         : LcOptInfo(this, LcJaggedArray), dim(dim), arrIndex(arrIndex), stmt(stmt)
     {
     }
@@ -308,7 +308,7 @@ struct LC_Array
     }
 
     // Get a tree representation for this symbolic a.length
-    GenTreePtr ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp);
 };
 
 /**
@@ -387,7 +387,7 @@ struct LC_Ident
     }
 
     // Convert this symbolic representation into a tree node.
-    GenTreePtr ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp);
 };
 
 /**
@@ -438,7 +438,7 @@ struct LC_Expr
     }
 
     // Convert LC_Expr into a tree node.
-    GenTreePtr ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp);
 };
 
 /**
@@ -477,7 +477,7 @@ struct LC_Condition
     }
 
     // Convert this conditional operation into a GenTree.
-    GenTreePtr ToGenTree(Compiler* comp);
+    GenTree* ToGenTree(Compiler* comp);
 };
 
 /**

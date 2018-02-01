@@ -10,9 +10,9 @@
 
 #ifndef LEGACY_BACKEND // Not necessary (it's this way in the #include location), but helpful to IntelliSense
 
-void genSetRegToConst(regNumber targetReg, var_types targetType, GenTreePtr tree);
-void genCodeForTreeNode(GenTreePtr treeNode);
-void genCodeForBinary(GenTreePtr treeNode);
+void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
+void genCodeForTreeNode(GenTree* treeNode);
+void genCodeForBinary(GenTree* treeNode);
 
 #if defined(_TARGET_X86_)
 void genCodeForLongUMod(GenTreeOp* node);
@@ -22,7 +22,7 @@ void genCodeForDivMod(GenTreeOp* treeNode);
 void genCodeForMul(GenTreeOp* treeNode);
 void genCodeForMulHi(GenTreeOp* treeNode);
 void genLeaInstruction(GenTreeAddrMode* lea);
-void genSetRegToCond(regNumber dstReg, GenTreePtr tree);
+void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
 #if defined(_TARGET_ARMARCH_)
 void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
@@ -33,16 +33,16 @@ void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
 #endif // _TARGET_ARM_
 
 #if !defined(_TARGET_64BIT_)
-void genLongToIntCast(GenTreePtr treeNode);
+void genLongToIntCast(GenTree* treeNode);
 #endif
 
-void genIntToIntCast(GenTreePtr treeNode);
-void genFloatToFloatCast(GenTreePtr treeNode);
-void genFloatToIntCast(GenTreePtr treeNode);
-void genIntToFloatCast(GenTreePtr treeNode);
-void genCkfinite(GenTreePtr treeNode);
+void genIntToIntCast(GenTree* treeNode);
+void genFloatToFloatCast(GenTree* treeNode);
+void genFloatToIntCast(GenTree* treeNode);
+void genIntToFloatCast(GenTree* treeNode);
+void genCkfinite(GenTree* treeNode);
 void genCodeForCompare(GenTreeOp* tree);
-void genIntrinsic(GenTreePtr treeNode);
+void genIntrinsic(GenTree* treeNode);
 void genPutArgStk(GenTreePutArgStk* treeNode);
 void genPutArgReg(GenTreeOp* tree);
 #ifdef _TARGET_ARM_
@@ -50,13 +50,13 @@ void genPutArgSplit(GenTreePutArgSplit* treeNode);
 #endif
 
 #if defined(_TARGET_XARCH_)
-unsigned getBaseVarForPutArgStk(GenTreePtr treeNode);
+unsigned getBaseVarForPutArgStk(GenTree* treeNode);
 #endif // _TARGET_XARCH_
 
 unsigned getFirstArgWithStackSlot();
 
-void genCompareFloat(GenTreePtr treeNode);
-void genCompareInt(GenTreePtr treeNode);
+void genCompareFloat(GenTree* treeNode);
+void genCompareInt(GenTree* treeNode);
 
 #ifdef FEATURE_SIMD
 enum SIMDScalarMoveType
@@ -161,7 +161,7 @@ regNumber genConsumeReg(GenTree* tree);
 void genCopyRegIfNeeded(GenTree* tree, regNumber needReg);
 void genConsumeRegAndCopy(GenTree* tree, regNumber needReg);
 
-void genConsumeIfReg(GenTreePtr tree)
+void genConsumeIfReg(GenTree* tree)
 {
     if (!tree->isContained())
     {
@@ -169,7 +169,7 @@ void genConsumeIfReg(GenTreePtr tree)
     }
 }
 
-void genRegCopy(GenTreePtr tree);
+void genRegCopy(GenTree* tree);
 void genTransferRegGCState(regNumber dst, regNumber src);
 void genConsumeAddress(GenTree* addr);
 void genConsumeAddrMode(GenTreeAddrMode* mode);
@@ -189,10 +189,10 @@ void genConsumeRegs(GenTree* tree);
 void genConsumeOperands(GenTreeOp* tree);
 void genEmitGSCookieCheck(bool pushReg);
 void genSetRegToIcon(regNumber reg, ssize_t val, var_types type = TYP_INT, insFlags flags = INS_FLAGS_DONT_CARE);
-void genCodeForShift(GenTreePtr tree);
+void genCodeForShift(GenTree* tree);
 
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
-void genCodeForShiftLong(GenTreePtr tree);
+void genCodeForShiftLong(GenTree* tree);
 #endif
 
 #ifdef _TARGET_XARCH_
@@ -297,9 +297,9 @@ void genCodeForArrOffset(GenTreeArrOffs* treeNode);
 instruction genGetInsForOper(genTreeOps oper, var_types type);
 bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
 void genCallInstruction(GenTreeCall* call);
-void genJmpMethod(GenTreePtr jmp);
+void genJmpMethod(GenTree* jmp);
 BasicBlock* genCallFinally(BasicBlock* block);
-void genCodeForJumpTrue(GenTreePtr tree);
+void genCodeForJumpTrue(GenTree* tree);
 #ifdef _TARGET_ARM64_
 void genCodeForJumpCompare(GenTreeOp* tree);
 #endif // _TARGET_ARM64_
@@ -310,17 +310,17 @@ void genEHCatchRet(BasicBlock* block);
 void genEHFinallyOrFilterRet(BasicBlock* block);
 #endif // !FEATURE_EH_FUNCLETS
 
-void genMultiRegCallStoreToLocal(GenTreePtr treeNode);
+void genMultiRegCallStoreToLocal(GenTree* treeNode);
 
 // Deals with codegen for muti-register struct returns.
-bool isStructReturn(GenTreePtr treeNode);
-void genStructReturn(GenTreePtr treeNode);
+bool isStructReturn(GenTree* treeNode);
+void genStructReturn(GenTree* treeNode);
 
-void genReturn(GenTreePtr treeNode);
+void genReturn(GenTree* treeNode);
 
-void genLclHeap(GenTreePtr tree);
+void genLclHeap(GenTree* tree);
 
-bool genIsRegCandidateLocal(GenTreePtr tree)
+bool genIsRegCandidateLocal(GenTree* tree)
 {
     if (!tree->IsLocal())
     {

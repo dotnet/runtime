@@ -41,7 +41,7 @@ bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 // Return Value:
 //    Return true if the tree is a method table reference.
 
-bool Compiler::gtIsVtableRef(GenTreePtr tree)
+bool Compiler::gtIsVtableRef(GenTree* tree)
 {
     if (tree->OperGet() == GT_IND)
     {
@@ -68,7 +68,7 @@ bool Compiler::gtIsVtableRef(GenTreePtr tree)
 // Return Value:
 //    Return the array length node.
 
-GenTreePtr Compiler::getArrayLengthFromAllocation(GenTreePtr tree)
+GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
 {
     assert(tree != nullptr);
 
@@ -103,7 +103,7 @@ GenTreePtr Compiler::getArrayLengthFromAllocation(GenTreePtr tree)
 // Return Value:
 //    Return the object type handle node.
 
-GenTreePtr Compiler::getObjectHandleNodeFromAllocation(GenTreePtr tree)
+GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
 {
     assert(tree != nullptr);
 
@@ -192,9 +192,9 @@ void Compiler::optEarlyProp()
             // Walk the stmt tree in linear order to rewrite any array length reference with a
             // constant array length.
             bool isRewritten = false;
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
-                GenTreePtr rewrittenTree = optEarlyPropRewriteTree(tree);
+                GenTree* rewrittenTree = optEarlyPropRewriteTree(tree);
                 if (rewrittenTree != nullptr)
                 {
                     gtUpdateSideEffects(stmt, rewrittenTree);
@@ -233,9 +233,9 @@ void Compiler::optEarlyProp()
 //    Return a new tree if the original tree was successfully rewritten.
 //    The containing tree links are updated.
 //
-GenTreePtr Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
+GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
 {
-    GenTreePtr  objectRefPtr = nullptr;
+    GenTree*    objectRefPtr = nullptr;
     optPropKind propKind     = optPropKind::OPK_INVALID;
 
     if (tree->OperGet() == GT_ARR_LENGTH)
@@ -279,9 +279,9 @@ GenTreePtr Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         return nullptr;
     }
 
-    unsigned   lclNum    = objectRefPtr->AsLclVarCommon()->GetLclNum();
-    unsigned   ssaNum    = objectRefPtr->AsLclVarCommon()->GetSsaNum();
-    GenTreePtr actualVal = optPropGetValue(lclNum, ssaNum, propKind);
+    unsigned lclNum    = objectRefPtr->AsLclVarCommon()->GetLclNum();
+    unsigned ssaNum    = objectRefPtr->AsLclVarCommon()->GetSsaNum();
+    GenTree* actualVal = optPropGetValue(lclNum, ssaNum, propKind);
 
     if (actualVal != nullptr)
     {
@@ -341,7 +341,7 @@ GenTreePtr Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
         }
 #endif
 
-        GenTreePtr actualValClone = gtCloneExpr(actualVal);
+        GenTree* actualValClone = gtCloneExpr(actualVal);
 
         if (actualValClone->gtType != tree->gtType)
         {
@@ -391,7 +391,7 @@ GenTreePtr Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
 // Return Value:
 //    Return the corresponding value based on valueKind.
 
-GenTreePtr Compiler::optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind)
+GenTree* Compiler::optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind)
 {
     return optPropGetValueRec(lclNum, ssaNum, valueKind, 0);
 }
@@ -409,15 +409,15 @@ GenTreePtr Compiler::optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKi
 // Return Value:
 //    Return the corresponding value based on valueKind.
 
-GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth)
+GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth)
 {
     if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
     {
         return nullptr;
     }
 
-    SSAName    ssaName(lclNum, ssaNum);
-    GenTreePtr value = nullptr;
+    SSAName  ssaName(lclNum, ssaNum);
+    GenTree* value = nullptr;
 
     // Bound the recursion with a hard limit.
     if (walkDepth > optEarlyPropRecurBound)
@@ -426,7 +426,7 @@ GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPro
     }
 
     // Track along the use-def chain to get the array length
-    GenTreePtr treelhs = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc.m_tree;
+    GenTree* treelhs = lvaTable[lclNum].GetPerSsaData(ssaNum)->m_defLoc.m_tree;
 
     if (treelhs == nullptr)
     {
@@ -436,13 +436,13 @@ GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPro
     }
     else
     {
-        GenTreePtr* lhsPtr;
-        GenTreePtr  treeDefParent = treelhs->gtGetParent(&lhsPtr);
+        GenTree** lhsPtr;
+        GenTree*  treeDefParent = treelhs->gtGetParent(&lhsPtr);
 
         if (treeDefParent->OperGet() == GT_ASG)
         {
             assert(treelhs == treeDefParent->gtGetOp1());
-            GenTreePtr treeRhs = treeDefParent->gtGetOp2();
+            GenTree* treeRhs = treeDefParent->gtGetOp2();
 
             if (treeRhs->OperIsScalarLocal() && !fgExcludeFromSsa(treeRhs->AsLclVarCommon()->GetLclNum()))
             {
@@ -492,7 +492,7 @@ GenTreePtr Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPro
 //    tree           - The input GT_INDIR tree.
 //
 
-void Compiler::optFoldNullCheck(GenTreePtr tree)
+void Compiler::optFoldNullCheck(GenTree* tree)
 {
     //
     // Check for a pattern like this:
@@ -555,17 +555,17 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 
             if (compCurBB == defBlock)
             {
-                GenTreePtr defTree   = defLoc.m_tree;
-                GenTreePtr defParent = defTree->gtGetParent(nullptr);
+                GenTree* defTree   = defLoc.m_tree;
+                GenTree* defParent = defTree->gtGetParent(nullptr);
 
                 if ((defParent->OperGet() == GT_ASG) && (defParent->gtNext == nullptr))
                 {
-                    GenTreePtr defRHS = defParent->gtGetOp2();
+                    GenTree* defRHS = defParent->gtGetOp2();
                     if (defRHS->OperGet() == GT_COMMA)
                     {
                         if (defRHS->gtGetOp1()->OperGet() == GT_NULLCHECK)
                         {
-                            GenTreePtr nullCheckTree = defRHS->gtGetOp1();
+                            GenTree* nullCheckTree = defRHS->gtGetOp1();
                             if (nullCheckTree->gtGetOp1()->OperGet() == GT_LCL_VAR)
                             {
                                 // We found a candidate for 'y' in the picture
@@ -573,18 +573,18 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 
                                 if (defRHS->gtGetOp2()->OperGet() == GT_ADD)
                                 {
-                                    GenTreePtr additionNode = defRHS->gtGetOp2();
+                                    GenTree* additionNode = defRHS->gtGetOp2();
                                     if ((additionNode->gtGetOp1()->OperGet() == GT_LCL_VAR) &&
                                         (additionNode->gtGetOp1()->gtLclVarCommon.gtLclNum == nullCheckLclNum))
                                     {
-                                        GenTreePtr offset = additionNode->gtGetOp2();
+                                        GenTree* offset = additionNode->gtGetOp2();
                                         if (offset->IsCnsIntOrI())
                                         {
                                             if (!fgIsBigOffset(offset->gtIntConCommon.IconValue()))
                                             {
                                                 // Walk from the use to the def in reverse execution order to see
                                                 // if any nodes have unsafe side effects.
-                                                GenTreePtr     currentTree        = lclVarNode->gtPrev;
+                                                GenTree*       currentTree        = lclVarNode->gtPrev;
                                                 bool           isInsideTry        = compCurBB->hasTryIndex();
                                                 bool           canRemoveNullCheck = true;
                                                 const unsigned maxNodesWalked     = 25;
@@ -609,8 +609,8 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
                                                 // Then walk the statement list in reverse execution order
                                                 // until we get to the statement containing the null check.
                                                 // We only need to check the side effects at the root of each statement.
-                                                GenTreePtr curStmt = compCurStmt->gtPrev;
-                                                currentTree        = curStmt->gtStmt.gtStmtExpr;
+                                                GenTree* curStmt = compCurStmt->gtPrev;
+                                                currentTree      = curStmt->gtStmt.gtStmtExpr;
                                                 while (canRemoveNullCheck && (currentTree != defParent))
                                                 {
                                                     if ((nodesWalked++ > maxNodesWalked) ||
@@ -668,7 +668,7 @@ void Compiler::optFoldNullCheck(GenTreePtr tree)
 //    True if GT_NULLCHECK can be folded into a node that is after tree is execution order,
 //    false otherwise.
 
-bool Compiler::optCanMoveNullCheckPastTree(GenTreePtr tree, bool isInsideTry)
+bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry)
 {
     bool result = true;
     if (isInsideTry)

@@ -684,7 +684,7 @@ public:
 
 #ifdef _TARGET_ARM_
     void addResolutionForDouble(BasicBlock*     block,
-                                GenTreePtr      insertionPoint,
+                                GenTree*        insertionPoint,
                                 Interval**      sourceIntervals,
                                 regNumberSmall* location,
                                 regNumber       toReg,
