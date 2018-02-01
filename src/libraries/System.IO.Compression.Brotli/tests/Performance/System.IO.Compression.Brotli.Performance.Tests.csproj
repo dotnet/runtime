@@ -11,6 +11,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+<!-- [ActiveIssue(26566)]
     <Compile Include="BrotliPerfTests.cs" />
     <Compile Include="CompressionStreamPerfTests.Brotli.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CompressionStreamTestBase.cs">
@@ -19,6 +20,7 @@
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CompressionStreamPerfTestBase.cs">
       <Link>Common\System\IO\Compression\CompressionStreamPerfTestBase.cs</Link>
     </Compile>
+-->
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.6-prerelease\content\**\*.*">
