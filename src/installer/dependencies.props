@@ -13,7 +13,7 @@
     <CoreClrCurrentRef>0b436a193b9cfc715f910f99fdfe88e171ef9e42</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
     <WCFCurrentRef>86fae27c39f57bdb23dd4ba0378984d1f6b08854</WCFCurrentRef>
-    <BuildToolsCurrentRef>0b436a193b9cfc715f910f99fdfe88e171ef9e42</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>fb8aaa87581eafdad52a1997540471169cf1b6bb</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -51,13 +51,13 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-preview2-02431-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-preview2-02431-05</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
   <PropertyGroup>
     <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
-    <PublishSymbolsPackageVersion>1.0.0-alpha-00015</PublishSymbolsPackageVersion>
+    <PublishSymbolsPackageVersion>1.0.0-beta-00002</PublishSymbolsPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
