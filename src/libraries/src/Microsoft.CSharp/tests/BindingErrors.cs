@@ -428,6 +428,93 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Throws<RuntimeBinderException>(() => DoStuff(d));
         }
 
+        public class Outer
+        {
+            public class Inner
+            {
+                public void DoNothing()
+                {
+                }
+            }
+        }
+
+        [Fact]
+        public void TryInvokeOrAccessNestedClassAsMember()
+        {
+            dynamic dFirst = new Outer.Inner();
+            dFirst.DoNothing();
+            dynamic d = new Outer();
+            Assert.Throws<RuntimeBinderException>(() => d.Inner<int>());
+            Assert.Throws<RuntimeBinderException>(() => d.Inner());
+            Assert.Throws<RuntimeBinderException>(() => d.Inner = 2);
+            Assert.Throws<RuntimeBinderException>(
+                () =>
+                {
+                    int i = d.Inner<int>();
+                });
+        }
+
+        [Fact]
+        public void TryInvokeTypeParameterAsMember()
+        {
+            dynamic d = new List<int>();
+            Assert.Throws<RuntimeBinderException>(() => d.T);
+            Assert.Throws<RuntimeBinderException>(() => d.T());
+            Assert.Throws<RuntimeBinderException>(() => d.T<int>());
+            Assert.Throws<RuntimeBinderException>(() =>
+            {
+                int i = d.T;
+            });
+        }
+
+        public class BaseForOuterWithMethod
+        {
+            public int Inner() => 42;
+        }
+
+        public class DerivedOuterHidingMethod : BaseForOuterWithMethod
+        {
+            public new class Inner
+            {
+                public void DoNothing()
+                {
+                }
+            }
+        }
+
+        [Fact]
+        public void AccessMethodHiddenByNested()
+        {
+            dynamic dFirst = new DerivedOuterHidingMethod.Inner();
+            dFirst.DoNothing();
+            dynamic d = new DerivedOuterHidingMethod();
+            Assert.Equal(42, d.Inner());
+        }
+
+        public class BaseForOuterWithNested
+        {
+            public class Inner
+            {
+                public void DoNothing()
+                {
+                }
+            }
+        }
+
+        public class DerivedOuterHidingNested : BaseForOuterWithNested
+        {
+            public new int Inner() => 42;
+        }
+
+        [Fact]
+        public void AccessMethodHidingNested()
+        {
+            dynamic dFirst = new BaseForOuterWithNested.Inner();
+            dFirst.DoNothing();
+            dynamic d = new DerivedOuterHidingNested();
+            Assert.Equal(42, d.Inner());
+		}
+
         [Fact]
         public void CannotCallOperatorDirectly()
         {

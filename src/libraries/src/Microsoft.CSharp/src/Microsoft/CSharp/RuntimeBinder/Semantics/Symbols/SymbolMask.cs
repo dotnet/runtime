@@ -17,5 +17,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         MASK_PropertySymbol = 1 << SYMKIND.SK_PropertySymbol,
         MASK_EventSymbol = 1 << SYMKIND.SK_EventSymbol,
         MASK_ALL = ~0,
+        MASK_Member = MASK_FieldSymbol | MASK_MethodSymbol | MASK_PropertySymbol | MASK_EventSymbol
     }
 }
