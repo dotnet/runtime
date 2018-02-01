@@ -305,9 +305,9 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             // and that allow the source operand to be either a reg or memop. Given the
             // fact that casts from small int to float/double are done as two-level casts,
             // the source operand is always guaranteed to be of size 4 or 8 bytes.
-            var_types  castToType = tree->CastToType();
-            GenTreePtr castOp     = tree->gtCast.CastOp();
-            var_types  castOpType = castOp->TypeGet();
+            var_types castToType = tree->CastToType();
+            GenTree*  castOp     = tree->gtCast.CastOp();
+            var_types castOpType = castOp->TypeGet();
             if (tree->gtFlags & GTF_UNSIGNED)
             {
                 castOpType = genUnsignedType(castOpType);
@@ -443,7 +443,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_ADDR:
         {
             // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTreePtr child = tree->gtOp.gtOp1;
+            GenTree* child = tree->gtOp.gtOp1;
             assert(!isCandidateLocalRef(child));
             assert(child->isContained());
             assert(info->dstCount == 1);
@@ -493,7 +493,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             hasPspSym = false;
 #endif
 
-            GenTreePtr size = tree->gtOp.gtOp1;
+            GenTree* size = tree->gtOp.gtOp1;
             if (size->IsCnsIntOrI())
             {
                 assert(size->isContained());

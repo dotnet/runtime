@@ -520,21 +520,21 @@ struct InlineCandidateInfo
 
 struct InlArgInfo
 {
-    GenTreePtr argNode;                     // caller node for this argument
-    GenTreePtr argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
-    unsigned   argTmpNum;                   // the argument tmp number
-    unsigned   argIsUsed : 1;               // is this arg used at all?
-    unsigned   argIsInvariant : 1;          // the argument is a constant or a local variable address
-    unsigned   argIsLclVar : 1;             // the argument is a local variable
-    unsigned   argIsThis : 1;               // the argument is the 'this' pointer
-    unsigned   argHasSideEff : 1;           // the argument has side effects
-    unsigned   argHasGlobRef : 1;           // the argument has a global ref
-    unsigned   argHasCallerLocalRef : 1;    // the argument value depends on an aliased caller local
-    unsigned   argHasTmp : 1;               // the argument will be evaluated to a temp
-    unsigned   argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
-    unsigned   argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
-    unsigned   argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
-                                            // field in them?
+    GenTree* argNode;                     // caller node for this argument
+    GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
+    unsigned argTmpNum;                   // the argument tmp number
+    unsigned argIsUsed : 1;               // is this arg used at all?
+    unsigned argIsInvariant : 1;          // the argument is a constant or a local variable address
+    unsigned argIsLclVar : 1;             // the argument is a local variable
+    unsigned argIsThis : 1;               // the argument is the 'this' pointer
+    unsigned argHasSideEff : 1;           // the argument has side effects
+    unsigned argHasGlobRef : 1;           // the argument has a global ref
+    unsigned argHasCallerLocalRef : 1;    // the argument value depends on an aliased caller local
+    unsigned argHasTmp : 1;               // the argument will be evaluated to a temp
+    unsigned argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
+    unsigned argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
+    unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
+                                          // field in them?
 };
 
 // InlLclVarInfo describes inline candidate argument and local variable properties.
@@ -562,7 +562,7 @@ struct InlineInfo
 
     InlineResult* inlineResult;
 
-    GenTreePtr           retExpr; // The return expression of the inlined candidate.
+    GenTree*             retExpr; // The return expression of the inlined candidate.
     CORINFO_CLASS_HANDLE retExprClassHnd;
     bool                 retExprClassHndIsExact;
 

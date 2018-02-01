@@ -72,7 +72,7 @@ typedef JitHashTable<RegSlotIdKey, RegSlotIdKey, GcSlotId>     RegSlotMap;
 typedef JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId> StackSlotMap;
 #endif
 
-typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, VARSET_TP*> NodeToVarsetPtrMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, VARSET_TP*> NodeToVarsetPtrMap;
 
 class GCInfo
 {
@@ -91,7 +91,7 @@ public:
     void gcMarkRegSetByref(regMaskTP regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegPtrVal(regNumber reg, var_types type);
-    void gcMarkRegPtrVal(GenTreePtr tree);
+    void gcMarkRegPtrVal(GenTree* tree);
 
 #ifdef DEBUG
     void gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
@@ -320,12 +320,12 @@ public:
                                            // might accidentally be violated in the future.)
     };
 
-    WriteBarrierForm gcIsWriteBarrierCandidate(GenTreePtr tgt, GenTreePtr assignVal);
-    bool gcIsWriteBarrierAsgNode(GenTreePtr op);
+    WriteBarrierForm gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal);
+    bool gcIsWriteBarrierAsgNode(GenTree* op);
 
     // Returns a WriteBarrierForm decision based on the form of "tgtAddr", which is assumed to be the
     // argument of a GT_IND LHS.
-    WriteBarrierForm gcWriteBarrierFormFromTargetAddress(GenTreePtr tgtAddr);
+    WriteBarrierForm gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr);
 
     //-------------------------------------------------------------------------
     //

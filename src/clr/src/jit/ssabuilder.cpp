@@ -99,7 +99,7 @@ void Compiler::fgResetForSsa()
         }
         if (blk->bbTreeList != nullptr)
         {
-            GenTreePtr last = blk->bbTreeList->gtPrev;
+            GenTree* last   = blk->bbTreeList->gtPrev;
             blk->bbTreeList = blk->FirstNonPhiDef();
             if (blk->bbTreeList != nullptr)
             {
@@ -113,7 +113,7 @@ void Compiler::fgResetForSsa()
         blk->bbPostOrderNum = 0;
         for (GenTreeStmt* stmt = blk->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
         {
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
                 if (tree->IsLocal())
                 {
@@ -683,7 +683,7 @@ BlkToBlkVectorMap* SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock** pos
 static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 {
     // Walk the statements for phi nodes.
-    for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+    for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
     {
         // A prefix of the statements of the block are phi definition nodes. If we complete processing
         // that prefix, exit.
@@ -692,9 +692,9 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
             break;
         }
 
-        GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+        GenTree* tree = stmt->gtStmt.gtStmtExpr;
 
-        GenTreePtr phiLhs = tree->gtOp.gtOp1;
+        GenTree* phiLhs = tree->gtOp.gtOp1;
         assert(phiLhs->OperGet() == GT_LCL_VAR);
         if (phiLhs->gtLclVarCommon.gtLclNum == lclNum)
         {
@@ -773,19 +773,19 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
                     // j. So insert a phi node at l.
                     JITDUMP("Inserting phi definition for V%02u at start of BB%02u.\n", lclNum, bbInDomFront->bbNum);
 
-                    GenTreePtr phiLhs = m_pCompiler->gtNewLclvNode(lclNum, m_pCompiler->lvaTable[lclNum].TypeGet());
+                    GenTree* phiLhs = m_pCompiler->gtNewLclvNode(lclNum, m_pCompiler->lvaTable[lclNum].TypeGet());
 
                     // Create 'phiRhs' as a GT_PHI node for 'lclNum', it will eventually hold a GT_LIST of GT_PHI_ARG
                     // nodes. However we have to construct this list so for now the gtOp1 of 'phiRhs' is a nullptr.
                     // It will get replaced with a GT_LIST of GT_PHI_ARG nodes in
                     // SsaBuilder::AssignPhiNodeRhsVariables() and in SsaBuilder::AddDefToHandlerPhis()
 
-                    GenTreePtr phiRhs =
+                    GenTree* phiRhs =
                         m_pCompiler->gtNewOperNode(GT_PHI, m_pCompiler->lvaTable[lclNum].TypeGet(), nullptr);
 
-                    GenTreePtr phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs);
+                    GenTree* phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs);
 
-                    GenTreePtr stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
+                    GenTree* stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
                     m_pCompiler->gtSetStmtInfo(stmt);
                     m_pCompiler->fgSetStmtSeq(stmt);
                 }
@@ -914,7 +914,7 @@ void SsaBuilder::AddDefPoint(GenTree* tree, BasicBlock* blk)
 #endif
 }
 
-bool SsaBuilder::IsIndirectAssign(GenTreePtr tree, Compiler::IndirectAssignmentAnnotation** ppIndirAssign)
+bool SsaBuilder::IsIndirectAssign(GenTree* tree, Compiler::IndirectAssignmentAnnotation** ppIndirAssign)
 {
     return tree->OperGet() == GT_ASG && m_pCompiler->m_indirAssignMap != nullptr &&
            m_pCompiler->GetIndirAssignMap()->Lookup(tree, ppIndirAssign);
@@ -938,8 +938,8 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
     // can skip these during (at least) value numbering.
     if (tree->OperIsAssignment())
     {
-        GenTreePtr lhs     = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-        GenTreePtr trueLhs = lhs->gtEffectiveVal(/*commaOnly*/ true);
+        GenTree* lhs     = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+        GenTree* trueLhs = lhs->gtEffectiveVal(/*commaOnly*/ true);
         if (trueLhs->OperIsIndir())
         {
             trueLhs->gtFlags |= GTF_IND_ASG_LHS;
@@ -1134,7 +1134,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                 bool phiFound = false;
 #endif
                 // A prefix of blocks statements will be SSA definitions.  Search those for "lclNum".
-                for (GenTreePtr stmt = handler->bbTreeList; stmt; stmt = stmt->gtNext)
+                for (GenTree* stmt = handler->bbTreeList; stmt; stmt = stmt->gtNext)
                 {
                     // If the tree is not an SSA def, break out of the loop: we're done.
                     if (!stmt->IsPhiDefnStmt())
@@ -1142,14 +1142,14 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                         break;
                     }
 
-                    GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+                    GenTree* tree = stmt->gtStmt.gtStmtExpr;
 
                     assert(tree->IsPhiDefn());
 
                     if (tree->gtOp.gtOp1->gtLclVar.gtLclNum == lclNum)
                     {
                         // It's the definition for the right local.  Add "count" to the RHS.
-                        GenTreePtr      phi  = tree->gtOp.gtOp2;
+                        GenTree*        phi  = tree->gtOp.gtOp2;
                         GenTreeArgList* args = nullptr;
                         if (phi->gtOp.gtOp1 != nullptr)
                         {
@@ -1311,16 +1311,16 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
     // We need to iterate over phi definitions, to give them SSA names, but we need
     // to know which are which, so we don't add phi definitions to handler phi arg lists.
     // Statements are phi defns until they aren't.
-    bool       isPhiDefn   = true;
-    GenTreePtr firstNonPhi = block->FirstNonPhiDef();
-    for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+    bool     isPhiDefn   = true;
+    GenTree* firstNonPhi = block->FirstNonPhiDef();
+    for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
     {
         if (stmt == firstNonPhi)
         {
             isPhiDefn = false;
         }
 
-        for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
+        for (GenTree* tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
         {
             TreeRenameVariables(tree, block, pRenameState, isPhiDefn);
         }
@@ -1374,13 +1374,13 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
     for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
     {
         // Walk the statements for phi nodes.
-        for (GenTreePtr stmt = succ->bbTreeList; stmt != nullptr && stmt->IsPhiDefnStmt(); stmt = stmt->gtNext)
+        for (GenTree* stmt = succ->bbTreeList; stmt != nullptr && stmt->IsPhiDefnStmt(); stmt = stmt->gtNext)
         {
-            GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+            GenTree* tree = stmt->gtStmt.gtStmtExpr;
             assert(tree->IsPhiDefn());
 
             // Get the phi node from GT_ASG.
-            GenTreePtr phiNode = tree->gtOp.gtOp2;
+            GenTree* phiNode = tree->gtOp.gtOp2;
             assert(phiNode->gtOp.gtOp1 == nullptr || phiNode->gtOp.gtOp1->OperGet() == GT_LIST);
 
             unsigned lclNum = tree->gtOp.gtOp1->gtLclVar.gtLclNum;
@@ -1402,7 +1402,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
             }
             if (!found)
             {
-                GenTreePtr newPhiArg =
+                GenTree* newPhiArg =
                     new (m_pCompiler, GT_PHI_ARG) GenTreePhiArg(tree->gtOp.gtOp1->TypeGet(), lclNum, ssaNum, block);
                 argList             = (phiNode->gtOp.gtOp1 == nullptr ? nullptr : phiNode->gtOp.gtOp1->AsArgList());
                 phiNode->gtOp.gtOp1 = new (m_pCompiler, GT_LIST) GenTreeArgList(newPhiArg, argList);
@@ -1510,9 +1510,9 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                 // For a filter, we consider the filter to be the "real" handler.
                 BasicBlock* handlerStart = succTry->ExFlowBlock();
 
-                for (GenTreePtr stmt = handlerStart->bbTreeList; stmt; stmt = stmt->gtNext)
+                for (GenTree* stmt = handlerStart->bbTreeList; stmt; stmt = stmt->gtNext)
                 {
-                    GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+                    GenTree* tree = stmt->gtStmt.gtStmtExpr;
 
                     // Check if the first n of the statements are phi nodes. If not, exit.
                     if (tree->OperGet() != GT_ASG || tree->gtOp.gtOp2 == nullptr ||
@@ -1522,8 +1522,8 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                     }
 
                     // Get the phi node from GT_ASG.
-                    GenTreePtr lclVar = tree->gtOp.gtOp1;
-                    unsigned   lclNum = lclVar->gtLclVar.gtLclNum;
+                    GenTree* lclVar = tree->gtOp.gtOp1;
+                    unsigned lclNum = lclVar->gtLclVar.gtLclNum;
 
                     // If the variable is live-out of "blk", and is therefore live on entry to the try-block-start
                     // "succ", then we make sure the current SSA name for the
@@ -1535,7 +1535,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                         continue;
                     }
 
-                    GenTreePtr phiNode = tree->gtOp.gtOp2;
+                    GenTree* phiNode = tree->gtOp.gtOp2;
                     assert(phiNode->gtOp.gtOp1 == nullptr || phiNode->gtOp.gtOp1->OperGet() == GT_LIST);
                     GenTreeArgList* argList = reinterpret_cast<GenTreeArgList*>(phiNode->gtOp.gtOp1);
 
@@ -1555,7 +1555,7 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                     if (!alreadyArg)
                     {
                         // Add the new argument.
-                        GenTreePtr newPhiArg =
+                        GenTree* newPhiArg =
                             new (m_pCompiler, GT_PHI_ARG) GenTreePhiArg(lclVar->TypeGet(), lclNum, ssaNum, block);
                         phiNode->gtOp.gtOp1 = new (m_pCompiler, GT_LIST) GenTreeArgList(newPhiArg, argList);
 
@@ -1979,7 +1979,7 @@ void Compiler::JitTestCheckSSA()
     for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
     {
         TestLabelAndNum tlAndN;
-        GenTreePtr      node = ki.Get();
+        GenTree*        node = ki.Get();
         bool            b    = testData->Lookup(node, &tlAndN);
         assert(b);
         if (tlAndN.m_tl == TL_SsaName)

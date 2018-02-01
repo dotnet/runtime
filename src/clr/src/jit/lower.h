@@ -45,7 +45,7 @@ public:
         bool    signCheckOnly; // For converting between unsigned/signed int
     };
 
-    static void getCastDescription(GenTreePtr treeNode, CastInfo* castInfo);
+    static void getCastDescription(GenTree* treeNode, CastInfo* castInfo);
 
     // This variant of LowerRange is called from outside of the main Lowering pass,
     // so it creates its own instance of Lowering to do so.
@@ -158,9 +158,9 @@ private:
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
-    void ReplaceArgWithPutArgOrBitcast(GenTreePtr* ppChild, GenTreePtr newNode);
-    GenTree* NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntry* info, var_types type);
-    void LowerArg(GenTreeCall* call, GenTreePtr* ppTree);
+    void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
+    GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
+    void LowerArg(GenTreeCall* call, GenTree** ppTree);
 #ifdef _TARGET_ARMARCH_
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
@@ -169,7 +169,7 @@ private:
     void InsertPInvokeCallProlog(GenTreeCall* call);
     void InsertPInvokeCallEpilog(GenTreeCall* call);
     void InsertPInvokeMethodProlog();
-    void InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTreePtr lastExpr));
+    void InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* lastExpr));
     GenTree* SetGCState(int cns);
     GenTree* CreateReturnTrapSeq();
     enum FrameLinkAction
@@ -296,8 +296,8 @@ private:
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);
-    bool IsBinOpInRMWStoreInd(GenTreePtr tree);
-    bool IsRMWMemOpRootedAtStoreInd(GenTreePtr storeIndTree, GenTreePtr* indirCandidate, GenTreePtr* indirOpSource);
+    bool IsBinOpInRMWStoreInd(GenTree* tree);
+    bool IsRMWMemOpRootedAtStoreInd(GenTree* storeIndTree, GenTree** indirCandidate, GenTree** indirOpSource);
     bool LowerRMWMemOp(GenTreeIndir* storeInd);
 #endif
 
@@ -314,13 +314,13 @@ private:
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions
-    void MorphBlkIntoHelperCall(GenTreePtr pTree, GenTreePtr treeStmt);
+    void MorphBlkIntoHelperCall(GenTree* pTree, GenTree* treeStmt);
 
 public:
-    static bool IndirsAreEquivalent(GenTreePtr pTreeA, GenTreePtr pTreeB);
+    static bool IndirsAreEquivalent(GenTree* pTreeA, GenTree* pTreeB);
 
 private:
-    static bool NodesAreEquivalentLeaves(GenTreePtr candidate, GenTreePtr storeInd);
+    static bool NodesAreEquivalentLeaves(GenTree* candidate, GenTree* storeInd);
 
     bool AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, GenTree* index);
 
@@ -336,7 +336,7 @@ private:
     }
 
     // Makes 'childNode' contained in the 'parentNode'
-    void MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode);
+    void MakeSrcContained(GenTree* parentNode, GenTree* childNode);
 
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);

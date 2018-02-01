@@ -765,7 +765,7 @@ int CodeGen::genNumberTemps()
     return compCurFPState.m_uStackSize - genCountBits(regSet.rsMaskRegVarFloat);
 }
 
-void CodeGen::genDiscardStackFP(GenTreePtr tree)
+void CodeGen::genDiscardStackFP(GenTree* tree)
 {
     assert(tree->InReg());
     assert(varTypeIsFloating(tree));
@@ -835,7 +835,7 @@ void CodeGen::genRegVarBirthStackFP(LclVarDsc* varDsc)
     SetRegVarFloat(reg, varDsc->TypeGet(), varDsc);
 }
 
-void CodeGen::genRegVarBirthStackFP(GenTreePtr tree)
+void CodeGen::genRegVarBirthStackFP(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -861,7 +861,7 @@ void CodeGen::genRegVarDeathStackFP(LclVarDsc* varDsc)
     SetRegVarFloat(reg, varDsc->TypeGet(), 0);
 }
 
-void CodeGen::genRegVarDeathStackFP(GenTreePtr tree)
+void CodeGen::genRegVarDeathStackFP(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -876,7 +876,7 @@ void CodeGen::genRegVarDeathStackFP(GenTreePtr tree)
     genRegVarDeathStackFP(varDsc);
 }
 
-void CodeGen::genLoadStackFP(GenTreePtr tree, regNumber reg)
+void CodeGen::genLoadStackFP(GenTree* tree, regNumber reg)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -916,7 +916,7 @@ void CodeGen::genLoadStackFP(GenTreePtr tree, regNumber reg)
     }
 }
 
-void CodeGen::genMovStackFP(GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg)
+void CodeGen::genMovStackFP(GenTree* dst, regNumber dstreg, GenTree* src, regNumber srcreg)
 {
     if (dstreg == REG_FPNONE && !dst->IsRegVar())
     {
@@ -1049,7 +1049,7 @@ void CodeGen::genMovStackFP(GenTreePtr dst, regNumber dstreg, GenTreePtr src, re
     }
 }
 
-void CodeGen::genCodeForTreeStackFP_DONE(GenTreePtr tree, regNumber reg)
+void CodeGen::genCodeForTreeStackFP_DONE(GenTree* tree, regNumber reg)
 {
     return genCodeForTree_DONE(tree, reg);
 }
@@ -1105,16 +1105,16 @@ void CodeGen::genSetupStateStackFP(BasicBlock* block)
     assert(block->bbFPStateX87->IsConsistent());
 }
 
-regMaskTP CodeGen::genPushArgumentStackFP(GenTreePtr args)
+regMaskTP CodeGen::genPushArgumentStackFP(GenTree* args)
 {
     regMaskTP addrReg = 0;
     unsigned  opsz    = genTypeSize(genActualType(args->TypeGet()));
 
     switch (args->gtOper)
     {
-        GenTreePtr temp;
-        GenTreePtr fval;
-        size_t     flopsz;
+        GenTree* temp;
+        GenTree* fval;
+        size_t   flopsz;
 
         case GT_CNS_DBL:
         {
@@ -1228,7 +1228,7 @@ regMaskTP CodeGen::genPushArgumentStackFP(GenTreePtr args)
     return addrReg;
 }
 
-void CodeGen::genRoundFpExpressionStackFP(GenTreePtr op, var_types type)
+void CodeGen::genRoundFpExpressionStackFP(GenTree* op, var_types type)
 {
     // Do nothing with memory resident opcodes - these are the right precision
     // (even if genMakeAddrOrFPstk loads them to the FP stack)
@@ -1267,7 +1267,7 @@ void CodeGen::genRoundFpExpressionStackFP(GenTreePtr op, var_types type)
     compiler->tmpRlsTemp(temp);
 }
 
-void CodeGen::genCodeForTreeStackFP_Const(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_Const(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1298,7 +1298,7 @@ void CodeGen::genCodeForTreeStackFP_Const(GenTreePtr tree)
     genCodeForTreeStackFP_DONE(tree, reg);
 }
 
-void CodeGen::genCodeForTreeStackFP_Leaf(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_Leaf(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1361,7 +1361,7 @@ void CodeGen::genCodeForTreeStackFP_Leaf(GenTreePtr tree)
     genUpdateLife(tree);
 }
 
-void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_Asg(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1372,10 +1372,10 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
     }
 #endif // DEBUG
 
-    emitAttr   size;
-    unsigned   offs;
-    GenTreePtr op1 = tree->gtOp.gtOp1;
-    GenTreePtr op2 = tree->gtGetOp2IfPresent();
+    emitAttr size;
+    unsigned offs;
+    GenTree* op1 = tree->gtOp.gtOp1;
+    GenTree* op2 = tree->gtGetOp2IfPresent();
 
     assert(tree->OperGet() == GT_ASG);
 
@@ -1396,7 +1396,7 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
         op1 = genCodeForCommaTree(op1);
     }
 
-    GenTreePtr op1NonCom = op1->gtEffectiveVal();
+    GenTree* op1NonCom = op1->gtEffectiveVal();
     if (op1NonCom->gtOper == GT_LCL_VAR)
     {
 #ifdef DEBUG
@@ -1440,7 +1440,7 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
                 constantValue = (double)temp;
             }
 
-            GenTreePtr constantTree;
+            GenTree* constantTree;
             constantTree = compiler->gtNewDconNode(constantValue);
             if (genConstantLoadStackFP(constantTree, true))
             {
@@ -1465,7 +1465,7 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
                 {
                     // Load constant to fp stack.
 
-                    GenTreePtr cnsaddr;
+                    GenTree* cnsaddr;
 
                     // Create slot for constant
                     if (op1->gtType == TYP_FLOAT || StackFPIsSameAsFloat(op2->gtDblCon.gtDconVal))
@@ -1507,7 +1507,7 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
                         // store forwarding fix for pentium 4 and centrino and also
                         // fld for doubles that can be represented as floats, saving
                         // 4 bytes of load
-                        GenTreePtr cnsaddr;
+                        GenTree* cnsaddr;
 
                         // Create slot for constant
                         if (op1->gtType == TYP_FLOAT || StackFPIsSameAsFloat(op2->gtDblCon.gtDconVal))
@@ -1563,7 +1563,7 @@ void CodeGen::genCodeForTreeStackFP_Asg(GenTreePtr tree)
 }
 
 void CodeGen::genSetupForOpStackFP(
-    GenTreePtr& op1, GenTreePtr& op2, bool bReverse, bool bMakeOp1Addressable, bool bOp1ReadOnly, bool bOp2ReadOnly)
+    GenTree*& op1, GenTree*& op2, bool bReverse, bool bMakeOp1Addressable, bool bOp1ReadOnly, bool bOp2ReadOnly)
 {
     if (bMakeOp1Addressable)
     {
@@ -1664,7 +1664,7 @@ void CodeGen::genSetupForOpStackFP(
     }
 }
 
-void CodeGen::genCodeForTreeStackFP_Arithm(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_Arithm(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1687,7 +1687,8 @@ void CodeGen::genCodeForTreeStackFP_Arithm(GenTreePtr tree)
     // here and tell genArithmStackFP to do the reverse operation
     bool bReverse;
 
-    GenTreePtr op1, op2;
+    GenTree* op1;
+    GenTree* op2;
 
     if (tree->gtFlags & GTF_REVERSE_OPS)
     {
@@ -1747,7 +1748,7 @@ void CodeGen::genCodeForTreeStackFP_Arithm(GenTreePtr tree)
 }
 
 regNumber CodeGen::genArithmStackFP(
-    genTreeOps oper, GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg, bool bReverse)
+    genTreeOps oper, GenTree* dst, regNumber dstreg, GenTree* src, regNumber srcreg, bool bReverse)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1910,7 +1911,7 @@ regNumber CodeGen::genArithmStackFP(
     return result;
 }
 
-void CodeGen::genCodeForTreeStackFP_AsgArithm(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_AsgArithm(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -1924,10 +1925,8 @@ void CodeGen::genCodeForTreeStackFP_AsgArithm(GenTreePtr tree)
     assert(tree->OperGet() == GT_ASG_ADD || tree->OperGet() == GT_ASG_SUB || tree->OperGet() == GT_ASG_MUL ||
            tree->OperGet() == GT_ASG_DIV);
 
-    GenTreePtr op1, op2;
-
-    op1 = tree->gtOp.gtOp1;
-    op2 = tree->gtGetOp2IfPresent();
+    GenTree* op1 = tree->gtOp.gtOp1;
+    GenTree* op2 = tree->gtGetOp2IfPresent();
 
     genSetupForOpStackFP(op1, op2, (tree->gtFlags & GTF_REVERSE_OPS) ? true : false, true, false, true);
 
@@ -1937,8 +1936,7 @@ void CodeGen::genCodeForTreeStackFP_AsgArithm(GenTreePtr tree)
     genCodeForTreeStackFP_DONE(tree, result);
 }
 
-regNumber CodeGen::genAsgArithmStackFP(
-    genTreeOps oper, GenTreePtr dst, regNumber dstreg, GenTreePtr src, regNumber srcreg)
+regNumber CodeGen::genAsgArithmStackFP(genTreeOps oper, GenTree* dst, regNumber dstreg, GenTree* src, regNumber srcreg)
 {
     regNumber result = REG_FPNONE;
 
@@ -2089,7 +2087,7 @@ regNumber CodeGen::genAsgArithmStackFP(
     return result;
 }
 
-void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_SmpOp(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -2152,7 +2150,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
 
         case GT_RETURN:
         {
-            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTree* op1 = tree->gtOp.gtOp1;
             assert(op1);
 
             // Compute the result onto the FP stack
@@ -2206,8 +2204,8 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
 
         case GT_COMMA:
         {
-            GenTreePtr op1 = tree->gtOp.gtOp1;
-            GenTreePtr op2 = tree->gtGetOp2IfPresent();
+            GenTree* op1 = tree->gtOp.gtOp1;
+            GenTree* op2 = tree->gtGetOp2IfPresent();
 
             if (tree->gtFlags & GTF_REVERSE_OPS)
             {
@@ -2241,7 +2239,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
 
         case GT_NEG:
         {
-            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTree* op1 = tree->gtOp.gtOp1;
 
             // get the tree into a register
             genCodeForTreeFloat(op1);
@@ -2260,7 +2258,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
         {
             assert(compiler->IsMathIntrinsic(tree));
 
-            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTree* op1 = tree->gtOp.gtOp1;
 
             // get tree into a register
             genCodeForTreeFloat(op1);
@@ -2290,7 +2288,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
             TempDsc* temp;
             int      offs;
 
-            GenTreePtr op1 = tree->gtOp.gtOp1;
+            GenTree* op1 = tree->gtOp.gtOp1;
 
             // Offset of the DWord containing the exponent
             offs = (op1->gtType == TYP_FLOAT) ? 0 : sizeof(int);
@@ -2340,7 +2338,7 @@ void CodeGen::genCodeForTreeStackFP_SmpOp(GenTreePtr tree)
     }
 }
 
-void CodeGen::genCodeForTreeStackFP_Cast(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_Cast(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -2359,7 +2357,7 @@ void CodeGen::genCodeForTreeStackFP_Cast(GenTreePtr tree)
     TempDsc*  temp;
     emitAttr  size;
 
-    GenTreePtr op1 = tree->gtOp.gtOp1;
+    GenTree* op1 = tree->gtOp.gtOp1;
 
     // If op1 is a comma expression, evaluate the non-last parts, make op1 be the rest.
     op1 = genCodeForCommaTree(op1);
@@ -2579,7 +2577,7 @@ void CodeGen::genCodeForTreeStackFP_Cast(GenTreePtr tree)
     }
 }
 
-void CodeGen::genCodeForTreeStackFP_Special(GenTreePtr tree)
+void CodeGen::genCodeForTreeStackFP_Special(GenTree* tree)
 {
 #ifdef DEBUG
     if (compiler->verbose)
@@ -2603,7 +2601,7 @@ void CodeGen::genCodeForTreeStackFP_Special(GenTreePtr tree)
     }
 }
 
-void CodeGen::genCodeForTreeFloat(GenTreePtr tree, RegSet::RegisterPreference* pref)
+void CodeGen::genCodeForTreeFloat(GenTree* tree, RegSet::RegisterPreference* pref)
 {
     // TestTransitions();
     genTreeOps oper;
@@ -2643,7 +2641,7 @@ void CodeGen::genCodeForTreeFloat(GenTreePtr tree, RegSet::RegisterPreference* p
 #endif
 }
 
-bool CodeGen::genCompInsStackFP(GenTreePtr tos, GenTreePtr other)
+bool CodeGen::genCompInsStackFP(GenTree* tos, GenTree* other)
 {
     // assume gensetupop done
 
@@ -2750,22 +2748,22 @@ bool CodeGen::genCompInsStackFP(GenTreePtr tos, GenTreePtr other)
     return bReverse;
 }
 
-void CodeGen::genCondJumpFltStackFP(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* jumpFalse, bool bDoTransition)
+void CodeGen::genCondJumpFltStackFP(GenTree* cond, BasicBlock* jumpTrue, BasicBlock* jumpFalse, bool bDoTransition)
 {
     assert(jumpTrue && jumpFalse);
     assert(!(cond->gtFlags & GTF_REVERSE_OPS)); // Done in genCondJump()
     assert(varTypeIsFloating(cond->gtOp.gtOp1));
 
-    GenTreePtr op1 = cond->gtOp.gtOp1;
-    GenTreePtr op2 = cond->gtOp.gtOp2;
+    GenTree*   op1 = cond->gtOp.gtOp1;
+    GenTree*   op2 = cond->gtOp.gtOp2;
     genTreeOps cmp = cond->OperGet();
 
     // Prepare operands.
     genSetupForOpStackFP(op1, op2, false, false, true, false);
 
-    GenTreePtr tos;
-    GenTreePtr other;
-    bool       bReverseCmp = false;
+    GenTree* tos;
+    GenTree* other;
+    bool     bReverseCmp = false;
 
     if ((op2->IsRegVar() || (op2->InReg())) &&                     // op2 is in a reg
         (compCurFPState.TopVirtual() == (unsigned)op2->gtRegNum && // Is it already at the top of the stack?
@@ -2888,7 +2886,7 @@ BasicBlock* CodeGen::genTransitionBlockStackFP(FlatFPStateX87* pState, BasicBloc
     return pBlock;
 }
 
-void CodeGen::genCondJumpLngStackFP(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* jumpFalse)
+void CodeGen::genCondJumpLngStackFP(GenTree* cond, BasicBlock* jumpTrue, BasicBlock* jumpFalse)
 {
     // For the moment, and so we don't have to deal with the amount of special cases
     // we have, will insert a dummy block for jumpTrue (if necessary) that will do the
@@ -2908,7 +2906,7 @@ void CodeGen::genCondJumpLngStackFP(GenTreePtr cond, BasicBlock* jumpTrue, Basic
     genDefineTempLabel(pTransition);
 }
 
-void CodeGen::genQMarkRegVarTransition(GenTreePtr nextNode, VARSET_VALARG_TP liveset)
+void CodeGen::genQMarkRegVarTransition(GenTree* nextNode, VARSET_VALARG_TP liveset)
 {
     // Kill any vars that may die in the transition
     VARSET_TP newLiveSet(VarSetOps::Intersection(compiler, liveset, compiler->optAllFPregVars));
@@ -2943,7 +2941,7 @@ void CodeGen::genQMarkRegVarTransition(GenTreePtr nextNode, VARSET_VALARG_TP liv
     }
 }
 
-void CodeGen::genQMarkBeforeElseStackFP(QmarkStateStackFP* pState, VARSET_VALARG_TP varsetCond, GenTreePtr nextNode)
+void CodeGen::genQMarkBeforeElseStackFP(QmarkStateStackFP* pState, VARSET_VALARG_TP varsetCond, GenTree* nextNode)
 {
     assert(regSet.rsMaskLockedFloat == 0);
 
@@ -2954,7 +2952,7 @@ void CodeGen::genQMarkBeforeElseStackFP(QmarkStateStackFP* pState, VARSET_VALARG
     genQMarkRegVarTransition(nextNode, varsetCond);
 }
 
-void CodeGen::genQMarkAfterElseBlockStackFP(QmarkStateStackFP* pState, VARSET_VALARG_TP varsetCond, GenTreePtr nextNode)
+void CodeGen::genQMarkAfterElseBlockStackFP(QmarkStateStackFP* pState, VARSET_VALARG_TP varsetCond, GenTree* nextNode)
 {
     assert(regSet.rsMaskLockedFloat == 0);
 
@@ -3143,7 +3141,7 @@ void CodeGen::genTableSwitchStackFP(regNumber reg, unsigned jumpCnt, BasicBlock*
     return genTableSwitch(reg, jumpCnt, jumpTab);
 }
 
-bool CodeGen::genConstantLoadStackFP(GenTreePtr tree, bool bOnlyNoMemAccess)
+bool CodeGen::genConstantLoadStackFP(GenTree* tree, bool bOnlyNoMemAccess)
 {
     assert(tree->gtOper == GT_CNS_DBL);
 
@@ -3176,7 +3174,7 @@ bool CodeGen::genConstantLoadStackFP(GenTreePtr tree, bool bOnlyNoMemAccess)
     }
     else
     {
-        GenTreePtr addr;
+        GenTree* addr;
         if (tree->gtType == TYP_FLOAT || StackFPIsSameAsFloat(tree->gtDblCon.gtDconVal))
         {
             float f = forceCastToFloat(tree->gtDblCon.gtDconVal);
@@ -3241,10 +3239,10 @@ bool CodeGen::StackFPIsSameAsFloat(double d)
     return false;
 }
 
-GenTreePtr CodeGen::genMakeAddressableStackFP(GenTreePtr tree,
-                                              regMaskTP* regMaskIntPtr,
-                                              regMaskTP* regMaskFltPtr,
-                                              bool       bCollapseConstantDoubles)
+GenTree* CodeGen::genMakeAddressableStackFP(GenTree*   tree,
+                                            regMaskTP* regMaskIntPtr,
+                                            regMaskTP* regMaskFltPtr,
+                                            bool       bCollapseConstantDoubles)
 {
     *regMaskIntPtr = *regMaskFltPtr = 0;
 
@@ -3262,7 +3260,7 @@ GenTreePtr CodeGen::genMakeAddressableStackFP(GenTreePtr tree,
             }
             else
             {
-                GenTreePtr addr;
+                GenTree* addr;
                 if (tree->gtType == TYP_FLOAT ||
                     (bCollapseConstantDoubles && StackFPIsSameAsFloat(tree->gtDblCon.gtDconVal)))
                 {
@@ -3311,8 +3309,8 @@ GenTreePtr CodeGen::genMakeAddressableStackFP(GenTreePtr tree,
             }
             else
             {
-                GenTreePtr addr = tree;
-                tree            = tree->gtOp.gtOp1;
+                GenTree* addr = tree;
+                tree          = tree->gtOp.gtOp1;
 
                 genCodeForTree(tree, 0);
                 regSet.rsMarkRegUsed(tree, addr);
@@ -3335,7 +3333,7 @@ GenTreePtr CodeGen::genMakeAddressableStackFP(GenTreePtr tree,
     }
 }
 
-void CodeGen::genKeepAddressableStackFP(GenTreePtr tree, regMaskTP* regMaskIntPtr, regMaskTP* regMaskFltPtr)
+void CodeGen::genKeepAddressableStackFP(GenTree* tree, regMaskTP* regMaskIntPtr, regMaskTP* regMaskFltPtr)
 {
     regMaskTP regMaskInt, regMaskFlt;
 
@@ -3401,7 +3399,7 @@ void CodeGen::genKeepAddressableStackFP(GenTreePtr tree, regMaskTP* regMaskIntPt
     }
 }
 
-void CodeGen::genDoneAddressableStackFP(GenTreePtr      tree,
+void CodeGen::genDoneAddressableStackFP(GenTree*        tree,
                                         regMaskTP       addrRegInt,
                                         regMaskTP       addrRegFlt,
                                         RegSet::KeepReg keptReg)
@@ -3885,12 +3883,12 @@ void Compiler::raEnregisterVarsPrePassStackFP()
             {
                 case BBJ_COND:
                 {
-                    GenTreePtr stmt;
+                    GenTree* stmt;
                     stmt = block->bbTreeList->gtPrev;
                     assert(stmt->gtNext == NULL && stmt->gtStmt.gtStmtExpr->gtOper == GT_JTRUE);
 
                     assert(stmt->gtStmt.gtStmtExpr->gtOp.gtOp1);
-                    GenTreePtr cond = stmt->gtStmt.gtStmtExpr->gtOp.gtOp1;
+                    GenTree* cond = stmt->gtStmt.gtStmtExpr->gtOp.gtOp1;
 
                     assert(cond->OperIsCompare());
 
@@ -3936,12 +3934,12 @@ void Compiler::raEnregisterVarsPrePassStackFP()
         }
 
         VARSET_TP liveSet(VarSetOps::MakeCopy(this, block->bbLiveIn));
-        for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
+        for (GenTree* stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
         {
             assert(stmt->gtOper == GT_STMT);
 
             unsigned prevHeight = stmt->gtStmt.gtStmtList->gtFPlvl;
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
                 VarSetOps::AssignNoCopy(this, liveSet, fgUpdateLiveSet(liveSet, tree));
                 switch (tree->gtOper)
@@ -3954,7 +3952,7 @@ void Compiler::raEnregisterVarsPrePassStackFP()
                         // to avoid store forwarding stall
                         if (tree->gtType == TYP_DOUBLE)
                         {
-                            GenTreePtr op1 = tree->gtOp.gtOp1;
+                            GenTree* op1 = tree->gtOp.gtOp1;
                             if (op1->gtOper == GT_LCL_VAR && op1->gtType == TYP_LONG)
                             {
                                 unsigned int lclNum = op1->gtLclVarCommon.gtLclNum;
@@ -4034,7 +4032,7 @@ void Compiler::raEnregisterVarsPrePassStackFP()
 #endif
 }
 
-void Compiler::raSetRegLclBirthDeath(GenTreePtr tree, VARSET_VALARG_TP lastlife, bool fromLDOBJ)
+void Compiler::raSetRegLclBirthDeath(GenTree* tree, VARSET_VALARG_TP lastlife, bool fromLDOBJ)
 {
     assert(tree->gtOper == GT_LCL_VAR);
 
@@ -4128,11 +4126,11 @@ void Compiler::raEnregisterVarsPostPassStackFP()
         */
 
         VARSET_TP lastlife(VarSetOps::MakeCopy(this, block->bbLiveIn));
-        for (GenTreePtr stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
+        for (GenTree* stmt = block->FirstNonPhiDef(); stmt; stmt = stmt->gtNext)
         {
             assert(stmt->gtOper == GT_STMT);
 
-            for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree;
+            for (GenTree *tree = stmt->gtStmt.gtStmtList; tree;
                  VarSetOps::AssignNoCopy(this, lastlife, fgUpdateLiveSet(lastlife, tree)), tree = tree->gtNext)
             {
                 if (tree->gtOper == GT_LCL_VAR)

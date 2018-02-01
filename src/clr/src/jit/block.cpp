@@ -645,7 +645,7 @@ bool BasicBlock::CloneBlockState(
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
 
-    for (GenTreePtr fromStmt = from->bbTreeList; fromStmt != nullptr; fromStmt = fromStmt->gtNext)
+    for (GenTree* fromStmt = from->bbTreeList; fromStmt != nullptr; fromStmt = fromStmt->gtNext)
     {
         auto newExpr = compiler->gtCloneExpr(fromStmt->gtStmt.gtStmtExpr, 0, varNum, varVal);
         if (!newExpr)
@@ -831,12 +831,12 @@ bool BasicBlock::isEmpty()
 
 GenTreeStmt* BasicBlock::FirstNonPhiDef()
 {
-    GenTreePtr stmt = bbTreeList;
+    GenTree* stmt = bbTreeList;
     if (stmt == nullptr)
     {
         return nullptr;
     }
-    GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+    GenTree* tree = stmt->gtStmt.gtStmtExpr;
     while ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_PHI) ||
            (tree->OperGet() == GT_STORE_LCL_VAR && tree->gtOp.gtOp1->OperGet() == GT_PHI))
     {
@@ -850,14 +850,14 @@ GenTreeStmt* BasicBlock::FirstNonPhiDef()
     return stmt->AsStmt();
 }
 
-GenTreePtr BasicBlock::FirstNonPhiDefOrCatchArgAsg()
+GenTree* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
 {
-    GenTreePtr stmt = FirstNonPhiDef();
+    GenTree* stmt = FirstNonPhiDef();
     if (stmt == nullptr)
     {
         return nullptr;
     }
-    GenTreePtr tree = stmt->gtStmt.gtStmtExpr;
+    GenTree* tree = stmt->gtStmt.gtStmtExpr;
     if ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_CATCH_ARG) ||
         (tree->OperGet() == GT_STORE_LCL_VAR && tree->gtOp.gtOp1->OperGet() == GT_CATCH_ARG))
     {
@@ -1161,8 +1161,8 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp)
 //
 bool BasicBlock::endsWithTailCallOrJmp(Compiler* comp, bool fastTailCallsOnly /*=false*/)
 {
-    GenTreePtr tailCall                       = nullptr;
-    bool       tailCallsConvertibleToLoopOnly = false;
+    GenTree* tailCall                       = nullptr;
+    bool     tailCallsConvertibleToLoopOnly = false;
     return endsWithJmpMethod(comp) ||
            endsWithTailCall(comp, fastTailCallsOnly, tailCallsConvertibleToLoopOnly, &tailCall);
 }
