@@ -258,8 +258,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     Compiler* compiler = comp;
 
     // Sources are dest address and initVal or source.
-    GenTreePtr srcAddrOrFill = nullptr;
-    bool       isInitBlk     = blkNode->OperIsInitBlkOp();
+    GenTree* srcAddrOrFill = nullptr;
+    bool     isInitBlk     = blkNode->OperIsInitBlkOp();
 
     if (!isInitBlk)
     {
@@ -276,7 +276,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
     if (isInitBlk)
     {
-        GenTreePtr initVal = source;
+        GenTree* initVal = source;
         if (initVal->OperIsInitVal())
         {
             initVal->SetContained();
@@ -415,10 +415,10 @@ void Lowering::LowerCast(GenTree* tree)
     DISPNODE(tree);
     JITDUMP("\n");
 
-    GenTreePtr op1     = tree->gtOp.gtOp1;
-    var_types  dstType = tree->CastToType();
-    var_types  srcType = genActualType(op1->TypeGet());
-    var_types  tmpType = TYP_UNDEF;
+    GenTree*  op1     = tree->gtOp.gtOp1;
+    var_types dstType = tree->CastToType();
+    var_types srcType = genActualType(op1->TypeGet());
+    var_types tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
     {
@@ -436,7 +436,7 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tmpType != TYP_UNDEF)
     {
-        GenTreePtr tmp = comp->gtNewCastNode(tmpType, op1, tmpType);
+        GenTree* tmp = comp->gtNewCastNode(tmpType, op1, tmpType);
         tmp->gtFlags |= (tree->gtFlags & (GTF_UNSIGNED | GTF_OVERFLOW | GTF_EXCEPT));
 
         tree->gtFlags &= ~GTF_UNSIGNED;
@@ -457,14 +457,14 @@ void Lowering::LowerCast(GenTree* tree)
 // Return Value:
 //    None.
 //
-void Lowering::LowerRotate(GenTreePtr tree)
+void Lowering::LowerRotate(GenTree* tree)
 {
     if (tree->OperGet() == GT_ROL)
     {
         // There is no ROL instruction on ARM. Convert ROL into ROR.
-        GenTreePtr rotatedValue        = tree->gtOp.gtOp1;
-        unsigned   rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
-        GenTreePtr rotateLeftIndexNode = tree->gtOp.gtOp2;
+        GenTree* rotatedValue        = tree->gtOp.gtOp1;
+        unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
+        GenTree* rotateLeftIndexNode = tree->gtOp.gtOp2;
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
@@ -474,8 +474,7 @@ void Lowering::LowerRotate(GenTreePtr tree)
         }
         else
         {
-            GenTreePtr tmp =
-                comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
+            GenTree* tmp = comp->gtNewOperNode(GT_NEG, genActualType(rotateLeftIndexNode->gtType), rotateLeftIndexNode);
             BlockRange().InsertAfter(rotateLeftIndexNode, tmp);
             tree->gtOp.gtOp2 = tmp;
         }
@@ -659,10 +658,10 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 {
-    GenTreePtr shiftBy = node->gtOp2;
+    GenTree* shiftBy = node->gtOp2;
 
 #ifdef _TARGET_ARM_
-    GenTreePtr source = node->gtOp1;
+    GenTree* source = node->gtOp1;
     if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
     {
         assert(source->OperGet() == GT_LONG);
@@ -725,9 +724,9 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
 #ifdef _TARGET_ARM_
-    GenTreePtr castOp     = node->CastOp();
-    var_types  castToType = node->CastToType();
-    var_types  srcType    = castOp->TypeGet();
+    GenTree*  castOp     = node->CastOp();
+    var_types castToType = node->CastToType();
+    var_types srcType    = castOp->TypeGet();
 
     if (varTypeIsLong(castOp))
     {
@@ -757,7 +756,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
     assert(node->OperIsBoundsCheck());
-    GenTreePtr other;
+    GenTree* other;
     if (!CheckImmedAndMakeContained(node, node->gtIndex))
     {
         CheckImmedAndMakeContained(node, node->gtArrLen);

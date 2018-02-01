@@ -520,10 +520,10 @@ public:
 
     // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer
     // with a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
-    ValueNum ExtendPtrVN(GenTreePtr opA, GenTreePtr opB);
+    ValueNum ExtendPtrVN(GenTree* opA, GenTree* opB);
     // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the
     // pointer form extended with "fieldSeq"; or else NoVN.
-    ValueNum ExtendPtrVN(GenTreePtr opA, FieldSeqNode* fieldSeq);
+    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq);
 
     // Queries on value numbers.
     // All queries taking value numbers require that those value numbers are valid, that is, that

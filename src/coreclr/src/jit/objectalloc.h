@@ -37,12 +37,12 @@ protected:
 
 private:
     bool CanAllocateLclVarOnStack(unsigned int lclNum) const;
-    void       DoAnalysis();
-    void       MorphAllocObjNodes();
-    GenTreePtr MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
-    GenTreePtr MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, GenTreeStmt* stmt);
+    void     DoAnalysis();
+    void     MorphAllocObjNodes();
+    GenTree* MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
+    GenTree* MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, GenTreeStmt* stmt);
 #ifdef DEBUG
-    static Compiler::fgWalkResult AssertWhenAllocObjFoundVisitor(GenTreePtr* pTree, Compiler::fgWalkData* data);
+    static Compiler::fgWalkResult AssertWhenAllocObjFoundVisitor(GenTree** pTree, Compiler::fgWalkData* data);
 #endif // DEBUG
 };
 

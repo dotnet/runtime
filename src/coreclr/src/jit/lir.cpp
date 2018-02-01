@@ -1434,7 +1434,7 @@ public:
     //
     CheckLclVarSemanticsHelper(Compiler*         compiler,
                                const LIR::Range* range,
-                               SmallHashTable<GenTreePtr, bool, 32U>& unusedDefs)
+                               SmallHashTable<GenTree*, bool, 32U>& unusedDefs)
         : compiler(compiler), range(range), unusedDefs(unusedDefs), unusedLclVarReads(compiler)
     {
     }
@@ -1445,7 +1445,7 @@ public:
     //    'true' if the Local variables semantics for the specified range is legal.
     bool Check()
     {
-        for (GenTreePtr node : *range)
+        for (GenTree* node : *range)
         {
             if (!node->isContained()) // a contained node reads operands in the parent.
             {
@@ -1473,9 +1473,9 @@ private:
     //
     // Arguments:
     //    node - the node to use operands from.
-    void UseNodeOperands(GenTreePtr node)
+    void UseNodeOperands(GenTree* node)
     {
-        for (GenTreePtr operand : node->Operands())
+        for (GenTree* operand : node->Operands())
         {
             if (!operand->IsLIR())
             {

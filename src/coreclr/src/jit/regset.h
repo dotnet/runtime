@@ -11,7 +11,6 @@
 
 class LclVarDsc;
 class TempDsc;
-typedef struct GenTree* GenTreePtr;
 class Compiler;
 class CodeGen;
 class GCInfo;
@@ -76,7 +75,7 @@ private:
         SpillDsc* spillNext; // next spilled value of same reg
 
         union {
-            GenTreePtr spillTree; // the value that was spilled
+            GenTree* spillTree; // the value that was spilled
 #ifdef LEGACY_BACKEND
             LclVarDsc* spillVarDsc; // variable if it's an enregistered variable
 #endif                              // LEGACY_BACKEND
@@ -85,7 +84,7 @@ private:
         TempDsc* spillTemp; // the temp holding the spilled value
 
 #ifdef LEGACY_BACKEND
-        GenTreePtr spillAddr; // owning complex address mode or nullptr
+        GenTree* spillAddr; // owning complex address mode or nullptr
 
         union {
             bool spillMoreMultis;
@@ -108,12 +107,12 @@ public:
 //  Track the status of the registers
 //
 #ifdef LEGACY_BACKEND
-public:                               // TODO-Cleanup: Should be private, but Compiler uses it
-    GenTreePtr rsUsedTree[REG_COUNT]; // trees currently sitting in the registers
+public:                             // TODO-Cleanup: Should be private, but Compiler uses it
+    GenTree* rsUsedTree[REG_COUNT]; // trees currently sitting in the registers
 private:
-    GenTreePtr rsUsedAddr[REG_COUNT];  // addr for which rsUsedTree[reg] is a part of the addressing mode
-    SpillDsc*  rsMultiDesc[REG_COUNT]; // keeps track of 'multiple-use' registers.
-#endif                                 // LEGACY_BACKEND
+    GenTree*  rsUsedAddr[REG_COUNT];  // addr for which rsUsedTree[reg] is a part of the addressing mode
+    SpillDsc* rsMultiDesc[REG_COUNT]; // keeps track of 'multiple-use' registers.
+#endif                                // LEGACY_BACKEND
 
 private:
     bool      rsNeededSpillReg;   // true if this method needed to spill any registers
@@ -213,14 +212,14 @@ private:
     void rsSetMaskVars(regMaskTP maskVars); // Setter for rsMaskVars or rsMaskRegVarFloat
     void rsSetMaskLock(regMaskTP maskLock); // Setter for rsMaskLock or rsMaskLockedFloat
 
-    void rsSetUsedTree(regNumber regNum, GenTreePtr tree);  // Setter for  rsUsedTree[]/genUsedRegsFloat[]
-    void rsFreeUsedTree(regNumber regNum, GenTreePtr tree); // Free   for  rsUsedTree[]/genUsedRegsFloat[]
+    void rsSetUsedTree(regNumber regNum, GenTree* tree);  // Setter for  rsUsedTree[]/genUsedRegsFloat[]
+    void rsFreeUsedTree(regNumber regNum, GenTree* tree); // Free   for  rsUsedTree[]/genUsedRegsFloat[]
 
 public:
     regPairNo rsFindRegPairNo(regMaskTP regMask);
 
 private:
-    bool rsIsTreeInReg(regNumber reg, GenTreePtr tree);
+    bool rsIsTreeInReg(regNumber reg, GenTree* tree);
 
     regMaskTP rsExcludeHint(regMaskTP regs, regMaskTP excludeHint);
     regMaskTP rsNarrowHint(regMaskTP regs, regMaskTP narrowHint);
@@ -228,17 +227,17 @@ private:
     regMaskTP rsRegMaskFree();
     regMaskTP rsRegMaskCanGrab();
 
-    void rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr = 0);
+    void rsMarkRegUsed(GenTree* tree, GenTree* addr = 0);
     // A special case of "rsMarkRegUsed": the register used is an argument register, used to hold part of
     // the given argument node "promotedStructArg".  (The name suggests that we're likely to use use this
     // for register holding a promoted struct argument, but the implementation doesn't depend on that.)  The
     // "isGCRef" argument indicates whether the register contains a GC reference.
-    void rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, regNumber regNum, bool isGCRef);
+    void rsMarkArgRegUsedByPromotedFieldArg(GenTree* promotedStructArg, regNumber regNum, bool isGCRef);
 
-    void rsMarkRegPairUsed(GenTreePtr tree);
+    void rsMarkRegPairUsed(GenTree* tree);
 
     void rsMarkRegFree(regMaskTP regMask);
-    void rsMarkRegFree(regNumber reg, GenTreePtr tree);
+    void rsMarkRegFree(regNumber reg, GenTree* tree);
     void rsMultRegFree(regMaskTP regMask);
     unsigned rsFreeNeededRegCount(regMaskTP needReg);
 
@@ -277,19 +276,19 @@ private:
             best = _best;
         }
     };
-    regNumber PickRegFloat(GenTreePtr          tree,
+    regNumber PickRegFloat(GenTree*            tree,
                            var_types           type  = TYP_DOUBLE,
                            RegisterPreference* pref  = NULL,
                            bool                bUsed = true);
     regNumber PickRegFloat(var_types type = TYP_DOUBLE, RegisterPreference* pref = NULL, bool bUsed = true);
-    regNumber PickRegFloatOtherThan(GenTreePtr tree, var_types type, regNumber reg);
+    regNumber PickRegFloatOtherThan(GenTree* tree, var_types type, regNumber reg);
     regNumber PickRegFloatOtherThan(var_types type, regNumber reg);
 
     regMaskTP RegFreeFloat();
 
-    void SetUsedRegFloat(GenTreePtr tree, bool bValue);
-    void SetLockedRegFloat(GenTreePtr tree, bool bValue);
-    bool IsLockedRegFloat(GenTreePtr tree);
+    void SetUsedRegFloat(GenTree* tree, bool bValue);
+    void SetLockedRegFloat(GenTree* tree, bool bValue);
+    bool IsLockedRegFloat(GenTree* tree);
 
     var_types rsRmvMultiReg(regNumber reg);
     void rsRecMultiReg(regNumber reg, var_types type);
@@ -336,7 +335,7 @@ private:
     void rsSpillBeg();
     void rsSpillEnd();
 
-    void rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx = 0);
+    void rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx = 0);
 
 #if defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
     void rsSpillFPStack(GenTreeCall* call);
@@ -348,7 +347,7 @@ private:
     void rsSpillRegs(regMaskTP regMask);
 #endif // LEGACY_BACKEND
 
-    SpillDsc* rsGetSpillInfo(GenTreePtr tree,
+    SpillDsc* rsGetSpillInfo(GenTree*   tree,
                              regNumber  reg,
                              SpillDsc** pPrevDsc = nullptr
 #ifdef LEGACY_BACKEND
@@ -371,28 +370,28 @@ private:
         KEEP_REG
     };
 
-    regNumber rsUnspillOneReg(GenTreePtr tree, regNumber oldReg, KeepReg willKeepNewReg, regMaskTP needReg);
+    regNumber rsUnspillOneReg(GenTree* tree, regNumber oldReg, KeepReg willKeepNewReg, regMaskTP needReg);
 #endif // LEGACY_BACKEND
 
-    TempDsc* rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned regIdx = 0);
+    TempDsc* rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regIdx = 0);
 
 #ifdef LEGACY_BACKEND
-    void rsUnspillReg(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg);
+    void rsUnspillReg(GenTree* tree, regMaskTP needReg, KeepReg keepReg);
 
-    void rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepReg);
+    void rsUnspillRegPair(GenTree* tree, regMaskTP needReg, KeepReg keepReg);
 #endif // LEGACY_BACKEND
 
-    void rsMarkSpill(GenTreePtr tree, regNumber reg);
+    void rsMarkSpill(GenTree* tree, regNumber reg);
 
 #ifdef LEGACY_BACKEND
-    void rsMarkUnspill(GenTreePtr tree, regNumber reg);
+    void rsMarkUnspill(GenTree* tree, regNumber reg);
 #endif // LEGACY_BACKEND
 
 #if FEATURE_STACK_FP_X87
     regMaskTP  rsMaskUsedFloat;
     regMaskTP  rsMaskRegVarFloat;
     regMaskTP  rsMaskLockedFloat;
-    GenTreePtr genUsedRegsFloat[REG_FPCOUNT];
+    GenTree*   genUsedRegsFloat[REG_FPCOUNT];
     LclVarDsc* genRegVarsFloat[REG_FPCOUNT];
 #endif // FEATURE_STACK_FP_X87
 };
@@ -448,7 +447,7 @@ public:
 #ifdef LEGACY_BACKEND
     void rsTrackRegLclVarLng(regNumber reg, unsigned var, bool low);
     bool rsTrackIsLclVarLng(regValKind rvKind);
-    void rsTrackRegClsVar(regNumber reg, GenTreePtr clsVar);
+    void rsTrackRegClsVar(regNumber reg, GenTree* clsVar);
 #endif // LEGACY_BACKEND
     void rsTrackRegCopy(regNumber reg1, regNumber reg2);
 #ifdef LEGACY_BACKEND

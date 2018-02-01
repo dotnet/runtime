@@ -47,12 +47,12 @@ void RegSet::rsSetMaskLock(regMaskTP maskLock)
     rsMaskLockedFloat = maskLock;
 }
 
-void RegSet::rsSetUsedTree(regNumber regNum, GenTreePtr tree)
+void RegSet::rsSetUsedTree(regNumber regNum, GenTree* tree)
 {
     assert(genUsedRegsFloat[regNum] == 0);
     genUsedRegsFloat[regNum] = tree;
 }
-void RegSet::rsFreeUsedTree(regNumber regNum, GenTreePtr tree)
+void RegSet::rsFreeUsedTree(regNumber regNum, GenTree* tree)
 {
     assert(genUsedRegsFloat[regNum] == tree);
     genUsedRegsFloat[regNum] = 0;
@@ -89,12 +89,12 @@ void RegSet::rsSetMaskLock(regMaskTP maskLock)
     rsMaskLock = maskLock;
 }
 
-void RegSet::rsSetUsedTree(regNumber regNum, GenTreePtr tree)
+void RegSet::rsSetUsedTree(regNumber regNum, GenTree* tree)
 {
     assert(rsUsedTree[regNum] == 0);
     rsUsedTree[regNum] = tree;
 }
-void RegSet::rsFreeUsedTree(regNumber regNum, GenTreePtr tree)
+void RegSet::rsFreeUsedTree(regNumber regNum, GenTree* tree)
 {
     assert(rsUsedTree[regNum] == tree);
     rsUsedTree[regNum] = 0;
@@ -152,7 +152,7 @@ static const regNumber pickOrder[] = {REG_FPV0, REG_FPV1, REG_FPV2, REG_FPV3, RE
 #endif
 
 // picks a reg other than the one specified
-regNumber RegSet::PickRegFloatOtherThan(GenTreePtr tree, var_types type, regNumber reg)
+regNumber RegSet::PickRegFloatOtherThan(GenTree* tree, var_types type, regNumber reg)
 {
     return PickRegFloatOtherThan(type, reg);
 }
@@ -163,7 +163,7 @@ regNumber RegSet::PickRegFloatOtherThan(var_types type, regNumber reg)
     return PickRegFloat(type, &pref);
 }
 
-regNumber RegSet::PickRegFloat(GenTreePtr tree, var_types type, RegisterPreference* pref, bool bUsed)
+regNumber RegSet::PickRegFloat(GenTree* tree, var_types type, RegisterPreference* pref, bool bUsed)
 {
     return PickRegFloat(type, pref, bUsed);
 }
@@ -266,7 +266,7 @@ RET:
 }
 
 #ifdef LEGACY_BACKEND
-void RegSet::SetUsedRegFloat(GenTreePtr tree, bool bValue)
+void RegSet::SetUsedRegFloat(GenTree* tree, bool bValue)
 {
     /* The value must be sitting in a register */
     assert(tree);
@@ -374,7 +374,7 @@ void RegSet::SetLockedRegFloat(GenTree* tree, bool bValue)
     }
 }
 
-bool RegSet::IsLockedRegFloat(GenTreePtr tree)
+bool RegSet::IsLockedRegFloat(GenTree* tree)
 {
     /* The value must be sitting in a register */
     assert(tree);
@@ -385,7 +385,7 @@ bool RegSet::IsLockedRegFloat(GenTreePtr tree)
     return (rsGetMaskLock() & regMask) == regMask;
 }
 
-void CodeGen::UnspillFloat(GenTreePtr tree)
+void CodeGen::UnspillFloat(GenTree* tree)
 {
 #ifdef DEBUG
     if (verbose)
@@ -446,9 +446,9 @@ void CodeGen::UnspillFloat(RegSet::SpillDsc* spillDsc)
 
 #if FEATURE_STACK_FP_X87
 
-Compiler::fgWalkResult CodeGen::genRegVarDiesInSubTreeWorker(GenTreePtr* pTree, Compiler::fgWalkData* data)
+Compiler::fgWalkResult CodeGen::genRegVarDiesInSubTreeWorker(GenTree** pTree, Compiler::fgWalkData* data)
 {
-    GenTreePtr                  tree  = *pTree;
+    GenTree*                    tree  = *pTree;
     genRegVarDiesInSubTreeData* pData = (genRegVarDiesInSubTreeData*)data->pCallbackData;
 
     // if it's dying, just rename the register, else load it normally
@@ -461,7 +461,7 @@ Compiler::fgWalkResult CodeGen::genRegVarDiesInSubTreeWorker(GenTreePtr* pTree, 
     return Compiler::WALK_CONTINUE;
 }
 
-bool CodeGen::genRegVarDiesInSubTree(GenTreePtr tree, regNumber reg)
+bool CodeGen::genRegVarDiesInSubTree(GenTree* tree, regNumber reg)
 {
     genRegVarDiesInSubTreeData Data;
     Data.reg    = reg;
@@ -482,7 +482,7 @@ bool CodeGen::genRegVarDiesInSubTree(GenTreePtr tree, regNumber reg)
  *  If type!=TYP_UNDEF, that is the desired presicion, else it is op->gtType
  */
 
-void CodeGen::genRoundFpExpression(GenTreePtr op, var_types type)
+void CodeGen::genRoundFpExpression(GenTree* op, var_types type)
 {
 #if FEATURE_STACK_FP_X87
     return genRoundFpExpressionStackFP(op, type);
@@ -491,7 +491,7 @@ void CodeGen::genRoundFpExpression(GenTreePtr op, var_types type)
 #endif
 }
 
-void CodeGen::genCodeForTreeFloat(GenTreePtr tree, regMaskTP needReg, regMaskTP bestReg)
+void CodeGen::genCodeForTreeFloat(GenTree* tree, regMaskTP needReg, regMaskTP bestReg)
 {
     RegSet::RegisterPreference pref(needReg, bestReg);
     genCodeForTreeFloat(tree, &pref);

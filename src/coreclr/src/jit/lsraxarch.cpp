@@ -479,7 +479,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_ADDR:
         {
             // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTreePtr child = tree->gtOp.gtOp1;
+            GenTree* child = tree->gtOp.gtOp1;
             assert(!isCandidateLocalRef(child));
             assert(child->isContained());
             assert(info->dstCount == 1);
@@ -862,7 +862,7 @@ void LinearScan::TreeNodeInfoInitCheckByteable(GenTree* tree, TreeNodeInfo* info
 // Notes:
 //    This is used to determine whether to preference the source to the destination register.
 //
-bool LinearScan::isRMWRegOper(GenTreePtr tree)
+bool LinearScan::isRMWRegOper(GenTree* tree)
 {
     // TODO-XArch-CQ: Make this more accurate.
     // For now, We assume that most binary operators are of the RMW form.
@@ -1021,8 +1021,8 @@ int LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree, TreeNodeInfo* info)
     // of bits moved gets stored in CL in case
     // the number of bits to shift is not a constant.
     int                   srcCount    = 0;
-    GenTreePtr            shiftBy     = tree->gtOp.gtOp2;
-    GenTreePtr            source      = tree->gtOp.gtOp1;
+    GenTree*              shiftBy     = tree->gtOp.gtOp2;
+    GenTree*              source      = tree->gtOp.gtOp1;
     LocationInfoListNode* shiftByInfo = nullptr;
     // x64 can encode 8 bits of shift and it will use 5 or 6. (the others are masked off)
     // We will allow whatever can be encoded - hope you know what you are doing.
@@ -1062,7 +1062,7 @@ int LinearScan::TreeNodeInfoInitShiftRotate(GenTree* tree, TreeNodeInfo* info)
     {
         assert((source->OperGet() == GT_LONG) && source->isContained());
 
-        GenTreePtr            sourceLo     = source->gtOp.gtOp1;
+        GenTree*              sourceLo     = source->gtOp.gtOp1;
         LocationInfoListNode* sourceLoInfo = useList.Begin();
         LocationInfoListNode* sourceHiInfo = useList.GetSecond(INDEBUG(source->gtGetOp2()));
 
@@ -1257,7 +1257,7 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
     bool isVarArgs           = call->IsVarargs();
 
     // First, count reg args
-    for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
+    for (GenTree* list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
         assert(list->OperIsList());
 
@@ -1270,7 +1270,7 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
         // - a put arg
         //
         // Note that this property is statically checked by LinearScan::CheckBlock.
-        GenTreePtr argNode = list->Current();
+        GenTree* argNode = list->Current();
 
         // Each register argument corresponds to one source.
         if (argNode->OperIsPutArgReg())
@@ -1348,10 +1348,10 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call, TreeNodeInfo* info)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    GenTreePtr args = call->gtCallArgs;
+    GenTree* args = call->gtCallArgs;
     while (args)
     {
-        GenTreePtr arg = args->gtOp.gtOp1;
+        GenTree* arg = args->gtOp.gtOp1;
         if (!(arg->gtFlags & GTF_LATE_ARG) && !arg)
         {
             if (arg->IsValue() && !arg->isContained())
@@ -1443,8 +1443,8 @@ void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode, TreeNodeInfo* i
     }
     assert(info->dstCount == 0);
     info->setInternalCandidates(this, RBM_NONE);
-    GenTreePtr srcAddrOrFill = nullptr;
-    bool       isInitBlk     = blkNode->OperIsInitBlkOp();
+    GenTree* srcAddrOrFill = nullptr;
+    bool     isInitBlk     = blkNode->OperIsInitBlkOp();
 
     regMaskTP dstAddrRegMask = RBM_NONE;
     regMaskTP sourceRegMask  = RBM_NONE;
@@ -1757,8 +1757,8 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk, TreeNode
 #endif // _TARGET_X86_
     }
 
-    GenTreePtr src  = putArgStk->gtOp1;
-    var_types  type = src->TypeGet();
+    GenTree*  src  = putArgStk->gtOp1;
+    var_types type = src->TypeGet();
 
 #if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
     // For PutArgStk of a TYP_SIMD12, we need an extra register.
@@ -1778,8 +1778,8 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk, TreeNode
         return;
     }
 
-    GenTreePtr dst     = putArgStk;
-    GenTreePtr srcAddr = nullptr;
+    GenTree* dst     = putArgStk;
+    GenTree* srcAddr = nullptr;
 
     info->srcCount = GetOperandInfo(src);
 
@@ -1867,7 +1867,7 @@ void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree, TreeNodeInfo* info)
     // Note: Here we don't need internal register to be different from targetReg.
     // Rather, require it to be different from operand's reg.
 
-    GenTreePtr size = tree->gtOp.gtOp1;
+    GenTree* size = tree->gtOp.gtOp1;
     if (size->IsCnsIntOrI())
     {
         assert(size->isContained());
@@ -2618,9 +2618,9 @@ void LinearScan::TreeNodeInfoInitCast(GenTree* tree, TreeNodeInfo* info)
     // and that allow the source operand to be either a reg or memop. Given the
     // fact that casts from small int to float/double are done as two-level casts,
     // the source operand is always guaranteed to be of size 4 or 8 bytes.
-    var_types  castToType = tree->CastToType();
-    GenTreePtr castOp     = tree->gtCast.CastOp();
-    var_types  castOpType = castOp->TypeGet();
+    var_types castToType = tree->CastToType();
+    GenTree*  castOp     = tree->gtCast.CastOp();
+    var_types castOpType = castOp->TypeGet();
 
     info->srcCount = GetOperandInfo(castOp);
     assert(info->dstCount == 1);
@@ -2656,8 +2656,8 @@ void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree, TreeNodeInfo* inf
     assert(tree->OperGet() == GT_STOREIND);
 
     GenTreeStoreInd*      dst      = tree->AsStoreInd();
-    GenTreePtr            addr     = dst->Addr();
-    GenTreePtr            src      = dst->Data();
+    GenTree*              addr     = dst->Addr();
+    GenTree*              src      = dst->Data();
     LocationInfoListNode* addrInfo = getLocationInfo(addr);
     LocationInfoListNode* srcInfo  = getLocationInfo(src);
 
@@ -2825,7 +2825,7 @@ void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree, TreeNodeInfo* in
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree, TreeNodeInfo* info)
+void LinearScan::TreeNodeInfoInitCmp(GenTree* tree, TreeNodeInfo* info)
 {
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP));
 
@@ -2841,10 +2841,10 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree, TreeNodeInfo* info)
     info->setDstCandidates(this, RBM_BYTE_REGS);
 #endif // _TARGET_X86_
 
-    GenTreePtr op1     = tree->gtOp.gtOp1;
-    GenTreePtr op2     = tree->gtOp.gtOp2;
-    var_types  op1Type = op1->TypeGet();
-    var_types  op2Type = op2->TypeGet();
+    GenTree*  op1     = tree->gtOp.gtOp1;
+    GenTree*  op2     = tree->gtOp.gtOp2;
+    var_types op1Type = op1->TypeGet();
+    var_types op2Type = op2->TypeGet();
 
     info->srcCount = appendBinaryLocationInfoToList(tree->AsOp());
 }
@@ -2858,7 +2858,7 @@ void LinearScan::TreeNodeInfoInitCmp(GenTreePtr tree, TreeNodeInfo* info)
 // Return Value:
 //    None.
 //
-void LinearScan::TreeNodeInfoInitMul(GenTreePtr tree, TreeNodeInfo* info)
+void LinearScan::TreeNodeInfoInitMul(GenTree* tree, TreeNodeInfo* info)
 {
 #if defined(_TARGET_X86_)
     assert(tree->OperIs(GT_MUL, GT_MULHI, GT_MUL_LONG));

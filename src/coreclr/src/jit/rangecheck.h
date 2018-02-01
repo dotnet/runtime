@@ -419,9 +419,9 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
-    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
-    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
-    typedef JitHashTable<GenTreePtr, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
 
 #ifdef DEBUG
     // TODO-Cleanup: This code has been kept around just to ensure that the SSA data is still
@@ -432,10 +432,10 @@ public:
     struct Location
     {
         BasicBlock*          block;
-        GenTreePtr           stmt;
+        GenTree*             stmt;
         GenTreeLclVarCommon* tree;
-        GenTreePtr           parent;
-        Location(BasicBlock* block, GenTreePtr stmt, GenTreeLclVarCommon* tree, GenTreePtr parent)
+        GenTree*             parent;
+        Location(BasicBlock* block, GenTree* stmt, GenTreeLclVarCommon* tree, GenTree* parent)
             : block(block), stmt(stmt), tree(tree), parent(parent)
         {
         }
@@ -471,7 +471,7 @@ public:
     // assumes that the lower range is resolved and upper range is symbolic as in an
     // increasing loop.
     // TODO-CQ: This is not general enough.
-    bool BetweenBounds(Range& range, int lower, GenTreePtr upper);
+    bool BetweenBounds(Range& range, int lower, GenTree* upper);
 
     // Entry point to optimize range checks in the block. Assumes value numbering
     // and assertion prop phases are completed.
@@ -480,28 +480,28 @@ public:
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that
     // contain the tree.
-    void OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree);
+    void OptimizeRangeCheck(BasicBlock* block, GenTree* stmt, GenTree* tree);
 
     // Given the index expression try to find its range.
     // The range of a variable depends on its rhs which in turn depends on its constituent variables.
     // The "path" is the path taken in the search for the rhs' range and its constituents' range.
     // If "monotonic" is true, the calculations are made more liberally assuming initial values
     // at phi definitions.
-    Range GetRange(BasicBlock* block, GenTreePtr expr, bool monotonic DEBUGARG(int indent));
+    Range GetRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent));
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRange.
     Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monotonic DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRange.
-    Range ComputeRange(BasicBlock* block, GenTreePtr expr, bool monotonic DEBUGARG(int indent));
+    Range ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic DEBUGARG(int indent));
 
     // Compute the range for the op1 and op2 for the given binary operator.
     Range ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monotonic DEBUGARG(int indent));
 
     // Merge assertions from AssertionProp's flags, for the corresponding "phiArg."
     // Requires "pRange" to contain range that is computed partially.
-    void MergeAssertion(BasicBlock* block, GenTreePtr phiArg, Range* pRange DEBUGARG(int indent));
+    void MergeAssertion(BasicBlock* block, GenTree* phiArg, Range* pRange DEBUGARG(int indent));
 
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
@@ -518,27 +518,27 @@ public:
     bool DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop);
 
     // Does the phi operands involve an assignment that could overflow?
-    bool DoesPhiOverflow(BasicBlock* block, GenTreePtr expr);
+    bool DoesPhiOverflow(BasicBlock* block, GenTree* expr);
 
     // Find the def of the "expr" local and recurse on the arguments if any of them involve a
     // calculation that overflows.
     bool DoesVarDefOverflow(GenTreeLclVarCommon* lcl);
 
-    bool ComputeDoesOverflow(BasicBlock* block, GenTreePtr expr);
+    bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr);
 
     // Does the current "expr" which is a use involve a definition, that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTreePtr tree);
+    bool DoesOverflow(BasicBlock* block, GenTree* tree);
 
     // Widen the range by first checking if the induction variable is monotonic. Requires "pRange"
     // to be partially computed.
-    void Widen(BasicBlock* block, GenTreePtr tree, Range* pRange);
+    void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
 
     // Is the binary operation increasing the value.
     bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
 
     // Given an "expr" trace its rhs and their definitions to check if all the assignments
     // are monotonically increasing.
-    bool IsMonotonicallyIncreasing(GenTreePtr tree);
+    bool IsMonotonicallyIncreasing(GenTree* tree);
 
     // We allocate a budget to avoid walking long UD chains. When traversing each link in the UD
     // chain, we decrement the budget. When the budget hits 0, then no more range check optimization

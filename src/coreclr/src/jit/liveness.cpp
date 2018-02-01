@@ -294,7 +294,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             {
                 GenTreeLclVarCommon* dummyLclVarTree = nullptr;
                 bool                 dummyIsEntire   = false;
-                GenTreePtr           addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree*             addrArg         = tree->gtOp.gtOp1->gtEffectiveVal(/*commaOnly*/ true);
                 if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
                 {
                     fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
@@ -1516,11 +1516,11 @@ bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet)
  * For updating liveset during traversal AFTER fgComputeLife has completed
  */
 
-VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTreePtr tree)
+VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tree)
 {
     VARSET_TP newLiveSet(VarSetOps::MakeCopy(this, liveSet));
     assert(fgLocalVarLivenessDone == true);
-    GenTreePtr lclVarTree = tree; // After the tests below, "lclVarTree" will be the local variable.
+    GenTree* lclVarTree = tree; // After the tests below, "lclVarTree" will be the local variable.
     if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_FLD || tree->gtOper == GT_REG_VAR ||
         (lclVarTree = fgIsIndirOfAddrOfLocal(tree)) != nullptr)
     {
@@ -1929,12 +1929,12 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
 
 #ifndef LEGACY_BACKEND
 void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTreePtr       startNode,
-                             GenTreePtr       endNode,
+                             GenTree*         startNode,
+                             GenTree*         endNode,
                              VARSET_VALARG_TP volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
-    GenTreePtr tree;
+    GenTree* tree;
 
     // Don't kill vars in scope
     VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
@@ -2301,22 +2301,22 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 #endif
 
 void Compiler::fgComputeLife(VARSET_TP&       life,
-                             GenTreePtr       startNode,
-                             GenTreePtr       endNode,
+                             GenTree*         startNode,
+                             GenTree*         endNode,
                              VARSET_VALARG_TP volatileVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
-    GenTreePtr tree;
-    unsigned   lclNum;
+    GenTree* tree;
+    unsigned lclNum;
 
-    GenTreePtr gtQMark       = NULL; // current GT_QMARK node (walking the trees backwards)
-    GenTreePtr nextColonExit = 0;    // gtQMark->gtOp.gtOp2 while walking the 'else' branch.
-                                     // gtQMark->gtOp.gtOp1 while walking the 'then' branch
+    GenTree* gtQMark       = NULL; // current GT_QMARK node (walking the trees backwards)
+    GenTree* nextColonExit = 0;    // gtQMark->gtOp.gtOp2 while walking the 'else' branch.
+                                   // gtQMark->gtOp.gtOp1 while walking the 'then' branch
 
     // TBD: This used to be an initialization to VARSET_NOT_ACCEPTABLE.  Try to figure out what's going on here.
-    VARSET_TP  entryLiveSet(VarSetOps::MakeFull(this));   // liveness when we see gtQMark
-    VARSET_TP  gtColonLiveSet(VarSetOps::MakeFull(this)); // liveness when we see gtColon
-    GenTreePtr gtColon = NULL;
+    VARSET_TP entryLiveSet(VarSetOps::MakeFull(this));   // liveness when we see gtQMark
+    VARSET_TP gtColonLiveSet(VarSetOps::MakeFull(this)); // liveness when we see gtColon
+    GenTree*  gtColon = NULL;
 
     VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope)); /* Dont kill vars in scope */
 
@@ -2346,8 +2346,8 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
             noway_assert(tree->gtFlags & GTF_RELOP_QMARK);
             noway_assert(gtQMark->gtOp.gtOp2->gtOper == GT_COLON);
 
-            GenTreePtr thenNode = gtColon->AsColon()->ThenNode();
-            GenTreePtr elseNode = gtColon->AsColon()->ElseNode();
+            GenTree* thenNode = gtColon->AsColon()->ThenNode();
+            GenTree* elseNode = gtColon->AsColon()->ElseNode();
 
             noway_assert(thenNode && elseNode);
 
@@ -2386,7 +2386,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
 
                     if (tree->gtFlags & GTF_SIDE_EFFECT)
                     {
-                        GenTreePtr sideEffList = NULL;
+                        GenTree* sideEffList = NULL;
 
                         gtExtractSideEffList(tree, &sideEffList);
 
@@ -2463,7 +2463,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
                     // so swap the two branches and reverse the condition.  If one is
                     // non-empty, we want it to be the 'else'
 
-                    GenTreePtr tmp = thenNode;
+                    GenTree* tmp = thenNode;
 
                     gtColon->AsColon()->ThenNode() = thenNode = elseNode;
                     gtColon->AsColon()->ElseNode() = elseNode = tmp;
@@ -2511,7 +2511,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
         // so the variable(s) should stay live until the end of the LDOBJ.
         // Note that for promoted structs lvTracked is false.
 
-        GenTreePtr lclVarTree = nullptr;
+        GenTree* lclVarTree = nullptr;
         if (tree->gtOper == GT_OBJ)
         {
             // fgIsIndirOfAddrOfLocal returns nullptr if the tree is
@@ -2849,7 +2849,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             EXTRACT_SIDE_EFFECTS:
                 /* Extract the side effects */
 
-                GenTreePtr sideEffList = nullptr;
+                GenTree* sideEffList = nullptr;
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -2948,7 +2948,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             {
                 /* :-( we have side effects */
 
-                GenTreePtr sideEffList = nullptr;
+                GenTree* sideEffList = nullptr;
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -3240,7 +3240,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             /* Get the first statement in the block */
 
-            GenTreePtr firstStmt = block->FirstNonPhiDef();
+            GenTree* firstStmt = block->FirstNonPhiDef();
 
             if (!firstStmt)
             {
@@ -3249,7 +3249,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
             /* Walk all the statements of the block backwards - Get the LAST stmt */
 
-            GenTreePtr nextStmt = block->bbTreeList->gtPrev;
+            GenTree* nextStmt = block->bbTreeList->gtPrev;
 
             do
             {

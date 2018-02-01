@@ -2395,7 +2395,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
 //    tree kinds can track ref types, the stack type is used as a
 //    fallback.
 
-void Compiler::lvaSetClass(unsigned varNum, GenTreePtr tree, CORINFO_CLASS_HANDLE stackHnd)
+void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
     bool                 isExact   = false;
     bool                 isNonNull = false;
@@ -2520,7 +2520,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
 //    tree kinds can track ref types, the stack type is used as a
 //    fallback.
 
-void Compiler::lvaUpdateClass(unsigned varNum, GenTreePtr tree, CORINFO_CLASS_HANDLE stackHnd)
+void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE stackHnd)
 {
     bool                 isExact   = false;
     bool                 isNonNull = false;
@@ -2724,7 +2724,7 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
 }
 
 // Decrement the ref counts for all locals contained in the tree and its children.
-void Compiler::lvaRecursiveDecRefCounts(GenTreePtr tree)
+void Compiler::lvaRecursiveDecRefCounts(GenTree* tree)
 {
     assert(lvaLocalVarRefCounted);
 
@@ -2765,13 +2765,13 @@ Compiler::fgWalkResult DecLclVarRefCountsVisitor::WalkTree(Compiler* compiler, G
  *  Helper passed to the tree walker to decrement the refCnts for
  *  all local variables in an expression
  */
-void Compiler::lvaDecRefCnts(GenTreePtr tree)
+void Compiler::lvaDecRefCnts(GenTree* tree)
 {
     assert(compCurBB != nullptr);
     lvaDecRefCnts(compCurBB, tree);
 }
 
-void Compiler::lvaDecRefCnts(BasicBlock* block, GenTreePtr tree)
+void Compiler::lvaDecRefCnts(BasicBlock* block, GenTree* tree)
 {
     assert(block != nullptr);
     assert(tree != nullptr);
@@ -2819,7 +2819,7 @@ void Compiler::lvaDecRefCnts(BasicBlock* block, GenTreePtr tree)
 }
 
 // Increment the ref counts for all locals contained in the tree and its children.
-void Compiler::lvaRecursiveIncRefCounts(GenTreePtr tree)
+void Compiler::lvaRecursiveIncRefCounts(GenTree* tree)
 {
     assert(lvaLocalVarRefCounted);
 
@@ -2860,7 +2860,7 @@ Compiler::fgWalkResult IncLclVarRefCountsVisitor::WalkTree(Compiler* compiler, G
  *  Helper passed to the tree walker to increment the refCnts for
  *  all local variables in an expression
  */
-void Compiler::lvaIncRefCnts(GenTreePtr tree)
+void Compiler::lvaIncRefCnts(GenTree* tree)
 {
     unsigned   lclNum;
     LclVarDsc* varDsc;
@@ -3591,7 +3591,7 @@ var_types LclVarDsc::lvaArgType()
  *  This is called by lvaMarkLclRefsCallback() to do variable ref marking
  */
 
-void Compiler::lvaMarkLclRefs(GenTreePtr tree)
+void Compiler::lvaMarkLclRefs(GenTree* tree)
 {
     /* Is this a call to unmanaged code ? */
     if (tree->gtOper == GT_CALL && tree->gtFlags & GTF_CALL_UNMANAGED)
@@ -3616,8 +3616,8 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
 
     if (tree->OperIsAssignment())
     {
-        GenTreePtr op1 = tree->gtOp.gtOp1;
-        GenTreePtr op2 = tree->gtOp.gtOp2;
+        GenTree* op1 = tree->gtOp.gtOp1;
+        GenTree* op2 = tree->gtOp.gtOp2;
 
         /* Set target register for RHS local if assignment is of a "small" type */
 
@@ -3712,7 +3712,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
     {
         if (tree->gtType == TYP_INT)
         {
-            GenTreePtr op2 = tree->gtOp.gtOp2;
+            GenTree* op2 = tree->gtOp.gtOp2;
 
             if (op2->gtOper == GT_LCL_VAR)
             {
@@ -3909,7 +3909,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
 #endif
 
     MarkLocalVarsVisitor visitor(this);
-    for (GenTreePtr tree = block->FirstNonPhiDef(); tree; tree = tree->gtNext)
+    for (GenTree* tree = block->FirstNonPhiDef(); tree; tree = tree->gtNext)
     {
         assert(tree->gtOper == GT_STMT);
 
@@ -7221,11 +7221,11 @@ static unsigned LCL_FLD_PADDING(unsigned lclNum)
     In the first pass we will mark the locals where we CAN't apply the stress mode.
     In the second pass we will do the appropiate morphing wherever we've not determined we can't do it.
 */
-Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTreePtr* pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
 {
-    GenTreePtr tree = *pTree;
+    GenTree*   tree = *pTree;
     genTreeOps oper = tree->OperGet();
-    GenTreePtr lcl;
+    GenTree*   lcl;
 
     switch (oper)
     {
@@ -7339,8 +7339,8 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTreePtr* pTree, fgWalkData
             /* Change addr(lclVar) to addr(lclVar)+padding */
 
             noway_assert(oper == GT_ADDR);
-            GenTreePtr paddingTree = pComp->gtNewIconNode(padding);
-            GenTreePtr newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
+            GenTree* paddingTree = pComp->gtNewIconNode(padding);
+            GenTree* newAddr     = pComp->gtNewOperNode(GT_ADD, tree->gtType, tree, paddingTree);
 
             *pTree = newAddr;
 

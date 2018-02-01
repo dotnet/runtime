@@ -363,7 +363,7 @@ void emitIns(instruction ins);
 
 void emitIns(instruction ins, emitAttr attr);
 
-void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd, GenTreePtr src);
+void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd, GenTree* src);
 
 void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd);
 

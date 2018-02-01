@@ -166,7 +166,7 @@ private:
     // Returns true, and sets "*ppIndirAssign", if "tree" has been recorded as an indirect assignment.
     // (If the tree is an assignment, it's a definition only if it's labeled as an indirect definition, where
     // we took the address of the local elsewhere in the extended tree.)
-    bool IsIndirectAssign(GenTreePtr tree, Compiler::IndirectAssignmentAnnotation** ppIndirAssign);
+    bool IsIndirectAssign(GenTree* tree, Compiler::IndirectAssignmentAnnotation** ppIndirAssign);
 
 #ifdef DEBUG
     void Print(BasicBlock** postOrder, int count);

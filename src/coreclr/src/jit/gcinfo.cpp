@@ -229,7 +229,7 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 
 /*****************************************************************************/
 
-GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreePtr tgt, GenTreePtr assignVal)
+GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal)
 {
 #if FEATURE_WRITE_BARRIER
 
@@ -297,7 +297,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreePtr tgt, GenTr
     return WBF_NoBarrier;
 }
 
-bool GCInfo::gcIsWriteBarrierAsgNode(GenTreePtr op)
+bool GCInfo::gcIsWriteBarrierAsgNode(GenTree* op)
 {
     if (op->gtOper == GT_ASG)
     {
@@ -322,7 +322,7 @@ bool GCInfo::gcIsWriteBarrierAsgNode(GenTreePtr op)
  */
 
 #ifdef LEGACY_BACKEND
-void GCInfo::gcMarkRegPtrVal(GenTreePtr tree)
+void GCInfo::gcMarkRegPtrVal(GenTree* tree)
 {
     if (varTypeIsGC(tree->TypeGet()))
     {
@@ -672,7 +672,7 @@ void GCInfo::gcRegPtrSetInit()
 
 #endif // JIT32_GCENCODER
 
-GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTreePtr tgtAddr)
+GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
     GCInfo::WriteBarrierForm result = GCInfo::WBF_BarrierUnknown; // Default case, we have no information.
 
