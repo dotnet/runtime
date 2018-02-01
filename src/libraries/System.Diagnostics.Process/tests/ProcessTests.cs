@@ -922,6 +922,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(26720, TargetFrameworkMonikers.Uap)]
         public void GetProcesses_InvalidMachineName_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Process.GetProcesses(Guid.NewGuid().ToString()));
