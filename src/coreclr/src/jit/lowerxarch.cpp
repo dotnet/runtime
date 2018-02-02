@@ -1500,8 +1500,8 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         //
         // Workaround:
         // Note that LowerVirtualStubCall() sets addr->gtRegNum to VirtualStubParam.reg and Lowering::doPhase()
-        // sets destination candidates on such nodes and resets addr->gtRegNum to REG_NA before calling
-        // TreeNodeInfoInit(). Ideally we should set a flag on addr nodes that shouldn't be marked as contained
+        // sets destination candidates on such nodes and resets addr->gtRegNum to REG_NA.
+        // Ideally we should set a flag on addr nodes that shouldn't be marked as contained
         // (in LowerVirtualStubCall()), but we don't have any GTF_* flags left for that purpose.  As a workaround
         // an explicit check is made here.
         //
