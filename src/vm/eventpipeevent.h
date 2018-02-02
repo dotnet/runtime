@@ -75,11 +75,15 @@ private:
     // True if the event is currently enabled.
     bool IsEnabled() const;
 
-    // Get metadata
     BYTE *GetMetadata() const;
 
-    // Get metadata length
     unsigned int GetMetadataLength() const;
+
+  private:
+    // used when Metadata is not provided
+    BYTE *BuildMinimumMetadata();
+
+    unsigned int GetMinimumMetadataLength();
 };
 
 #endif // FEATURE_PERFTRACING

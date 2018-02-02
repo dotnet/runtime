@@ -430,7 +430,7 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
             {
                 // If it's the oldest event we've seen, then save it.
                 if((pOldestInstance == NULL) ||
-                   (pOldestInstance->GetTimeStamp().QuadPart > pNext->GetTimeStamp().QuadPart)) 
+                   (pOldestInstance->GetTimeStamp()->QuadPart > pNext->GetTimeStamp()->QuadPart)) 
                 {
                     pOldestInstance = pNext;
                     pOldestContainingBuffer = pContainingBuffer;
