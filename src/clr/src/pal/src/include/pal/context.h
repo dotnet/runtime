@@ -157,6 +157,13 @@ using asm_sigcontext::_xstate;
 #define FPSTATE_RESERVED padding
 #endif
 
+// The mask for YMM registers presence flag stored in the xstate_bv. On current Linuxes, this definition is
+// only in internal headers, so we define it here. The xstate_bv is extracted from the processor xstate bit
+// vector register, so the value is OS independent.
+#ifndef XSTATE_YMM
+#define XSTATE_YMM 4
+#endif
+
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
 {
     // Bytes 464..511 in the FXSAVE format are available for software to use for any purpose. In this case, they are used to
@@ -174,7 +181,7 @@ inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)
     return FPREG_FpxSwBytes(uc)->extended_size;
 }
 
-inline bool FPREG_HasExtendedState(const ucontext_t *uc)
+inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
 {
     // See comments in /usr/include/x86_64-linux-gnu/asm/sigcontext.h for info on how to detect if extended state is present
     static_assert_no_msg(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
@@ -191,14 +198,19 @@ inline bool FPREG_HasExtendedState(const ucontext_t *uc)
     }
 
     _ASSERTE(extendedSize >= FP_XSTATE_MAGIC2_SIZE);
-    return *reinterpret_cast<UINT32 *>(reinterpret_cast<UINT8 *>(FPREG_Fpstate(uc)) + (extendedSize - FP_XSTATE_MAGIC2_SIZE))
-           == FP_XSTATE_MAGIC2;
+    if (*reinterpret_cast<UINT32 *>(reinterpret_cast<UINT8 *>(FPREG_Fpstate(uc)) + (extendedSize - FP_XSTATE_MAGIC2_SIZE))
+        != FP_XSTATE_MAGIC2)
+    {
+        return false;
+    }
+
+    return (FPREG_FpxSwBytes(uc)->xstate_bv & XSTATE_YMM) != 0;
 }
 
 inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 {
     static_assert_no_msg(sizeof(reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space) == 16 * 16);
-    _ASSERTE(FPREG_HasExtendedState(uc));
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
 
     return reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space;
 }
