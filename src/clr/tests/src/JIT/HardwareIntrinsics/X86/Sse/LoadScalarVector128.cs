@@ -22,17 +22,17 @@ namespace IntelHardwareIntrinsicTest
 
             if (Sse.IsSupported)
             {
-                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { float.NaN, float.NaN, float.NaN, float.NaN }))
+                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { 1, -5, 100, 3 }, new float[4]))
                 {
-                    var vf1 = Sse.SetScalar(3);
-                    Unsafe.Write(floatTable.outArrayPtr, vf1);
+                    var vf = Sse.LoadScalarVector128((float*)(floatTable.inArrayPtr));
+                    Unsafe.Write(floatTable.outArrayPtr, vf);
 
-                    if (!floatTable.CheckResult((x) => (x[0] == 3)
-                                                    && (BitConverter.SingleToInt32Bits(x[1]) == 0)
-                                                    && (BitConverter.SingleToInt32Bits(x[2]) == 0)
-                                                    && (BitConverter.SingleToInt32Bits(x[3]) == 0)))
+                    if (!floatTable.CheckResult((x, y) => BitConverter.SingleToInt32Bits(x[0]) == BitConverter.SingleToInt32Bits(y[0])
+                                                       && BitConverter.SingleToInt32Bits(y[1]) == 0
+                                                       && BitConverter.SingleToInt32Bits(y[2]) == 0
+                                                       && BitConverter.SingleToInt32Bits(y[3]) == 0))
                     {
-                        Console.WriteLine("SSE SetScalar failed on float:");
+                        Console.WriteLine("SSE LoadScalarVector128 failed on float:");
                         foreach (var item in floatTable.outArray)
                         {
                             Console.Write(item + ", ");
@@ -43,30 +43,35 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-
             return testResult;
         }
 
         public unsafe struct TestTable<T> : IDisposable where T : struct
         {
+            public T[] inArray;
             public T[] outArray;
 
+            public void* inArrayPtr => inHandle.AddrOfPinnedObject().ToPointer();
             public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
 
+            GCHandle inHandle;
             GCHandle outHandle;
-            public TestTable(T[] a)
+            public TestTable(T[] a, T[] b)
             {
-                this.outArray = a;
+                this.inArray = a;
+                this.outArray = b;
 
+                inHandle = GCHandle.Alloc(inArray, GCHandleType.Pinned);
                 outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
             }
-            public bool CheckResult(Func<T[], bool> check)
+            public bool CheckResult(Func<T[], T[], bool> check)
             {
-                return check(outArray);
+                return check(inArray, outArray);
             }
 
             public void Dispose()
             {
+                inHandle.Free();
                 outHandle.Free();
             }
         }

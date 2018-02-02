@@ -22,17 +22,16 @@ namespace IntelHardwareIntrinsicTest
 
             if (Sse.IsSupported)
             {
-                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { 1, -5, 100, 3 }, new float[4]))
+                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { 1, -5, 100, 0 }, new float[4]))
                 {
-                    var vf = Sse.LoadScalar((float*)(floatTable.inArrayPtr));
-                    Unsafe.Write(floatTable.outArrayPtr, vf);
+                    var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArrayPtr);
+                    var vf2 = Sse.ConvertScalarToVector128Single(vf1, 5);
+                    Unsafe.Write(floatTable.outArrayPtr, vf2);
 
-                    if (!floatTable.CheckResult((x, y) => BitConverter.SingleToInt32Bits(x[0]) == BitConverter.SingleToInt32Bits(y[0])
-                                                       && BitConverter.SingleToInt32Bits(y[1]) == 0
-                                                       && BitConverter.SingleToInt32Bits(y[2]) == 0
-                                                       && BitConverter.SingleToInt32Bits(y[3]) == 0))
+                    if (!floatTable.CheckResult((x, y) => (y[0] == 5)
+                                                       && (y[1] == x[1]) && (y[2] == x[2]) && (y[3] == x[3])))
                     {
-                        Console.WriteLine("SSE LoadScalar failed on float:");
+                        Console.WriteLine("SSE ConvertScalarToVector128Single failed on float:");
                         foreach (var item in floatTable.outArray)
                         {
                             Console.Write(item + ", ");
