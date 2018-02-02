@@ -26,7 +26,7 @@ namespace System.Net.Test.Common
 
             public static string DomainJoinedProxyPort => GetValue("COREFX_DOMAINJOINED_PROXYPORT");
 
-            public static bool StressEnabled => GetValue("COREFX_STRESS_HTTP", "0") == "1";
+            public static bool StressEnabled => GetValue("COREFX_STRESS", "0") == "1";
 
             public static string SSLv2RemoteServer => GetValue("COREFX_HTTPHOST_SSL2", "https://www.ssllabs.com:10200/");
             public static string SSLv3RemoteServer => GetValue("COREFX_HTTPHOST_SSL3", "https://www.ssllabs.com:10300/");
