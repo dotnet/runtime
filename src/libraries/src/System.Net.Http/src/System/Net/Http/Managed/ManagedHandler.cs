@@ -294,6 +294,28 @@ namespace System.Net.Http
         {
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+
+            if (request.Version.Major == 0)
+            {
+                return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_version));
+            }
+
+            // Add headers to define content transfer, if not present
+            if (request.Content != null &&
+                (!request.HasHeaders || request.Headers.TransferEncodingChunked != true) &&
+                request.Content.Headers.ContentLength == null)
+            {
+                // We have content, but neither Transfer-Encoding or Content-Length is set.
+                request.Headers.TransferEncodingChunked = true;
+            }
+
+            if (request.Version.Minor == 0 && request.Version.Major == 1 &&
+                request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+            {
+                // HTTP 1.0 does not support chunking
+                return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_chunking));
+            }
+
             return handler.SendAsync(request, cancellationToken);
         }
     }
