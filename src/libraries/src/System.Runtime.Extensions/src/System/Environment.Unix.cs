@@ -18,7 +18,7 @@ namespace System
     {
         internal static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
         private static Func<string, IEnumerable<string>> s_fileReadLines;
-        private static Action<string> s_directoryCreateDirectory;
+        private static Func<string, object> s_directoryCreateDirectory;
 
         private static string CurrentDirectoryCore
         {
@@ -80,11 +80,11 @@ namespace System
                 Debug.Assert(option == SpecialFolderOption.Create);
 
                 // TODO #11151: Replace with Directory.CreateDirectory once we have access to System.IO.FileSystem here.
-                Action<string> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
+                Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
                 {
                     Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true);
                     MethodInfo mi = dirType.GetTypeInfo().GetDeclaredMethod("CreateDirectory");
-                    return (Action<string>)mi.CreateDelegate(typeof(Action<string>));
+                    return (Func<string, object>)mi.CreateDelegate(typeof(Func<string, object>));
                 });
                 createDirectory(path);
 
