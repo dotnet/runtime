@@ -125,7 +125,7 @@ namespace System.Net.WebSockets.Tests
 
         private sealed class DirectManagedHttpClientHandler : HttpClientHandler
         {
-            private const string ManagedHandlerEnvVar = "COMPlus_UseManagedHttpClientHandler";
+            private const string ManagedHandlerEnvVar = "DOTNET_SYSTEM_NET_HTTP_USEMANAGEDHTTPCLIENTHANDLER";
             private static readonly LocalDataStoreSlot s_managedHandlerSlot = GetSlot();
             private static readonly object s_true = true;
 
