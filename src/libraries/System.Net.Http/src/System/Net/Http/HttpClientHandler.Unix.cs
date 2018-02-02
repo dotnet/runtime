@@ -41,17 +41,11 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        public virtual bool SupportsAutomaticDecompression => _curlHandler != null ?
-            _curlHandler.SupportsAutomaticDecompression :
-            _managedHandler.SupportsAutomaticDecompression;
+        public virtual bool SupportsAutomaticDecompression => _curlHandler == null || _curlHandler.SupportsAutomaticDecompression;
 
-        public virtual bool SupportsProxy => _curlHandler != null ?
-            _curlHandler.SupportsProxy :
-            _managedHandler.SupportsProxy;
+        public virtual bool SupportsProxy => true;
 
-        public virtual bool SupportsRedirectConfiguration => _curlHandler != null ?
-            _curlHandler.SupportsRedirectConfiguration :
-            _managedHandler.SupportsRedirectConfiguration;
+        public virtual bool SupportsRedirectConfiguration => true;
 
         public bool UseCookies
         {
