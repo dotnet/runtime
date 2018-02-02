@@ -630,7 +630,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_SSE_ConvertToVector128SingleScalar:
+        case NI_SSE_ConvertScalarToVector128Single:
         {
             assert(sig->numArgs == 2);
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
