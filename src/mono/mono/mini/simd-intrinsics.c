@@ -2081,6 +2081,9 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 	MonoMethodSignature *sig = mono_method_signature (cmethod);
 	MonoType *type = &cmethod->klass->byval_arg;
 
+	if (!cmethod->klass->simd_type)
+		return NULL;
+
 	/*
 	 * Vector2/3/4 are handled the same way, since the underlying SIMD type is the same (4 * r4).
 	 */
