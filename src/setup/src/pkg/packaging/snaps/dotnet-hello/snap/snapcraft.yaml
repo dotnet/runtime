@@ -1,0 +1,21 @@
+name: dotnet-hello
+version: '0.1'
+summary: This is a sample .NET Core 2.0 application
+description: |
+  This is a sample .NET Core 2.0 application
+
+grade: devel
+confinement: strict
+
+apps:
+  dotnet-hello:
+    command: dotnet-hello
+parts:
+  dotnet-hello:
+    plugin: dotnet2
+    dotnet-runtime-version: 2.0.5
+    source: .
+    build: |
+      dotnet build -c Release
+      dotnet publish -c Release -o $SNAPCRAFT_PART_INSTALL --self-contained -r linux-x64
+      chmod 0755 $SNAPCRAFT_PART_INSTALL/dotnet-hello
