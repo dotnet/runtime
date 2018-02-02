@@ -53,6 +53,7 @@ set( JIT_SOURCES
   loopcloning.cpp
   lower.cpp
   lsra.cpp
+  lsrabuild.cpp
   morph.cpp
   objectalloc.cpp
   optcse.cpp
