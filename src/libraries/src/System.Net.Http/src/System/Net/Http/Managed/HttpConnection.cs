@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -185,29 +186,14 @@ namespace System.Net.Http
 
         private Task WriteFormattedInt32Async(int value, CancellationToken cancellationToken)
         {
-            const int MaxFormattedInt32Length = 10; // number of digits in int.MaxValue.ToString()
-
-            // If the maximum possible number of digits fits in our buffer, we can format synchronously
-            if (_writeOffset <= _writeBuffer.Length - MaxFormattedInt32Length)
+            // Try to format into our output buffer directly.
+            if (Utf8Formatter.TryFormat(value, new Span<byte>(_writeBuffer, _writeOffset, _writeBuffer.Length - _writeOffset), out int bytesWritten))
             {
-                if (value == 0)
-                {
-                    _writeBuffer[_writeOffset++] = (byte)'0';
-                }
-                else
-                {
-                    int initialOffset = _writeOffset;
-                    while (value > 0)
-                    {
-                        value = Math.DivRem(value, 10, out int digit);
-                        _writeBuffer[_writeOffset++] = (byte)('0' + digit);
-                    }
-                    Array.Reverse(_writeBuffer, initialOffset, _writeOffset - initialOffset);
-                }
+                _writeOffset += bytesWritten;
                 return Task.CompletedTask;
             }
 
-            // Otherwise, do it the slower way.
+            // If we don't have enough room, do it the slow way.
             return WriteAsciiStringAsync(value.ToString(CultureInfo.InvariantCulture), cancellationToken);
         }
 
@@ -1213,7 +1199,7 @@ namespace System.Net.Http
                     // at any point to understand if the connection has been closed or if errant data
                     // has been sent on the connection by the server, either of which would mean we
                     // should close the connection and not use it for subsequent requests.
-                    Debug.Assert(_readLength == _readOffset);
+                    Debug.Assert(_readLength == _readOffset, $"{_readLength} != {_readOffset}");
                     _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
 
                     // Put connection back in the pool.
