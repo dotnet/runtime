@@ -2290,7 +2290,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             info->setInternalCandidates(this, RBM_BYTE_REGS);
             break;
 
-        case NI_SSE_SetScalar:
+        case NI_SSE_SetScalarVector128:
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             info->internalFloatCount = 1;
             info->setInternalCandidates(this, allSIMDRegs());
