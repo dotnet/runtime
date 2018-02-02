@@ -3670,6 +3670,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     impPopStack();
                     GenTree* typeHandleOp =
                         impTokenToHandle(pConstrainedResolvedToken, nullptr, TRUE /* mustRestoreHandle */);
+                    if (typeHandleOp == nullptr)
+                    {
+                        assert(compDonotInline());
+                        return nullptr;
+                    }
                     GenTreeArgList* helperArgs = gtNewArgList(typeHandleOp);
                     GenTree*        runtimeType =
                         gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, helperArgs);
