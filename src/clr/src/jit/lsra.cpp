@@ -667,8 +667,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , listNodePool(theCompiler)
 {
 #ifdef DEBUG
-    maxNodeLocation   = 0;
-    activeRefPosition = nullptr;
+    maxNodeLocation    = 0;
+    activeRefPosition  = nullptr;
+    specialPutArgCount = 0;
 
     // Get the value of the environment variable that controls stress for register allocation
     lsraStressMask = JitConfig.JitStressRegs();
