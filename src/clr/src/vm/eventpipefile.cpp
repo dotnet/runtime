@@ -4,8 +4,10 @@
 
 #include "common.h"
 #include "eventpipebuffer.h"
+#include "eventpipeblock.h"
 #include "eventpipeconfiguration.h"
 #include "eventpipefile.h"
+#include "sampleprofiler.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -25,12 +27,10 @@ EventPipeFile::EventPipeFile(
     }
     CONTRACTL_END;
 
-    SetObjectVersion(2);
+    SetObjectVersion(3);
     SetMinReaderVersion(0);
 
-    m_pSerializer = new FastSerializer(outputFilePath, *this);
-    m_serializationLock.Init(LOCK_TYPE_DEFAULT);
-    m_pMetadataLabels = new MapSHashWithRemove<EventPipeEvent*, StreamLabel>();
+    m_pBlock = new EventPipeBlock(100 * 1024);
 
 #ifdef _DEBUG
     m_lockOnWrite = lockOnWrite;
@@ -41,21 +41,23 @@ EventPipeFile::EventPipeFile(
     QueryPerformanceCounter(&m_fileOpenTimeStamp);
     QueryPerformanceFrequency(&m_timeStampFrequency);
 
-    // Write a forward reference to the beginning of the event stream.
-    // This also allows readers to know where the event stream ends and skip it if needed.
-    m_beginEventsForwardReferenceIndex = m_pSerializer->AllocateForwardReference();
-    m_pSerializer->WriteForwardReference(m_beginEventsForwardReferenceIndex);
+    m_pointerSize = TARGET_POINTER_SIZE;
 
-    // Write the header information into the file.
+    m_currentProcessId = GetCurrentProcessId();
 
-    // Write the current date and time.
-    m_pSerializer->WriteBuffer((BYTE*)&m_fileOpenSystemTime, sizeof(m_fileOpenSystemTime));
+    SYSTEM_INFO sysinfo = {};
+    GetSystemInfo(&sysinfo);
+    m_numberOfProcessors = sysinfo.dwNumberOfProcessors;
 
-    // Write FileOpenTimeStamp
-    m_pSerializer->WriteBuffer((BYTE*)&m_fileOpenTimeStamp, sizeof(m_fileOpenTimeStamp));
+    m_samplingRateInNs = SampleProfiler::GetSamplingRate();
 
-    // Write ClockFrequency
-    m_pSerializer->WriteBuffer((BYTE*)&m_timeStampFrequency, sizeof(m_timeStampFrequency));
+    m_pSerializer = new FastSerializer(outputFilePath); // it creates the file stream and writes the header
+    m_serializationLock.Init(LOCK_TYPE_DEFAULT);
+    m_pMetadataIds = new MapSHashWithRemove<EventPipeEvent*, unsigned int>();
+
+    m_metadataIdCounter = 0; // we start with 0, it's always gets incremented by generator so the first id will be 1, as specified in the docs
+
+    m_pSerializer->WriteObject(this); // this is the first object in the file
 }
 
 EventPipeFile::~EventPipeFile()
@@ -68,13 +70,17 @@ EventPipeFile::~EventPipeFile()
     }
     CONTRACTL_END;
 
-    // Mark the end of the event stream.
-    StreamLabel currentLabel = m_pSerializer->GetStreamLabel();
+    if (m_pBlock != NULL && m_pSerializer != NULL)
+    {
+        WriteEnd();
+    }
 
-    // Define the event start forward reference.
-    m_pSerializer->DefineForwardReference(m_beginEventsForwardReferenceIndex, currentLabel);
+    if (m_pBlock != NULL)
+    {
+        delete(m_pBlock);
+        m_pBlock = NULL;
+    }
 
-    // Close the serializer.
     if(m_pSerializer != NULL)
     {
         delete(m_pSerializer);
@@ -92,37 +98,27 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
     }
     CONTRACTL_END;
 
-#ifdef _DEBUG
-    if(m_lockOnWrite)
-    {
-        // Take the serialization lock.
-        // This is used for synchronous file writes.
-        // The circular buffer path only writes from one thread.
-        SpinLockHolder _slh(&m_serializationLock);
-    }
-#endif // _DEBUG
-
     // Check to see if we've seen this event type before.
     // If not, then write the event metadata to the event stream first.
-    StreamLabel metadataLabel = GetMetadataLabel(*instance.GetEvent());
-    if(metadataLabel == 0)
+    unsigned int metadataId = GetMetadataId(*instance.GetEvent());
+    if(metadataId == 0)
     {
-        EventPipeEventInstance* pMetadataInstance = EventPipe::GetConfiguration()->BuildEventMetadataEvent(instance);
+        metadataId = GenerateMetadataId();
 
-        metadataLabel = m_pSerializer->GetStreamLabel();
-        pMetadataInstance->FastSerialize(m_pSerializer, (StreamLabel)0); // 0 breaks recursion and represents the metadata event.
+        EventPipeEventInstance* pMetadataInstance = EventPipe::GetConfiguration()->BuildEventMetadataEvent(instance, metadataId);
+        
+        WriteToBlock(*pMetadataInstance, 0); // 0 breaks recursion and represents the metadata event.
 
-        SaveMetadataLabel(*instance.GetEvent(), metadataLabel);
+        SaveMetadataId(*instance.GetEvent(), metadataId);
 
         delete[] (pMetadataInstance->GetData());
         delete (pMetadataInstance);
     }
 
-    // Write the event to the stream.
-    instance.FastSerialize(m_pSerializer, metadataLabel);
+    WriteToBlock(instance, metadataId);
 }
 
-StreamLabel EventPipeFile::GetMetadataLabel(EventPipeEvent &event)
+void EventPipeFile::WriteEnd()
 {
     CONTRACTL
     {
@@ -132,36 +128,109 @@ StreamLabel EventPipeFile::GetMetadataLabel(EventPipeEvent &event)
     }
     CONTRACTL_END;
 
-    StreamLabel outLabel;
-    if(m_pMetadataLabels->Lookup(&event, &outLabel))
-    {
-        _ASSERTE(outLabel != 0);
-        return outLabel;
-    }
+    m_pSerializer->WriteObject(m_pBlock); // we write current block to the disk, whether it's full or not
 
-    return 0;
+    m_pBlock->Clear();
+
+    // "After the last EventBlock is emitted, the stream is ended by emitting a NullReference Tag which indicates that there are no more objects in the stream to read."
+    // see https://github.com/Microsoft/perfview/blob/master/src/TraceEvent/EventPipe/EventPipeFormat.md for more
+    m_pSerializer->WriteTag(FastSerializerTags::NullReference); 
 }
 
-void EventPipeFile::SaveMetadataLabel(EventPipeEvent &event, StreamLabel label)
+void EventPipeFile::WriteToBlock(EventPipeEventInstance &instance, unsigned int metadataId)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(label > 0);
+    }
+    CONTRACTL_END;
+
+    instance.SetMetadataId(metadataId);
+
+    if (m_pBlock->WriteEvent(instance))
+    {
+        return; // the block is not full, we added the event and continue
+    }
+
+#ifdef _DEBUG
+    if (m_lockOnWrite)
+    {
+        // Take the serialization lock.
+        // This is used for synchronous file writes.
+        // The circular buffer path only writes from one thread.
+        SpinLockHolder _slh(&m_serializationLock);
+    }
+#endif // _DEBUG
+
+    // we can't write this event to the current block (it's full)
+    // so we write what we have in the block to the serializer
+    m_pSerializer->WriteObject(m_pBlock);
+
+    m_pBlock->Clear();
+
+    bool result = m_pBlock->WriteEvent(instance);
+
+    _ASSERTE(result == true); // we should never fail to add event to a clear block (if we do the max size is too small)
+}
+
+unsigned int EventPipeFile::GenerateMetadataId()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // PAL does not support 32 bit InterlockedIncrement, so we are using the LONG version and cast to int
+    // https://github.com/dotnet/coreclr/blob/master/src/pal/inc/pal.h#L4159
+    // it's ok because the metadataId will never be bigger than 32 bit
+    return (unsigned int)InterlockedIncrement(&m_metadataIdCounter);
+}
+
+unsigned int EventPipeFile::GetMetadataId(EventPipeEvent &event)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    unsigned int metadataId;
+    if(m_pMetadataIds->Lookup(&event, &metadataId))
+    {
+        _ASSERTE(metadataId != 0);
+        return metadataId;
+    }
+
+    return 0;
+}
+
+void EventPipeFile::SaveMetadataId(EventPipeEvent &event, unsigned int metadataId)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(metadataId > 0);
     }
     CONTRACTL_END;
 
     // If a pre-existing metadata label exists, remove it.
-    StreamLabel outLabel;
-    if(m_pMetadataLabels->Lookup(&event, &outLabel))
+    unsigned int oldId;
+    if(m_pMetadataIds->Lookup(&event, &oldId))
     {
-        m_pMetadataLabels->Remove(&event);
+        m_pMetadataIds->Remove(&event);
     }
 
     // Add the metadata label.
-    m_pMetadataLabels->Add(&event, label);
+    m_pMetadataIds->Add(&event, metadataId);
 }
 
 #endif // FEATURE_PERFTRACING

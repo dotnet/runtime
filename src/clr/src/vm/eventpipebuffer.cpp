@@ -97,7 +97,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
         }
 
         // Save the most recent event timestamp.
-        m_mostRecentTimeStamp = pInstance->GetTimeStamp();
+        m_mostRecentTimeStamp = *pInstance->GetTimeStamp();
 
     }
     EX_CATCH
@@ -174,7 +174,7 @@ EventPipeEventInstance* EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent,
 
         // We have a pointer within the bounds of the buffer.
         // Find the next event by skipping the current event with it's data payload immediately after the instance.
-        pNextInstance = (EventPipeEventInstance *)(pEvent->GetData() + pEvent->GetLength());
+        pNextInstance = (EventPipeEventInstance *)(pEvent->GetData() + pEvent->GetDataLength());
 
         // Check to see if we've reached the end of the written portion of the buffer.
         if((BYTE*)pNextInstance >= m_pCurrent)
@@ -184,7 +184,7 @@ EventPipeEventInstance* EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent,
     }
 
     // Ensure that the timestamp is valid.  The buffer is zero'd before use, so a zero timestamp is invalid.
-    LARGE_INTEGER nextTimeStamp = pNextInstance->GetTimeStamp();
+    LARGE_INTEGER nextTimeStamp = *pNextInstance->GetTimeStamp();
     if(nextTimeStamp.QuadPart == 0)
     {
         return NULL;
@@ -260,10 +260,10 @@ bool EventPipeBuffer::EnsureConsistency()
         _ASSERTE(pInstance->EnsureConsistency());
 
         // Validate that payload and length match.
-        _ASSERTE((pInstance->GetData() != NULL && pInstance->GetLength() > 0) || (pInstance->GetData() != NULL && pInstance->GetLength() == 0));
+        _ASSERTE((pInstance->GetData() != NULL && pInstance->GetDataLength() > 0) || (pInstance->GetData() != NULL && pInstance->GetDataLength() == 0));
 
         // Skip the event.
-        ptr += sizeof(*pInstance) + pInstance->GetLength();
+        ptr += sizeof(*pInstance) + pInstance->GetDataLength();
     }
 
     // When we're done walking the filled portion of the buffer,

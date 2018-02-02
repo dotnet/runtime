@@ -35,6 +35,13 @@ class SampleProfiler
         // Set the sampling rate.
         static void SetSamplingRate(unsigned long nanoseconds);
 
+        static unsigned long GetSamplingRate()
+        {
+            LIMITED_METHOD_CONTRACT;
+
+            return s_samplingRateInNs;
+        }
+
     private:
 
         // Iterate through all managed threads and walk all stacks.

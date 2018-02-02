@@ -33,8 +33,9 @@ EventPipeEvent::EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsi
     }
     else
     {
-        m_pMetadata = NULL;
-        m_metadataLength = 0;
+        // if metadata is not provided, we have to build the minimum version. It's required by the serialization contract
+        m_pMetadata = BuildMinimumMetadata();
+        m_metadataLength = GetMinimumMetadataLength();
     }
 }
 
@@ -53,6 +54,61 @@ EventPipeEvent::~EventPipeEvent()
         delete[] m_pMetadata;
         m_pMetadata = NULL;
     }
+}
+
+unsigned int EventPipeEvent::GetMinimumMetadataLength()
+{
+    LIMITED_METHOD_CONTRACT;
+    
+    unsigned int minimumMetadataLength =
+        sizeof(m_eventID) +
+        (SString::Empty().GetCount() + 1) * sizeof(WCHAR) + // size of empty unicode string
+        sizeof(m_keywords) +
+        sizeof(m_eventVersion) +
+        sizeof(m_level) +
+        sizeof(unsigned int); // parameter count
+
+    return minimumMetadataLength;
+}
+
+BYTE *EventPipeEvent::BuildMinimumMetadata()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    unsigned int minmumMetadataLength = GetMinimumMetadataLength();
+
+    BYTE *minmumMetadata = new BYTE[minmumMetadataLength];
+    BYTE *currentPtr = minmumMetadata;
+
+    // the order of fields is defined in coreclr\src\mscorlib\shared\System\Diagnostics\Tracing\EventSource.cs DefineEventPipeEvents method
+    memcpy(currentPtr, &m_eventID, sizeof(m_eventID));
+    currentPtr += sizeof(m_eventID);
+
+    SString eventName = SString::Empty();
+    unsigned int eventNameSize = (eventName.GetCount() + 1) * sizeof(WCHAR);
+    memcpy(currentPtr, (BYTE*)eventName.GetUnicode(), eventNameSize);
+    currentPtr += eventNameSize;
+
+    memcpy(currentPtr, &m_keywords, sizeof(m_keywords));
+    currentPtr += sizeof(m_keywords);
+
+    memcpy(currentPtr, &m_eventVersion, sizeof(m_eventVersion));
+    currentPtr += sizeof(m_eventVersion);
+
+    memcpy(currentPtr, &m_level, sizeof(m_level));
+    currentPtr += sizeof(m_level);
+
+    unsigned int noParameters = 0;
+    memcpy(currentPtr, &noParameters, sizeof(noParameters));
+    currentPtr += sizeof(noParameters);
+
+    return minmumMetadata;
 }
 
 EventPipeProvider* EventPipeEvent::GetProvider() const
