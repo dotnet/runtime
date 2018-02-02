@@ -70,22 +70,22 @@ namespace Tracing.Tests
                 int retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(activityId, Guid.Empty);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(activityId), activityId, Guid.Empty);
 
                 // Set the activity ID to a random GUID and then confirm that it was properly set.
                 activityId = Guid.NewGuid();
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
 
                 Guid currActivityId = Guid.Empty;
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref currActivityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(currActivityId, activityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(currActivityId), currActivityId, activityId);
 
                 // Set and get the activity ID in one call.
                 activityId = Guid.NewGuid();
@@ -93,63 +93,63 @@ namespace Tracing.Tests
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(currActivityId, activityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(currActivityId), currActivityId, activityId);
 
                 // Validate that the value we specified in the previous call is what comes back from a call to Get.
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(savedActivityId, activityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(savedActivityId), savedActivityId, activityId);
 
                 // Create a new ID but don't change the current value.
                 Guid newActivityId = Guid.Empty;
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_CREATE_ID,
                     ref newActivityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.NotEqual<Guid>(newActivityId, Guid.Empty);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.NotEqual<Guid>(nameof(newActivityId), newActivityId, Guid.Empty);
 
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(savedActivityId, activityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(savedActivityId), savedActivityId, activityId);
 
                 // Create a new ID and set it in one action.
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_CREATE_SET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(savedActivityId, activityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(savedActivityId), savedActivityId, activityId);
 
                 savedActivityId = activityId;
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.NotEqual<Guid>(savedActivityId, activityId);
-                Assert.NotEqual<Guid>(activityId, Guid.Empty);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.NotEqual<Guid>(nameof(savedActivityId), savedActivityId, activityId);
+                Assert.NotEqual<Guid>(nameof(activityId), activityId, Guid.Empty);
 
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref newActivityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(activityId, newActivityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(activityId), activityId, newActivityId);
 
                 // Set the activity ID back to zero.
                 activityId = Guid.Empty;
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
 
                 retCode = EventActivityIdControl(
                     ActivityControlCode.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref activityId);
-                Assert.Equal<int>(retCode, 0);
-                Assert.Equal<Guid>(activityId, Guid.Empty);
+                Assert.Equal<int>(nameof(retCode), retCode, 0);
+                Assert.Equal<Guid>(nameof(activityId), activityId, Guid.Empty);
 
                 // Try pass an invalid control code.
                 activityId = Guid.NewGuid();
@@ -157,8 +157,8 @@ namespace Tracing.Tests
                 retCode = EventActivityIdControl(
                     (ActivityControlCode)10,
                     ref activityId);
-                Assert.Equal<int>(retCode, 1);
-                Assert.Equal<Guid>(activityId, savedActivityId);
+                Assert.Equal<int>(nameof(retCode), retCode, 1);
+                Assert.Equal<Guid>(nameof(activityId), activityId, savedActivityId);
             }
             catch(Exception ex)
             {
