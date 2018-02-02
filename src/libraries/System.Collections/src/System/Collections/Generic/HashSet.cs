@@ -1029,6 +1029,24 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Ensures that the hash set can hold up to 'capacity' entries without any further expansion of its backing storage.
+        /// </summary>
+        public int EnsureCapacity(int capacity)
+        {
+            if (capacity < 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            int currentCapacity = _slots == null ? 0 : _slots.Length;
+            if (currentCapacity >= capacity)
+                return currentCapacity;
+            if (_buckets == null)
+                return Initialize(capacity);
+
+            int newSize = HashHelpers.GetPrime(capacity);
+            SetCapacity(newSize);
+            return newSize;
+        }
+
+        /// <summary>
         /// Sets the capacity of this list to the size of the list (rounded up to nearest prime),
         /// unless count is 0, in which case we release references.
         /// 
@@ -1105,7 +1123,7 @@ namespace System.Collections.Generic
         /// greater than or equal to capacity.
         /// </summary>
         /// <param name="capacity"></param>
-        private void Initialize(int capacity)
+        private int Initialize(int capacity)
         {
             Debug.Assert(_buckets == null, "Initialize was called but _buckets was non-null");
 
@@ -1113,6 +1131,7 @@ namespace System.Collections.Generic
 
             _buckets = new int[size];
             _slots = new Slot[size];
+            return size;
         }
 
         /// <summary>
