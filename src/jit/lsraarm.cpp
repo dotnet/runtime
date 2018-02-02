@@ -29,86 +29,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "lsra.h"
 
-//------------------------------------------------------------------------
-// TreeNodeInfoInitReturn: Set the NodeInfo for a GT_RETURN.
-//
-// Arguments:
-//    tree - The node of interest
-//
-// Return Value:
-//    None.
-//
-void LinearScan::TreeNodeInfoInitReturn(GenTree* tree, TreeNodeInfo* info)
+void LinearScan::BuildLclHeap(GenTree* tree)
 {
-    GenTree* op1 = tree->gtGetOp1();
-
-    assert(info->dstCount == 0);
-    if (tree->TypeGet() == TYP_LONG)
-    {
-        assert((op1->OperGet() == GT_LONG) && op1->isContained());
-        GenTree* loVal                  = op1->gtGetOp1();
-        GenTree* hiVal                  = op1->gtGetOp2();
-        info->srcCount                  = 2;
-        LocationInfoListNode* loValInfo = getLocationInfo(loVal);
-        LocationInfoListNode* hiValInfo = getLocationInfo(hiVal);
-        loValInfo->info.setSrcCandidates(this, RBM_LNGRET_LO);
-        hiValInfo->info.setSrcCandidates(this, RBM_LNGRET_HI);
-        useList.Append(loValInfo);
-        useList.Append(hiValInfo);
-    }
-    else if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
-    {
-        regMaskTP useCandidates = RBM_NONE;
-
-        info->srcCount = ((tree->TypeGet() == TYP_VOID) || op1->isContained()) ? 0 : 1;
-
-        if (varTypeIsStruct(tree))
-        {
-            // op1 has to be either an lclvar or a multi-reg returning call
-            if (op1->OperGet() != GT_LCL_VAR)
-            {
-                noway_assert(op1->IsMultiRegCall());
-
-                ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
-                info->srcCount              = retTypeDesc->GetReturnRegCount();
-                useCandidates               = retTypeDesc->GetABIReturnRegs();
-            }
-        }
-        else
-        {
-            // Non-struct type return - determine useCandidates
-            switch (tree->TypeGet())
-            {
-                case TYP_VOID:
-                    useCandidates = RBM_NONE;
-                    break;
-                case TYP_FLOAT:
-                    useCandidates = RBM_FLOATRET;
-                    break;
-                case TYP_DOUBLE:
-                    // We ONLY want the valid double register in the RBM_DOUBLERET mask.
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
-                    break;
-                case TYP_LONG:
-                    useCandidates = RBM_LNGRET;
-                    break;
-                default:
-                    useCandidates = RBM_INTRET;
-                    break;
-            }
-        }
-
-        LocationInfoListNode* locationInfo = getLocationInfo(op1);
-        if (useCandidates != RBM_NONE)
-        {
-            locationInfo->info.setSrcCandidates(this, useCandidates);
-        }
-        useList.Append(locationInfo);
-    }
-}
-
-void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree, TreeNodeInfo* info)
-{
+    TreeNodeInfo* info = currentNodeInfo;
     assert(info->dstCount == 1);
 
     // Need a variable number of temp regs (see genLclHeap() in codegenarm.cpp):
@@ -190,7 +113,7 @@ void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree, TreeNodeInfo* info)
 }
 
 //------------------------------------------------------------------------
-// TreeNodeInfoInit: Set the register requirements for RA.
+// BuildNode: Set the register requirements for RA.
 //
 // Notes:
 //    Takes care of annotating the register requirements
@@ -205,10 +128,11 @@ void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree, TreeNodeInfo* info)
 //    requirements needed by LSRA to build the Interval Table (source,
 //    destination and internal [temp] register counts).
 //
-void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
+void LinearScan::BuildNode(GenTree* tree)
 {
-    unsigned     kind         = tree->OperKind();
-    RegisterType registerType = TypeGet(tree);
+    TreeNodeInfo* info         = currentNodeInfo;
+    unsigned      kind         = tree->OperKind();
+    RegisterType  registerType = TypeGet(tree);
 
     if (tree->isContained())
     {
@@ -238,7 +162,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
-            TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon(), info);
+            BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
         case GT_NOP:
@@ -273,7 +197,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
                     assert(info->dstCount == 1);
                     break;
                 default:
-                    NYI_ARM("LinearScan::TreeNodeInfoInit for GT_INTRINSIC");
+                    NYI_ARM("LinearScan::Build for GT_INTRINSIC");
                     break;
             }
         }
@@ -492,7 +416,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             break;
 
         case GT_RETURN:
-            TreeNodeInfoInitReturn(tree, info);
+            BuildReturn(tree);
             break;
 
         case GT_RETFILT:
@@ -630,7 +554,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_ROR:
         case GT_LSH_HI:
         case GT_RSH_LO:
-            TreeNodeInfoInitShiftRotate(tree, info);
+            BuildShiftRotate(tree);
             break;
 
         case GT_EQ:
@@ -640,7 +564,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_GE:
         case GT_GT:
         case GT_CMP:
-            TreeNodeInfoInitCmp(tree, info);
+            BuildCmp(tree);
             break;
 
         case GT_CKFINITE:
@@ -651,7 +575,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             break;
 
         case GT_CALL:
-            TreeNodeInfoInitCall(tree->AsCall(), info);
+            BuildCall(tree->AsCall());
             break;
 
         case GT_ADDR:
@@ -668,7 +592,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
-            TreeNodeInfoInitBlockStore(tree->AsBlk(), info);
+            BuildBlockStore(tree->AsBlk());
             break;
 
         case GT_INIT_VAL:
@@ -677,7 +601,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             break;
 
         case GT_LCLHEAP:
-            TreeNodeInfoInitLclHeap(tree, info);
+            BuildLclHeap(tree);
             break;
 
         case GT_STOREIND:
@@ -688,11 +612,11 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
             {
                 info->srcCount = 2;
-                TreeNodeInfoInitGCWriteBarrier(tree, info);
+                BuildGCWriteBarrier(tree);
                 break;
             }
 
-            TreeNodeInfoInitIndir(tree->AsIndir(), info);
+            BuildIndir(tree->AsIndir());
             // No contained source on ARM.
             assert(!src->isContained());
             info->srcCount++;
@@ -712,7 +636,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_IND:
             assert(info->dstCount == 1);
             info->srcCount = 1;
-            TreeNodeInfoInitIndir(tree->AsIndir(), info);
+            BuildIndir(tree->AsIndir());
             break;
 
         case GT_CATCH_ARG:
@@ -751,15 +675,15 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
             break;
 
         case GT_PUTARG_SPLIT:
-            TreeNodeInfoInitPutArgSplit(tree->AsPutArgSplit(), info);
+            BuildPutArgSplit(tree->AsPutArgSplit());
             break;
 
         case GT_PUTARG_STK:
-            TreeNodeInfoInitPutArgStk(tree->AsPutArgStk(), info);
+            BuildPutArgStk(tree->AsPutArgStk());
             break;
 
         case GT_PUTARG_REG:
-            TreeNodeInfoInitPutArgReg(tree->AsUnOp(), info);
+            BuildPutArgReg(tree->AsUnOp());
             break;
 
         case GT_BITCAST:
@@ -792,7 +716,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
                         GenTree::OpName(tree->OperGet()));
             NYIRAW(message);
 #else
-            NYI_ARM("TreeNodeInfoInit default case");
+            NYI_ARM("BuildNode default case");
 #endif
         case GT_LCL_FLD:
         case GT_LCL_FLD_ADDR:
@@ -808,19 +732,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree, TreeNodeInfo* info)
         case GT_SETCC:
         case GT_MEMORYBARRIER:
         case GT_OBJ:
-            assert(info->dstCount == (tree->IsValue() ? 1 : 0));
-            if (kind & (GTK_CONST | GTK_LEAF))
-            {
-                info->srcCount = 0;
-            }
-            else if (kind & (GTK_SMPOP))
-            {
-                info->srcCount = appendBinaryLocationInfoToList(tree->AsOp());
-            }
-            else
-            {
-                unreached();
-            }
+            BuildSimple(tree);
             break;
 
         case GT_INDEX_ADDR:
