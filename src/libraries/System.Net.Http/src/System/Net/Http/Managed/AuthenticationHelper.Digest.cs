@@ -239,12 +239,19 @@ namespace System.Net.Http
             using (HashAlgorithm hash = algorithm == Sha256 ? SHA256.Create() : (HashAlgorithm)MD5.Create())
 #pragma warning restore CA5351
             {
-                Encoding enc = Encoding.UTF8;
-                byte[] result = hash.ComputeHash(enc.GetBytes(data));
+                Span<byte> result = stackalloc byte[hash.HashSize / 8]; // HashSize is in bits
+                bool hashComputed = hash.TryComputeHash(Encoding.UTF8.GetBytes(data), result, out int bytesWritten);
+                Debug.Assert(hashComputed && bytesWritten == result.Length);
 
                 StringBuilder sb = StringBuilderCache.Acquire(result.Length * 2);
-                foreach (byte b in result)
-                    sb.Append(b.ToString("x2"));
+
+                Span<char> byteX2 = stackalloc char[2];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    bool formatted = result[i].TryFormat(byteX2, out int charsWritten, "x2");
+                    Debug.Assert(formatted && charsWritten == 2);
+                    sb.Append(byteX2);
+                }
 
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
