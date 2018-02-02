@@ -206,38 +206,10 @@ namespace System.Net.Http
             Debug.Assert(!_canRetry);
             _canRetry = true;
 
+            // Send the request.
+            if (NetEventSource.IsEnabled) Trace($"Sending request: {request}");
             try
             {
-                // Our max supported version is 1.1, so if Version > 1.1, degrade to 1.1.
-                Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0);     // guaranteed by Version class
-                bool isHttp10 = false;
-                if (request.Version.Major == 0)
-                {
-                    throw new NotSupportedException(SR.net_http_unsupported_version);
-                }
-                else if (request.Version.Major == 1 && request.Version.Minor == 0)
-                {
-                    isHttp10 = true;
-                }
-
-                // Send the request.
-                if (NetEventSource.IsEnabled) Trace($"Sending request: {request}");
-
-                // Add headers to define content transfer, if not present
-                if (request.Content != null &&
-                    (!request.HasHeaders || request.Headers.TransferEncodingChunked != true) &&
-                    request.Content.Headers.ContentLength == null)
-                {
-                    // We have content, but neither Transfer-Encoding or Content-Length is set.
-                    request.Headers.TransferEncodingChunked = true;
-                }
-
-                if (isHttp10 && request.HasHeaders && request.Headers.TransferEncodingChunked == true)
-                {
-                    // HTTP 1.0 does not support chunking
-                    throw new NotSupportedException(SR.net_http_unsupported_chunking);
-                }
-
                 // Write request line
                 await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
@@ -253,6 +225,8 @@ namespace System.Net.Http
                 await WriteStringAsync(request.RequestUri.PathAndQuery, cancellationToken).ConfigureAwait(false);
 
                 // fall-back to 1.1 for all versions other than 1.0
+                Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0); // guaranteed by Version class
+                bool isHttp10 = request.Version.Minor == 0 && request.Version.Major == 1;
                 await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes,
                                       cancellationToken).ConfigureAwait(false);
 
