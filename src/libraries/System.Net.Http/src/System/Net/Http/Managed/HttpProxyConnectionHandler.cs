@@ -88,6 +88,7 @@ namespace System.Net.Http
 
                         if (credential != null)
                         {
+                            // TODO #23156: Drain response before disposing.
                             response.Dispose();
 
                             request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(AuthenticationHelper.Basic,
@@ -111,8 +112,9 @@ namespace System.Net.Http
 
                             if (await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false))
                             {
+                                // TODO #23156: Drain response before disposing.
                                 response.Dispose();
-                                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                                response = await GetConnectionAndSendAsync(request, proxyUri, cancellationToken).ConfigureAwait(false);
 
                                 // Retry in case of nonce timeout in server.
                                 if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired)
