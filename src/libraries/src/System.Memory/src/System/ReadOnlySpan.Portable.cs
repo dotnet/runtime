@@ -17,7 +17,7 @@ namespace System
     /// </summary>
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    public readonly ref struct ReadOnlySpan<T>
+    public readonly ref partial struct ReadOnlySpan<T>
     {
         /// <summary>
         /// Creates a new read-only span over the entirety of the target array.
@@ -106,16 +106,6 @@ namespace System
         private string DebuggerDisplay => string.Format("System.ReadOnlySpan<{0}>[{1}]", typeof(T).Name, Length);
 
         /// <summary>
-        /// The number of items in the read-only span.
-        /// </summary>
-        public int Length => _length;
-
-        /// <summary>
-        /// Returns true if Length is 0.
-        /// </summary>
-        public bool IsEmpty => _length == 0;
-
-        /// <summary>
         /// Returns the specified element of the read-only span.
         /// </summary>
         /// <param name="index"></param>
@@ -190,53 +180,10 @@ namespace System
         }
 
         /// <summary>
-        /// Returns false if left and right point at the same memory and have the same length.  Note that
-        /// this does *not* check to see if the *contents* are equal.
-        /// </summary>
-        public static bool operator !=(ReadOnlySpan<T> left, ReadOnlySpan<T> right) => !(left == right);
-
-        /// <summary>
-        /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.
-        /// <exception cref="System.NotSupportedException">
-        /// Always thrown by this method.
-        /// </exception>
-        /// </summary>
-        [Obsolete("Equals() on ReadOnlySpan will always throw an exception. Use == instead.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj)
-        {
-            throw new NotSupportedException(SR.CannotCallEqualsOnSpan);
-        }
-
-        /// <summary>
-        /// This method is not supported as spans cannot be boxed.
-        /// <exception cref="System.NotSupportedException">
-        /// Always thrown by this method.
-        /// </exception>
-        /// </summary>
-        [Obsolete("GetHashCode() on ReadOnlySpan will always throw an exception.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode()
-        {
-            throw new NotSupportedException(SR.CannotCallGetHashCodeOnSpan);
-        }
-
-        /// <summary>
         /// Returns a <see cref="String"/> with the name of the type and the number of elements
         /// </summary>
         /// <returns>A <see cref="String"/> with the name of the type and the number of elements</returns>
         public override string ToString() => string.Format("System.ReadOnlySpan<{0}>[{1}]", typeof(T).Name, _length);
-
-        /// <summary>
-        /// Defines an implicit conversion of an array to a <see cref="ReadOnlySpan{T}"/>
-        /// </summary>
-        public static implicit operator ReadOnlySpan<T>(T[] array) => array != null ? new ReadOnlySpan<T>(array) : default;
-
-        /// <summary>
-        /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlySpan{T}"/>
-        /// </summary>
-        public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment)
-            => arraySegment.Array != null ? new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count) : default;
 
         /// <summary>
         /// Forms a slice out of the given read-only span, beginning at 'start'.
@@ -290,11 +237,6 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a 0-length read-only span whose base is the null pointer.
-        /// </summary>
-        public static ReadOnlySpan<T> Empty => default(ReadOnlySpan<T>);
-
-        /// <summary>
         /// This method is obsolete, use System.Runtime.InteropServices.MemoryMarshal.GetReference instead.
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
         /// would have been stored. Such a reference can be used for pinning but must never be dereferenced.
@@ -307,61 +249,6 @@ namespace System
                 unsafe { return ref Unsafe.AsRef<T>(_byteOffset.ToPointer()); }
             else
                 return ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset);
-        }
-
-        /// <summary>Gets an enumerator for this span.</summary>
-        public Enumerator GetEnumerator() => new Enumerator(this);
-
-        /// <summary>Enumerates the elements of a <see cref="ReadOnlySpan{T}"/>.</summary>
-        public ref struct Enumerator
-        {
-            /// <summary>The span being enumerated.</summary>
-            private readonly ReadOnlySpan<T> _span;
-            /// <summary>The next index to yield.</summary>
-            private int _index;
-
-            /// <summary>Initialize the enumerator.</summary>
-            /// <param name="span">The span to enumerate.</param>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal Enumerator(ReadOnlySpan<T> span)
-            {
-                _span = span;
-                _index = -1;
-            }
-
-            /// <summary>Advances the enumerator to the next element of the span.</summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool MoveNext()
-            {
-                int index = _index + 1;
-                if (index < _span.Length)
-                {
-                    _index = index;
-                    return true;
-                }
-
-                return false;
-            }
-
-            /// <summary>Gets the element at the current position of the enumerator.</summary>
-            public ref readonly T Current
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get
-                {
-                    // TODO https://github.com/dotnet/corefx/issues/24105:
-                    // Change this to simply be:
-                    //     get => ref _span[_index];
-                    // once ReadOnlySpan<T>'s indexer returns ref readonly.
-
-                    if ((uint)_index >= (uint)_span.Length)
-                    {
-                        ThrowHelper.ThrowIndexOutOfRangeException();
-                    }
-
-                    return ref Unsafe.Add(ref _span.DangerousGetPinnableReference(), _index);
-                }
-            }
         }
 
         // These expose the internal representation for Span-related apis use only.
