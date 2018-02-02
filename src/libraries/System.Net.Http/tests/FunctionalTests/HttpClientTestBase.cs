@@ -9,7 +9,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientTestBase : RemoteExecutorTestBase
     {
-        private const string ManagedHandlerEnvVar = "COMPlus_UseManagedHttpClientHandler";
+        private const string ManagedHandlerEnvVar = "DOTNET_SYSTEM_NET_HTTP_USEMANAGEDHTTPCLIENTHANDLER";
         private static readonly LocalDataStoreSlot s_managedHandlerSlot;
 
         static HttpClientTestBase()
