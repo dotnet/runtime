@@ -439,7 +439,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicID)
     {
-        case NI_SSE_ConvertToVector128SingleScalar:
+        case NI_SSE_ConvertScalarToVector128Single:
         {
             assert(node->TypeGet() == TYP_SIMD16);
             assert(node->gtSIMDBaseType == TYP_FLOAT);
@@ -550,7 +550,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_SetScalar:
+        case NI_SSE_SetScalarVector128:
         {
             assert(baseType == TYP_FLOAT);
             assert(op2 == nullptr);
