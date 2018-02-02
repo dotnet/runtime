@@ -66,8 +66,6 @@
 
 #define THUNK_SIZE (3 * 4)
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 #if __APPLE__
 void sys_icache_invalidate (void *start, size_t len);
 #endif

@@ -107,6 +107,14 @@ typedef guint32 gunichar;
 #define ABS(a)         ((a) > 0 ? (a) : -(a))
 #endif
 
+#ifndef ALIGN_TO
+#define ALIGN_TO(val,align) ((((gssize)val) + ((align) - 1)) & ~((align) - 1))
+#endif
+
+#ifndef ALIGN_PTR_TO
+#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
+#endif
+
 #define G_STRUCT_OFFSET(p_type,field) offsetof(p_type,field)
 
 #define EGLIB_STRINGIFY(x) #x

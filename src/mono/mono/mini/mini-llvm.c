@@ -50,8 +50,6 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 #error "The version of the mono llvm repository is too old."
 #endif
 
-#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
-
  /*
   * Information associated by mono with LLVM modules.
   */

@@ -32,8 +32,6 @@ typedef struct {
 	guint8 info [MONO_ZERO_LEN_ARRAY];
 } MonoUnwindInfo;
 
-#define ALIGN_TO(val,align) ((((size_t)val) + ((align) - 1)) & ~((align) - 1))
-
 static mono_mutex_t unwind_mutex;
 
 static MonoUnwindInfo **cached_info;

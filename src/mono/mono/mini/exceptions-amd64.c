@@ -46,8 +46,6 @@
 #include "aot-runtime.h"
 #include "tasklets.h"
 
-#define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
-
 #ifdef TARGET_WIN32
 static void (*restore_stack) (void);
 static MonoW32ExceptionHandler fpe_handler;

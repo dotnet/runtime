@@ -61,8 +61,6 @@ static gpointer bp_trampoline;
 #define mono_mini_arch_unlock() mono_os_mutex_unlock (&mini_arch_mutex)
 static mono_mutex_t mini_arch_mutex;
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 #define ARGS_OFFSET 8
 
 #ifdef TARGET_WIN32

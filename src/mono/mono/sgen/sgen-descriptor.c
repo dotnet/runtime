@@ -39,8 +39,6 @@
 #define MAX_USER_DESCRIPTORS 16
 
 #define MAKE_ROOT_DESC(type,val) ((type) | ((val) << ROOT_DESC_TYPE_SHIFT))
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 
 static SgenArrayList complex_descriptors = SGEN_ARRAY_LIST_INIT (NULL, NULL, NULL, INTERNAL_MEM_COMPLEX_DESCRIPTORS);
 static SgenUserRootMarkFunc user_descriptors [MAX_USER_DESCRIPTORS];

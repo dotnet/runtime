@@ -130,8 +130,6 @@
 #endif
 #endif
 
-#define ALIGN_TO(val,align) (((val) + ((align) - 1)) & ~((align) - 1))
-
 #define SIGNAL_STACK_SIZE (64 * 1024)
 
 #define STACK_BIAS MONO_SPARC_STACK_BIAS

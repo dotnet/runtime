@@ -982,8 +982,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 #endif
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 static inline void
 update_liveness_gc (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, gint32 *last_use, MonoMethodVar **vreg_to_varinfo, GSList **callsites)
 {

@@ -96,8 +96,6 @@ typedef struct {
 	guint8 *reg_pin_bitmap;
 } MonoCompileGC;
 
-#define ALIGN_TO(val,align) ((((mgreg_t)val) + ((align) - 1)) & ~((align) - 1))
-
 #undef DEBUG
 
 #if 0

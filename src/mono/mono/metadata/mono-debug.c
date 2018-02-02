@@ -27,8 +27,6 @@
 #include <mono/metadata/runtime.h>
 #include <string.h>
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 #if NO_UNALIGNED_ACCESS
 #define WRITE_UNALIGNED(type, addr, val) \
 	memcpy(addr, &val, sizeof(type))

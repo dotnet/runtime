@@ -2369,8 +2369,6 @@ mono_handle_exception (MonoContext *ctx, MonoObject *obj)
 #error "Can't use sigaltstack without sigaction"
 #endif
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 void
 mono_setup_altstack (MonoJitTlsData *tls)
 {

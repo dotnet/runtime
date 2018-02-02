@@ -124,9 +124,6 @@ get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRu
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
-
 static LockFreeMempool*
 lock_free_mempool_new (void)
 {

@@ -24,8 +24,6 @@
 
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 /*
  * GSHAREDVT
  */

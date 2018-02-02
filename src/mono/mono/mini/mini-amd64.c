@@ -56,8 +56,6 @@ static gboolean optimize_for_xen = TRUE;
 #define optimize_for_xen 0
 #endif
 
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
