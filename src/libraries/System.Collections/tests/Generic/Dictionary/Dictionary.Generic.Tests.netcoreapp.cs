@@ -88,28 +88,38 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void EnsureCapacity_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
+        public void EnsureCapacity_Generic_RequestingLargerCapacity_DoesNotInvalidateEnumeration(int count)
         {
-            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)(GenericIDictionaryFactory(count));
+            var dictionary = (Dictionary<TKey, TValue>)(GenericIDictionaryFactory(count));
             var capacity = dictionary.EnsureCapacity(0);
-            ICollection<TValue> values = dictionary.Values;
-            IEnumerator<TValue> valuesEnum = values.GetEnumerator();
+            IEnumerator keysEnum = dictionary.Keys.GetEnumerator();
+            IEnumerator valuesEnum = dictionary.Values.GetEnumerator();
+            IEnumerator keysListEnum = new List<TKey>(dictionary.Keys).GetEnumerator();
+            IEnumerator valuesListEnum = new List<TValue>(dictionary.Values).GetEnumerator();
+
             dictionary.EnsureCapacity(capacity + 1); // Verify EnsureCapacity does not invalidate enumeration
-            while (valuesEnum.MoveNext());
+
+            while(keysEnum.MoveNext())
+            {
+                valuesEnum.MoveNext();
+                keysListEnum.MoveNext();
+                valuesListEnum.MoveNext();
+                Assert.Equal(keysListEnum.Current, keysEnum.Current);
+                Assert.Equal(valuesListEnum.Current, valuesEnum.Current);
+            }
         }
 
         [Fact]
-        public void EnsureCapacity_NegativeCapacityRequested_Throws()
+        public void EnsureCapacity_Generic_NegativeCapacityRequested_Throws()
         {
-            var dictionary = new Dictionary<string, string>();
+            var dictionary = new Dictionary<TKey, TValue>();
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => dictionary.EnsureCapacity(-1));
         }
 
-        [Fact]
-        [ActiveIssue("dotnet/corefx #24445")] 
-        public void EnsureCapacity_DictionaryNotInitialized_RequestedZero_ReturnsZero()
+        [Fact] 
+        public void EnsureCapacity_Generic_DictionaryNotInitialized_RequestedZero_ReturnsZero()
         {
-            var dictionary = new Dictionary<string, string>();
+            var dictionary = new Dictionary<TKey, TValue>();
             Assert.Equal(0, dictionary.EnsureCapacity(0));
         }
 
@@ -118,80 +128,75 @@ namespace System.Collections.Tests
         [InlineData(2)]
         [InlineData(3)]
         [InlineData(4)]
-        public void EnsureCapacity_DictionaryNotInitialized_RequestedNonZero_CapacityIsSetToAtLeastTheRequested(int requestedCapacity)
+        public void EnsureCapacity_Generic_DictionaryNotInitialized_RequestedNonZero_CapacityIsSetToAtLeastTheRequested(int requestedCapacity)
         {
-            var dictionary = new Dictionary<string, string>();
+            var dictionary = new Dictionary<TKey, TValue>();
             Assert.InRange(dictionary.EnsureCapacity(requestedCapacity), requestedCapacity, int.MaxValue);
         }
 
         [Theory]
         [InlineData(3)]
         [InlineData(7)]
-        public void EnsureCapacity_RequestedCapacitySmallerThanCurrent_CapacityUnchanged(int currentCapacity)
+        public void EnsureCapacity_Generic_RequestedCapacitySmallerThanCurrent_CapacityUnchanged(int currentCapacity)
         {
-            Dictionary<string, string> dictionary;
+            Dictionary<TKey, TValue> dictionary;
 
-            // assert capacity remains the same when ensuring a capacity smaller or equal to existing
+            // assert capacity remains the same when ensuring a capacity smaller or equal than existing
             for (int i = 0; i <= currentCapacity; i++)
             {
-                dictionary = new Dictionary<string, string>(currentCapacity);
+                dictionary = new Dictionary<TKey, TValue>(currentCapacity);
                 Assert.Equal(currentCapacity, dictionary.EnsureCapacity(i));
             }
         }
 
         [Theory]
         [InlineData(7)]
-        public void EnsureCapacity_ExistingCapacityRequested_SameValueReturned(int capacity)
+        public void EnsureCapacity_Generic_ExistingCapacityRequested_SameValueReturned(int capacity)
         {
-            var dictionary = new Dictionary<int, int>(capacity);
+            var dictionary = new Dictionary<TKey, TValue>(capacity);
             Assert.Equal(capacity, dictionary.EnsureCapacity(capacity));
 
-            dictionary = new Dictionary<int, int>();
-            for (int i = 0; i < capacity; i++)
-            {
-                dictionary.Add(i, 0);
-            }
+            dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(capacity);
             Assert.Equal(capacity, dictionary.EnsureCapacity(capacity));
         }
 
         [Theory]
         [InlineData(0)]
-        [InlineData(7)]
-        public void EnsureCapacity_EnsureCapacityCalledTwice_ReturnsSameValue(int count)
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        public void EnsureCapacity_Generic_EnsureCapacityCalledTwice_ReturnsSameValue(int count)
         {
-            var dictionary = new Dictionary<int, int>();
-            for (int i = 0; i < count; i++)
-            {
-                dictionary.Add(i, 0);
-            }
-            int capacity = dictionary.EnsureCapacity(count * 2);
-            Assert.Equal(capacity, dictionary.EnsureCapacity(count * 2));
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            int capacity = dictionary.EnsureCapacity(0);
+            Assert.Equal(capacity, dictionary.EnsureCapacity(0));
+
+            dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            capacity = dictionary.EnsureCapacity(count);
+            Assert.Equal(capacity, dictionary.EnsureCapacity(count));
+
+            dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            capacity = dictionary.EnsureCapacity(count + 1);
+            Assert.Equal(capacity, dictionary.EnsureCapacity(count + 1));
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(5)]
         [InlineData(7)]
-        public void EnsureCapacity_DictionaryNotEmpty_RequestedSmallerThanCount_ReturnsAtLeastSizeOfCount(int count)
+        public void EnsureCapacity_Generic_DictionaryNotEmpty_RequestedSmallerThanCount_ReturnsAtLeastSizeOfCount(int count)
         {
-            var dictionary = new Dictionary<int, int>();
-            for (int i = 0; i < count; i++)
-            {
-                dictionary.Add(i, 0);
-            }
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
             Assert.InRange(dictionary.EnsureCapacity(count - 1), count, int.MaxValue);
         }
 
         [Theory]
         [InlineData(7)]
         [InlineData(20)]
-        public void EnsureCapacity_DictionaryNotEmpty_SetsToAtLeastTheRequested(int count)
+        public void EnsureCapacity_Generic_DictionaryNotEmpty_SetsToAtLeastTheRequested(int count)
         {
-            var dictionary = new Dictionary<int, int>();
-            for (int i = 0; i < count; i++)
-            {
-                dictionary.Add(i, 0);
-            }
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
 
             // get current capacity
             int currentCapacity = dictionary.EnsureCapacity(0);
@@ -202,15 +207,15 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void EnsureCapacity_CapacityIsSetToPrimeNumberLargerOrEqualToRequested()
+        public void EnsureCapacity_Generic_CapacityIsSetToPrimeNumberLargerOrEqualToRequested()
         {
-            var dictionary = new Dictionary<int, int>();
+            var dictionary = new Dictionary<TKey, TValue>();
             Assert.Equal(17, dictionary.EnsureCapacity(17));
 
-            dictionary = new Dictionary<int, int>();
+            dictionary = new Dictionary<TKey, TValue>();
             Assert.Equal(17, dictionary.EnsureCapacity(15));
 
-            dictionary = new Dictionary<int, int>();
+            dictionary = new Dictionary<TKey, TValue>();
             Assert.Equal(17, dictionary.EnsureCapacity(13));
         }
 
