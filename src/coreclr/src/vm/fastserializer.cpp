@@ -24,6 +24,7 @@ FastSerializer::FastSerializer(SString &outputFilePath, FastSerializableObject &
     m_pFileStream = new CFileStream();
     if(FAILED(m_pFileStream->OpenForWrite(outputFilePath)))
     {
+        _ASSERTE(!"Unable to open file for write.");
         delete(m_pFileStream);
         m_pFileStream = NULL;
         return;
