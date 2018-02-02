@@ -33,9 +33,9 @@ namespace IntelHardwareIntrinsicTest
 
                     CheckMethod<short> checkInt16 = (short x, short y, short z, ref short a) =>
                     {
-                        var tmp = ((int)x * y) * 0x0000ffff;
+                        int tmp = (((int)x * (int)y) & 0x0000ffff);
                         a = unchecked((short)tmp);
-                        return -a == z;
+                        return a == z;
                     };
 
                     if (!shortTable.CheckResult(checkInt16))
