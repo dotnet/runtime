@@ -218,10 +218,6 @@ namespace System.Net.Http
             }
         }
 
-        internal bool SupportsProxy => true;
-
-        internal bool SupportsRedirectConfiguration => true;
-
         internal bool UseProxy
         {
             get { return _useProxy; }
