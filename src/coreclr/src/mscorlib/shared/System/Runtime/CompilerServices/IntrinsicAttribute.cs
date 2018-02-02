@@ -6,8 +6,8 @@ namespace System.Runtime.CompilerServices
 {
     // Calls to methods or references to fields marked with this attribute may be replaced at
     // some call sites with jit intrinsic expansions.
-    // Types marked with this attribute may be specially treated by the rumtime/compiler.
-    [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Field, Inherited = false)]
+    // Types marked with this attribute may be specially treated by the runtime/compiler.
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Field, Inherited = false)]
     internal sealed class IntrinsicAttribute : Attribute
     {
     }
