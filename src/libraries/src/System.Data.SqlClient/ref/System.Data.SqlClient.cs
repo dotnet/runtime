@@ -478,6 +478,9 @@ namespace System.Data.SqlClient
         public override void Close() { }
         public new System.Data.SqlClient.SqlCommand CreateCommand() { throw null; }
         protected override System.Data.Common.DbCommand CreateDbCommand() { throw null; }
+        public override System.Data.DataTable GetSchema() { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName) { throw null; }
+        public override System.Data.DataTable GetSchema(string collectionName, string[] restrictionValues) { throw null; }
         public override void Open() { }
         public override System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void ResetStatistics() { }
@@ -681,6 +684,7 @@ namespace System.Data.SqlClient
         public virtual object GetSqlValue(int i) { throw null; }
         public virtual int GetSqlValues(object[] values) { throw null; }
         public virtual System.Data.SqlTypes.SqlXml GetSqlXml(int i) { throw null; }
+        public override System.Data.DataTable GetSchemaTable() { throw null; }
         public override System.IO.Stream GetStream(int i) { throw null; }
         public override string GetString(int i) { throw null; }
         public override System.IO.TextReader GetTextReader(int i) { throw null; }
