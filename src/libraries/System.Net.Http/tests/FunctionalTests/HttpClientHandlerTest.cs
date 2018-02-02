@@ -1679,6 +1679,35 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                Task responseTask = LoopbackServer.AcceptSocketAsync(server, async (socket, stream, reader, writer) =>
+                {
+                    var buffer = new byte[1000];
+                    while (await socket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), SocketFlags.None) != 0);
+                    return null;
+                });
+
+                using (var client = CreateHttpClient())
+                {
+                    Exception error = new FormatException();
+                    var content = new StreamContent(new DelegateStream(
+                        canSeekFunc: () => true,
+                        lengthFunc: () => 12345678,
+                        positionGetFunc: () => 0,
+                        canReadFunc: () => true,
+                        readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
+                    Assert.Same(error, await Assert.ThrowsAsync<FormatException>(() => client.PostAsync(uri, content)));
+                }
+            });
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false)]

@@ -279,14 +279,18 @@ namespace System.Net.Http
 
                     if (!request.HasHeaders || request.Headers.ExpectContinue != true)
                     {
-                        _canRetry = false;
-
-                        // Start the copy from the request.  We do this here in case it synchronously throws
-                        // an exception, e.g. StreamContent throwing for non-rewindable content, and because if
-                        // we did it in SendRequestContentAsync, that exception would get trapped in the returned
-                        // task... at that point, we might get stuck waiting to receive a response from the server
-                        // that'll never come, as the server is still expecting us to send data.
-                        _sendRequestContentTask = SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream);
+                        // Send the request content asynchronously.
+                        Task sendTask = _sendRequestContentTask = SendRequestContentAsync(request, stream);
+                        if (sendTask.IsFaulted)
+                        {
+                            // Technically this isn't necessary: if the task failed, it will have stored the exception
+                            // and disposed of the stream, which will cause subsequent reads to fail.  This is also
+                            // only special-casing the case where the operation fails synchronously or at least very
+                            // quickly.  But it results in slightly nicer flow, and since we can handle this case,
+                            // we may as well do so.
+                            _sendRequestContentTask = null;
+                            sendTask.GetAwaiter().GetResult();
+                        }
                     }
                     else
                     {
@@ -475,12 +479,15 @@ namespace System.Net.Http
             return line.Count == 2;
         }
 
-        private async Task SendRequestContentAsync(Task copyTask, HttpContentWriteStream stream)
+        private async Task SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream)
         {
+            // Now that we're sending content, prohibit retries on this connection.
+            _canRetry = false;
+
             try
             {
-                // Wait for all of the data to be copied to the server.
-                await copyTask.ConfigureAwait(false);
+                // Copy all of the data to the server.
+                await request.Content.CopyToAsync(stream, _transportContext).ConfigureAwait(false);
 
                 // Finish the content; with a chunked upload, this includes writing the terminating chunk.
                 await stream.FinishAsync().ConfigureAwait(false);
@@ -511,9 +518,7 @@ namespace System.Net.Http
             if (sendRequestContent)
             {
                 if (NetEventSource.IsEnabled) Trace($"Sending request content for Expect: 100-continue.");
-
-                _canRetry = false;
-                await SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream).ConfigureAwait(false);
+                await SendRequestContentAsync(request, stream).ConfigureAwait(false);
             }
             else
             {
