@@ -10,6 +10,7 @@
 #include "eventpipe.h"
 #include "eventpipeevent.h"
 #include "eventpipesession.h"
+#include "eventpipeblock.h"
 #include "fastserializableobject.h"
 #include "fastserializer.h"
 
@@ -22,23 +23,84 @@ public:
 
     EventPipeEventInstance(EventPipeSession &session, EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 
-    // Get the event associated with this instance.
-    EventPipeEvent* GetEvent() const;
+    StackContents* GetStack()
+    {
+        LIMITED_METHOD_CONTRACT;
 
-    // Get the stack contents object to either read or write to it.
-    StackContents* GetStack();
+        return &m_stackContents;
+    }
 
-    // Get the timestamp.
-    LARGE_INTEGER GetTimeStamp() const;
+    EventPipeEvent* GetEvent() const
+    {
+        LIMITED_METHOD_CONTRACT;
 
-    // Get a pointer to the data payload.
-    BYTE* GetData() const;
+        return m_pEvent;
+    }
 
-    // Get the length of the data.
-    unsigned int GetLength() const;
+    const LARGE_INTEGER* const GetTimeStamp() const
+    {
+        LIMITED_METHOD_CONTRACT;
 
-    // Serialize this object using FastSerialization.
-    void FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel);
+        return &m_timeStamp;
+    }
+
+    unsigned int GetMetadataId() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_metadataId;
+    }
+
+    void SetMetadataId(unsigned int metadataId)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_metadataId = metadataId;
+    }
+
+    DWORD GetThreadId() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_threadID;
+    }
+
+    const GUID* const GetActivityId() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return &m_activityId;
+    }
+
+    const GUID* const GetRelatedActivityId() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return &m_relatedActivityId;
+    }
+
+    const BYTE* const GetData() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pData;
+    }
+
+    unsigned int GetDataLength() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_dataLength;
+    }
+
+    unsigned int GetStackSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_stackContents.GetSize();
+    }
+
+    unsigned int GetAlignedTotalSize() const;
 
 #ifdef _DEBUG
     // Serialize this event to the JSON file.
@@ -54,6 +116,7 @@ protected:
 #endif // _DEBUG
 
     EventPipeEvent *m_pEvent;
+    unsigned int m_metadataId;
     DWORD m_threadID;
     LARGE_INTEGER m_timeStamp;
     GUID m_activityId;

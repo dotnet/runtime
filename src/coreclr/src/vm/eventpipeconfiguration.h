@@ -77,7 +77,7 @@ public:
     void EnableRundown(EventPipeSession *pSession);
 
     // Get the event used to write metadata to the event stream.
-    EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance);
+    EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance, unsigned int metdataId);
 
     // Delete deferred providers.
     void DeleteDeferredProviders();
