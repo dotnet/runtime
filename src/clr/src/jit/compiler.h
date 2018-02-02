@@ -4921,6 +4921,7 @@ private:
     bool fgCanFastTailCall(GenTreeCall* call);
     bool fgCheckStmtAfterTailCall();
     void fgMorphTailCall(GenTreeCall* call);
+    GenTree* fgGetStubAddrArg(GenTreeCall* call);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
     GenTree* fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
                                                    fgArgTabEntry* argTabEntry,
