@@ -3119,4 +3119,21 @@ L_3:
 	ldc.i4.0
 	ret
   }
+
+  .method public hidebysig static int32 test_0_github_issue_6721 () cil managed
+  {
+       .maxstack 8
+       ldc.i4.0
+       conv.i8
+       ldc.i4.m1
+       conv.ovf.i8.un
+       sub.ovf
+       ldc.i8 0xffffffff00000001
+       beq.s IL_success
+       ldc.i4.1
+       ret
+       IL_success:
+       ldc.i4.0
+       ret
+  }
 }
