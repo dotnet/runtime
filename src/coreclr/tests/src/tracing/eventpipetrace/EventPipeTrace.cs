@@ -68,7 +68,7 @@ namespace Tracing.Tests
                         allocTickCount += 1;
 
                         // Some basic integrity checks
-                        // AssertEqual(data.TypeName, "System.Object"); https://github.com/Microsoft/perfview/issues/470
+                        AssertEqual(data.TypeName, "System.Object");
                         AssertEqual(data.AllocationKind.ToString(), GCAllocationKind.Small.ToString());
                         AssertEqual(data.ProviderName, "Microsoft-Windows-DotNETRuntime");
                         AssertEqual(data.EventName, "GC/AllocationTick");

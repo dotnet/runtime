@@ -7,7 +7,11 @@
 
 #ifdef FEATURE_PERFTRACING
 
-FastSerializer::FastSerializer(SString &outputFilePath, FastSerializableObject &object)
+// Event Pipe has previously implemented a feature called "forward references"
+// As a result of work on V3 of Event Pipe (https://github.com/Microsoft/perfview/pull/532) it got removed
+// if you need it, please use git to restore it
+
+FastSerializer::FastSerializer(SString &outputFilePath)
 {
     CONTRACTL
     {
@@ -18,9 +22,7 @@ FastSerializer::FastSerializer(SString &outputFilePath, FastSerializableObject &
     CONTRACTL_END;
 
     m_writeErrorEncountered = false;
-    m_pEntryObject = &object;
     m_currentPos = 0;
-    m_nextForwardReference = 0;
     m_pFileStream = new CFileStream();
     if(FAILED(m_pFileStream->OpenForWrite(outputFilePath)))
     {
@@ -30,11 +32,7 @@ FastSerializer::FastSerializer(SString &outputFilePath, FastSerializableObject &
         return;
     }
 
-    // Write the file header.
     WriteFileHeader();
-
-    // Write the entry object.
-    WriteEntryObject();
 }
 
 FastSerializer::~FastSerializer()
@@ -46,15 +44,6 @@ FastSerializer::~FastSerializer()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    // Write the end of the entry object.
-    WriteTag(FastSerializerTags::EndObject);
-
-    // Write forward reference table.
-    StreamLabel forwardReferenceLabel = WriteForwardReferenceTable();
-
-    // Write trailer.
-    WriteTrailer(forwardReferenceLabel);
 
     if(m_pFileStream != NULL)
     {
@@ -74,23 +63,20 @@ void FastSerializer::WriteObject(FastSerializableObject *pObject)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pObject != NULL);
     }
     CONTRACTL_END;
 
-    // Write a BeginObject tag.
     WriteTag(FastSerializerTags::BeginObject);
 
-    // Write object begin tag.
     WriteSerializationType(pObject);
 
     // Ask the object to serialize itself using the current serializer.
     pObject->FastSerialize(this);
 
-    // Write object end tag.
     WriteTag(FastSerializerTags::EndObject);
 }
 
@@ -138,82 +124,12 @@ void FastSerializer::WriteBuffer(BYTE *pBuffer, unsigned int length)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-void FastSerializer::WriteEntryObject()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    // Write begin entry object tag.
-    WriteTag(FastSerializerTags::BeginObject);
-
-    // Write the type information for the entry object.
-    WriteSerializationType(m_pEntryObject);
-
-    // The object is now initialized.  Fields or other objects can now be written.
-}
-
-unsigned int FastSerializer::AllocateForwardReference()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(m_nextForwardReference < MaxForwardReferences);
-    }
-    CONTRACTL_END;
-
-    // TODO: Handle failure.
-
-    // Save the index.
-    int index = m_nextForwardReference;
-
-    // Allocate the forward reference and zero-fill it so that the reader
-    // will know if it was not properly defined.
-    m_forwardReferences[m_nextForwardReference++] = 0;
-
-    return index;
-}
-
-void FastSerializer::DefineForwardReference(unsigned int index, StreamLabel value)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(index < MaxForwardReferences-1);
-    }
-    CONTRACTL_END;
-
-    m_forwardReferences[index] = value;
-}
-
-void FastSerializer::WriteForwardReference(unsigned int index)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(index < MaxForwardReferences-1);
-    }
-    CONTRACTL_END;
-
-    WriteBuffer((BYTE*)&index, sizeof(index));
-}
-
 void FastSerializer::WriteSerializationType(FastSerializableObject *pObject)
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
         PRECONDITION(pObject != NULL);
     }
@@ -234,6 +150,7 @@ void FastSerializer::WriteSerializationType(FastSerializableObject *pObject)
     // Write the SerializationType TypeName field.
     const char *strTypeName = pObject->GetTypeName();
     unsigned int length = (unsigned int)strlen(strTypeName);
+
     WriteString(strTypeName, length);
 
     // Write the EndObject tag.
@@ -246,7 +163,7 @@ void FastSerializer::WriteTag(FastSerializerTags tag, BYTE *payload, unsigned in
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -259,18 +176,17 @@ void FastSerializer::WriteTag(FastSerializerTags tag, BYTE *payload, unsigned in
     }
 }
 
-
 void FastSerializer::WriteFileHeader()
 {
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    const char *strSignature = "!FastSerialization.1";
+    const char *strSignature = "!FastSerialization.1"; // the consumer lib expects exactly the same string, it must not be changed
     unsigned int length = (unsigned int)strlen(strSignature);
     WriteString(strSignature, length);
 }
@@ -280,7 +196,7 @@ void FastSerializer::WriteString(const char *strContents, unsigned int length)
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
@@ -290,49 +206,6 @@ void FastSerializer::WriteString(const char *strContents, unsigned int length)
 
     // Write the string contents.
     WriteBuffer((BYTE*) strContents, length);
-}
-
-StreamLabel FastSerializer::WriteForwardReferenceTable()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    // Save the position of the start of the forward references table.
-    StreamLabel current = GetStreamLabel();
-
-    // Write the count of allocated references.
-    WriteBuffer((BYTE*) &m_nextForwardReference, sizeof(m_nextForwardReference));
-
-    // Write each of the allocated references.
-    WriteBuffer((BYTE*) m_forwardReferences, sizeof(StreamLabel) * m_nextForwardReference);
-
-    return current;
-}
-
-void FastSerializer::WriteTrailer(StreamLabel forwardReferencesTableStart)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    // Get the current location to mark the beginning of the trailer.
-    StreamLabel current = GetStreamLabel();
-
-    // Write the trailer, which contains the start of the forward references table.
-    WriteBuffer((BYTE*) &forwardReferencesTableStart, sizeof(forwardReferencesTableStart));
-
-    // Write the location of the trailer.  This is the final piece of data written to the file,
-    // so that it can be easily found by a reader that can seek to the end of the file.
-    WriteBuffer((BYTE*) &current, sizeof(current));
 }
 
 #endif // FEATURE_PERFTRACING

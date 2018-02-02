@@ -65,60 +65,20 @@ EventPipeEventInstance::EventPipeEventInstance(
 #endif // _DEBUG
 }
 
-StackContents* EventPipeEventInstance::GetStack()
+unsigned int EventPipeEventInstance::GetAlignedTotalSize() const
 {
-    LIMITED_METHOD_CONTRACT;
-
-    return &m_stackContents;
-}
-
-EventPipeEvent* EventPipeEventInstance::GetEvent() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pEvent;
-}
-
-LARGE_INTEGER EventPipeEventInstance::GetTimeStamp() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_timeStamp;
-}
-
-BYTE* EventPipeEventInstance::GetData() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_pData;
-}
-
-unsigned int EventPipeEventInstance::GetLength() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return m_dataLength;
-}
-
-void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel)
-{
-    CONTRACTL
+    CONTRACT(unsigned int)
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        POSTCONDITION(RETVAL % ALIGNMENT_SIZE == 0);
     }
-    CONTRACTL_END;
-
-#ifdef EVENTPIPE_EVENT_MARKER
-    // Useful for diagnosing serialization bugs.
-    const unsigned int value = 0xDEADBEEF;
-    pSerializer->WriteBuffer((BYTE*)&value, sizeof(value));
-#endif
+    CONTRACT_END;
 
     // Calculate the size of the total payload so that it can be written to the file.
     unsigned int payloadLength =
-        sizeof(metadataLabel) +
+        sizeof(m_metadataId) +          // Metadata ID
         sizeof(m_threadID) +            // Thread ID
         sizeof(m_timeStamp) +           // TimeStamp
         sizeof(m_activityId) +          // Activity ID
@@ -128,42 +88,13 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLa
         sizeof(unsigned int) +          // Prepended stack payload size in bytes
         m_stackContents.GetSize();      // Stack payload size
 
-    // Write the size of the event to the file.
-    pSerializer->WriteBuffer((BYTE*)&payloadLength, sizeof(payloadLength));
-
-    // Write the metadata label.
-    pSerializer->WriteBuffer((BYTE*)&metadataLabel, sizeof(metadataLabel));
-
-    // Write the thread ID.
-    pSerializer->WriteBuffer((BYTE*)&m_threadID, sizeof(m_threadID));
-
-    // Write the timestamp.
-    pSerializer->WriteBuffer((BYTE*)&m_timeStamp, sizeof(m_timeStamp));
-
-    // Write the activity id.
-    pSerializer->WriteBuffer((BYTE*)&m_activityId, sizeof(m_activityId));
-
-    // Write the related activity id.
-    pSerializer->WriteBuffer((BYTE*)&m_relatedActivityId, sizeof(m_relatedActivityId));
-
-    // Write the data payload size.
-    pSerializer->WriteBuffer((BYTE*)&m_dataLength, sizeof(m_dataLength));
-
-    // Write the event data payload.
-    if(m_dataLength > 0)
+    // round up to ALIGNMENT_SIZE bytes
+    if (payloadLength % ALIGNMENT_SIZE != 0)
     {
-        pSerializer->WriteBuffer(m_pData, m_dataLength);
+        payloadLength += ALIGNMENT_SIZE - (payloadLength % ALIGNMENT_SIZE);
     }
 
-    // Write the size of the stack in bytes.
-    unsigned int stackSize = m_stackContents.GetSize();
-    pSerializer->WriteBuffer((BYTE*)&stackSize, sizeof(stackSize));
-
-    // Write the stack if present.
-    if(stackSize > 0)
-    {
-        pSerializer->WriteBuffer(m_stackContents.GetPointer(), stackSize);
-    }
+    RETURN payloadLength;
 }
 
 #ifdef _DEBUG

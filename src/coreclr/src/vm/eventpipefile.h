@@ -9,6 +9,7 @@
 #ifdef FEATURE_PERFTRACING
 
 #include "eventpipe.h"
+#include "eventpipeblock.h"
 #include "eventpipeeventinstance.h"
 #include "fastserializableobject.h"
 #include "fastserializer.h"
@@ -25,36 +26,52 @@ class EventPipeFile : public FastSerializableObject
         );
         ~EventPipeFile();
 
-        // Write an event to the file.
         void WriteEvent(EventPipeEventInstance &instance);
 
-        // Serialize this object.
-        // Not supported - this is the entry object for the trace,
-        // which means that the contents hasn't yet been created.
-        void FastSerialize(FastSerializer *pSerializer)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!"This function should never be called!");
-        }
+        void WriteEnd();
 
-        // Get the type name of this object.
         const char* GetTypeName()
         {
             LIMITED_METHOD_CONTRACT;
-            return "Microsoft.DotNet.Runtime.EventPipeFile";
+            return "Trace";
+        }
+
+        void FastSerialize(FastSerializer *pSerializer)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_PREEMPTIVE;
+                PRECONDITION(pSerializer != NULL);
+            }
+            CONTRACTL_END;
+
+            pSerializer->WriteBuffer((BYTE*)&m_fileOpenSystemTime, sizeof(m_fileOpenSystemTime));
+            pSerializer->WriteBuffer((BYTE*)&m_fileOpenTimeStamp, sizeof(m_fileOpenTimeStamp));
+            pSerializer->WriteBuffer((BYTE*)&m_timeStampFrequency, sizeof(m_timeStampFrequency));
+
+            // the beginning of V3
+            pSerializer->WriteBuffer((BYTE*)&m_pointerSize, sizeof(m_pointerSize));
+            pSerializer->WriteBuffer((BYTE*)&m_currentProcessId, sizeof(m_currentProcessId));
+            pSerializer->WriteBuffer((BYTE*)&m_numberOfProcessors, sizeof(m_numberOfProcessors));
+            pSerializer->WriteBuffer((BYTE*)&m_samplingRateInNs, sizeof(m_samplingRateInNs));
         }
 
     private:
 
-        // Get the metadata address in the file for an event.
-        // The return value can be written into the file as a back-pointer to the event metadata.
-        StreamLabel GetMetadataLabel(EventPipeEvent &event);
+        unsigned int GenerateMetadataId();
 
-        // Save the metadata address in the file for an event.
-        void SaveMetadataLabel(EventPipeEvent &event, StreamLabel label);
+        unsigned int GetMetadataId(EventPipeEvent &event);
+
+        void SaveMetadataId(EventPipeEvent &event, unsigned int metadataId);
+
+        void WriteToBlock(EventPipeEventInstance &instance, unsigned int metadataId);
 
         // The object responsible for serialization.
         FastSerializer *m_pSerializer;
+
+        EventPipeBlock *m_pBlock;
 
         // The system time when the file was opened.
         SYSTEMTIME m_fileOpenSystemTime;
@@ -65,15 +82,22 @@ class EventPipeFile : public FastSerializableObject
         // The frequency of the timestamps used for this file.
         LARGE_INTEGER m_timeStampFrequency;
 
-        // The forward reference index that marks the beginning of the event stream.
-        unsigned int m_beginEventsForwardReferenceIndex;
+        unsigned int m_pointerSize;
+
+        unsigned int m_currentProcessId;
+
+        unsigned int m_numberOfProcessors;
+
+        unsigned int m_samplingRateInNs;
 
         // The serialization which is responsible for making sure only a single event
         // or block of events gets written to the file at once.
         SpinLock m_serializationLock;
 
         // Hashtable of metadata labels.
-        MapSHashWithRemove<EventPipeEvent*, StreamLabel> *m_pMetadataLabels;
+        MapSHashWithRemove<EventPipeEvent*, unsigned int> *m_pMetadataIds;
+
+        Volatile<LONG> m_metadataIdCounter;
 
 #ifdef _DEBUG
         bool m_lockOnWrite;
