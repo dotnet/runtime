@@ -117,10 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CannotCallEqualsOnSpan" xml:space="preserve">
+  <data name="NotSupported_CannotCallEqualsOnSpan" xml:space="preserve">
     <value>Equals() on Span and ReadOnlySpan is not supported. Use operator== instead.</value>
   </data>
-  <data name="CannotCallGetHashCodeOnSpan" xml:space="preserve">
+  <data name="NotSupported_CannotCallGetHashCodeOnSpan" xml:space="preserve">
     <value>GetHashCode() on Span and ReadOnlySpan is not supported.</value>
   </data>
   <data name="Argument_InvalidTypeWithPointersNotSupported" xml:space="preserve">
