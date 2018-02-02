@@ -1170,7 +1170,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     STANDARD_VM_CONTRACT;
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-    if (!GetAssembly()->IsSIMDVectorAssembly())
+    if (!(GetAssembly()->IsSIMDVectorAssembly() || bmtProp->fIsIntrinsicType))
         return false;
 
     if (bmtFP->NumInstanceFieldBytes != 16)
@@ -1532,6 +1532,23 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 #endif
+
+    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
+    // Currently, only SIMD types have [Intrinsic] attribute
+    //
+    // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
+    if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
+    {
+        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
+            g_CompilerServicesIntrinsicAttribute,
+            NULL,
+            NULL);
+
+        if (hr == S_OK)
+        {
+            bmtProp->fIsIntrinsicType = true;
+        }
+    }
 
 #ifdef FEATURE_COMINTEROP 
 
@@ -10428,21 +10445,9 @@ MethodTableBuilder::SetupMethodTable2(
     }
     pMT->SetInternalCorElementType(normalizedType);
 
-    // If this type is marked by [Intrinsic] attribute, it may be specially treated by the runtime/compiler
-    // Currently, only SIMD types have [Intrinsic] attribute
-    //
-    // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
-    if ((GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly()) && IsValueClass() && bmtGenerics->HasInstantiation())
+    if (bmtProp->fIsIntrinsicType)
     {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(), 
-            g_CompilerServicesIntrinsicAttribute, 
-            NULL, 
-            NULL);
-
-        if (hr == S_OK)
-        {
-            pMT->SetIsIntrinsicType();
-        }
+        pMT->SetIsIntrinsicType();
     }
 
     if (GetModule()->IsSystem())
