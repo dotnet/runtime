@@ -25,17 +25,35 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (test.IsSupported)
             {
-                // Validates basic functionality works
-                test.RunBasicScenario();
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
 
-                // Validates calling via reflection works
-                test.RunReflectionScenario();
+                // Validates basic functionality works, using Load
+                test.RunBasicScenario_Load();
+
+                // Validates basic functionality works, using LoadAligned
+                test.RunBasicScenario_LoadAligned();
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates calling via reflection works, using Load
+                test.RunReflectionScenario_Load();
+
+                // Validates calling via reflection works, using LoadAligned
+                test.RunReflectionScenario_LoadAligned();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                // Validates passing a local works
-                test.RunLclVarScenario();
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing a local works, using Load
+                test.RunLclVarScenario_Load();
+
+                // Validates passing a local works, using LoadAligned
+                test.RunLclVarScenario_LoadAligned();
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -92,24 +110,44 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), VectorSize);
 
             for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); }
-            _dataTable = new BooleanComparisonOpTest__DataTable<Single>(_data1, _data2);
+            _dataTable = new BooleanComparisonOpTest__DataTable<Single>(_data1, _data2, VectorSize);
         }
 
         public bool IsSupported => Sse.IsSupported;
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario()
+        public void RunBasicScenario_UnsafeRead()
         {
             var result = Sse.CompareLessThanOrEqualOrderedScalar(
                 Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
                 Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr)
             );
 
-            ValidateResult(_dataTable.inArray1, _dataTable.inArray2, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
         }
 
-        public void RunReflectionScenario()
+        public void RunBasicScenario_Load()
+        {
+            var result = Sse.CompareLessThanOrEqualOrderedScalar(
+                Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
+                Sse.LoadVector128((Single*)(_dataTable.inArray2Ptr))
+            );
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
+        }
+
+        public void RunBasicScenario_LoadAligned()
+        {
+            var result = Sse.CompareLessThanOrEqualOrderedScalar(
+                Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr)),
+                Sse.LoadAlignedVector128((Single*)(_dataTable.inArray2Ptr))
+            );
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
         {
             var result = typeof(Sse).GetMethod(nameof(Sse.CompareLessThanOrEqualOrderedScalar), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
                                      .Invoke(null, new object[] {
@@ -117,7 +155,29 @@ namespace JIT.HardwareIntrinsics.X86
                                         Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr)
                                      });
 
-            ValidateResult(_dataTable.inArray1, _dataTable.inArray2, (bool)(result));
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+        }
+
+        public void RunReflectionScenario_Load()
+        {
+            var result = typeof(Sse).GetMethod(nameof(Sse.CompareLessThanOrEqualOrderedScalar), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
+                                     .Invoke(null, new object[] {
+                                        Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
+                                        Sse.LoadVector128((Single*)(_dataTable.inArray2Ptr))
+                                     });
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+        }
+
+        public void RunReflectionScenario_LoadAligned()
+        {
+            var result = typeof(Sse).GetMethod(nameof(Sse.CompareLessThanOrEqualOrderedScalar), new Type[] { typeof(Vector128<Single>), typeof(Vector128<Single>) })
+                                     .Invoke(null, new object[] {
+                                        Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr)),
+                                        Sse.LoadAlignedVector128((Single*)(_dataTable.inArray2Ptr))
+                                     });
+
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }
 
         public void RunClsVarScenario()
@@ -130,10 +190,28 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar1, _clsVar2, result);
         }
 
-        public void RunLclVarScenario()
+        public void RunLclVarScenario_UnsafeRead()
         {
             var left = Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr);
             var right = Unsafe.Read<Vector128<Single>>(_dataTable.inArray2Ptr);
+            var result = Sse.CompareLessThanOrEqualOrderedScalar(left, right);
+
+            ValidateResult(left, right, result);
+        }
+
+        public void RunLclVarScenario_Load()
+        {
+            var left = Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr));
+            var right = Sse.LoadVector128((Single*)(_dataTable.inArray2Ptr));
+            var result = Sse.CompareLessThanOrEqualOrderedScalar(left, right);
+
+            ValidateResult(left, right, result);
+        }
+
+        public void RunLclVarScenario_LoadAligned()
+        {
+            var left = Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr));
+            var right = Sse.LoadAlignedVector128((Single*)(_dataTable.inArray2Ptr));
             var result = Sse.CompareLessThanOrEqualOrderedScalar(left, right);
 
             ValidateResult(left, right, result);
@@ -160,7 +238,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario();
+                RunBasicScenario_UnsafeRead();
             }
             catch (PlatformNotSupportedException)
             {
@@ -175,6 +253,17 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
+
+            ValidateResult(inArray1, inArray2, result, method);
+        }
+
+        private void ValidateResult(void* left, void* right, bool result, [CallerMemberName] string method = "")
+        {
+            Single[] inArray1 = new Single[ElementCount];
+            Single[] inArray2 = new Single[ElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
 
             ValidateResult(inArray1, inArray2, result, method);
         }

@@ -10,23 +10,27 @@ using System.Runtime.Intrinsics.X86;
 
 namespace JIT.HardwareIntrinsics.X86
 {
-    public unsafe struct BooleanComparisonOpTest__DataTable<T> : IDisposable where T : struct
+    public unsafe struct SimpleBinaryOpTest__DataTable<T> : IDisposable where T : struct
     {
         private byte[] inArray1;
         private byte[] inArray2;
+        private byte[] outArray;
 
         private GCHandle inHandle1;
         private GCHandle inHandle2;
+        private GCHandle outHandle;
 
         private byte simdSize;
 
-        public BooleanComparisonOpTest__DataTable(T[] inArray1, T[] inArray2, int simdSize)
+        public SimpleBinaryOpTest__DataTable(T[] inArray1, T[] inArray2, T[] outArray, int simdSize)
         {
             this.inArray1 = new byte[simdSize * 2];
             this.inArray2 = new byte[simdSize * 2];
+            this.outArray = new byte[simdSize * 2];
 
             this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
             this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+            this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
             this.simdSize = unchecked((byte)(simdSize));
 
@@ -36,11 +40,13 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), simdSize);
         public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), simdSize);
 
         public void Dispose()
         {
             inHandle1.Free();
             inHandle2.Free();
+            outHandle.Free();
         }
 
         private static unsafe void* Align(byte* buffer, byte expectedAlignment)
