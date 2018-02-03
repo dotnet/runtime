@@ -25,6 +25,7 @@
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\Diagnostics\RemoteExecutorTestBase.cs" />
     <Compile Include="System\Net\PlatformDetection.Networking.cs" />
+    <Compile Include="System\TestEnvironment.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netcoreapp'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />

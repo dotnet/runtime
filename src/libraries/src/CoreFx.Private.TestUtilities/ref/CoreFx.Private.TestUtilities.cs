@@ -112,6 +112,10 @@ namespace System
         [CLSCompliant(false)]
         public static Xunit.TheoryData ToTheoryData<T>(this System.Collections.Generic.IEnumerable<T> data) { throw null; }
     }
+    public static partial class TestEnvironment
+    {
+        public static bool IsStressModeEnabled { get { throw null; } }
+    }
 }
 namespace System.Diagnostics
 {
