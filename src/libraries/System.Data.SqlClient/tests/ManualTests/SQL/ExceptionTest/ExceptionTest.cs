@@ -47,7 +47,22 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        private static bool EmployeesTableHasFullTextIndex()
+        {
+            if (DataTestUtility.TcpConnStr == null)
+                return false;
+
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = conn.CreateCommand())
+            {
+                conn.Open();
+                cmd.CommandText = "SELECT object_id FROM sys.fulltext_indexes WHERE object_id = object_id('Northwind.dbo.Employees')";
+
+                return (cmd.ExecuteScalar() != null);
+            }
+        }
+
+        [ConditionalFact(nameof(EmployeesTableHasFullTextIndex))]
         public static void WarningsBeforeRowsTest()
         {
             bool hitWarnings = false;
