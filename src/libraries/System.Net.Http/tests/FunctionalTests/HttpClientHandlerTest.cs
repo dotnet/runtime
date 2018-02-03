@@ -1647,10 +1647,13 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        [InlineData(null)]
-        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue)
+        [InlineData(false, "1.0")]
+        [InlineData(true, "1.0")]
+        [InlineData(null, "1.0")]
+        [InlineData(false, "1.1")]
+        [InlineData(true, "1.1")]
+        [InlineData(null, "1.1")]
+        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, string version)
         {
             using (HttpClient client = CreateHttpClient())
             {
@@ -1659,6 +1662,7 @@ namespace System.Net.Http.Functional.Tests
                     Content = new StringContent("Test String", Encoding.UTF8)
                 };
                 req.Headers.ExpectContinue = expectContinue;
+                req.Version = new Version(version);
 
                 using (HttpResponseMessage response = await client.SendAsync(req))
                 {
@@ -1666,7 +1670,7 @@ namespace System.Net.Http.Functional.Tests
                     if (UseManagedHandler)
                     {
                         const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                        if (expectContinue == true)
+                        if (expectContinue == true && version == "1.1")
                         {
                             Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
                         }

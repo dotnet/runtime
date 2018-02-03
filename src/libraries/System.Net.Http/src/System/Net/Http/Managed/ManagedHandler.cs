@@ -309,11 +309,19 @@ namespace System.Net.Http
                 request.Headers.TransferEncodingChunked = true;
             }
 
-            if (request.Version.Minor == 0 && request.Version.Major == 1 &&
-                request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+            if (request.Version.Minor == 0 && request.Version.Major == 1 && request.HasHeaders)
             {
                 // HTTP 1.0 does not support chunking
-                return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_chunking));
+                if (request.Headers.TransferEncodingChunked == true)
+                {
+                    return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_chunking));
+                }
+
+                // HTTP 1.0 does not support Expect: 100-continue; just disable it.
+                if (request.Headers.ExpectContinue == true)
+                {
+                    request.Headers.ExpectContinue = false;
+                }
             }
 
             return handler.SendAsync(request, cancellationToken);
