@@ -39,13 +39,16 @@ namespace System
         /// Creates a new read-only span over the entirety of the target array.
         /// </summary>
         /// <param name="array">The target array.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// reference (Nothing in Visual Basic).</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan(T[] array)
         {
             if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            {
+                this = default;
+                return; // returns default
+            }
 
             _pointer = new ByReference<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()));
             _length = array.Length;
@@ -58,7 +61,7 @@ namespace System
         /// <param name="array">The target array.</param>
         /// <param name="start">The index at which to begin the read-only span.</param>
         /// <param name="length">The number of items in the read-only span.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
@@ -67,7 +70,12 @@ namespace System
         public ReadOnlySpan(T[] array, int start, int length)
         {
             if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            {
+                if (start != 0 || length != 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                this = default;
+                return; // returns default
+            }
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
