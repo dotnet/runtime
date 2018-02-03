@@ -2,31 +2,41 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class BeginExecAsyncTest
     {
-        private static string commandText =
-                "INSERT INTO[dbo].[Shippers] " +
-                "([CompanyName] " +
-                ",[Phone]) " +
-                "VALUES " +
-                "('Acme Inc.' " +
-                ",'555-1212'); " +
-                "WAITFOR DELAY '0:0:3';" +
-                "DELETE FROM dbo.Shippers WHERE ShipperID > 3;";
-        
+        private static string GenerateCommandText()
+        {
+            int suffix = (new Random()).Next(5000);
+
+            string commandText = 
+                $"CREATE TABLE #Shippers{suffix}(" +
+                    $"[ShipperID][int] NULL," +
+                    $"[CompanyName] [nvarchar] (40) NOT NULL," +
+                    $"[Phone] [nvarchar] (24) NULL )" +
+                $"INSERT INTO #Shippers{suffix}" +
+                        $"([CompanyName]  " +
+                        $",[Phone])" +
+                    $"VALUES " +
+                        $"('Acme Inc.' " +
+                        $",'555-1212'); " +
+                $"WAITFOR DELAY '0:0:3'; " +
+                $"DELETE FROM #Shippers{suffix} WHERE ShipperID > 3;";
+
+            return commandText;
+        }
+
         [CheckConnStrSetupFact]
         public static void ExecuteTest()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 try
-                {                    
-                    SqlCommand command = new SqlCommand(commandText, connection);
+                {
+                    SqlCommand command = new SqlCommand(GenerateCommandText(), connection);
                     connection.Open();
 
                     IAsyncResult result = command.BeginExecuteNonQuery();
@@ -63,7 +73,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
             {
                 bool caughtException = false;
-                SqlCommand command = new SqlCommand(commandText, connection);
+                SqlCommand command = new SqlCommand(GenerateCommandText(), connection);
                 connection.Open();
 
                 //Try to execute a synchronous query on same command
