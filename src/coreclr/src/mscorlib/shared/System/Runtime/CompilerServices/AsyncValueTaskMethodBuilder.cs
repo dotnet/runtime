@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices
 #if netstandard
             _methodBuilder.Start(ref stateMachine);
 #else
-            AsyncMethodBuilder.Start(ref stateMachine); // will provide the right ExecutionContext semantics
+            AsyncMethodBuilderCore.Start(ref stateMachine);
 #endif
 
         /// <summary>Associates the builder with the specified state machine.</summary>
