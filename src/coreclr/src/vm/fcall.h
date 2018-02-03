@@ -653,6 +653,18 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 #define HELPER_METHOD_FRAME_BEGIN_2(arg1, arg2) HELPER_METHOD_FRAME_BEGIN_ATTRIB_2(Frame::FRAME_ATTR_NONE, arg1, arg2)
 
+#define HELPER_METHOD_FRAME_BEGIN_ATTRIB_3(attribs, arg1, arg2, arg3)                         \
+        static_assert(sizeof(arg1) == sizeof(OBJECTREF), "GC protecting structs of multiple OBJECTREFs requires a PROTECT variant of the HELPER METHOD FRAME macro");\
+        static_assert(sizeof(arg2) == sizeof(OBJECTREF), "GC protecting structs of multiple OBJECTREFs requires a PROTECT variant of the HELPER METHOD FRAME macro");\
+        static_assert(sizeof(arg3) == sizeof(OBJECTREF), "GC protecting structs of multiple OBJECTREFs requires a PROTECT variant of the HELPER METHOD FRAME macro");\
+        HELPER_METHOD_FRAME_BEGIN_EX(                                                   \
+            return,                                                                     \
+            HELPER_FRAME_DECL(3)(HELPER_FRAME_ARGS(attribs),                            \
+                (OBJECTREF*) &arg1, (OBJECTREF*) &arg2, (OBJECTREF*) &arg3),                                \
+            HELPER_METHOD_POLL(),TRUE)
+
+#define HELPER_METHOD_FRAME_BEGIN_3(arg1, arg2, arg3) HELPER_METHOD_FRAME_BEGIN_ATTRIB_3(Frame::FRAME_ATTR_NONE, arg1, arg2, arg3)
+
 #define HELPER_METHOD_FRAME_BEGIN_PROTECT(gc)                                           \
         HELPER_METHOD_FRAME_BEGIN_EX(                                                   \
             return,                                                                     \
