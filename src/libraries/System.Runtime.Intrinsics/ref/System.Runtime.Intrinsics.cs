@@ -967,7 +967,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> ConvertToVector128Double(Vector128<float> value) { throw null; }
         public static Vector128<int> ConvertToVector128Int32WithTruncation(Vector128<float> value) { throw null; }
         public static Vector128<int> ConvertToVector128Int32WithTruncation(Vector128<double> value) { throw null; }
-        public static Vector128<uint> ConvertScalarToVector128UInt32Scalar(uint value) { throw null; }
+        public static Vector128<uint> ConvertScalarToVector128UInt32(uint value) { throw null; }
         public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) { throw null; }
         public static Vector128<double> Divide(Vector128<double> left,  Vector128<double> right) { throw null; }
         public static Vector128<double> DivideScalar(Vector128<double> left, Vector128<double> right) { throw null; }
