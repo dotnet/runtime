@@ -20,7 +20,6 @@ namespace System
         /// <summary>
         /// Removes all leading and trailing white-space characters from the span.
         /// </summary>
-        /// <param name="span">The span</param>
         public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span)
         {
             return span.TrimStart().TrimEnd();
@@ -29,7 +28,6 @@ namespace System
         /// <summary>
         /// Removes all leading white-space characters from the span.
         /// </summary>
-        /// <param name="span">The span</param>
         public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> span)
         {
             int start = 0;
@@ -44,7 +42,6 @@ namespace System
         /// <summary>
         /// Removes all trailing white-space characters from the span.
         /// </summary>
-        /// <param name="span">The span</param>
         public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> span)
         {
             int end = span.Length - 1;
@@ -128,7 +125,8 @@ namespace System
                         goto Next;
                 }
                 break;
-            Next: ;
+            Next:
+                ;
             }
             return span.Slice(start);
         }
@@ -150,7 +148,8 @@ namespace System
                         goto Next;
                 }
                 break;
-            Next: ;
+            Next:
+                ;
             }
             return span.Slice(0, end + 1);
         }

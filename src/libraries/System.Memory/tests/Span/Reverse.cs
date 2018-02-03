@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Runtime.CompilerServices;
 using static System.TestHelpers;
 
 namespace System.SpanTests
@@ -21,7 +20,7 @@ namespace System.SpanTests
 
             span = actual;
             span.Slice(2, 0).Reverse();
-            
+
             Assert.Equal<byte>(expected, span.ToArray());
         }
 
@@ -43,7 +42,7 @@ namespace System.SpanTests
         [Fact]
         public static void ReverseByte()
         {
-            for(int length = 0; length < byte.MaxValue; length++)
+            for (int length = 0; length < byte.MaxValue; length++)
             {
                 var actual = new byte[length];
                 for (int i = 0; i < length; i++)
@@ -110,7 +109,7 @@ namespace System.SpanTests
             IntPtr[] expectedFull = new IntPtr[length];
             Array.Copy(actualFull, expectedFull, length);
             Array.Reverse(expectedFull, offset, length - offset);
-            
+
             var expectedSpan = new Span<IntPtr>(expectedFull, offset, length - offset);
             var actualSpan = new Span<IntPtr>(actualFull, offset, length - offset);
             actualSpan.Reverse();

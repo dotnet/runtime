@@ -5,10 +5,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#endif
-
 namespace System.Buffers.Text
 {
     /// <summary>
