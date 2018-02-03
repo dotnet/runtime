@@ -768,13 +768,15 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static unsafe Vector128<ushort> LoadScalarVector128(ushort* address) => LoadScalarVector128(address);
         /// <summary>
-        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
-        ///   MOVQ xmm, reg/m64
+        /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
+        ///   MOVD xmm, reg/m32
+        /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static unsafe Vector128<int> LoadScalarVector128(int* address) => LoadScalarVector128(address);
         /// <summary>
-        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
-        ///   MOVQ xmm, reg/m64
+        /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
+        ///   MOVD xmm, reg/m32
+        /// The above native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
         public static unsafe Vector128<uint> LoadScalarVector128(uint* address) => LoadScalarVector128(address);
         /// <summary>
