@@ -2329,6 +2329,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
         // However, we cannot do the same for the VEX-encoding as it changes an observable
         // side-effect and may mask an Access Violation that would otherwise occur.
         case NI_SSE_LoadAlignedVector128:
+        case NI_SSE2_LoadAlignedVector128:
             isContainable = (containingCategory == HW_Category_SimpleSIMD) && !comp->canUseVexEncoding();
             break;
 
@@ -2336,11 +2337,13 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
         // read remains the same. Likewise, we can't fold a larger load into a SIMD scalar
         // intrinsic as that would read fewer bits that requested.
         case NI_SSE_LoadScalarVector128:
+        case NI_SSE2_LoadScalarVector128:
             isContainable = (containingCategory == HW_Category_SIMDScalar);
             break;
 
         // VEX encoding supports unaligned memory ops, so we can fold them
         case NI_SSE_LoadVector128:
+        case NI_SSE2_LoadVector128:
             isContainable = (containingCategory == HW_Category_SimpleSIMD) && comp->canUseVexEncoding();
             break;
 
