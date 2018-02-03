@@ -26,6 +26,9 @@ namespace JitBench
         [Option("use-existing-setup", Required = false, HelpText = "Use existing setup.")]
         public Boolean UseExistingSetup { get; set; }
 
+        [Option("local-jitbench-repo", Required = false, HelpText = "Optional path to a local JitBench repo enlistment to use instead of downloading from github")]
+        public string LocalJitBenchRepo { get; set; }
+
         [Option("tiering", Required = false, HelpText = "Enable tiered jit.")]
         public Boolean EnableTiering { get; set; }
 
