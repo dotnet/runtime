@@ -184,6 +184,7 @@ INST3( mov_i2xmm,   "movd"        , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCK
 INST3( mov_xmm2i,   "movd"        , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKDBL(0x7E)) // Move xmm reg to an int reg. reg1=xmm reg, reg2=int reg
 INST3( pmovmskb,    "pmovmskb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKDBL(0xD7)) // Move the MSB bits of all bytes in a xmm reg to an int reg
 INST3( movmskpd,    "movmskpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKDBL(0x50)) // Extract 2-bit sign mask from xmm and store in reg. The upper bits of r32 or r64 are filled with zeros.
+INST3( movd,        "movd"        , 0, IUM_WR, 0, 0, PCKDBL(0x7E), BAD_CODE, PCKDBL(0x6E))
 INST3( movq,        "movq"        , 0, IUM_WR, 0, 0, PCKDBL(0xD6), BAD_CODE, SSEFLT(0x7E))
 INST3( movsdsse2,   "movsd"       , 0, IUM_WR, 0, 0, SSEDBL(0x11), BAD_CODE, SSEDBL(0x10))
 
