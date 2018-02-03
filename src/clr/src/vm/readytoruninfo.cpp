@@ -674,7 +674,7 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
     return true;
 }
 
-PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups /*=TRUE*/)
+PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
 
@@ -864,7 +864,7 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), FALSE);
+    PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), NULL, FALSE);
     _ASSERTE(ret != NULL);
     return ret;
 }
