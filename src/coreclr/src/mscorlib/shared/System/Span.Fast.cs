@@ -39,14 +39,17 @@ namespace System
         /// Creates a new span over the entirety of the target array.
         /// </summary>
         /// <param name="array">The target array.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[] array)
         {
             if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            {
+                this = default;
+                return; // returns default
+            }
             if (default(T) == null && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
@@ -61,7 +64,7 @@ namespace System
         /// <param name="array">The target array.</param>
         /// <param name="start">The index at which to begin the span.</param>
         /// <param name="length">The number of items in the span.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="array"/> is a null
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
@@ -71,7 +74,12 @@ namespace System
         public Span(T[] array, int start, int length)
         {
             if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            {
+                if (start != 0 || length != 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                this = default;
+                return; // returns default
+            }
             if (default(T) == null && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
