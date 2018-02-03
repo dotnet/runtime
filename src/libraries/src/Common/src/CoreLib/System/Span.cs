@@ -29,11 +29,11 @@ namespace System
 #if !FEATURE_PORTABLE_SPAN
             [NonVersionable]
 #endif // !FEATURE_PORTABLE_SPAN
-             get
-             {
-                 return _length;
-             }
-         }
+            get
+            {
+                return _length;
+            }
+        }
 
         /// <summary>
         /// Returns true if Length is 0.
