@@ -22,29 +22,13 @@ namespace IntelHardwareIntrinsicTest
 
             if (Sse2.IsSupported)
             {
-                using (var doubleTable = TestTableSse2<double>.Create(testsCount))
                 using (var uintTable = TestTableSse2<uint, ulong>.Create(testsCount, 2.0))
                 {
-                    for (int i = 0; i < testsCount; i++)
-                    {
-                        (Vector128<double>, Vector128<double>, Vector128<double>) value = doubleTable[i];
-                        Vector128<double> result = Sse2.Multiply(value.Item1, value.Item2);
-                        doubleTable.SetOutArray(result);
-                    }
-
                     for (int i = 0; i < testsCount; i++)
                     {
                         (Vector128<uint>, Vector128<uint>) value = uintTable[i];
                         Vector128<ulong> result = Sse2.Multiply(value.Item1, value.Item2);
                         uintTable.SetOutArrayU(result);
-                    }
-
-                    CheckMethod<double> checkDouble = (double x, double y, double z, ref double a) => (a = x * y) == z;
-
-                    if (!doubleTable.CheckResult(checkDouble))
-                    {
-                        PrintError(doubleTable, methodUnderTestName, "(double x, double y, double z, ref double a) => (a = x * y) == z", checkDouble);
-                        testResult = Fail;
                     }
 
                     CheckMethodFive<uint, ulong> checkUInt32 = (uint x1, uint x2, uint y1, uint y2, ulong z1, ulong z2, ref ulong a1, ref ulong a2) =>
