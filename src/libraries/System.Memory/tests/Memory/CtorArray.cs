@@ -71,8 +71,13 @@ namespace System.MemoryTests
         [Fact]
         public static void CtorArrayNullArray()
         {
-            Assert.Throws<ArgumentNullException>(() => new Memory<int>(null));
-            Assert.Throws<ArgumentNullException>(() => new Memory<int>(null, 0, 0));
+            var memory = new Memory<int>(null);
+            memory.Validate();
+            Assert.Equal(default, memory);
+
+            memory = new Memory<int>(null, 0, 0);
+            memory.Validate();
+            Assert.Equal(default, memory);
         }
 
         [Fact]

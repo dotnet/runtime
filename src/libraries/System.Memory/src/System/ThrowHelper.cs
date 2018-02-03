@@ -106,17 +106,16 @@ namespace System
         }
     }
 
+    //
+    // The convention for this enum is using the argument name as the enum name
+    //
     internal enum ExceptionArgument
     {
         array,
         length,
         start,
-        text,
-        obj,
-        ownedMemory,
         minimumBufferSize,
         byteOffset,
-        pointer,
         comparable,
         comparer
     }

@@ -54,11 +54,19 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void AsReadOnlyMemory_NullString_Throws()
+        public static void AsReadOnlyMemory_NullString_Default()
         {
-            AssertExtensions.Throws<ArgumentNullException>("text", () => ((string)null).AsReadOnlyMemory());
-            AssertExtensions.Throws<ArgumentNullException>("text", () => ((string)null).AsReadOnlyMemory(0));
-            AssertExtensions.Throws<ArgumentNullException>("text", () => ((string)null).AsReadOnlyMemory(0, 0));
+            ReadOnlyMemory<char> m = ((string)null).AsReadOnlyMemory();
+            m.Validate();
+            Assert.Equal(default, m);
+
+            m = ((string)null).AsReadOnlyMemory(0);
+            m.Validate();
+            Assert.Equal(default, m);
+
+            m = ((string)null).AsReadOnlyMemory(0, 0);
+            m.Validate();
+            Assert.Equal(default, m);
         }
 
         [Fact]
@@ -191,14 +199,14 @@ namespace System.MemoryTests
         [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsReadOnlyMemory_2Arg_OutOfRange(string text, int start)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlyMemory(start));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("Start", () => text.AsReadOnlyMemory(start));
         }
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsReadOnlyMemory_3Arg_OutOfRange(string text, int start, int length)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlyMemory(start, length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("Start", () => text.AsReadOnlyMemory(start, length));
         }
 
         [Fact]

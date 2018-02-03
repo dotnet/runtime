@@ -43,7 +43,7 @@ namespace System
         /// Creates a new readonly span over the portion of the target string.
         /// </summary>
         /// <param name="text">The target string.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
+        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         public static ReadOnlySpan<char> AsReadOnlySpan(this string text) => Span.AsReadOnlySpan(text);
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace System
         /// <param name="text">The target string.</param>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
+        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
@@ -71,13 +71,13 @@ namespace System
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
         /// <param name="text">The target string.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null reference (Nothing in Visual Basic).</exception>
+        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text) => Span.AsReadOnlyMemory(text);
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
         /// <param name="text">The target string.</param>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null reference (Nothing in Visual Basic).</exception>
+        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
@@ -87,7 +87,7 @@ namespace System
         /// <param name="text">The target string.</param>
         /// <param name="start">The index at which to begin this slice.</param>
         /// <param name="length">The desired length for the slice (exclusive).</param>
-        /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null reference (Nothing in Visual Basic).</exception>
+        /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
