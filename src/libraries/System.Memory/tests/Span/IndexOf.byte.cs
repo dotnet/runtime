@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Numerics;
-using System.Text;
 using Xunit;
 
 namespace System.SpanTests
