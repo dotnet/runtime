@@ -29,11 +29,11 @@ namespace System
 #if !FEATURE_PORTABLE_SPAN
             [NonVersionable]
 #endif // !FEATURE_PORTABLE_SPAN
-             get
-             {
-                 return _length;
-             }
-         }
+            get
+            {
+                return _length;
+            }
+        }
 
         /// <summary>
         /// Returns true if Length is 0.
@@ -83,13 +83,13 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
-        public static implicit operator ReadOnlySpan<T>(T[] array) => array != null ? new ReadOnlySpan<T>(array) : default;
+        public static implicit operator ReadOnlySpan<T>(T[] array) => new ReadOnlySpan<T>(array);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
         public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment)
-            => arraySegment.Array != null ? new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count) : default;
+            => new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 
         /// <summary>
         /// Returns a 0-length read-only span whose base is the null pointer.
