@@ -143,7 +143,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                return _comparer;
+                return (_comparer is NonRandomizedStringEqualityComparer) ? (IEqualityComparer<TKey>)EqualityComparer<string>.Default : _comparer;
             }
         }
 
