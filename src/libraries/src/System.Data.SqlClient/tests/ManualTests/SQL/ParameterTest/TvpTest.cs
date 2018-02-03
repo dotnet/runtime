@@ -1115,7 +1115,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
                 catch (SqlException se)
                 {
-                    Console.WriteLine("SqlException: {0}", se.Message);
+                    Console.WriteLine("SqlException. Error Code: {0}", se.Number);
                 }
                 catch (InvalidOperationException ioe)
                 {
