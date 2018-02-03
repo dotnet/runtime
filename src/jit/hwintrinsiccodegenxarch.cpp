@@ -438,7 +438,6 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
     regNumber      targetReg   = node->gtRegNum;
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
-    instruction    ins         = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
 
     regNumber op1Reg = REG_NA;
     regNumber op2Reg = REG_NA;
@@ -464,6 +463,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             genHWIntrinsic_R_R_RM(node, ins);
             break;
         }
+
         case NI_SSE_CompareEqualOrderedScalar:
         case NI_SSE_CompareEqualUnorderedScalar:
         {
@@ -471,6 +471,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             op2Reg           = op2->gtRegNum;
             regNumber tmpReg = node->GetSingleTempReg();
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), op1Reg, op2Reg);
             emit->emitIns_R(INS_setpo, EA_1BYTE, targetReg);
             emit->emitIns_R(INS_sete, EA_1BYTE, tmpReg);
@@ -486,6 +487,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), op1Reg, op2Reg);
             emit->emitIns_R(INS_seta, EA_1BYTE, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
@@ -498,6 +500,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), op1Reg, op2Reg);
             emit->emitIns_R(INS_setae, EA_1BYTE, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
@@ -510,6 +513,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), op2Reg, op1Reg);
             emit->emitIns_R(INS_seta, EA_1BYTE, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
@@ -522,6 +526,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             op2Reg = op2->gtRegNum;
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), op2Reg, op1Reg);
             emit->emitIns_R(INS_setae, EA_1BYTE, targetReg);
             emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
@@ -536,6 +541,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 
             regNumber tmpReg = node->GetSingleTempReg();
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), op1Reg, op2Reg);
             emit->emitIns_R(INS_setpe, EA_1BYTE, targetReg);
             emit->emitIns_R(INS_setne, EA_1BYTE, tmpReg);
@@ -551,6 +557,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(op2 == nullptr);
             if (op1Reg != targetReg)
             {
+                instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
                 emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg);
             }
             break;
@@ -561,7 +568,39 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_FLOAT);
             assert(op2 == nullptr);
 
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_INT), targetReg, op1Reg);
+            break;
+        }
+
+        case NI_SSE_Prefetch0:
+        case NI_SSE_Prefetch1:
+        case NI_SSE_Prefetch2:
+        case NI_SSE_PrefetchNonTemporal:
+        {
+            assert(baseType == TYP_UBYTE);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            emit->emitIns_AR(ins, emitTypeSize(baseType), op1Reg, 0);
+            break;
+        }
+
+        case NI_SSE_ReciprocalScalar:
+        case NI_SSE_ReciprocalSqrtScalar:
+        case NI_SSE_SqrtScalar:
+        {
+            assert(baseType == TYP_FLOAT);
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+
+            if (op2 == nullptr)
+            {
+                emit->emitIns_SIMD_R_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op1Reg);
+            }
+            else
+            {
+                genHWIntrinsic_R_R_RM(node, ins);
+            }
             break;
         }
 
@@ -677,6 +716,15 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 
                 genDefineTempLabel(switchTableEnd);
             }
+            break;
+        }
+
+        case NI_SSE_StoreFence:
+        {
+            assert(baseType == TYP_VOID);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+            emit->emitIns(INS_sfence);
             break;
         }
 
