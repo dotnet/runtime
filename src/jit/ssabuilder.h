@@ -5,7 +5,6 @@
 #pragma once
 #pragma warning(disable : 4503) // 'identifier' : decorated name length exceeded, name was truncated
 
-#undef SSA_FEATURE_USEDEF
 #undef SSA_FEATURE_DOMARR
 
 #include "compiler.h"
@@ -20,24 +19,6 @@ typedef jitstd::pair<LclVarNum, int> SsaVarName;
 class SsaBuilder
 {
 private:
-    struct SsaVarNameHasher
-    {
-        /**
-         * Hash functor used in maps to hash a given key.
-         *
-         * @params key SsaVarName which is a pair of lclNum and ssaNum which defines a variable.
-         * @return Hash value corresponding to a key.
-         */
-        size_t operator()(const SsaVarName& key) const
-        {
-            return jitstd::hash<__int64>()((((__int64)key.first) << sizeof(int)) | key.second);
-        }
-    };
-
-    // Used to maintain a map of a given SSA numbering to its use or def.
-    typedef jitstd::unordered_map<SsaVarName, jitstd::vector<GenTree*>, SsaVarNameHasher> VarToUses;
-    typedef jitstd::unordered_map<SsaVarName, GenTree*, SsaVarNameHasher>                 VarToDef;
-
     inline void EndPhase(Phases phase)
     {
         m_pCompiler->EndPhase(phase);
@@ -157,11 +138,6 @@ private:
     // Requires "tree" to be a local variable node. Maintains a map of <lclNum, ssaNum> -> tree
     // information in m_defs.
     void AddDefPoint(GenTree* tree, BasicBlock* blk);
-#ifdef SSA_FEATURE_USEDEF
-    // Requires "tree" to be a local variable node. Maintains a map of <lclNum, ssaNum> -> tree
-    // information in m_uses.
-    void AddUsePoint(GenTree* tree);
-#endif
 
     // Returns true, and sets "*ppIndirAssign", if "tree" has been recorded as an indirect assignment.
     // (If the tree is an assignment, it's a definition only if it's labeled as an indirect definition, where
@@ -185,13 +161,5 @@ private:
     // Do not move these outside of this class, use accessors/interface methods.
     int* m_pDomPreOrder;
     int* m_pDomPostOrder;
-#endif
-
-#ifdef SSA_FEATURE_USEDEF
-    // Use Def information after SSA. To query the uses and def of a given ssa var,
-    // probe these data structures.
-    // Do not move these outside of this class, use accessors/interface methods.
-    VarToUses m_uses;
-    VarToDef  m_defs;
 #endif
 };

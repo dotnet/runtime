@@ -150,10 +150,6 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
     , m_pDomPreOrder(nullptr)
     , m_pDomPostOrder(nullptr)
 #endif
-#ifdef SSA_FEATURE_USEDEF
-    , m_uses(&m_allocator)
-    , m_defs(&m_allocator)
-#endif
 {
 }
 
@@ -840,29 +836,6 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
     EndPhase(PHASE_BUILD_SSA_INSERT_PHIS);
 }
 
-#ifdef SSA_FEATURE_USEDEF
-/**
- * Record a use point of a variable.
- *
- * The use point is just the tree that is a local variable use.
- *
- * @param tree Tree node where an SSA variable is used.
- *
- * @remarks The result is in the m_uses map :: [lclNum, ssaNum] -> tree.
- */
-void SsaBuilder::AddUsePoint(GenTree* tree)
-{
-    assert(tree->IsLocal());
-    SsaVarName          key(tree->gtLclVarCommon.gtLclNum, tree->gtLclVarCommon.gtSsaNum);
-    VarToUses::iterator iter = m_uses.find(key);
-    if (iter == m_uses.end())
-    {
-        iter = m_uses.insert(key, VarToUses::mapped_type(m_uses.get_allocator()));
-    }
-    (*iter).second.push_back(tree);
-}
-#endif // !SSA_FEATURE_USEDEF
-
 /**
  * Record a def point of a variable.
  *
@@ -900,18 +873,6 @@ void SsaBuilder::AddDefPoint(GenTree* tree, BasicBlock* blk)
     LclSsaVarDsc* ssaDef    = m_pCompiler->lvaTable[lclNum].GetPerSsaData(defSsaNum);
     ssaDef->m_defLoc.m_blk  = blk;
     ssaDef->m_defLoc.m_tree = tree;
-
-#ifdef SSA_FEATURE_USEDEF
-    SsaVarName         key(lclNum, defSsaNum);
-    VarToDef::iterator iter = m_defs.find(key);
-    if (iter == m_defs.end())
-    {
-        iter = m_defs.insert(key, tree);
-        return;
-    }
-    // There can only be a single definition for an SSA var.
-    unreached();
-#endif
 }
 
 bool SsaBuilder::IsIndirectAssign(GenTree* tree, Compiler::IndirectAssignmentAnnotation** ppIndirAssign)
@@ -1056,9 +1017,6 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
                 // name of the use, we record it in a map reserved for that purpose.
                 unsigned count = pRenameState->CountForUse(lclNum);
                 tree->gtLclVarCommon.SetSsaNum(count);
-#ifdef SSA_FEATURE_USEDEF
-                AddUsePoint(tree);
-#endif
             }
 
             // Give a count and increment.
@@ -1105,9 +1063,6 @@ void SsaBuilder::TreeRenameVariables(GenTree* tree, BasicBlock* block, SsaRename
             // Give the count as top of stack.
             unsigned count = pRenameState->CountForUse(lclNum);
             tree->gtLclVarCommon.SetSsaNum(count);
-#ifdef SSA_FEATURE_USEDEF
-            AddUsePoint(tree);
-#endif
         }
     }
 }
