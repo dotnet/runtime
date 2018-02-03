@@ -1536,17 +1536,19 @@ DebuggerJitInfo * DebuggerMethodInfo::FindJitInfo(MethodDesc * pMD,
 /*
  * FindOrCreateInitAndAddJitInfo
  *
- * This routine allocates a new DJI, adding it to the DMI.
+ * This routine tries to find an existing DJI based on the method desc and start address, or allocates a new DJI, adding it to
+ * the DMI.
  *
  * Parameters:
- *   fd - the method desc to create a DJI for.
+ *   fd - the method desc to find or create a DJI for.
+ *   startAddr - the start address to find or create the DJI for.
  *
  * Returns
- *   A pointer to the created DJI, or NULL.
+ *   A pointer to the found or created DJI, or NULL.
  *
  */
 
-DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* fd)
+DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr)
 {
     CONTRACTL
     {
@@ -1558,11 +1560,25 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
 
     _ASSERTE(fd != NULL);
 
-    // This will grab the latest EnC version.
-    TADDR addr = (TADDR) g_pEEInterface->GetFunctionAddress(fd);
-
-    if (addr == NULL)
+    // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
+    if (fd->IsDynamicMethod())
+    {
         return NULL;
+    }
+
+    if (startAddr == NULL)
+    {
+        // This will grab the start address for the current code version.
+        startAddr = (TADDR)g_pEEInterface->GetFunctionAddress(fd);
+        if (startAddr == NULL)
+        {
+            return NULL;
+        }
+    }
+    else
+    {
+        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc((PCODE)startAddr) == fd);
+    }
 
     // Check the lsit to see if we've already populated an entry for this JitInfo.
     // If we didn't have a JitInfo before, lazily create it now.
@@ -1570,18 +1586,16 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     //
     // We haven't got the lock yet so we'll repeat this lookup once
     // we've taken the lock.
-    DebuggerJitInfo * pResult = FindJitInfo(fd, addr);
+    DebuggerJitInfo * pResult = FindJitInfo(fd, startAddr);
     if (pResult != NULL)
     {
-        // Found!
         return pResult;
     }
 
-
-    // CreateInitAndAddJitInfo takes a lock and checks the list again, which
-    // makes this  thread-safe.
-    BOOL unused;
-    return CreateInitAndAddJitInfo(fd, addr, &unused);
+    // The DJI may already be populated in the cache, if so CreateInitAndAddJitInfo is a no-op and that is fine.
+    // CreateInitAndAddJitInfo takes a lock and checks the list again, which makes this thread-safe.
+    BOOL jitInfoWasCreated;
+    return CreateInitAndAddJitInfo(fd, startAddr, &jitInfoWasCreated);
 }
 
 // Create a DJI around a method-desc. The EE already has all the information we need for a DJI,
@@ -2353,7 +2367,7 @@ PTR_DebuggerJitInfo DebuggerMethodInfo::GetLatestJitInfo(MethodDesc *mdesc)
 
     // This ensures that there is an entry in the DJI list for this particular MethodDesc.
     // in the case of generic code it may not be the first entry in the list.
-    FindOrCreateInitAndAddJitInfo(mdesc);
+    FindOrCreateInitAndAddJitInfo(mdesc, NULL /* startAddr */);
 
 #endif // #ifndef DACCESS_COMPILE
 
