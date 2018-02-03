@@ -72,6 +72,7 @@ VPTR_CLASS(GCFrame)
 VPTR_CLASS(HelperMethodFrame)
 VPTR_CLASS(HelperMethodFrame_1OBJ)
 VPTR_CLASS(HelperMethodFrame_2OBJ)
+VPTR_CLASS(HelperMethodFrame_3OBJ)
 VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
 #ifdef FEATURE_HIJACK
 VPTR_CLASS(HijackFrame)
