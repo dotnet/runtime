@@ -18,6 +18,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         // data value and server consts
         private const string MagicName = "Magic";
+        // Use a union statement so that Identity columns don't carry over
+        private const string _createTableQuery = "select * into {0} from Employees where EmployeeID < 3 union all (select * from Employees where 1 = 0)";
         private string _tempTable;
         private string _tempKey;
 
@@ -567,20 +569,20 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [CheckConnStrSetupFact]
         public void UpdateTest()
         {
-            try
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = conn.CreateCommand())
+            using (SqlDataAdapter adapter = new SqlDataAdapter())
+            using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
             {
-                using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
-                using (SqlCommand cmd = conn.CreateCommand())
-                using (SqlDataAdapter adapter = new SqlDataAdapter())
-                using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
+                conn.Open();
+
+                cmd.CommandText = string.Format(_createTableQuery, _tempTable);
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                cmd.ExecuteNonQuery();
+
+                try
                 {
-                    conn.Open();
-
-                    cmd.CommandText = string.Format("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into {0} from Employees where EmployeeID < 3", _tempTable);
-                    cmd.ExecuteNonQuery();
-                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
-                    cmd.ExecuteNonQuery();
-
                     PrepareUpdateCommands(adapter, conn, _tempTable);
 
                     adapter.SelectCommand = new SqlCommand(string.Format("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country from {0} where EmployeeID < 3", _tempTable), conn);
@@ -639,10 +641,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
                     dataSet.AcceptChanges();
                 }
-            }
-            finally
-            {
-                ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                finally
+                {
+                    ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                }
             }
         }
 
@@ -656,15 +658,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             using (SqlDataAdapter adapter = new SqlDataAdapter())
             using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
             {
+                conn.Open();
+
+                cmd.CommandText = string.Format(_createTableQuery, _tempTable);
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                cmd.ExecuteNonQuery();
+
                 try
                 {
-                    conn.Open();
-
-                    cmd.CommandText = "SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into " + _tempTable + " from Employees where EmployeeID < 3";
-                    cmd.ExecuteNonQuery();
-                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
-                    cmd.ExecuteNonQuery();
-
                     PrepareUpdateCommands(adapter, conn, _tempTable);
 
                     adapter.SelectCommand = new SqlCommand("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country FROM " + _tempTable + " WHERE EmployeeID < 3", conn);
@@ -762,16 +764,16 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             string spDropInsert = "DROP PROCEDURE sp_insert" + _tempTable;
             bool dropSP = false;
-            try
-            {
-                using (SqlDataAdapter adapter = new SqlDataAdapter())
-                using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
-                using (SqlCommand cmd = new SqlCommand(null, conn))
-                using (SqlCommand temp = new SqlCommand("SELECT id, LastName, FirstName into " + _tempTable + " from ident", conn))
-                using (SqlCommand tableClean = new SqlCommand("", conn))
-                {
-                    ExecuteNonQueryCommand(createIdentTable);
 
+            using (SqlDataAdapter adapter = new SqlDataAdapter())
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = new SqlCommand(null, conn))
+            using (SqlCommand temp = new SqlCommand("SELECT id, LastName, FirstName into " + _tempTable + " from ident", conn))
+            using (SqlCommand tableClean = new SqlCommand("", conn))
+            {
+                ExecuteNonQueryCommand(createIdentTable);
+                try
+                {
                     adapter.InsertCommand = new SqlCommand()
                     {
                         CommandText = "sp_insert" + _tempTable,
@@ -827,15 +829,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                         (i1 != 0) && (i2 != 0) && (i2 == (i1 + 1)),
                         string.Format("FAILED:  UpdateRefresh, i2 should equal (i1 + 1). i1: {0}. i2: {1}.", i1, i2));
                 }
-            }
-            finally
-            {
-                if (dropSP)
+                finally
                 {
-                    ExecuteNonQueryCommand(spDropInsert);
-                    ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                    if (dropSP)
+                    {
+                        ExecuteNonQueryCommand(spDropInsert);
+                        ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                    }
+                    ExecuteNonQueryCommand("DROP TABLE ident");
                 }
-                ExecuteNonQueryCommand("DROP TABLE ident");
             }
         }
 
@@ -979,21 +981,20 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [CheckConnStrSetupFact]
         public void AutoGenUpdateTest()
         {
-            try
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = conn.CreateCommand())
+            using (SqlDataAdapter adapter = new SqlDataAdapter())
+            using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
             {
-                using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
-                using (SqlCommand cmd = conn.CreateCommand())
-                using (SqlDataAdapter adapter = new SqlDataAdapter())
-                using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
+                conn.Open();
+
+                cmd.CommandText = string.Format(_createTableQuery, _tempTable);
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                cmd.ExecuteNonQuery();
+
+                try
                 {
-                    conn.Open();
-
-                    cmd.CommandText = string.Format("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into {0} from Employees where EmployeeID < 3", _tempTable);
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
-                    cmd.ExecuteNonQuery();
-
                     adapter.SelectCommand = new SqlCommand(string.Format("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country from {0} where EmployeeID < 3", _tempTable), conn);
                     adapterVerify.SelectCommand = new SqlCommand("SELECT LastName, FirstName FROM " + _tempTable + " where FirstName='" + MagicName + "'", conn);
 
@@ -1041,10 +1042,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     // Verify that set is empty
                     VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
                 }
-            }
-            finally
-            {
-                ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                finally
+                {
+                    ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                }
             }
         }
 
@@ -1100,16 +1101,15 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             using (SqlDataAdapter adapter = new SqlDataAdapter())
             using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
             {
+                conn.Open();
+
+                cmd.CommandText = string.Format(_createTableQuery, _tempTable);
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                cmd.ExecuteNonQuery();
+
                 try
                 {
-                    conn.Open();
-
-                    cmd.CommandText = "SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into " + _tempTable + " from Employees where EmployeeID < 3";
-                    cmd.ExecuteNonQuery();
-
-                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
-                    cmd.ExecuteNonQuery();
-
                     adapter.SelectCommand = new SqlCommand("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country FROM " + _tempTable + " WHERE EmployeeID < 3", conn);
                     adapterVerify.SelectCommand = new SqlCommand("SELECT LastName, FirstName FROM " + _tempTable + " where FirstName='" + MagicName + "'", conn);
 
