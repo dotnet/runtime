@@ -263,7 +263,8 @@ SHARED_API int32_t hostfxr_resolve_sdk(
 // the specified app.
 //
 // Returned format is a list of paths separated by PATH_SEPARATOR
-// which is a semicolon (;) on Windows and a colon (:) otherwise,
+// which is a semicolon (;) on Windows and a colon (:) otherwise.
+// The returned string is null-terminated.
 //
 // Invoked from ASP.NET in order to help load a native assembly
 // before the clr is initialized (through a custom host).
@@ -277,7 +278,8 @@ SHARED_API int32_t hostfxr_resolve_sdk(
 //      for launching the application.
 //
 //    buffer
-//      The buffer where the native paths will be written.
+//      The buffer where the native paths and null terminator
+//      will be written.
 //
 //    buffer_size
 //      The size of the buffer argument in pal::char_t units.
@@ -285,7 +287,8 @@ SHARED_API int32_t hostfxr_resolve_sdk(
 //    required_buffer_size
 //      If the return value is HostApiBufferTooSmall, then
 //      required_buffer_size is set to the minimium buffer
-//      size necessary to contain the result.
+//      size necessary to contain the result including the
+//      null terminator.
 //
 // Return value:
 //   0 on success, otherwise failure
