@@ -616,7 +616,10 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
     GenTree* op3      = nullptr;
     GenTree* op4      = nullptr;
     int      simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
-    assert(simdSize == 16);
+
+    // The Prefetch and StoreFence intrinsics don't take any SIMD operands
+    // and have a simdSize of 0
+    assert((simdSize == 16) || (simdSize == 0));
 
     switch (intrinsic)
     {
@@ -662,6 +665,23 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_ReciprocalScalar:
+        case NI_SSE_ReciprocalSqrtScalar:
+        case NI_SSE_SqrtScalar:
+        {
+            assert((sig->numArgs == 1) || (sig->numArgs == 2));
+            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
+
+            if (sig->numArgs == 2)
+            {
+                op2 = impSIMDPopStack(TYP_SIMD16);
+            }
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, simdSize);
+            break;
+        }
+
         case NI_SSE_MoveMask:
             assert(sig->numArgs == 1);
             assert(JITtype2varType(sig->retType) == TYP_INT);
@@ -670,12 +690,30 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, intrinsic, TYP_FLOAT, simdSize);
             break;
 
+        case NI_SSE_Prefetch0:
+        case NI_SSE_Prefetch1:
+        case NI_SSE_Prefetch2:
+        case NI_SSE_PrefetchNonTemporal:
+        {
+            assert(sig->numArgs == 1);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, intrinsic, TYP_UBYTE, 0);
+            break;
+        }
+
         case NI_SSE_SetAllVector128:
             assert(sig->numArgs == 1);
             assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtCloneExpr(op1), gtNewIconNode(0), NI_SSE_Shuffle,
                                                TYP_FLOAT, simdSize);
+            break;
+
+        case NI_SSE_StoreFence:
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, TYP_VOID, 0);
             break;
 
         default:
