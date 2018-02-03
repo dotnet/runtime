@@ -267,7 +267,9 @@ bool emitter::Is4ByteSSE4Instruction(instruction ins)
 bool emitter::TakesVexPrefix(instruction ins)
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
-    if (ins == INS_vzeroupper)
+    // special case sfence and the prefetch instructions as they never take a VEX prefix
+    if ((ins == INS_vzeroupper) || (ins == INS_sfence) || (ins == INS_prefetcht0) || (ins == INS_prefetcht1) ||
+        (ins == INS_prefetcht2) || (ins == INS_prefetchnta))
     {
         return false;
     }
@@ -2027,7 +2029,9 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)    // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx));
+               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_prefetcht0) ||
+               (ins == INS_prefetcht1)                                  // the prefetch instructions are always 3 bytes
+               || (ins == INS_prefetcht2) || (ins == INS_prefetchnta)); // and have part of their modr/m byte hardcoded
         size = 3;
     }
     else
@@ -2469,7 +2473,8 @@ void emitter::emitIns(instruction ins)
                            ins == INS_r_stosb || ins == INS_r_stosd || ins == INS_r_stosp || ins == INS_ret ||
                            ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
 #ifndef LEGACY_BACKEND
-                           || ins == INS_vzeroupper
+                           // These instructions take zero operands
+                           || ins == INS_vzeroupper || ins == INS_sfence
 #endif
                            );
 
@@ -3971,6 +3976,25 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
 }
 
 #ifndef LEGACY_BACKEND
+void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs)
+{
+    assert(ins == INS_prefetcht0 || ins == INS_prefetcht1 || ins == INS_prefetcht2 || ins == INS_prefetchnta);
+
+    instrDesc* id = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+
+    id->idInsFmt(IF_ARD);
+    id->idAddr()->iiaAddrMode.amBaseReg = base;
+    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
 void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, insFormat fmt)
 {
     ssize_t    offs = indir->Offset();

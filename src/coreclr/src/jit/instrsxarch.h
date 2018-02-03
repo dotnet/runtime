@@ -218,6 +218,12 @@ INST3( shufpd,      "shufpd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCK
 
 INST3( punpckhdq,   "punpckhdq"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKDBL(0x6A))
 
+INST3( prefetchnta, "prefetchnta" , 0, IUM_RD, 0, 0, 0x000F0018,   BAD_CODE, BAD_CODE)
+INST3( prefetcht0,  "prefetcht0"  , 0, IUM_RD, 0, 0, 0x000F0818,   BAD_CODE, BAD_CODE)
+INST3( prefetcht1,  "prefetcht1"  , 0, IUM_RD, 0, 0, 0x000F1018,   BAD_CODE, BAD_CODE)
+INST3( prefetcht2,  "prefetcht2"  , 0, IUM_RD, 0, 0, 0x000F1818,   BAD_CODE, BAD_CODE)
+INST3( sfence,      "sfence"      , 0, IUM_RD, 0, 0, 0x000FF8AE,   BAD_CODE, BAD_CODE)
+
 // SSE 2 arith
 INST3( addps,  "addps",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x58))    // Add packed singles
 INST3( addss,  "addss",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEFLT(0x58))    // Add scalar singles
