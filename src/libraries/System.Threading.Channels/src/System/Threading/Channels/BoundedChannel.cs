@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace System.Threading.Channels
 {
     /// <summary>Provides a channel with a bounded capacity.</summary>
-    [DebuggerDisplay("Items={ItemsCountForDebugger}, Capacity={_bufferedCapacity}")]
+    [DebuggerDisplay("Items={ItemsCountForDebugger}, Capacity={_bufferedCapacity}, Mode={_mode}, Closed={ChannelIsClosedForDebugger}")]
     [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
     internal sealed class BoundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
@@ -49,7 +49,9 @@ namespace System.Threading.Channels
             Writer = new BoundedChannelWriter(this);
         }
 
-        private sealed class BoundedChannelReader : ChannelReader<T>
+        [DebuggerDisplay("Items={ItemsCountForDebugger}")]
+        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
+        private sealed class BoundedChannelReader : ChannelReader<T>, IDebugEnumerable<T>
         {
             internal readonly BoundedChannel<T> _parent;
             internal BoundedChannelReader(BoundedChannel<T> parent) => _parent = parent;
@@ -157,9 +159,17 @@ namespace System.Threading.Channels
                 // Return the item
                 return item;
             }
+
+            /// <summary>Gets the number of items in the channel. This should only be used by the debugger.</summary>
+            private int ItemsCountForDebugger => _parent._items.Count;
+
+            /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
+            IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();
         }
 
-        private sealed class BoundedChannelWriter : ChannelWriter<T>
+        [DebuggerDisplay("Items={ItemsCountForDebugger}, Capacity={CapacityForDebugger}")]
+        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
+        private sealed class BoundedChannelWriter : ChannelWriter<T>, IDebugEnumerable<T>
         {
             internal readonly BoundedChannel<T> _parent;
             internal BoundedChannelWriter(BoundedChannel<T> parent) => _parent = parent;
@@ -388,6 +398,15 @@ namespace System.Threading.Channels
                 waitingReaders.Success(item: true);
                 return ChannelUtilities.s_trueTask;
             }
+
+            /// <summary>Gets the number of items in the channel. This should only be used by the debugger.</summary>
+            private int ItemsCountForDebugger => _parent._items.Count;
+
+            /// <summary>Gets the capacity of the channel. This should only be used by the debugger.</summary>
+            private int CapacityForDebugger => _parent._bufferedCapacity;
+
+            /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
+            IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();
         }
 
         [Conditional("DEBUG")]
@@ -417,6 +436,9 @@ namespace System.Threading.Channels
 
         /// <summary>Gets the number of items in the channel.  This should only be used by the debugger.</summary>
         private int ItemsCountForDebugger => _items.Count;
+
+        /// <summary>Report if the channel is closed or not. This should only be used by the debugger.</summary>
+        private bool ChannelIsClosedForDebugger => _doneWriting != null;
 
         /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
         IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _items.GetEnumerator();
