@@ -317,8 +317,7 @@ namespace System.Runtime.CompilerServices
                 displayMessage = GetDisplayMessage(kind, userMessage, conditionText);
             }
 
-            // TODO: https://github.com/dotnet/coreclr/issues/14867
-            System.Diagnostics.Debug.Fail(displayMessage);
+            System.Diagnostics.Debug.ContractFailure(false, displayMessage, string.Empty, GetResourceNameForFailure(kind));
         }
 
         private static String GetResourceNameForFailure(ContractFailureKind failureKind)

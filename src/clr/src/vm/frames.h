@@ -60,6 +60,8 @@
 //    | |
 //    + +-HelperMethodFrame_2OBJ- reports additional object references
 //    | |
+//    + +-HelperMethodFrame_3OBJ- reports additional object references
+//    | |
 //    + +-HelperMethodFrame_PROTECTOBJ - reports additional object references
 //    |
 //    +-TransitionFrame         - this abstract frame represents a transition from
@@ -215,6 +217,7 @@ FRAME_TYPE_NAME(FuncEvalFrame)
 FRAME_TYPE_NAME(HelperMethodFrame)
 FRAME_TYPE_NAME(HelperMethodFrame_1OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_2OBJ)
+FRAME_TYPE_NAME(HelperMethodFrame_3OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_PROTECTOBJ)
 FRAME_ABSTRACT_TYPE_NAME(FramedMethodFrame)
 FRAME_TYPE_NAME(SecureDelegateFrame)
@@ -1547,6 +1550,72 @@ private:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_2OBJ)
+};
+
+//-----------------------------------------------------------------------------
+// HelperMethodFrame_3OBJ
+//-----------------------------------------------------------------------------
+
+class HelperMethodFrame_3OBJ : public HelperMethodFrame
+{
+    VPTR_VTABLE_CLASS(HelperMethodFrame_3OBJ, HelperMethodFrame)
+
+public:
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    HelperMethodFrame_3OBJ(
+            void* fCallFtnEntry, 
+            unsigned attribs, 
+            OBJECTREF* aGCPtr1, 
+            OBJECTREF* aGCPtr2,
+            OBJECTREF* aGCPtr3)
+        : HelperMethodFrame(fCallFtnEntry, attribs)
+    {
+        LIMITED_METHOD_CONTRACT;
+        gcPtrs[0] = aGCPtr1;
+        gcPtrs[1] = aGCPtr2;
+        gcPtrs[2] = aGCPtr3;
+        INDEBUG(Thread::ObjectRefProtected(aGCPtr1);)
+        INDEBUG(Thread::ObjectRefProtected(aGCPtr2);)
+        INDEBUG(Thread::ObjectRefProtected(aGCPtr3);)
+        INDEBUG((*aGCPtr1).Validate();)
+        INDEBUG((*aGCPtr2).Validate();)
+        INDEBUG((*aGCPtr3).Validate();)
+    }
+#endif
+
+    virtual void GcScanRoots(promote_func *fn, ScanContext* sc)
+    {
+        WRAPPER_NO_CONTRACT;
+        DoPromote(fn, sc, gcPtrs[0], FALSE);
+        DoPromote(fn, sc, gcPtrs[1], FALSE);
+        DoPromote(fn, sc, gcPtrs[2], FALSE);
+        HelperMethodFrame::GcScanRoots(fn, sc);
+    }
+
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+    void Pop()
+    {
+        WRAPPER_NO_CONTRACT;
+        HelperMethodFrame::Pop();
+        Thread::ObjectRefNew(gcPtrs[0]);
+        Thread::ObjectRefNew(gcPtrs[1]);
+        Thread::ObjectRefNew(gcPtrs[2]);
+    }
+#endif // DACCESS_COMPILE
+
+    BOOL Protects(OBJECTREF *ppORef)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (ppORef == gcPtrs[0] || ppORef == gcPtrs[1] || ppORef == gcPtrs[2]) ? TRUE : FALSE;
+    }
+#endif
+
+private:
+    PTR_OBJECTREF gcPtrs[3];
+
+    // Keep as last entry in class
+    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_3OBJ)
 };
 
 
@@ -3422,6 +3491,10 @@ public:
     // HelperMethodFrame_2OBJ
     FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF * aGCPtr1, OBJECTREF * aGCPtr2) :
         m_frame(fCallFtnEntry, attribs, aGCPtr1, aGCPtr2) { WRAPPER_NO_CONTRACT; }
+
+    // HelperMethodFrame_3OBJ
+    FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF * aGCPtr1, OBJECTREF * aGCPtr2, OBJECTREF * aGCPtr3) :
+        m_frame(fCallFtnEntry, attribs, aGCPtr1, aGCPtr2, aGCPtr3) { WRAPPER_NO_CONTRACT; }
 
     // HelperMethodFrame_PROTECTOBJ
     FORCEINLINE FrameWithCookie(void* fCallFtnEntry, unsigned attribs, OBJECTREF* pObjRefs, int numObjRefs) :
