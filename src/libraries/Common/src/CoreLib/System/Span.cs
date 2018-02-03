@@ -84,13 +84,13 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Span{T}"/>
         /// </summary>
-        public static implicit operator Span<T>(T[] array) => array != null ? new Span<T>(array) : default;
+        public static implicit operator Span<T>(T[] array) => new Span<T>(array);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
         /// </summary>
         public static implicit operator Span<T>(ArraySegment<T> arraySegment)
-            => arraySegment.Array != null ? new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count) : default;
+            => new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
 
         /// <summary>
         /// Returns an empty <see cref="Span{T}"/>
