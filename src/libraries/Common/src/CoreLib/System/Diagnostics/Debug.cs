@@ -4,6 +4,8 @@
 
 // Do not remove this, it is needed to retain calls to these conditional methods in release builds
 #define DEBUG
+using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -91,18 +93,34 @@ namespace System.Diagnostics
             if (!condition)
             {
                 string stackTrace;
-
                 try
                 {
-                    stackTrace = Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
+                    stackTrace = new StackTrace(0, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
                 }
                 catch
                 {
                     stackTrace = "";
                 }
-
                 WriteLine(FormatAssert(stackTrace, message, detailMessage));
-                s_ShowAssertDialog(stackTrace, message, detailMessage);
+                s_ShowDialog(stackTrace, message, detailMessage, "Assertion Failed");
+            }
+        }
+
+        internal static void ContractFailure(bool condition, string message, string detailMessage, string failureKindMessage)
+        {
+            if (!condition)
+            {
+                string stackTrace;
+                try
+                {
+                    stackTrace = new StackTrace(0, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+                }
+                catch
+                {
+                    stackTrace = "";
+                }
+                WriteLine(FormatAssert(stackTrace, message, detailMessage));
+                s_ShowDialog(stackTrace, message, detailMessage, SR.GetResourceString(failureKindMessage));
             }
         }
 
@@ -315,7 +333,8 @@ namespace System.Diagnostics
         }
 
         // internal and not readonly so that the tests can swap this out.
-        internal static Action<string, string, string> s_ShowAssertDialog = ShowAssertDialog;
+        internal static Action<string, string, string, string> s_ShowDialog = ShowDialog;
+
         internal static Action<string> s_WriteCore = WriteCore;
     }
 }
