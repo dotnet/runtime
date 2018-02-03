@@ -377,7 +377,7 @@ WCHAR g_szFailFastBuffer[256];
 
 // This is the common code for FailFast processing that is wrapped by the two
 // FailFast FCalls below.
-void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, UINT exitCode)
+void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, UINT exitCode, STRINGREF refErrorSourceString)
 {
     CONTRACTL
     {
@@ -391,6 +391,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     {
         STRINGREF refMesgString;
         EXCEPTIONREF refExceptionForWatsonBucketing;
+        STRINGREF refErrorSourceString;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
@@ -398,6 +399,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     
     gc.refMesgString = refMesgString;
     gc.refExceptionForWatsonBucketing = refExceptionForWatsonBucketing;
+    gc.refErrorSourceString = refErrorSourceString;
 
     // Managed code injected FailFast maps onto the unmanaged version
     // (EEPolicy::HandleFatalError) in the following manner: the exit code is
@@ -422,6 +424,20 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     // just this problem.
     WCHAR  *pszMessage = NULL;
     DWORD   cchMessage = (gc.refMesgString == NULL) ? 0 : gc.refMesgString->GetStringLength();
+
+    WCHAR * errorSourceString = NULL;
+
+    if (gc.refErrorSourceString != NULL) 
+    {
+        DWORD cchErrorSource = gc.refErrorSourceString->GetStringLength();
+        errorSourceString = new (nothrow) WCHAR[cchErrorSource + 1];
+
+        if (errorSourceString != NULL) 
+        {
+            memcpyNoGCRefs(errorSourceString, gc.refErrorSourceString->GetBuffer(), cchErrorSource * sizeof(WCHAR));
+            errorSourceString[cchErrorSource] = W('\0');
+        }
+    }
 
     if (cchMessage < FAIL_FAST_STATIC_BUFFER_LENGTH)
     {
@@ -483,7 +499,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     if (gc.refExceptionForWatsonBucketing != NULL)
         pThread->SetLastThrownObject(gc.refExceptionForWatsonBucketing);
 
-    EEPolicy::HandleFatalError(exitCode, retAddress, pszMessage);
+    EEPolicy::HandleFatalError(exitCode, retAddress, pszMessage, NULL, errorSourceString);
 
     GCPROTECT_END();
 }
@@ -502,7 +518,7 @@ FCIMPL1(VOID, SystemNative::FailFast, StringObject* refMessageUNSAFE)
     UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
     
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, NULL, retaddr, COR_E_FAILFAST);
+    GenericFailFast(refMessage, NULL, retaddr, COR_E_FAILFAST, NULL);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -520,7 +536,7 @@ FCIMPL2(VOID, SystemNative::FailFastWithExitCode, StringObject* refMessageUNSAFE
     UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
     
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, NULL, retaddr, exitCode);
+    GenericFailFast(refMessage, NULL, retaddr, exitCode, NULL);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -539,7 +555,27 @@ FCIMPL2(VOID, SystemNative::FailFastWithException, StringObject* refMessageUNSAF
     UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
     
     // Call the actual worker to perform failfast
-    GenericFailFast(refMessage, refException, retaddr, COR_E_FAILFAST);
+    GenericFailFast(refMessage, refException, retaddr, COR_E_FAILFAST, NULL);
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+FCIMPL3(VOID, SystemNative::FailFastWithExceptionAndSource, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE, StringObject* errorSourceUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    STRINGREF refMessage = (STRINGREF)refMessageUNSAFE;
+    EXCEPTIONREF refException = (EXCEPTIONREF)refExceptionUNSAFE;
+    STRINGREF errorSource = (STRINGREF)errorSourceUNSAFE;
+
+    HELPER_METHOD_FRAME_BEGIN_3(refMessage, refException, errorSource);
+
+    // The HelperMethodFrame knows how to get the return address.
+    UINT_PTR retaddr = HELPER_METHOD_FRAME_GET_RETURN_ADDRESS();
+    
+    // Call the actual worker to perform failfast
+    GenericFailFast(refMessage, refException, retaddr, COR_E_FAILFAST, errorSource);
 
     HELPER_METHOD_FRAME_END();
 }
