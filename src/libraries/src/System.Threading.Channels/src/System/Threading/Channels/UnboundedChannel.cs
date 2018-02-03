@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Threading.Channels
 {
     /// <summary>Provides a buffered channel of unbounded capacity.</summary>
-    [DebuggerDisplay("Items={ItemsCountForDebugger}")]
+    [DebuggerDisplay("Items={ItemsCountForDebugger}, Closed={ChannelIsClosedForDebugger}")]
     [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
     internal sealed class UnboundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
@@ -35,7 +35,9 @@ namespace System.Threading.Channels
             Writer = new UnboundedChannelWriter(this);
         }
 
-        private sealed class UnboundedChannelReader : ChannelReader<T>
+        [DebuggerDisplay("Items={ItemsCountForDebugger}")]
+        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
+        private sealed class UnboundedChannelReader : ChannelReader<T>, IDebugEnumerable<T>
         {
             internal readonly UnboundedChannel<T> _parent;
             internal UnboundedChannelReader(UnboundedChannel<T> parent) => _parent = parent;
@@ -95,9 +97,17 @@ namespace System.Threading.Channels
                     }
                 }
             }
+
+            /// <summary>Gets the number of items in the channel.  This should only be used by the debugger.</summary>
+            private int ItemsCountForDebugger => _parent._items.Count;
+
+            /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
+            IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();
         }
 
-        private sealed class UnboundedChannelWriter : ChannelWriter<T>
+        [DebuggerDisplay("Items={ItemsCountForDebugger}")]
+        [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
+        private sealed class UnboundedChannelWriter : ChannelWriter<T>, IDebugEnumerable<T>
         {
             internal readonly UnboundedChannel<T> _parent;
             internal UnboundedChannelWriter(UnboundedChannel<T> parent) => _parent = parent;
@@ -194,6 +204,12 @@ namespace System.Threading.Channels
                 cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
                 TryWrite(item) ? ChannelUtilities.s_trueTask :
                 Task.FromException(ChannelUtilities.CreateInvalidCompletionException(_parent._doneWriting));
+
+            /// <summary>Gets the number of items in the channel. This should only be used by the debugger.</summary>
+            private int ItemsCountForDebugger => _parent._items.Count;
+
+            /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
+            IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();
         }
 
         /// <summary>Gets the object used to synchronize access to all state on this instance.</summary>
@@ -221,10 +237,13 @@ namespace System.Threading.Channels
             {
                 Debug.Assert(_doneWriting != null, "We're completed, so we must be done writing.");
             }
-        }  
+        }
 
         /// <summary>Gets the number of items in the channel.  This should only be used by the debugger.</summary>
         private int ItemsCountForDebugger => _items.Count;
+
+        /// <summary>Report if the channel is closed or not. This should only be used by the debugger.</summary>
+        private bool ChannelIsClosedForDebugger => _doneWriting != null;
 
         /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
         IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _items.GetEnumerator();
