@@ -8,14 +8,14 @@ namespace System.Net.Test.Common
     {
         public static partial class Http
         {
-            private static readonly string DefaultAzureServer = "corefx-net.cloudapp.net";  
+            private static readonly string DefaultAzureServer = "corefx-net.cloudapp.net";
 
             public static string Host => GetValue("COREFX_HTTPHOST", DefaultAzureServer);
 
             public static string SecureHost => GetValue("COREFX_SECUREHTTPHOST", DefaultAzureServer);
 
             public static string Http2Host => GetValue("COREFX_HTTP2HOST", "http2.akamai.com");
-            
+
             // This server doesn't use HTTP/2 server push (push promise) feature. Some HttpClient implementations
             // don't support servers that use push right now.
             public static string Http2NoPushHost => GetValue("COREFX_HTTP2NOPUSHHOST", "www.microsoft.com");
@@ -25,8 +25,6 @@ namespace System.Net.Test.Common
             public static string DomainJoinedProxyHost => GetValue("COREFX_DOMAINJOINED_PROXYHOST");
 
             public static string DomainJoinedProxyPort => GetValue("COREFX_DOMAINJOINED_PROXYPORT");
-
-            public static bool StressEnabled => GetValue("COREFX_STRESS", "0") == "1";
 
             public static string SSLv2RemoteServer => GetValue("COREFX_HTTPHOST_SSL2", "https://www.ssllabs.com:10200/");
             public static string SSLv3RemoteServer => GetValue("COREFX_HTTPHOST_SSL3", "https://www.ssllabs.com:10300/");
@@ -137,7 +135,7 @@ namespace System.Net.Test.Common
                         statusCode,
                         destination);
                 }
-                
+
                 return new Uri(uriString);
             }
 
@@ -145,14 +143,14 @@ namespace System.Net.Test.Common
             {
                 Uri destinationUri = BasicAuthUriForCreds(secure, userName, password);
                 string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
-                
+
                 return new Uri(string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}",
                     secure ? HttpsScheme : HttpScheme,
                     Host,
                     RedirectHandler,
                     statusCode,
                     destination));
-            }            
+            }
         }
     }
 }
