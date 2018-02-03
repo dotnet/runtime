@@ -24,18 +24,43 @@ namespace IntelHardwareIntrinsicTest
             {
                 using (TestTable<float> floatTable = new TestTable<float>(new float[4] { 1, -5, 100, 0 }, new float[4]))
                 {
-
-                    var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArrayPtr);
+                    var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArray1Ptr);
                     var vf2 = Sse.ReciprocalSqrtScalar(vf1);
                     Unsafe.Write(floatTable.outArrayPtr, vf2);
 
-                    if (!floatTable.CheckResult((x, y) => {
-                        var expected = 1 / MathF.Sqrt(x[0]);
-                        return ((Math.Abs(expected - y[0]) <= 0.0003662109375f) // |Relative Error| <= 1.5 * 2^-12
-                             || (float.IsNaN(expected) && float.IsNaN(y[0]))
-                             || (float.IsNegativeInfinity(expected) && float.IsNegativeInfinity(y[0]))
-                             || (float.IsPositiveInfinity(expected) && float.IsPositiveInfinity(y[0])))
-                            && (y[1] == x[1]) && (y[2] == x[2]) && (y[3] == x[3]);
+                    if (!floatTable.CheckResult((x, y, z) => {
+                        var expected = 1 / MathF.Sqrt(y[0]);
+                        return ((Math.Abs(expected - z[0]) <= 0.0003662109375f) // |Relative Error| <= 1.5 * 2^-12
+                             || (float.IsNaN(expected) && float.IsNaN(z[0]))
+                             || (float.IsNegativeInfinity(expected) && float.IsNegativeInfinity(z[0]))
+                             || (float.IsPositiveInfinity(expected) && float.IsPositiveInfinity(z[0])))
+                            && (z[1] == x[1]) && (z[2] == x[2]) && (z[3] == x[3]);
+                    }))
+                    {
+                        Console.WriteLine("SSE ReciprocalSqrtScalar failed on float:");
+                        foreach (var item in floatTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+                }
+
+                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { 1, -5, 100, 0 }, new float[4] { 22, -1, -50, 0 }, new float[4]))
+                {
+                    var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArray1Ptr);
+                    var vf2 = Unsafe.Read<Vector128<float>>(floatTable.inArray2Ptr);
+                    var vf3 = Sse.ReciprocalSqrtScalar(vf1, vf2);
+                    Unsafe.Write(floatTable.outArrayPtr, vf3);
+
+                    if (!floatTable.CheckResult((x, y, z) => {
+                        var expected = 1 / MathF.Sqrt(y[0]);
+                        return ((Math.Abs(expected - z[0]) <= 0.0003662109375f) // |Relative Error| <= 1.5 * 2^-12
+                             || (float.IsNaN(expected) && float.IsNaN(z[0]))
+                             || (float.IsNegativeInfinity(expected) && float.IsNegativeInfinity(z[0]))
+                             || (float.IsPositiveInfinity(expected) && float.IsPositiveInfinity(z[0])))
+                            && (z[1] == x[1]) && (z[2] == x[2]) && (z[3] == x[3]);
                     }))
                     {
                         Console.WriteLine("SSE ReciprocalSqrtScalar failed on float:");
@@ -49,39 +74,46 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-
             return testResult;
         }
 
         public unsafe struct TestTable<T> : IDisposable where T : struct
         {
-            public T[] inArray;
+            public T[] inArray1;
+            public T[] inArray2;
             public T[] outArray;
 
-            public void* inArrayPtr => inHandle.AddrOfPinnedObject().ToPointer();
+            public void* inArray1Ptr => inHandle1.AddrOfPinnedObject().ToPointer();
+            public void* inArray2Ptr => inHandle2.AddrOfPinnedObject().ToPointer();
             public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
 
-            GCHandle inHandle;
+            GCHandle inHandle1;
+            GCHandle inHandle2;
             GCHandle outHandle;
-            public TestTable(T[] a, T[] b)
+            public TestTable(T[] a, T[] b) : this(a, a, b)
             {
-                this.inArray = a;
-                this.outArray = b;
+            }
+            public TestTable(T[] a, T[] b, T[] c)
+            {
+                this.inArray1 = a;
+                this.inArray2 = b;
+                this.outArray = c;
 
-                inHandle = GCHandle.Alloc(inArray, GCHandleType.Pinned);
+                inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
+                inHandle2 = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
                 outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
             }
-            public bool CheckResult(Func<T[], T[], bool> check)
+            public bool CheckResult(Func<T[], T[], T[], bool> check)
             {
-                return check(inArray, outArray);
+                return check(inArray1, inArray2, outArray);
             }
 
             public void Dispose()
             {
-                inHandle.Free();
+                inHandle1.Free();
+                inHandle2.Free();
                 outHandle.Free();
             }
         }
-
     }
 }
