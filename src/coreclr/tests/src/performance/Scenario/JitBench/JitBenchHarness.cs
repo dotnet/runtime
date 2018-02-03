@@ -135,115 +135,91 @@ namespace JitBench
             s_jitBenchDevDirectory = Path.Combine(s_temporaryDirectory, "J");
             s_dotnetProcessFileName = Path.Combine(s_jitBenchDevDirectory, ".dotnet", "dotnet.exe");
             s_musicStoreDirectory = Path.Combine(s_jitBenchDevDirectory, "src", "MusicStore");
+
+            s_localJitBenchRepo = options.LocalJitBenchRepo;
+            if(s_localJitBenchRepo != null && !Directory.Exists(s_localJitBenchRepo))
+            {
+                throw new Exception("Requested local JitBench repo " + s_localJitBenchRepo + " does not exist");
+            }
         }
 
         private static void DownloadAndExtractJitBenchRepo()
         {
-            using (var client = new HttpClient())
-            {
-                var archiveName = $"{JitBenchCommitSha1Id}.zip";
-                var url = $"{JitBenchRepoUrl}/archive/{archiveName}";
-                var zipFile = Path.Combine(s_temporaryDirectory, archiveName);
+            // If the repo already exists, we delete it and extract it again.
+            if (Directory.Exists(s_jitBenchDevDirectory))
+                Directory.Delete(s_jitBenchDevDirectory, true);
 
-                using (FileStream tmpzip = File.Create(zipFile))
+            if (s_localJitBenchRepo == null)
+            {
+                using (var client = new HttpClient())
                 {
-                    using (Stream stream = client.GetStreamAsync(url).Result)
-                        stream.CopyTo(tmpzip);
-                    tmpzip.Flush();
-                }
+                    var archiveName = $"{JitBenchCommitSha1Id}.zip";
+                    var url = $"{JitBenchRepoUrl}/archive/{archiveName}";
+                    var zipFile = Path.Combine(s_temporaryDirectory, archiveName);
 
-                // If the repo already exists, we delete it and extract it again.
-                if (Directory.Exists(s_jitBenchDevDirectory))
-                    Directory.Delete(s_jitBenchDevDirectory, true);
-
-                // This step will create s_JitBenchDevDirectory.
-                ZipFile.ExtractToDirectory(zipFile, s_temporaryDirectory);
-                Directory.Move(Path.Combine(s_temporaryDirectory, $"JitBench-{JitBenchCommitSha1Id}"), s_jitBenchDevDirectory);
-            }
-        }
-
-        private static void InstallSharedRuntime()
-        {
-            var psi = new ProcessStartInfo
-            {
-                WorkingDirectory = s_jitBenchDevDirectory,
-                FileName = @"powershell.exe",
-                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
-            };
-            LaunchProcess(psi, 180000);
-        }
-
-        private static IDictionary<string, string> InstallDotnet()
-        {
-            var psi = new ProcessStartInfo
-            {
-                WorkingDirectory = s_jitBenchDevDirectory,
-                FileName = @"powershell.exe",
-                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel master -Architecture {s_targetArchitecture}"
-            };
-            LaunchProcess(psi, 180000);
-
-            return GetInitialEnvironment();
-        }
-
-        private static void ModifySharedFramework()
-        {
-            // Current working directory is the <coreclr repo root>/sandbox directory.
-            Console.WriteLine($"Modifying the shared framework.");
-
-            var sourcedi = new DirectoryInfo(Directory.GetCurrentDirectory());
-            var targetdi = new DirectoryInfo(
-                new DirectoryInfo(Path.Combine(s_jitBenchDevDirectory, ".dotnet", "shared", "Microsoft.NETCore.App"))
-                .GetDirectories("*")
-                .OrderBy(s => s.Name)
-                .Last()
-                .FullName);
-
-            Console.WriteLine($"  Source : {sourcedi.FullName}");
-            Console.WriteLine($"  Target : {targetdi.FullName}");
-
-            var compiledBinariesOfInterest = new string[] {
-                "clretwrc.dll",
-                "clrjit.dll",
-                "coreclr.dll",
-                "mscordaccore.dll",
-                "mscordbi.dll",
-                "mscorrc.debug.dll",
-                "mscorrc.dll",
-                "sos.dll",
-                "SOS.NETCore.dll",
-                "System.Private.CoreLib.dll"
-            };
-
-            foreach (var compiledBinaryOfInterest in compiledBinariesOfInterest)
-            {
-                foreach (FileInfo fi in targetdi.GetFiles(compiledBinaryOfInterest))
-                {
-                    var sourceFilePath = Path.Combine(sourcedi.FullName, fi.Name);
-                    var targetFilePath = Path.Combine(targetdi.FullName, fi.Name);
-
-                    if (File.Exists(sourceFilePath))
+                    using (FileStream tmpzip = File.Create(zipFile))
                     {
-                        File.Copy(sourceFilePath, targetFilePath, true);
-                        Console.WriteLine($"    Copied file - '{targetFilePath}'");
+                        using (Stream stream = client.GetStreamAsync(url).Result)
+                            stream.CopyTo(tmpzip);
+                        tmpzip.Flush();
                     }
+
+                    // This step will create s_JitBenchDevDirectory.
+                    ZipFile.ExtractToDirectory(zipFile, s_temporaryDirectory);
+                    Directory.Move(Path.Combine(s_temporaryDirectory, $"JitBench-{JitBenchCommitSha1Id}"), s_jitBenchDevDirectory);
                 }
+            }
+            else
+            {
+                DirectoryCopy(s_localJitBenchRepo, s_jitBenchDevDirectory);
             }
         }
 
-        private static IDictionary<string, string> GenerateStore(IDictionary<string, string> environment)
+        private static void DirectoryCopy(string sourceDir, string destDir)
+        {
+            DirectoryInfo dir = new DirectoryInfo(sourceDir);
+
+            DirectoryInfo[] dirs = dir.GetDirectories();
+            if (!Directory.Exists(destDir))
+            {
+                Directory.CreateDirectory(destDir);
+            }
+
+            FileInfo[] files = dir.GetFiles();
+            foreach (FileInfo file in files)
+            {
+                string temppath = Path.Combine(destDir, file.Name);
+                file.CopyTo(temppath, false);
+            }
+
+            foreach (DirectoryInfo subdir in dirs)
+            {
+                string temppath = Path.Combine(destDir, subdir.Name);
+                DirectoryCopy(subdir.FullName, temppath);
+            }
+        }
+
+        private static IDictionary<string, string> SetupJitBench()
         {
             // This step generates some environment variables needed later.
-            var psi = new ProcessStartInfo
+            string coreclrPrivateBinDir = Directory.GetCurrentDirectory();
+            var psi = new ProcessStartInfo()
             {
                 WorkingDirectory = s_jitBenchDevDirectory,
                 FileName = "powershell.exe",
-                Arguments = $"-NoProfile -Command \".\\AspNet-GenerateStore.ps1 -InstallDir .store -Architecture {s_targetArchitecture} -Runtime win7-{s_targetArchitecture}; gi env:JITBENCH_*, env:DOTNET_SHARED_STORE | %{{ \\\"$($_.Name)=$($_.Value)\\\" }} 1>>{EnvironmentFileName}\""
+                Arguments = $"-Command \".\\RunBenchmark.ps1 " +
+                            $"-SetupOnly " +
+                            $"-Architecture {s_targetArchitecture} " +
+                            $"-Rid win7-{s_targetArchitecture} " +
+                            $"-FrameworkVersion: {VersioningConstants.MicrosoftNetCoreAppPackageVersion} " +
+                            $"-PrivateCoreClrBinDirPath {coreclrPrivateBinDir} " +
+                            $"; gi env:PATH, env:JITBENCH_*, env:DOTNET_* | %{{ \\\"$($_.Name)=$($_.Value)\\\" }} 1>>{EnvironmentFileName}\""
             };
 
-            LaunchProcess(psi, 1800000, environment);
+            LaunchProcess(psi, 1800000);
 
             // Return the generated environment variables.
+            IDictionary<string, string> environment = new Dictionary<string, string>();
             return GetEnvironment(environment, Path.Combine(s_jitBenchDevDirectory, EnvironmentFileName));
         }
 
@@ -258,53 +234,15 @@ namespace JitBench
                 if (pair.Length != 2)
                     throw new InvalidOperationException($"AspNet-GenerateStore.ps1 did not generate the expected environment variable {pair}");
 
-                if (!environment.ContainsKey(pair[0]))
-                    environment.Add(pair[0], pair[1]);
+                string key = pair[0].ToUpperInvariant();
+                string value = pair[1];
+                if (!environment.ContainsKey(key))
+                    environment.Add(key,value);
                 else
-                    environment[pair[0]] = pair[1];
+                    environment[key] = value;
             }
 
             return environment;
-        }
-
-        private static void DotNetInfo(string workingDirectory, string dotnetFileName, IDictionary<string, string> environment)
-        {
-            var psi = new ProcessStartInfo
-            {
-                WorkingDirectory = workingDirectory,
-                FileName = dotnetFileName,
-                Arguments = "--info"
-            };
-
-            LaunchProcess(psi, 60000, environment);
-        }
-
-        private static void RestoreMusicStore(string workingDirectory, string dotnetFileName, IDictionary<string, string> environment)
-        {
-            var psi = new ProcessStartInfo
-            {
-                WorkingDirectory = workingDirectory,
-                FileName = dotnetFileName,
-                Arguments = "restore"
-            };
-
-            LaunchProcess(psi, 300000, environment);
-        }
-
-        private static void PublishMusicStore(string workingDirectory, string dotnetFileName, IDictionary<string, string> environment)
-        {
-            var manifest = environment["JITBENCH_ASPNET_MANIFEST"];
-            if (!File.Exists(manifest))
-                throw new FileNotFoundException(manifest);
-
-            var psi = new ProcessStartInfo
-            {
-                WorkingDirectory = workingDirectory,
-                FileName = dotnetFileName,
-                Arguments = $"publish -c Release -f {JitBenchTargetFramework} --manifest \"{manifest}\" /p:MvcRazorCompileOnPublish=false -o \"{MusicStorePublishDirectory}\""
-            };
-
-            LaunchProcess(psi, 300000, environment);
         }
 
         // Return an environment with the downloaded dotnet on the path.
@@ -324,9 +262,6 @@ namespace JitBench
             return environment;
         }
 
-        private static string MusicStorePublishDirectory =>
-            Path.Combine(s_musicStoreDirectory, "bin", s_targetArchitecture, "Release", JitBenchTargetFramework, "publish");
-
         private static ProcessStartInfo CreateJitBenchStartInfo(IDictionary<string, string> environment)
         {
             var psi = new ProcessStartInfo
@@ -335,7 +270,7 @@ namespace JitBench
                 FileName = s_dotnetProcessFileName,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
-                WorkingDirectory = MusicStorePublishDirectory,
+                WorkingDirectory = Path.Combine(s_musicStoreDirectory, "bin", "Release", environment["JITBENCH_TARGET_FRAMEWORK_MONIKER"], "publish"),
             };
 
             foreach (KeyValuePair<string, string> pair in environment)
@@ -351,31 +286,15 @@ namespace JitBench
             IDictionary<string, string> environment = GetInitialEnvironment();
             environment = GetEnvironment(environment, Path.Combine(s_jitBenchDevDirectory, EnvironmentFileName));
             ValidateEnvironment(environment);
-
             return CreateJitBenchStartInfo(environment);
         }
 
         private static ProcessStartInfo CreateNewSetup()
         {
             PrintHeader("Starting SETUP");
-
             DownloadAndExtractJitBenchRepo();
-            InstallSharedRuntime();
-            IDictionary<string, string> environment = InstallDotnet();
-
-            if (new string[] { "PATH" }.Except(environment.Keys, StringComparer.OrdinalIgnoreCase).Any())
-                throw new Exception("Missing expected environment variable PATH.");
-
-            environment = GenerateStore(environment);
-
+            IDictionary<string, string> environment = SetupJitBench();
             ValidateEnvironment(environment);
-
-            ModifySharedFramework();
-
-            DotNetInfo(s_musicStoreDirectory, s_dotnetProcessFileName, environment);
-            RestoreMusicStore(s_musicStoreDirectory, s_dotnetProcessFileName, environment);
-            PublishMusicStore(s_musicStoreDirectory, s_dotnetProcessFileName, environment);
-
             return CreateJitBenchStartInfo(environment);
         }
 
@@ -384,12 +303,10 @@ namespace JitBench
             var expectedVariables = new string[] {
                 "DOTNET_MULTILEVEL_LOOKUP",
                 "PATH",
-                "JITBENCH_ASPNET_MANIFEST",
-                "JITBENCH_FRAMEWORK_VERSION",
-                "JITBENCH_ASPNET_VERSION",
                 "DOTNET_SHARED_STORE",
+                "JITBENCH_TARGET_FRAMEWORK_MONIKER"
             };
-            if (expectedVariables.Except(environment.Keys, StringComparer.OrdinalIgnoreCase).Any())
+            if (expectedVariables.Except(environment.Keys, StringComparer.Ordinal).Any())
                 throw new Exception("Missing expected environment variables.");
 
             Console.WriteLine("**********************************************************************");
@@ -399,8 +316,7 @@ namespace JitBench
         }
 
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
-        private const string JitBenchCommitSha1Id = "1235b8ed0e867dae0be50ba9467f5028c813c4fd";
-        private const string JitBenchTargetFramework = "netcoreapp2.1";
+        private const string JitBenchCommitSha1Id = "6e1327b633e2d7d45f4c13f498fc27698ea5735a";
         private const string EnvironmentFileName = "JitBenchEnvironment.txt";
 
         private void PreIteration(ScenarioTest scenario)
@@ -446,31 +362,35 @@ namespace JitBench
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    Match match = Regex.Match(line, @"^Server started in (\d+)ms$");
+                    Match match = Regex.Match(line, @"^Server start \(ms\): \s*(\d+)\s*$");
                     if (match.Success && match.Groups.Count == 2)
                     {
                         startupTime = Convert.ToDouble(match.Groups[1].Value);
                         continue;
                     }
 
-                    match = Regex.Match(line, @"^Request took (\d+)ms$");
+                    match = Regex.Match(line, @"^1st Request \(ms\): \s*(\d+)\s*$");
                     if (match.Success && match.Groups.Count == 2)
                     {
                         firstRequestTime = Convert.ToDouble(match.Groups[1].Value);
                         continue;
                     }
 
-                    match = Regex.Match(line, @"^Steadystate average response time: (\d+\.?\d*)ms$");
-                    if (match.Success && match.Groups.Count == 2)
-                    {
-                        steadyStateAverageTime = Convert.ToDouble(match.Groups[1].Value);
-                        continue;
-                    }
+                    //the steady state output chart looks like:
+                    //   Requests    Aggregate Time(ms)    Req/s   Req Min(ms)   Req Mean(ms)   Req Median(ms)   Req Max(ms)   SEM(%)
+                    // ----------    ------------------    -----   -----------   ------------   --------------   -----------   ------
+                    //    2-  100                 5729   252.60          3.01           3.96             3.79          9.81     1.86
+                    //  101-  250                 6321   253.76          3.40           3.94             3.84          5.25     0.85
+                    //  ... many more rows ...
 
-                    match = Regex.Match(line, @"^Steadystate median response time: (\d+\.?\d*)ms$");
-                    if (match.Success && match.Groups.Count == 2)
+                    //                              Requests       Agg     req/s        min          mean           median         max          SEM
+                    match = Regex.Match(line, @"^\s*\d+-\s*\d+ \s* \d+ \s* \d+\.\d+ \s* \d+\.\d+ \s* (\d+\.\d+) \s* (\d+\.\d+) \s* \d+\.\d+ \s* \d+\.\d+$");
+                    if (match.Success && match.Groups.Count == 3)
                     {
-                        steadyStateMedianTime = Convert.ToDouble(match.Groups[1].Value);
+                        //many lines will match, but the final values of these variables will be from the last batch which is presumably the
+                        //best measurement of steady state performance
+                        steadyStateAverageTime = Convert.ToDouble(match.Groups[1].Value);
+                        steadyStateMedianTime = Convert.ToDouble(match.Groups[2].Value);
                         continue;
                     }
                 }
@@ -766,5 +686,6 @@ namespace JitBench
         private static string s_dotnetProcessFileName;
         private static string s_musicStoreDirectory;
         private static string s_targetArchitecture;
+        private static string s_localJitBenchRepo;
     }
 }
