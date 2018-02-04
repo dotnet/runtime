@@ -2274,6 +2274,7 @@ namespace System.Reflection.Metadata
     public readonly partial struct TypeDefinition
     {
         private readonly object _dummy;
+        public bool IsNested { get { throw null; } }
         public System.Reflection.TypeAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle BaseType { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }

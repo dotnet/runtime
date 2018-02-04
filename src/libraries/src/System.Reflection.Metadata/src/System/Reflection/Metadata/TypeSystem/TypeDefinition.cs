@@ -53,6 +53,11 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// Indicates whether this is a nested type.
+        /// </summary>
+        public bool IsNested => Attributes.IsNested();
+
+        /// <summary>
         /// Name of the type.
         /// </summary>
         public StringHandle Name
