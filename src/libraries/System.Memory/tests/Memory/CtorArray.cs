@@ -69,6 +69,7 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        [ActiveIssue(26807)]
         public static void CtorArrayNullArray()
         {
             var memory = new Memory<int>(null);
