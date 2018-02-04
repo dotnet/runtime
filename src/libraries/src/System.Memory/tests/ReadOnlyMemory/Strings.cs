@@ -199,14 +199,14 @@ namespace System.MemoryTests
         [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsReadOnlyMemory_2Arg_OutOfRange(string text, int start)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("Start", () => text.AsReadOnlyMemory(start));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlyMemory(start));
         }
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsReadOnlyMemory_3Arg_OutOfRange(string text, int start, int length)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("Start", () => text.AsReadOnlyMemory(start, length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlyMemory(start, length));
         }
 
         [Fact]
