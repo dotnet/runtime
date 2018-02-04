@@ -1391,6 +1391,24 @@ class Tests
 
 		return 0;
 	}
+
+	class LdobjStobj {
+		public int counter;
+		public LdobjStobj buffer1;
+		public LdobjStobj buffer2;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static void swap<T>(ref T first, ref T second) {
+		second = first;
+	}
+
+	public static int test_42_ldobj_stobj_ref () {
+		var obj = new LdobjStobj ();
+		obj.counter = 42;
+		swap (ref obj.buffer1, ref obj.buffer2);
+		return obj.counter;
+	}
 }
 
 #if !__MOBILE__
