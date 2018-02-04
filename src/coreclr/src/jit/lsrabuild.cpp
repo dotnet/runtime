@@ -1519,23 +1519,31 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
     const bool supportsSpecialPutArg = true;
 #endif
 
-    if (supportsSpecialPutArg && tree->OperGet() == GT_PUTARG_REG && isCandidateLocalRef(tree->gtGetOp1()) &&
-        (tree->gtGetOp1()->gtFlags & GTF_VAR_DEATH) == 0)
+    if (supportsSpecialPutArg)
     {
-        // This is the case for a "pass-through" copy of a lclVar.  In the case where it is a non-last-use,
-        // we don't want the def of the copy to kill the lclVar register, if it is assigned the same register
-        // (which is actually what we hope will happen).
-        JITDUMP("Setting putarg_reg as a pass-through of a non-last use lclVar\n");
+        if ((tree->OperGet() == GT_PUTARG_REG) && isCandidateLocalRef(tree->gtGetOp1()) &&
+            (tree->gtGetOp1()->gtFlags & GTF_VAR_DEATH) == 0)
+        {
+            // This is the case for a "pass-through" copy of a lclVar.  In the case where it is a non-last-use,
+            // we don't want the def of the copy to kill the lclVar register, if it is assigned the same register
+            // (which is actually what we hope will happen).
+            JITDUMP("Setting putarg_reg as a pass-through of a non-last use lclVar\n");
 
-        // Get the register information for the first operand of the node.
-        LocationInfoListNode* operandDef = useList.Begin();
-        assert(operandDef->treeNode == tree->gtGetOp1());
+            // Get the register information for the first operand of the node.
+            LocationInfoListNode* operandDef = useList.Begin();
+            assert(operandDef->treeNode == tree->gtGetOp1());
 
-        // Preference the destination to the interval of the first register defined by the first operand.
-        Interval* srcInterval = operandDef->interval;
-        assert(srcInterval->isLocalVar);
-        prefSrcInterval = srcInterval;
-        isSpecialPutArg = true;
+            // Preference the destination to the interval of the first register defined by the first operand.
+            Interval* srcInterval = operandDef->interval;
+            assert(srcInterval->isLocalVar);
+            prefSrcInterval = srcInterval;
+            isSpecialPutArg = true;
+            INDEBUG(specialPutArgCount++);
+        }
+        else if (tree->IsCall())
+        {
+            INDEBUG(specialPutArgCount = 0);
+        }
     }
 
     RefPosition* internalRefs[MaxInternalRegisters];
@@ -1784,10 +1792,11 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
     if ((getStressLimitRegs() != LSRA_LIMIT_NONE) || (getSelectionHeuristics() != LSRA_SELECT_DEFAULT))
     {
         // The number of registers required for a tree node is the sum of
-        // consume + produce + internalCount.  This is the minimum
-        // set of registers that needs to be ensured in candidate
-        // set of ref positions created.
-        unsigned minRegCount = consume + produce + info->internalIntCount + info->internalFloatCount;
+        //   consume + produce + internalCount + specialPutArgCount.
+        // This is the minimum set of registers that needs to be ensured in the candidate set of ref positions created.
+        //
+        unsigned minRegCount =
+            consume + produce + info->internalIntCount + info->internalFloatCount + specialPutArgCount;
 
         for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
         {
