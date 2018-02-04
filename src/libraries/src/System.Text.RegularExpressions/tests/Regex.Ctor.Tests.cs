@@ -235,8 +235,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?<=", RegexOptions.None)]
         [InlineData("(?<!", RegexOptions.None)]
         [InlineData("(?>", RegexOptions.None)]
+        [InlineData("(?>-", RegexOptions.None)]
         [InlineData("(?)", RegexOptions.None)]
         [InlineData("(?<)", RegexOptions.None)]
+        [InlineData("(?<", RegexOptions.None)]
         [InlineData("(?')", RegexOptions.None)]
         [InlineData(@"\1", RegexOptions.None)]
         [InlineData(@"\1", RegexOptions.None)]
@@ -278,6 +280,14 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("?((a)a|", RegexOptions.None)]
         [InlineData("?((a)a|b", RegexOptions.None)]
         public void Ctor_InvalidPattern(string pattern, RegexOptions options)
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => new Regex(pattern, options));
+        }
+
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework throws InvalidOperationException")]
+        [InlineData("(?<-", RegexOptions.None)]
+        public void Ctor_InvalidPattern_NotNetFramework(string pattern, RegexOptions options)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new Regex(pattern, options));
         }
