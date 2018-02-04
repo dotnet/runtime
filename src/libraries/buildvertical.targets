@@ -30,7 +30,8 @@
 
       <!-- we need to ignore placeholder build configurations that start with _ -->
       <_projectBuildConfigurations Remove="@(_projectBuildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('_'))" />
-
+      <!-- Ignore uap build configurations https://github.com/dotnet/corefx/issues/26802 -->
+      <_projectBuildConfigurations Remove="@(_projectBuildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('uap'))" />
       <!-- transform back to project -->
       <_projectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
@@ -59,7 +60,8 @@
 
       <!-- we need to ignore placeholder build configurations that start with _ -->
       <_NonPkgProjProjectReferenceBuildConfigurations Remove="@(_NonPkgProjProjectReferenceBuildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('_'))" />
-
+      <!-- Ignore uap build configurations https://github.com/dotnet/corefx/issues/26802 -->
+      <_NonPkgProjProjectReferenceBuildConfigurations Remove="@(_NonPkgProjProjectReferenceBuildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('uap'))" />
       <!-- transform back to project -->
       <_NonPkgProjProjectReferenceWitnConfiguration Include="@(_NonPkgProjProjectReferenceBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
@@ -184,6 +186,8 @@
       <_buildConfigurations Include="$(BuildConfigurations)" />
       <!-- For BuildAllConfigurations we need to ignore any placeholder build configuration that starts with _ -->
       <_buildConfigurations Remove="@(_buildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('_'))" />
+      <!-- Ignore uap build configurations https://github.com/dotnet/corefx/issues/26802 -->
+      <_buildConfigurations Remove="@(_buildConfigurations)" Condition="$([System.String]::Copy('%(Identity)').StartsWith('uap'))" />
       <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(_traversalBuildConfigurations)" />
     </ItemGroup>
   </Target>

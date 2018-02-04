@@ -70,10 +70,16 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        [ActiveIssue(26807)]
         public static void CtorArrayNullArray()
         {
-            Assert.Throws<ArgumentNullException>(() => new ReadOnlyMemory<int>(null));
-            Assert.Throws<ArgumentNullException>(() => new ReadOnlyMemory<int>(null, 0, 0));
+            var memory = new ReadOnlyMemory<int>(null);
+            memory.Validate();
+            Assert.Equal(default, memory);
+
+            memory = new ReadOnlyMemory<int>(null, 0, 0);
+            memory.Validate();
+            Assert.Equal(default, memory);
         }
 
         [Fact]

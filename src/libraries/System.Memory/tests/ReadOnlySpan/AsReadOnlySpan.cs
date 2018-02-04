@@ -40,7 +40,9 @@ namespace System.SpanTests
         public static void NullArrayAsReadOnlySpan()
         {
             int[] a = null;
-            Assert.Throws<ArgumentNullException>(() => a.AsReadOnlySpan().DontBox());
+            ReadOnlySpan<int> span = a.AsReadOnlySpan();
+            span.Validate();
+            Assert.True(span == default);
         }
 
         [Fact]
@@ -117,9 +119,17 @@ namespace System.SpanTests
         public static void StringAsReadOnlySpanNullChecked()
         {
             string s = null;
-            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan().DontBox());
-            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan(0).DontBox());
-            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan(0, 0).DontBox());
+            ReadOnlySpan<char> span = s.AsReadOnlySpan();
+            span.Validate();
+            Assert.True(span == default);
+
+            span = s.AsReadOnlySpan(0);
+            span.Validate();
+            Assert.True(span == default);
+
+            span = s.AsReadOnlySpan(0, 0);
+            span.Validate();
+            Assert.True(span == default);
         }
 
         [Fact]
