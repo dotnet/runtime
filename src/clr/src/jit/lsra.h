@@ -813,6 +813,11 @@ private:
     enum LsraStressLimitRegs{LSRA_LIMIT_NONE = 0, LSRA_LIMIT_CALLEE = 0x1, LSRA_LIMIT_CALLER = 0x2,
                              LSRA_LIMIT_SMALL_SET = 0x3, LSRA_LIMIT_MASK = 0x3};
 
+    // When we limit the number of candidate registers, we have to take into account any
+    // "specialPutArg" references that are in flight, as that increases the number of live
+    // registers between it and the next call.
+    int specialPutArgCount;
+
     // When LSRA_LIMIT_SMALL_SET is specified, it is desirable to select a "mixed" set of caller- and callee-save
     // registers, so as to get different coverage than limiting to callee or caller.
     // At least for x86 and AMD64, and potentially other architecture that will support SIMD,

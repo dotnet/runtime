@@ -61,6 +61,18 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrSt
     }
 }
 
+#ifdef DEBUG
+void Compiler::optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName)
+{
+    JITDUMP("{ ");
+    for (LclNumToGenTreePtrStack::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
+    {
+        GenTree* node = iter.GetValue()->Index(0);
+        JITDUMP("%d-[%06d]:V%02u ", iter.Get(), dspTreeID(node), node->AsLclVarCommon()->gtLclNum);
+    }
+    JITDUMP("}\n\n");
+}
+#endif
 /*******************************************************************************************************
  *
  * Given the "lclVar" and "copyVar" compute if the copy prop will be beneficial.
@@ -296,7 +308,14 @@ bool Compiler::optIsSsaLocal(GenTree* tree)
 
 void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName)
 {
+#ifdef DEBUG
     JITDUMP("Copy Assertion for BB%02u\n", block->bbNum);
+    if (verbose)
+    {
+        printf("  curSsaName stack: ");
+        optDumpCopyPropStack(curSsaName);
+    }
+#endif
 
     // There are no definitions at the start of the block. So clear it.
     compCurLifeTree = nullptr;
