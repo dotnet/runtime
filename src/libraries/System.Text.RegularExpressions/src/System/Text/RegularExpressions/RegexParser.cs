@@ -367,7 +367,7 @@ namespace System.Text.RegularExpressions
                     goto ContinueOuterScan;
                 }
 
-                ch = MoveRightGetChar();
+                ch = RightCharMoveRight();
 
                 // Handle quantifiers
                 while (Unit() != null)
@@ -409,7 +409,7 @@ namespace System.Text.RegularExpressions
                                     }
                                 }
 
-                                if (startpos == Textpos() || CharsRight() == 0 || MoveRightGetChar() != '}')
+                                if (startpos == Textpos() || CharsRight() == 0 || RightCharMoveRight() != '}')
                                 {
                                     AddConcatenate();
                                     Textto(startpos - 1);
@@ -482,7 +482,7 @@ namespace System.Text.RegularExpressions
 
                 if (c > 0)
                 {
-                    if (MoveRightGetChar() == '$')
+                    if (RightCharMoveRight() == '$')
                         AddUnitNode(ScanDollar());
                     AddConcatenate();
                 }
@@ -526,7 +526,7 @@ namespace System.Text.RegularExpressions
             for (; CharsRight() > 0; firstChar = false)
             {
                 bool fTranslatedChar = false;
-                ch = MoveRightGetChar();
+                ch = RightCharMoveRight();
                 if (ch == ']')
                 {
                     if (!firstChar)
@@ -537,7 +537,7 @@ namespace System.Text.RegularExpressions
                 }
                 else if (ch == '\\' && CharsRight() > 0)
                 {
-                    switch (ch = MoveRightGetChar())
+                    switch (ch = RightCharMoveRight())
                     {
                         case 'D':
                         case 'd':
@@ -606,7 +606,7 @@ namespace System.Text.RegularExpressions
 
                         MoveRight();
                         name = ScanCapname();
-                        if (CharsRight() < 2 || MoveRightGetChar() != ':' || MoveRightGetChar() != ']')
+                        if (CharsRight() < 2 || RightCharMoveRight() != ':' || RightCharMoveRight() != ']')
                             Textto(savePos);
                         // else lookup name (nyi)
                     }
@@ -713,7 +713,7 @@ namespace System.Text.RegularExpressions
                 if (CharsRight() == 0)
                     break;
 
-                switch (ch = MoveRightGetChar())
+                switch (ch = RightCharMoveRight())
                 {
                     case ':':
                         NodeType = RegexNode.Group;
@@ -742,7 +742,7 @@ namespace System.Text.RegularExpressions
                         if (CharsRight() == 0)
                             goto BreakRecognize;
 
-                        switch (ch = MoveRightGetChar())
+                        switch (ch = RightCharMoveRight())
                         {
                             case '=':
                                 if (close == '\'')
@@ -804,7 +804,7 @@ namespace System.Text.RegularExpressions
 
                                 // grab part after - if any
 
-                                if ((capnum != -1 || proceed == true) && CharsRight() > 0 && RightChar() == '-')
+                                if ((capnum != -1 || proceed == true) && CharsRight() > 1 && RightChar() == '-')
                                 {
                                     MoveRight();
                                     ch = RightChar();
@@ -842,7 +842,7 @@ namespace System.Text.RegularExpressions
 
                                 // actually make the node
 
-                                if ((capnum != -1 || uncapnum != -1) && CharsRight() > 0 && MoveRightGetChar() == close)
+                                if ((capnum != -1 || uncapnum != -1) && CharsRight() > 0 && RightCharMoveRight() == close)
                                 {
                                     return new RegexNode(RegexNode.Capture, _options, capnum, uncapnum);
                                 }
@@ -862,7 +862,7 @@ namespace System.Text.RegularExpressions
                             if (ch >= '0' && ch <= '9')
                             {
                                 int capnum = ScanDecimal();
-                                if (CharsRight() > 0 && MoveRightGetChar() == ')')
+                                if (CharsRight() > 0 && RightCharMoveRight() == ')')
                                 {
                                     if (IsCaptureSlot(capnum))
                                         return new RegexNode(RegexNode.Testref, _options, capnum);
@@ -876,7 +876,7 @@ namespace System.Text.RegularExpressions
                             {
                                 string capname = ScanCapname();
 
-                                if (IsCaptureName(capname) && CharsRight() > 0 && MoveRightGetChar() == ')')
+                                if (IsCaptureName(capname) && CharsRight() > 0 && RightCharMoveRight() == ')')
                                     return new RegexNode(RegexNode.Testref, _options, CaptureSlotFromName(capname));
                             }
                         }
@@ -916,7 +916,7 @@ namespace System.Text.RegularExpressions
                         if (CharsRight() == 0)
                             goto BreakRecognize;
 
-                        if ((ch = MoveRightGetChar()) == ')')
+                        if ((ch = RightCharMoveRight()) == ')')
                             return null;
 
                         if (ch != ':')
@@ -1081,7 +1081,7 @@ namespace System.Text.RegularExpressions
                 if (CharsRight() >= 2)
                 {
                     MoveRight();
-                    ch = MoveRightGetChar();
+                    ch = RightCharMoveRight();
 
                     if (ch == '<' || ch == '\'')
                     {
@@ -1113,7 +1113,7 @@ namespace System.Text.RegularExpressions
             {
                 int capnum = ScanDecimal();
 
-                if (CharsRight() > 0 && MoveRightGetChar() == close)
+                if (CharsRight() > 0 && RightCharMoveRight() == close)
                 {
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
@@ -1157,7 +1157,7 @@ namespace System.Text.RegularExpressions
             {
                 string capname = ScanCapname();
 
-                if (CharsRight() > 0 && MoveRightGetChar() == close)
+                if (CharsRight() > 0 && RightCharMoveRight() == close)
                 {
                     if (IsCaptureName(capname))
                         return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
@@ -1240,7 +1240,7 @@ namespace System.Text.RegularExpressions
                 else
                 {
                     int capnum = ScanDecimal();
-                    if (!angled || CharsRight() > 0 && MoveRightGetChar() == '}')
+                    if (!angled || CharsRight() > 0 && RightCharMoveRight() == '}')
                     {
                         if (IsCaptureSlot(capnum))
                             return new RegexNode(RegexNode.Ref, _options, capnum);
@@ -1251,7 +1251,7 @@ namespace System.Text.RegularExpressions
             {
                 string capname = ScanCapname();
 
-                if (CharsRight() > 0 && MoveRightGetChar() == '}')
+                if (CharsRight() > 0 && RightCharMoveRight() == '}')
                 {
                     if (IsCaptureName(capname))
                         return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
@@ -1310,7 +1310,7 @@ namespace System.Text.RegularExpressions
 
             while (CharsRight() > 0)
             {
-                if (!RegexCharClass.IsWordChar(MoveRightGetChar()))
+                if (!RegexCharClass.IsWordChar(RightCharMoveRight()))
                 {
                     MoveLeft();
                     break;
@@ -1387,7 +1387,7 @@ namespace System.Text.RegularExpressions
 
             if (CharsRight() >= c)
             {
-                for (; c > 0 && ((d = HexDigit(MoveRightGetChar())) >= 0); c -= 1)
+                for (; c > 0 && ((d = HexDigit(RightCharMoveRight())) >= 0); c -= 1)
                 {
                     i *= 0x10;
                     i += d;
@@ -1429,7 +1429,7 @@ namespace System.Text.RegularExpressions
             if (CharsRight() <= 0)
                 throw MakeException(SR.MissingControl);
 
-            ch = MoveRightGetChar();
+            ch = RightCharMoveRight();
 
             // \ca interpreted as \cA
 
@@ -1495,7 +1495,7 @@ namespace System.Text.RegularExpressions
         {
             char ch;
 
-            ch = MoveRightGetChar();
+            ch = RightCharMoveRight();
 
             if (ch >= '0' && ch <= '7')
             {
@@ -1543,7 +1543,7 @@ namespace System.Text.RegularExpressions
             {
                 throw MakeException(SR.IncompleteSlashP);
             }
-            char ch = MoveRightGetChar();
+            char ch = RightCharMoveRight();
             if (ch != '{')
             {
                 throw MakeException(SR.MalformedSlashP);
@@ -1552,7 +1552,7 @@ namespace System.Text.RegularExpressions
             int startpos = Textpos();
             while (CharsRight() > 0)
             {
-                ch = MoveRightGetChar();
+                ch = RightCharMoveRight();
                 if (!(RegexCharClass.IsWordChar(ch) || ch == '-'))
                 {
                     MoveLeft();
@@ -1561,7 +1561,7 @@ namespace System.Text.RegularExpressions
             }
             string capname = _pattern.Substring(startpos, Textpos() - startpos);
 
-            if (CharsRight() == 0 || MoveRightGetChar() != '}')
+            if (CharsRight() == 0 || RightCharMoveRight() != '}')
                 throw MakeException(SR.IncompleteSlashP);
 
             return capname;
@@ -1640,7 +1640,7 @@ namespace System.Text.RegularExpressions
             while (CharsRight() > 0)
             {
                 int pos = Textpos();
-                ch = MoveRightGetChar();
+                ch = RightCharMoveRight();
                 switch (ch)
                 {
                     case '\\':
@@ -2290,7 +2290,7 @@ namespace System.Text.RegularExpressions
         /*
          * Returns the char at the right of the current parsing position and advances to the right.
          */
-        internal char MoveRightGetChar()
+        internal char RightCharMoveRight()
         {
             return _pattern[_currentPos++];
         }
