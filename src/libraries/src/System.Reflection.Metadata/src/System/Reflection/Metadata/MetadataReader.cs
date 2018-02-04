@@ -544,7 +544,7 @@ namespace System.Reflection.Metadata
 
             if ((externalTableMask & ~validTables) != 0)
             {
-                throw new BadImageFormatException(string.Format(SR.UnknownTables, (TableMask)externalTableMask));
+                throw new BadImageFormatException(string.Format(SR.UnknownTables, externalTableMask));
             }
 
             externalTableRowCounts = ReadMetadataTableRowCounts(ref reader, externalTableMask);
