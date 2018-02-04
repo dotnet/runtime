@@ -9,7 +9,8 @@
     <BuildConfigurations>
       uap-Windows_NT;
       netfx-Windows_NT;
-      netcoreapp;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
       $(PackageConfigurations)
     </BuildConfigurations>
   </PropertyGroup>
