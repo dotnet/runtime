@@ -179,6 +179,8 @@ HARDWARE_INTRINSIC(SSE2_Xor,                                         "Xor",     
 
 //  SSE3 Intrinsics
 HARDWARE_INTRINSIC(SSE3_IsSupported,                                 "get_IsSupported",                                  SSE3,       -1,           0,            0,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_IsSupportedProperty,               HW_Flag_NoFlag)
+HARDWARE_INTRINSIC(SSE3_LoadAndDuplicateToVector128,                 "LoadAndDuplicateToVector128",                      SSE3,       -1,           32,           1,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_lddqu,     INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_movddup},           HW_Category_MemoryLoad,                        HW_Flag_NoFlag)
+HARDWARE_INTRINSIC(SSE3_LoadDquVector128,                            "LoadDquVector128",                                 SSE3,       -1,           32,           1,           {INS_lddqu,     INS_lddqu,     INS_lddqu,     INS_lddqu,     INS_lddqu,     INS_lddqu,     INS_lddqu,     INS_lddqu,     INS_invalid,   INS_invalid},           HW_Category_MemoryLoad,                        HW_Flag_NoFlag)
 
 //  SSSE3 Intrinsics
 HARDWARE_INTRINSIC(SSSE3_IsSupported,                                "get_IsSupported",                                  SSSE3,      -1,           0,            0,           {INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid,   INS_invalid},           HW_Category_IsSupportedProperty,               HW_Flag_NoFlag)
