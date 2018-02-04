@@ -184,14 +184,14 @@ namespace System.SpanTests
         [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsReadOnlySpan_2Arg_OutOfRange(string text, int start)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("Start", () => text.AsReadOnlySpan(start).DontBox());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlySpan(start).DontBox());
         }
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsReadOnlySpan_3Arg_OutOfRange(string text, int start, int length)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("Start", () => text.AsReadOnlySpan(start, length).DontBox());
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsReadOnlySpan(start, length).DontBox());
         }
     }
 }
