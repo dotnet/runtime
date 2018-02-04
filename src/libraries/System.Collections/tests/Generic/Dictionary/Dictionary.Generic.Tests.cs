@@ -43,8 +43,7 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
             Dictionary<TKey, TValue> copied = new Dictionary<TKey, TValue>(source, comparer);
             Assert.Equal(source, copied);
-            if (typeof(TKey) != typeof(string) || comparer != EqualityComparer<TKey>.Default)   // Dictionary special-cases the default comparer when TKEy=string
-                Assert.Equal(comparer, copied.Comparer);
+            Assert.Equal(comparer, copied.Comparer);
         }
 
         [Theory]
@@ -55,8 +54,7 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> source = GenericIDictionaryFactory(count);
             Dictionary<TKey, TValue> copied = new Dictionary<TKey, TValue>(source, comparer);
             Assert.Equal(source, copied);
-            if (typeof(TKey) != typeof(string) || comparer != EqualityComparer<TKey>.Default)   // Dictionary special-cases the default comparer when TKEy=string
-                Assert.Equal(comparer, copied.Comparer);
+            Assert.Equal(comparer, copied.Comparer);
         }
 
         [Theory]
@@ -74,9 +72,7 @@ namespace System.Collections.Tests
             IEqualityComparer<TKey> comparer = GetKeyIEqualityComparer();
             Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>(count, comparer);
             Assert.Equal(0, dictionary.Count);
-            // Dictionary with TKey string when 
-            if (typeof(TKey) != typeof(string) || comparer != EqualityComparer<TKey>.Default)   // Dictionary special-cases the default comparer when TKEy=string
-                Assert.Equal(comparer, dictionary.Comparer);
+            Assert.Equal(comparer, dictionary.Comparer);
         }
 
         #endregion
