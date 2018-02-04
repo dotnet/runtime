@@ -43,7 +43,7 @@ Performance tests for CoreFX are built on top of xunit and [the Microsoft xunit-
 
 For the time being, perf tests should reside within their own "Performance" folder within the tests directory of a library (e.g. [corefx/src/System.IO.FileSystem/tests/Performance](https://github.com/dotnet/corefx/tree/master/src/System.IO.FileSystem/tests/Performance) contains perf tests for FileSystem).
 
-Start by adding the following lines to the tests csproj:
+It's easiest to copy and modify an existing example like the one above. Notice that you'll need these lines in the tests csproj:
 ```
   <ItemGroup>
     <!-- Performance Tests -->
@@ -54,19 +54,12 @@ Start by adding the following lines to the tests csproj:
     </Compile>
   </ItemGroup>
   <!-- Optimizations to configure Xunit for performance -->
-  <ItemGroup>
+  <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-  </ItemGroup>
+  </PropertyGroup>
 ```
 (Replace Dictionary/List with whatever class you’re testing.)
 
-Next, the project.json for the tests directory also needs to import the xunit libraries:
-
-```
-    "Microsoft.DotNet.xunit.performance": "1.0.0-*",
-    "xunit": "2.1.0",  
-    "xunit.netcore.extensions": "1.0.0-prerelease-*"  
-```
 Once that’s all done, you can actually add tests to the file.
 
 Writing Test Cases
