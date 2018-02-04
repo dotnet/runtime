@@ -201,13 +201,13 @@ namespace System.Diagnostics.Tests
             }
 
             FieldInfo writeCoreHook = typeof(Debug).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
-            FieldInfo showAssertDialogHook = typeof(Debug).GetField("s_ShowAssertDialog", BindingFlags.Static | BindingFlags.NonPublic);
+            FieldInfo showDialogHook = typeof(Debug).GetField("s_ShowDialog", BindingFlags.Static | BindingFlags.NonPublic);
 
             var originalWriteCoreHook = writeCoreHook.GetValue(null);
             writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
 
-            var originalShowAssertDialogHook = showAssertDialogHook.GetValue(null);
-            showAssertDialogHook.SetValue(null, new Action<string, string, string>(WriteLogger.s_instance.ShowAssertDialog));
+            var originalShowDialogHook = showDialogHook.GetValue(null);
+            showDialogHook.SetValue(null, new Action<string, string, string, string>(WriteLogger.s_instance.ShowDialog));
 
             try
             {
@@ -228,7 +228,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 writeCoreHook.SetValue(null, originalWriteCoreHook);
-                showAssertDialogHook.SetValue(null, originalShowAssertDialogHook);
+                showDialogHook.SetValue(null, originalShowDialogHook);
             }
         }
 
@@ -248,9 +248,9 @@ namespace System.Diagnostics.Tests
                 AssertUIOutput = string.Empty;
             }
 
-            public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
+            public void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
             {
-                AssertUIOutput += stackTrace + message + detailMessage;
+                AssertUIOutput += stackTrace + message + detailMessage + errorSource;
             }
 
             public void WriteCore(string message)
