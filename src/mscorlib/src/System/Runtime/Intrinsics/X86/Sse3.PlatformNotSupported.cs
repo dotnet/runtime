@@ -50,6 +50,7 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m128d _mm_loaddup_pd (double const* mem_addr)
+        /// MOVDDUP xmm, m64
         /// </summary>
         public static unsafe Vector128<double> LoadAndDuplicateToVector128(double* address) { throw new PlatformNotSupportedException(); }
 
