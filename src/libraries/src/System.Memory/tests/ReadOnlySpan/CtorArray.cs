@@ -82,6 +82,15 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void CtorArrayNullArrayNonZeroStartAndLength()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySpan<int>(null, 1, 0).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySpan<int>(null, 0, 1).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySpan<int>(null, 1, 1).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ReadOnlySpan<int>(null, -1, -1).DontBox());
+        }
+
+        [Fact]
         public static void CtorArrayWrongValueType()
         {
             // Can pass variant array, if array type is a valuetype.
