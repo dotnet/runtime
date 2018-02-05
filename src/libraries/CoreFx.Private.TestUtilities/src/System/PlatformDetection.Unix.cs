@@ -35,6 +35,7 @@ namespace System
         public static bool IsUbuntu1710 => IsDistroAndVersion("ubuntu", 17, 10);
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
+        public static bool IsFedora27 => IsDistroAndVersion("fedora", 27);
         public static bool IsWindowsNanoServer => false;
         public static bool IsWindowsServerCore => false;
         public static bool IsWindowsAndElevated => false;
@@ -46,6 +47,7 @@ namespace System
         public static bool IsNotRedHatFamily6 => !IsRedHatFamily6;
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
+        public static bool IsNotFedora27 => !IsFedora27;
 
         public static Version OSXVersion { get; } = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion);
 

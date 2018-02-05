@@ -64,7 +64,7 @@ namespace System.Net.Http.Functional.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
         {
             if (!BackendSupportsCustomCertificateHandling)
@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
         }
         
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
             if (!BackendSupportsCustomCertificateHandling)
@@ -140,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Uri url, bool checkRevocation)
         {
@@ -189,7 +189,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task UseCallback_CallbackReturnsFailure_ThrowsException()
         {
             if (!BackendSupportsCustomCertificateHandling)
@@ -207,7 +207,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
             if (!BackendSupportsCustomCertificateHandling)
@@ -269,7 +269,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
             if (!BackendSupportsCustomCertificateHandling)
@@ -332,7 +332,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
