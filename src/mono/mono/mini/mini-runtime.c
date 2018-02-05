@@ -3502,14 +3502,12 @@ mini_get_debug_options (void)
 static gpointer
 mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 {
-#if (!defined(__ppc64__) && !defined(__powerpc64__) || _CALL_ELF == 2)
-	return addr;
-#else
+#if defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	gpointer* desc = NULL;
 
 	if ((desc = g_hash_table_lookup (domain->ftnptrs_hash, addr)))
 		return desc;
-#	if defined(__ppc64__) || defined(__powerpc64__)
+#	if defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_PPC64)
 
 	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
 
@@ -3519,13 +3517,15 @@ mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 #	endif
 	g_hash_table_insert (domain->ftnptrs_hash, addr, desc);
 	return desc;
+#else
+	return addr;
 #endif
 }
 
 static gpointer
 mini_get_addr_from_ftnptr (gpointer descr)
 {
-#if ((defined(__ppc64__) || defined(__powerpc64__)) && _CALL_ELF != 2)
+#if ((defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_PPC64)) && _CALL_ELF != 2)
 	return *(gpointer*)descr;
 #else
 	return descr;

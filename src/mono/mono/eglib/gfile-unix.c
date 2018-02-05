@@ -79,6 +79,19 @@ g_file_test (const gchar *filename, GFileTest test)
 	return FALSE;
 }
 
+#ifdef _AIX
+/* HACK: the preprocessor will not give us mkdtemp no matter
+   what and Mono (for good reason) does
+   "-Werror-implicit-function-declaration" so we error out;
+   instead declare mkdtemp here; the linker will find mkdtemp
+   anwyays. libuv has had similar issues, but they just ignore
+   the compiler warning instead of failing on it.
+   
+   See: github.com/libuv/libuv/pull/740 */
+
+extern char *mkdtemp(char *);
+#endif
+
 gchar *
 g_mkdtemp (char *tmp_template)
 {

@@ -16,6 +16,7 @@
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-error.h"
 #include "mono/utils/mono-error-internals.h"
+#include "mono/utils/mono-machine.h"
 #include "mono/utils/mono-stack-unwinding.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-coop-mutex.h"
@@ -122,8 +123,8 @@ struct _MonoArray {
 	MonoArrayBounds *bounds;
 	/* total number of elements of the array */
 	mono_array_size_t max_length; 
-	/* we use double to ensure proper alignment on platforms that need it */
-	double vector [MONO_ZERO_LEN_ARRAY];
+	/* we use mono_64bitaligned_t to ensure proper alignment on platforms that need it */
+	mono_64bitaligned_t vector [MONO_ZERO_LEN_ARRAY];
 };
 
 #define MONO_SIZEOF_MONO_ARRAY (sizeof (MonoArray) - MONO_ZERO_LEN_ARRAY * sizeof (double))

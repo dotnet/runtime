@@ -168,10 +168,15 @@ const DECOVFL power_overflow[] = {
     { 4u,         1266874889u, 3047500985u }, // 10^9 remainder 0.709551616
 };
 
-
 #define UInt32x32To64(a, b) ((uint64_t)((uint32_t)(a)) * (uint64_t)((uint32_t)(b)))
+#if G_BYTE_ORDER != G_LITTLE_ENDIAN
+/* hacky endian swap where losing the other end is OK, since we truncate to 32bit */
+#define Div64by32(num, den) ((uint32_t) (((uint64_t)(num) / (uint32_t)(den)) >> 32) )
+#define Mod64by32(num, den) ((uint32_t) (((uint64_t)(num) % (uint32_t)(den)) >> 32) )
+#else
 #define Div64by32(num, den) ((uint32_t)((uint64_t)(num) / (uint32_t)(den)))
 #define Mod64by32(num, den) ((uint32_t)((uint64_t)(num) % (uint32_t)(den)))
+#endif
 
 static double
 fnDblPower10(int ix)

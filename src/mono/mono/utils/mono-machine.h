@@ -26,4 +26,15 @@ typedef gint32 mgreg_t;
 typedef gint64 mgreg_t;
 #endif
 
+/* Alignment for MonoArray.vector */
+#if defined(_AIX)
+/*
+ * HACK: doubles in structs always align to 4 on AIX... even on 64-bit,
+ * which is bad for aligned usage like what System.Array.FastCopy does
+ */
+typedef guint64 mono_64bitaligned_t;
+#else
+typedef double mono_64bitaligned_t;
+#endif
+
 #endif /* __MONO_MONO_MACHINE_H__ */

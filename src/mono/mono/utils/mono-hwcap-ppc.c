@@ -25,6 +25,8 @@
 #if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
 #include <string.h>
 #include <sys/auxv.h>
+#elif defined(_AIX)
+#include <sys/systemcfg.h>
 #endif
 
 void
@@ -59,5 +61,17 @@ mono_hwcap_arch_init (void)
 		if (!strcmp (str, "ppc970") || (!strncmp (str, "power", 5) && str [5] >= '4' && str [5] <= '7'))
 			mono_hwcap_ppc_has_multiple_ls_units = TRUE;
 	}
+#elif defined(_AIX)
+	/*
+	 * FIXME: ensure these are valid, and we match Linux ones
+	 */
+	mono_hwcap_ppc_is_isa_2x = __power_4_andup() ? TRUE : FALSE;
+	mono_hwcap_ppc_is_isa_64 = __cpu64() ? TRUE: FALSE;
+	/*
+	 * I dont see a way to get extended POWER6 and the PV_6_1
+	 * def seems to be trigged on the POWER6 here despite not
+	 * having these extended instructions, so POWER7 it is
+	 */
+	mono_hwcap_ppc_has_move_fpr_gpr = __power_7_andup() ? TRUE : FALSE;
 #endif
 }

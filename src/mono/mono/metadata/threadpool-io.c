@@ -179,7 +179,15 @@ selector_thread_wakeup_drain_pipes (void)
 		if (received == 0)
 			break;
 		if (received == -1) {
+#ifdef ERESTART
+			/* 
+			 * some unices (like AIX) send ERESTART, which doesn't
+			 * exist on some other OSes errno
+			 */
+			if (errno != EINTR && errno != EAGAIN && errno != ERESTART)
+#else
 			if (errno != EINTR && errno != EAGAIN)
+#endif
 				g_warning ("selector_thread_wakeup_drain_pipes: read () failed, error (%d) %s\n", errno, g_strerror (errno));
 			break;
 		}

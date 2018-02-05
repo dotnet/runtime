@@ -66,7 +66,19 @@ mono_dl_open_file (const char *file, int flags)
 	if (!file)
 		return NULL;
 #endif
+#if defined(_AIX)
+	/*
+	 * dlopen is /weird/ on AIX 
+	 * shared libraries (really, all oobjects are, since PPC is PIC)
+	 * can cohabitate with not just SOs of the other arch, but also
+	 * with regular objects in an archive used for static linking
+	 * 
+	 * we have to pass RTLD_MEMBER, otherwise lib.a(lib.o) doesn't work
+	 */
+	return dlopen (file, flags | RTLD_MEMBER);
+#else
 	return dlopen (file, flags);
+#endif
 }
 
 void

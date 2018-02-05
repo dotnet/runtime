@@ -59,7 +59,7 @@
 #elif defined(sparc) || defined(__sparc__)
 #define CONFIG_CPU "sparc"
 #define CONFIG_WORDSIZE "32"
-#elif defined(__ppc64__) || defined(__powerpc64__) || defined(TARGET_POWERPC)
+#elif defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_64) || defined(TARGET_POWERPC)
 #define CONFIG_WORDSIZE "64"
 #ifdef __mono_ppc_ilp32__ 
 #   define CONFIG_CPU "ppc64ilp32"

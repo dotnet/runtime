@@ -374,6 +374,29 @@ case "$host" in
 		libgc_threads=pthreads
 		use_sigposix=yes
 		;;
+	*-*-aix*|*-*-os400*)
+		dnl Set up a 64-bit build
+		CPPFLAGS="$CPPFLAGS -maix64 -DGC_AIX_THREADS -D_ALL_SOURCE -D_LARGE_FILES -D_REENTRANT"
+		LDFLAGS="-maix64"
+		libmono_cflags="-D_REENTRANT"
+		dnl Would you believe GNU nm doesn't know how to process AIX libraries?
+		dnl Hardcode IBM binutils in case GNU ones end up on our path. Also
+		dnl specifiy 64-bit mode for tools.
+		AR="/usr/bin/ar -X64"
+		NM="/usr/bin/nm -X64"
+		dnl SGen is the future (changes to Boehm support code would be
+		dnl required if you wish to re-enable Boehm)
+		support_boehm=no
+		with_gc=sgen
+		need_link_unlink=yes
+		use_sigposix=yes
+		dnl the valloc call to alloc the guard page bombs out, even with extending the data area
+		with_sigaltstack=no
+		dnl use pthread TLS, __thread has issues with the compiler flags we use
+		with_tls=pthread
+		dnl ppc Linux is the same? test further
+		disable_munmap=yes
+		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.ac checks!])
 		libdl="-ldl"
@@ -544,6 +567,7 @@ AC_CHECK_HEADERS(sys/poll.h)
 AC_CHECK_HEADERS(sys/wait.h)
 AC_CHECK_HEADERS(grp.h)
 AC_CHECK_HEADERS(syslog.h)
+AC_CHECK_FUNCS(vsyslog)
 
 # for mono/dis
 AC_CHECK_HEADERS(wchar.h)
@@ -2983,6 +3007,12 @@ case "{$build}" in
     NAME_DEV_RANDOM="/dev/srandom"
     ;;
 
+dnl IBM i does not have /dev/random, use unblocking only
+
+    *-*-os400*)
+    NAME_DEV_RANDOM="/dev/urandom"
+    ;;
+
 dnl Win32 does not have /dev/random, they have their own method...
 
     *-mingw*|*-*-cygwin*)
@@ -3416,7 +3446,8 @@ case "$host" in
 		INTL="intl"
 		;;
 	macppc-*-openbsd* | powerpc*-*-linux* | powerpc-*-openbsd* | \
-        powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* | powerpc-*-freebsd* )
+        powerpc-*-sysv* | powerpc-*-darwin* | powerpc-*-netbsd* | \
+        powerpc-*-freebsd* | powerpc-*-aix* | powerpc-*-os400* )
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 			TARGET=POWERPC64;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__ -D__mono_ppc64__"
@@ -3427,6 +3458,13 @@ case "$host" in
 		fi
 		arch_target=ppc;
 		case $host_os in
+		  aix*|os400*)
+			dnl on AIX/PASE, shared libraries can be inside archives
+			dnl if they are, we specify them by lib.a(lib.so)
+			dnl we may hardcode 64-bit names at times, but we don't do 32-bit AIX, so
+			LIBC="libc.a(shr_64.o)"
+			INTL="libintl.a(libintl.so.9)"
+			;;
 		  linux*|darwin*)
 			;;
 		esac
@@ -4003,7 +4041,19 @@ AC_SEARCH_LIBS(nanosleep, rt)
 
 AC_SEARCH_LIBS(dlopen, dl)
 old_ldflags="${LDFLAGS}"
-LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+# GNU specific option, this confuses IBM ld, but do offer alternatives when possible
+if test $lt_cv_prog_gnu_ld = yes; then
+	LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+else
+	case $host in
+	*-*-aix*|*-*-os400*)
+		;;
+	*)
+		dnl Try to use export-dynamic anyways
+		LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+		;;
+	esac
+fi
 AC_TRY_LINK(, [int i;], found_export_dynamic=yes, found_export_dynamic=no)
 if test $found_export_dynamic = no; then
 	LDFLAGS="${old_ldflags}"

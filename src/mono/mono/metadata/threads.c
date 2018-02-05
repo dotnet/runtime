@@ -616,8 +616,17 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 
 	/* Necessary to get valid priority range */
 
+#if defined(_AIX)
+	/*
+	 * this AIX hack is because PASE is finicky; AIX is just less
+	 * fatalistic about it
+	 */
+	min = PRIORITY_MIN;
+	max = PRIORITY_MAX;
+#else
 	min = sched_get_priority_min (policy);
 	max = sched_get_priority_max (policy);
+#endif
 
 	if (max > 0 && min >= 0 && max > min) {
 		double srange, drange, sposition, dposition;
@@ -646,7 +655,11 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 		}
 	}
 
+#if defined(_AIX)
+	res = pthread_setschedparam (tid, SCHED_OTHER, &param);
+#else
 	res = pthread_setschedparam (tid, policy, &param);
+#endif
 	if (res != 0) {
 		if (res == EPERM) {
 			g_warning ("%s: pthread_setschedparam failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);

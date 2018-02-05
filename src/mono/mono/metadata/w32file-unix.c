@@ -4574,7 +4574,7 @@ mono_w32file_get_drive_type(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
-#if defined (HOST_DARWIN) || defined (__linux__) || defined(HOST_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__)
+#if defined (HOST_DARWIN) || defined (__linux__) || defined(HOST_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__) || defined(_AIX)
 static gchar*
 get_fstypename (gchar *utfpath)
 {

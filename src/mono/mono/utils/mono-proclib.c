@@ -826,13 +826,13 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 {
 	char buf [256];
 	char *s;
-	int hz = get_user_hz ();
+	int uhz = get_user_hz ();
 	guint64	user_ticks = 0, nice_ticks = 0, system_ticks = 0, idle_ticks = 0, irq_ticks = 0, sirq_ticks = 0;
 	FILE *f = fopen ("/proc/stat", "r");
 	if (!f)
 		return;
 	if (cpu_id < 0)
-		hz *= mono_cpu_count ();
+		uhz *= mono_cpu_count ();
 	while ((s = fgets (buf, sizeof (buf), f))) {
 		char *data = NULL;
 		if (cpu_id < 0 && strncmp (s, "cpu", 3) == 0 && g_ascii_isspace (s [3])) {
@@ -857,15 +857,15 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 	fclose (f);
 
 	if (user)
-		*user = (user_ticks + nice_ticks) * 10000000 / hz;
+		*user = (user_ticks + nice_ticks) * 10000000 / uhz;
 	if (systemt)
-		*systemt = (system_ticks) * 10000000 / hz;
+		*systemt = (system_ticks) * 10000000 / uhz;
 	if (irq)
-		*irq = (irq_ticks) * 10000000 / hz;
+		*irq = (irq_ticks) * 10000000 / uhz;
 	if (sirq)
-		*sirq = (sirq_ticks) * 10000000 / hz;
+		*sirq = (sirq_ticks) * 10000000 / uhz;
 	if (idle)
-		*idle = (idle_ticks) * 10000000 / hz;
+		*idle = (idle_ticks) * 10000000 / uhz;
 }
 
 /**

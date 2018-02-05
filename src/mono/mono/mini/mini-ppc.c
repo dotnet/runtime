@@ -37,6 +37,9 @@
 #ifdef __linux__
 #include <unistd.h>
 #endif
+#ifdef _AIX
+#include <sys/systemcfg.h>
+#endif
 
 #define FORCE_INDIR_CALL 1
 
@@ -537,6 +540,10 @@ mono_arch_init (void)
 #elif defined(G_COMPILER_CODEWARRIOR)
 	cachelinesize = 32;
 	cachelineinc = 32;
+#elif defined(_AIX)
+	/* FIXME: use block instead? */
+	cachelinesize = _system_configuration.icache_line;
+	cachelineinc = _system_configuration.icache_line;
 #else
 //#error Need a way to get cache line size
 #endif

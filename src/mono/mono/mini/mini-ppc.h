@@ -86,6 +86,11 @@ typedef struct MonoCompileArch {
 
 #else /* must be __mono_ppc__ */
 
+#if defined(_AIX)
+/* 32 and 64 bit AIX use function descriptors */
+#define PPC_USES_FUNCTION_DESCRIPTOR
+#endif
+
 #define MONO_ARCH_EMULATE_FCONV_TO_I8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R8 1
 #define MONO_ARCH_EMULATE_LCONV_TO_R4 1
@@ -144,6 +149,32 @@ typedef struct MonoCompileArch {
 #define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
 #define MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS 0
 #define MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS 0
+#elif defined(_AIX)
+/* FIXME: are these values valid? on 32-bit? */
+#define PPC_RET_ADDR_OFFSET 16
+#if defined(__mono_ppc64__)
+#define PPC_STACK_PARAM_OFFSET 112
+#define PPC_MINIMAL_STACK_SIZE 112
+#else
+#define PPC_STACK_PARAM_OFFSET 56
+#define PPC_MINIMAL_STACK_SIZE 56
+#endif
+#define PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS 0
+#define PPC_MOST_FLOAT_STRUCT_MEMBERS_TO_RETURN_VIA_REGISTERS 0
+#define PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+#define PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
+#define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
+#define MONO_ARCH_HAVE_DECOMPOSE_VTYPE_OPTS 0
+#define MONO_ARCH_RETURN_CAN_USE_MULTIPLE_REGISTERS 0
+//#define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
+#define PPC_MINIMAL_PARAM_AREA_SIZE 64
+#define PPC_LAST_FPARG_REG ppc_f13
+#define PPC_PASS_STRUCTS_BY_VALUE 1
+#define PPC_THREAD_PTR_REG ppc_r13
+#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
+#define PPC_FIRST_ARG_REG ppc_r3
+#define PPC_LAST_ARG_REG ppc_r10
+#define PPC_FIRST_FPARG_REG ppc_f1
 #else
 /* Linux */
 #ifdef __mono_ppc64__
@@ -332,7 +363,8 @@ extern guint8* mono_ppc_create_pre_code_ftnptr (guint8 *code);
 	#define UCONTEXT_REG_FPRn(ctx, n)
 	#define UCONTEXT_REG_NIP(ctx)
 	#define UCONTEXT_REG_LNK(ctx)
-
+#elif defined (_AIX)
+#define MONO_ARCH_USE_SIGACTION 1
 #else
 /* For other operating systems, we pull the definition from an external file */
 #include "mini-ppc-os.h"
