@@ -88,7 +88,10 @@ namespace System.Net.Http
                 _chunkBytesRemaining -= bytesConsumed;
                 if (_chunkBytesRemaining == 0)
                 {
-                    await _connection.ReadEmptyLineAsync(cancellationToken).ConfigureAwait(false);
+                    if (!LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                    {
+                        ThrowInvalidHttpResponse();
+                    }
                 }
             }
 
