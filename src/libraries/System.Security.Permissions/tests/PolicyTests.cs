@@ -24,7 +24,9 @@ namespace System.Security.Permissions.Tests
             NamedPermissionSet nps = new NamedPermissionSet("test");
             pl.AddNamedPermissionSet(nps);
             nps = pl.ChangeNamedPermissionSet("test", new PermissionSet(new Permissions.PermissionState()));
+#pragma warning disable 618
             PolicyLevel.CreateAppDomainLevel();
+#pragma warning restore 618
             nps = pl.GetNamedPermissionSet("test");
             pl.Recover();
             NamedPermissionSet nps2 = pl.RemoveNamedPermissionSet(nps);
