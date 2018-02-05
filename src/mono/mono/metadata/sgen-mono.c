@@ -545,7 +545,7 @@ sgen_client_finalize_notify (void)
 }
 
 void
-mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_data)
 {
 	sgen_object_register_for_finalization (obj, user_data);
 }
