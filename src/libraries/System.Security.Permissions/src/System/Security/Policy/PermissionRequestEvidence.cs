@@ -4,6 +4,7 @@
 
 namespace System.Security.Policy
 {
+    [Obsolete("This type is obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
     public sealed partial class PermissionRequestEvidence : EvidenceBase
     {
         public PermissionRequestEvidence(PermissionSet request, PermissionSet optional, PermissionSet denied) { }

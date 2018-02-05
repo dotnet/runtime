@@ -1571,6 +1571,7 @@ namespace System.Security.Policy
         public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { throw null; }
         public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { throw null; }
     }
+    [System.ObsoleteAttribute("This type is obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
     public sealed partial class FirstMatchCodeGroup : System.Security.Policy.CodeGroup
     {
         public FirstMatchCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition, System.Security.Policy.PolicyStatement policy) : base(default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }
@@ -1661,6 +1662,7 @@ namespace System.Security.Policy
         public override System.Security.Policy.PolicyStatement Resolve(System.Security.Policy.Evidence evidence) { throw null; }
         public override System.Security.Policy.CodeGroup ResolveMatchingCodeGroups(System.Security.Policy.Evidence evidence) { throw null; }
     }
+    [System.ObsoleteAttribute("This type is obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
     public sealed partial class PermissionRequestEvidence : System.Security.Policy.EvidenceBase
     {
         public PermissionRequestEvidence(System.Security.PermissionSet request, System.Security.PermissionSet optional, System.Security.PermissionSet denied) { }
@@ -1693,6 +1695,7 @@ namespace System.Security.Policy
         public void AddFullTrustAssembly(System.Security.Policy.StrongNameMembershipCondition snMC) { }
         public void AddNamedPermissionSet(System.Security.NamedPermissionSet permSet) { }
         public System.Security.NamedPermissionSet ChangeNamedPermissionSet(string name, System.Security.PermissionSet pSet) { throw null; }
+        [System.ObsoleteAttribute("AppDomain policy levels are obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static System.Security.Policy.PolicyLevel CreateAppDomainLevel() { throw null; }
         public void FromXml(System.Security.SecurityElement e) { }
         public System.Security.NamedPermissionSet GetNamedPermissionSet(string name) { throw null; }
@@ -1825,6 +1828,7 @@ namespace System.Security.Policy
         Run = 2,
         Upgrade = 1,
     }
+    [System.ObsoleteAttribute("This type is obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
     public sealed partial class UnionCodeGroup : System.Security.Policy.CodeGroup
     {
         public UnionCodeGroup(System.Security.Policy.IMembershipCondition membershipCondition, System.Security.Policy.PolicyStatement policy) : base(default(System.Security.Policy.IMembershipCondition), default(System.Security.Policy.PolicyStatement)) { }

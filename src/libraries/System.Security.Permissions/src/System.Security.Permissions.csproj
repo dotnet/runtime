@@ -6,7 +6,6 @@
     <RootNamespace>System.Security.Permissions</RootNamespace>
     <AssemblyName>System.Security.Permissions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <PackageAsRefAndLib Condition="'$(TargetGroup)' == 'netfx'">true</PackageAsRefAndLib>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
