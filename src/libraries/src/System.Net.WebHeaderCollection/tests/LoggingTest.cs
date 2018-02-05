@@ -11,6 +11,7 @@ namespace System.Net.Tests
     {
         [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "NetEventSource is only part of .NET Core")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         public void EventSource_ExistsWithCorrectId()
         {
