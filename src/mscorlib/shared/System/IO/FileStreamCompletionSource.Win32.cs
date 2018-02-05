@@ -36,7 +36,7 @@ namespace System.IO
             private long _result; // Using long since this needs to be used in Interlocked APIs
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            internal FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[] bytes)
+            protected FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[] bytes)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
@@ -48,7 +48,11 @@ namespace System.IO
                 // thus is already pinned) and if no one else is currently using the preallocated overlapped.  This is the fast-path
                 // for cases where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's
                 // buffer is used) and where operations on the FileStream are not being performed concurrently.
-                _overlapped = (bytes == null || ReferenceEquals(bytes, _stream._buffer)) && _stream.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
+                Debug.Assert((bytes == null || ReferenceEquals(bytes, _stream._buffer)));
+
+                // The _preallocatedOverlapped is null if the internal buffer was never created, so we check for 
+                // a non-null bytes before using the stream's _preallocatedOverlapped
+                _overlapped = bytes != null && _stream.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
                     _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
                     _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
@@ -217,6 +221,17 @@ namespace System.IO
                     }
                 }
             }
+
+            public static FileStreamCompletionSource Create(FileStream stream, int numBufferedBytesRead, ReadOnlyMemory<byte> memory)
+            {
+                // If the memory passed in is the stream's internal buffer, we can use the base FileStreamCompletionSource,
+                // which has a PreAllocatedOverlapped with the memory already pinned.  Otherwise, we use the derived
+                // MemoryFileStreamCompletionSource, which Retains the memory, which will result in less pinning in the case
+                // where the underlying memory is backed by pre-pinned buffers.
+                return MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer) && ReferenceEquals(buffer.Array, stream._buffer) ?
+                    new FileStreamCompletionSource(stream, numBufferedBytesRead, buffer.Array) :
+                    new MemoryFileStreamCompletionSource(stream, numBufferedBytesRead, memory);
+            }
         }
 
         /// <summary>
@@ -231,7 +246,6 @@ namespace System.IO
             internal MemoryFileStreamCompletionSource(FileStream stream, int numBufferedBytes, ReadOnlyMemory<byte> memory) :
                 base(stream, numBufferedBytes, bytes: null) // this type handles the pinning, so null is passed for bytes
             {
-                Debug.Assert(!MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> array), "The base should be used directly if we can get the array.");
                 _handle = memory.Retain(pin: true);
             }
 
