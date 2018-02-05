@@ -8,7 +8,7 @@
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
     <OutputType>Exe</OutputType>
     <TargetExt>.dll</TargetExt>
-    <NoWarn>$(NoWarn);0169;0414;0649</NoWarn>
+    
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
