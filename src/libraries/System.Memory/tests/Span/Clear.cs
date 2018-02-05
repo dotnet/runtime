@@ -249,20 +249,14 @@ namespace System.SpanTests
 
                 try
                 {
-                    ref int data = ref Unsafe.AsRef<int>(memory.ToPointer());
-
-                    int initial = 5;
-                    for (int i = 0; i < length; i++)
-                    {
-                        Unsafe.Add(ref data, i) = initial;
-                    }
-
                     Span<int> span = new Span<int>(memory.ToPointer(), length);
+                    span.Fill(5);
 
                     // Act
                     span.Clear();
 
                     // Assert using custom code for perf and to avoid allocating extra memory
+                    ref int data = ref Unsafe.AsRef<int>(memory.ToPointer());
                     for (int i = 0; i < length; i++)
                     {
                         var actual = Unsafe.Add(ref data, i);
