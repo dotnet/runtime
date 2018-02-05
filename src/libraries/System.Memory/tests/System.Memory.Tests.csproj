@@ -67,6 +67,7 @@
     <Compile Include="Span\StartsWith.T.cs" />
     <Compile Include="Span\StartsWith.byte.cs" />
     <Compile Include="Span\ToArray.cs" />
+    <Compile Include="Span\ToString.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlySpan\AsBytes.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
+    <Compile Include="ReadOnlySpan\ToString.cs" />
     <Compile Include="ReadOnlySpan\TrimAnyCharacter.cs" />
     <Compile Include="ReadOnlySpan\TrimManyCharacters.cs" />
     <Compile Include="ReadOnlySpan\TrimWhiteSpace.cs" />
