@@ -1945,6 +1945,7 @@ namespace System
         public bool Equals(System.ReadOnlyMemory<T> other) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> arraySegment) { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (T[] array) { throw null; }
         public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
