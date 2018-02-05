@@ -84,6 +84,15 @@ typedef struct {
 	/* For FRAME_TYPE_INTERP */
 	gpointer interp_frame;
 
+	/*
+	 * A stack address associated with the frame which can be used
+	 * to compare frames.
+	 * This is needed because ctx is not changed when unwinding through
+	 * interpreter frames, it still refers to the last native interpreter
+	 * frame.
+	 */
+	gpointer frame_addr;
+
 	/* The next fields are only useful for the jit */
 	gpointer lmf;
 	guint32 unwind_info_len;

@@ -632,6 +632,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	frame->native_offset = -1;
 	frame->domain = target_domain;
 	frame->async_context = async;
+	frame->frame_addr = MONO_CONTEXT_GET_SP (ctx);
 
 	ji = frame->ji;
 
@@ -670,6 +671,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 typedef struct {
 	gboolean in_interp;
 	MonoInterpStackIter interp_iter;
+	gpointer last_frame_addr;
 } Unwinder;
 
 static void
@@ -697,7 +699,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 
 		/* Process debugger invokes */
 		/* The DEBUGGER_INVOKE should be returned before the first interpreter frame for the invoke */
-		if ((gpointer)MONO_CONTEXT_GET_SP (ctx) > (gpointer)(*lmf)) {
+		if (unwinder->last_frame_addr > (gpointer)(*lmf)) {
 			if (((guint64)(*lmf)->previous_lmf) & 2) {
 				MonoLMFExt *ext = (MonoLMFExt*)(*lmf);
 				if (ext->debugger_invoke) {
@@ -711,8 +713,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		unwinder->in_interp = mini_get_interp_callbacks ()->frame_iter_next (&unwinder->interp_iter, frame);
 		if (frame->type == FRAME_TYPE_INTERP) {
 			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_frame);
-			/* This is needed so code which uses ctx->sp for frame ordering would work */
-			MONO_CONTEXT_SET_SP (new_ctx, parent);
+			unwinder->last_frame_addr = parent;
 		}
 		if (!unwinder->in_interp)
 			return unwinder_unwind_frame (unwinder, domain, jit_tls, prev_ji, ctx, new_ctx, trace, lmf, save_locations, frame);
@@ -728,6 +729,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_exit_data);
 			MONO_CONTEXT_SET_SP (new_ctx, parent);
 		}
+		unwinder->last_frame_addr = frame->frame_addr;
 		return TRUE;
 	}
 }

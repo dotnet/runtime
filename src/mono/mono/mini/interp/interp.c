@@ -5386,6 +5386,7 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 	frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->imethod->code;
 	frame->ji = iframe->imethod->jinfo;
 	frame->managed = TRUE;
+	frame->frame_addr = iframe;
 
 	stack_iter->current = iframe->parent;
 
