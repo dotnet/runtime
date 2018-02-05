@@ -81,7 +81,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            descriptor = new HeaderDescriptor(ByteArrayHelpers.GetStringFromByteSpan(headerName));
+            descriptor = new HeaderDescriptor(HttpRuleParser.GetTokenString(headerName));
             return true;
         }
 
@@ -112,7 +112,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            return ByteArrayHelpers.GetStringFromByteSpan(headerValue);
+            return HttpRuleParser.DefaultHttpEncoding.GetString(headerValue);
         }
     }
 }
