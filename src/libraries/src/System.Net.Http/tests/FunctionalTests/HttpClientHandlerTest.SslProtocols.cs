@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task SetProtocols_AfterRequest_ThrowsException()
         {
             if (!BackendSupportsSslConfiguration)
@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         [InlineData(SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls, true)]
         [InlineData(SslProtocols.Tls11, false)]
@@ -237,7 +237,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         [InlineData(SslProtocols.Tls11, SslProtocols.Tls, typeof(IOException))]
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11, typeof(IOException))]
         [InlineData(SslProtocols.Tls, SslProtocols.Tls12, typeof(AuthenticationException))]
@@ -264,7 +264,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(8538, TestPlatforms.Windows)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotFedora27))] // TODO: make test unconditional when #26803 is fixed
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -303,7 +303,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static bool SslDefaultsToTls12 => !PlatformDetection.IsWindows7;
+        private static bool SslDefaultsToTls12 => !PlatformDetection.IsWindows7 && !PlatformDetection.IsFedora27; // TODO: remove IsFedora27 when #26803 is fixed
         // TLS 1.2 may not be enabled on Win7
         // https://technet.microsoft.com/en-us/library/dn786418.aspx#BKMK_SchannelTR_TLS12
     }
