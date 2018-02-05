@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System.IO
 {
@@ -337,7 +334,7 @@ namespace System.IO
             {
                 try
                 {
-                    foreach (string item in EnumeratePaths(directory.FullName, "*", SearchOption.TopDirectoryOnly, SearchTarget.Both))
+                    foreach (string item in Directory.EnumerateFileSystemEntries(directory.FullName))
                     {
                         if (!ShouldIgnoreDirectory(Path.GetFileName(item)))
                         {
@@ -444,249 +441,6 @@ namespace System.IO
                 ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
         }
 
-        public static IEnumerable<string> EnumeratePaths(string path, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
-        {
-            return new FileSystemEnumerable<string>(path, searchPattern, searchOption, searchTarget, (p, _) => p);
-        }
-
-        public static IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
-        {
-            switch (searchTarget)
-            {
-                case SearchTarget.Files:
-                    return new FileSystemEnumerable<FileInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        {
-                            var info = new FileInfo(path, null);
-                            info.Refresh();
-                            return info;
-                        });
-                case SearchTarget.Directories:
-                    return new FileSystemEnumerable<DirectoryInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        {
-                            var info = new DirectoryInfo(path, null);
-                            info.Refresh();
-                            return info;
-                        });
-                default:
-                    return new FileSystemEnumerable<FileSystemInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        {
-                            var info = isDir ?
-                                (FileSystemInfo)new DirectoryInfo(path, null) :
-                                (FileSystemInfo)new FileInfo(path, null);
-                            info.Refresh();
-                            return info;
-                        });
-            }
-        }
-
-        private sealed class FileSystemEnumerable<T> : IEnumerable<T>
-        {
-            private readonly PathPair _initialDirectory;
-            private readonly string _searchPattern;
-            private readonly SearchOption _searchOption;
-            private readonly bool _includeFiles;
-            private readonly bool _includeDirectories;
-            private readonly Func<string, bool, T> _translateResult;
-            private IEnumerator<T> _firstEnumerator;
-
-            internal FileSystemEnumerable(
-                string userPath, string searchPattern,
-                SearchOption searchOption, SearchTarget searchTarget,
-                Func<string, bool, T> translateResult)
-            {
-                // Basic validation of the input path
-                if (userPath == null)
-                {
-                    throw new ArgumentNullException("path");
-                }
-                if (string.IsNullOrEmpty(userPath))
-                {
-                    throw new ArgumentException(SR.Argument_EmptyPath, "path");
-                }
-
-                // Validate and normalize the search pattern.  If after doing so it's empty,
-                // matching Win32 behavior we can skip all additional validation and effectively
-                // return an empty enumerable.
-                searchPattern = NormalizeSearchPattern(searchPattern);
-                if (searchPattern.Length > 0)
-                {
-                    PathHelpers.ThrowIfEmptyOrRootedPath(searchPattern);
-
-                    // If the search pattern contains any paths, make sure we factor those into 
-                    // the user path, and then trim them off.
-                    int lastSlash = searchPattern.LastIndexOf(Path.DirectorySeparatorChar);
-                    if (lastSlash >= 0)
-                    {
-                        if (lastSlash >= 1)
-                        {
-                            userPath = Path.Combine(userPath, searchPattern.Substring(0, lastSlash));
-                        }
-                        searchPattern = searchPattern.Substring(lastSlash + 1);
-                    }
-
-                    // Typically we shouldn't see either of these cases, an upfront check is much faster
-                    foreach (char c in searchPattern)
-                    {
-                        if (c == '\\' || c == '[')
-                        {
-                            // We need to escape any escape characters in the search pattern
-                            searchPattern = searchPattern.Replace(@"\", @"\\");
-
-                            // And then escape '[' to prevent it being picked up as a wildcard
-                            searchPattern = searchPattern.Replace(@"[", @"\[");
-                            break;
-                        }
-                    }
-
-                    string fullPath = Path.GetFullPath(userPath);
-
-                    // Store everything for the enumerator
-                    _initialDirectory = new PathPair(userPath, fullPath);
-                    _searchPattern = searchPattern;
-                    _searchOption = searchOption;
-                    _includeFiles = (searchTarget & SearchTarget.Files) != 0;
-                    _includeDirectories = (searchTarget & SearchTarget.Directories) != 0;
-                    _translateResult = translateResult;
-                }
-
-                // Open the first enumerator so that any errors are propagated synchronously.
-                _firstEnumerator = Enumerate();
-            }
-
-            public IEnumerator<T> GetEnumerator()
-            {
-                return Interlocked.Exchange(ref _firstEnumerator, null) ?? Enumerate();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            private IEnumerator<T> Enumerate()
-            {
-                return Enumerate(
-                    _initialDirectory.FullPath != null ? 
-                        OpenDirectory(_initialDirectory.FullPath) : 
-                        null);
-            }
-
-            private IEnumerator<T> Enumerate(Microsoft.Win32.SafeHandles.SafeDirectoryHandle dirHandle)
-            {
-                if (dirHandle == null)
-                {
-                    // Empty search
-                    yield break;
-                }
-
-                Debug.Assert(!dirHandle.IsInvalid);
-                Debug.Assert(!dirHandle.IsClosed);
-
-                // Maintain a stack of the directories to explore, in the case of SearchOption.AllDirectories
-                // Lazily-initialized only if we find subdirectories that will be explored.
-                Stack<PathPair> toExplore = null;
-                PathPair dirPath = _initialDirectory;
-                while (dirHandle != null)
-                {
-                    try
-                    {
-                        // Read each entry from the enumerator
-                        Interop.Sys.DirectoryEntry dirent;
-                        while (Interop.Sys.ReadDir(dirHandle, out dirent) == 0)
-                        {
-                            // Get from the dir entry whether the entry is a file or directory.
-                            // We classify everything as a file unless we know it to be a directory.
-                            bool isDir;
-                            if (dirent.InodeType == Interop.Sys.NodeType.DT_DIR)
-                            {
-                                // We know it's a directory.
-                                isDir = true;
-                            }
-                            else if (dirent.InodeType == Interop.Sys.NodeType.DT_LNK || dirent.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                            {
-                                // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
-                                // If we can't (e.g. symlink to a file, broken symlink, etc.), we'll just treat it as a file.
-                                Interop.ErrorInfo errnoIgnored;
-                                isDir = DirectoryExists(Path.Combine(dirPath.FullPath, dirent.InodeName), out errnoIgnored);
-                            }
-                            else
-                            {
-                                // Otherwise, treat it as a file.  This includes regular files, FIFOs, etc.
-                                isDir = false;
-                            }
-
-                            // Yield the result if the user has asked for it.  In the case of directories,
-                            // always explore it by pushing it onto the stack, regardless of whether
-                            // we're returning directories.
-                            if (isDir)
-                            {
-                                if (!ShouldIgnoreDirectory(dirent.InodeName))
-                                {
-                                    string userPath = null;
-                                    if (_searchOption == SearchOption.AllDirectories)
-                                    {
-                                        if (toExplore == null)
-                                        {
-                                            toExplore = new Stack<PathPair>();
-                                        }
-                                        userPath = Path.Combine(dirPath.UserPath, dirent.InodeName);
-                                        toExplore.Push(new PathPair(userPath, Path.Combine(dirPath.FullPath, dirent.InodeName)));
-                                    }
-                                    if (_includeDirectories &&
-                                        Interop.Sys.FnMatch(_searchPattern, dirent.InodeName, Interop.Sys.FnMatchFlags.FNM_NONE) == 0)
-                                    {
-                                        yield return _translateResult(userPath ?? Path.Combine(dirPath.UserPath, dirent.InodeName), /*isDirectory*/true);
-                                    }
-                                }
-                            }
-                            else if (_includeFiles &&
-                                     Interop.Sys.FnMatch(_searchPattern, dirent.InodeName, Interop.Sys.FnMatchFlags.FNM_NONE) == 0)
-                            {
-                                yield return _translateResult(Path.Combine(dirPath.UserPath, dirent.InodeName), /*isDirectory*/false);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        // Close the directory enumerator
-                        dirHandle.Dispose();
-                        dirHandle = null;
-                    }
-
-                    if (toExplore != null && toExplore.Count > 0)
-                    {
-                        // Open the next directory.
-                        dirPath = toExplore.Pop();
-                        dirHandle = OpenDirectory(dirPath.FullPath);
-                    }
-                }
-            }
-
-            private static string NormalizeSearchPattern(string searchPattern)
-            {
-                if (searchPattern == "." || searchPattern == "*.*")
-                {
-                    searchPattern = "*";
-                }
-                else if (PathHelpers.EndsInDirectorySeparator(searchPattern))
-                {
-                    searchPattern += "*";
-                }
-
-                return searchPattern;
-            }
-
-            private static Microsoft.Win32.SafeHandles.SafeDirectoryHandle OpenDirectory(string fullPath)
-            {
-                Microsoft.Win32.SafeHandles.SafeDirectoryHandle handle = Interop.Sys.OpenDir(fullPath);
-                if (handle.IsInvalid)
-                {
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), fullPath, isDirectory: true);
-                }
-                return handle;
-            }
-        }
-
         /// <summary>Determines whether the specified directory name should be ignored.</summary>
         /// <param name="name">The name to evaluate.</param>
         /// <returns>true if the name is "." or ".."; otherwise, false.</returns>
@@ -760,13 +514,6 @@ namespace System.IO
                 (FileSystemInfo)new FileInfo(fullPath, null);
 
             info.LastWriteTimeCore = time;
-        }
-
-        public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
-        {
-            return asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
         }
 
         public static string[] GetLogicalDrives()

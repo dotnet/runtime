@@ -19,28 +19,24 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\IO\CharSpanExtensions.cs" />
-    <Compile Include="System\IO\DosMatcher.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerable.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerableFactory.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemName.cs" />
+    <Compile Include="System\IO\Enumeration\MatchType.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
     <Compile Include="System\IO\DirectoryInfo.cs" />
     <Compile Include="System\IO\File.cs" />
     <Compile Include="System\IO\FileInfo.cs" />
     <Compile Include="System\IO\FileSystemInfo.cs" />
+    <Compile Include="System\IO\Enumeration\EnumerationOptions.cs" />
     <Compile Include="System\IO\Iterator.cs" />
     <Compile Include="System\IO\PathHelpers.cs" />
     <Compile Include="System\IO\PathPair.cs" />
     <Compile Include="System\IO\ReadLinesIterator.cs" />
     <Compile Include="System\IO\SearchOption.cs" />
     <Compile Include="System\IO\SearchTarget.cs" />
-    <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
-      <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
-      <Link>Common\System\Collections\Generic\EnumerableHelpers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
-      <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
@@ -62,19 +58,14 @@
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
     <Compile Include="System\IO\CharSpanExtensions.Windows.cs" />
     <Compile Include="System\IO\DisableMediaInsertionPrompt.cs" />
     <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
     <Compile Include="System\IO\FileInfo.Windows.cs" />
-    <Compile Include="System\IO\FindEnumerable.Windows.cs" />
-    <Compile Include="System\IO\FindEnumerableFactory.cs" />
-    <Compile Include="System\IO\FindPredicate.cs" />
-    <Compile Include="System\IO\FindTransform.cs" />
-    <Compile Include="System\IO\FindPredicates.cs" />
-    <Compile Include="System\IO\FindTransforms.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\PathHelpers.Windows.cs" />
-    <Compile Include="System\IO\RawFindData.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEntry.Windows.cs" />
     <Compile Include="System\IO\FileSystem.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -246,7 +237,7 @@
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
-    <Compile Include="System\IO\FindEnumerable.Win32.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
     </Compile>
@@ -274,7 +265,7 @@
   </ItemGroup>
   <!-- Windows : UAP - Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' == 'true'">
-    <Compile Include="System\IO\FindEnumerable.WinRT.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.WinRT.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
       <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
     </Compile>
@@ -290,6 +281,8 @@
   </ItemGroup>
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
+    <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="System\IO\CharSpanExtensions.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\PathHelpers.Unix.cs" />
@@ -405,6 +398,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
