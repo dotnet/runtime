@@ -6,14 +6,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Runtime.CompilerServices;
+using System.Buffers;
 
 namespace System
 {
     public partial class String
     {
+        private const int StackallocIntBufferSizeLimit = 128;
+
         unsafe private static void FillStringChecked(String dest, int destPos, String src)
         {
             Debug.Assert(dest != null);
@@ -1141,7 +1143,7 @@ namespace System
             return SplitInternal(separator, count, options);
         }
 
-        private String[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
+        private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
@@ -1152,33 +1154,35 @@ namespace System
 
             bool omitEmptyEntries = (options == StringSplitOptions.RemoveEmptyEntries);
 
-            if ((count == 0) || (omitEmptyEntries && this.Length == 0))
+            if ((count == 0) || (omitEmptyEntries && Length == 0))
             {
-                return Array.Empty<String>();
+                return Array.Empty<string>();
             }
 
             if (count == 1)
             {
-                return new String[] { this };
+                return new string[] { this };
             }
 
-            int[] sepList = new int[Length];
-            int numReplaces = MakeSeparatorList(separators, sepList);
+            Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
+            var sepListBuilder = new ValueListBuilder<int>(initialSpan);
+
+            MakeSeparatorList(separators, ref sepListBuilder);
+            ReadOnlySpan<int> sepList = sepListBuilder.AsReadOnlySpan();
 
             // Handle the special case of no replaces.
-            if (0 == numReplaces)
+            if (sepList.Length == 0)
             {
-                return new String[] { this };
+                return new string[] { this };
             }
 
-            if (omitEmptyEntries)
-            {
-                return SplitOmitEmptyEntries(sepList, null, 1, numReplaces, count);
-            }
-            else
-            {
-                return SplitKeepEmptyEntries(sepList, null, 1, numReplaces, count);
-            }
+            string[] result = omitEmptyEntries 
+                ? SplitOmitEmptyEntries(sepList, default, 1, count)
+                : SplitKeepEmptyEntries(sepList, default, 1, count);
+
+            sepListBuilder.Dispose();
+
+            return result;
         }
 
         public String[] Split(String separator, StringSplitOptions options = StringSplitOptions.None)
@@ -1201,7 +1205,7 @@ namespace System
             return SplitInternal(null, separator, count, options);
         }
 
-        private String[] SplitInternal(String separator, String[] separators, Int32 count, StringSplitOptions options)
+        private string[] SplitInternal(string separator, string[] separators, int count, StringSplitOptions options)
         {
             if (count < 0)
             {
@@ -1223,74 +1227,87 @@ namespace System
                 return SplitInternal((char[])null, count, options);
             }
 
-            if ((count == 0) || (omitEmptyEntries && this.Length == 0))
+            if ((count == 0) || (omitEmptyEntries && Length == 0))
             {
-                return Array.Empty<String>();
+                return Array.Empty<string>();
             }
 
             if (count == 1 || (singleSeparator && separator.Length == 0))
             {
-                return new String[] { this };
+                return new string[] { this };
             }
-
-            int[] sepList = new int[Length];
-            int[] lengthList;
-            int defaultLength;
-            int numReplaces;
 
             if (singleSeparator)
             {
-                lengthList = null;
-                defaultLength = separator.Length;
-                numReplaces = MakeSeparatorList(separator, sepList);
+                return SplitInternal(separator, count, options);
             }
-            else
-            {
-                lengthList = new int[Length];
-                defaultLength = 0;
-                numReplaces = MakeSeparatorList(separators, sepList, lengthList);
-            }
+            
+            Span<int> sepListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
+            var sepListBuilder = new ValueListBuilder<int>(sepListInitialSpan);
 
+            Span<int> lengthListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
+            var lengthListBuilder = new ValueListBuilder<int>(lengthListInitialSpan);
+
+            MakeSeparatorList(separators, ref sepListBuilder, ref lengthListBuilder);
+            ReadOnlySpan<int> sepList = sepListBuilder.AsReadOnlySpan();
+            ReadOnlySpan<int> lengthList = lengthListBuilder.AsReadOnlySpan();
+            
             // Handle the special case of no replaces.
-            if (0 == numReplaces)
+            if (sepList.Length == 0)
             {
-                return new String[] { this };
+                return new string[] { this };
             }
 
-            if (omitEmptyEntries)
-            {
-                return SplitOmitEmptyEntries(sepList, lengthList, defaultLength, numReplaces, count);
-            }
-            else
-            {
-                return SplitKeepEmptyEntries(sepList, lengthList, defaultLength, numReplaces, count);
-            }
+            string[] result = omitEmptyEntries 
+                ? SplitOmitEmptyEntries(sepList, lengthList, 0, count)
+                : SplitKeepEmptyEntries(sepList, lengthList, 0, count);
+
+            sepListBuilder.Dispose();
+            lengthListBuilder.Dispose();
+
+            return result;
         }
 
-        // Note a special case in this function:
-        //     If there is no separator in the string, a string array which only contains 
-        //     the original string will be returned regardless of the count. 
-        //
-
-        private String[] SplitKeepEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 defaultLength, Int32 numReplaces, int count)
+        private string[] SplitInternal(string separator, int count, StringSplitOptions options)
         {
-            Debug.Assert(numReplaces >= 0);
+            Span<int> sepListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
+            var sepListBuilder = new ValueListBuilder<int>(sepListInitialSpan);
+
+            MakeSeparatorList(separator, ref sepListBuilder);
+            ReadOnlySpan<int> sepList = sepListBuilder.AsReadOnlySpan();
+            if (sepList.Length == 0)
+            {
+                // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
+                return new string[] { this };
+            }
+
+            string[] result = options == StringSplitOptions.RemoveEmptyEntries 
+                ? SplitOmitEmptyEntries(sepList, default, separator.Length, count)
+                : SplitKeepEmptyEntries(sepList, default, separator.Length, count);
+
+            sepListBuilder.Dispose();
+
+            return result;
+        }
+
+        private string[] SplitKeepEmptyEntries(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count)
+        {
             Debug.Assert(count >= 2);
 
             int currIndex = 0;
             int arrIndex = 0;
 
             count--;
-            int numActualReplaces = (numReplaces < count) ? numReplaces : count;
+            int numActualReplaces = (sepList.Length < count) ? sepList.Length : count;
 
             //Allocate space for the new array.
             //+1 for the string from the end of the last replace to the end of the String.
-            String[] splitStrings = new String[numActualReplaces + 1];
+            string[] splitStrings = new string[numActualReplaces + 1];
 
             for (int i = 0; i < numActualReplaces && currIndex < Length; i++)
             {
                 splitStrings[arrIndex++] = Substring(currIndex, sepList[i] - currIndex);
-                currIndex = sepList[i] + ((lengthList == null) ? defaultLength : lengthList[i]);
+                currIndex = sepList[i] + (lengthList.IsEmpty ? defaultLength : lengthList[i]);
             }
 
             //Handle the last string at the end of the array if there is one.
@@ -1302,7 +1319,7 @@ namespace System
             {
                 //We had a separator character at the end of a string.  Rather than just allowing
                 //a null character, we'll replace the last element in the array with an empty string.
-                splitStrings[arrIndex] = String.Empty;
+                splitStrings[arrIndex] = string.Empty;
             }
 
             return splitStrings;
@@ -1310,17 +1327,17 @@ namespace System
 
 
         // This function will not keep the Empty String 
-        private String[] SplitOmitEmptyEntries(Int32[] sepList, Int32[] lengthList, Int32 defaultLength, Int32 numReplaces, int count)
+        private string[] SplitOmitEmptyEntries(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count)
         {
-            Debug.Assert(numReplaces >= 0);
             Debug.Assert(count >= 2);
+
+            int numReplaces = sepList.Length;
 
             // Allocate array to hold items. This array may not be 
             // filled completely in this function, we will create a 
             // new array and copy string references to that new array.
-
             int maxItems = (numReplaces < count) ? (numReplaces + 1) : count;
-            String[] splitStrings = new String[maxItems];
+            string[] splitStrings = new string[maxItems];
 
             int currIndex = 0;
             int arrIndex = 0;
@@ -1331,13 +1348,13 @@ namespace System
                 {
                     splitStrings[arrIndex++] = Substring(currIndex, sepList[i] - currIndex);
                 }
-                currIndex = sepList[i] + ((lengthList == null) ? defaultLength : lengthList[i]);
+                currIndex = sepList[i] + (lengthList.IsEmpty ? defaultLength : lengthList[i]);
                 if (arrIndex == count - 1)
                 {
                     // If all the remaining entries at the end are empty, skip them
                     while (i < numReplaces - 1 && currIndex == sepList[++i])
                     {
-                        currIndex += ((lengthList == null) ? defaultLength : lengthList[i]);
+                        currIndex += (lengthList.IsEmpty ? defaultLength : lengthList[i]);
                     }
                     break;
                 }
@@ -1352,10 +1369,10 @@ namespace System
                 splitStrings[arrIndex++] = Substring(currIndex);
             }
 
-            String[] stringArray = splitStrings;
+            string[] stringArray = splitStrings;
             if (arrIndex != maxItems)
             {
-                stringArray = new String[arrIndex];
+                stringArray = new string[arrIndex];
                 for (int j = 0; j < arrIndex; j++)
                 {
                     stringArray[j] = splitStrings[j];
@@ -1364,15 +1381,14 @@ namespace System
             return stringArray;
         }
 
-        //--------------------------------------------------------------------    
-        // This function returns the number of the places within this instance where 
-        // characters in Separator occur.
-        // Args: separator  -- A string containing all of the split characters.
-        //       sepList    -- an array of ints for split char indicies.
-        //--------------------------------------------------------------------    
-        private int MakeSeparatorList(ReadOnlySpan<char> separators, int[] sepList)
+        /// <summary>
+        /// Uses ValueListBuilder to create list that holds indexes of separators in string.
+        /// </summary>
+        /// <param name="separators"><see cref="ReadOnlySpan{T}"/> of separator chars</param>
+        /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
+        /// <returns></returns>
+        private void MakeSeparatorList(ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
-            int foundCount = 0;
             char sep0, sep1, sep2;
 
             switch (separators.Length)
@@ -1383,7 +1399,7 @@ namespace System
                     {
                         if (char.IsWhiteSpace(this[i]))
                         {
-                            sepList[foundCount++] = i;
+                            sepListBuilder.Append(i);
                         }
                     }
                     break;
@@ -1395,7 +1411,7 @@ namespace System
                     {
                         if (this[i] == sep0)
                         {
-                            sepList[foundCount++] = i;
+                            sepListBuilder.Append(i);
                         }
                     }
                     break;
@@ -1407,7 +1423,7 @@ namespace System
                         char c = this[i];
                         if (c == sep0 || c == sep1)
                         {
-                            sepList[foundCount++] = i;
+                            sepListBuilder.Append(i);
                         }
                     }
                     break;
@@ -1420,7 +1436,7 @@ namespace System
                         char c = this[i];
                         if (c == sep0 || c == sep1 || c == sep2)
                         {
-                            sepList[foundCount++] = i;
+                            sepListBuilder.Append(i);
                         }
                     }
                     break;
@@ -1440,92 +1456,75 @@ namespace System
                             if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
                                 separators.Contains(c))
                             {
-                                sepList[foundCount++] = i;
+                                sepListBuilder.Append(i);
                             }
                         }
                     }
                     break;
             }
-
-            return foundCount;
         }
 
-        //--------------------------------------------------------------------
-        // This function returns number of the places within baseString where
-        // instances of the separator string occurs.
-        // Args: separator  -- the separator
-        //       sepList    -- an array of ints for split string indicies.
-        //--------------------------------------------------------------------
-        private unsafe int MakeSeparatorList(string separator, int[] sepList)
+        /// <summary>
+        /// Uses ValueListBuilder to create list that holds indexes of separators in string.
+        /// </summary>
+        /// <param name="separator">separator string</param>
+        /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
+        /// <returns></returns>
+        private void MakeSeparatorList(string separator, ref ValueListBuilder<int> sepListBuilder)
         {
-            Debug.Assert(!string.IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
+            Debug.Assert(!IsNullOrEmpty(separator), "!string.IsNullOrEmpty(separator)");
 
-            int foundCount = 0;
-            int sepListCount = sepList.Length;
             int currentSepLength = separator.Length;
 
-            fixed (char* pwzChars = &_firstChar)
+            for (int i = 0; i < Length; i++)
             {
-                for (int i = 0; i < Length && foundCount < sepListCount; i++)
+                if (this[i] == separator[0] && currentSepLength <= Length - i)
                 {
-                    if (pwzChars[i] == separator[0] && currentSepLength <= Length - i)
+                    if (currentSepLength == 1
+                        || CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
                     {
-                        if (currentSepLength == 1
-                            || String.CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
-                        {
-                            sepList[foundCount] = i;
-                            foundCount++;
-                            i += currentSepLength - 1;
-                        }
+                        sepListBuilder.Append(i);
+                        i += currentSepLength - 1;
                     }
                 }
             }
-            return foundCount;
         }
 
-        //--------------------------------------------------------------------    
-        // This function returns the number of the places within this instance where 
-        // instances of separator strings occur.
-        // Args: separators -- An array containing all of the split strings.
-        //       sepList    -- an array of ints for split string indicies.
-        //       lengthList -- an array of ints for split string lengths.
-        //--------------------------------------------------------------------    
-        private unsafe int MakeSeparatorList(String[] separators, int[] sepList, int[] lengthList)
+        /// <summary>
+        /// Uses ValueListBuilder to create list that holds indexes of separators in string and list that holds length of separator strings.
+        /// </summary>
+        /// <param name="separators">separator strngs</param>
+        /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> for separator indexes</param>
+        /// <param name="lengthListBuilder"><see cref="ValueListBuilder{T}"/> for separator length values</param>        
+        private void MakeSeparatorList(string[] separators, ref ValueListBuilder<int> sepListBuilder, ref ValueListBuilder<int> lengthListBuilder)
         {
             Debug.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");
 
-            int foundCount = 0;
-            int sepListCount = sepList.Length;
             int sepCount = separators.Length;
 
-            fixed (char* pwzChars = &_firstChar)
+            for (int i = 0; i < Length; i++)
             {
-                for (int i = 0; i < Length && foundCount < sepListCount; i++)
+                for (int j = 0; j < separators.Length; j++)
                 {
-                    for (int j = 0; j < separators.Length; j++)
+                    string separator = separators[j];
+                    if (IsNullOrEmpty(separator))
                     {
-                        String separator = separators[j];
-                        if (String.IsNullOrEmpty(separator))
+                        continue;
+                    }
+                    int currentSepLength = separator.Length;
+                    if (this[i] == separator[0] && currentSepLength <= Length - i)
+                    {
+                        if (currentSepLength == 1
+                            || CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
                         {
-                            continue;
-                        }
-                        Int32 currentSepLength = separator.Length;
-                        if (pwzChars[i] == separator[0] && currentSepLength <= Length - i)
-                        {
-                            if (currentSepLength == 1
-                                || String.CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
-                            {
-                                sepList[foundCount] = i;
-                                lengthList[foundCount] = currentSepLength;
-                                foundCount++;
-                                i += currentSepLength - 1;
-                                break;
-                            }
+                            sepListBuilder.Append(i);
+                            lengthListBuilder.Append(currentSepLength);
+                            i += currentSepLength - 1;
+                            break;
                         }
                     }
                 }
             }
-            return foundCount;
         }
 
         // Returns a substring of this string.
