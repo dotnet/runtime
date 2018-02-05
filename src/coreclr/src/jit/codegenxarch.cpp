@@ -2787,7 +2787,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
         }
         else
         {
-            emit->emitIns_R_R(INS_xorpd, EA_8BYTE, tmpReg, tmpReg);
+            emit->emitIns_R_R(INS_xorps, EA_8BYTE, tmpReg, tmpReg);
         }
 
         // Determine how many 16 byte slots we're going to fill using SSE movs.
