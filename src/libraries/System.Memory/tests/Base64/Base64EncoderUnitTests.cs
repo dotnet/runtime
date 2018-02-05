@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.SpanTests;
 using System.Text;
 using Xunit;
 
@@ -75,20 +76,44 @@ namespace System.Buffers.Text.Tests
         [OuterLoop]
         public void EncodeTooLargeSpan()
         {
+
+            if (IntPtr.Size < 8)
+                return;
+
+            bool allocatedFirst = false;
+            bool allocatedSecond = false;
+            IntPtr memBlockFirst = IntPtr.Zero;
+            IntPtr memBlockSecond = IntPtr.Zero;
+
             // int.MaxValue - (int.MaxValue % 4) => 2147483644, largest multiple of 4 less than int.MaxValue
             // CLR default limit of 2 gigabytes (GB).
+            // 1610612734, larger than MaximumEncodeLength, requires output buffer of size 2147483648 (which is > int.MaxValue)
+            const int sourceCount = (int.MaxValue >> 2) * 3 + 1;
+            const int encodedCount = 2000000000;
+            
             try
             {
-                // 1610612734, larger than MaximumEncodeLength, requires output buffer of size 2147483648 (which is > int.MaxValue)
-                Span<byte> source = new byte[(int.MaxValue >> 2) * 3 + 1];
-                Span<byte> encodedBytes = new byte[2000000000];
-                Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
-                Assert.Equal((encodedBytes.Length >> 2) * 3, consumed); // encoding 1500000000 bytes fits into buffer of 2000000000 bytes 
-                Assert.Equal(encodedBytes.Length, encodedBytesCount);
+                allocatedFirst = AllocationHelper.TryAllocNative((IntPtr)sourceCount, out memBlockFirst);
+                allocatedSecond = AllocationHelper.TryAllocNative((IntPtr)encodedCount, out memBlockSecond);
+                if (allocatedFirst && allocatedSecond)
+                {
+                    unsafe
+                    {
+                        var source = new Span<byte>(memBlockFirst.ToPointer(), sourceCount);
+                        var encodedBytes = new Span<byte>(memBlockSecond.ToPointer(), encodedCount);
+
+                        Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
+                        Assert.Equal((encodedBytes.Length >> 2) * 3, consumed); // encoding 1500000000 bytes fits into buffer of 2000000000 bytes 
+                        Assert.Equal(encodedBytes.Length, encodedBytesCount);
+                    }
+                }
             }
-            catch (OutOfMemoryException)
+            finally
             {
-                // do nothing
+                if (allocatedFirst)
+                    AllocationHelper.ReleaseNative(ref memBlockFirst);
+                if (allocatedSecond)
+                    AllocationHelper.ReleaseNative(ref memBlockSecond);
             }
         }
 

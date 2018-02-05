@@ -93,20 +93,11 @@ namespace System.Buffers.Text.Tests
         {
             get
             {
-                yield return new ParserTestData<int>("0", 0, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
-                yield return new ParserTestData<int>("2", 2, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
-                yield return new ParserTestData<int>("21", 21, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
-                yield return new ParserTestData<int>("+2", 2, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
                 yield return new ParserTestData<int>("-2", -2, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
                 yield return new ParserTestData<int>("2147483647", 2147483647, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
-                yield return new ParserTestData<int>("-2147483648", -2147483648, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
                 yield return new ParserTestData<int>("2147483648", default, 'D', expectedSuccess: false);
-                yield return new ParserTestData<int>("-2147483649", default, 'D', expectedSuccess: false);
                 yield return new ParserTestData<int>("12345abcdefg1", 12345, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB - 8 };
-                yield return new ParserTestData<int>("1234145abcdefg1", 1234145, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB - 8 };
                 yield return new ParserTestData<int>("abcdefghijklmnop1", 0, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB - 17 };
-                yield return new ParserTestData<int>("1147483648", 1147483648, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
-                yield return new ParserTestData<int>("-1147483649", -1147483649, 'D', expectedSuccess: true) { ExpectedBytesConsumed = TwoGiB };
             }
         }
     }
