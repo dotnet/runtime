@@ -390,7 +390,7 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public void TryWrite_NoBlockedReaders_WaitingReader_WaiterNotifified()
+        public void TryWrite_NoBlockedReaders_WaitingReader_WaiterNotified()
         {
             Channel<int> c = CreateChannel();
 
