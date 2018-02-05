@@ -161,7 +161,24 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 	g_error ("pthread_kill () is not supported by this platform");
 #endif
 
-	if (result && result != ESRCH)
+	/*
+	 * ESRCH just means the thread is gone; this is usually not fatal.
+	 *
+	 * ENOTSUP can occur if we try to send signals (e.g. for sampling) to Grand
+	 * Central Dispatch threads on Apple platforms. This is kinda bad, but
+	 * since there's really nothing we can do about it, we just ignore it and
+	 * move on.
+	 *
+	 * All other error codes are ill-documented and usually stem from various
+	 * OS-specific idiosyncracies. We want to know about these, so fail loudly.
+	 * One example is EAGAIN on Linux, which indicates a signal queue overflow.
+	 */
+	if (result &&
+	    result != ESRCH
+#if defined (__MACH__) && defined (ENOTSUP)
+	    && result != ENOTSUP
+#endif
+	    )
 		g_error ("%s: pthread_kill failed with error %d - potential kernel OOM or signal queue overflow", __func__, result);
 
 	return result;
