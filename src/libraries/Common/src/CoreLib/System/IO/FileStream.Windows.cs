@@ -848,9 +848,7 @@ namespace System.IO
             Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = destination.TryGetArray(out ArraySegment<byte> memoryArray) ?
-                new FileStreamCompletionSource(this, numBufferedBytesRead, memoryArray.Array) :
-                new MemoryFileStreamCompletionSource(this, numBufferedBytesRead, destination);
+            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, numBufferedBytesRead, destination);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -1069,9 +1067,7 @@ namespace System.IO
             Debug.Assert(_useAsyncIO, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = MemoryMarshal.TryGetArray(source, out ArraySegment<byte> array) ?
-                new FileStreamCompletionSource(this, 0, array.Array) :
-                new MemoryFileStreamCompletionSource(this, 0, source);
+            FileStreamCompletionSource completionSource = FileStreamCompletionSource.Create(this, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (CanSeek)
