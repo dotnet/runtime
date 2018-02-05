@@ -830,7 +830,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 {
 	MonoImage *image = method->klass->image;
 	MonoMethodSignature *csignature;
-	int virtual = *td->ip == CEE_CALLVIRT;
+	int is_virtual = *td->ip == CEE_CALLVIRT;
 	int calli = *td->ip == CEE_CALLI || *td->ip == CEE_MONO_CALLI_EXTRA_ARG;
 	int i;
 	guint32 vt_stack_used = 0;
@@ -838,7 +838,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int op = -1;
 	int native = 0;
 	int is_void = 0;
-	int need_null_check = virtual;
+	int need_null_check = is_virtual;
 
 	guint32 token = read32 (td->ip + 1);
 
@@ -1101,28 +1101,28 @@ no_intrinsic:
 					ADD_CODE (td, csignature->param_count | ((td->sp - 1)->type != STACK_TYPE_MP ? 0 : BOX_NOT_CLEAR_VT_SP));
 				}
 			}
-			virtual = FALSE;
+			is_virtual = FALSE;
 		}
 	}
 
 	if (target_method)
 		mono_class_init (target_method->klass);
 
-	if (!virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT))
+	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		/* MS.NET seems to silently convert this to a callvirt */
-		virtual = TRUE;
+		is_virtual = TRUE;
 
-	if (virtual && target_method && (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
+	if (is_virtual && target_method && (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 		(MONO_METHOD_IS_FINAL (target_method) &&
 		 target_method->wrapper_type != MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)) &&
 		!(mono_class_is_marshalbyref (target_method->klass))) {
 		/* Not really virtual, just needs a null check */
-		virtual = FALSE;
+		is_virtual = FALSE;
 		need_null_check = TRUE;
 	}
 
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
-	if (!calli && op == -1 && (!virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
+	if (!calli && op == -1 && (!is_virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
@@ -1165,7 +1165,7 @@ no_intrinsic:
 					ADD_CODE (td, 0);
 				}
 				if (csignature->hasthis) {
-					if (virtual || need_null_check)
+					if (is_virtual || need_null_check)
 						ADD_CODE (td, MINT_CKNULL);
 					ADD_CODE (td, MINT_POP);
 					ADD_CODE (td, 0);
@@ -1179,7 +1179,7 @@ no_intrinsic:
 	if (method->wrapper_type == MONO_WRAPPER_NONE && target_method != NULL) {
 		if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
-		if (!virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		if (!is_virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 	}
 
@@ -1239,14 +1239,14 @@ no_intrinsic:
 			ADD_CODE (td, get_data_item_index (td, target_method->klass));
 			ADD_CODE (td, 1 + target_method->klass->rank);
 		}
-	} else if (!calli && !virtual && jit_call_supported (target_method, csignature)) {
+	} else if (!calli && !is_virtual && jit_call_supported (target_method, csignature)) {
 		ADD_CODE(td, MINT_JIT_CALL);
 		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error)));
 		mono_error_assert_ok (error);
 	} else {
 		if (calli)
 			ADD_CODE(td, native ? MINT_CALLI_NAT : MINT_CALLI);
-		else if (virtual)
+		else if (is_virtual)
 			ADD_CODE(td, is_void ? MINT_VCALLVIRT : MINT_CALLVIRT);
 		else
 			ADD_CODE(td, is_void ? MINT_VCALL : MINT_CALL);
