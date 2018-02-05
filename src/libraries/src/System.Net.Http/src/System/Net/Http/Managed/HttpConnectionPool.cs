@@ -56,7 +56,10 @@ namespace System.Net.Http
             if (!pools.UsingProxy)
             {
                 // CONSIDER: Cache more than just host name -- port, header name, etc
+
+                // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 _idnHostAsciiBytes = Encoding.ASCII.GetBytes(key.Host);
+                Debug.Assert(Encoding.ASCII.GetString(_idnHostAsciiBytes) == key.Host);
             }
             else
             {
