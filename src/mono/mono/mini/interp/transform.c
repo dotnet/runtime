@@ -296,6 +296,15 @@ grow_code (TransformData *td)
 			ADD_CODE(td, sp_off == 1 ? MINT_CONV_I4_I8 : MINT_CONV_I4_I8_SP); \
 	} while (0)
 
+#define CHECK_TYPELOAD(klass) \
+	do { \
+		if (!(klass) || mono_class_has_failure (klass)) { \
+			mono_error_set_for_class_failure (error, klass); \
+			goto exit; \
+		} \
+	} while (0)
+
+
 static void 
 handle_branch (TransformData *td, int short_op, int long_op, int offset)
 {
@@ -1051,6 +1060,10 @@ no_intrinsic:
 
 	if (constrained_class) {
 		mono_class_setup_vtable (constrained_class);
+		if (mono_class_has_failure (constrained_class)) {
+			mono_error_set_for_class_failure (error, constrained_class);
+			return;
+		}
 #if DEBUG_INTERP
 		g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
@@ -2853,6 +2866,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 			ADD_CODE(td, MINT_CASTCLASS);
 			ADD_CODE(td, get_data_item_index (td, klass));
 			td->sp [-1].klass = klass;
@@ -2862,6 +2876,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			CHECK_STACK (td, 1);
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 			ADD_CODE(td, MINT_ISINST);
 			ADD_CODE(td, get_data_item_index (td, klass));
 			td->ip += 5;
@@ -2911,6 +2926,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			token = read32 (td->ip + 1);
 
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 
 			if (mini_type_is_reference (&klass->byval_arg)) {
 				int mt = mint_type (&klass->byval_arg);
@@ -3147,6 +3163,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 
 			BARRIER_IF_VOLATILE (td);
 			ADD_CODE(td, td->sp [-1].type == STACK_TYPE_VT ? MINT_STOBJ_VT : MINT_STOBJ);
@@ -3219,6 +3236,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
@@ -3251,6 +3269,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 
 			unsigned char lentype = (td->sp - 1)->type;
 			if (lentype == STACK_TYPE_I8) {
@@ -3282,7 +3301,15 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			else
 				klass = mini_get_class (method, token, generic_context);
 
+			CHECK_TYPELOAD (klass);
+
 			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
+				/*
+				 * Check the class for failures before the type check, which can
+				 * throw other exceptions.
+				 */
+				mono_class_setup_vtable (klass);
+				CHECK_TYPELOAD (klass);
 				ADD_CODE (td, MINT_LDELEMA_TC);
 			} else {
 				ADD_CODE (td, MINT_LDELEMA);
@@ -3377,6 +3404,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			CHECK_STACK (td, 2);
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 			switch (mint_type (&klass->byval_arg)) {
 				case MINT_TYPE_I1:
 					ENSURE_I4 (td, 1);
@@ -3507,6 +3535,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			ENSURE_I4 (td, 2);
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 			switch (mint_type (&klass->byval_arg)) {
 				case MINT_TYPE_I1:
 					SIMPLE_OP (td, MINT_STELEM_I1);
@@ -3570,6 +3599,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 
 			ADD_CODE (td, MINT_MKREFANY);
 			ADD_CODE (td, get_data_item_index (td, klass));
@@ -3583,6 +3613,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 			token = read32 (td->ip + 1);
 			klass = mini_get_class (method, token, generic_context);
+			CHECK_TYPELOAD (klass);
 
 			ADD_CODE (td, MINT_REFANYVAL);
 			ADD_CODE (td, get_data_item_index (td, klass));
@@ -4218,6 +4249,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				CHECK_STACK(td, 1);
 				token = read32 (td->ip + 1);
 				klass = mini_get_class (method, token, generic_context);
+				CHECK_TYPELOAD (klass);
 				if (klass->valuetype) {
 					ADD_CODE (td, MINT_INITOBJ);
 					i32 = mono_class_value_size (klass, NULL);
@@ -4246,7 +4278,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			case CEE_CONSTRAINED_:
 				token = read32 (td->ip + 1);
 				constrained_class = mini_get_class (method, token, generic_context);
-				mono_class_init (constrained_class);
+				CHECK_TYPELOAD (constrained_class);
 				td->ip += 5;
 				break;
 			case CEE_INITBLK:
@@ -4280,7 +4312,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				} else {
 					int align;
 					MonoClass *szclass = mini_get_class (method, token, generic_context);
-					mono_class_init (szclass);
+					CHECK_TYPELOAD (szclass);
 #if 0
 					if (!szclass->valuetype)
 						THROW_EX (mono_exception_from_name (mono_defaults.corlib, "System", "InvalidProgramException"), ip - 5);
