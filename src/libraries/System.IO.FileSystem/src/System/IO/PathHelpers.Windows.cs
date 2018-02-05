@@ -30,19 +30,5 @@ namespace System.IO
             EndsInDirectorySeparator(path) ?
                 path.Substring(0, path.Length - 1) :
                 path;
-
-        public static bool IsPathRooted(string path)
-        {
-            // Want to avoid PathInternal.CheckInvalidPathChars on Path.IsPathRooted
-
-            if (path != null)
-            {
-                int length = path.Length;
-                if ((length >= 1 && PathInternal.IsDirectorySeparator(path[0])) ||
-                    (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == Path.VolumeSeparatorChar))
-                    return true;
-            }
-            return false;
-        }
     }
 }

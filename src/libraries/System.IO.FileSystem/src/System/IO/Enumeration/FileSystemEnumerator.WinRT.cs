@@ -5,9 +5,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace System.IO
+namespace System.IO.Enumeration
 {
-    internal partial class FindEnumerable<TResult, TState>
+    public partial class FileSystemEnumerator<TResult>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe bool GetData()
@@ -24,9 +24,16 @@ namespace System.IO
                     case Interop.Errors.ERROR_NO_MORE_FILES:
                         DirectoryFinished();
                         return false;
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(error, _currentPath);
+                    case Interop.Errors.ERROR_ACCESS_DENIED:
+                        if (_options.IgnoreInaccessible)
+                        {
+                            return false;
+                        }
+                        break;
                 }
+
+                if (!ContinueOnError(error))
+                    throw Win32Marshal.GetExceptionForWin32Error(error, _currentPath);
             }
 
             return true;
