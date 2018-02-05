@@ -288,7 +288,7 @@ namespace System.Text.RegularExpressions
                         goto ContinueOuterScan;
 
                     case '[':
-                        AddUnitSet(ScanCharClass(UseOptionI()).ToStringClass());
+                        AddUnitSet(ScanCharClass(UseOptionI(), scanOnly: false).ToStringClass());
                         break;
 
                     case '(':
@@ -326,7 +326,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '\\':
-                        AddUnitNode(ScanBackslash());
+                        AddUnitNode(ScanBackslash(scanOnly: false));
                         break;
 
                     case '^':
@@ -495,15 +495,6 @@ namespace System.Text.RegularExpressions
          * Scans contents of [] (not including []'s), and converts to a
          * RegexCharClass.
          */
-        internal RegexCharClass ScanCharClass(bool caseInsensitive)
-        {
-            return ScanCharClass(caseInsensitive, false);
-        }
-
-        /*
-         * Scans contents of [] (not including []'s), and converts to a
-         * RegexCharClass.
-         */
         internal RegexCharClass ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
             char ch = '\0';
@@ -624,7 +615,7 @@ namespace System.Text.RegularExpressions
                             // In that case, we'll add chPrev to our char class, skip the opening [, and
                             // scan the new character class recursively.
                             cc.AddChar(chPrev);
-                            cc.AddSubtraction(ScanCharClass(caseInsensitive, false));
+                            cc.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly));
 
                             if (CharsRight() > 0 && RightChar() != ']')
                                 throw MakeException(SR.SubtractionMustBeLast);
@@ -652,7 +643,7 @@ namespace System.Text.RegularExpressions
                     if (!scanOnly)
                     {
                         MoveRight(1);
-                        cc.AddSubtraction(ScanCharClass(caseInsensitive, false));
+                        cc.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly));
 
                         if (CharsRight() > 0 && RightChar() != ']')
                             throw MakeException(SR.SubtractionMustBeLast);
@@ -660,7 +651,7 @@ namespace System.Text.RegularExpressions
                     else
                     {
                         MoveRight(1);
-                        ScanCharClass(caseInsensitive, true);
+                        ScanCharClass(caseInsensitive, scanOnly);
                     }
                 }
                 else
@@ -988,7 +979,7 @@ namespace System.Text.RegularExpressions
          * Scans chars following a '\' (not counting the '\'), and returns
          * a RegexNode for the type of atom scanned.
          */
-        internal RegexNode ScanBackslash()
+        internal RegexNode ScanBackslash(bool scanOnly)
         {
             char ch;
             RegexCharClass cc;
@@ -1005,40 +996,54 @@ namespace System.Text.RegularExpressions
                 case 'Z':
                 case 'z':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     return new RegexNode(TypeFromCode(ch), _options);
 
                 case 'w':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     if (UseOptionE())
                         return new RegexNode(RegexNode.Set, _options, RegexCharClass.ECMAWordClass);
                     return new RegexNode(RegexNode.Set, _options, RegexCharClass.WordClass);
 
                 case 'W':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     if (UseOptionE())
                         return new RegexNode(RegexNode.Set, _options, RegexCharClass.NotECMAWordClass);
                     return new RegexNode(RegexNode.Set, _options, RegexCharClass.NotWordClass);
 
                 case 's':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     if (UseOptionE())
                         return new RegexNode(RegexNode.Set, _options, RegexCharClass.ECMASpaceClass);
                     return new RegexNode(RegexNode.Set, _options, RegexCharClass.SpaceClass);
 
                 case 'S':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     if (UseOptionE())
                         return new RegexNode(RegexNode.Set, _options, RegexCharClass.NotECMASpaceClass);
                     return new RegexNode(RegexNode.Set, _options, RegexCharClass.NotSpaceClass);
 
                 case 'd':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     if (UseOptionE())
                         return new RegexNode(RegexNode.Set, _options, RegexCharClass.ECMADigitClass);
                     return new RegexNode(RegexNode.Set, _options, RegexCharClass.DigitClass);
 
                 case 'D':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     if (UseOptionE())
                         return new RegexNode(RegexNode.Set, _options, RegexCharClass.NotECMADigitClass);
                     return new RegexNode(RegexNode.Set, _options, RegexCharClass.NotDigitClass);
@@ -1046,6 +1051,8 @@ namespace System.Text.RegularExpressions
                 case 'p':
                 case 'P':
                     MoveRight();
+                    if (scanOnly)
+                        return null;
                     cc = new RegexCharClass();
                     cc.AddCategoryFromName(ParseProperty(), (ch != 'p'), UseOptionI(), _pattern);
                     if (UseOptionI())
@@ -1054,14 +1061,14 @@ namespace System.Text.RegularExpressions
                     return new RegexNode(RegexNode.Set, _options, cc.ToStringClass());
 
                 default:
-                    return ScanBasicBackslash();
+                    return ScanBasicBackslash(scanOnly);
             }
         }
 
         /*
          * Scans \-style backreferences and character escapes
          */
-        internal RegexNode ScanBasicBackslash()
+        internal RegexNode ScanBasicBackslash(bool scanOnly)
         {
             if (CharsRight() == 0)
                 throw MakeException(SR.IllegalEndEscape);
@@ -1107,7 +1114,7 @@ namespace System.Text.RegularExpressions
                 ch = RightChar();
             }
 
-            // Try to parse backreference: \<1> or \<cap>
+            // Try to parse backreference: \<1>
 
             if (angled && ch >= '0' && ch <= '9')
             {
@@ -1115,6 +1122,8 @@ namespace System.Text.RegularExpressions
 
                 if (CharsRight() > 0 && RightCharMoveRight() == close)
                 {
+                    if (scanOnly)
+                        return null;
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
                     else
@@ -1141,11 +1150,13 @@ namespace System.Text.RegularExpressions
                         newcapnum = newcapnum * 10 + (int)(ch - '0');
                     }
                     if (capnum >= 0)
-                        return new RegexNode(RegexNode.Ref, _options, capnum);
+                        return scanOnly ? null : new RegexNode(RegexNode.Ref, _options, capnum);
                 }
                 else
                 {
                     int capnum = ScanDecimal();
+                    if (scanOnly)
+                        return null;
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
                     else if (capnum <= 9)
@@ -1153,12 +1164,17 @@ namespace System.Text.RegularExpressions
                 }
             }
 
+
+            // Try to parse backreference: \<foo>
+
             else if (angled && RegexCharClass.IsWordChar(ch))
             {
                 string capname = ScanCapname();
 
                 if (CharsRight() > 0 && RightCharMoveRight() == close)
                 {
+                    if (scanOnly)
+                        return null;
                     if (IsCaptureName(capname))
                         return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
                     else
@@ -1174,7 +1190,7 @@ namespace System.Text.RegularExpressions
             if (UseOptionI())
                 ch = _culture.TextInfo.ToLower(ch);
 
-            return new RegexNode(RegexNode.One, _options, ch);
+            return scanOnly ? null : new RegexNode(RegexNode.One, _options, ch);
         }
 
         /*
@@ -1645,7 +1661,7 @@ namespace System.Text.RegularExpressions
                 {
                     case '\\':
                         if (CharsRight() > 0)
-                            MoveRight();
+                            ScanBackslash(scanOnly: true);
                         break;
 
                     case '#':
@@ -1657,7 +1673,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '[':
-                        ScanCharClass(false, true);
+                        ScanCharClass(caseInsensitive: false, scanOnly: true);
                         break;
 
                     case ')':
