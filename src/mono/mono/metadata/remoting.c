@@ -16,6 +16,7 @@
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/marshal-internals.h"
 #include "mono/metadata/abi-details.h"
+#include "mono/metadata/class-init.h"
 #include "mono/metadata/cominterop.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/exception.h"
@@ -173,7 +174,7 @@ mono_remoting_marshal_init (void)
 	if (module_initialized)
 		return;
 
-	byte_array_class = mono_array_class_get (mono_defaults.byte_class, 1);
+	byte_array_class = mono_class_create_array (mono_defaults.byte_class, 1);
 
 #ifndef DISABLE_JIT
 	klass = mono_class_get_remoting_services_class ();

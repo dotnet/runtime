@@ -54,6 +54,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/class-init.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internals.h>
@@ -626,7 +627,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 	else
 		bounded = FALSE;
 
-	aklass = mono_bounded_array_class_get (klass, mono_array_length (lengths), bounded);
+	aklass = mono_class_create_bounded_array (klass, mono_array_length (lengths), bounded);
 
 	sizes = (uintptr_t *)alloca (aklass->rank * sizeof(intptr_t) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
@@ -678,7 +679,7 @@ ves_icall_System_Array_CreateInstanceImpl64 (MonoReflectionType *type, MonoArray
 	else
 		bounded = FALSE;
 
-	aklass = mono_bounded_array_class_get (klass, mono_array_length (lengths), bounded);
+	aklass = mono_class_create_bounded_array (klass, mono_array_length (lengths), bounded);
 
 	sizes = (uintptr_t *)alloca (aklass->rank * sizeof(intptr_t) * 2);
 	for (i = 0; i < aklass->rank; ++i) {
@@ -2847,7 +2848,7 @@ ves_icall_RuntimeType_GetGenericArguments (MonoReflectionTypeHandle ref_type, Mo
 		MONO_HANDLE_ASSIGN (res, create_type_array (domain, runtimeTypeArray, container->type_argc, error));
 		goto_if_nok (error, leave);
 		for (int i = 0; i < container->type_argc; ++i) {
-			MonoClass *pklass = mono_class_from_generic_parameter_internal (mono_generic_container_get_param (container, i));
+			MonoClass *pklass = mono_class_create_generic_parameter (mono_generic_container_get_param (container, i));
 
 			if (!set_type_object_in_array (domain, &pklass->byval_arg, res, i, error))
 				goto leave;
@@ -3197,7 +3198,7 @@ set_array_generic_argument_handle_gparam (MonoDomain *domain, MonoGenericContain
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoGenericParam *param = mono_generic_container_get_param (container, i);
-	MonoClass *pklass = mono_class_from_generic_parameter_internal (param);
+	MonoClass *pklass = mono_class_create_generic_parameter (param);
 	MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, &pklass->byval_arg, error);
 	goto_if_nok (error, leave);
 	MONO_HANDLE_ARRAY_SETREF (arr, i, rt);
@@ -6209,9 +6210,9 @@ ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int ra
 
 	MonoClass *aklass;
 	if (rank == 0) //single dimentional array
-		aklass = mono_array_class_get (klass, 1);
+		aklass = mono_class_create_array (klass, 1);
 	else
-		aklass = mono_bounded_array_class_get (klass, rank, TRUE);
+		aklass = mono_class_create_bounded_array (klass, rank, TRUE);
 
 	if (mono_class_has_failure (aklass)) {
 		mono_error_set_for_class_failure (error, aklass);
@@ -6256,7 +6257,7 @@ ves_icall_RuntimeType_MakePointerType (MonoReflectionTypeHandle ref_type, MonoEr
 	if (!is_ok (error))
 		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
 
-	MonoClass *pklass = mono_ptr_class_get (type);
+	MonoClass *pklass = mono_class_create_ptr (type);
 
 	return mono_type_get_object_handle (domain, &pklass->byval_arg, error);
 }

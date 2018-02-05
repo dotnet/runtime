@@ -25,6 +25,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/class-internals.h"
+#include "mono/metadata/class-init.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>

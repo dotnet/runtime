@@ -14,6 +14,7 @@
  */
 #include <config.h>
 #include "mono/metadata/assembly.h"
+#include "mono/metadata/class-init.h"
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/object-internals.h"

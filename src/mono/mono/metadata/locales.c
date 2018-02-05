@@ -18,6 +18,7 @@
 #include <glib.h>
 #include <string.h>
 
+#include <mono/metadata/class-init.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>

@@ -24,6 +24,7 @@
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
 #include "metadata/reflection-internals.h"
+#include "mono/metadata/class-init.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
@@ -3316,7 +3317,7 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 			}
 
 			if (allocateNewArray) {
-				aklass = mono_bounded_array_class_get (mono_defaults.object_class, dim, bounded);
+				aklass = mono_class_create_bounded_array (mono_defaults.object_class, dim, bounded);
 				*result = mono_array_new_full_checked (mono_domain_get (), aklass, sizes, bounds, error);
 				if (mono_error_set_pending_exception (error))
 					return FALSE;

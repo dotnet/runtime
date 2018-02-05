@@ -37,6 +37,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain-icalls.h>
+#include <mono/metadata/class-init.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
 #include <mono/metadata/assembly-internals.h>
@@ -234,7 +235,7 @@ create_domain_objects (MonoDomain *domain)
 	 * This class is used during exception handling, so initialize it here, to prevent
 	 * stack overflows while handling stack overflows.
 	 */
-	mono_class_init (mono_array_class_get (mono_defaults.int_class, 1));
+	mono_class_init (mono_class_create_array (mono_defaults.int_class, 1));
 }
 
 /**

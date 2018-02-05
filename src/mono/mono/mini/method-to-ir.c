@@ -10917,7 +10917,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if (context_used) {
 				MonoInst *args [3];
-				MonoClass *array_class = mono_array_class_get (klass, 1);
+				MonoClass *array_class = mono_class_create_array (klass, 1);
 				MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
 				/* FIXME: Use OP_NEWARR and decompose later to help abcrem */
@@ -10944,7 +10944,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = mono_emit_jit_icall (cfg, ves_icall_array_new, iargs);
 				} else {
 					/* Decompose later since it is needed by abcrem */
-					MonoClass *array_type = mono_array_class_get (klass, 1);
+					MonoClass *array_type = mono_class_create_array (klass, 1);
 					mono_class_vtable_checked (cfg->domain, array_type, &cfg->error);
 					CHECK_CFG_ERROR;
 					CHECK_TYPELOAD (array_type);
@@ -11027,7 +11027,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * so we need to ignore them here
 			 */
 			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
-				MonoClass *array_class = mono_array_class_get (klass, 1);
+				MonoClass *array_class = mono_class_create_array (klass, 1);
 				mini_emit_check_array_type (cfg, sp [0], array_class);
 				CHECK_TYPELOAD (array_class);
 			}

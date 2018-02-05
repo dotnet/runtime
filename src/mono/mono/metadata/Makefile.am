@@ -120,6 +120,8 @@ common_sources = \
 	attach.c		\
 	cil-coff.h		\
 	class.c			\
+	class-init.h		\
+	class-init.c		\
 	class-internals.h	\
 	class-inlines.h		\
 	class-accessors.c	\

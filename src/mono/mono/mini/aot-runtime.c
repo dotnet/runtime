@@ -575,7 +575,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		eklass = decode_klass_ref (module, p, &p, error);
 		if (!eklass)
 			return NULL;
-		klass = mono_array_class_get (eklass, rank);
+		klass = mono_class_create_array (eklass, rank);
 		break;
 	case MONO_AOT_TYPEREF_PTR: {
 		MonoType *t;
@@ -4672,7 +4672,7 @@ mono_aot_get_method_checked (MonoDomain *domain, MonoMethod *method, MonoError *
 						rank = mono_method_signature (array_method)->param_count;
 					else
 						g_assert_not_reached ();
-					MonoClass *obj_array_class = mono_array_class_get (mono_defaults.object_class, rank);
+					MonoClass *obj_array_class = mono_class_create_array (mono_defaults.object_class, rank);
 					MonoMethod *m = mono_class_get_method_from_name (obj_array_class, array_method->name, mono_method_signature (array_method)->param_count);
 					g_assert (m);
 

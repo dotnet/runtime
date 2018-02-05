@@ -68,12 +68,15 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClassField*
 mono_field_from_token      (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClass *
 mono_bounded_array_class_get (MonoClass *element_class, uint32_t rank, mono_bool bounded);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClass *
 mono_array_class_get       (MonoClass *element_class, uint32_t rank);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoClass *
 mono_ptr_class_get         (MonoType *type);
 

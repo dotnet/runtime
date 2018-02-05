@@ -17,6 +17,7 @@
 #include <config.h>
 #include <glib.h>
 #include "mono/metadata/assembly.h"
+#include "mono/metadata/class-init.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/dynamic-image-internals.h"
 #include "mono/metadata/dynamic-stream-internals.h"
@@ -1652,7 +1653,7 @@ reflection_param_handle_mono_type (MonoReflectionGenericParamHandle ref_gparam, 
 		param->param.owner = mono_class_get_generic_container (owner);
 	}
 
-	MonoClass *pklass = mono_class_from_generic_parameter_internal ((MonoGenericParam *) param);
+	MonoClass *pklass = mono_class_create_generic_parameter ((MonoGenericParam *) param);
 
 	result = &pklass->byval_arg;
 
@@ -1739,7 +1740,7 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 		MonoType *base = mono_reflection_type_handle_mono_type (ref_element, error);
 		goto_if_nok (error, leave);
 		g_assert (base);
-		result = &mono_ptr_class_get (base)->byval_arg;
+		result = &mono_class_create_ptr (base)->byval_arg;
 		MONO_HANDLE_SETVAL (ref, type, MonoType*, result);
 	} else if (is_sre_generic_instance (klass)) {
 		result = reflection_instance_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionGenericClass, ref), error);
