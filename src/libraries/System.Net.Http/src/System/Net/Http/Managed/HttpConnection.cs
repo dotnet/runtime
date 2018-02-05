@@ -408,7 +408,10 @@ namespace System.Net.Http
                         if (response.StatusCode == HttpStatusCode.Continue)
                         {
                             // We got our continue header.  Read the subsequent empty line and parse the additional status line.
-                            await ReadEmptyLineAsync(cancellationToken).ConfigureAwait(false);
+                            if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                            {
+                                ThrowInvalidHttpResponse();
+                            }
                             ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                         }
                     }
@@ -567,7 +570,9 @@ namespace System.Net.Http
             // We sent the request version as either 1.0 or 1.1.
             // We expect a response version of the form 1.X, where X is a single digit as per RFC.
 
-            if (line.Length < 12 || // "HTTP/1.1 123" with optional phrase 
+            const int MinStatusLineLength = 12;     // "HTTP/1.1 123" 
+
+            if (line.Length < MinStatusLineLength ||
                 line[0] != 'H' ||
                 line[1] != 'T' ||
                 line[2] != 'T' ||
@@ -599,26 +604,21 @@ namespace System.Net.Http
                 (HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
 
             // Parse (optional) reason phrase
-            if (line.Length == 12)
+            if (line.Length == MinStatusLineLength)
             {
                 response.ReasonPhrase = string.Empty;
             }
-            else if (line[12] != ' ')
+            else if (line[MinStatusLineLength] != ' ')
             {
                 ThrowInvalidHttpResponse();
             }
             else
             {
-                Span<byte> reasonBytes = line.Slice(13);
+                Span<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
-                {
-                    response.ReasonPhrase = knownReasonPhrase;
-                }
-                else
-                {
-                    response.ReasonPhrase = Encoding.ASCII.GetString(reasonBytes);
-                }
+                response.ReasonPhrase = knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes) ?
+                                            knownReasonPhrase :
+                                            Encoding.ASCII.GetString(reasonBytes);
             }
         }
 
@@ -918,32 +918,26 @@ namespace System.Net.Http
             while (true)
             {
                 int scanOffset = _readOffset + previouslyScannedBytes;
-                int endIndex = Array.IndexOf(_readBuffer, (byte)'\n', scanOffset, _readLength - scanOffset);
-                if (endIndex >= 0)
+                int lfIndex = Array.IndexOf(_readBuffer, (byte)'\n', scanOffset, _readLength - scanOffset);
+                if (lfIndex >= 0)
                 {
                     int startIndex = _readOffset;
-                    _readOffset = endIndex + 1;
-
-                    if (endIndex > startIndex && _readBuffer[endIndex - 1] == '\r')
+                    int length = lfIndex - startIndex;
+                    if (length > 0 && _readBuffer[startIndex + length - 1] == '\r')
                     {
-                        endIndex--;
+                        length--;
                     }
 
-                    return new ArraySegment<byte>(_readBuffer, startIndex, endIndex - startIndex);
+                    // Advance read position past the LF
+                    _readOffset = lfIndex + 1;
+
+                    return new ArraySegment<byte>(_readBuffer, startIndex, length);
                 }
 
                 // Couldn't find LF.  Read more.
                 // Note this may cause _readOffset to change.
                 previouslyScannedBytes = _readLength - _readOffset;
                 await FillAsync(cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private async Task ReadEmptyLineAsync(CancellationToken cancellationToken)
-        {
-            if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
-            {
-                ThrowInvalidHttpResponse();
             }
         }
 
