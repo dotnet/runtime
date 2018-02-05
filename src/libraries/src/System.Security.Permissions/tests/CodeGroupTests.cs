@@ -23,7 +23,9 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public static void FirstMatchCodeGroupCallMethods()
         {
+#pragma warning disable 618
             FirstMatchCodeGroup fmcg = new FirstMatchCodeGroup(new GacMembershipCondition(), new PolicyStatement(new PermissionSet(new PermissionState())));
+#pragma warning restore 618
             CodeGroup cg = fmcg.Copy();
             PolicyStatement ps = fmcg.Resolve(new Evidence());
             cg = fmcg.ResolveMatchingCodeGroups(new Evidence());
@@ -48,7 +50,9 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public static void UnionCodeGroupCallMethods()
         {
+#pragma warning disable 618
             UnionCodeGroup ucg = new UnionCodeGroup(new GacMembershipCondition(), new PolicyStatement(new PermissionSet(new PermissionState())));
+#pragma warning restore 618
             CodeGroup cg = ucg.Copy();
             PolicyStatement ps = ucg.Resolve(new Evidence());
             cg = ucg.ResolveMatchingCodeGroups(new Evidence());

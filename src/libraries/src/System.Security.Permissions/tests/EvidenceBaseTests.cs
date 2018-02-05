@@ -53,8 +53,10 @@ namespace System.Security.Permissions.Tests
         public static void PermissionRequestEvidenceCallMethods()
         {
             PermissionSet ps = new PermissionSet(new PermissionState());
+#pragma warning disable 618
             PermissionRequestEvidence pre = new PermissionRequestEvidence(ps, ps, ps);
             PermissionRequestEvidence obj = pre.Copy();
+#pragma warning restore 618
             string str = ps.ToString();
             SecurityElement se = new SecurityElement("");
             ps.FromXml(se);
