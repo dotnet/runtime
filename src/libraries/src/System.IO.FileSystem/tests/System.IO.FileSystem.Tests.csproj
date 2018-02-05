@@ -53,6 +53,10 @@
     <Compile Include="File\ReadWriteAllBytesAsync.cs" />
     <Compile Include="File\ReadWriteAllTextAsync.cs" />
     <Compile Include="FileStream\ReadWriteSpan.netcoreapp.cs" />
+    <Compile Include="Enumeration\ConstructionTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\SpecialDirectoryTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\SkipAttributeTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\DosMatcherTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
@@ -180,6 +184,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Matchers\" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

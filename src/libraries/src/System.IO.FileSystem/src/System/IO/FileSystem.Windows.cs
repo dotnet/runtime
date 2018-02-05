@@ -183,38 +183,6 @@ namespace System.IO
                     && ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
         }
 
-        public static IEnumerable<string> EnumeratePaths(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
-        {
-            FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
-            switch (searchTarget)
-            {
-                case SearchTarget.Files:
-                    return FindEnumerableFactory.UserFiles(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
-                case SearchTarget.Directories:
-                    return FindEnumerableFactory.UserDirectories(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
-                case SearchTarget.Both:
-                    return FindEnumerableFactory.UserEntries(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(searchTarget));
-            }
-        }
-
-        public static IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string fullPath, string searchPattern, SearchOption searchOption, SearchTarget searchTarget)
-        {
-            FindEnumerableFactory.NormalizeInputs(ref fullPath, ref searchPattern);
-            switch (searchTarget)
-            {
-                case SearchTarget.Directories:
-                    return FindEnumerableFactory.DirectoryInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
-                case SearchTarget.Files:
-                    return FindEnumerableFactory.FileInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
-                case SearchTarget.Both:
-                    return FindEnumerableFactory.FileSystemInfos(fullPath, searchPattern, searchOption == SearchOption.AllDirectories);
-                default:
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget));
-            }
-        }
-
         /// <summary>
         /// Returns 0 on success, otherwise a Win32 error code.  Note that
         /// classes should use -1 as the uninitialized state for dataInitialized.

@@ -20,12 +20,15 @@ namespace System.IO
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public static bool Exists(string path) { throw null; }
         public static System.DateTime GetCreationTime(string path) { throw null; }
         public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
@@ -33,13 +36,16 @@ namespace System.IO
         public static string[] GetDirectories(string path) { throw null; }
         public static string[] GetDirectories(string path, string searchPattern) { throw null; }
         public static string[] GetDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public static string GetDirectoryRoot(string path) { throw null; }
         public static string[] GetFiles(string path) { throw null; }
         public static string[] GetFiles(string path, string searchPattern) { throw null; }
         public static string[] GetFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public static string[] GetFileSystemEntries(string path) { throw null; }
         public static string[] GetFileSystemEntries(string path, string searchPattern) { throw null; }
         public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public static System.DateTime GetLastAccessTime(string path) { throw null; }
         public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
         public static System.DateTime GetLastWriteTime(string path) { throw null; }
@@ -67,23 +73,29 @@ namespace System.IO
         public override void Delete() { }
         public void Delete(bool recursive) { }
         public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles() { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos() { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern) { throw null; }
         public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
         public System.IO.DirectoryInfo[] GetDirectories() { throw null; }
         public System.IO.DirectoryInfo[] GetDirectories(string searchPattern) { throw null; }
         public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public System.IO.FileInfo[] GetFiles() { throw null; }
         public System.IO.FileInfo[] GetFiles(string searchPattern) { throw null; }
         public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public System.IO.FileSystemInfo[] GetFileSystemInfos() { throw null; }
         public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern) { throw null; }
         public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.Enumeration.EnumerationOptions enumerationOptions) { throw null; }
         public void MoveTo(string destDirName) { }
         public override string ToString() { throw null; }
     }
@@ -210,5 +222,77 @@ namespace System.IO
     {
         AllDirectories = 1,
         TopDirectoryOnly = 0,
+    }
+}
+namespace System.IO.Enumeration
+{
+    public enum MatchType
+    {
+        Simple,
+        Dos
+    }
+    public class EnumerationOptions
+    {
+        public EnumerationOptions() { }
+
+        public bool RecurseSubdirectories { get { throw null; } set { } }
+        public bool IgnoreInaccessible { get { throw null; } set { } }
+        public int BufferSize { get { throw null; } set { } }
+        public FileAttributes AttributesToSkip { get { throw null; } set { } }
+        public MatchType MatchType { get { throw null; } set { } }
+        public bool ReturnSpecialDirectories { get { throw null; } set { } }
+    }
+    public ref struct FileSystemEntry
+    {
+        public ReadOnlySpan<char> Directory { get { throw null; } }
+        public string RootDirectory { get { throw null; } }
+        public string OriginalRootDirectory { get { throw null; } }
+        public ReadOnlySpan<char> FileName { get { throw null; } }
+        public FileAttributes Attributes { get { throw null; } }
+        public long Length { get { throw null; } }
+        public DateTimeOffset CreationTimeUtc { get { throw null; } }
+        public DateTimeOffset LastAccessTimeUtc { get { throw null; } }
+        public DateTimeOffset LastWriteTimeUtc { get { throw null; } }
+        public bool IsDirectory { get { throw null; } }
+        public FileSystemInfo ToFileSystemInfo() { throw null; }
+        public string ToSpecifiedFullPath() { throw null; }
+        public string ToFullPath() { throw null; }
+    }
+    public abstract class FileSystemEnumerator<TResult> : Runtime.ConstrainedExecution.CriticalFinalizerObject, Collections.Generic.IEnumerator<TResult>
+    {
+        public FileSystemEnumerator(string directory, EnumerationOptions options = null) { }
+
+        protected virtual bool ShouldIncludeEntry(ref FileSystemEntry entry) { throw null; }
+        protected virtual bool ShouldRecurseIntoEntry(ref FileSystemEntry entry) { throw null; }
+        protected abstract TResult TransformEntry(ref FileSystemEntry entry);
+        protected virtual void OnDirectoryFinished(ReadOnlySpan<char> directory) { throw null; }
+        protected virtual bool ContinueOnError(int error) { throw null; }
+
+        public TResult Current { get { throw null; } }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        public bool MoveNext() { throw null; }
+        public void Reset() { throw null; }
+        public void Dispose() { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
+    }
+    public class FileSystemEnumerable<TResult> : Collections.Generic.IEnumerable<TResult>
+    {
+        public FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions options = null) { }
+
+        public FindPredicate ShouldRecursePredicate { get { throw null; } set { } }
+        public FindPredicate ShouldIncludePredicate { get { throw null; } set { } }
+
+        public Collections.Generic.IEnumerator<TResult> GetEnumerator() { throw null; }
+        Collections.IEnumerator Collections.IEnumerable.GetEnumerator() { throw null; }
+
+
+        public delegate bool FindPredicate(ref FileSystemEntry entry);
+        public delegate TResult FindTransform(ref FileSystemEntry entry);
+    }
+    public static class FileSystemName
+    {
+        public static string TranslateDosExpression(string expression) { throw null; }
+        public static bool MatchesDosExpression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
+        public static bool MatchesSimpleExpression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
     }
 }
