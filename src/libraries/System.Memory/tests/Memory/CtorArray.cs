@@ -69,7 +69,6 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        [ActiveIssue(26807)]
         public static void CtorArrayNullArray()
         {
             var memory = new Memory<int>(null);
@@ -79,6 +78,15 @@ namespace System.MemoryTests
             memory = new Memory<int>(null, 0, 0);
             memory.Validate();
             Assert.Equal(default, memory);
+        }
+
+        [Fact]
+        public static void CtorArrayNullArrayNonZeroStartAndLength()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(null, 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(null, 0, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(null, 1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(null, -1, -1));
         }
 
         [Fact]

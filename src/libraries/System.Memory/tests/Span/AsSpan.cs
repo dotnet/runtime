@@ -35,7 +35,16 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void ZeroLengthArrayAsSpan()
+        public static void NullArrayAsSpan()
+        {
+            int[] a = null;
+            Span<int> span = a.AsSpan();
+            span.Validate();
+            Assert.True(span == default);
+        }
+
+        [Fact]
+        public static void EmptyArrayAsSpan()
         {
             int[] empty = Array.Empty<int>();
             Span<int> span = empty.AsSpan();

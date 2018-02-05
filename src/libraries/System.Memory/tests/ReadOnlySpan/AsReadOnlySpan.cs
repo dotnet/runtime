@@ -133,6 +133,20 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void StringAsReadOnlySpanNullNonZeroStartAndLength()
+        {
+            string str = null;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlySpan(1).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlySpan(-1).DontBox());
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlySpan(0, 1).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlySpan(1, 0).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlySpan(1, 1).DontBox());
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlySpan(-1, -1).DontBox());
+        }
+
+        [Fact]
         public static void EmptySpanAsReadOnlySpan()
         {
             Span<int> span = default;

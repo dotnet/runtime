@@ -70,6 +70,20 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        public static void NullAsReadOnlyMemoryNonZeroStartAndLength()
+        {
+            string str = null;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlyMemory(1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlyMemory(-1));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlyMemory(0, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlyMemory(1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlyMemory(1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => str.AsReadOnlyMemory(-1, -1));
+        }
+
+        [Fact]
         public static void AsReadOnlyMemory_TryGetString_Roundtrips()
         {
             string input = "0123456789";
