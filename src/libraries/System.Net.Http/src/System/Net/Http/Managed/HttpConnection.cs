@@ -618,7 +618,7 @@ namespace System.Net.Http
                 string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
                 response.ReasonPhrase = knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes) ?
                                             knownReasonPhrase :
-                                            Encoding.ASCII.GetString(reasonBytes);
+                                            HttpRuleParser.DefaultHttpEncoding.GetString(reasonBytes);
             }
         }
 
