@@ -192,6 +192,10 @@ bool isSse41Blendv(instruction ins)
 {
     return ins == INS_blendvps || ins == INS_blendvpd || ins == INS_pblendvb;
 }
+bool isPrefetch(instruction ins)
+{
+    return (ins == INS_prefetcht0) || (ins == INS_prefetcht1) || (ins == INS_prefetcht2) || (ins == INS_prefetchnta);
+}
 #else  // LEGACY_BACKEND
 bool UseVEXEncoding()
 {
@@ -246,6 +250,11 @@ bool TakesVexPrefix(instruction ins)
 {
     return false;
 }
+bool isPrefetch(instruction ins)
+{
+    return false;
+}
+
 code_t AddVexPrefixIfNeeded(instruction ins, code_t code, emitAttr attr)
 {
     return code;
