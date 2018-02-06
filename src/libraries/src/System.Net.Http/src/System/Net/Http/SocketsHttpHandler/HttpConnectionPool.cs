@@ -89,7 +89,7 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        private ValueTask<HttpConnection> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public ValueTask<HttpConnection> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool cachedOnly)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -124,6 +124,10 @@ namespace System.Net.Http
                     if (NetEventSource.IsEnabled) conn.Trace("Found invalid connection in pool.");
                     conn.Dispose();
                 }
+                if (cachedOnly) {
+                    return new ValueTask<HttpConnection>((HttpConnection)null);
+                }
+
 
                 // No valid cached connections, so we need to create a new one.  If
                 // there's no limit on the number of connections associated with this
@@ -186,7 +190,7 @@ namespace System.Net.Http
             { 
                 // Loop on connection failures and retry if possible.
 
-                HttpConnection connection = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
+                HttpConnection connection = await GetConnectionAsync(request, cancellationToken, false).ConfigureAwait(false);
 
                 if (connection.IsNewConnection)
                 {
