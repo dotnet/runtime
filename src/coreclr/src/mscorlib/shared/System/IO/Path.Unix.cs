@@ -44,91 +44,24 @@ namespace System.IO
             return result;
         }
 
-        /// <summary>
-        /// Try to remove relative segments from the given path (without combining with a root).
-        /// </summary>
-        /// <param name="skip">Skip the specified number of characters before evaluating.</param>
-        private static string RemoveRelativeSegments(string path, int skip = 0)
+        public static string GetFullPath(string path, string basePath)
         {
-            bool flippedSeparator = false;
+            if (path == null)
+                throw new ArgumentException(nameof(path));
 
-            // Remove "//", "/./", and "/../" from the path by copying each character to the output, 
-            // except the ones we're removing, such that the builder contains the normalized path 
-            // at the end.
-            var sb = StringBuilderCache.Acquire(path.Length);
-            if (skip > 0)
-            {
-                sb.Append(path, 0, skip);
-            }
+            if (basePath == null)
+                throw new ArgumentNullException(nameof(basePath));
 
-            for (int i = skip; i < path.Length; i++)
-            {
-                char c = path[i];
+            if (!IsPathFullyQualified(basePath))
+                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified);
 
-                if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
-                {
-                    // Skip this character if it's a directory separator and if the next character is, too,
-                    // e.g. "parent//child" => "parent/child"
-                    if (PathInternal.IsDirectorySeparator(path[i + 1]))
-                    {
-                        continue;
-                    }
+            if (basePath.Contains('\0') || path.Contains('\0'))
+                throw new ArgumentException(SR.Argument_InvalidPathChars);
 
-                    // Skip this character and the next if it's referring to the current directory,
-                    // e.g. "parent/./child" =? "parent/child"
-                    if ((i + 2 == path.Length || PathInternal.IsDirectorySeparator(path[i + 2])) &&
-                        path[i + 1] == '.')
-                    {
-                        i++;
-                        continue;
-                    }
+            if (IsPathFullyQualified(path))
+                return GetFullPath(path);
 
-                    // Skip this character and the next two if it's referring to the parent directory,
-                    // e.g. "parent/child/../grandchild" => "parent/grandchild"
-                    if (i + 2 < path.Length &&
-                        (i + 3 == path.Length || PathInternal.IsDirectorySeparator(path[i + 3])) &&
-                        path[i + 1] == '.' && path[i + 2] == '.')
-                    {
-                        // Unwind back to the last slash (and if there isn't one, clear out everything).
-                        int s;
-                        for (s = sb.Length - 1; s >= 0; s--)
-                        {
-                            if (PathInternal.IsDirectorySeparator(sb[s]))
-                            {
-                                sb.Length = s;
-                                break;
-                            }
-                        }
-                        if (s < 0)
-                        {
-                            sb.Length = 0;
-                        }
-
-                        i += 2;
-                        continue;
-                    }
-                }
-
-                // Normalize the directory separator if needed
-                if (c != PathInternal.DirectorySeparatorChar && c == PathInternal.AltDirectorySeparatorChar)
-                {
-                    c = PathInternal.DirectorySeparatorChar;
-                    flippedSeparator = true;
-                }
-
-                sb.Append(c);
-            }
-
-            if (flippedSeparator || sb.Length != path.Length)
-            {
-                return StringBuilderCache.GetStringAndRelease(sb);
-            }
-            else
-            {
-                // We haven't changed the source path, return the original
-                StringBuilderCache.Release(sb);
-                return path;
-            }
+            return GetFullPath(CombineNoChecks(basePath, path));
         }
 
         private static string RemoveLongPathPrefix(string path)
