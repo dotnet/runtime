@@ -51,6 +51,7 @@ if exist %_VSWHERE% (
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 
+set VSCMD_START_DIR="%~dp0"
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 :RunVCVars
