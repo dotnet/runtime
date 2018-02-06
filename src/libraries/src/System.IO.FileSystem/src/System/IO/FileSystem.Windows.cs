@@ -66,7 +66,7 @@ namespace System.IO
             List<string> stackDir = new List<string>();
 
             // Attempt to figure out which directories don't exist, and only
-            // create the ones we need.  Note that InternalExists may fail due
+            // create the ones we need.  Note that FileExists may fail due
             // to Win32 ACL's preventing us from seeing a directory, and this
             // isn't threadsafe.
 
@@ -120,7 +120,7 @@ namespace System.IO
                     int currentError = Marshal.GetLastWin32Error();
                     // While we tried to avoid creating directories that don't
                     // exist above, there are at least two cases that will 
-                    // cause us to see ERROR_ALREADY_EXISTS here.  InternalExists 
+                    // cause us to see ERROR_ALREADY_EXISTS here.  FileExists
                     // can fail because we didn't have permission to the 
                     // directory.  Secondly, another thread or process could
                     // create the directory between the time we check and the
@@ -131,7 +131,7 @@ namespace System.IO
                     else
                     {
                         // If there's a file in this directory's place, or if we have ERROR_ACCESS_DENIED when checking if the directory already exists throw.
-                        if (File.InternalExists(name) || (!DirectoryExists(name, out currentError) && currentError == Interop.Errors.ERROR_ACCESS_DENIED))
+                        if (FileExists(name) || (!DirectoryExists(name, out currentError) && currentError == Interop.Errors.ERROR_ACCESS_DENIED))
                         {
                             firstError = currentError;
                             errorString = name;

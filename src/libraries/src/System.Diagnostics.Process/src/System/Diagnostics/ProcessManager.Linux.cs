@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace System.Diagnostics
@@ -14,7 +15,7 @@ namespace System.Diagnostics
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {
-            return EnumerableHelpers.ToArray(EnumerateProcessIds());
+            return EnumerateProcessIds().ToArray();
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
