@@ -2344,6 +2344,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
         // VEX encoding supports unaligned memory ops, so we can fold them
         case NI_SSE_LoadVector128:
         case NI_SSE2_LoadVector128:
+        case NI_AVX_LoadVector256:
+        case NI_AVX_LoadAlignedVector256:
             isContainable = (containingCategory == HW_Category_SimpleSIMD) && comp->canUseVexEncoding();
             break;
 
