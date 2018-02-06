@@ -13936,6 +13936,31 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                 fgLastBB = bPrev;
             }
 
+            // When using profile weights, fgComputeEdgeWeights expects the first non-internal block to have profile
+            // weight.
+            // Make sure we don't break that invariant.
+            if (fgIsUsingProfileWeights() && block->hasProfileWeight() && (block->bbFlags & BBF_INTERNAL) == 0)
+            {
+                BasicBlock* bNext = block->bbNext;
+
+                // Check if the next block can't maintain the invariant.
+                if ((bNext == nullptr) || ((bNext->bbFlags & BBF_INTERNAL) != 0) || !bNext->hasProfileWeight())
+                {
+                    // Check if the current block is the first non-internal block.
+                    BasicBlock* curBB = bPrev;
+                    while ((curBB != nullptr) && (curBB->bbFlags & BBF_INTERNAL) != 0)
+                    {
+                        curBB = curBB->bbPrev;
+                    }
+                    if (curBB == nullptr)
+                    {
+                        // This block is the first non-internal block and it has profile weight.
+                        // Don't delete it.
+                        break;
+                    }
+                }
+            }
+
             /* Remove the block */
             compCurBB = block;
             fgRemoveBlock(block, false);
