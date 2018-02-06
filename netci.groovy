@@ -1284,7 +1284,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         case 'innerloop':
                             // PR Triggered jobs. These jobs will run pri0 tests.
                             if (configuration == 'Checked') {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Innerloop Build and Test")
                             }
                             break
 
