@@ -76,6 +76,15 @@ namespace System.IO.Enumeration
         /// </remarks>
         public MatchType MatchType { get; set; }
 
+
+        /// <summary>
+        /// For APIs that allow specifying a match expression this will allow you to specify case matching behavior.
+        /// </summary>
+        /// <remarks>
+        /// Default is to match platform defaults, which are gleaned from the case sensitivity of the temporary folder.
+        /// </remarks>
+        public MatchCasing MatchCasing { get; set; }
+
         /// <summary>
         /// Set to true to return "." and ".." directory entries.
         /// </summary>
