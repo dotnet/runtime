@@ -237,8 +237,8 @@ def main(args):
     command = "git checkout %s" % fx_commit
     log(command)
     returncode = 0 if testing else os.system(command)
-    if not returncode == 0:
-        sys.exit(returncode)
+    if returncode != 0:
+        sys.exit(1)
 
     # On Unix, coreFx build.sh requires HOME to be set, and it isn't by default
     # under our CI system, so set it now.
@@ -266,7 +266,7 @@ def main(args):
     log(command)
     returncode = 0 if testing else os.system(command)
     if returncode != 0:
-        sys.exit(returncode)
+        sys.exit(1)
 
     # Build the build-tests command line.
 
@@ -303,8 +303,10 @@ def main(args):
 
     log(command)
     returncode = 0 if testing else os.system(command)
+    if returncode != 0:
+        sys.exit(1)
 
-    sys.exit(returncode)
+    sys.exit(0)
 
 
 ##########################################################################
