@@ -41,7 +41,7 @@ namespace System.Net.Http.Functional.Tests
                 //     MustNotCheck,
                 // }
 
-                if (CurlSslVersionDescription() == "SecureTransport")
+                if (Interop.Http.GetSslVersionDescription() == "SecureTransport")
                 {
                     return true;
                 }
@@ -65,12 +65,9 @@ namespace System.Net.Http.Functional.Tests
 
                 // For other Unix-based systems it's true if (and only if) the openssl backend
                 // is used with libcurl.
-                return (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+                return (Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) ?? false);
             }
         }
-
-        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
-        private static extern string CurlSslVersionDescription();
 
         [Theory]
         [PlatformSpecific(~TestPlatforms.OSX)] // Not implemented
