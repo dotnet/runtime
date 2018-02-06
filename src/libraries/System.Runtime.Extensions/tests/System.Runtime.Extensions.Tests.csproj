@@ -33,6 +33,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\Random.netcoreapp.cs" />
+    <Compile Include="System\IO\Path.IsPathFullyQualified.netcoreapp.cs" />
+    <Compile Include="System\IO\PathTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
     <Compile Include="System\BitConverterSpan.cs" />
