@@ -1193,19 +1193,27 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
         public static string GetDirectoryName(string path) { throw null; }
+        public static ReadOnlySpan<char> GetDirectoryName(ReadOnlySpan<char> path) { throw null; }
         public static string GetExtension(string path) { throw null; }
+        public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path) { throw null; }
         public static string GetFileName(string path) { throw null; }
+        public static ReadOnlySpan<char> GetFileName(ReadOnlySpan<char> path) { throw null; }
         public static string GetFileNameWithoutExtension(string path) { throw null; }
+        public static ReadOnlySpan<char> GetFileNameWithoutExtension(ReadOnlySpan<char> path) { throw null; }
         public static string GetFullPath(string path) { throw null; }
         public static char[] GetInvalidFileNameChars() { throw null; }
         public static char[] GetInvalidPathChars() { throw null; }
         public static string GetPathRoot(string path) { throw null; }
+        public static ReadOnlySpan<char> GetPathRoot(ReadOnlySpan<char> path) { throw null; }
         public static string GetRandomFileName() { throw null; }
         public static string GetTempFileName() { throw null; }
         public static string GetTempPath() { throw null; }
         public static bool HasExtension(string path) { throw null; }
+        public static bool HasExtension(ReadOnlySpan<char> path) { throw null; }
         public static bool IsPathRooted(string path) { throw null; }
+        public static bool IsPathRooted(ReadOnlySpan<char> path) { throw null; }
         public static bool IsPathFullyQualified(string path) { throw null; }
+        public static bool IsPathFullyQualified(ReadOnlySpan<char> path) { throw null; }
         public static string GetRelativePath(string relativeTo, string path) { throw null; }
     }
 

@@ -6,18 +6,12 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static class GetFullyQualifiedPathTests
+    public static class GetFullyQualifiedPathSpanTests
     {
-        [Fact]
-        public static void IsPathFullyQualified_NullArgument()
-        {
-            Assert.Throws<ArgumentNullException>(() => Path.IsPathFullyQualified(null));
-        }
-
         [Fact]
         public static void IsPathFullyQualified_Empty()
         {
-            Assert.False(Path.IsPathFullyQualified(""));
+            Assert.False(Path.IsPathFullyQualified(ReadOnlySpan<char>.Empty));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -29,7 +23,7 @@ namespace System.IO.Tests
         [InlineData("C:foo.txt")]
         public static void IsPathFullyQualified_Windows_Invalid(string path)
         {
-            Assert.False(Path.IsPathFullyQualified(path));
+            Assert.False(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -50,37 +44,6 @@ namespace System.IO.Tests
         [InlineData(@"C://foo2")]
         public static void IsPathFullyQualified_Windows_Valid(string path)
         {
-            Assert.True(Path.IsPathFullyQualified(path));
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Theory]
-        [InlineData(@"\")]
-        [InlineData(@"\\")]
-        [InlineData(".")]
-        [InlineData("./foo.txt")]
-        [InlineData("..")]
-        [InlineData("../foo.txt")]
-        [InlineData(@"C:")]
-        [InlineData(@"C:/")]
-        [InlineData(@"C://")]
-        public static void IsPathFullyQualified_Unix_Invalid(string path)
-        {
-            Assert.False(Path.IsPathFullyQualified(path));
-            Assert.False(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Theory]
-        [InlineData("/")]
-        [InlineData("/foo.txt")]
-        [InlineData("/..")]
-        [InlineData("//")]
-        [InlineData("//foo.txt")]
-        [InlineData("//..")]
-        public static void IsPathFullyQualified_Unix_Valid(string path)
-        {
-            Assert.True(Path.IsPathFullyQualified(path));
             Assert.True(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
         }
     }

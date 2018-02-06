@@ -60,7 +60,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void GetDirectoryName_SpaceThrowOnWindows_Core()
         {
             string path = " ";
@@ -76,58 +75,80 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData("\u00A0")] // Non-breaking Space
-        [InlineData("\u2028")] // Line separator
-        [InlineData("\u2029")] // Paragraph separator
+        public static TheoryData<string> GetDirectoryName_NonControl_Test_Data => new TheoryData<string>
+        {
+            { "\u00A0" }, // Non-breaking Space
+            { "\u2028" }, // Line separator
+            { "\u2029" }, // Paragraph separator
+        };
+
+        [Theory, MemberData(nameof(GetDirectoryName_NonControl_Test_Data))]
         public static void GetDirectoryName_NonControl(string path)
         {
             Assert.Equal(string.Empty, Path.GetDirectoryName(path));
         }
 
-        [Theory]
-        [InlineData("\u00A0")] // Non-breaking Space
-        [InlineData("\u2028")] // Line separator
-        [InlineData("\u2029")] // Paragraph separator
+        [Theory, MemberData(nameof(GetDirectoryName_NonControl_Test_Data))]
         public static void GetDirectoryName_NonControlWithSeparator(string path)
         {
             Assert.Equal(path, Path.GetDirectoryName(Path.Combine(path, path)));
         }
 
-        [Theory]
-        [InlineData(null, null)]
-        [InlineData(".", "")]
-        [InlineData("..", "")]
-        [InlineData("baz", "")]
+        public static TheoryData<string, string> GetDirectoryName_Test_Data => new TheoryData<string, string>
+        {
+            { null, null },
+            { ".", "" },
+            { "..", "" },
+            { "baz", "" },
+        };
+
+        [Theory, MemberData(nameof(GetDirectoryName_Test_Data))]
         public static void GetDirectoryName(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
         }
 
-        [Theory]
-        [InlineData(@"dir/baz", "dir")]
-        [InlineData(@"dir\baz", "dir")]
-        [InlineData(@"dir\baz\bar", @"dir\baz")]
-        [InlineData(@"dir\\baz", "dir")]
-        [InlineData(@" dir\baz", " dir")]
-        [InlineData(@" C:\dir\baz", @"C:\dir")]
-        [InlineData(@"..\..\files.txt", @"..\..")]
-        [InlineData(@"C:\", null)]
-        [InlineData(@"C:", null)]
+        public static TheoryData<string, string> GetDirectoryName_Windows_Test_Data => new TheoryData<string, string>
+        {
+            { @"dir/baz", "dir" },
+            { @"dir\baz", "dir" },
+            { @"dir\baz\bar", @"dir\baz" },
+            { @"..\..\files.txt", @"..\.." },
+            { @"C:\", null },
+            { @"C:", null },
+        };
+
+        public static TheoryData<string, string> GetDirectoryName_Windows_string_Test_Data => new TheoryData<string, string>
+        {
+            { @" C:\dir\baz", @"C:\dir" },
+            { @"dir\\baz", "dir" },
+            { @" dir\baz", " dir" },
+            { @" C:\dir\baz", @"C:\dir" },
+        };
+
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific paths
+        [Theory, MemberData(nameof(GetDirectoryName_Windows_Test_Data)), MemberData(nameof(GetDirectoryName_Windows_string_Test_Data))]
         public static void GetDirectoryName_Windows(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
         }
 
-        [Theory]
-        [InlineData(@"dir/baz", @"dir")]
-        [InlineData(@"dir//baz", @"dir")]
-        [InlineData(@"dir\baz", @"")]
-        [InlineData(@"dir/baz/bar", @"dir/baz")]
-        [InlineData(@"../../files.txt", @"../..")]
-        [InlineData(@"/", null)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific paths
+        public static TheoryData<string, string> GetDirectoryName_Unix_Test_Data => new TheoryData<string, string>
+        {
+            { @"dir/baz", @"dir" },
+            { @"dir\baz", @"" },
+            { @"dir/baz/bar", @"dir/baz" },
+            { @"../../files.txt", @"../.." },
+            { @"/", null },
+        };
+
+		public static TheoryData<string, string> GetDirectoryName_Unix_String_Test_Data => new TheoryData<string, string>
+		{
+			{ @"dir//baz", @"dir" },
+		};
+
+		[PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific paths
+        [Theory, MemberData(nameof(GetDirectoryName_Unix_Test_Data)), MemberData(nameof(GetDirectoryName_Unix_String_Test_Data))]
         public static void GetDirectoryName_Unix(string path, string expected)
         {
             Assert.Equal(expected, Path.GetDirectoryName(path));
@@ -138,44 +159,59 @@ namespace System.IO.Tests
         {
             string curDir = Directory.GetCurrentDirectory();
             Assert.Equal(curDir, Path.GetDirectoryName(Path.Combine(curDir, "baz")));
+        
             Assert.Equal(null, Path.GetDirectoryName(Path.GetPathRoot(curDir)));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific special characters in directory path
-        [Fact]
-        public static void GetDirectoryName_ControlCharacters_Unix()
+        public static TheoryData<char, int, string> GetDirectoryName_ControlCharacters_Unix_Test_Data => new TheoryData<char, int, string>
         {
-            Assert.Equal(new string('\t', 1), Path.GetDirectoryName(Path.Combine(new string('\t', 1), "file")));
-            Assert.Equal(new string('\b', 2), Path.GetDirectoryName(Path.Combine(new string('\b', 2), "fi le")));
-            Assert.Equal(new string('\v', 3), Path.GetDirectoryName(Path.Combine(new string('\v', 3), "fi\nle")));
-            Assert.Equal(new string('\n', 4), Path.GetDirectoryName(Path.Combine(new string('\n', 4), "fi\rle")));
+            { '\t', 1, "file" },
+            { '\b', 2, "fi le" },
+            { '\v', 3, "fi\nle" },
+            { '\v', 3, "fi\nle" },
+        };
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific special characters in directory path
+        [Theory, MemberData(nameof(GetDirectoryName_ControlCharacters_Unix_Test_Data))]
+        public static void GetDirectoryName_ControlCharacters_Unix(char ch, int count, string file)
+        {
+            Assert.Equal(new string(ch, count), Path.GetDirectoryName(Path.Combine(new string(ch, count), file)));
         }
 
-        [Theory]
-        [InlineData("file.exe", ".exe")]
-        [InlineData("file", "")]
-        [InlineData(null, null)]
-        [InlineData("file.", "")]
-        [InlineData("file.s", ".s")]
-        [InlineData("test/file", "")]
-        [InlineData("test/file.extension", ".extension")]
+        public static TheoryData<string, string> GetExtension_Test_Data => new TheoryData<string, string>
+        {
+            { "file.exe", ".exe" },
+            { "file", "" },
+            { null, null },
+            { "file.", "" },
+            { "file.s", ".s" },
+            { "test/file", "" },
+            { "test/file.extension", ".extension" },
+        };
+
+        [Theory, MemberData(nameof(GetExtension_Test_Data))]
         public static void GetExtension(string path, string expected)
         {
             if (path != null)
             {
                 path = path.Replace('/', Path.DirectorySeparatorChar);
             }
+
             Assert.Equal(expected, Path.GetExtension(path));
             Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path));
         }
 
+        public static TheoryData<string, string> GetExtension_Unix_Test_Data => new TheoryData<string, string>
+        {
+            { "file.e xe", ".e xe"},
+            { "file. ", ". "},
+            { " file. ", ". "},
+            { " file.extension", ".extension"},
+            { "file.exten\tsion", ".exten\tsion" },
+        };
+
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks file extension behavior on Unix
-        [Theory]
-        [InlineData("file.e xe", ".e xe")]
-        [InlineData("file. ", ". ")]
-        [InlineData(" file. ", ". ")]
-        [InlineData(" file.extension", ".extension")]
-        [InlineData("file.exten\tsion", ".exten\tsion")]
+        [Theory, MemberData(nameof(GetExtension_Unix_Test_Data))]
         public static void GetExtension_Unix(string path, string expected)
         {
             Assert.Equal(expected, Path.GetExtension(path));
@@ -185,6 +221,7 @@ namespace System.IO.Tests
         public static IEnumerable<object[]> GetFileName_TestData()
         {
             yield return new object[] { null, null };
+            yield return new object[] { "", "" };
             yield return new object[] { ".", "." };
             yield return new object[] { "..", ".." };
             yield return new object[] { "file", "file" };
@@ -202,14 +239,24 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.GetFileName(path));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific valid file names
-        [Fact]
-        public static void GetFileName_Unix()
+        public static TheoryData<string> GetFileName_Unix_Test_Data => new TheoryData<string>
         {
-            Assert.Equal(" . ", Path.GetFileName(" . "));
-            Assert.Equal(" .. ", Path.GetFileName(" .. "));
-            Assert.Equal("fi le", Path.GetFileName("fi le"));
-            Assert.Equal("fi  le", Path.GetFileName("fi  le"));
+            {" . "},
+            {" .. "},
+            {"fi le"},
+        };
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific valid file names
+        [Theory, MemberData(nameof(GetFileName_Unix_Test_Data))]
+        public static void GetFileName_Unix(string file)
+        {
+            Assert.Equal(file, Path.GetFileName(file));
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public static void GetFileNameWithSpaces_Unix()
+        {
             Assert.Equal("fi  le", Path.GetFileName(Path.Combine("b \r\n ar", "fi  le")));
         }
 
@@ -253,43 +300,59 @@ namespace System.IO.Tests
             Assert.False(Path.IsPathRooted("file.exe"));
         }
 
+        public static TheoryData<string, string> GetPathRoot_Windows_UncAndExtended_Test_Data => new TheoryData<string, string>
+        {
+            { @"\\test\unc\path\to\something", @"\\test\unc" },
+            { @"\\a\b\c\d\e", @"\\a\b" },
+            { @"\\a\b\", @"\\a\b" },
+            { @"\\a\b", @"\\a\b" },
+            { @"\\test\unc", @"\\test\unc" },
+        };
+
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests UNC
-        [Theory]
-        [InlineData(@"\\test\unc\path\to\something", @"\\test\unc")]
-        [InlineData(@"\\a\b\c\d\e", @"\\a\b")]
-        [InlineData(@"\\a\b\", @"\\a\b")]
-        [InlineData(@"\\a\b", @"\\a\b")]
-        [InlineData(@"\\test\unc", @"\\test\unc")]
+        [Theory, MemberData(nameof(GetPathRoot_Windows_UncAndExtended_Test_Data))]
         public static void GetPathRoot_Windows_UncAndExtended(string value, string expected)
         {
             Assert.True(Path.IsPathRooted(value));
             Assert.Equal(expected, Path.GetPathRoot(value));
         }
 
+        public static TheoryData<string, string, string> GetPathRoot_Windows_UncAndExtended_WithLegacySupport_Test_Data => new TheoryData<string, string, string>
+        {
+            { @"\\?\UNC\test\unc", @"\\?\UNC", @"\\?\UNC\test\unc\path\to\something" },
+            { @"\\?\UNC\test\unc", @"\\?\UNC", @"\\?\UNC\test\unc" },
+            { @"\\?\UNC\a\b1", @"\\?\UNC", @"\\?\UNC\a\b1" },
+            { @"\\?\UNC\a\b2", @"\\?\UNC", @"\\?\UNC\a\b2\" },
+            { @"\\?\C:\", @"\\?\C:", @"\\?\C:\foo\bar.txt" },
+        };
+
+        [Theory, MemberData(nameof(GetPathRoot_Windows_UncAndExtended_WithLegacySupport_Test_Data))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests UNC
-        [Theory]
-        [InlineData(@"\\?\UNC\test\unc", @"\\?\UNC", @"\\?\UNC\test\unc\path\to\something")]
-        [InlineData(@"\\?\UNC\test\unc", @"\\?\UNC", @"\\?\UNC\test\unc")]
-        [InlineData(@"\\?\UNC\a\b1", @"\\?\UNC", @"\\?\UNC\a\b1")]
-        [InlineData(@"\\?\UNC\a\b2", @"\\?\UNC", @"\\?\UNC\a\b2\")]
-        [InlineData(@"\\?\C:\", @"\\?\C:", @"\\?\C:\foo\bar.txt")]
         public static void GetPathRoot_Windows_UncAndExtended_WithLegacySupport(string normalExpected, string legacyExpected, string value)
         {
             Assert.True(Path.IsPathRooted(value));
-
+        
             string expected = PathFeatures.IsUsingLegacyPathNormalization() ? legacyExpected : normalExpected;
             Assert.Equal(expected, Path.GetPathRoot(value));
         }
 
+        public static TheoryData<string, string> GetPathRoot_Windows_Test_Data => new TheoryData<string, string>
+        {
+            { @"C:", @"C:" },
+            { @"C:\", @"C:\" },
+            { @"C:\\", @"C:\" },
+            { @"C:\foo1", @"C:\" },
+            { @"C:\\foo2", @"C:\" },
+        };
+
+        public static TheoryData<string, string> GetPathRoot_Windows_String_Test_Data => new TheoryData<string, string>
+        {
+            { @"C://", @"C:\" },
+            { @"C://foo3", @"C:\" },
+        };
+
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific path convention
-        [Theory]
-        [InlineData(@"C:", @"C:")]
-        [InlineData(@"C:\", @"C:\")]
-        [InlineData(@"C:\\", @"C:\")]
-        [InlineData(@"C://", @"C:\")]
-        [InlineData(@"C:\foo1", @"C:\")]
-        [InlineData(@"C:\\foo2", @"C:\")]
-        [InlineData(@"C://foo3", @"C:\")]
+        [Theory, MemberData(nameof(GetPathRoot_Windows_Test_Data)), MemberData(nameof(GetPathRoot_Windows_String_Test_Data))]
         public static void GetPathRoot_Windows(string value, string expected)
         {
             Assert.True(Path.IsPathRooted(value));
@@ -315,13 +378,17 @@ namespace System.IO.Tests
             Assert.False(Path.IsPathRooted(path));
         }
 
+        public static TheoryData<string> IsPathRooted_Windows_Invalid_Test_Data => new TheoryData<string>
+        {
+            { @"@:\foo" },  // 064 = @     065 = A
+            { @"[:\\" },    // 091 = [     090 = Z
+            { @"`:\foo "},  // 096 = `     097 = a
+            { @"{:\\" },    // 123 = {     122 = z
+        };
+
         // Testing invalid drive letters !(a-zA-Z)
         [PlatformSpecific(TestPlatforms.Windows)]
-        [Theory]
-        [InlineData(@"@:\foo")]    // 064 = @     065 = A
-        [InlineData(@"[:\\")]       // 091 = [     090 = Z
-        [InlineData(@"`:\foo")]    // 096 = `     097 = a
-        [InlineData(@"{:\\")]       // 123 = {     122 = z
+        [Theory, MemberData(nameof(IsPathRooted_Windows_Invalid_Test_Data))]   
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed on Core where it would return true if the first char is not a drive letter followed by a VolumeSeparatorChar coreclr/10297")]
         public static void IsPathRooted_Windows_Invalid(string value)
         {
