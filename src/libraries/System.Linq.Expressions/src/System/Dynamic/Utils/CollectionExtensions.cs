@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic.Utils
@@ -74,7 +75,7 @@ namespace System.Dynamic.Utils
                 return builder.ToReadOnlyCollection();
             }
 
-            T[] array = EnumerableHelpers.ToArray(enumerable);
+            T[] array = enumerable.ToArray();
             return array.Length == 0 ?
                 EmptyReadOnlyCollection<T>.Instance :
                 new TrueReadOnlyCollection<T>(array);

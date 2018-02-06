@@ -188,7 +188,7 @@ namespace System.IO
                     return false;
                 }
 
-                return InternalExists(path);
+                return FileSystem.FileExists(path);
             }
             catch (ArgumentException) { }
             catch (NotSupportedException) { } // Security can throw this on ":"
@@ -197,11 +197,6 @@ namespace System.IO
             catch (UnauthorizedAccessException) { }
 
             return false;
-        }
-
-        internal static bool InternalExists(string path)
-        {
-            return FileSystem.FileExists(path);
         }
 
         public static FileStream Open(string path, FileMode mode)
@@ -387,11 +382,6 @@ namespace System.IO
         }
 
         public static byte[] ReadAllBytes(string path)
-        {
-            return InternalReadAllBytes(path);
-        }
-
-        private static byte[] InternalReadAllBytes(string path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
             using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
@@ -643,7 +633,7 @@ namespace System.IO
             string fullSourceFileName = Path.GetFullPath(sourceFileName);
             string fullDestFileName = Path.GetFullPath(destFileName);
 
-            if (!InternalExists(fullSourceFileName))
+            if (!FileSystem.FileExists(fullSourceFileName))
             {
                 throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, fullSourceFileName), fullSourceFileName);
             }
