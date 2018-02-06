@@ -2,19 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Internal.Runtime.CompilerServices;
-using System.Buffers;
 
 namespace System
 {
     public partial class String
     {
         private const int StackallocIntBufferSizeLimit = 128;
+
+        // Workaround for https://github.com/dotnet/coreclr/issues/16197
+        [StructLayout(LayoutKind.Sequential, Size = StackallocIntBufferSizeLimit * sizeof(int))]
+        struct StackallocIntBuffer
+        {
+            private int _dummy;
+        }
 
         unsafe private static void FillStringChecked(String dest, int destPos, String src)
         {
@@ -949,7 +957,7 @@ namespace System
                     return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
 
                 case StringComparison.Ordinal:
-                    return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.Ordinal);
+                    return Replace(oldValue, newValue);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.OrdinalIgnoreCase);
@@ -1079,18 +1087,98 @@ namespace System
             }
         }
 
-        // This method contains the same functionality as StringBuilder Replace. The only difference is that
-        // a new String has to be allocated since Strings are immutable
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern String ReplaceInternal(String oldValue, String newValue);
-
-        public String Replace(String oldValue, String newValue)
+        public string Replace(string oldValue, string newValue)
         {
             if (oldValue == null)
                 throw new ArgumentNullException(nameof(oldValue));
-            // Note that if newValue is null, we treat it like String.Empty.
+            if (oldValue.Length == 0)
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
 
-            return ReplaceInternal(oldValue, newValue);
+            // Api behavior: if newValue is null, instances of oldValue are to be removed.
+            if (newValue == null)
+                newValue = string.Empty;
+
+            // Workaround for https://github.com/dotnet/coreclr/issues/16197
+            // Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
+            Span<int> initialSpan; StackallocIntBuffer initialBuffer; unsafe { initialSpan = new Span<int>(&initialBuffer, StackallocIntBufferSizeLimit); }
+            var replacementIndices = new ValueListBuilder<int>(initialSpan);
+
+            unsafe
+            {
+                fixed (char* pThis = &_firstChar)
+                {
+                    int matchIdx = 0;
+                    int lastPossibleMatchIdx = this.Length - oldValue.Length;
+                    while (matchIdx <= lastPossibleMatchIdx)
+                    {
+                        char* pMatch = pThis + matchIdx;
+                        for (int probeIdx = 0; probeIdx < oldValue.Length; probeIdx++)
+                        {
+                            if (pMatch[probeIdx] != oldValue[probeIdx])
+                            {
+                                goto Next;
+                            }
+                        }
+                        // Found a match for the string. Record the location of the match and skip over the "oldValue."
+                        replacementIndices.Append(matchIdx);
+                        matchIdx += oldValue.Length;
+                        continue;
+
+                    Next:
+                        matchIdx++;
+                    }
+                }
+            }
+
+            if (replacementIndices.Length == 0)
+                return this;
+
+            // String allocation and copying is in separate method to make this method faster for the case where
+            // nothing needs replacing.
+            string dst = ReplaceHelper(oldValue.Length, newValue, replacementIndices.AsReadOnlySpan());
+
+            replacementIndices.Dispose();
+
+            return dst;
+        }
+
+        private string ReplaceHelper(int oldValueLength, string newValue, ReadOnlySpan<int> indices)
+        {
+            Debug.Assert(indices.Length > 0);
+
+            long dstLength = this.Length + ((long)(newValue.Length - oldValueLength)) * indices.Length;
+            if (dstLength > int.MaxValue)
+                throw new OutOfMemoryException();
+            string dst = FastAllocateString((int)dstLength);
+
+            Span<char> dstSpan = new Span<char>(ref dst.GetRawStringData(), dst.Length);
+
+            int thisIdx = 0;
+            int dstIdx = 0;
+
+            for (int r = 0; r < indices.Length; r++)
+            {
+                int replacementIdx = indices[r];
+
+                // Copy over the non-matching portion of the original that precedes this occurrence of oldValue.
+                int count = replacementIdx - thisIdx;
+                if (count != 0)
+                {
+                    this.AsReadOnlySpan().Slice(thisIdx, count).CopyTo(dstSpan.Slice(dstIdx));
+                    dstIdx += count;
+                }
+                thisIdx = replacementIdx + oldValueLength;
+
+                // Copy over newValue to replace the oldValue.
+                newValue.AsReadOnlySpan().CopyTo(dstSpan.Slice(dstIdx));
+                dstIdx += newValue.Length;
+            }
+
+            // Copy over the final non-matching portion at the end of the string.
+            Debug.Assert(this.Length - thisIdx == dstSpan.Length - dstIdx);
+            this.AsReadOnlySpan().Slice(thisIdx).CopyTo(dstSpan.Slice(dstIdx));
+
+            return dst;
         }
 
         public String[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)

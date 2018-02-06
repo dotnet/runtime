@@ -65,15 +65,6 @@ public:
     static FCDECL1(INT32, Length, StringObject* pThisRef);
 
     //
-    // Modifiers
-    //
-    static FCDECL3(Object*, ReplaceString, StringObject* thisRef, StringObject* oldValue, StringObject* newValue);
-
-    static FCDECL3(Object*, Insert, StringObject* thisRefUNSAFE, INT32 startIndex, StringObject* valueUNSAFE);
-
-    static FCDECL3(Object*, Remove, StringObject* thisRefUNSAFE, INT32 startIndex, INT32 count);
-
-    //
     // Interop
     //
 #ifdef FEATURE_COMINTEROP
