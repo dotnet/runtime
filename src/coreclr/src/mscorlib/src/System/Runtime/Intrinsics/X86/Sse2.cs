@@ -748,26 +748,6 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<double> LoadLow(Vector128<double> upper, double* address) => LoadLow(upper, address);
 
         /// <summary>
-        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
-        ///   MOVQ xmm, reg/m64
-        /// </summary>
-        public static unsafe Vector128<sbyte> LoadScalarVector128(sbyte* address) => LoadScalarVector128(address);
-        /// <summary>
-        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
-        ///   MOVQ xmm, reg/m64
-        /// </summary>
-        public static unsafe Vector128<byte> LoadScalarVector128(byte* address) => LoadScalarVector128(address);
-        /// <summary>
-        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
-        ///   MOVQ xmm, reg/m64
-        /// </summary>
-        public static unsafe Vector128<short> LoadScalarVector128(short* address) => LoadScalarVector128(address);
-        /// <summary>
-        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
-        ///   MOVQ xmm, reg/m64
-        /// </summary>
-        public static unsafe Vector128<ushort> LoadScalarVector128(ushort* address) => LoadScalarVector128(address);
-        /// <summary>
         /// __m128i _mm_loadl_epi32 (__m128i const* mem_addr)
         ///   MOVD xmm, reg/m32
         /// The above native signature does not exist. We provide this additional overload for completeness.
