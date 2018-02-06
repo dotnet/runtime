@@ -95,7 +95,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 genConsumeOperands(node);
                 if (category == HW_Category_MemoryStore)
                 {
-                    emit->emitIns_AR_R(ins, emitTypeSize(TYP_SIMD16), op2->gtRegNum, op1->gtRegNum, 0);
+                    emit->emitIns_AR_R(ins, simdSize, op2->gtRegNum, op1->gtRegNum, 0);
                 }
                 else if ((ival != -1) && varTypeIsFloating(baseType))
                 {
@@ -103,7 +103,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryLoad)
                 {
-                    emit->emitIns_SIMD_R_R_AR(ins, emitTypeSize(TYP_SIMD16), targetReg, op1->gtRegNum, op2->gtRegNum);
+                    emit->emitIns_SIMD_R_R_AR(ins, simdSize, targetReg, op1->gtRegNum, op2->gtRegNum);
                 }
                 else
                 {
