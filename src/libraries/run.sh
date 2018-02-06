@@ -15,4 +15,10 @@ __dotnet=$__toolRuntime/dotnetcli/dotnet
 
 cd $__scriptpath
 $__dotnet $__toolRuntime/run.exe $__scriptpath/config.json "$@"
-exit $?
+if [ $? -ne 0 ]; then
+    local exit=$?
+    echo "run.sh: dotnet run failed with exit code $exit"
+    exit $exit
+fi
+echo "run.sh: dotnet run succeeded"
+exit 0
