@@ -69,12 +69,15 @@ namespace System.IO.Enumeration
 
         private static bool MatchesPattern(string expression, ReadOnlySpan<char> name, EnumerationOptions options)
         {
+            bool ignoreCase = (options.MatchCasing == MatchCasing.PlatformDefault && !PathInternal.IsCaseSensitive)
+                || options.MatchCasing == MatchCasing.CaseInsensitive;
+
             switch (options.MatchType)
             {
                 case MatchType.Simple:
-                    return FileSystemName.MatchesSimpleExpression(expression, name, ignoreCase: !PathInternal.IsCaseSensitive);
+                    return FileSystemName.MatchesSimpleExpression(expression, name, ignoreCase);
                 case MatchType.Dos:
-                    return FileSystemName.MatchesDosExpression(expression, name, ignoreCase: !PathInternal.IsCaseSensitive);
+                    return FileSystemName.MatchesDosExpression(expression, name, ignoreCase);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(options));
             }

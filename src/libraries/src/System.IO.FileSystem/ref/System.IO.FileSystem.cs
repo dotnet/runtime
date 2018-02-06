@@ -231,6 +231,12 @@ namespace System.IO.Enumeration
         Simple,
         Dos
     }
+    public enum MatchCasing
+    {
+        PlatformDefault,
+        CaseSensitive,
+        CaseInsensitive
+    }
     public class EnumerationOptions
     {
         public EnumerationOptions() { }
@@ -240,6 +246,7 @@ namespace System.IO.Enumeration
         public int BufferSize { get { throw null; } set { } }
         public FileAttributes AttributesToSkip { get { throw null; } set { } }
         public MatchType MatchType { get { throw null; } set { } }
+        public MatchCasing MatchCasing { get { throw null; } set { } }
         public bool ReturnSpecialDirectories { get { throw null; } set { } }
     }
     public ref struct FileSystemEntry
