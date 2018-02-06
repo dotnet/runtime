@@ -132,6 +132,8 @@ Breaking Change Rules
 * Moving a type from one assembly into another assembly  
 > The old assembly must be marked with `TypeForwardedToAttribute` pointing to the new location
 
+* Changing a `struct` type to a `readonly struct` type
+
 &#10007; **Disallowed**
 * Adding the `sealed` or `abstract` keyword to a type when there _are accessible_ (public or protected) constructors
 
@@ -143,6 +145,10 @@ Breaking Change Rules
 * Removing one or more base classes for a type, including changing `struct` to `class` and vice versa
 
 * Changing the namespace or name of a type
+
+* Changing a `readonly struct` type to a `struct` type
+
+* Changing a `struct` type to a `ref struct` type and vice versa
 
 ### Members
 &#10003; **Allowed**
@@ -158,6 +164,8 @@ Breaking Change Rules
 
 * Introducing or removing an override
 > Make note, that introducing an override might cause previous consumers to skip over the override when calling `base`.
+
+* Change from `ref readonly` return to `ref` return (except for virtual methods or interfaces)
 
 &#10007; **Disallowed**
 * Adding an member to an interface
@@ -181,6 +189,10 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 * Adding `virtual` to a member
 > While this change would often work without breaking too many scenarios because C# compiler tends to emit `callvirt` IL instructions to call non-virtual methods (`callvirt` performs a null check, while a normal `call` won't), we can't rely on it. C# is not the only language we target and the C# compiler increasingly tries to optimize `callvirt` to a normal `call` whenever the target method is non-virtual and the `this` is provably not null (such as a method accessed through the `?.` null propagation operator). Making a method virtual would mean that consumer code would often end up calling it non-virtually.
 
+* Change from `ref` return to `ref readonly` return
+
+* Change from `ref readonly` return to `ref` return on a virtual method or interface
+
 * Adding or removing `static` keyword from a member
 
 ### Signatures
@@ -200,7 +212,7 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 * Removing `params` from a parameter
 
-* Adding or removing `out` or `ref` keywords from a parameter
+* Adding or removing `in`, `out`, or `ref` keywords from a parameter
 
 * Renaming a parameter (including case)  
 > This is considered breaking for two reasons:
