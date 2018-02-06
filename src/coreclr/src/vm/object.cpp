@@ -1519,9 +1519,6 @@ BOOL StringObject::SetTrailByte(BYTE bTrailByte) {
 }
 
 
-#define DEFAULT_CAPACITY 16
-#define DEFAULT_MAX_CAPACITY 0x7FFFFFFF
-
 /*================================ReplaceBuffer=================================
 **This is a helper function designed to be used by N/Direct it replaces the entire
 **contents of the String with a new string created by some native method.  This 
@@ -1577,35 +1574,6 @@ void StringBufferObject::ReplaceBufferAnsi(STRINGBUFFERREF *thisRef, __in_ecount
     CHARARRAYREF newCharArray = AllocateCharArray((*thisRef)->GetAllocationLength(newCapacity+1));
     (*thisRef)->ReplaceBufferWithAnsi(&newCharArray, newBuffer, newCapacity);
 }
-
-
-/*==============================LocalIndexOfString==============================
-**Finds search within base and returns the index where it was found.  The search
-**starts from startPos and we return -1 if search isn't found.  This is a direct 
-**copy from COMString::IndexOfString, but doesn't require that we build up
-**an instance of indexOfStringArgs before calling it.  
-**
-**Args:
-**base -- the string in which to search
-**search -- the string for which to search
-**strLength -- the length of base
-**patternLength -- the length of search
-**startPos -- the place from which to start searching.
-**
-==============================================================================*/
-/* static */ INT32 StringBufferObject::LocalIndexOfString(__in_ecount(strLength) WCHAR *base, __in_ecount(patternLength) WCHAR *search, int strLength, int patternLength, int startPos) {
-    LIMITED_METHOD_CONTRACT
-    _ASSERTE(base != NULL);
-    _ASSERTE(search != NULL);
-
-    int iThis, iPattern;
-    for (iThis=startPos; iThis < (strLength-patternLength+1); iThis++) {
-        for (iPattern=0; iPattern<patternLength && base[iThis+iPattern]==search[iPattern]; iPattern++);
-        if (iPattern == patternLength) return iThis;
-    }
-    return -1;
-}
-
 
 #ifdef USE_CHECKED_OBJECTREFS
 
