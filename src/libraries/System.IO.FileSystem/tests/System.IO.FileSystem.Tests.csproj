@@ -57,6 +57,7 @@
     <Compile Include="Enumeration\SpecialDirectoryTests.netcoreapp.cs" />
     <Compile Include="Enumeration\SkipAttributeTests.netcoreapp.cs" />
     <Compile Include="Enumeration\DosMatcherTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\MatchCasingTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->

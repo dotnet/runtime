@@ -23,6 +23,7 @@
     <Compile Include="System\IO\Enumeration\FileSystemEnumerableFactory.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemName.cs" />
+    <Compile Include="System\IO\Enumeration\MatchCasing.cs" />
     <Compile Include="System\IO\Enumeration\MatchType.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
