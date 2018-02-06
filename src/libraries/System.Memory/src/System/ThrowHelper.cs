@@ -111,7 +111,6 @@ namespace System
     //
     internal enum ExceptionArgument
     {
-        array,
         length,
         start,
         minimumBufferSize,
