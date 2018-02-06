@@ -331,7 +331,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue(22158, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // TODO: make unconditional after #26813 and #26476 are fixed
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             using (HttpClient client = CreateHttpClient())
