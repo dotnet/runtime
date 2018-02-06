@@ -413,6 +413,9 @@ INST3( pmuldq,       "pmuldq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( blendvps,     "blendvps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x14))   // Variable Blend Packed Singles
 INST3( blendvpd,     "blendvpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x15))   // Variable Blend Packed Doubles
 INST3( pblendvb,     "pblendvb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x10))   // Variable Blend Packed Bytes
+INST3( lddqu,        "lddqu"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0xF0))  // Load Unaligned integer
+INST3( movntdqa,     "movntdqa"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2A))   // Load Double Quadword Non-Temporal Aligned Hint
+INST3( movddup,      "movddup"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0x12))   // Replicate Double FP Values
 
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
