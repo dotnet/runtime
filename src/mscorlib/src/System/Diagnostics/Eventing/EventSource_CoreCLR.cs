@@ -33,46 +33,22 @@ namespace System.Diagnostics.Tracing
         {
             if (TplEtwProvider.Log != null)
                 TplEtwProvider.Log.SetActivityId(activityId);
-#if FEATURE_MANAGED_ETW
-#if FEATURE_ACTIVITYSAMPLING
-            Guid newId = activityId;
-#endif // FEATURE_ACTIVITYSAMPLING
+
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.  
-
-#if FEATURE_PERFTRACING && PLATFORM_WINDOWS
+#if FEATURE_MANAGED_ETW
+#if FEATURE_PERFTRACING
             // Set the activity id via EventPipe.
             EventPipeInternal.EventActivityIdControl(
                 (uint)UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
-
-            // Set the activity id via ETW and fetch the previous id.
-            if (UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
-                UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
-                ref activityId) == 0)
-#elif FEATURE_PERFTRACING
-            if (EventPipeInternal.EventActivityIdControl(
-                (uint)UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
-                ref activityId) == 0)
-#elif PLATFORM_WINDOWS
-            if (UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
-                UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
-                ref activityId) == 0)
-#endif // FEATURE_PERFTRACING && PLATFORM_WINDOWS
-            {
-#if FEATURE_ACTIVITYSAMPLING
-                var activityDying = s_activityDying;
-                if (activityDying != null && newId != activityId)
-                {
-                    if (activityId == Guid.Empty)
-                    {
-                        activityId = FallbackActivityId;
-                    }
-                    // OutputDebugString(string.Format("Activity dying: {0} -> {1}", activityId, newId));
-                    activityDying(activityId);     // This is actually the OLD activity ID.  
-                }
-#endif // FEATURE_ACTIVITYSAMPLING
-            }
+#endif // FEATURE_PERFTRACING
+#if PLATFORM_WINDOWS
+            // Set the activity id via ETW.
+            UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
+                UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+                ref activityId);
+#endif // PLATFORM_WINDOWS
 #endif // FEATURE_MANAGED_ETW
         }
 
