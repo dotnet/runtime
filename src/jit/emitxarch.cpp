@@ -2029,9 +2029,9 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)    // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_prefetcht0) ||
-               (ins == INS_prefetcht1)                                  // the prefetch instructions are always 3 bytes
-               || (ins == INS_prefetcht2) || (ins == INS_prefetchnta)); // and have part of their modr/m byte hardcoded
+               || (ins == INS_movzx) || (ins == INS_movsx)
+               // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
+               || isPrefetch(ins));
         size = 3;
     }
     else
