@@ -5925,13 +5925,15 @@ static void AppendGCLayout(ULONGARRAY &gcLayout, size_t baseOffset, BOOL fIsType
         _ASSERTE(pMT);
         _ASSERTE(pMT->IsValueType());
 
-        if (pMT->IsByRefLike())
+        BOOL isByRefLike = pMT->IsByRefLike();
+        if (isByRefLike)
         {
             FindByRefPointerOffsetsInByRefLikeObject(
                 pMT,
                 baseOffset,
                 [&](size_t pointerOffset)
                 {
+                    _ASSERTE(gcLayout.Count() == 0 || pointerOffset > (gcLayout[gcLayout.Count() - 1] & ~(ULONG)1));
                     *gcLayout.AppendThrowing() = (ULONG)(pointerOffset | 1); // "| 1" to mark it as an interior pointer
                 });
         }
@@ -5962,9 +5964,24 @@ static void AppendGCLayout(ULONGARRAY &gcLayout, size_t baseOffset, BOOL fIsType
                 size_t stop = start - (cur->GetSeriesSize() + size);
                 for (size_t off = stop + sizeof(void*); off <= start; off += sizeof(void*))
                 {
-                    _ASSERTE(gcLayout.Count() == 0 || off > gcLayout[gcLayout.Count() - 1]);
                     _ASSERTE(FitsInU4(off));
-                    *gcLayout.AppendThrowing() = (ULONG)off;
+
+                    int gcLayoutInsertIndex = gcLayout.Count();
+                    _ASSERTE(gcLayoutInsertIndex >= 0);
+                    if (isByRefLike)
+                    {
+                        // Offsets in 'gcLayout' are expected to be in increasing order and for by-ref-like types the by-refs would
+                        // have already been inserted into 'gcLayout' above. Find the appropriate index at which to insert this
+                        // offset.
+                        while (gcLayoutInsertIndex != 0 && off < gcLayout[gcLayoutInsertIndex - 1])
+                        {
+                            --gcLayoutInsertIndex;
+                            _ASSERTE(off != (gcLayout[gcLayoutInsertIndex] & ~(ULONG)1));
+                        }
+                    }
+
+                    _ASSERTE(gcLayoutInsertIndex == 0 || off > (gcLayout[gcLayoutInsertIndex - 1] & ~(ULONG)1));
+                    *gcLayout.InsertThrowing(gcLayoutInsertIndex) = (ULONG)off;
                 }
                 cur++;
 

@@ -389,8 +389,7 @@ inline void FindByRefPointerOffsetsInByRefLikeObject(PTR_MethodTable pMT, SIZE_T
             continue;
         }
 
-        SIZE_T fieldStartIndex = pFD->GetOffset() / sizeof(void *);
-        FindByRefPointerOffsetsInByRefLikeObject(pFieldMT, baseOffset + fieldStartIndex, processPointerOffset);
+        FindByRefPointerOffsetsInByRefLikeObject(pFieldMT, baseOffset + pFD->GetOffset(), processPointerOffset);
     }
 }
 
