@@ -401,14 +401,14 @@ namespace System
         //
         public static char ToUpper(char c)
         {
-            return ToUpper(c, CultureInfo.CurrentCulture);
+            return CultureInfo.CurrentCulture.TextInfo.ToUpper(c);
         }
 
 
         // Converts a character to upper-case for invariant culture.
         public static char ToUpperInvariant(char c)
         {
-            return ToUpper(c, CultureInfo.InvariantCulture);
+            return CultureInfo.InvariantCulture.TextInfo.ToUpper(c);
         }
 
 
@@ -432,14 +432,14 @@ namespace System
         // Converts a character to lower-case for the default culture.
         public static char ToLower(char c)
         {
-            return ToLower(c, CultureInfo.CurrentCulture);
+            return CultureInfo.CurrentCulture.TextInfo.ToLower(c);
         }
 
 
         // Converts a character to lower-case for invariant culture.
         public static char ToLowerInvariant(char c)
         {
-            return ToLower(c, CultureInfo.InvariantCulture);
+            return CultureInfo.InvariantCulture.TextInfo.ToLower(c);
         }
 
 
