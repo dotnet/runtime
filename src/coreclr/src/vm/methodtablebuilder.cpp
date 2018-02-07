@@ -1500,20 +1500,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
         LPCUTF8 nameSpace;
         HRESULT hr = GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace);
 
-        if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics") == 0)
-        {
-            if (IsCompilationProcess())
-            {
-                // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
-                // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
-                //
-                // Once they are properly handled according to the ABI requirements, we can remove this check
-                // and allow them to be used in crossgen/AOT scenarios.
-                COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
-            }
-        }
-
 #if defined(_TARGET_ARM64_)
         // All the funtions in System.Runtime.Intrinsics.Arm.Arm64 are hardware intrinsics.
         if (hr == S_OK && strcmp(nameSpace, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
@@ -9560,6 +9546,17 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
+
+                if (IsCompilationProcess())
+                {
+                    // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
+                    // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
+                    // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+                    //
+                    // Once they are properly handled according to the ABI requirements, we can remove this check
+                    // and allow them to be used in crossgen/AOT scenarios.
+                    COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
+                }
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
