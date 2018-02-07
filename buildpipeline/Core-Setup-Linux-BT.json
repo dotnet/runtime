@@ -591,7 +591,7 @@
       "alwaysRun": false,
       "displayName": "Package - OpenSuse",
       "timeoutInMinutes": 0,
-      "refName": "Task38",
+      "refName": "Task40",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -611,7 +611,7 @@
       "alwaysRun": false,
       "displayName": "Publish - OpenSuse",
       "timeoutInMinutes": 0,
-      "refName": "Task39",
+      "refName": "Task41",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -632,7 +632,7 @@
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task40",
+      "refName": "Task42",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -699,7 +699,7 @@
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task42",
+      "refName": "Task43",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
