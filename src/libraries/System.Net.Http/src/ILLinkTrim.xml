@@ -2,5 +2,8 @@
   <assembly fullname="System.Net.Http">
     <!-- Anonymous types are used with DiagnosticSource logging and subscribers reflect over those, calling their public getters. -->
     <type fullname="*f__AnonymousType*" />
+
+    <!-- TODO #23166: Remove once exposed in contract -->
+    <type fullname="System.Net.Http.ManagedHandler" />
   </assembly>
 </linker>

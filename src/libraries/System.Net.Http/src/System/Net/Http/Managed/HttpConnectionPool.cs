@@ -17,9 +17,6 @@ namespace System.Net.Http
     /// <summary>Provides a pool of connections to the same endpoint.</summary>
     internal sealed class HttpConnectionPool : IDisposable
     {
-        /// <summary>Maximum number of milliseconds a connection is allowed to be idle in the pool before we remove it.</summary>
-        private const int MaxIdleTimeMilliseconds = 100_000;
-
         private readonly HttpConnectionPools _pools;
         private readonly HttpConnectionKey _key;
 
@@ -82,6 +79,9 @@ namespace System.Net.Http
                 return new ValueTask<HttpConnection>(Task.FromCanceled<HttpConnection>(cancellationToken));
             }
 
+            TimeSpan pooledConnectionLifetime = _pools.Settings._pooledConnectionLifetime;
+            TimeSpan pooledConnectionIdleTimeout = _pools.Settings._pooledConnectionIdleTimeout;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
             List<CachedConnection> list = _idleConnections;
             lock (SyncObj)
             {
@@ -94,7 +94,7 @@ namespace System.Net.Http
                     Debug.Assert(!conn.IsNewConnection);
 
                     list.RemoveAt(list.Count - 1);
-                    if (cachedConnection.IsUsable())
+                    if (cachedConnection.IsUsable(now, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                     {
                         // We found a valid collection.  Return it.
                         if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
@@ -461,6 +461,9 @@ namespace System.Net.Http
         /// </returns>
         public bool CleanCacheAndDisposeIfUnused()
         {
+            TimeSpan pooledConnectionLifetime = _pools.Settings._pooledConnectionLifetime;
+            TimeSpan pooledConnectionIdleTimeout = _pools.Settings._pooledConnectionIdleTimeout;
+
             List<CachedConnection> list = _idleConnections;
             List<HttpConnection> toDispose = null;
             bool tookLock = false;
@@ -475,7 +478,7 @@ namespace System.Net.Http
 
                 // Find the first item which needs to be removed.
                 int freeIndex = 0;
-                while (freeIndex < list.Count && list[freeIndex].IsUsable(now))
+                while (freeIndex < list.Count && list[freeIndex].IsUsable(now, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                 {
                     freeIndex++;
                 }
@@ -493,7 +496,7 @@ namespace System.Net.Http
                     {
                         // Look for the first item to be kept.  Along the way, any
                         // that shouldn't be kept are disposed of.
-                        while (current < list.Count && !list[current].IsUsable(now))
+                        while (current < list.Count && !list[current].IsUsable(now, pooledConnectionLifetime, pooledConnectionIdleTimeout))
                         {
                             toDispose.Add(list[current]._connection);
                             current++;
@@ -574,11 +577,9 @@ namespace System.Net.Http
             }
 
             /// <summary>Gets whether the connection is currently usable.</summary>
-            /// <returns>true if we believe the connection can be reused; otherwise, false.  See comments on other overload.</returns>
-            public bool IsUsable() => !_connection.ReadAheadCompleted;
-
-            /// <summary>Gets whether the connection is currently usable, factoring in expiration time.</summary>
             /// <param name="now">The current time.  Passed in to amortize the cost of calling DateTime.UtcNow.</param>
+            /// <param name="pooledConnectionLifetime">How long a connection can be open to be considered reusable.</param>
+            /// <param name="pooledConnectionIdleTimeout">How long a connection can have been idle in the pool to be considered reusable.</param>
             /// <returns>
             /// true if we believe the connection can be reused; otherwise, false.  There is an inherent race condition here,
             /// in that the server could terminate the connection or otherwise make it unusable immediately after we check it,
@@ -586,9 +587,35 @@ namespace System.Net.Http
             /// terminate it, which would be considered a failure, so this race condition is largely benign and inherent to
             /// the nature of connection pooling.
             /// </returns>
-            public bool IsUsable(DateTimeOffset now) =>
-                now - _returnedTime <= TimeSpan.FromMilliseconds(MaxIdleTimeMilliseconds) &&
-                IsUsable();
+            public bool IsUsable(
+                DateTimeOffset now,
+                TimeSpan pooledConnectionLifetime,
+                TimeSpan pooledConnectionIdleTimeout)
+            {
+                // Validate that the connection hasn't been idle in the pool for longer than is allowed.
+                if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) && (now - _returnedTime > pooledConnectionIdleTimeout))
+                {
+                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {now - _returnedTime} > {pooledConnectionIdleTimeout}.");
+                    return false;
+                }
+
+                // Validate that the connection hasn't been alive for longer than is allowed.
+                if ((pooledConnectionLifetime != Timeout.InfiniteTimeSpan) && (now - _connection.CreationTime > pooledConnectionLifetime))
+                {
+                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Alive {now - _connection.CreationTime} > {pooledConnectionLifetime}.");
+                    return false;
+                }
+
+                // Validate that the connection hasn't received any stray data while in the pool.
+                if (_connection.ReadAheadCompleted)
+                {
+                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Unexpected data received.");
+                    return false;
+                }
+
+                // The connection is usable.
+                return true;
+            }
 
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);
             public override bool Equals(object obj) => obj is CachedConnection && Equals((CachedConnection)obj);
