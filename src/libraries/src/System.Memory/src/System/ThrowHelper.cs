@@ -68,6 +68,22 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateInvalidOperationException_OutstandingReferences() { return new InvalidOperationException(SR.OutstandingReferences); }
 
+        internal static void ThrowInvalidOperationException_UnexpectedSegmentType() { throw CreateInvalidOperationException_UnexpectedSegmentType(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateInvalidOperationException_UnexpectedSegmentType() { return new InvalidOperationException(SR.UnexpectedSegmentType); }
+
+        internal static void ThrowInvalidOperationException_EndPositionNotReached() { throw CreateInvalidOperationException_EndPositionNotReached(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateInvalidOperationException_EndPositionNotReached() { return new InvalidOperationException(SR.EndPositionNotReached); }
+
+        internal static void ThrowArgumentOutOfRangeException_PositionOutOfRange() { throw CreateArgumentOutOfRangeException_PositionOutOfRange(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateArgumentOutOfRangeException_PositionOutOfRange() { return new ArgumentOutOfRangeException("position"); }
+
+        internal static void ThrowArgumentOutOfRangeException_CountOutOfRange() { throw CreateArgumentOutOfRangeException_CountOutOfRange(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateArgumentOutOfRangeException_CountOutOfRange() { return new ArgumentOutOfRangeException("count"); }
+
         internal static void ThrowObjectDisposedException_ArrayMemoryPoolBuffer() { throw CreateObjectDisposedException_ArrayMemoryPoolBuffer(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateObjectDisposedException_ArrayMemoryPoolBuffer() { return new ObjectDisposedException("ArrayMemoryPoolBuffer"); }
@@ -83,6 +99,10 @@ namespace System
         internal static void ThrowArgumentException_OverlapAlignmentMismatch() { throw CreateArgumentException_OverlapAlignmentMismatch(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentException_OverlapAlignmentMismatch() { return new ArgumentException(SR.Argument_OverlapAlignmentMismatch); }
+
+        internal static void ThrowNotSupportedException() { throw CreateThrowNotSupportedException(); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateThrowNotSupportedException() { return new NotSupportedException(); }
 
         //
         // Enable use of ThrowHelper from TryFormat() routines without introducing dozens of non-code-coveraged "bytesWritten = 0; return false" boilerplate.
@@ -116,6 +136,14 @@ namespace System
         minimumBufferSize,
         byteOffset,
         comparable,
-        comparer
+        comparer,
+        destination,
+        offset,
+        startSegment,
+        endSegment,
+        startIndex,
+        endIndex,
+        array,
+        ownedMemory
     }
 }
