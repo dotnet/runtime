@@ -24,6 +24,7 @@
 
 #define BOX_NOT_CLEAR_VT_SP 0x4000
 
+#define MINT_VT_ALIGNMENT 8
 
 enum {
 	VAL_I32     = 0,

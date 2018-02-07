@@ -485,14 +485,14 @@ can_store (int stack_type, int var_type)
 
 #define PUSH_VT(td, size) \
 	do { \
-		(td)->vt_sp += ((size) + 7) & ~7; \
+		(td)->vt_sp += ALIGN_TO ((size), MINT_VT_ALIGNMENT); \
 		if ((td)->vt_sp > (td)->max_vt_sp) \
 			(td)->max_vt_sp = (td)->vt_sp; \
 	} while (0)
 
 #define POP_VT(td, size) \
 	do { \
-		(td)->vt_sp -= ((size) + 7) & ~7; \
+		(td)->vt_sp -= ALIGN_TO ((size), MINT_VT_ALIGNMENT); \
 	} while (0)
 
 #if NO_UNALIGNED_ACCESS
@@ -1210,7 +1210,7 @@ no_intrinsic:
 				size = mono_class_native_size (klass, NULL);
 			else
 				size = mono_class_value_size (klass, NULL);
-			size = (size + 7) & ~7;
+			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			vt_stack_used += size;
 		}
 	}
@@ -2074,7 +2074,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			ADD_CODE (td, 0);
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (td->sp [-1].klass, NULL);
-				size = (size + 7) & ~7;
+				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 				ADD_CODE(td, MINT_VTRESULT);
 				ADD_CODE(td, 0);
 				WRITE32(td, &size);
@@ -2125,7 +2125,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				if (mint_type (ult) == MINT_TYPE_VT) {
 					MonoClass *klass = mono_class_from_mono_type (ult);
 					vt_size = mono_class_value_size (klass, NULL);
-					vt_size = (vt_size + 7) & ~7;
+					vt_size = ALIGN_TO (vt_size, MINT_VT_ALIGNMENT);
 				}
 			}
 			if (td->sp > td->stack)
@@ -2834,7 +2834,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					if (mt == MINT_TYPE_VT) {
 						MonoClass *k = mono_class_from_mono_type (csignature->params [i]);
 						gint32 size = mono_class_value_size (k, NULL);
-						size = (size + 7) & ~7;
+						size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 						vt_stack_used += size;
 					}
 				}
@@ -3035,7 +3035,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			}
 			if (td->sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (klass, NULL);
-				size = (size + 7) & ~7;
+				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 				td->vt_sp -= size;
 				ADD_CODE (td, MINT_VTRESULT);
 				ADD_CODE (td, 0);
@@ -3230,7 +3230,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			} else {
 				if (mint_type (&klass->byval_arg) == MINT_TYPE_VT && !klass->enumtype) {
 					size = mono_class_value_size (klass, NULL);
-					size = (size + 7) & ~7;
+					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 					td->vt_sp -= size;
 				}
 				ADD_CODE(td, MINT_BOX);
@@ -3950,7 +3950,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					size = mono_class_native_size(td->sp [-1].klass, NULL);
 				else
 					size = mono_class_value_size(td->sp [-1].klass, NULL);
-				size = (size + 7) & ~7;
+				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 				ADD_CODE(td, MINT_VTRESULT);
 				ADD_CODE(td, 0);
 				WRITE32(td, &size);

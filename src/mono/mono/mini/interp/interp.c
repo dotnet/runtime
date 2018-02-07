@@ -2041,8 +2041,6 @@ do_transform_method (InterpFrame *frame, ThreadContext *context)
 		interp_pop_lmf (&ext);
 }
 
-#define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
-
 static void
 copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **vt_sp)
 {
@@ -2467,7 +2465,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (ret_size > 0) {
 				memmove (vt_sp, ret_vt_sp, ret_size);
 				sp [-1].data.p = vt_sp;
-				vt_sp += (ret_size + 7) & ~7;
+				vt_sp += ALIGN_TO (ret_size, MINT_VT_ALIGNMENT);
 			}
 			ip += 4;
 			MINT_IN_BREAK;
@@ -2543,7 +2541,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			i32 = READ32 (ip + 1);
 			sp->data.p = vt_sp;
 			memcpy(sp->data.p, sp [-1].data.p, i32);
-			vt_sp += (i32 + 7) & ~7;
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			++sp;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -3479,7 +3477,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (mint_type (&c->byval_arg) == MINT_TYPE_VT && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
 				sp [-1].data.p = vt_sp;
-				vt_sp += (size + 7) & ~7;
+				vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			}
 			stackval_from_data (&c->byval_arg, &sp [-1], p, FALSE);
 			MINT_IN_BREAK;
@@ -3708,7 +3706,7 @@ array_constructed:
 
 			sp [-1].data.p = vt_sp;
 			memcpy (sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), i32);
-			vt_sp += (i32 + 7) & ~7;
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 3;
 			MINT_IN_BREAK;
 
@@ -3761,7 +3759,7 @@ array_constructed:
 
 			sp [-1].data.p = vt_sp;
 			memcpy(sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), i32);
-			vt_sp += (i32 + 7) & ~7;
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			memcpy(sp [-1].data.p, addr, i32);
 			MINT_IN_BREAK;
 		}
@@ -3805,7 +3803,7 @@ array_constructed:
 			guint16 offset = * (guint16 *)(ip + 1);
 			mono_value_copy ((char *) o + offset, sp [1].data.p, klass);
 
-			vt_sp -= (i32 + 7) & ~7;
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -3852,7 +3850,7 @@ array_constructed:
 				mono_value_copy ((char *) o + field->offset, sp [-1].data.p, klass);
 
 			sp -= 2;
-			vt_sp -= (i32 + 7) & ~7;
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLDA) {
@@ -3880,7 +3878,7 @@ array_constructed:
 			ip += 4;
 
 			sp->data.p = vt_sp;
-			vt_sp += (size + 7) & ~7;
+			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			stackval_from_data (field->type, sp, addr, FALSE);
 			++sp;
 			MINT_IN_BREAK;
@@ -3904,7 +3902,7 @@ array_constructed:
 
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
-			vt_sp -= (i32 + 7) & ~7;
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STOBJ_VT) {
@@ -3913,7 +3911,7 @@ array_constructed:
 			ip += 2;
 			size = mono_class_value_size (c, NULL);
 			memcpy(sp [-2].data.p, sp [-1].data.p, size);
-			vt_sp -= (size + 7) & ~7;
+			vt_sp -= ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
@@ -3980,7 +3978,7 @@ array_constructed:
 				int size = mono_class_value_size (c, NULL);
 				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, sp [-1 - offset].data.p, error);
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-				size = (size + 7) & ~7;
+				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 				if (pop_vt_sp)
 					vt_sp -= size;
 			} else {
@@ -4124,7 +4122,7 @@ array_constructed:
 				char *src_addr = mono_array_addr_with_size ((MonoArray *) o, i32, aindex);
 				sp [0].data.vt = vt_sp;
 				stackval_from_data (&klass_vt->byval_arg, sp, src_addr, FALSE);
-				vt_sp += (i32 + 7) & ~7;
+				vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 				ip += 3;
 				break;
 			}
@@ -4201,7 +4199,7 @@ array_constructed:
 				char *dst_addr = mono_array_addr_with_size ((MonoArray *) o, i32, aindex);
 
 				stackval_to_data (&klass_vt->byval_arg, &sp [2], dst_addr, FALSE);
-				vt_sp -= (i32 + 7) & ~7;
+				vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 				ip += 3;
 				break;
 			}
@@ -4809,7 +4807,7 @@ array_constructed:
 			sp->data.p = vt_sp;
 			i32 = READ32(ip + 2);
 			memcpy(sp->data.p, frame->args + * (guint16 *)(ip + 1), i32);
-			vt_sp += (i32 + 7) & ~7;
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			++sp;
 			MINT_IN_BREAK;
@@ -4834,7 +4832,7 @@ array_constructed:
 			i32 = READ32(ip + 2);
 			--sp;
 			memcpy(frame->args + * (guint16 *)(ip + 1), sp->data.p, i32);
-			vt_sp -= (i32 + 7) & ~7;
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			MINT_IN_BREAK;
 
@@ -4910,7 +4908,7 @@ array_constructed:
 			sp->data.p = vt_sp;
 			i32 = READ32(ip + 2);
 			memcpy(sp->data.p, locals + * (guint16 *)(ip + 1), i32);
-			vt_sp += (i32 + 7) & ~7;
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			++sp;
 			MINT_IN_BREAK;
@@ -4948,7 +4946,7 @@ array_constructed:
 			i32 = READ32(ip + 2);
 			--sp;
 			memcpy(locals + * (guint16 *)(ip + 1), sp->data.p, i32);
-			vt_sp -= (i32 + 7) & ~7;
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			MINT_IN_BREAK;
 
