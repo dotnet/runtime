@@ -56,6 +56,7 @@ namespace System.Net.Http
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
         private Exception _pendingException;
+        private int _allowedReadLineBytes;
 
         private Task<int> _readAheadTask;
         private byte[] _readBuffer;
@@ -226,7 +227,7 @@ namespace System.Net.Http
 
                 await WriteStringAsync(request.RequestUri.PathAndQuery, cancellationToken).ConfigureAwait(false);
 
-                // fall-back to 1.1 for all versions other than 1.0
+                // Fall back to 1.1 for all versions other than 1.0
                 Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0); // guaranteed by Version class
                 bool isHttp10 = request.Version.Minor == 0 && request.Version.Major == 1;
                 await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes,
@@ -313,6 +314,7 @@ namespace System.Net.Http
                 }
 
                 // Start to read response.
+                _allowedReadLineBytes = _pool.Pools.Settings._maxResponseHeadersLength * 1024;
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
@@ -378,6 +380,7 @@ namespace System.Net.Http
                             {
                                 ThrowInvalidHttpResponse();
                             }
+
                             ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                         }
                     }
@@ -474,10 +477,7 @@ namespace System.Net.Http
             }
         }
 
-        private static bool LineIsEmpty(ArraySegment<byte> line)
-        {
-            return line.Count == 0;
-        }
+        private static bool LineIsEmpty(ArraySegment<byte> line) => line.Count == 0;
 
         private async Task SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream)
         {
@@ -896,6 +896,11 @@ namespace System.Net.Http
                     }
 
                     // Advance read position past the LF
+                    _allowedReadLineBytes -= lfIndex + 1 - scanOffset;
+                    if (_allowedReadLineBytes < 0)
+                    {
+                        ThrowInvalidHttpResponse();
+                    }
                     _readOffset = lfIndex + 1;
 
                     return new ArraySegment<byte>(_readBuffer, startIndex, length);
@@ -904,6 +909,11 @@ namespace System.Net.Http
                 // Couldn't find LF.  Read more.
                 // Note this may cause _readOffset to change.
                 previouslyScannedBytes = _readLength - _readOffset;
+                _allowedReadLineBytes -= _readLength - scanOffset;
+                if (_allowedReadLineBytes < 0)
+                {
+                    ThrowInvalidHttpResponse();
+                }
                 await FillAsync(cancellationToken).ConfigureAwait(false);
             }
         }
