@@ -2064,6 +2064,8 @@ copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **v
 		vt += arg_size;
 	}
 
+	vt = ALIGN_PTR_TO (vt, MINT_VT_ALIGNMENT);
+
 	*(char**)vt_sp = vt;
 }
 
@@ -2454,7 +2456,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			g_assert (frame->varargs);
 			sp->data.p = vt_sp;
 			*(gpointer*)sp->data.p = frame->varargs;
-			vt_sp += sizeof (gpointer);
+			vt_sp += ALIGN_TO (sizeof (gpointer), MINT_VT_ALIGNMENT);
 			++ip;
 			++sp;
 			MINT_IN_BREAK;
@@ -4335,7 +4337,7 @@ array_constructed:
 			gpointer addr = sp [-1].data.p;
 			/* Push the typedref value on the stack */
 			sp [-1].data.p = vt_sp;
-			vt_sp += sizeof (MonoTypedRef);
+			vt_sp += ALIGN_TO (sizeof (MonoTypedRef), MINT_VT_ALIGNMENT);
 
 			MonoTypedRef *tref = sp [-1].data.p;
 			tref->klass = c;
@@ -4349,7 +4351,7 @@ array_constructed:
 			MonoTypedRef *tref = sp [-1].data.p;
 			MonoType *type = tref->type;
 
-			vt_sp -= sizeof (MonoTypedRef);
+			vt_sp -= ALIGN_TO (sizeof (MonoTypedRef), MINT_VT_ALIGNMENT);
 			sp [-1].data.p = vt_sp;
 			vt_sp += 8;
 			*(gpointer*)sp [-1].data.p = type;
@@ -4364,7 +4366,7 @@ array_constructed:
 			if (c != tref->klass)
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
-			vt_sp -= sizeof (MonoTypedRef);
+			vt_sp -= ALIGN_TO (sizeof (MonoTypedRef), MINT_VT_ALIGNMENT);
 
 			sp [-1].data.p = addr;
 			ip += 2;
