@@ -144,6 +144,8 @@ namespace System.Net.Http
             }
         }
 
+        public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
+
         private async Task WriteHeadersAsync(HttpHeaders headers, CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
