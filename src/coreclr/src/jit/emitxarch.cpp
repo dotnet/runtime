@@ -267,11 +267,20 @@ bool emitter::Is4ByteSSE4Instruction(instruction ins)
 bool emitter::TakesVexPrefix(instruction ins)
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
-    // special case sfence and the prefetch instructions as they never take a VEX prefix
-    if ((ins == INS_vzeroupper) || (ins == INS_sfence) || (ins == INS_prefetcht0) || (ins == INS_prefetcht1) ||
-        (ins == INS_prefetcht2) || (ins == INS_prefetchnta))
+    // special case (l|m|s)fence and the prefetch instructions as they never take a VEX prefix
+    switch (ins)
     {
-        return false;
+        case INS_lfence:
+        case INS_mfence:
+        case INS_prefetchnta:
+        case INS_prefetcht0:
+        case INS_prefetcht1:
+        case INS_prefetcht2:
+        case INS_sfence:
+        case INS_vzeroupper:
+            return false;
+        default:
+            break;
     }
 
     return IsAVXInstruction(ins);
@@ -2474,7 +2483,7 @@ void emitter::emitIns(instruction ins)
                            ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
 #ifndef LEGACY_BACKEND
                            // These instructions take zero operands
-                           || ins == INS_vzeroupper || ins == INS_sfence
+                           || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence
 #endif
                            );
 
