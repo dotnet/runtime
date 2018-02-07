@@ -682,14 +682,7 @@ namespace System.Net.Tests
         public void ServicePoint_GetValue_ExpectedResult(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.NotNull(request.ServicePoint);
-            }
-            else
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => request.ServicePoint);
-            }
+            Assert.NotNull(request.ServicePoint);
         }
 
         [Theory, MemberData(nameof(EchoServers))]

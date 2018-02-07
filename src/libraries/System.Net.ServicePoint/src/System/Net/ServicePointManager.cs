@@ -176,16 +176,27 @@ namespace System.Net
         {
             if (proxy != null && !address.IsLoopback)
             {
-                Uri proxyAddress = proxy.GetProxy(address);
-                if (proxyAddress != null)
+                try
                 {
-                    if (proxyAddress.Scheme != Uri.UriSchemeHttp)
+                    Uri proxyAddress = proxy.GetProxy(address);
+                    if (proxyAddress != null)
                     {
-                        throw new NotSupportedException(SR.Format(SR.net_proxyschemenotsupported, address.Scheme));
-                    }
+                        if (proxyAddress.Scheme != Uri.UriSchemeHttp)
+                        {
+                            throw new NotSupportedException(SR.Format(SR.net_proxyschemenotsupported, address.Scheme));
+                        }
 
-                    address = proxyAddress;
-                    return true;
+                        address = proxyAddress;
+                        return true;
+                    }
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    // HttpWebRequest has a dummy SystemWebProxy that's used as a sentinel
+                    // and whose GetProxy method throws a PlatformNotSupportedException.
+                    // For the purposes of this stand-in ServicePointManager implementation,
+                    // we ignore this default "system" proxy for the purposes of mapping
+                    // to a particular ServicePoint instance.
                 }
             }
 
