@@ -5712,7 +5712,7 @@ protected:
     void optCSEstop();
 
     CSEdsc* optCSEfindDsc(unsigned index);
-    void optUnmarkCSE(GenTree* tree);
+    bool optUnmarkCSE(GenTree* tree);
 
     // user defined callback data for the tree walk function optCSE_MaskHelper()
     struct optCSE_MaskData
@@ -5765,7 +5765,7 @@ protected:
     void     optValnumCSE_DataFlow();
     void     optValnumCSE_Availablity();
     void     optValnumCSE_Heuristic();
-    void optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree* keepList);
+    void optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree** wbKeepList);
 
 #endif // FEATURE_VALNUM_CSE
 
