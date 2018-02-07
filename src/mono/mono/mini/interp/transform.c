@@ -1185,19 +1185,20 @@ no_intrinsic:
 
 	if (csignature->call_convention == MONO_CALL_VARARG) {
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
+		int vararg_stack = 0;
 		/*
 		 * For vararg calls, ArgIterator expects the signature and the varargs to be
 		 * stored in a linear memory. We allocate the necessary vt_stack space for
 		 * this. All varargs will be pushed to the vt_stack at call site.
 		 */
-		vt_stack_used += sizeof (gpointer);
-		PUSH_VT (td, sizeof (gpointer));
+		vararg_stack += sizeof (gpointer);
 		for (i = csignature->sentinelpos; i < csignature->param_count; ++i) {
 			int align, arg_size;
 			arg_size = mono_type_stack_size (csignature->params [i], &align);
-			vt_stack_used += arg_size;
-			PUSH_VT (td, arg_size);
+			vararg_stack += arg_size;
 		}
+		vt_stack_used += ALIGN_TO (vararg_stack, MINT_VT_ALIGNMENT);
+		PUSH_VT (td, vararg_stack);
 	}
 
 	g_assert (csignature->call_convention != MONO_CALL_THISCALL && csignature->call_convention != MONO_CALL_FASTCALL);
