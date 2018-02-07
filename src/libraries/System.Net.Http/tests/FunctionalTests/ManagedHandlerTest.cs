@@ -129,11 +129,10 @@ namespace System.Net.Http.Functional.Tests
     //    protected override bool UseManagedHandler => true;
     //}
 
-    // TODO #23142: The managed handler doesn't currently track how much data was written for the response headers.
-    //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
-    //{
-    //    protected override bool UseManagedHandler => true;
-    //}
+    public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
+    {
+        protected override bool UseManagedHandler => true;
+    }
 
     public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase
     {

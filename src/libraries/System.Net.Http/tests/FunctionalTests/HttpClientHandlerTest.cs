@@ -1198,6 +1198,51 @@ namespace System.Net.Http.Functional.Tests
                             Assert.Contains("MyCoolTrailerHeader", response.Headers.GetValues("Trailer"));
                         }
                         Assert.False(response.Headers.Contains("MyCoolTrailerHeader"), "Trailer should have been ignored");
+
+                        string data = await response.Content.ReadAsStringAsync();
+                        Assert.Contains("data", data);
+                        Assert.DoesNotContain("MyCoolTrailerHeader", data);
+                        Assert.DoesNotContain("amazingtrailer", data);
+                    }
+                }
+            });
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        getResponseTask,
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            "HTTP/1.1 200 OK\r\n" +
+                            "Transfer-Encoding: chunked\r\n" +
+                            "\r\n" +
+                            "4    \r\n" + // whitespace after size
+                            "data\r\n" +
+                            "5;somekey=somevalue\r\n" + // chunk extension
+                            "hello\r\n" +
+                            "7\t ;chunkextension\r\n" + // tabs/spaces then chunk extension
+                            "netcore\r\n" +
+                            "0\r\n" +
+                            "\r\n"));
+
+                    using (HttpResponseMessage response = await getResponseTask)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        string data = await response.Content.ReadAsStringAsync();
+                        Assert.Contains("data", data);
+                        Assert.Contains("hello", data);
+                        Assert.Contains("netcore", data);
+                        Assert.DoesNotContain("somekey", data);
+                        Assert.DoesNotContain("somevalue", data);
+                        Assert.DoesNotContain("chunkextension", data);
                     }
                 }
             });
@@ -1206,9 +1251,19 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData("")] // missing size
+        [InlineData("    ")] // missing size
         [InlineData("10000000000000000")] // overflowing size
+        [InlineData("xyz")] // non-hex
+        [InlineData("7gibberish")] // valid size then gibberish
+        [InlineData("7\v\f")] // unacceptable whitespace
         public async Task GetAsync_InvalidChunkSize_ThrowsHttpRequestException(string chunkSize)
         {
+            if (IsCurlHandler)
+            {
+                // libcurl allows any arbitrary characters after the hex value
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1229,6 +1284,41 @@ namespace System.Net.Http.Functional.Tests
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
                     tcs.SetResult(true);
+                    await serverTask;
+                }
+            });
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task GetAsync_InfiniteChunkSize_ThrowsHttpRequestException()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    client.Timeout = Timeout.InfiniteTimeSpan;
+
+                    var cts = new CancellationTokenSource();
+                    var tcs = new TaskCompletionSource<bool>();
+                    Task serverTask = LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    {
+                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
+                        await writer.WriteAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+                        try
+                        {
+                            while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
+                            {
+                                await writer.WriteAsync(new string(' ', 10000));
+                                await Task.Delay(1);
+                            }
+                        }
+                        catch { }
+                        return null;
+                    }, null);
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                    cts.Cancel();
                     await serverTask;
                 }
             });
