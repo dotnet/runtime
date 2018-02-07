@@ -256,7 +256,7 @@ namespace System.Net.Test.Common
                 }
                 else
                 {
-                    await writer.WriteAsync($"{content}\r\n").ConfigureAwait(false);
+                    await writer.WriteAsync($"{content}").ConfigureAwait(false);
                 }
 
                 return null;
