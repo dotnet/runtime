@@ -45,10 +45,20 @@ namespace System.Globalization
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.DayNames, out this.saDayNames);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevDayNames, out this.saAbbrevDayNames);
             result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.SuperShortDayNames, out this.saSuperShortDayNames);
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames);
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames);
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames);
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames);
+
+            string leapHebrewMonthName = null;
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames, ref leapHebrewMonthName);
+            if (leapHebrewMonthName != null)
+            {              
+                // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7              
+                Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
+                saLeapYearMonthNames = (string[]) saMonthNames.Clone();
+                saLeapYearMonthNames[6] = leapHebrewMonthName;
+            }
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames, ref leapHebrewMonthName);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames, ref leapHebrewMonthName);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames, ref leapHebrewMonthName);
+
             result &= EnumEraNames(localeName, calendarId, CalendarDataType.EraNames, out this.saEraNames);
             result &= EnumEraNames(localeName, calendarId, CalendarDataType.AbbrevEraNames, out this.saAbbrevEraNames);
 
@@ -241,7 +251,7 @@ namespace System.Globalization
             return index - startIndex;
         }
 
-        private static bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] monthNames)
+        private static bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] monthNames, ref string leapHebrewMonthName)
         {
             monthNames = null;
 
@@ -256,6 +266,17 @@ namespace System.Globalization
                 {
                     callbackContext.Results.Add(string.Empty);
                 }
+
+                if (callbackContext.Results.Count > 13)
+                {
+                    Debug.Assert(calendarId == CalendarId.HEBREW && callbackContext.Results.Count == 14);
+                    
+                    if (calendarId == CalendarId.HEBREW)
+                    {
+                        leapHebrewMonthName = callbackContext.Results[13];
+                    }
+                    callbackContext.Results.RemoveRange(13, callbackContext.Results.Count - 13);
+                }                
 
                 monthNames = callbackContext.Results.ToArray();
             }
