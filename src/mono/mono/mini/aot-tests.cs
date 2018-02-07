@@ -193,6 +193,10 @@ class Tests
 		public static T Get_T (object o) {
 			return (T)o;
 		}
+
+		public static long vtype_by_val<T1, T2, T3, T4, T5> (T1 t1, T2 t2, T3 t3, T4 t4, long? t5) {
+			return (long)t5;
+		}
 	}
 
 	[Category ("DYNCALL")]
@@ -210,6 +214,12 @@ class Tests
 			return 2;
 		}
 		return 0;
+	}
+
+	static int test_42_arm64_dyncall_vtypebyval () {
+		var method = typeof (Foo5<string>).GetMethod ("vtype_by_val").MakeGenericMethod (new Type [] { typeof (int), typeof (long?), typeof (long?), typeof (long?), typeof (long?) });
+		long res = (long)method.Invoke (null, new object [] { 1, 2L, 3L, 4L, 42L });
+		return (int)res;
 	}
 
 	class Foo6 {
