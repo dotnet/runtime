@@ -478,6 +478,33 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]   // Does not support LF-only
+        [Theory]
+        [InlineData("\r\n")]
+        [InlineData("\n")]
+        public async Task GetAsync_ResponseHasNormalLineEndings_Success(string lineEnding)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        $"HTTP/1.1 200 OK{lineEnding}Date: {DateTimeOffset.UtcNow:R}{lineEnding}Server: TestServer{lineEnding}Content-Length: 0{lineEnding}{lineEnding}",
+                        new LoopbackServer.Options { ResponseStreamWrapper = GetStream });
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    using (HttpResponseMessage response = await getResponseTask)
+                    {
+                        Assert.Equal(200, (int)response.StatusCode);
+                        Assert.Equal("OK", response.ReasonPhrase);
+                        Assert.Equal("TestServer", response.Headers.Server.ToString());
+                    }
+                }
+            });
+        }
     }
 
     public class HttpProtocolTests_Dribble : HttpProtocolTests

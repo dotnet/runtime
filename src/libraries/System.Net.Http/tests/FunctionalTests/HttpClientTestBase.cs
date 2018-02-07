@@ -31,6 +31,11 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual bool UseManagedHandler => false;
 
+        protected bool IsWinHttpHandler => !UseManagedHandler && PlatformDetection.IsWindows && !PlatformDetection.IsUap && !PlatformDetection.IsFullFramework;
+        protected bool IsCurlHandler => !UseManagedHandler && !PlatformDetection.IsWindows;
+        protected bool IsNetfxHandler => !UseManagedHandler && PlatformDetection.IsWindows && PlatformDetection.IsFullFramework;
+        protected bool IsUapHandler => !UseManagedHandler && PlatformDetection.IsWindows && PlatformDetection.IsUap;
+
         protected HttpClient CreateHttpClient() => new HttpClient(CreateHttpClientHandler());
 
         protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseManagedHandler);

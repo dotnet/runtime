@@ -143,6 +143,13 @@ namespace System.Net.Http
             return true;
         }
 
+        internal static string GetTokenString(ReadOnlySpan<byte> input)
+        {
+            Debug.Assert(IsToken(input));
+
+            return Encoding.ASCII.GetString(input);
+        }
+
         internal static int GetWhitespaceLength(string input, int startIndex)
         {
             Debug.Assert(input != null);
