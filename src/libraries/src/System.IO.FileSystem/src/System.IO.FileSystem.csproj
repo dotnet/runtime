@@ -34,7 +34,6 @@
     <Compile Include="System\IO\Enumeration\EnumerationOptions.cs" />
     <Compile Include="System\IO\Iterator.cs" />
     <Compile Include="System\IO\PathHelpers.cs" />
-    <Compile Include="System\IO\PathPair.cs" />
     <Compile Include="System\IO\ReadLinesIterator.cs" />
     <Compile Include="System\IO\SearchOption.cs" />
     <Compile Include="System\IO\SearchTarget.cs" />
