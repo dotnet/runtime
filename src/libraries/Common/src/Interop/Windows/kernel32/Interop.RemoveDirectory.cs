@@ -18,7 +18,7 @@ internal partial class Interop
 
         internal static bool RemoveDirectory(string path)
         {
-            path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
+            path = PathInternal.EnsureExtendedPrefixIfNeeded(path);
             return RemoveDirectoryPrivate(path);
         }
     }

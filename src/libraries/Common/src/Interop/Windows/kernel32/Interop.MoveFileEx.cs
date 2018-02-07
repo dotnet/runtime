@@ -18,8 +18,8 @@ internal partial class Interop
 
         internal static bool MoveFile(string src, string dst)
         {
-            src = PathInternal.EnsureExtendedPrefixOverMaxPath(src);
-            dst = PathInternal.EnsureExtendedPrefixOverMaxPath(dst);
+            src = PathInternal.EnsureExtendedPrefixIfNeeded(src);
+            dst = PathInternal.EnsureExtendedPrefixIfNeeded(dst);
             return MoveFileExPrivate(src, dst, 2 /* MOVEFILE_COPY_ALLOWED */);
         }
     }

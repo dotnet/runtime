@@ -11,11 +11,9 @@ namespace System.IO
 {
     public sealed partial class DirectoryInfo : FileSystemInfo
     {
-        private string _name;
-
         public DirectoryInfo(string path)
         {
-            Init(originalPath: PathHelpers.ShouldReviseDirectoryPathToCurrent(path) ? "." : path,
+            Init(originalPath: path,
                   fullPath: Path.GetFullPath(path),
                   isNormalized: true);
         }
@@ -39,26 +37,16 @@ namespace System.IO
                     Path.GetFileName(PathHelpers.TrimEndingDirectorySeparator(fullPath)));
 
             FullPath = fullPath;
-            DisplayPath = PathHelpers.ShouldReviseDirectoryPathToCurrent(originalPath) ? "." : originalPath;
         }
-
-        public override string Name => _name;
 
         public DirectoryInfo Parent
         {
             get
             {
-                string s = FullPath;
-
-                // FullPath might end in either "parent\child" or "parent\child", and in either case we want 
+                // FullPath might end in either "parent\child" or "parent\child\", and in either case we want 
                 // the parent of child, not the child. Trim off an ending directory separator if there is one,
                 // but don't mangle the root.
-                if (!PathHelpers.IsRoot(s))
-                {
-                    s = PathHelpers.TrimEndingDirectorySeparator(s);
-                }
-
-                string parentName = Path.GetDirectoryName(s);
+                string parentName = Path.GetDirectoryName(PathHelpers.IsRoot(FullPath) ? FullPath : PathHelpers.TrimEndingDirectorySeparator(FullPath));
                 return parentName != null ? 
                     new DirectoryInfo(parentName, null) :
                     null;
@@ -70,53 +58,20 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            return CreateSubdirectoryHelper(path);
-        }
-
-        private DirectoryInfo CreateSubdirectoryHelper(string path)
-        {
-            Debug.Assert(path != null);
-
             PathHelpers.ThrowIfEmptyOrRootedPath(path);
 
-            string newDirs = Path.Combine(FullPath, path);
-            string fullPath = Path.GetFullPath(newDirs);
+            string fullPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
             if (0 != string.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.StringComparison))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, DisplayPath), nameof(path));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, FullPath), nameof(path));
             }
 
             FileSystem.CreateDirectory(fullPath);
-
-            // Check for read permission to directory we hand back by calling this constructor.
             return new DirectoryInfo(fullPath);
         }
 
-        public void Create()
-        {
-            FileSystem.CreateDirectory(FullPath);
-        }
-
-        // Tests if the given path refers to an existing DirectoryInfo on disk.
-        // 
-        // Your application must have Read permission to the directory's
-        // contents.
-        //
-        public override bool Exists
-        {
-            get
-            {
-                try
-                {
-                    return ExistsCore;
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
+        public void Create() => FileSystem.CreateDirectory(FullPath);
 
         // Returns an array of Files in the DirectoryInfo specified by path
         public FileInfo[] GetFiles() => GetFiles("*", enumerationOptions: EnumerationOptions.Compatible);
@@ -218,25 +173,7 @@ namespace System.IO
             }
         }
 
-        // Returns the root portion of the given path. The resulting string
-        // consists of those rightmost characters of the path that constitute the
-        // root of the path. Possible patterns for the resulting string are: An
-        // empty string (a relative path on the current drive), "\" (an absolute
-        // path on the current drive), "X:" (a relative path on a given drive,
-        // where X is the drive letter), "X:\" (an absolute path on a given drive),
-        // and "\\server\share" (a UNC path for a given server and share name).
-        // The resulting string is null if path is null.
-        //
-
-        public DirectoryInfo Root
-        {
-            get
-            {
-                string rootPath = Path.GetPathRoot(FullPath);
-
-                return new DirectoryInfo(rootPath);
-            }
-        }
+        public DirectoryInfo Root => new DirectoryInfo(Path.GetPathRoot(FullPath));
 
         public void MoveTo(string destDirName)
         {
@@ -244,26 +181,22 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
-
             string destination = Path.GetFullPath(destDirName);
+
             string destinationWithSeparator = destination;
-            if (destinationWithSeparator[destinationWithSeparator.Length - 1] != Path.DirectorySeparatorChar)
+            if (!PathHelpers.EndsInDirectorySeparator(destinationWithSeparator))
                 destinationWithSeparator = destinationWithSeparator + PathHelpers.DirectorySeparatorCharAsString;
 
-            string fullSourcePath;
-            if (FullPath.Length > 0 && FullPath[FullPath.Length - 1] == Path.DirectorySeparatorChar)
-                fullSourcePath = FullPath;
-            else
-                fullSourcePath = FullPath + PathHelpers.DirectorySeparatorCharAsString;
+            string sourceWithSeparator = PathHelpers.EndsInDirectorySeparator(FullPath)
+                ? FullPath : FullPath + PathHelpers.DirectorySeparatorCharAsString;
 
-            StringComparison pathComparison = PathInternal.StringComparison;
-            if (string.Equals(fullSourcePath, destinationWithSeparator, pathComparison))
+            if (string.Equals(sourceWithSeparator, destinationWithSeparator, PathInternal.StringComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            string sourceRoot = Path.GetPathRoot(fullSourcePath);
+            string sourceRoot = Path.GetPathRoot(sourceWithSeparator);
             string destinationRoot = Path.GetPathRoot(destinationWithSeparator);
 
-            if (!string.Equals(sourceRoot, destinationRoot, pathComparison))
+            if (!string.Equals(sourceRoot, destinationRoot, PathInternal.StringComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
@@ -271,7 +204,7 @@ namespace System.IO
             if (!Exists && !FileSystem.FileExists(FullPath))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
 
-            if (FileSystem.DirectoryExists(destinationWithSeparator))
+            if (FileSystem.DirectoryExists(destination))
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destinationWithSeparator));
 
             FileSystem.MoveDirectory(FullPath, destination);
@@ -285,22 +218,8 @@ namespace System.IO
             Invalidate();
         }
 
-        public override void Delete()
-        {
-            FileSystem.RemoveDirectory(FullPath, false);
-        }
+        public override void Delete() => FileSystem.RemoveDirectory(FullPath, recursive: false);
 
-        public void Delete(bool recursive)
-        {
-            FileSystem.RemoveDirectory(FullPath, recursive);
-        }
-
-        /// <summary>
-        /// Returns the original path. Use FullPath or Name properties for the path / directory name.
-        /// </summary>
-        public override string ToString()
-        {
-            return DisplayPath;
-        }
+        public void Delete(bool recursive) => FileSystem.RemoveDirectory(FullPath, recursive);
     }
 }

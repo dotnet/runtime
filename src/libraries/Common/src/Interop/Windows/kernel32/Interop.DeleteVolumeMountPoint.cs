@@ -19,7 +19,7 @@ internal partial class Interop
 
         internal static bool DeleteVolumeMountPoint(string mountPoint)
         {
-            mountPoint = PathInternal.EnsureExtendedPrefixOverMaxPath(mountPoint);
+            mountPoint = PathInternal.EnsureExtendedPrefixIfNeeded(mountPoint);
             return DeleteVolumeMountPointPrivate(mountPoint);
         }
     }
