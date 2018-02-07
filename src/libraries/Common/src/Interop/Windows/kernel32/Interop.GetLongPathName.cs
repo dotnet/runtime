@@ -18,7 +18,7 @@ internal partial class Interop
 
         internal static int GetLongPathName(string path, [Out]StringBuilder longPathBuffer, int bufferLength)
         {
-            path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
+            path = PathInternal.EnsureExtendedPrefixIfNeeded(path);
             return GetLongPathNamePrivate(path, longPathBuffer, bufferLength);
         }
     }

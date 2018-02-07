@@ -19,9 +19,9 @@ internal partial class Interop
             string replacedFileName, string replacementFileName, string backupFileName,
             int dwReplaceFlags, IntPtr lpExclude, IntPtr lpReserved)
         {
-            replacedFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(replacedFileName);
-            replacementFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(replacementFileName);
-            backupFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(backupFileName);
+            replacedFileName = PathInternal.EnsureExtendedPrefixIfNeeded(replacedFileName);
+            replacementFileName = PathInternal.EnsureExtendedPrefixIfNeeded(replacementFileName);
+            backupFileName = PathInternal.EnsureExtendedPrefixIfNeeded(backupFileName);
 
             return ReplaceFilePrivate(
                 replacedFileName, replacementFileName, backupFileName,
