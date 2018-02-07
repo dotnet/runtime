@@ -96,6 +96,8 @@ namespace System.Collections.Generic
         public virtual void OnDeserialization(object sender) { }
         public bool Remove(TKey key) { throw null; }
         public bool Remove(TKey key, out TValue value) { throw null; }
+        public void TrimExcess(int capacity) { }
+        public void TrimExcess() { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> keyValuePair) { throw null; }

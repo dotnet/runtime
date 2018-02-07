@@ -67,6 +67,9 @@
     <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs">
       <Link>Common\System\ObjectCloner.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\RandomExtensions.cs">
+      <Link>Common\System\RandomExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs" Condition="'$(TargetGroup)'!='netcoreapp'">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
