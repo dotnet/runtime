@@ -1092,17 +1092,21 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 {
     pal::string_t probe_path = path;
 
-    if (pal::realpath(&probe_path) && pal::directory_exists(probe_path))
+    if (pal::realpath(&probe_path))
     {
         realpaths->push_back(probe_path);
     }
     else
     {
-        //Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
-        pal::string_t placeholder = _X("|arch|");
-        placeholder.push_back(DIR_SEPARATOR);
-        placeholder.append(_X("|tfm|"));
+        // Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
+        // Check for for both forward and back slashes
+        pal::string_t placeholder = _X("|arch|\\|tfm|");
         auto pos_placeholder = probe_path.find(placeholder);
+        if (pos_placeholder == pal::string_t::npos)
+        {
+            placeholder = _X("|arch|/|tfm|");
+            pos_placeholder = probe_path.find(placeholder);
+        }
 
         if (pos_placeholder != pal::string_t::npos)
         {
@@ -1111,7 +1115,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
 
-            if (pal::directory_exists(probe_path))
+            if (pal::realpath(&probe_path))
             {
                 realpaths->push_back(probe_path);
             }
@@ -1146,6 +1150,7 @@ std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t 
     return known_opts;
 }
 
+// Returns '0' on success, 'AppArgNotRunnable' if should be routed to CLI, otherwise error code.
 int fx_muxer_t::parse_args(
     const pal::string_t& own_dir,
     const pal::string_t& own_dll,
@@ -1154,13 +1159,10 @@ int fx_muxer_t::parse_args(
     const pal::char_t* argv[],
     bool exec_mode,
     host_mode_t mode,
-    bool* is_an_app,
     int* new_argoff,
     pal::string_t& app_candidate,
     opt_map_t& opts)
 {
-    *is_an_app = true;
-
     std::vector<host_option> known_opts = get_known_opts(exec_mode, mode);
 
     // Parse the known arguments if any.
@@ -1177,7 +1179,12 @@ int fx_muxer_t::parse_args(
 
     app_candidate = own_dll;
     *new_argoff = argoff + num_parsed;
-    if (mode != host_mode_t::standalone)
+    bool doesAppExist = false;
+    if (mode == host_mode_t::standalone)
+    {
+        doesAppExist = pal::realpath(&app_candidate);
+    }
+    else
     {
         trace::verbose(_X("Detected a non-standalone application, expecting app.dll to execute."));
         if (*new_argoff >= argc)
@@ -1186,29 +1193,39 @@ int fx_muxer_t::parse_args(
         }
 
         app_candidate = argv[*new_argoff];
-        bool is_app_managed = (ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false)) && pal::realpath(&app_candidate);
 
+        bool is_app_managed = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
         if (!is_app_managed)
         {
             trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());
-
-            *is_an_app = false;
-
-            if (exec_mode)
+            if (!exec_mode)
             {
-                trace::error(_X("dotnet exec needs a managed .dll or .exe extension. The application specified was '%s'"), app_candidate.c_str());
-                return InvalidArgFailure;
+                // Route to CLI.
+                return AppArgNotRunnable;
             }
+        }
 
-            // Route to CLI.
-            return AppArgNotRunnable;
+        doesAppExist = pal::realpath(&app_candidate);
+        if (!doesAppExist)
+        {
+            trace::verbose(_X("Application '%s' does not exist."), app_candidate.c_str());
+            if (!exec_mode)
+            {
+                // Route to CLI.
+                return AppArgNotRunnable;
+            }
+        }
+
+        if (!is_app_managed && doesAppExist)
+        {
+            assert(exec_mode == true);
+            trace::error(_X("dotnet exec needs a managed .dll or .exe extension. The application specified was '%s'"), app_candidate.c_str());
+            return InvalidArgFailure;
         }
     }
 
     // App is managed executable.
-    trace::verbose(_X("Treating application '%s' as a managed executable."), app_candidate.c_str());
-
-    if (!pal::file_exists(app_candidate))
+    if (!doesAppExist)
     {
         trace::error(_X("The application to execute does not exist: '%s'"), app_candidate.c_str());
         return InvalidArgFailure;
@@ -1223,7 +1240,7 @@ int read_config(
     pal::string_t& runtime_config
 )
 {
-    if (!runtime_config.empty() && (!pal::realpath(&runtime_config) || !pal::file_exists(runtime_config)))
+    if (!runtime_config.empty() && !pal::realpath(&runtime_config))
     {
         trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
         return StatusCode::InvalidConfigFile;
@@ -1278,7 +1295,7 @@ int fx_muxer_t::read_config_and_execute(
     pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
     std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
 
-    if (!deps_file.empty() && (!pal::realpath(&deps_file) || !pal::file_exists(deps_file)))
+    if (!deps_file.empty() && !pal::realpath(&deps_file))
     {
         trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
         return StatusCode::InvalidArgFailure;
@@ -1460,7 +1477,6 @@ int fx_muxer_t::execute(
     // Detect invocation mode
     host_mode_t mode = detect_operating_mode(own_dir, own_dll, own_name);
 
-    bool is_an_app = true; // Indicates activation of an app instead of an invocation of the SDK.
     int new_argoff;
     pal::string_t app_candidate;
     opt_map_t opts;
@@ -1469,13 +1485,13 @@ int fx_muxer_t::execute(
     {
         // Invoked as corehost
         trace::verbose(_X("--- Executing in split/FX mode..."));
-        result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &is_an_app, &new_argoff, app_candidate, opts);
+        result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &new_argoff, app_candidate, opts);
     }
     else if (mode == host_mode_t::standalone)
     {
         // Invoked from the application base.
         trace::verbose(_X("--- Executing in standalone mode..."));
-        result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &is_an_app, &new_argoff, app_candidate, opts);
+        result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &new_argoff, app_candidate, opts);
     }
     else
     {
@@ -1490,20 +1506,20 @@ int fx_muxer_t::execute(
 
         if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
         {
-            result = parse_args(own_dir, own_dll, 2, argc, argv, true, mode, &is_an_app, &new_argoff, app_candidate, opts); // arg offset 2 for dotnet, exec
+            result = parse_args(own_dir, own_dll, 2, argc, argv, true, mode, &new_argoff, app_candidate, opts); // arg offset 2 for dotnet, exec
         }
         else
         {
-            result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &is_an_app, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
+            result = parse_args(own_dir, own_dll, 1, argc, argv, false, mode, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
 
-            if (!is_an_app)
+            if (result == AppArgNotRunnable)
             {
                 return handle_cli(own_dir, own_dll, argc, argv);
             }
         }
     }
 
-    if (!result && is_an_app)
+    if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
         result = handle_exec_host_command(host_command, own_dir, app_candidate, opts, argc, argv, new_argoff, mode, result_buffer, buffer_size, required_buffer_size);
@@ -1610,12 +1626,11 @@ int fx_muxer_t::handle_cli(
 
     trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
 
-    bool is_an_app;
     int new_argoff;
     pal::string_t app_candidate;
     opt_map_t opts;
     
-    int result = parse_args(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
+    int result = parse_args(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]

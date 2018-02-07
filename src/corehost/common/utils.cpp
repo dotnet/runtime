@@ -329,7 +329,7 @@ bool get_path_from_argv(pal::string_t *path)
     // the wrong location when filename is ends up being found in %PATH% and not the current directory.
     if (path->find(DIR_SEPARATOR) != pal::string_t::npos)
     {
-        return (pal::realpath(path) && pal::file_exists(*path));
+        return pal::realpath(path);
     }
 
     return false;
