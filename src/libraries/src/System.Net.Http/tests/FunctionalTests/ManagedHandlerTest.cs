@@ -279,9 +279,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
                     {
-                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer,
+                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
                             $"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
@@ -295,14 +295,19 @@ namespace System.Net.Http.Functional.Tests
                             TextReader clientReader = new StreamReader(clientStream);
                             TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
 
-                            clientWriter.WriteLine("hello server");
-                            Assert.Equal("hello server", reader.ReadLine());
-                            writer.WriteLine("hello client");
-                            Assert.Equal("hello client", clientReader.ReadLine());
-                            clientWriter.WriteLine("goodbye server");
-                            Assert.Equal("goodbye server", reader.ReadLine());
-                            writer.WriteLine("goodbye client");
-                            Assert.Equal("goodbye client", clientReader.ReadLine());
+                            const string helloServer = "hello server";
+                            const string helloClient = "hello client";
+                            const string goodbyeServer = "goodbye server";
+                            const string goodbyeClient = "goodbye client";
+
+                            clientWriter.WriteLine(helloServer);
+                            Assert.Equal(helloServer, serverReader.ReadLine());
+                            serverWriter.WriteLine(helloClient);
+                            Assert.Equal(helloClient, clientReader.ReadLine());
+                            clientWriter.WriteLine(goodbyeServer);
+                            Assert.Equal(goodbyeServer, serverReader.ReadLine());
+                            serverWriter.WriteLine(goodbyeClient);
+                            Assert.Equal(goodbyeClient, clientReader.ReadLine());
                         }
 
                         return null;
