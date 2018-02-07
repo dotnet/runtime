@@ -35,8 +35,11 @@ namespace System.Net.Http
         internal X509CertificateCollection _clientCertificates;
 
         internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
-        internal bool _checkCertificateRevocationList = false;
+        internal bool _checkCertificateRevocationList = HttpHandlerDefaults.DefaultCheckCertificateRevocationList;
         internal SslProtocols _sslProtocols = SslProtocols.None;
+
+        internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
+        internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
 
         internal IDictionary<string, object> _properties;
     }
