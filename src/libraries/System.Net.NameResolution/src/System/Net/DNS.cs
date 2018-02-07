@@ -52,40 +52,14 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(hostName), SR.Format(SR.net_toolong,
                     nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
             }
-
-            //
-            // IPv6 Changes: IPv6 requires the use of getaddrinfo() rather
-            //               than the traditional IPv4 gethostbyaddr() / gethostbyname().
-            //               getaddrinfo() is also protocol independent in that it will also
-            //               resolve IPv4 names / addresses. As a result, it is the preferred
-            //               resolution mechanism on platforms that support it (Windows 5.1+).
-            //               If getaddrinfo() is unsupported, IPv6 resolution does not work.
-            //
-            // Consider    : If IPv6 is disabled, we could detect IPv6 addresses
-            //               and throw an unsupported platform exception.
-            //
-            // Note        : Whilst getaddrinfo is available on WinXP+, we only
-            //               use it if IPv6 is enabled (platform is part of that
-            //               decision). This is done to minimize the number of
-            //               possible tests that are needed.
-            //
-            if (includeIPv6 || SocketProtocolSupportPal.OSSupportsIPv6)
+           
+            int nativeErrorCode;
+            SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, out ipHostEntry, out nativeErrorCode);
+            if (errorCode != SocketError.Success)
             {
-                //
-                // IPv6 enabled: use getaddrinfo() to obtain DNS information.
-                //
-                int nativeErrorCode;
-                SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, out ipHostEntry, out nativeErrorCode);
-                if (errorCode != SocketError.Success)
-                {
-                    throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
-                }
+                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
             }
-            else
-            {
-                ipHostEntry = NameResolutionPal.GetHostByName(hostName);
-            }
-
+           
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
         } // GetHostByName
