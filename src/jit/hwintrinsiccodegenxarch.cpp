@@ -744,7 +744,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
     regNumber      targetReg   = node->gtRegNum;
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
-    instruction    ins         = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+    instruction    ins         = INS_invalid;
     regNumber      op1Reg      = REG_NA;
     regNumber      op2Reg      = REG_NA;
     emitter*       emit        = getEmitter();
@@ -765,10 +765,28 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op2 != nullptr);
             assert(baseType == TYP_DOUBLE);
 
+            ins    = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
             op2Reg = op2->gtRegNum;
             ival   = Compiler::ivalOfHWIntrinsic(intrinsicID);
             emit->emitIns_SIMD_R_R_R_I(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op2Reg, ival);
 
+            break;
+        }
+
+        case NI_SSE2_LoadFence:
+        {
+            assert(baseType == TYP_VOID);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+            emit->emitIns(INS_lfence);
+            break;
+        }
+        case NI_SSE2_MemoryFence:
+        {
+            assert(baseType == TYP_VOID);
+            assert(op1 == nullptr);
+            assert(op2 == nullptr);
+            emit->emitIns(INS_mfence);
             break;
         }
 
@@ -777,6 +795,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op2 == nullptr);
             assert(baseType == TYP_BYTE || baseType == TYP_UBYTE || baseType == TYP_DOUBLE);
 
+            ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_INT), targetReg, op1Reg);
             break;
         }
@@ -788,6 +807,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op1 == nullptr);
             assert(op2 == nullptr);
 
+            ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
             emit->emitIns_SIMD_R_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, targetReg, targetReg);
             break;
         }
