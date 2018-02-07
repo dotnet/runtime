@@ -70,6 +70,13 @@
     <Compile Include="Span\ToString.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ReadOnlyBuffer\BufferSegment.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceFactory.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.cs" />
+    <Compile Include="ReadOnlyBuffer\SequencePosition.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ReadOnlySpan\AsBytes.cs" />
     <Compile Include="ReadOnlySpan\AsReadOnlySpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
