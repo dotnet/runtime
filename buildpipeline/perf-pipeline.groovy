@@ -91,7 +91,7 @@ def windowsPerf(String arch, String config, String uploadString, String runType,
             bat "\"%VS140COMNTOOLS%\\..\\..\\VC\\vcvarsall.bat\" x86_amd64\n" +
                 "py tests\\scripts\\run-xunit-perf.py ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${arch}.${config}\\performance\\linkbench\\linkbench -group ILLink -nowarmup"
         }
-        archiveArtifacts allowEmptyArchive: false, artifacts:'bin/sandbox_logs/**,machinedata.json'
+        archiveArtifacts allowEmptyArchive: false, artifacts:'bin/sandbox_logs/**,machinedata.json', onlyIfSuccessful: false
     }
 }
 
@@ -123,7 +123,7 @@ def windowsThroughput(String arch, String os, String config, String runType, Str
         bat ".\\init-tools.cmd"
         bat "tests\\runtest.cmd ${config} ${arch} GenerateLayoutOnly"
         bat "py -u tests\\scripts\\run-throughput-perf.py -arch ${arch} -os ${os} -configuration ${config} -opt_level ${optLevel} -jit_name ${jit} ${pgoTestFlag} -clr_root \"%WORKSPACE%\" -assembly_root \"%WORKSPACE%\\${arch}ThroughputBenchmarks\\lib\" -benchview_path \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -run_type ${runType}"
-        archiveArtifacts allowEmptyArchive: false, artifacts:'throughput-*.csv,machinedata.json'
+        archiveArtifacts allowEmptyArchive: false, artifacts:'throughput-*.csv,machinedata.json', onlyIfSuccessful: false
     }
 }
 
@@ -178,7 +178,7 @@ def linuxPerf(String arch, String os, String config, String uploadString, String
         String runXUnitCommonArgs = "-arch ${arch} -os Ubuntu16.04 -configuration ${config} -stabilityPrefix \"taskset 0x00000002 nice --adjustment=-10\" -generateBenchviewData \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" ${uploadString} ${pgoTestFlag} -runtype ${runType} -optLevel ${optLevel} -outputdir \"\${WORKSPACE}/bin/sandbox_logs\""
 
         sh "python3 ./tests/scripts/run-xunit-perf.py -testBinLoc bin/tests/Windows_NT.${arch}.${config}/JIT/Performance/CodeQuality ${runXUnitCommonArgs}"
-        archiveArtifacts allowEmptyArchive: false, artifacts:'bin/toArchive/**,machinedata.json'
+        archiveArtifacts allowEmptyArchive: false, artifacts:'bin/toArchive/**,machinedata.json', onlyIfSuccessful: false
     }
 }
 
@@ -211,7 +211,7 @@ def linuxThroughput(String arch, String os, String config, String uploadString, 
         sh "./tests/scripts/perf-prep.sh --throughput"
         sh "./init-tools.sh"
         sh "python3 ./tests/scripts/run-throughput-perf.py -arch \"${arch}\" -os \"${os}\" -configuration \"${config}\" -opt_level ${optLevel} ${pgoTestFlag} -clr_root \"\${WORKSPACE}\" -assembly_root \"\${WORKSPACE}/${arch}ThroughputBenchmarks/lib\" -run_type \"${runType}\"  -benchview_path \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\""
-        archiveArtifacts allowEmptyArchive: false, artifacts:'throughput-*.csv,machinedata.json'
+        archiveArtifacts allowEmptyArchive: false, artifacts:'throughput-*.csv,machinedata.json', onlyIfSuccessful: false
     }
 }
 
