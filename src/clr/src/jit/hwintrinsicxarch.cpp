@@ -736,6 +736,8 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
     var_types baseType = TYP_UNKNOWN;
     var_types retType  = TYP_UNKNOWN;
 
+    assert((simdSize == 16) || (simdSize == 0));
+
     switch (intrinsic)
     {
         case NI_SSE2_CompareLessThan:
@@ -753,6 +755,17 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
                     gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_CompareGreaterThan, baseType, simdSize);
             }
             break;
+
+        case NI_SSE2_LoadFence:
+        case NI_SSE2_MemoryFence:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            assert(simdSize == 0);
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, TYP_VOID, simdSize);
+            break;
+        }
 
         case NI_SSE2_MoveMask:
             assert(sig->numArgs == 1);

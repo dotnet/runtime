@@ -220,6 +220,8 @@ INST3( shufpd,      "shufpd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCK
 
 INST3( punpckhdq,   "punpckhdq"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, PCKDBL(0x6A))
 
+INST3( lfence,      "lfence"      , 0, IUM_RD, 0, 0, 0x000FE8AE,   BAD_CODE, BAD_CODE)
+INST3( mfence,      "mfence"      , 0, IUM_RD, 0, 0, 0x000FF0AE,   BAD_CODE, BAD_CODE)
 INST3( prefetchnta, "prefetchnta" , 0, IUM_RD, 0, 0, 0x000F0018,   BAD_CODE, BAD_CODE)
 INST3( prefetcht0,  "prefetcht0"  , 0, IUM_RD, 0, 0, 0x000F0818,   BAD_CODE, BAD_CODE)
 INST3( prefetcht1,  "prefetcht1"  , 0, IUM_RD, 0, 0, 0x000F1018,   BAD_CODE, BAD_CODE)
