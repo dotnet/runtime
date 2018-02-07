@@ -1176,11 +1176,11 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     // We change this to a GT_LCL_FLD (from a GT_ADDR of a GT_LCL_VAR)
                     lcl->ChangeOper(GT_LCL_FLD);
                     fgLclFldAssign(lcl->gtLclVarCommon.gtLclNum);
+                    lcl->gtType = src->gtType;
+                    asgType     = src->gtType;
                 }
 
-                lcl->gtType = src->gtType;
-                asgType     = src->gtType;
-                dest        = lcl;
+                dest = lcl;
 
 #if defined(_TARGET_ARM_)
                 // TODO-Cleanup: This should have been taken care of in the above HasMultiRegRetVal() case,
@@ -15712,7 +15712,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE 
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
-    GenTree* ret = gtNewLclvNode(tmpNum, op->gtType);
+    GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
     ret->gtFlags |= GTF_DONT_CSE;
