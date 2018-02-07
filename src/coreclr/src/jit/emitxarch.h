@@ -105,6 +105,7 @@ void SetUseSSE4(bool value)
 }
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSE4Instruction(instruction ins);
+bool Is4ByteSSE4OrAVXInstruction(instruction ins);
 
 bool hasRexPrefix(code_t code)
 {
@@ -183,7 +184,6 @@ bool IsThreeOperandAVXInstruction(instruction ins)
 {
     return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
 }
-bool Is4ByteAVXInstruction(instruction ins);
 bool isAvxBlendv(instruction ins)
 {
     return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
@@ -231,10 +231,6 @@ bool IsDstSrcSrcAVXInstruction(instruction ins)
     return false;
 }
 bool IsThreeOperandAVXInstruction(instruction ins)
-{
-    return false;
-}
-bool Is4ByteAVXInstruction(instruction ins)
 {
     return false;
 }
