@@ -13,11 +13,13 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\attach.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cil-coff.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-getters.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-inlines.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-init.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-accessors.c" />
+    <ClInclude Include="$(MonosourceLocation)\mono\metadata\class-private-definition.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\cominterop.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\cominterop.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\console-io.h" />

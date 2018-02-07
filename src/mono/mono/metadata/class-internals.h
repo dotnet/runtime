@@ -15,9 +15,9 @@
 #include "mono/utils/mono-error.h"
 #include "mono/sgen/gc-internal-agnostic.h"
 
-#define MONO_CLASS_IS_ARRAY(c) ((c)->rank)
+#define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
-#define MONO_CLASS_HAS_STATIC_METADATA(klass) ((klass)->type_token && !(klass)->image->dynamic && !mono_class_is_ginst (klass))
+#define MONO_CLASS_HAS_STATIC_METADATA(klass) (m_class_get_type_token (klass) && !m_class_get_image (klass)->dynamic && !mono_class_is_ginst (klass))
 
 #define MONO_DEFAULT_SUPERTABLE_SIZE 6
 
@@ -260,167 +260,46 @@ typedef enum {
 	MONO_CLASS_POINTER, /* pointer of function pointer*/
 } MonoTypeKind;
 
-struct _MonoClass {
-	/* element class for arrays and enum basetype for enums */
-	MonoClass *element_class; 
-	/* used for subtype checks */
-	MonoClass *cast_class; 
+typedef struct _MonoClassDef MonoClassDef;
+typedef struct _MonoClassGtd MonoClassGtd;
+typedef struct _MonoClassGenericInst MonoClassGenericInst;
+typedef struct _MonoClassGenericParam MonoClassGenericParam;
+typedef struct _MonoClassArray MonoClassArray;
+typedef struct _MonoClassPointer MonoClassPointer;
 
-	/* for fast subtype checks */
-	MonoClass **supertypes;
-	guint16     idepth;
+union _MonoClassSizes {
+		int class_size; /* size of area for static fields */
+		int element_size; /* for array types */
+		int generic_param_token; /* for generic param types, both var and mvar */
+};
 
-	/* array dimension */
-	guint8     rank;          
-
-	int        instance_size; /* object instance size */
-
-	guint inited          : 1;
-
-	/* A class contains static and non static data. Static data can be
-	 * of the same type as the class itselfs, but it does not influence
-	 * the instance size of the class. To avoid cyclic calls to 
-	 * mono_class_init (from mono_class_instance_size ()) we first 
-	 * initialise all non static fields. After that we set size_inited 
-	 * to 1, because we know the instance size now. After that we 
-	 * initialise all static fields.
-	 */
-
-	/* ALL BITFIELDS SHOULD BE WRITTEN WHILE HOLDING THE LOADER LOCK */
-	guint size_inited     : 1;
-	guint valuetype       : 1; /* derives from System.ValueType */
-	guint enumtype        : 1; /* derives from System.Enum */
-	guint blittable       : 1; /* class is blittable */
-	guint unicode         : 1; /* class uses unicode char when marshalled */
-	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
-	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
-
-	/* next byte */
-	guint8 min_align;
-
-	/* next byte */
-	guint packing_size    : 4;
-	guint ghcimpl         : 1; /* class has its own GetHashCode impl */ 
-	guint has_finalize    : 1; /* class has its own Finalize impl */ 
-#ifndef DISABLE_REMOTING
-	guint marshalbyref    : 1; /* class is a MarshalByRefObject */
-	guint contextbound    : 1; /* class is a ContextBoundObject */
-#endif
-	/* next byte */
-	guint delegate        : 1; /* class is a Delegate */
-	guint gc_descr_inited : 1; /* gc_descr is initialized */
-	guint has_cctor       : 1; /* class has a cctor */
-	guint has_references  : 1; /* it has GC-tracked references in the instance */
-	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
-	guint no_special_static_fields : 1; /* has no thread/context static fields */
-	/* directly or indirectly derives from ComImport attributed class.
-	 * this means we need to create a proxy for instances of this class
-	 * for COM Interop. set this flag on loading so all we need is a quick check
-	 * during object creation rather than having to traverse supertypes
-	 */
-	guint is_com_object : 1; 
-	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
-
-	/* next byte*/
-	guint class_kind : 3; /* One of the values from MonoTypeKind */
-	guint interfaces_inited : 1; /* interfaces is initialized */
-	guint simd_type : 1; /* class is a simd intrinsic type */
-	guint has_finalize_inited    : 1; /* has_finalize is initialized */
-	guint fields_inited : 1; /* setup_fields () has finished */
-	guint has_failure : 1; /* See mono_class_get_exception_data () for a MonoErrorBoxed with the details */
-	guint has_weak_fields : 1; /* class has weak reference fields */
-
-	MonoClass  *parent;
-	MonoClass  *nested_in;
-
-	MonoImage *image;
-	const char *name;
-	const char *name_space;
-
-	guint32    type_token;
-	int        vtable_size; /* number of slots */
-
-	guint16     interface_count;
-	guint32     interface_id;        /* unique inderface id (for interfaces) */
-	guint32     max_interface_id;
-	
-	guint16     interface_offsets_count;
-	MonoClass **interfaces_packed;
-	guint16    *interface_offsets_packed;
 /* enabled only with small config for now: we might want to do it unconditionally */
 #ifdef MONO_SMALL_CONFIG
 #define COMPRESSED_INTERFACE_BITMAP 1
 #endif
-	guint8     *interface_bitmap;
 
-	MonoClass **interfaces;
 
-	union {
-		int class_size; /* size of area for static fields */
-		int element_size; /* for array types */
-		int generic_param_token; /* for generic param types, both var and mvar */
-	} sizes;
+#ifdef ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+#define MONO_CLASS_DEF_PRIVATE 1
+#endif
 
-	/*
-	 * Field information: Type and location from object base
-	 */
-	MonoClassField *fields;
+/* Hide _MonoClass definition in checked build mode to ensure that
+ * it is only accessed via getter and setter methods.
+ */
+#ifndef MONO_CLASS_DEF_PRIVATE
+#include "class-private-definition.h"
+#endif
 
-	MonoMethod **methods;
-
-	/* used as the type of the this argument and when passing the arg by value */
-	MonoType this_arg;
-	MonoType byval_arg;
-
-	MonoGCDescriptor gc_descr;
-
-	MonoClassRuntimeInfo *runtime_info;
-
-	/* Generic vtable. Initialized by a call to mono_class_setup_vtable () */
-	MonoMethod **vtable;
-
-	/* Infrequently used items. See class-accessors.c: InfrequentDataKind for what goes into here. */
-	MonoPropertyBag infrequent_data;
-};
-
-typedef struct {
-	MonoClass klass;
-	guint32	flags;
-	/*
-	 * From the TypeDef table
-	 */
-	guint32 first_method_idx;
-	guint32 first_field_idx;
-	guint32 method_count, field_count;
-	/* next element in the class_cache hash list (in MonoImage) */
-	MonoClass *next_class_cache;
-} MonoClassDef;
-
-typedef struct {
-	MonoClassDef klass;
-	MonoGenericContainer *generic_container;
-	/* The canonical GENERICINST where we instantiate a generic type definition with its own generic parameters.*/
-	/* Suppose we have class T`2<A,B> {...}.  canonical_inst is the GTD T`2 applied to A and B. */
-	MonoType canonical_inst;
-} MonoClassGtd;
-
-typedef struct {
-	MonoClass klass;
-	MonoGenericClass *generic_class;
-} MonoClassGenericInst;
-
-typedef struct {
-	MonoClass klass;
-} MonoClassGenericParam;
-
-typedef struct {
-	MonoClass klass;
-	guint32 method_count;
-} MonoClassArray;
-
-typedef struct {
-	MonoClass klass;
-} MonoClassPointer;
+/* If MonoClass definition is hidden, just declare the getters.
+ * Otherwise, define them as static inline functions.
+ */
+#ifdef MONO_CLASS_DEF_PRIVATE
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass);
+#else
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) static inline rettype funcname (argtype *klass) { return optref klass-> fieldname ; }
+#endif
+#include "class-getters.h"
+#undef MONO_CLASS_GETTER
 
 #ifdef COMPRESSED_INTERFACE_BITMAP
 int mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size);
@@ -429,7 +308,7 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 #define mono_class_interface_match(bmap,uiid) ((bmap) [(uiid) >> 3] & (1 << ((uiid)&7)))
 #endif
 
-#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= (k)->max_interface_id) && mono_class_interface_match ((k)->interface_bitmap, (uiid)))
+#define MONO_CLASS_IMPLEMENTS_INTERFACE(k,uiid) (((uiid) <= m_class_get_max_interface_id (k)) && mono_class_interface_match (m_class_get_interface_bitmap (k), (uiid)))
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
@@ -439,8 +318,8 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 #define mono_vtable_is_remote(vtable) (FALSE)
 #define mono_vtable_set_is_remote(vtable,enable) do {} while (0)
 #else
-#define mono_class_is_marshalbyref(klass) ((klass)->marshalbyref)
-#define mono_class_is_contextbound(klass) ((klass)->contextbound)
+#define mono_class_is_marshalbyref(klass) (m_class_get_marshalbyref (klass))
+#define mono_class_is_contextbound(klass) (m_class_get_contextbound (klass))
 #define mono_vtable_is_remote(vtable) ((vtable)->remote)
 #define mono_vtable_set_is_remote(vtable,enable) do { (vtable)->remote = enable ? 1 : 0; } while (0)
 #endif
@@ -448,7 +327,7 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 #ifdef DISABLE_COM
 #define mono_class_is_com_object(klass) (FALSE)
 #else
-#define mono_class_is_com_object(klass) ((klass)->is_com_object)
+#define mono_class_is_com_object(klass) (m_class_is_com_object (klass))
 #endif
 
 
@@ -733,16 +612,16 @@ mono_class_setup_supertypes (MonoClass *klass);
 static inline gboolean
 mono_class_has_parent_fast (MonoClass *klass, MonoClass *parent)
 {
-	return (klass->idepth >= parent->idepth) && (klass->supertypes [parent->idepth - 1] == parent);
+	return (m_class_get_idepth (klass) >= m_class_get_idepth (parent)) && (m_class_get_supertypes (klass) [m_class_get_idepth (parent) - 1] == parent);
 }
 
 static inline gboolean
 mono_class_has_parent (MonoClass *klass, MonoClass *parent)
 {
-	if (G_UNLIKELY (!klass->supertypes))
+	if (G_UNLIKELY (!m_class_get_supertypes (klass)))
 		mono_class_setup_supertypes (klass);
 
-	if (G_UNLIKELY (!parent->supertypes))
+	if (G_UNLIKELY (!m_class_get_supertypes (parent)))
 		mono_class_setup_supertypes (parent);
 
 	return mono_class_has_parent_fast (klass, parent);
