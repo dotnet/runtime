@@ -96,6 +96,7 @@ def static getOSGroup(def os) {
                     def archiveSettings = new ArchivalSettings()
                     archiveSettings.addFiles('bin/sandbox_logs/**')
                     archiveSettings.addFiles('machinedata.json')
+                    archiveSettings.setAlwaysArchive()
 
                     Utilities.addArchival(newJob, archiveSettings)
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
@@ -207,6 +208,7 @@ def static getOSGroup(def os) {
                         // Save machinedata.json to /artifact/bin/ Jenkins dir
                         def archiveSettings = new ArchivalSettings()
                         archiveSettings.addFiles('throughput-*.csv')
+                        archiveSettings.setAlwaysArchive()
                         Utilities.addArchival(newJob, archiveSettings)
 
                         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
@@ -326,6 +328,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
         def archiveSettings = new ArchivalSettings()
         archiveSettings.addFiles('bin/sandbox_logs/**')
         archiveSettings.addFiles('machinedata.json')
+        archiveSettings.setAlwaysArchive()
 
         Utilities.addArchival(newJob, archiveSettings)
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
@@ -473,6 +476,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
             def archiveSettings = new ArchivalSettings()
             archiveSettings.addFiles('throughput-*.csv')
             archiveSettings.addFiles('machinedata.json')
+            archiveSettings.setAlwaysArchive()
             Utilities.addArchival(newJob, archiveSettings)
 
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
@@ -597,6 +601,7 @@ parallel(
                     def archiveSettings = new ArchivalSettings()
                     archiveSettings.addFiles('bin/sandbox_logs/**')
                     archiveSettings.addFiles('machinedata.json')
+                    archiveSettings.setAlwaysArchive()
 
                     Utilities.addArchival(newJob, archiveSettings)
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
@@ -706,6 +711,7 @@ parallel(
         def archiveSettings = new ArchivalSettings()
         archiveSettings.addFiles('bin/toArchive/**')
         archiveSettings.addFiles('machinedata.json')
+        archiveSettings.setAlwaysArchive()
 
         Utilities.addArchival(newJob, archiveSettings)
         Utilities.standardJobSetup(newJob, project, false, "*/${branch}")
@@ -790,6 +796,7 @@ parallel(
                     def archiveSettings = new ArchivalSettings()
                     archiveSettings.addFiles('bin/sandbox_logs/**')
                     archiveSettings.addFiles('machinedata.json')
+                    archiveSettings.setAlwaysArchive()
 
                     // Set the label (currently we are only measuring size, therefore we are running on VM).
                     Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
