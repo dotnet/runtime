@@ -1,15 +1,15 @@
 .NET Core Common Language Runtime (CoreCLR)
 ===========================
 
-This repository contains complete source code the runtime of [.NET Core](http://dotnet.github.io).
+This repository contains the complete source code for the runtime of [.NET Core](http://dotnet.github.io).
 If you are new to .NET Core start with the [About .NET](https://docs.microsoft.com/en-us/dotnet/articles/about/) 
-that quickly points you to [.NET Core Tutorials](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started)
+that quickly points you to [.NET Core Tutorials](https://docs.microsoft.com/en-us/dotnet/articles/core/getting-started).
 
 
 .NET Core is best thought of as 'agile .NET'.   Generally speaking it is the same as 
 the [Desktop .NET Framework](https://en.wikipedia.org/wiki/.NET_Framework)
 distributed as part of the Windows operating system, but it is a cross platform 
-(Windows, Linux, macOS) and cross architecture (x86, x64, arm) subset that can be deployed
+(Windows, Linux, macOS) and cross architecture (x86, x64, ARM) subset that can be deployed
 as part of the application (if desired), and thus can be updated quickly to fix bugs or add features.  
 
 ## If You Just Want to Use .NET Core
@@ -31,20 +31,20 @@ related to .NET Core including:
  * Need to **log a issue** or Provide Feedback?   See then [Issues and Feedback Page](Documentation/workflow/IssuesFeedbackEngagement.md) page.
  * Want to **chat** with other members of the CoreCLR community?  See the [Chat Section](Documentation/workflow/IssuesFeedbackEngagement.md#Chat-with-the-CoreCLR-community) page.
  * Need a **current build** or **test results** of the CoreCLR repository?   See the [Official and Daily Builds](Documentation/workflow/OfficalAndDailyBuilds.md) page.
- * If you want powerful search of the source code for both CoreClr and CoreFx see [.NET Source Code Index](https://source.dot.net)
+ * If you want powerful search of the source code for both CoreCLR and CoreFx see [.NET Source Code Index](https://source.dot.net).
 
 ## What Can you Make from this Repository?
 
-.NET Core relies heavily on the [Nuget](https://en.wikipedia.org/wiki/NuGet) package manager,
+.NET Core relies heavily on the [NuGet](https://en.wikipedia.org/wiki/NuGet) package manager,
 which is a system to package, distribute and version software components.  See [https://www.nuget.org/](https://www.nuget.org/) 
-for more information on Nuget.   For now it is enough to know Nuget is a system that
+for more information on NuGet.   For now it is enough to know NuGet is a system that
 bundles components into `*.nupkg` files (which are ZIP archives) and these packages can be 'published' 
 either through a local file system path or by a URL (e.g. https://www.nuget.org/).   There are then tools 
-(e.g. Nuget.exe, Visual Studio, dotnet.exe) that based on a configuration file (.csproj) know 
+(e.g. nuget.exe, Visual Studio, dotnet.exe) that based on a configuration file (.csproj) know 
 how to search these publishing locations and pull down consistent set of packages for the 
 application.   
 
-In concrete terms, this repository is best thought of as the source code for the following Nuget package
+In concrete terms, this repository is best thought of as the source code for the following NuGet package:
  
  * **Microsoft.NETCore.Runtime.CoreCLR** - Represents the object allocator, garbage collector (GC), class 
    loader, type system, interop and the most fundamental parts of the .NET class library (e.g. 
@@ -69,7 +69,7 @@ By itself, the `Microsoft.NETCore.Runtime.CoreCLR` package is actually not enoug
 One reason for this is that the CoreCLR package tries to minimize the amount of the class library that it implements.
 Only types that have a strong dependency on the internal workings of the runtime are included (e.g, 
 `System.Object`, `System.String`, `System.Threading.Thread`, `System.Threading.Tasks.Task` and most foundational interfaces).
-Instead most of the class library is implemented as independent Nuget packages that simply use the .NET Core 
+Instead most of the class library is implemented as independent NuGet packages that simply use the .NET Core 
 runtime as a dependency.    Many of the most familiar classes (`System.Collections`, `System.IO`, `System.Xml` and 
 so on), live in packages defined in the [dotnet/corefx](https://github.com/dotnet/corefx) repository.
 
@@ -84,14 +84,14 @@ For example the *`System.Runtime`* package defined in CoreFX declares the PUBLIC
 However, `System.Runtime.dll` (defined in the CoreFX repo) forwards references ultimately to `System.Private.CoreLib.dll` 
 which is defined here.
 
-Thus in order to run an application, you need BOTH the `Microsoft.NETCore.Runtime.CoreCLR` Nuget package 
+Thus in order to run an application, you need BOTH the `Microsoft.NETCore.Runtime.CoreCLR` NuGet package 
 (defined in this repository) as well as  packages for whatever you actually reference that were defined 
 in the CoreFX repository (which at a minimum includes the `System.Runtime` package).    You also need some 
 sort of 'host' executable that loads the CoreCLR package as well as the CoreFX packages and starts your code (typically 
 you use `dotnet.exe` for this).   
 
 These extra pieces are not defined here, however you don't need to build them in order to use the CoreCLR 
-Nuget package you create here.   There are already versions of the CoreFX packages published on 
+NuGet package you create here.   There are already versions of the CoreFX packages published on 
 https://www.nuget.org/ so you can have your test application's project file specify the CoreCLR you 
 built and it will naturally pull anything else it needs from the official location https://www.nuget.org/ to 
 make a complete application.  More on this in the [Using Your Build](Documentation/workflow/UsingYourBuild.md) page.
@@ -100,7 +100,7 @@ make a complete application.  More on this in the [Using Your Build](Documentati
 ## Setting up your GIT Clone of the CoreCLR Repository
 
 The first step in making a build of the CoreCLR Repository is to clone it locally.   If you already know
-how to do this, just skip this section.  Otherwise if you are developing on windows you can see
+how to do this, just skip this section.  Otherwise if you are developing on Windows you can see
 [Setting Up A Git Repository In Visual Studio 2017](https://github.com/Microsoft/perfview/blob/master/documentation/SettingUpRepoInVS.md)
 for instructions on setting up.  This link uses a different repository as an example, but the issues (do you fork or not) and
 the procedure are equally applicable to this repository.  
@@ -147,13 +147,13 @@ to build the release (full speed) flavor.  You can find more build options with 
 ## Using Your Build
 
 The build places all of its generated files under the `bin` directory at the base of the repository.   There 
-is a `bin\Log` directory that contains log files generated during the build (Most useful when the build fails).
+is a `bin\Log` directory that contains log files generated during the build (most useful when the build fails).
 The the actual output is placed in a directory like this 
 
 * bin\Product\Windows_NT.x64.Release
 
 Where you can see the operating system and CPU architecture, and the build type are part of the name.   While
-the 'raw' output of the build is sometimes useful, normally you are only interested in the Nuget packages 
+the 'raw' output of the build is sometimes useful, normally you are only interested in the NuGet packages 
 that were built, which are placed in the directory 
 
 * bin\Product\Windows_NT.x64.Release\.nuget\pkg
@@ -162,7 +162,7 @@ These packages are the 'output' of your build.
 
 There are two basic techniques for using your new runtime.
 
- 1. **Use dotnet.exe and Nuget to compose an application**.   See [Using Your Build](Documentation/workflow/UsingYourBuild.md) for 
+ 1. **Use dotnet.exe and NuGet to compose an application**.   See [Using Your Build](Documentation/workflow/UsingYourBuild.md) for 
  instructions on creating a program that uses 
  your new runtime by using the NuGet packages you just created and the 'dotnet' command line interface.  This
  is the expected way non-runtime developers are likely to consume your new runtime.    
