@@ -22,14 +22,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\MemoryExtensions.cs" />
+    <Compile Include="System\SequencePosition.cs" />
     <Compile Include="System\SpanHelpers.BinarySearch.cs" />
     <Compile Include="System\SpanHelpers.T.cs" />
     <Compile Include="System\SpanHelpers.byte.cs" />
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Buffers\ArrayMemoryPool.cs" />
     <Compile Include="System\Buffers\ArrayMemoryPool.ArrayMemoryPoolBuffer.cs" />
+    <Compile Include="System\Buffers\SequenceExtensions.cs" />
+    <Compile Include="System\Buffers\IMemoryList.cs" />
     <Compile Include="System\Buffers\MemoryPool.cs" />
     <Compile Include="System\Buffers\OperationStatus.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequence.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequence_helpers.cs" />
     <Compile Include="System\Buffers\Binary\Reader.cs" />
     <Compile Include="System\Buffers\Binary\ReaderBigEndian.cs" />
     <Compile Include="System\Buffers\Binary\ReaderLittleEndian.cs" />
@@ -123,6 +128,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Common or Common-branched source files -->
+    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>Common\System\Collections\HashHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
