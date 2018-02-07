@@ -919,15 +919,6 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         *wbPassStruct = howToPassStruct;
     }
 
-#if defined(FEATURE_MULTIREG_ARGS) && defined(_TARGET_ARM64_)
-    // Normalize struct return type for ARM64 FEATURE_MULTIREG_ARGS
-    // This is not yet enabled for ARM32 since FEATURE_SIMD is not enabled
-    if (varTypeIsStruct(useType))
-    {
-        useType = impNormStructType(clsHnd);
-    }
-#endif
-
     return useType;
 }
 
@@ -1148,16 +1139,6 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     {
         *wbReturnStruct = howToReturnStruct;
     }
-
-#if defined(FEATURE_MULTIREG_RET) && defined(_TARGET_ARM64_)
-    // Normalize struct return type for ARM64 FEATURE_MULTIREG_RET
-    // This is not yet enabled for ARM32 since FEATURE_SIMD is not enabled
-    // This is not needed for XARCH as eeGetSystemVAmd64PassStructInRegisterDescriptor() is used
-    if (varTypeIsStruct(useType))
-    {
-        useType = impNormStructType(clsHnd);
-    }
-#endif
 
     return useType;
 }
