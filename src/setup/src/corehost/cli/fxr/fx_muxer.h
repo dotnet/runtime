@@ -47,7 +47,6 @@ public:
         const pal::char_t* argv[],
         bool exec_mode,
         host_mode_t mode,
-        bool* is_an_app,
         int* new_argoff,
         pal::string_t& app_candidate,
         opt_map_t& opts);
