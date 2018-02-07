@@ -33,6 +33,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1024,6 +1025,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [OuterLoop] // makes long wait
         public void TestCacheSliding()
         {
             var config = new NameValueCollection();
@@ -1039,7 +1041,8 @@ namespace MonoTests.System.Runtime.Caching
                 // The sliding expiration timeout has to be greater than 1 second because
                 // .NET implementation ignores timeouts updates smaller than
                 // CacheExpires.MIN_UPDATE_DELTA which is equal to 1.
-                cip.SlidingExpiration = TimeSpan.FromSeconds(2);
+                const int SlidingExpirationThresholdMSec = 4000;
+                cip.SlidingExpiration = TimeSpan.FromMilliseconds(SlidingExpirationThresholdMSec);
                 mc.Add("slidingtest", "42", cip);
 
                 mc.Add("expire1", "1", cip);
@@ -1049,13 +1052,28 @@ namespace MonoTests.System.Runtime.Caching
                 mc.Add("expire5", "5", cip);
 
                 Assert.Equal(6, mc.GetCount());
-
+                // The loop below would sleep for ~5 seconds total (in 50 intervals).
+                // Each of these intervals is only supposed to be ~100ms.
+                // However due to concurrency with other tests and various system conditions,
+                // we observe occasional delays that are much longer than the SlidingExpirationThresholdMSec
+                // expiration period which causes the "slidingtest" cache item to expire
+                Stopwatch sw = new Stopwatch();
                 for (int i = 0; i < 50; i++)
                 {
+                    sw.Restart();
                     Thread.Sleep(100);
-
                     var item = mc.Get("slidingtest");
-                    Assert.NotEqual(null, item);
+                    sw.Stop();
+
+                    if (sw.ElapsedMilliseconds < SlidingExpirationThresholdMSec)
+                    {
+                        Assert.NotEqual(null, item);
+                    }
+                    else
+                    {
+                        // for the sake of simplicity skip an inversed assert here (Assert.Equal(null, item)) 
+                        // (to avoid further complicating the test as we would need to address a few more subtle timing cases)
+                    }
                 }
 
                 Assert.Null(mc.Get("expire1"));
@@ -1065,7 +1083,7 @@ namespace MonoTests.System.Runtime.Caching
                 Assert.Null(mc.Get("expire5"));
                 Assert.Equal(1, mc.GetCount());
 
-                Thread.Sleep(3000);
+                Thread.Sleep(SlidingExpirationThresholdMSec);
 
                 Assert.Null(mc.Get("slidingtest"));
                 Assert.Equal(0, mc.GetCount());
