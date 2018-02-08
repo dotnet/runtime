@@ -4133,8 +4133,21 @@ case "$host" in
 esac
 
 case $with_libgdiplus in
-    no|installed)
+    no)
     libgdiplus_loc=
+    ;;
+
+    installed)
+    libgdiplus_loc=
+    if test x$cross_compiling = xno; then
+        if test x$host_darwin = xyes; then
+	    a=/Library/Frameworks/Mono.framework/Versions/Current/lib/$libgdiplus_install_loc
+	    if test -x $a; then
+	      libgdiplus_install_loc=$a
+	      libgdiplus_loc="preinstalled at $a"
+	    fi
+	fi
+    fi
     ;;
 
     yes|sibling)
@@ -4150,8 +4163,8 @@ case $with_libgdiplus in
     libgdiplus_loc=`pwd`/$with_libgdiplus
     ;;
 esac
-AC_SUBST([libgdiplus_loc])
-AC_SUBST([libgdiplus_install_loc])
+AC_SUBST(libgdiplus_loc)
+AC_SUBST(libgdiplus_install_loc)
 
 AC_ARG_ENABLE(icall-symbol-map,[  --enable-icall-symbol-map Generate tables which map icall functions to their C symbols], icall_symbol_map=$enableval, icall_symbol_map=no)
 if test "x$icall_symbol_map" = "xyes"; then
