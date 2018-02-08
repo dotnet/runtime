@@ -433,7 +433,7 @@ find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, Mo
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
-		ji = mini_jit_info_table_find (domain, (char *)ip, NULL);
+		ji = mini_jit_info_table_find (domain, ip, NULL);
 
 	if (managed)
 		*managed = FALSE;
@@ -592,7 +592,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
 		ji = prev_ji;
 	else
-		ji = mini_jit_info_table_find (domain, (char *)ip, &target_domain);
+		ji = mini_jit_info_table_find (domain, ip, &target_domain);
 
 	if (!target_domain)
 		target_domain = domain;
@@ -893,7 +893,7 @@ mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpoin
 		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
 		gpointer ip = trace_ip.ip;
 		gpointer generic_info = trace_ip.generic_info;
-		MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *)ip);
+		MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
 
 		if (ji == NULL) {
 			if (func (NULL, ip, 0, FALSE, user_data))
@@ -947,7 +947,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		if (trace_ip.ji) {
 			ji = trace_ip.ji;
 		} else {
-			ji = mono_jit_info_table_find (domain, (char *)ip);
+			ji = mono_jit_info_table_find (domain, ip);
 			if (ji == NULL) {
 				/* Unmanaged frame */
 				mono_array_setref (res, i, sf);
@@ -1147,7 +1147,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 		for (l = ips; l; l = l->next) {
 			guint8 *ip = (guint8*)l->data;
 			memset (&frame, 0, sizeof (StackFrameInfo));
-			frame.ji = mini_jit_info_table_find (domain, (char*)ip, &frame.domain);
+			frame.ji = mini_jit_info_table_find (domain, ip, &frame.domain);
 			if (!frame.ji || frame.ji->is_trampoline)
 				continue;
 			frame.type = FRAME_TYPE_MANAGED;
@@ -1263,7 +1263,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 			frame_ip = ip;
 
-			ji = mini_jit_info_table_find (mono_domain_get (), (char*)ip, &frame_domain);
+			ji = mini_jit_info_table_find (mono_domain_get (), ip, &frame_domain);
 			if (!ji || ji->is_trampoline)
 				continue;
 
@@ -1404,7 +1404,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
  * OUT_DOMAIN if it is not NULL.
  */
 MonoJitInfo*
-mini_jit_info_table_find_ext (MonoDomain *domain, char *addr, gboolean allow_trampolines, MonoDomain **out_domain)
+mini_jit_info_table_find_ext (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain)
 {
 	MonoJitInfo *ji;
 	MonoInternalThread *t = mono_thread_internal_current ();
@@ -1449,7 +1449,7 @@ mini_jit_info_table_find_ext (MonoDomain *domain, char *addr, gboolean allow_tra
 }
 
 MonoJitInfo*
-mini_jit_info_table_find (MonoDomain *domain, char *addr, MonoDomain **out_domain)
+mini_jit_info_table_find (MonoDomain *domain, gpointer addr, MonoDomain **out_domain)
 {
 	return mini_jit_info_table_find_ext (domain, addr, FALSE, out_domain);
 }

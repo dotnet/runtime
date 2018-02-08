@@ -8000,10 +8000,10 @@ mono_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer
 
 	g_assert (addr);
 
-	ji = mono_jit_info_table_find (domain, (char *)mono_get_addr_from_ftnptr (addr));
+	ji = mono_jit_info_table_find (domain, mono_get_addr_from_ftnptr (addr));
 	/* Shared code */
 	if (!ji && domain != mono_get_root_domain ())
-		ji = mono_jit_info_table_find (mono_get_root_domain (), (char *)mono_get_addr_from_ftnptr (addr));
+		ji = mono_jit_info_table_find (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr));
 	if (ji) {
 		method = mono_jit_info_get_method (ji);
 		g_assert (!mono_class_is_gtd (method->klass));

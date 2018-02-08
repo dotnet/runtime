@@ -4139,7 +4139,7 @@ handle_dumper_queue_entry (void)
 				g_assert (domain && "What happened to the domain pointer?");
 				g_assert (address && "What happened to the instruction pointer?");
 
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *) address);
+				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
 
 				if (ji)
 					sample->frames [i].method = mono_jit_info_get_method (ji);

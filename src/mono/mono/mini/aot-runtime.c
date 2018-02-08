@@ -4080,7 +4080,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 				return NULL;
 		}
 		MONO_PROFILER_RAISE (jit_begin, (method));
-		jinfo = mono_jit_info_table_find (domain, (char*)code);
+		jinfo = mono_jit_info_table_find (domain, code);
 		g_assert (jinfo);
 		MONO_PROFILER_RAISE (jit_done, (method, jinfo));
 	}

@@ -272,7 +272,7 @@ jit_info_table_find (MonoJitInfoTable *table, MonoThreadHazardPointers *hp, gint
  * mono_jit_info_get_method () could fail.
  */
 MonoJitInfo*
-mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_aot, gboolean allow_trampolines)
+mono_jit_info_table_find_internal (MonoDomain *domain, gpointer addr, gboolean try_aot, gboolean allow_trampolines)
 {
 	MonoJitInfoTable *table;
 	MonoJitInfo *ji, *module_ji;
@@ -330,7 +330,7 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
  * code or a trampoline) or a valid pointer to a \c MonoJitInfo* .
  */
 MonoJitInfo*
-mono_jit_info_table_find (MonoDomain *domain, char *addr)
+mono_jit_info_table_find (MonoDomain *domain, gpointer addr)
 {
 	return mono_jit_info_table_find_internal (domain, addr, TRUE, FALSE);
 }

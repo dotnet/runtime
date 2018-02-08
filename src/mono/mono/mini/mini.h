@@ -2293,8 +2293,8 @@ gboolean mono_thread_state_init_from_monoctx    (MonoThreadUnwindState *ctx, Mon
 void     mono_setup_altstack                    (MonoJitTlsData *tls);
 void     mono_free_altstack                     (MonoJitTlsData *tls);
 gpointer mono_altstack_restore_prot             (mgreg_t *regs, guint8 *code, gpointer *tramp_data, guint8* tramp);
-MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, char *addr, MonoDomain **out_domain);
-MonoJitInfo* mini_jit_info_table_find_ext       (MonoDomain *domain, char *addr, gboolean allow_trampolines, MonoDomain **out_domain);
+MonoJitInfo* mini_jit_info_table_find           (MonoDomain *domain, gpointer addr, MonoDomain **out_domain);
+MonoJitInfo* mini_jit_info_table_find_ext       (MonoDomain *domain, gpointer addr, gboolean allow_trampolines, MonoDomain **out_domain);
 void     mono_resume_unwind                     (MonoContext *ctx) MONO_LLVM_INTERNAL;
 
 MonoJitInfo * mono_find_jit_info                (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *res, MonoJitInfo *prev_ji, MonoContext *ctx, MonoContext *new_ctx, char **trace, MonoLMF **lmf, int *native_offset, gboolean *managed);

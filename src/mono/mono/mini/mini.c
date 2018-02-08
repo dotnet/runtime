@@ -4081,9 +4081,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		gpointer compiled_method = mono_compile_method_checked (nm, error);
 		return_val_if_nok (error, NULL);
 		code = mono_get_addr_from_ftnptr (compiled_method);
-		jinfo = mono_jit_info_table_find (target_domain, (char *)code);
+		jinfo = mono_jit_info_table_find (target_domain, code);
 		if (!jinfo)
-			jinfo = mono_jit_info_table_find (mono_domain_get (), (char *)code);
+			jinfo = mono_jit_info_table_find (mono_domain_get (), code);
 		if (jinfo)
 			MONO_PROFILER_RAISE (jit_done, (method, jinfo));
 		return code;

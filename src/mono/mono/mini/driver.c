@@ -928,7 +928,7 @@ test_thread_func (ThreadData *td)
 					guint pos = (*data)->start + random () % (*data)->length;
 					MonoJitInfo *ji;
 
-					ji = mono_jit_info_table_find (domain, (char*)(gulong) pos);
+					ji = mono_jit_info_table_find (domain, (char*)(gsize)pos);
 
 					g_assert (ji->cas_inited);
 					g_assert ((*data)->ji == ji);

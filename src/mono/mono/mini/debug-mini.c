@@ -665,7 +665,7 @@ void
 mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *)ip);
+	MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
 	MonoDebugMethodJitInfo *jit;
 	int i;
 

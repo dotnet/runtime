@@ -145,7 +145,7 @@ MONO_API int32_t
 mono_context_get_domain_id  (MonoAppContext *context);
 
 MONO_API MonoJitInfo *
-mono_jit_info_table_find   (MonoDomain *domain, char *addr);
+mono_jit_info_table_find   (MonoDomain *domain, void* addr);
 
 /* MonoJitInfo accessors */
 

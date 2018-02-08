@@ -2722,7 +2722,7 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 	data->valid_info = TRUE;
 	ji = mono_jit_info_table_find_internal (
 			(MonoDomain *)mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN],
-			(char *)MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx),
+			MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx),
 			TRUE,
 			TRUE);
 
@@ -4442,7 +4442,7 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 		code = mono_aot_get_method_checked (domain, method, &oerror);
 		if (code) {
 			mono_error_assert_ok (&oerror);
-			ji = mono_jit_info_table_find (domain, (char *)code);
+			ji = mono_jit_info_table_find (domain, code);
 		} else {
 			/* Might be interpreted */
 			ji = mini_get_interp_callbacks ()->find_jit_info (domain, method);
