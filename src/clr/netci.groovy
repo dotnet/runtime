@@ -2943,8 +2943,8 @@ Constants.allScenarios.each { scenario ->
                                     batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxtests.zip', '_\\fx\\bin\\tests')")
 
                                     // Add the script to run the corefx tests
-                                    def corefx_runtime_path   = "_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm"
-                                    def corefx_tests_dir      = "_\\fx\\bin\\tests"
+                                    def corefx_runtime_path   = "%WORKSPACE%\\_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-arm"
+                                    def corefx_tests_dir      = "%WORKSPACE%\\_\\fx\\bin\\tests"
                                     def corefx_exclusion_file = "%WORKSPACE%\\tests\\arm\\corefx_test_exclusions.txt"
                                     batchFile("call %WORKSPACE%\\tests\\scripts\\run-corefx-tests.bat ${corefx_runtime_path} ${corefx_tests_dir} ${corefx_exclusion_file}")
 
