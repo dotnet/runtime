@@ -1616,7 +1616,6 @@ typedef struct tagVS_FIXEDFILEINFO
 #include "cpp/ccombstr.h"
 #include "cpp/cstring.h"
 #endif // !PAL_STDCPP_COMPAT
-#include "sscli_version.h"
 
 #endif // RC_INVOKED
 

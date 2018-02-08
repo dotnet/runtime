@@ -165,6 +165,9 @@ typedef enum ReplacesCorHdrNumericDefines
     COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN=0x08,    // NEW
     COR_VTABLE_CALL_MOST_DERIVED        =0x10,          // Call most derived method described by
 
+// EATJ constants
+    IMAGE_COR_EATJ_THUNK_SIZE           = 32,           // Size of a jump thunk reserved range.
+
 // Max name lengths    
     //@todo: Change to unlimited name lengths.
     MAX_CLASS_NAME                      =1024,
