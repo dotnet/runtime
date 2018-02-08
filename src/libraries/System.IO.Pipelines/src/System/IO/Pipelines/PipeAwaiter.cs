@@ -13,6 +13,9 @@ namespace System.IO.Pipelines
     {
         private readonly IPipeAwaiter<T> _awaiter;
 
+        /// <summary>
+        /// Create new instance of <see cref="PipeAwaiter{T}"/> that wraps async operation implemented by <paramref name="awaiter"/>
+        /// </summary>
         public PipeAwaiter(IPipeAwaiter<T> awaiter)
         {
             _awaiter = awaiter;

@@ -16,7 +16,7 @@ namespace System.IO.Pipelines
         /// </summary>
         /// <param name="result">The <see cref="ReadResult"/></param>
         /// <returns>True if data was available, or if the call was canceled or the writer was completed.</returns>
-        /// <remarks>If the pipe returns false, there's no need to call <see cref="AdvanceTo"/>.</remarks>
+        /// <remarks>If the pipe returns false, there's no need to call <see cref="AdvanceTo(SequencePosition, SequencePosition)"/>.</remarks>
         public abstract bool TryRead(out ReadResult result);
 
         /// <summary>
