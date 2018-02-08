@@ -179,7 +179,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
       <Link>Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs</Link>
     </Compile>
-    <Compile Include="System\IO\FileSystemInfo.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
       <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
@@ -281,9 +280,12 @@
   </ItemGroup>
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="System\IO\FileStatus.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="System\IO\CharSpanExtensions.Unix.cs" />
+    <Compile Include="System\IO\FileInfo.Unix.cs" />
+    <Compile Include="System\IO\DirectoryInfo.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\PathHelpers.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Unix.cs" />
@@ -338,6 +340,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Stat.Span.cs">
+      <Link>Common\Interop\Unix\Interop.Stat.Span.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadDir.cs">
       <Link>Common\Interop\Unix\Interop.ReadDir.cs</Link>
     </Compile>
@@ -391,6 +396,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Unix.cs">
       <Link>Common\System\IO\DriveInfoInternal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Text\ValueUtf8Converter.cs">
+      <Link>Common\System\Text\ValueUtf8Converter.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
