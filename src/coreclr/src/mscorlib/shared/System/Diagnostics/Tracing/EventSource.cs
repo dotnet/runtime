@@ -742,6 +742,7 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 4;
+                descrs[0].Reserved = 0;
                 WriteEventCore(eventId, 1, descrs);
             }
         }
@@ -754,8 +755,10 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 4;
+                descrs[0].Reserved = 0;
                 descrs[1].DataPointer = (IntPtr)(&arg2);
                 descrs[1].Size = 4;
+                descrs[1].Reserved = 0;
                 WriteEventCore(eventId, 2, descrs);
             }
         }
@@ -768,10 +771,13 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 4;
+                descrs[0].Reserved = 0;
                 descrs[1].DataPointer = (IntPtr)(&arg2);
                 descrs[1].Size = 4;
+                descrs[1].Reserved = 0;
                 descrs[2].DataPointer = (IntPtr)(&arg3);
                 descrs[2].Size = 4;
+                descrs[2].Reserved = 0;
                 WriteEventCore(eventId, 3, descrs);
             }
         }
@@ -785,6 +791,7 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
+                descrs[0].Reserved = 0;
                 WriteEventCore(eventId, 1, descrs);
             }
         }
@@ -797,8 +804,10 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
+                descrs[0].Reserved = 0;
                 descrs[1].DataPointer = (IntPtr)(&arg2);
                 descrs[1].Size = 8;
+                descrs[1].Reserved = 0;
                 WriteEventCore(eventId, 2, descrs);
             }
         }
@@ -811,10 +820,13 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
+                descrs[0].Reserved = 0;
                 descrs[1].DataPointer = (IntPtr)(&arg2);
                 descrs[1].Size = 8;
+                descrs[1].Reserved = 0;
                 descrs[2].DataPointer = (IntPtr)(&arg3);
                 descrs[2].Size = 8;
+                descrs[2].Reserved = 0;
                 WriteEventCore(eventId, 3, descrs);
             }
         }
@@ -831,6 +843,7 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[1];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
+                    descrs[0].Reserved = 0;
                     WriteEventCore(eventId, 1, descrs);
                 }
             }
@@ -849,8 +862,10 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
+                    descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
                 }
             }
@@ -871,10 +886,13 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
+                    descrs[1].Reserved = 0;
                     descrs[2].DataPointer = (IntPtr)string3Bytes;
                     descrs[2].Size = ((arg3.Length + 1) * 2);
+                    descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);
                 }
             }
@@ -892,8 +910,10 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)(&arg2);
                     descrs[1].Size = 4;
+                    descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
                 }
             }
@@ -910,10 +930,13 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)(&arg2);
                     descrs[1].Size = 4;
+                    descrs[1].Reserved = 0;
                     descrs[2].DataPointer = (IntPtr)(&arg3);
                     descrs[2].Size = 4;
+                    descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);
                 }
             }
@@ -931,8 +954,10 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                     descrs[0].DataPointer = (IntPtr)string1Bytes;
                     descrs[0].Size = ((arg1.Length + 1) * 2);
+                    descrs[1].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)(&arg2);
                     descrs[1].Size = 8;
+                    descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
                 }
             }
@@ -950,8 +975,10 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 8;
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
+                    descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
                 }
             }
@@ -969,8 +996,10 @@ namespace System.Diagnostics.Tracing
                     EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 4;
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)string2Bytes;
                     descrs[1].Size = ((arg2.Length + 1) * 2);
+                    descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
                 }
             }
@@ -987,8 +1016,10 @@ namespace System.Diagnostics.Tracing
                     int blobSize = 0;
                     descrs[0].DataPointer = (IntPtr)(&blobSize);
                     descrs[0].Size = 4;
+                    descrs[0].Reserved = 0;
                     descrs[1].DataPointer = (IntPtr)(&blobSize); // valid address instead of empty content 
                     descrs[1].Size = 0;
+                    descrs[1].Reserved = 0;
                     WriteEventCore(eventId, 2, descrs);
                 }
                 else
@@ -998,8 +1029,10 @@ namespace System.Diagnostics.Tracing
                     {
                         descrs[0].DataPointer = (IntPtr)(&blobSize);
                         descrs[0].Size = 4;
+                        descrs[0].Reserved = 0;
                         descrs[1].DataPointer = (IntPtr)blob;
                         descrs[1].Size = blobSize;
+                        descrs[1].Reserved = 0;
                         WriteEventCore(eventId, 2, descrs);
                     }
                 }
@@ -1014,13 +1047,16 @@ namespace System.Diagnostics.Tracing
                 EventSource.EventData* descrs = stackalloc EventSource.EventData[3];
                 descrs[0].DataPointer = (IntPtr)(&arg1);
                 descrs[0].Size = 8;
+                descrs[0].Reserved = 0;
                 if (arg2 == null || arg2.Length == 0)
                 {
                     int blobSize = 0;
                     descrs[1].DataPointer = (IntPtr)(&blobSize);
                     descrs[1].Size = 4;
+                    descrs[1].Reserved = 0;
                     descrs[2].DataPointer = (IntPtr)(&blobSize); // valid address instead of empty contents 
                     descrs[2].Size = 0;
+                    descrs[2].Reserved = 0;
                     WriteEventCore(eventId, 3, descrs);
                 }
                 else
@@ -1030,8 +1066,10 @@ namespace System.Diagnostics.Tracing
                     {
                         descrs[1].DataPointer = (IntPtr)(&blobSize);
                         descrs[1].Size = 4;
+                        descrs[1].Reserved = 0;
                         descrs[2].DataPointer = (IntPtr)blob;
                         descrs[2].Size = blobSize;
+                        descrs[2].Reserved = 0;
                         WriteEventCore(eventId, 3, descrs);
                     }
                 }
@@ -1055,6 +1093,12 @@ namespace System.Diagnostics.Tracing
             /// Size of the argument referenced by DataPointer
             /// </summary>
             public int Size { get { return m_Size; } set { m_Size = value; } }
+
+            /// <summary>
+            /// Reserved by ETW.  This property is present to ensure that we can zero it
+            /// since System.Private.CoreLib uses are not zero'd.
+            /// </summary>
+            internal int Reserved { get { return m_Reserved; } set { m_Reserved = value; } }
 
             #region private
             /// <summary>
@@ -1097,8 +1141,10 @@ namespace System.Diagnostics.Tracing
         ///                EventSource.EventData* descrs = stackalloc EventSource.EventData[2];
         ///                descrs[0].DataPointer = (IntPtr)(&amp;arg1);
         ///                descrs[0].Size = 8;
+        ///                descrs[0].Reserved = 0;
         ///                descrs[1].DataPointer = (IntPtr)string2Bytes;
         ///                descrs[1].Size = ((arg2.Length + 1) * 2);
+        ///                descrs[1].Reserved = 0;
         ///                WriteEventCore(eventId, 2, descrs);
         ///            }
         ///        }

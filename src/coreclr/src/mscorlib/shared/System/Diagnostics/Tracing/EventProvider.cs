@@ -958,6 +958,8 @@ namespace System.Diagnostics.Tracing
                     List<int> refObjPosition = new List<int>(s_etwAPIMaxRefObjCount);
                     List<object> dataRefObj = new List<object>(s_etwAPIMaxRefObjCount);
                     EventData* userData = stackalloc EventData[2 * argCount];
+                    for (int i = 0; i < 2 * argCount; i++)
+                        userData[i] = default(EventData);
                     EventData* userDataPtr = (EventData*)userData;
                     byte* dataBuffer = stackalloc byte[s_basicTypeAllocationBufferSize * 2 * argCount]; // Assume 16 chars for non-string argument
                     byte* currentBuffer = dataBuffer;
