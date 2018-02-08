@@ -5,9 +5,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Reflection;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -475,6 +477,336 @@ namespace System.Net.Http.Functional.Tests
                         });
                     });
                 }
+            }
+        }
+    }
+
+    public sealed class SocketsHttpHandler_PublicAPIBehavior_Test
+    {
+        private static async Task IssueRequestAsync(HttpMessageHandler handler)
+        {
+            using (var c = new HttpMessageInvoker(handler, disposeHandler: false))
+                await Assert.ThrowsAnyAsync<Exception>(() =>
+                    c.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri("/shouldquicklyfail", UriKind.Relative)), default));
+        }
+
+        [Fact]
+        public void AllowAutoRedirect_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.True(handler.AllowAutoRedirect);
+
+                handler.AllowAutoRedirect = true;
+                Assert.True(handler.AllowAutoRedirect);
+
+                handler.AllowAutoRedirect = false;
+                Assert.False(handler.AllowAutoRedirect);
+            }
+        }
+
+        [Fact]
+        public void AutomaticDecompression_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
+
+                handler.AutomaticDecompression = DecompressionMethods.GZip;
+                Assert.Equal(DecompressionMethods.GZip, handler.AutomaticDecompression);
+
+                handler.AutomaticDecompression = DecompressionMethods.Deflate;
+                Assert.Equal(DecompressionMethods.Deflate, handler.AutomaticDecompression);
+
+                handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                Assert.Equal(DecompressionMethods.GZip | DecompressionMethods.Deflate, handler.AutomaticDecompression);
+            }
+        }
+
+        [Fact]
+        public void CookieContainer_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                CookieContainer container = handler.CookieContainer;
+                Assert.Same(container, handler.CookieContainer);
+
+                var newContainer = new CookieContainer();
+                handler.CookieContainer = newContainer;
+                Assert.Same(newContainer, handler.CookieContainer);
+            }
+        }
+
+        [Fact]
+        public void Credentials_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Null(handler.Credentials);
+
+                var newCredentials = new NetworkCredential("username", "password");
+                handler.Credentials = newCredentials;
+                Assert.Same(newCredentials, handler.Credentials);
+            }
+        }
+
+        [Fact]
+        public void DefaultProxyCredentials_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Null(handler.DefaultProxyCredentials);
+
+                var newCredentials = new NetworkCredential("username", "password");
+                handler.DefaultProxyCredentials = newCredentials;
+                Assert.Same(newCredentials, handler.DefaultProxyCredentials);
+            }
+        }
+
+        [Fact]
+        public void MaxAutomaticRedirections_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(50, handler.MaxAutomaticRedirections);
+
+                handler.MaxAutomaticRedirections = int.MaxValue;
+                Assert.Equal(int.MaxValue, handler.MaxAutomaticRedirections);
+
+                handler.MaxAutomaticRedirections = 1;
+                Assert.Equal(1, handler.MaxAutomaticRedirections);
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxAutomaticRedirections = 0);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxAutomaticRedirections = -1);
+            }
+        }
+
+        [Fact]
+        public void MaxConnectionsPerServer_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
+
+                handler.MaxConnectionsPerServer = int.MaxValue;
+                Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
+
+                handler.MaxConnectionsPerServer = 1;
+                Assert.Equal(1, handler.MaxConnectionsPerServer);
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxConnectionsPerServer = 0);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxConnectionsPerServer = -1);
+            }
+        }
+
+        [Fact]
+        public void MaxResponseHeadersLength_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(64, handler.MaxResponseHeadersLength);
+
+                handler.MaxResponseHeadersLength = int.MaxValue;
+                Assert.Equal(int.MaxValue, handler.MaxResponseHeadersLength);
+
+                handler.MaxResponseHeadersLength = 1;
+                Assert.Equal(1, handler.MaxResponseHeadersLength);
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxResponseHeadersLength = 0);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxResponseHeadersLength = -1);
+            }
+        }
+
+        [Fact]
+        public void PreAuthenticate_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.False(handler.PreAuthenticate);
+
+                handler.PreAuthenticate = false;
+                Assert.False(handler.PreAuthenticate);
+
+                handler.PreAuthenticate = true;
+                Assert.True(handler.PreAuthenticate);
+            }
+        }
+
+        [Fact]
+        public void PooledConnectionIdleTimeout_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+
+                handler.PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan;
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionIdleTimeout);
+
+                handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(0);
+                Assert.Equal(TimeSpan.FromSeconds(0), handler.PooledConnectionIdleTimeout);
+
+                handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(1);
+                Assert.Equal(TimeSpan.FromSeconds(1), handler.PooledConnectionIdleTimeout);
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(-2));
+            }
+        }
+
+        [Fact]
+        public void PooledConnectionLifetime_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionLifetime);
+
+                handler.PooledConnectionLifetime = Timeout.InfiniteTimeSpan;
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionLifetime);
+
+                handler.PooledConnectionLifetime = TimeSpan.FromSeconds(0);
+                Assert.Equal(TimeSpan.FromSeconds(0), handler.PooledConnectionLifetime);
+
+                handler.PooledConnectionLifetime = TimeSpan.FromSeconds(1);
+                Assert.Equal(TimeSpan.FromSeconds(1), handler.PooledConnectionLifetime);
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.PooledConnectionLifetime = TimeSpan.FromSeconds(-2));
+            }
+        }
+
+        [Fact]
+        public void Properties_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                IDictionary<string, object> props = handler.Properties;
+                Assert.NotNull(props);
+                Assert.Empty(props);
+
+                props.Add("hello", "world");
+                Assert.Equal(1, props.Count);
+                Assert.Equal("world", props["hello"]);
+            }
+        }
+
+        [Fact]
+        public void Proxy_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Null(handler.Proxy);
+
+                var proxy = new WebProxy();
+                handler.Proxy = proxy;
+                Assert.Same(proxy, handler.Proxy);
+            }
+        }
+
+        [Fact]
+        public void SslOptions_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                SslClientAuthenticationOptions options = handler.SslOptions;
+                Assert.NotNull(options);
+
+                Assert.True(options.AllowRenegotiation);
+                Assert.Null(options.ApplicationProtocols);
+                Assert.Equal(X509RevocationMode.NoCheck, options.CertificateRevocationCheckMode);
+                Assert.Null(options.ClientCertificates);
+                Assert.Equal(SslProtocols.None, options.EnabledSslProtocols);
+                Assert.Equal(EncryptionPolicy.RequireEncryption, options.EncryptionPolicy);
+                Assert.Null(options.LocalCertificateSelectionCallback);
+                Assert.Null(options.RemoteCertificateValidationCallback);
+                Assert.Null(options.TargetHost);
+
+                Assert.Same(options, handler.SslOptions);
+
+                var newOptions = new SslClientAuthenticationOptions();
+                handler.SslOptions = newOptions;
+                Assert.Same(newOptions, handler.SslOptions);
+            }
+        }
+
+        [Fact]
+        public void UseCookies_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.True(handler.UseCookies);
+
+                handler.UseCookies = true;
+                Assert.True(handler.UseCookies);
+
+                handler.UseCookies = false;
+                Assert.False(handler.UseCookies);
+            }
+        }
+
+        [Fact]
+        public void UseProxy_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.True(handler.UseProxy);
+
+                handler.UseProxy = false;
+                Assert.False(handler.UseProxy);
+
+                handler.UseProxy = true;
+                Assert.True(handler.UseProxy);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task AfterDisposeSendAsync_GettersUsable_SettersThrow(bool dispose)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Type expectedExceptionType;
+                if (dispose)
+                {
+                    handler.Dispose();
+                    expectedExceptionType = typeof(ObjectDisposedException);
+                }
+                else
+                {
+                    await IssueRequestAsync(handler);
+                    expectedExceptionType = typeof(InvalidOperationException);
+                }
+
+                Assert.True(handler.AllowAutoRedirect);
+                Assert.Equal(DecompressionMethods.None, handler.AutomaticDecompression);
+                Assert.NotNull(handler.CookieContainer);
+                Assert.Null(handler.Credentials);
+                Assert.Null(handler.DefaultProxyCredentials);
+                Assert.Equal(50, handler.MaxAutomaticRedirections);
+                Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
+                Assert.Equal(64, handler.MaxResponseHeadersLength);
+                Assert.False(handler.PreAuthenticate);
+                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionLifetime);
+                Assert.NotNull(handler.Properties);
+                Assert.Null(handler.Proxy);
+                Assert.NotNull(handler.SslOptions);
+                Assert.True(handler.UseCookies);
+                Assert.True(handler.UseProxy);
+
+                Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
+                Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
+                Assert.Throws(expectedExceptionType, () => handler.CookieContainer = new CookieContainer());
+                Assert.Throws(expectedExceptionType, () => handler.Credentials = new NetworkCredential("anotheruser", "anotherpassword"));
+                Assert.Throws(expectedExceptionType, () => handler.DefaultProxyCredentials = new NetworkCredential("anotheruser", "anotherpassword"));
+                Assert.Throws(expectedExceptionType, () => handler.MaxAutomaticRedirections = 2);
+                Assert.Throws(expectedExceptionType, () => handler.MaxConnectionsPerServer = 2);
+                Assert.Throws(expectedExceptionType, () => handler.MaxResponseHeadersLength = 2);
+                Assert.Throws(expectedExceptionType, () => handler.PreAuthenticate = false);
+                Assert.Throws(expectedExceptionType, () => handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(2));
+                Assert.Throws(expectedExceptionType, () => handler.PooledConnectionLifetime = TimeSpan.FromSeconds(2));
+                Assert.Throws(expectedExceptionType, () => handler.Proxy = new WebProxy());
+                Assert.Throws(expectedExceptionType, () => handler.SslOptions = new SslClientAuthenticationOptions());
+                Assert.Throws(expectedExceptionType, () => handler.UseCookies = false);
+                Assert.Throws(expectedExceptionType, () => handler.UseProxy = false);
             }
         }
     }
