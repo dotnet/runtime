@@ -102,6 +102,25 @@ ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
 ```
 
+Alternatively, to avoid modifying /usr/local/ you can invoke cmake with the `OPENSSL_ROOT_DIR` env var set. The value to be passed in the directory where openssl is installed. Use `brew info openssl` to determine it. For example:
+
+```
+$brew info openssl
+openssl: stable 1.0.2l (bottled) [keg-only]
+SSL/TLS cryptography library
+https://openssl.org/
+/usr/local/Cellar/openssl/1.0.1f (1,229 files, 10.8MB)
+  Poured from bottle on 2014-01-20 at 19:25:30
+/usr/local/Cellar/openssl/1.0.1g (1,229 files, 10.6MB)
+  Poured from bottle on 2014-04-07 at 11:26:41
+```
+
+With the above example, we'd pick the latest version `1.0.1g` and invoke cmake like the following:
+
+```
+OPENSSL_ROOT_DIR="/usr/local/Cellar/openssl/1.0.1g cmake
+```
+
 ### Known Issues
 If you see errors along the lines of `SendFailure (Error writing headers)` you may need to import trusted root certificates:
 
