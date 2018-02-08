@@ -240,7 +240,7 @@ namespace System.IO
                     {
                         FlushWriteBuffer();
                     }
-                    catch (IOException) when (!disposing)
+                    catch (Exception e) when (IsIoRelatedException(e) && !disposing)
                     {
                         // On finalization, ignore failures from trying to flush the write buffer,
                         // e.g. if this stream is wrapping a pipe and the pipe is now broken.
