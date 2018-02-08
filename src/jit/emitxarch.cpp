@@ -81,6 +81,8 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_addps:
         case INS_addsd:
         case INS_addss:
+        case INS_addsubpd:
+        case INS_addsubps:
         case INS_andnpd:
         case INS_andnps:
         case INS_andpd:
@@ -98,6 +100,9 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_dppd:
         case INS_dpps:
         case INS_haddpd:
+        case INS_haddps:
+        case INS_hsubpd:
+        case INS_hsubps:
         case INS_insertps:
         case INS_maxpd:
         case INS_maxps:
@@ -140,6 +145,11 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pcmpgtq:
         case INS_pcmpgtw:
         case INS_phaddd:
+        case INS_phaddsw:
+        case INS_phaddw:
+        case INS_phsubd:
+        case INS_phsubsw:
+        case INS_phsubw:
         case INS_pinsrw:
         case INS_pmaddwd:
         case INS_pmaxsb:
