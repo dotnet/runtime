@@ -38,10 +38,10 @@ namespace System.Net
             {
                 return NameResolutionUtilities.GetUnresolvedAnswer(address);
             }
-            return InternalGetHostByName(hostName, false);
+            return InternalGetHostByName(hostName);
         }
 
-        private static IPHostEntry InternalGetHostByName(string hostName, bool includeIPv6)
+        private static IPHostEntry InternalGetHostByName(string hostName)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
             IPHostEntry ipHostEntry = null;
@@ -59,7 +59,7 @@ namespace System.Net
             {
                 throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
             }
-           
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
         } // GetHostByName
@@ -219,7 +219,7 @@ namespace System.Net
             }
             else
             {
-                ipHostEntry = InternalGetHostByName(hostName, false);
+                ipHostEntry = InternalGetHostByName(hostName);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
@@ -261,7 +261,7 @@ namespace System.Net
                 }
                 else
                 {
-                    hostEntry = InternalGetHostByName(result.hostName, result.includeIPv6);
+                    hostEntry = InternalGetHostByName(result.hostName);
                 }
             }
             catch (OutOfMemoryException)
@@ -446,7 +446,7 @@ namespace System.Net
             }
             else
             {
-                ipHostEntry = InternalGetHostByName(hostNameOrAddress, true);
+                ipHostEntry = InternalGetHostByName(hostNameOrAddress);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
@@ -500,7 +500,7 @@ namespace System.Net
             {
                 // InternalGetHostByName works with IP addresses (and avoids a reverse-lookup), but we need
                 // explicit handling in order to do the ArgumentException and guarantee the behavior.
-                addresses = InternalGetHostByName(hostNameOrAddress, true).AddressList;
+                addresses = InternalGetHostByName(hostNameOrAddress).AddressList;
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, addresses);

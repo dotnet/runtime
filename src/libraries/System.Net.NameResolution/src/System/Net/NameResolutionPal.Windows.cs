@@ -141,34 +141,6 @@ namespace System.Net
             return HostEntry;
         } // NativeToHostEntry
 
-        public static IPHostEntry GetHostByName(string hostName)
-        {
-            //
-            // IPv6 disabled: use gethostbyname() to obtain DNS information.
-            //
-            IntPtr nativePointer =
-                Interop.Winsock.gethostbyname(
-                    hostName);
-
-            if (nativePointer == IntPtr.Zero)
-            {
-                // Need to do this first since if we wait the last error code might be overwritten.
-                SocketException socketException = new SocketException();
-
-                IPAddress address;
-                if (IPAddress.TryParse(hostName, out address))
-                {
-                    IPHostEntry ipHostEntry = NameResolutionUtilities.GetUnresolvedAnswer(address);
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
-                    return ipHostEntry;
-                }
-
-                throw socketException;
-            }
-
-            return NativeToHostEntry(nativePointer);
-        }
-
         public static IPHostEntry GetHostByAddr(IPAddress address)
         {
             // TODO #2891: Optimize this (or decide if this legacy code can be removed):
