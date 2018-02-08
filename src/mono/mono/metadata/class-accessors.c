@@ -469,6 +469,33 @@ mono_class_get_dim_conflicts (MonoClass *klass)
 	return info->data;
 }
 
+/**
+ * mono_class_set_failure:
+ * \param klass class in which the failure was detected
+ * \param ex_type the kind of exception/error to be thrown (later)
+ * \param ex_data exception data (specific to each type of exception/error)
+ *
+ * Keep a detected failure informations in the class for later processing.
+ * Note that only the first failure is kept.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+gboolean
+mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error)
+{
+	g_assert (boxed_error != NULL);
+
+	if (mono_class_has_failure (klass))
+		return FALSE;
+
+	mono_loader_lock ();
+	klass->has_failure = 1;
+	mono_class_set_exception_data (klass, boxed_error);
+	mono_loader_unlock ();
+
+	return TRUE;
+}
+
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }
 #include "class-getters.h"
