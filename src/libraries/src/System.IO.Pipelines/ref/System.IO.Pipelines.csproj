@@ -10,11 +10,14 @@
     <Compile Include="System.IO.Pipelines.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
     <Reference Include="netstandard" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

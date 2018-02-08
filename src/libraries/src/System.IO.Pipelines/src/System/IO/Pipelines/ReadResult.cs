@@ -32,7 +32,7 @@ namespace System.IO.Pipelines
         }
 
         /// <summary>
-        /// The <see cref="ReadOnlyBuffer{Byte}"/> that was read
+        /// The <see cref="ReadOnlySequence{Byte}"/> that was read
         /// </summary>
         public ReadOnlySequence<byte> Buffer => ResultBuffer;
 

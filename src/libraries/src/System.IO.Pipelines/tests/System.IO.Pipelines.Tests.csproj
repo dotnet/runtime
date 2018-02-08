@@ -7,6 +7,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="BackpressureTests.cs" />
+    <Compile Include="FlushAsyncCancellationTests.cs" />
+    <Compile Include="FlushAsyncCompletionTests.cs" />
+    <Compile Include="FlushResultTests.cs" />
+    <Compile Include="PipeCompletionCallbacksTests.cs" />
+    <Compile Include="PipeLengthTests.cs" />
+    <Compile Include="PipelineReaderWriterFacts.cs" />
+    <Compile Include="PipePoolTests.cs" />
+    <Compile Include="PipeResetTests.cs" />
+    <Compile Include="PipeTest.cs" />
+    <Compile Include="PipeWriterTests.cs" />
+    <Compile Include="ReadAsyncCancellationTests.cs" />
+    <Compile Include="ReadAsyncCompletionTests.cs" />
+    <Compile Include="ReadResultTests.cs" />
+    <Compile Include="SchedulerFacts.cs" />
+    <Compile Include="TestMemoryPool.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
