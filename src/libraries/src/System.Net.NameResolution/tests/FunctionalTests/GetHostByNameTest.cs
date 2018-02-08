@@ -111,7 +111,6 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(Dns.GetHostName(), entry.HostName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [ActiveIssue(26789, TestPlatforms.OSX)]
         [Fact]
         public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
         {
