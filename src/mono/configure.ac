@@ -4144,7 +4144,7 @@ case $with_libgdiplus in
 	    a=/Library/Frameworks/Mono.framework/Versions/Current/lib/$libgdiplus_install_loc
 	    if test -x $a; then
 	      libgdiplus_install_loc=$a
-	      libgdiplus_loc="preinstalled at $a"
+	      libgdiplus_loc=$a
 	    fi
 	fi
     fi
