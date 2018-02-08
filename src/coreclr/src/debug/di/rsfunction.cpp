@@ -132,6 +132,10 @@ HRESULT CordbFunction::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugFunction3*>(this);
     }
+    else if (id == IID_ICorDebugFunction4)
+    {
+        *pInterface = static_cast<ICorDebugFunction4*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugFunction*>(this));
@@ -567,6 +571,38 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
         }
     }
     PUBLIC_API_END(hr);
+    return hr;
+}
+
+//-----------------------------------------------------------------------------
+// CordbFunction::CreateNativeBreakpoint
+//  Public method for ICorDebugFunction4::CreateNativeBreakpoint.
+//   Sets a breakpoint at native offset 0 for all native code versions of a method.
+// 
+// Parameters
+//   pnVersion - out parameter to hold the version number.
+// 
+// Returns:
+//   S_OK on success.
+//-----------------------------------------------------------------------------
+HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppBreakpoint, ICorDebugFunctionBreakpoint **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
+
+    RSExtSmartPtr<CordbILCode> pCode;
+
+    hr = GetILCode(&pCode);
+
+    if (SUCCEEDED(hr))
+    {        
+        hr = pCode->CreateNativeBreakpoint(ppBreakpoint);
+    }
+
     return hr;
 }
 
