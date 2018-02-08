@@ -16,106 +16,106 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class ManagedHandler_HttpProtocolTests : HttpProtocolTests
+    public sealed class SocketsHttpHandler_HttpProtocolTests : HttpProtocolTests
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
+    public sealed class SocketsHttpHandler_HttpProtocolTests_Dribble : HttpProtocolTests_Dribble
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientTest : HttpClientTest
+    public sealed class SocketsHttpHandler_HttpClientTest : HttpClientTest
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest
+    public sealed class SocketsHttpHandler_DiagnosticsTest : DiagnosticsTest
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest
+    public sealed class SocketsHttpHandler_HttpClientEKUTest : HttpClientEKUTest
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {
-        public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
-        protected override bool UseManagedHandler => true;
+        public SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest
+    public sealed class SocketsHttpHandler_PostScenarioTest : PostScenarioTest
     {
-        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseManagedHandler => true;
+        public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest
+    public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
     {
-        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseManagedHandler => true;
+        public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
+    public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
     {
-        public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseManagedHandler => true;
+        public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress
+    public sealed class SocketsHttpHandler_HttpClientMiniStress : HttpClientMiniStress
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest
+    public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
-        public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseManagedHandler => true;
+        public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest
+    public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
-        public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
-        protected override bool UseManagedHandler => true;
+        public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_IdnaProtocolTests : IdnaProtocolTests
+    public sealed class SocketsHttpHandler_IdnaProtocolTests : IdnaProtocolTests
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
         protected override bool SupportsIdna => true;
     }
 
-    public sealed class ManagedHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
+    public sealed class SocketsHttpHandler_HttpRetryProtocolTests : HttpRetryProtocolTests
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
     // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
@@ -123,20 +123,20 @@ namespace System.Net.Http.Functional.Tests
     // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
     // or we need to just recognize that cancellation in such situations can be left up to the caller to do the
     // same thing if it's really important.
-    //public sealed class ManagedHandler_CancellationTest : CancellationTest
+    //public sealed class SocketsHttpHandler_CancellationTest : CancellationTest
     //{
-    //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) { }
-    //    protected override bool UseManagedHandler => true;
+    //    public SocketsHttpHandler_CancellationTest(ITestOutputHelper output) : base(output) { }
+    //    protected override bool UseSocketsHttpHandler => true;
     //}
 
-    public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
 
         [Fact]
         public async Task SendBytesBackAndForthBetweenClientAndServer_Success()
@@ -265,9 +265,9 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class ManagedHandler_ConnectionUpgrade_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_ConnectionUpgrade_Test : HttpClientTestBase
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
 
         [Fact]
         public async Task UpgradeConnection_Success()
@@ -316,9 +316,9 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase
+    public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase
     {
-        protected override bool UseManagedHandler => true;
+        protected override bool UseSocketsHttpHandler => true;
 
         // TODO: Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
         // In theory they should pass with any handler that does appropriate connection pooling.
@@ -437,9 +437,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("PooledConnectionIdleTimeout")]
         public async Task SmallConnectionTimeout_SubsequentRequestUsesDifferentConnection(string timeoutPropertyName)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (var handler = new SocketsHttpHandler())
             {
-                SetManagedHandlerProperty(handler, timeoutPropertyName, TimeSpan.FromMilliseconds(1));
+                switch (timeoutPropertyName)
+                {
+                    case "PooledConnectionLifetime": handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(1); break;
+                    case "PooledConnectionIdleTimeout": handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(1); break;
+                    default: throw new ArgumentOutOfRangeException(nameof(timeoutPropertyName));
+                }
 
                 using (HttpClient client = new HttpClient(handler))
                 {
@@ -471,13 +476,6 @@ namespace System.Net.Http.Functional.Tests
                     });
                 }
             }
-        }
-
-        private static void SetManagedHandlerProperty(HttpClientHandler handler, string name, object value)
-        {
-            // TODO #23166: Use the managed API for ConnectionIdleTimeout when it's exposed
-            object managedHandler = handler.GetType().GetField("_managedHandler", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handler);
-            managedHandler.GetType().GetProperty(name).SetValue(managedHandler, value);
         }
     }
 }
