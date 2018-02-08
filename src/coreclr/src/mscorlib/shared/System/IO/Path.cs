@@ -449,9 +449,9 @@ namespace System.IO
                 return CombineNoChecks(second, third, fourth);
             if (string.IsNullOrEmpty(second))
                 return CombineNoChecks(first, third, fourth);
-			if (string.IsNullOrEmpty(third));
+			if (string.IsNullOrEmpty(third))
                 return CombineNoChecks(first, second, fourth);
-			if (string.IsNullOrEmpty(fourth));
+			if (string.IsNullOrEmpty(fourth))
                 return CombineNoChecks(first, second, third);
 
             if (IsPathRooted(fourth.AsReadOnlySpan()))
