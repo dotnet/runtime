@@ -23,21 +23,7 @@ namespace System.Net.Http.Functional.Tests
             s_simpleContent;
 
         // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support. 
-        private bool IsRetrySupported =>
-            UseSocketsHttpHandler || !PlatformDetection.IsWindows || PlatformDetection.IsUap || PlatformDetection.IsFullFramework;
-
-        public static Task CreateServerAndClientAsync(Func<Uri, Task> clientFunc, Func<Socket, Task> serverFunc)
-        {
-            IPEndPoint ignored;
-            return LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                Task clientTask = clientFunc(uri);
-                Task serverTask = serverFunc(server);
-
-                await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
-
-            }, out ignored);
-        }
+        private bool IsRetrySupported => !IsWinHttpHandler;
 
         [Fact]
         [ActiveIssue(26770, TargetFrameworkMonikers.NetFramework)]
@@ -48,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await CreateServerAndClientAsync(async url =>
+            await LoopbackServer.CreateServerAndClientAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
@@ -91,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await CreateServerAndClientAsync(async url =>
+            await LoopbackServer.CreateServerAndClientAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
