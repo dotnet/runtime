@@ -139,24 +139,6 @@ namespace System.Net
             };
         }
 
-        public static unsafe IPHostEntry GetHostByName(string hostName)
-        {
-            if (hostName == "")
-            {
-                // To match documented behavior on Windows, if an empty string is passed in, use the local host's name.
-                hostName = Dns.GetHostName();
-            }
-
-            Interop.Sys.HostEntry entry;
-            int err = Interop.Sys.GetHostByName(hostName, &entry);
-            if (err != 0)
-            {
-                throw SocketExceptionFactory.CreateSocketException(GetSocketErrorForErrno(err), err);
-            }
-
-            return CreateIPHostEntry(entry);
-        }
-
         public static unsafe IPHostEntry GetHostByAddr(IPAddress addr)
         {
             // TODO #2891: Optimize this (or decide if this legacy code can be removed):
