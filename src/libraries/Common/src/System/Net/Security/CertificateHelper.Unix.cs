@@ -14,7 +14,7 @@ namespace System.Net.Security
             X509Certificate2Collection candidateCerts;
             using (var myStore = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
-                myStore.Open(OpenFlags.OpenExistingOnly | OpenFlags.ReadOnly);
+                myStore.Open(OpenFlags.ReadOnly);
                 candidateCerts = myStore.Certificates;
             }
             

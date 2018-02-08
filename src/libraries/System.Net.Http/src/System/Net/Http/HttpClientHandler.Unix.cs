@@ -22,7 +22,7 @@ namespace System.Net.Http
         {
             if (UseManagedHandler)
             {
-                _managedHandler = new ManagedHandler();
+                _managedHandler = new ManagedHandler() { SslOptions = new SslClientAuthenticationOptions() };
                 _diagnosticsHandler = new DiagnosticsHandler(_managedHandler);
             }
             else
@@ -81,7 +81,19 @@ namespace System.Net.Http
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get => _curlHandler != null ? _curlHandler.ClientCertificateOptions : _managedHandler.ClientCertificateOptions;
+            get
+            {
+                if (_curlHandler != null)
+                {
+                    return _curlHandler.ClientCertificateOptions;
+                }
+                else
+                {
+                    return _managedHandler.SslOptions.LocalCertificateSelectionCallback != null ?
+                        ClientCertificateOption.Automatic :
+                        ClientCertificateOption.Manual;
+                }
+            }
             set
             {
                 if (_curlHandler != null)
@@ -90,18 +102,54 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.ClientCertificateOptions = value;
+                    switch (value)
+                    {
+                        case ClientCertificateOption.Manual:
+                            ThrowForModifiedManagedSslOptionsIfStarted();
+                            _managedHandler.SslOptions.LocalCertificateSelectionCallback = null;
+                            break;
+
+                        case ClientCertificateOption.Automatic:
+                            ThrowForModifiedManagedSslOptionsIfStarted();
+                            _managedHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate();
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(value));
+                    }
                 }
             }
         }
 
-        public X509CertificateCollection ClientCertificates => _curlHandler != null ?
-            _curlHandler.ClientCertificates :
-            _managedHandler.ClientCertificates;
+        public X509CertificateCollection ClientCertificates
+        {
+            get
+            {
+                if (_curlHandler != null)
+                {
+                    return _curlHandler.ClientCertificates;
+                }
+                else
+                {
+                    if (ClientCertificateOptions != ClientCertificateOption.Manual)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
+                    }
+
+                    return _managedHandler.SslOptions.ClientCertificates ??
+                        (_managedHandler.SslOptions.ClientCertificates = new X509CertificateCollection());
+                }
+            }
+        }
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
-            get => _curlHandler != null ? _curlHandler.ServerCertificateCustomValidationCallback : _managedHandler.ServerCertificateCustomValidationCallback;
+            get
+            {
+                return _curlHandler != null ?
+                    _curlHandler.ServerCertificateCustomValidationCallback :
+                    (_managedHandler.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
+            }
             set
             {
                 if (_curlHandler != null)
@@ -110,14 +158,17 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.ServerCertificateCustomValidationCallback = value;
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _managedHandler.SslOptions.RemoteCertificateValidationCallback = value != null ?
+                        new ConnectHelper.CertificateCallbackMapper(value).ForManagedHandler :
+                        null;
                 }
             }
         }
 
         public bool CheckCertificateRevocationList
         {
-            get => _curlHandler != null ? _curlHandler.CheckCertificateRevocationList : _managedHandler.CheckCertificateRevocationList;
+            get => _curlHandler != null ? _curlHandler.CheckCertificateRevocationList : _managedHandler.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
             set
             {
                 if (_curlHandler != null)
@@ -126,14 +177,15 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.CheckCertificateRevocationList = value;
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _managedHandler.SslOptions.CertificateRevocationCheckMode = value ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
                 }
             }
         }
 
         public SslProtocols SslProtocols
         {
-            get => _curlHandler != null ? _curlHandler.SslProtocols : _managedHandler.SslProtocols;
+            get => _curlHandler != null ? _curlHandler.SslProtocols : _managedHandler.SslOptions.EnabledSslProtocols;
             set
             {
                 if (_curlHandler != null)
@@ -142,7 +194,9 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.SslProtocols = value;
+                    SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _managedHandler.SslOptions.EnabledSslProtocols = value;
                 }
             }
         }
@@ -229,16 +283,12 @@ namespace System.Net.Http
 
         public bool UseDefaultCredentials
         {
-            get => _curlHandler != null ? _curlHandler.UseDefaultCredentials : _managedHandler.UseDefaultCredentials;
+            get => _curlHandler != null ? _curlHandler.UseDefaultCredentials : false;
             set
             {
                 if (_curlHandler != null)
                 {
                     _curlHandler.UseDefaultCredentials = value;
-                }
-                else
-                {
-                    _managedHandler.UseDefaultCredentials = value;
                 }
             }
         }
@@ -323,7 +373,7 @@ namespace System.Net.Http
             }
         }
 
-        public IDictionary<String, object> Properties => _curlHandler != null ?
+        public IDictionary<string, object> Properties => _curlHandler != null ?
             _curlHandler.Properties :
             _managedHandler.Properties;
 

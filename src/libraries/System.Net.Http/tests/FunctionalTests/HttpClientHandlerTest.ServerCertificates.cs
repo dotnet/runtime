@@ -45,6 +45,27 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void ServerCertificateCustomValidationCallback_SetGet_Roundtrips()
+        {
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            {
+                Assert.Null(handler.ServerCertificateCustomValidationCallback);
+
+                Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> callback1 = (req, cert, chain, policy) => throw new NotImplementedException("callback1");
+                Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> callback2 = (req, cert, chain, policy) => throw new NotImplementedException("callback2");
+
+                handler.ServerCertificateCustomValidationCallback = callback1;
+                Assert.Same(callback1, handler.ServerCertificateCustomValidationCallback);
+
+                handler.ServerCertificateCustomValidationCallback = callback2;
+                Assert.Same(callback2, handler.ServerCertificateCustomValidationCallback);
+
+                handler.ServerCertificateCustomValidationCallback = null;
+                Assert.Null(handler.ServerCertificateCustomValidationCallback);
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task NoCallback_ValidCertificate_SuccessAndExpectedPropertyBehavior()
