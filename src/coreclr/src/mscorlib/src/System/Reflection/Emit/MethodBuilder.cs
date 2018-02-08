@@ -125,6 +125,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Arg_NoStaticVirtual);
             }
 
+#if !FEATURE_DEFAULT_INTERFACES
             if ((attributes & MethodAttributes.SpecialName) != MethodAttributes.SpecialName)
             {
                 if ((type.Attributes & TypeAttributes.Interface) == TypeAttributes.Interface)
@@ -136,6 +137,7 @@ namespace System.Reflection.Emit
                         throw new ArgumentException(SR.Argument_BadAttributeOnInterfaceMethod);
                 }
             }
+#endif
 
             m_callingConvention = callingConvention;
 
