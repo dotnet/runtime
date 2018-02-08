@@ -59,8 +59,8 @@ namespace System.Net.WebSockets.Tests
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
             KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
             AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key);
-            DirectManagedHttpClientHandler handler = DirectManagedHttpClientHandler.CreateHandler();
-            using (HttpResponseMessage response = await handler.SendAsync(request, CancellationToken.None).ConfigureAwait(false))
+            var httpInvoker = new HttpMessageInvoker(new SocketsHttpHandler());
+            using (HttpResponseMessage response = await httpInvoker.SendAsync(request, CancellationToken.None).ConfigureAwait(false))
             {
                 Assert.Equal(HttpStatusCode.SwitchingProtocols, response.StatusCode);
                 using (Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
@@ -121,45 +121,6 @@ namespace System.Net.WebSockets.Tests
             public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
             public override void SetLength(long value) => throw new NotImplementedException();
             public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
-        }
-
-        private sealed class DirectManagedHttpClientHandler : HttpClientHandler
-        {
-            private const string ManagedHandlerEnvVar = "DOTNET_SYSTEM_NET_HTTP_USEMANAGEDHTTPCLIENTHANDLER";
-            private static readonly LocalDataStoreSlot s_managedHandlerSlot = GetSlot();
-            private static readonly object s_true = true;
-
-            private static LocalDataStoreSlot GetSlot()
-            {
-                LocalDataStoreSlot slot = Thread.GetNamedDataSlot(ManagedHandlerEnvVar);
-                if (slot != null)
-                {
-                    return slot;
-                }
-
-                try
-                {
-                    return Thread.AllocateNamedDataSlot(ManagedHandlerEnvVar);
-                }
-                catch (ArgumentException) // in case of a race condition where multiple threads all try to allocate the slot concurrently
-                {
-                    return Thread.GetNamedDataSlot(ManagedHandlerEnvVar);
-                }
-            }
-
-            public static DirectManagedHttpClientHandler CreateHandler()
-            {
-                Thread.SetData(s_managedHandlerSlot, s_true);
-                try
-                {
-                    return new DirectManagedHttpClientHandler();
-                }
-                finally { Thread.SetData(s_managedHandlerSlot, null); }
-            }
-
-            public new Task<HttpResponseMessage> SendAsync(
-                HttpRequestMessage request, CancellationToken cancellationToken) =>
-                base.SendAsync(request, cancellationToken);
         }
     }
 }

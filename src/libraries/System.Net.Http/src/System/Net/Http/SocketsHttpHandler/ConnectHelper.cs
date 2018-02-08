@@ -16,18 +16,18 @@ namespace System.Net.Http
     internal static class ConnectHelper
     {
         /// <summary>
-        /// Helper type used by HttpClientHandler when wrapping ManagedHandler to map its
+        /// Helper type used by HttpClientHandler when wrapping SocketsHttpHandler to map its
         /// certificate validation callback to the one used by SslStream.
         /// </summary>
         internal sealed class CertificateCallbackMapper
         {
             public readonly Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> FromHttpClientHandler;
-            public readonly RemoteCertificateValidationCallback ForManagedHandler;
+            public readonly RemoteCertificateValidationCallback ForSocketsHttpHandler;
 
             public CertificateCallbackMapper(Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> fromHttpClientHandler)
             {
                 FromHttpClientHandler = fromHttpClientHandler;
-                ForManagedHandler = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+                ForSocketsHttpHandler = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                     FromHttpClientHandler(sender as HttpRequestMessage, certificate as X509Certificate2, chain, sslPolicyErrors);
             }
         }
