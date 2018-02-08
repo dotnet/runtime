@@ -11,6 +11,7 @@
       <TargetPath>runtimes/win/lib/$(UAPvNextTFM)</TargetPath>
     </File>
     <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <!-- All elements from previous packages that will be included in the newly built package -->
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/netstandard1.3" />
