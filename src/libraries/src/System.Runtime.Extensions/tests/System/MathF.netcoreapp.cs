@@ -217,6 +217,9 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity, float.NaN,    0.0f)]
+        [InlineData(-3.14159265f,            float.NaN,    0.0f)]                               //                              value: -(pi)
+        [InlineData(-2.71828183f,            float.NaN,    0.0f)]                               //                              value: -(e)
+        [InlineData(-1.41421356f,            float.NaN,    0.0f)]                               //                              value: -(sqrt(2))
         [InlineData(-1.0f,                   3.14159265f,  CrossPlatformMachineEpsilon * 10)]   // expected:  (pi)
         [InlineData(-0.911733915f,           2.71828183f,  CrossPlatformMachineEpsilon * 10)]   // expected:  (e)
         [InlineData(-0.668201510f,           2.30258509f,  CrossPlatformMachineEpsilon * 10)]   // expected:  (ln(10))
@@ -234,6 +237,9 @@ namespace System.Tests
         [InlineData( 0.907167129f,           0.434294482f, CrossPlatformMachineEpsilon)]        // expected:  (log10(e))
         [InlineData( 0.949765715f,           0.318309886f, CrossPlatformMachineEpsilon)]        // expected:  (1 / pi)
         [InlineData( 1.0f,                   0.0f,         0.0f)]
+        [InlineData( 1.41421356f,            float.NaN,    0.0f)]                               //                              value:  (sqrt(2))
+        [InlineData( 2.71828183f,            float.NaN,    0.0f)]                               //                              value:  (e)
+        [InlineData( 3.14159265f,            float.NaN,    0.0f)]                               //                              value:  (pi)
         [InlineData( float.PositiveInfinity, float.NaN,    0.0f)]
         public static void Acos(float value, float expectedResult, float allowedVariance)
         {
@@ -242,6 +248,12 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,              0.0f)]                              //                                value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,              0.0f)]                              //                                value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,              0.0f)]                              //                                value: -(sqrt(2))
+        [InlineData(-1.0f,                    float.NaN,              0.0f)]
+        [InlineData(-0.693147181f,            float.NaN,              0.0f)]                              //                                value: -(ln(2))
+        [InlineData(-0.434294482f,            float.NaN,              0.0f)]                              //                                value: -(log10(e))
         [InlineData(-0.0f,                    float.NaN,              0.0f)]
         [InlineData( float.NaN,               float.NaN,              0.0f)]
         [InlineData( 0.0f,                    float.NaN,              0.0f)]
@@ -268,6 +280,9 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,    0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,    0.0f)]                              //                              value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,    0.0f)]                              //                              value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,    0.0f)]                              //                              value: -(sqrt(2))
         [InlineData(-1.0f,                   -1.57079633f,  CrossPlatformMachineEpsilon * 10)]  // expected: -(pi / 2)
         [InlineData(-0.991806244f,           -1.44269504f,  CrossPlatformMachineEpsilon * 10)]  // expected: -(log2(e))
         [InlineData(-0.987765946f,           -1.41421356f,  CrossPlatformMachineEpsilon * 10)]  // expected: -(sqrt(2))
@@ -297,6 +312,9 @@ namespace System.Tests
         [InlineData( 0.987765946f,            1.41421356f,  CrossPlatformMachineEpsilon * 10)]  // expected:  (sqrt(2))
         [InlineData( 0.991806244f,            1.44269504f,  CrossPlatformMachineEpsilon * 10)]  // expected:  (log2(e))
         [InlineData( 1.0f,                    1.57079633f,  CrossPlatformMachineEpsilon * 10)]  // expected:  (pi / 2)
+        [InlineData( 1.41421356f,             float.NaN,    0.0f)]                              //                              value:  (sqrt(2))
+        [InlineData( 2.71828183f,             float.NaN,    0.0f)]                              //                              value:  (e)
+        [InlineData( 3.14159265f,             float.NaN,    0.0f)]                              //                              value:  (pi)
         [InlineData( float.PositiveInfinity,  float.NaN,    0.0f)]
         public static void Asin(float value, float expectedResult, float allowedVariance)
         {
@@ -498,6 +516,9 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,              0.0f)]                              //                                value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,              0.0f)]                              //                                value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,              0.0f)]                              //                                value: -(sqrt(2))
         [InlineData(-1.0f,                    float.NegativeInfinity, CrossPlatformMachineEpsilon * 10)]
         [InlineData(-0.996272076f,           -3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(pi)
         [InlineData(-0.991328916f,           -2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(e)
@@ -531,6 +552,9 @@ namespace System.Tests
         [InlineData( 0.991328916f,            2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (e)
         [InlineData( 0.996272076f,            3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi)
         [InlineData( 1.0f,                    float.PositiveInfinity, 0.0f)]
+        [InlineData( 3.14159265f,             float.NaN,              0.0f)]                              //                                value:  (pi)
+        [InlineData( 2.71828183f,             float.NaN,              0.0f)]                              //                                value:  (e)
+        [InlineData( 1.41421356f,             float.NaN,              0.0f)]                              //                                value:  (sqrt(2))
         [InlineData( float.PositiveInfinity,  float.NaN,              0.0f)]
         public static void Atanh(float value, float expectedResult, float allowedVariance)
         {
@@ -788,6 +812,12 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,              0.0f)]                               //                               value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,              0.0f)]                               //                               value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,              0.0f)]                               //                               value: -(sqrt(2))
+        [InlineData(-1.0f,                    float.NaN,              0.0f)]
+        [InlineData(-0.693147181f,            float.NaN,              0.0f)]                               //                               value: -(ln(2))
+        [InlineData(-0.434294482f,            float.NaN,              0.0f)]                               //                               value: -(log10(e))
         [InlineData(-0.0f,                    float.NegativeInfinity, 0.0f)]
         [InlineData( float.NaN,               float.NaN,              0.0f)]
         [InlineData( 0.0f,                    float.NegativeInfinity, 0.0f)]
@@ -840,6 +870,12 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,              0.0f)]                                //                              value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,              0.0f)]                                //                              value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,              0.0f)]                                //                              value: -(sqrt(2))
+        [InlineData(-1.0f,                    float.NaN,              0.0f)]
+        [InlineData(-0.693147181f,            float.NaN,              0.0f)]                                //                              value: -(ln(2))
+        [InlineData(-0.434294482f,            float.NaN,              0.0f)]                                //                              value: -(log10(e))
         [InlineData(-0.0f,                    float.NegativeInfinity, 0.0f)]
         [InlineData( float.NaN,               float.NaN,              0.0f)]
         [InlineData( 0.0f,                    float.NegativeInfinity, 0.0f)]
