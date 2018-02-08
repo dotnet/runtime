@@ -8480,7 +8480,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 src1 = id->idReg1();
             }
 
-            // encode source operand reg in 'vvvv' bits in 1's compliement form
+            // encode source operand reg in 'vvvv' bits in 1's complement form
             code = insEncodeReg3456(ins, src1, size, code);
         }
         else if (IsDstSrcSrcAVXInstruction(ins))
@@ -10614,7 +10614,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     unsigned regCode = insEncodeReg345(ins, targetReg, size, &code);
     regCode |= insEncodeReg012(ins, src2, size, &code);
-    // encode source operand reg in 'vvvv' bits in 1's compliement form
+    // encode source operand reg in 'vvvv' bits in 1's complement form
     code = insEncodeReg3456(ins, src1, size, code);
 
     // Output the REX prefix
@@ -12174,7 +12174,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // For this format, moves do not support a third operand, so we only need to handle the binary ops.
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
-                    // encode source operand reg in 'vvvv' bits in 1's compliement form
+                    // encode source operand reg in 'vvvv' bits in 1's complement form
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
 
@@ -12202,7 +12202,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
-                    // encode source operand reg in 'vvvv' bits in 1's compliement form
+                    // encode source operand reg in 'vvvv' bits in 1's complement form
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
 
@@ -12228,7 +12228,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg2(), size, code);
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -12255,7 +12255,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg2(), size, code);
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -12278,7 +12278,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // For this format, moves do not support a third operand, so we only need to handle the binary ops.
             if (IsDstDstSrcAVXInstruction(ins))
             {
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
             }
 
@@ -12337,7 +12337,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // For this format, moves do not support a third operand, so we only need to handle the binary ops.
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
-                    // encode source operand reg in 'vvvv' bits in 1's compliement form
+                    // encode source operand reg in 'vvvv' bits in 1's complement form
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
 
@@ -12363,7 +12363,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
-                    // encode source operand reg in 'vvvv' bits in 1's compliement form
+                    // encode source operand reg in 'vvvv' bits in 1's complement form
                     code = insEncodeReg3456(ins, id->idReg1(), size, code);
                 }
 
@@ -12389,7 +12389,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg2(), size, code);
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -12416,7 +12416,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = AddVexPrefixIfNeeded(ins, code, size);
 
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg2(), size, code);
 
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
@@ -12438,7 +12438,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // For this format, moves do not support a third operand, so we only need to handle the binary ops.
             if (IsDstDstSrcAVXInstruction(ins))
             {
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
             }
 
@@ -12461,7 +12461,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // For this format, moves do not support a third operand, so we only need to handle the binary ops.
             if (IsDstDstSrcAVXInstruction(ins))
             {
-                // encode source operand reg in 'vvvv' bits in 1's compliement form
+                // encode source operand reg in 'vvvv' bits in 1's complement form
                 code = insEncodeReg3456(ins, id->idReg1(), size, code);
             }
 
