@@ -96,6 +96,21 @@ namespace Arm64intrisicsTest
             testBinOp<TBaseType, TVectorType, TBaseType, TVectorType>(testCaseDescription, binOp, check);
         }
 
+        static void dumpVector<TBaseType, TVectorType>(String name, TVectorType vector)
+            where TBaseType : struct, IComparable
+            where TVectorType : new()
+        {
+            var result = writeVector<TBaseType, TVectorType>(vector);
+
+            Console.Write(name);
+            Console.Write(" : { ");
+            for (int i = 0; i < result.Length; i++)
+            {
+                Console.Write($"{result[i]} ");
+            }
+            Console.WriteLine("}");
+        }
+
         static void testBinOp<TBaseType, TVectorType, TBaseReturnType, TVectorReturnType>(String testCaseDescription,
                                                       Func<TVectorType, TVectorType, TVectorReturnType> binOp,
                                                       Func<TBaseType, TBaseType, TBaseReturnType> check)
@@ -126,6 +141,9 @@ namespace Arm64intrisicsTest
                         if(!failed)
                         {
                             Console.WriteLine($"testBinOp<{typeof(TBaseType).Name}, {typeof(TVectorType).Name} >{testCaseDescription}: Check Failed");
+                            dumpVector<TBaseType, TVectorType>("vLeft", vLeft);
+                            dumpVector<TBaseType, TVectorType>("vRight", vRight);
+                            dumpVector<TBaseReturnType, TVectorReturnType>("vResult", vResult);
                         }
                         Console.WriteLine($"check({left[i]}, {right[i]}) : result[{i}] = {result[i]}, expected {expected}");
                         failed = true;
