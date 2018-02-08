@@ -7,7 +7,8 @@ namespace Tracing.Tests
     class EventPipeSmoke
     {
         private static int allocIterations = 10000;
-        private static int trivialSize = 0x100000;
+        private static bool zapDisabled = Int32.Parse(Environment.GetEnvironmentVariable("COMPlus_ZapDisable") ?? "0") > 0;
+        private static int trivialSize = zapDisabled ? 64 * 1024 : 1 * 1024 * 1024;
 
         static int Main(string[] args)
         {
@@ -39,6 +40,7 @@ namespace Tracing.Tests
             Console.WriteLine("\tEnd: Disable tracing.\n");
 
             FileInfo outputMeta = new FileInfo(outputFilename);
+            Console.WriteLine("\tExpecting at least {0} bytes of data", trivialSize);
             Console.WriteLine("\tCreated {0} bytes of data", outputMeta.Length);
 
             bool pass = false;
