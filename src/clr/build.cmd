@@ -139,6 +139,7 @@ set __BuildTests=1
 set __BuildPackages=1
 set __BuildNativeCoreLib=1
 set __RestoreOptData=1
+set __GenerateLayout=0
 set __CrossgenAltJit=
 
 @REM CMD has a nasty habit of eating "=" on the argument list, so passing:
@@ -224,6 +225,7 @@ if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!proc
 if /i "%1" == "skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "generatelayout"      (set __GenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -771,6 +773,23 @@ if %__BuildTests% EQU 1 (
 
     if not !errorlevel! == 0 (
         REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
+        exit /b 1
+    )
+) else if %__GenerateLayout% EQU 1 (
+    echo %__MsgPrefix%Generating layout for %__BuildOS%.%__BuildArch%.%__BuildType%
+
+    REM Construct the arguments to pass to the runtest build script.
+
+    rem arm64 builds currently use private toolset which has not been released yet
+    REM TODO, remove once the toolset is open.
+    if not "%__ToolsetDir%" == "" call :PrivateToolSet
+
+    set NEXTCMD=call %__ProjectDir%\test\runtest.cmd %__BuildArch% %__BuildType% GenerateLayoutOnly %__UnprocessedBuildArgs%
+    echo %__MsgPrefix%!NEXTCMD!
+    !NEXTCMD!
+
+    if not !errorlevel! == 0 (
+        REM runtest.cmd has already emitted an error message and mentioned the build log file to examine.
         exit /b 1
     )
 )
