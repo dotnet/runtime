@@ -134,8 +134,7 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     assert(compGeneratingProlog);
 #endif
 
-    FuncInfoDsc* func = funCurrentFunc();
-
+    FuncInfoDsc* func     = funCurrentFunc();
     unsigned int cbProlog = 0;
     if (compGeneratingProlog)
     {
@@ -213,12 +212,18 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 
 void Compiler::unwindAllocStackCFI(unsigned size)
 {
+#if defined(_TARGET_ARM_)
+    assert(compGeneratingEpilog);
+#else
     assert(compGeneratingProlog);
-
-    FuncInfoDsc* func = funCurrentFunc();
-
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
+#endif
+    FuncInfoDsc* func     = funCurrentFunc();
+    unsigned int cbProlog = 0;
+    if (compGeneratingProlog)
+    {
+        cbProlog = unwindGetCurrentOffset(func);
+        noway_assert((BYTE)cbProlog == cbProlog);
+    }
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, size);
 }
 
@@ -231,11 +236,18 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 //
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
+#if defined(_TARGET_ARM_)
+    assert(compGeneratingEpilog);
+#else
     assert(compGeneratingProlog);
-    FuncInfoDsc* func = funCurrentFunc();
-
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
+#endif
+    FuncInfoDsc* func     = funCurrentFunc();
+    unsigned int cbProlog = 0;
+    if (compGeneratingProlog)
+    {
+        cbProlog = unwindGetCurrentOffset(func);
+        noway_assert((BYTE)cbProlog == cbProlog);
+    }
 
     createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
     if (offset != 0)
