@@ -51,7 +51,38 @@ namespace System.IO.Pipelines
         /// </summary>
         public virtual PipeAwaiter<FlushResult> WriteAsync(ReadOnlyMemory<byte> source)
         {
-            this.Write(source.Span);
+            Span<byte> destination = GetSpan();
+            var sourceSpan = source.Span;
+            // Fast path, try copying to the available memory directly
+            if (sourceSpan.Length <= destination.Length)
+            {
+                sourceSpan.CopyTo(destination);
+                Advance(sourceSpan.Length);
+                return FlushAsync();
+            }
+
+            var remaining = sourceSpan.Length;
+            var offset = 0;
+
+            while (remaining > 0)
+            {
+                var writable = Math.Min(remaining, destination.Length);
+
+                destination = GetSpan(writable);
+
+                if (writable == 0)
+                {
+                    continue;
+                }
+
+                sourceSpan.Slice(offset, writable).CopyTo(destination);
+
+                remaining -= writable;
+                offset += writable;
+
+                Advance(writable);
+            }
+
             return FlushAsync();
         }
     }

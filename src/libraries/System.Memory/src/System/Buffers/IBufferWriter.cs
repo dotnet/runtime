@@ -9,19 +9,19 @@ namespace System.Buffers
     public interface IBufferWriter
     {
         /// <summary>
-        /// Notifies <see cref="IBufferWriter"/> that <paramref  cref="bytes"/> amount of data was written to <see cref="Span{Byte}"/>/<see cref="Memory{Byte}"/>
+        /// Notifies <see cref="IBufferWriter"/> that <paramref name="bytes"/> amount of data was written to <see cref="Span{Byte}"/>/<see cref="Memory{Byte}"/>
         /// </summary>
         void Advance(int bytes);
 
         /// <summary>
-        /// Requests the <see cref="Memory{Byte}"/> of at least <paramref  cref="minimumLength"/> in size.
-        /// If <see cref="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
+        /// Requests the <see cref="Memory{Byte}"/> of at least <paramref name="minimumLength"/> in size.
+        /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
         Memory<byte> GetMemory(int minimumLength = 0);
 
         /// <summary>
-        /// Requests the <see cref="Span{Byte}"/> of at least <paramref  cref="minimumLength"/> in size.
-        /// If <see cref="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
+        /// Requests the <see cref="Span{Byte}"/> of at least <paramref name="minimumLength"/> in size.
+        /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
         Span<byte> GetSpan(int minimumLength = 0);
     }

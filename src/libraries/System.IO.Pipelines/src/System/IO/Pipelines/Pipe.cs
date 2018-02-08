@@ -11,7 +11,7 @@ namespace System.IO.Pipelines
     /// <summary>
     /// Default <see cref="PipeWriter"/> and <see cref="PipeReader"/> implementation.
     /// </summary>
-    public sealed class Pipe : IPipeAwaiter<ReadResult>, IPipeAwaiter<FlushResult>
+    public sealed class Pipe
     {
         private const int SegmentPoolSize = 16;
 
@@ -61,6 +61,9 @@ namespace System.IO.Pipelines
 
         private bool _disposed;
 
+        private DefaultPipeReader _reader;
+        private DefaultPipeWriter _writer;
+
         internal long Length => _length;
 
         /// <summary>
@@ -97,6 +100,10 @@ namespace System.IO.Pipelines
 
             _bufferSegmentPool = new BufferSegment[SegmentPoolSize];
 
+            _readingState = default;
+            _readerCompletion = default;
+            _writerCompletion = default;
+
             _pool = options.Pool;
             _minimumSegmentSize = options.MinimumSegmentSize;
             _maximumSizeHigh = options.PauseWriterThreshold;
@@ -105,8 +112,8 @@ namespace System.IO.Pipelines
             _writerScheduler = options.WriterScheduler ?? PipeScheduler.Inline;
             _readerAwaitable = new PipeAwaitable(completed: false);
             _writerAwaitable = new PipeAwaitable(completed: true);
-            Reader = new DefaultPipeReader(this);
-            Writer = new DefaultPipeWriter(this);
+            _reader = new DefaultPipeReader(this);
+            _writer = new DefaultPipeWriter(this);
         }
 
         private void ResetState()
@@ -315,7 +322,7 @@ namespace System.IO.Pipelines
 
             TrySchedule(_readerScheduler, awaitable);
 
-            return new PipeAwaiter<FlushResult>(this);
+            return new PipeAwaiter<FlushResult>(_writer);
         }
 
         internal void CompleteWriter(Exception exception)
@@ -490,9 +497,6 @@ namespace System.IO.Pipelines
             }
         }
 
-        /// <summary>
-        /// Cancel to currently pending call to <see cref="ReadAsync"/> without completing the <see cref="PipeReader"/>.
-        /// </summary>
         internal void CancelPendingRead()
         {
             Action awaitable;
@@ -503,9 +507,6 @@ namespace System.IO.Pipelines
             TrySchedule(_readerScheduler, awaitable);
         }
 
-        /// <summary>
-        /// Cancel to currently pending call to <see cref="WritableBuffer.FlushAsync"/> without completing the <see cref="PipeWriter"/>.
-        /// </summary>
         internal void CancelPendingFlush()
         {
             Action awaitable;
@@ -547,7 +548,7 @@ namespace System.IO.Pipelines
                 cancellationTokenRegistration = _readerAwaitable.AttachToken(token, _signalReaderAwaitable, this);
             }
             cancellationTokenRegistration.Dispose();
-            return new PipeAwaiter<ReadResult>(this);
+            return new PipeAwaiter<ReadResult>(_reader);
         }
 
         internal bool TryRead(out ReadResult result)
@@ -618,9 +619,9 @@ namespace System.IO.Pipelines
             }
         }
 
-        bool IPipeAwaiter<ReadResult>.IsCompleted => _readerAwaitable.IsCompleted;
+        internal bool IsReadAsyncCompleted => _readerAwaitable.IsCompleted;
 
-        void IPipeAwaiter<ReadResult>.OnCompleted(Action continuation)
+        internal void OnReadAsyncCompleted(Action continuation)
         {
             Action awaitable;
             bool doubleCompletion;
@@ -635,7 +636,7 @@ namespace System.IO.Pipelines
             TrySchedule(_readerScheduler, awaitable);
         }
 
-        ReadResult IPipeAwaiter<ReadResult>.GetResult()
+        internal ReadResult GetReadAsyncResult()
         {
             if (!_readerAwaitable.IsCompleted)
             {
@@ -682,9 +683,9 @@ namespace System.IO.Pipelines
             }
         }
 
-        bool IPipeAwaiter<FlushResult>.IsCompleted => _writerAwaitable.IsCompleted;
+        internal bool IsFlushAsyncCompleted => _writerAwaitable.IsCompleted;
 
-        FlushResult IPipeAwaiter<FlushResult>.GetResult()
+        internal FlushResult GetFlushAsyncResult()
         {
             var result = new FlushResult();
             lock (_sync)
@@ -708,7 +709,7 @@ namespace System.IO.Pipelines
             return result;
         }
 
-        void IPipeAwaiter<FlushResult>.OnCompleted(Action continuation)
+        internal void OnFlushAsyncCompleted(Action continuation)
         {
             Action awaitable;
             bool doubleCompletion;
@@ -743,10 +744,19 @@ namespace System.IO.Pipelines
             TrySchedule(_writerScheduler, action);
         }
 
-        public PipeReader Reader { get; }
+        /// <summary>
+        /// Gets the <see cref="PipeReader"/> for this pipe.
+        /// </summary>
+        public PipeReader Reader => _reader;
 
-        public PipeWriter Writer { get; }
+        /// <summary>
+        /// Gets the <see cref="PipeWriter"/> for this pipe.
+        /// </summary>
+        public PipeWriter Writer => _writer;
 
+        /// <summary>
+        /// Resets the pipe
+        /// </summary>
         public void Reset()
         {
             lock (_sync)
@@ -761,7 +771,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        private sealed class DefaultPipeReader : PipeReader
+        private sealed class DefaultPipeReader : PipeReader, IPipeAwaiter<ReadResult>
         {
             private readonly Pipe _pipe;
 
@@ -804,9 +814,15 @@ namespace System.IO.Pipelines
             {
                 _pipe.OnWriterCompleted(callback, state);
             }
+
+            public bool IsCompleted => _pipe.IsReadAsyncCompleted;
+
+            public ReadResult GetResult() => _pipe.GetReadAsyncResult();
+
+            public void OnCompleted(Action continuation) => _pipe.OnReadAsyncCompleted(continuation);
         }
 
-        private sealed class DefaultPipeWriter : PipeWriter
+        private sealed class DefaultPipeWriter : PipeWriter, IPipeAwaiter<FlushResult>
         {
             private readonly Pipe _pipe;
 
@@ -854,6 +870,12 @@ namespace System.IO.Pipelines
             {
                 return _pipe.GetSpan(minimumLength);
             }
+
+            public bool IsCompleted => _pipe.IsFlushAsyncCompleted;
+
+            public FlushResult GetResult() => _pipe.GetFlushAsyncResult();
+
+            public void OnCompleted(Action continuation) => _pipe.OnFlushAsyncCompleted(continuation);
         }
     }
 }
