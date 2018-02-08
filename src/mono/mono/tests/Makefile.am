@@ -959,7 +959,9 @@ CI_DISABLED_TESTS = \
 # failing tests which we temporarily disable for PRs
 # so they don't interfere with other people's work
 CI_PR_DISABLED_TESTS = \
-	appdomain-threadpool-unload.exe
+	appdomain-threadpool-unload.exe \
+	monitor-abort.exe \
+	monitor-wait-abort.exe
 
 if ENABLE_COOP
 CI_PR_DISABLED_TESTS += \
