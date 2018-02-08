@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Globalization;
-using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -26,7 +24,7 @@ namespace System.Net.Http
         {
             if (UseManagedHandler)
             {
-                _managedHandler = new ManagedHandler();
+                _managedHandler = new ManagedHandler() { SslOptions = new SslClientAuthenticationOptions() };
                 _diagnosticsHandler = new DiagnosticsHandler(_managedHandler);
             }
             else
@@ -100,22 +98,6 @@ namespace System.Net.Http
                 else
                 {
                     _managedHandler.CookieContainer = value;
-                }
-            }
-        }
-
-        public ClientCertificateOption ClientCertificateOptions
-        {
-            get => _winHttpHandler != null ? _winHttpHandler.ClientCertificateOption : _managedHandler.ClientCertificateOptions;
-            set
-            {
-                if (_winHttpHandler != null)
-                {
-                    _winHttpHandler.ClientCertificateOption = value;
-                }
-                else
-                {
-                    _managedHandler.ClientCertificateOptions = value;
                 }
             }
         }
@@ -207,7 +189,7 @@ namespace System.Net.Http
             //
             // This property only affect .ServerCredentials and not .DefaultProxyCredentials.
 
-            get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials : _managedHandler.UseDefaultCredentials;
+            get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials : false;
             set
             {
                 if (_winHttpHandler != null)
@@ -224,10 +206,6 @@ namespace System.Net.Http
                             _winHttpHandler.ServerCredentials = null;
                         }
                     }
-                }
-                else
-                {
-                    _managedHandler.UseDefaultCredentials = value;
                 }
             }
         }
@@ -312,13 +290,77 @@ namespace System.Net.Http
             }
         }
 
-        public X509CertificateCollection ClientCertificates => _winHttpHandler != null ?
-            _winHttpHandler.ClientCertificates :
-            _managedHandler.ClientCertificates;
-        
+        public ClientCertificateOption ClientCertificateOptions
+        {
+            get
+            {
+                if (_winHttpHandler != null)
+                {
+                    return _winHttpHandler.ClientCertificateOption;
+                }
+                else
+                {
+                    return _managedHandler.SslOptions.LocalCertificateSelectionCallback != null ?
+                        ClientCertificateOption.Automatic :
+                        ClientCertificateOption.Manual;
+                }
+            }
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.ClientCertificateOption = value;
+                }
+                else
+                {
+                    switch (value)
+                    {
+                        case ClientCertificateOption.Manual:
+                            ThrowForModifiedManagedSslOptionsIfStarted();
+                            _managedHandler.SslOptions.LocalCertificateSelectionCallback = null;
+                            break;
+
+                        case ClientCertificateOption.Automatic:
+                            ThrowForModifiedManagedSslOptionsIfStarted();
+                            _managedHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate();
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                }
+            }
+        }
+
+        public X509CertificateCollection ClientCertificates
+        {
+            get
+            {
+                if (_winHttpHandler != null)
+                {
+                    return _winHttpHandler.ClientCertificates;
+                }
+                else
+                {
+                    if (ClientCertificateOptions != ClientCertificateOption.Manual)
+                    {
+                        throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
+                    }
+
+                    return _managedHandler.SslOptions.ClientCertificates ??
+                        (_managedHandler.SslOptions.ClientCertificates = new X509CertificateCollection());
+                }
+            }
+        }
+
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
-            get => _winHttpHandler != null ? _winHttpHandler.ServerCertificateValidationCallback : _managedHandler.ServerCertificateCustomValidationCallback;
+            get
+            {
+                return _winHttpHandler != null ?
+                    _winHttpHandler.ServerCertificateValidationCallback :
+                    (_managedHandler.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
+            }
             set
             {
                 if (_winHttpHandler != null)
@@ -327,14 +369,17 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.ServerCertificateCustomValidationCallback = value;
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _managedHandler.SslOptions.RemoteCertificateValidationCallback = value != null ?
+                        new ConnectHelper.CertificateCallbackMapper(value).ForManagedHandler :
+                        null;
                 }
             }
         }
 
         public bool CheckCertificateRevocationList
         {
-            get => _winHttpHandler != null ? _winHttpHandler.CheckCertificateRevocationList : _managedHandler.CheckCertificateRevocationList;
+            get => _winHttpHandler != null ? _winHttpHandler.CheckCertificateRevocationList : _managedHandler.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
             set
             {
                 if (_winHttpHandler != null)
@@ -343,14 +388,15 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.CheckCertificateRevocationList = value;
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _managedHandler.SslOptions.CertificateRevocationCheckMode = value ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
                 }
             }
         }
 
         public SslProtocols SslProtocols
         {
-            get => _winHttpHandler != null ? _winHttpHandler.SslProtocols : _managedHandler.SslProtocols;
+            get => _winHttpHandler != null ? _winHttpHandler.SslProtocols : _managedHandler.SslOptions.EnabledSslProtocols;
             set
             {
                 if (_winHttpHandler != null)
@@ -359,16 +405,17 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.SslProtocols = value;
+                    SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
+                    ThrowForModifiedManagedSslOptionsIfStarted();
+                    _managedHandler.SslOptions.EnabledSslProtocols = value;
                 }
             }
         }
 
-        public IDictionary<String, object> Properties => _winHttpHandler != null ?
+        public IDictionary<string, object> Properties => _winHttpHandler != null ?
             _winHttpHandler.Properties :
             _managedHandler.Properties;
         
-
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

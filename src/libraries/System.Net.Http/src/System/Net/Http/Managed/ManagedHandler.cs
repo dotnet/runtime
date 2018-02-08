@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -51,22 +49,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._cookieContainer = value;
-            }
-        }
-
-        public ClientCertificateOption ClientCertificateOptions
-        {
-            get => _settings._clientCertificateOptions;
-            set
-            {
-                if (value != ClientCertificateOption.Manual &&
-                    value != ClientCertificateOption.Automatic)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                CheckDisposedOrStarted();
-                _settings._clientCertificateOptions = value;
             }
         }
 
@@ -117,16 +99,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._preAuthenticate = value;
-            }
-        }
-
-        public bool UseDefaultCredentials
-        {
-            get => _settings._useDefaultCredentials;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._useDefaultCredentials = value;
             }
         }
 
@@ -195,47 +167,13 @@ namespace System.Net.Http
             }
         }
 
-        public X509CertificateCollection ClientCertificates
+        public SslClientAuthenticationOptions SslOptions
         {
-            get
-            {
-                if (_settings._clientCertificateOptions != ClientCertificateOption.Manual)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
-                }
-
-                return _settings._clientCertificates ?? (_settings._clientCertificates = new X509Certificate2Collection());
-            }
-        }
-
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
-        {
-            get => _settings._serverCertificateCustomValidationCallback;
+            get => _settings._sslOptions;
             set
             {
                 CheckDisposedOrStarted();
-                _settings._serverCertificateCustomValidationCallback = value;
-            }
-        }
-
-        public bool CheckCertificateRevocationList
-        {
-            get => _settings._checkCertificateRevocationList;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._checkCertificateRevocationList = value;
-            }
-        }
-
-        public SslProtocols SslProtocols
-        {
-            get => _settings._sslProtocols;
-            set
-            {
-                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
-                CheckDisposedOrStarted();
-                _settings._sslProtocols = value;
+                _settings._sslOptions = value;
             }
         }
 
@@ -285,38 +223,39 @@ namespace System.Net.Http
 
         private HttpMessageHandler SetupHandlerChain()
         {
-            HttpMessageHandler handler = new HttpConnectionHandler(_settings);
+            // Clone the settings to get a relatively consistent view that won't change after this point.
+            // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
+            HttpConnectionSettings settings = _settings.Clone();
 
-            if (_settings._useProxy &&
-                (_settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
+            HttpMessageHandler handler = new HttpConnectionHandler(settings);
+
+            if (settings._useProxy && (settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
             {
-                handler = new HttpProxyConnectionHandler(_settings, handler);
+                handler = new HttpProxyConnectionHandler(settings, handler);
             }
 
-            if (_settings._useCookies)
+            if (settings._useCookies)
             {
                 handler = new CookieHandler(CookieContainer, handler);
             }
 
-            if (_settings._credentials != null || _settings._allowAutoRedirect)
+            if (settings._credentials != null || settings._allowAutoRedirect)
             {
-                handler = new AuthenticateAndRedirectHandler(_settings._preAuthenticate, _settings._credentials, _settings._allowAutoRedirect, _settings._maxAutomaticRedirections, handler);
+                handler = new AuthenticateAndRedirectHandler(settings._preAuthenticate, settings._credentials, settings._allowAutoRedirect, settings._maxAutomaticRedirections, handler);
             }
 
-            if (_settings._automaticDecompression != DecompressionMethods.None)
+            if (settings._automaticDecompression != DecompressionMethods.None)
             {
-                handler = new DecompressionHandler(_settings._automaticDecompression, handler);
+                handler = new DecompressionHandler(settings._automaticDecompression, handler);
             }
 
-            if (Interlocked.CompareExchange(ref _handler, handler, null) == null)
-            {
-                return handler;
-            }
-            else
+            // Ensure a single handler is used for all requests.
+            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
             {
                 handler.Dispose();
-                return _handler;
             }
+
+            return _handler;
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(
