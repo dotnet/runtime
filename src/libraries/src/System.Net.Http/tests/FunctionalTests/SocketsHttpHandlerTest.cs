@@ -120,6 +120,11 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandler_HttpCookieProtocolTests : HttpCookieProtocolTests
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
     // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's
     // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
