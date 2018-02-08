@@ -2120,6 +2120,12 @@
         "4.0.3.0": "4.5.0"
       }
     },
+    "System.IO.Pipelines": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "System.IO.Pipes": {
       "StableVersions": [
         "4.0.0",
