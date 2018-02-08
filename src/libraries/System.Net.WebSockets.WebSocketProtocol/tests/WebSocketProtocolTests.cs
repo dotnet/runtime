@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -55,19 +56,41 @@ namespace System.Net.WebSockets.Tests
         [MemberData(nameof(EchoServers))]
         public async Task WebSocketProtocol_CreateFromConnectedStream_Succeeds(Uri echoUri)
         {
-            Uri uri = new UriBuilder(echoUri) { Scheme = (echoUri.Scheme == "ws") ? "http" : "https" }.Uri;
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri);
-            KeyValuePair<string, string> secKeyAndSecWebSocketAccept = CreateSecKeyAndSecWebSocketAccept();
-            AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key);
-            var httpInvoker = new HttpMessageInvoker(new SocketsHttpHandler());
-            using (HttpResponseMessage response = await httpInvoker.SendAsync(request, CancellationToken.None).ConfigureAwait(false))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Equal(HttpStatusCode.SwitchingProtocols, response.StatusCode);
-                using (Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                bool secure = echoUri.Scheme == "wss";
+                client.Connect(echoUri.Host, secure ? 443 : 80);
+
+                Stream stream = new NetworkStream(client, ownsSocket: false);
+                if (secure)
                 {
-                    Assert.True(connectedStream.CanRead);
-                    Assert.True(connectedStream.CanWrite);
-                    using (WebSocket socket = WebSocketProtocol.CreateFromStream(connectedStream, false, null, TimeSpan.FromSeconds(10)))
+                    SslStream ssl = new SslStream(stream, leaveInnerStreamOpen: true, delegate { return true; });
+                    await ssl.AuthenticateAsClientAsync(echoUri.Host);
+                    stream = ssl;
+                }
+
+                using (stream)
+                {
+                    using (var writer = new StreamWriter(stream, Encoding.ASCII, bufferSize: 1, leaveOpen: true))
+                    {
+                        await writer.WriteAsync($"GET {echoUri.PathAndQuery} HTTP/1.1\r\n");
+                        await writer.WriteAsync($"Host: {echoUri.Host}\r\n");
+                        await writer.WriteAsync($"Upgrade: websocket\r\n");
+                        await writer.WriteAsync($"Connection: Upgrade\r\n");
+                        await writer.WriteAsync($"Sec-WebSocket-Version: 13\r\n");
+                        await writer.WriteAsync($"Sec-WebSocket-Key: {Convert.ToBase64String(Guid.NewGuid().ToByteArray())}\r\n");
+                        await writer.WriteAsync($"\r\n");
+                    }
+
+                    using (var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, bufferSize: 1, leaveOpen: true))
+                    {
+                        string statusLine = await reader.ReadLineAsync();
+                        Assert.NotEmpty(statusLine);
+                        Assert.Equal("HTTP/1.1 101 Switching Protocols", statusLine);
+                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync()));
+                    }
+
+                    using (WebSocket socket = WebSocketProtocol.CreateFromStream(stream, false, null, TimeSpan.FromSeconds(10)))
                     {
                         Assert.NotNull(socket);
                         Assert.Equal(WebSocketState.Open, socket.State);
@@ -86,28 +109,6 @@ namespace System.Net.WebSockets.Tests
         }
 
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
-
-        /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
-        private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
-        private static KeyValuePair<string, string> CreateSecKeyAndSecWebSocketAccept()
-        {
-            string secKey = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-            using (SHA1 sha = SHA1.Create())
-            {
-                return new KeyValuePair<string, string>(
-                    secKey,
-                    Convert.ToBase64String(sha.ComputeHash(Encoding.ASCII.GetBytes(secKey + WSServerGuid))));
-            }
-        }
-
-        private static void AddWebSocketHeaders(HttpRequestMessage request, string secKey)
-        {
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Connection, HttpKnownHeaderNames.Upgrade);
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Upgrade, "websocket");
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketVersion, "13");
-            request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.SecWebSocketKey, secKey);
-        }
 
         private sealed class UnreadableStream : Stream
         {
