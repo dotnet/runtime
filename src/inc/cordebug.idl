@@ -5427,6 +5427,23 @@ interface ICorDebugFunction3 : IUnknown
 };
 
 /*
+ICorDebugFunction4 is a logical extension to ICorDebugFunction.
+*/
+[
+    object,
+    local,
+    uuid(72965963-34fd-46e9-9434-b817fe6e7f43),
+    pointer_default(unique)
+]
+interface ICorDebugFunction4 : IUnknown
+{
+    /*
+     * Sets a breakpoint at offset 0 of any current or future jitted methods. 
+     */
+    HRESULT CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
+};
+
+/*
     ICorDebugCode represents an IL or native code blob.
  
     For methods that take offsets, the units are the same as the units on the CordbCode object.
@@ -5677,7 +5694,6 @@ interface ICorDebugILCode2 : IUnknown
         [out] ULONG32 *pcMap,
         [out, size_is(cMap), length_is(*pcMap)] COR_IL_MAP map[]);
 }
-
 
 /*
  ICorDebugClass represents a Class (mdTypeDef) in the IL image.
