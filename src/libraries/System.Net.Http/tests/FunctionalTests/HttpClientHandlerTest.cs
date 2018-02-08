@@ -1086,44 +1086,48 @@ namespace System.Net.Http.Functional.Tests
             return new KeyValuePair<string, string>(name, value);
         }
 
-        public static object[][] CookieNameValues =
+        public static IEnumerable<object[]> CookieNameValuesAndUseCookies()
         {
-            // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
-            // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
-            // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
-            // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
-            // iteration index, which would cause header values to be missed if not handled correctly.
-            //
-            // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
-            //  * 0-127 chars: succeeds, index advances from 0 to 1.
-            //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
-            //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
-            //
-            // The below overall header value lengths were chosen to exercise reading header values at these
-            // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
-
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 129) },
-
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 254) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 255) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257) },
-
-            new object[]
+            foreach (bool useCookies in new[] { true, false })
             {
-                new KeyValuePair<string, string>(
-                    ".AspNetCore.Antiforgery.Xam7_OeLcN4",
-                    "CfDJ8NGNxAt7CbdClq3UJ8_6w_4661wRQZT1aDtUOIUKshbcV4P0NdS8klCL5qGSN-PNBBV7w23G6MYpQ81t0PMmzIN4O04fqhZ0u1YPv66mixtkX3iTi291DgwT3o5kozfQhe08-RAExEmXpoCbueP_QYM")
+                // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
+                // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
+                // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
+                // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
+                // iteration index, which would cause header values to be missed if not handled correctly.
+                //
+                // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
+                //  * 0-127 chars: succeeds, index advances from 0 to 1.
+                //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
+                //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
+                //
+                // The below overall header value lengths were chosen to exercise reading header values at these
+                // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
+
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 129), useCookies };
+
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 254), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 255), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257), useCookies };
+
+                yield return new object[]
+                {
+                    new KeyValuePair<string, string>(
+                        ".AspNetCore.Antiforgery.Xam7_OeLcN4",
+                        "CfDJ8NGNxAt7CbdClq3UJ8_6w_4661wRQZT1aDtUOIUKshbcV4P0NdS8klCL5qGSN-PNBBV7w23G6MYpQ81t0PMmzIN4O04fqhZ0u1YPv66mixtkX3iTi291DgwT3o5kozfQhe08-RAExEmXpoCbueP_QYM"),
+                    useCookies
+                };
             }
-        };
+        }
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(CookieNameValues))]
-        public async Task GetAsync_ResponseWithSetCookieHeaders_AllCookiesRead(KeyValuePair<string, string> cookie1)
+        [MemberData(nameof(CookieNameValuesAndUseCookies))]
+        public async Task GetAsync_ResponseWithSetCookieHeaders_AllCookiesRead(KeyValuePair<string, string> cookie1, bool useCookies)
         {
             var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
             var cookie3 = new KeyValuePair<string, string>("name", "value");
@@ -1131,28 +1135,39 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getResponseTask,
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
-                            $"Set-Cookie   : {cookie2.Key}={cookie2.Value}; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
-                            $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
-                            "\r\n"));
+                    handler.UseCookies = useCookies;
 
-                    using (HttpResponseMessage response = await getResponseTask)
+                    using (var client = new HttpClient(handler))
                     {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+                        Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                        await TestHelper.WhenAllCompletedOrAnyFailed(
+                            getResponseTask,
+                            LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                                $"HTTP/1.1 200 OK\r\n" +
+                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                                $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
+                                $"Set-Cookie   : {cookie2.Key}={cookie2.Value}; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
+                                $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
+                                "\r\n"));
 
-                        Assert.Equal(3, cookies.Count);
-                        Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
-                        Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
-                        Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                        using (HttpResponseMessage response = await getResponseTask)
+                        {
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                            CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+                            if (useCookies)
+                            {
+                                Assert.Equal(3, cookies.Count);
+                                Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
+                                Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
+                                Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                            }
+                            else
+                            {
+                                Assert.Equal(0, cookies.Count);
+                            }
+                        }
                     }
                 }
             });
