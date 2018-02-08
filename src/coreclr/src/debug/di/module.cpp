@@ -2975,8 +2975,9 @@ HRESULT CordbCode::CreateBreakpoint(ULONG32 offset,
 
     HRESULT hr;
     ULONG32 size = GetSize();
+    BOOL offsetIsIl = IsIL();
     LOG((LF_CORDB, LL_INFO10000, "CCode::CreateBreakpoint, offset=%d, size=%d, IsIl=%d, this=0x%p\n",
-        offset, size, m_fIsIL, this));
+        offset, size, offsetIsIl, this));
 
     // Make sure the offset is within range of the method.
     // If we're native code, then both offset & total code size are bytes of native code,
@@ -2986,7 +2987,7 @@ HRESULT CordbCode::CreateBreakpoint(ULONG32 offset,
         return CORDBG_E_UNABLE_TO_SET_BREAKPOINT;
     }
 
-    CordbFunctionBreakpoint *bp = new (nothrow) CordbFunctionBreakpoint(this, offset);
+    CordbFunctionBreakpoint *bp = new (nothrow) CordbFunctionBreakpoint(this, offset, offsetIsIl);
 
     if (bp == NULL)
         return E_OUTOFMEMORY;
@@ -3390,6 +3391,40 @@ mdSignature CordbILCode::GetLocalVarSigToken()
 {
     return m_localVarSigToken;
 }
+
+HRESULT CordbILCode::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint)
+{
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppBreakpoint, ICorDebugFunctionBreakpoint **);
+
+    HRESULT hr;
+    ULONG32 size = GetSize();
+    LOG((LF_CORDB, LL_INFO10000, "CordbILCode::CreateNativeBreakpoint, size=%d, this=0x%p\n",
+        size, this));
+
+    ULONG32 offset = 0;
+    CordbFunctionBreakpoint *bp = new (nothrow) CordbFunctionBreakpoint(this, offset, FALSE);
+
+    if (bp == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    hr = bp->Activate(TRUE);
+    if (SUCCEEDED(hr))
+    {
+        *ppBreakpoint = static_cast<ICorDebugFunctionBreakpoint*> (bp);
+        bp->ExternalAddRef();
+        return S_OK;
+    }
+    else
+    {
+        delete bp;
+        return hr;
+    }
+}
+
+
 
 CordbReJitILCode::CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode) :
 CordbILCode(pFunction, TargetBuffer(), encVersion, mdSignatureNil, VmPtrToCookie(vmILCodeVersionNode)),
