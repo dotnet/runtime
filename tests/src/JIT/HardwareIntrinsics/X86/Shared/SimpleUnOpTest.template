@@ -1,0 +1,295 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace JIT.HardwareIntrinsics.X86
+{{
+    public static partial class Program
+    {{
+        private static void {2}{3}()
+        {{
+            var test = new SimpleUnaryOpTest__{2}{3}();
+
+            if (test.IsSupported)
+            {{
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                // Validates basic functionality works, using Load
+                test.RunBasicScenario_Load();
+
+                // Validates basic functionality works, using LoadAligned
+                test.RunBasicScenario_LoadAligned();
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates calling via reflection works, using Load
+                test.RunReflectionScenario_Load();
+
+                // Validates calling via reflection works, using LoadAligned
+                test.RunReflectionScenario_LoadAligned();
+
+                // Validates passing a static member works
+                test.RunClsVarScenario();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing a local works, using Load
+                test.RunLclVarScenario_Load();
+
+                // Validates passing a local works, using LoadAligned
+                test.RunLclVarScenario_LoadAligned();
+
+                // Validates passing the field of a local works
+                test.RunLclFldScenario();
+
+                // Validates passing an instance member works
+                test.RunFldScenario();
+            }}
+            else
+            {{
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }}
+
+            if (!test.Succeeded)
+            {{
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }}
+        }}
+    }}
+
+    public sealed unsafe class SimpleUnaryOpTest__{2}{3}
+    {{
+        private const int VectorSize = {5};
+        private const int ElementCount = VectorSize / sizeof({3});
+
+        private static {3}[] _data = new {3}[ElementCount];
+
+        private static {4}<{3}> _clsVar;
+
+        private {4}<{3}> _fld;
+
+        private SimpleUnaryOpTest__DataTable<{3}> _dataTable;
+
+        static SimpleUnaryOpTest__{2}{3}()
+        {{
+            var random = new Random();
+
+            for (var i = 0; i < ElementCount; i++) {{ _data[i] = {6}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _clsVar), ref Unsafe.As<{3}, byte>(ref _data[0]), VectorSize);
+        }}
+
+        public SimpleUnaryOpTest__{2}{3}()
+        {{
+            Succeeded = true;
+
+            var random = new Random();
+
+            for (var i = 0; i < ElementCount; i++) {{ _data[i] = {6}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _fld), ref Unsafe.As<{3}, byte>(ref _data[0]), VectorSize);
+
+            for (var i = 0; i < ElementCount; i++) {{ _data[i] = {6}; }}
+            _dataTable = new SimpleUnaryOpTest__DataTable<{3}>(_data, new {3}[ElementCount], VectorSize);
+        }}
+
+        public bool IsSupported => {0}.IsSupported;
+
+        public bool Succeeded {{ get; set; }}
+
+        public void RunBasicScenario_UnsafeRead()
+        {{
+            var result = {0}.{2}(
+                Unsafe.Read<{4}<{3}>>(_dataTable.inArrayPtr)
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }}
+
+        public void RunBasicScenario_Load()
+        {{
+            var result = {0}.{2}(
+                {1}.Load{4}(({3}*)(_dataTable.inArrayPtr))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }}
+
+        public void RunBasicScenario_LoadAligned()
+        {{
+            var result = {0}.{2}(
+                {1}.LoadAligned{4}(({3}*)(_dataTable.inArrayPtr))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }}
+
+        public void RunReflectionScenario_UnsafeRead()
+        {{
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>) }})
+                                     .Invoke(null, new object[] {{
+                                        Unsafe.Read<{4}<{3}>>(_dataTable.inArrayPtr)
+                                     }});
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({4}<{3}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }}
+
+        public void RunReflectionScenario_Load()
+        {{
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>) }})
+                                     .Invoke(null, new object[] {{
+                                        {1}.Load{4}(({3}*)(_dataTable.inArrayPtr))
+                                     }});
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({4}<{3}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }}
+
+        public void RunReflectionScenario_LoadAligned()
+        {{
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>) }})
+                                     .Invoke(null, new object[] {{
+                                        {1}.LoadAligned{4}(({3}*)(_dataTable.inArrayPtr))
+                                     }});
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({4}<{3}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }}
+
+        public void RunClsVarScenario()
+        {{
+            var result = {0}.{2}(
+                _clsVar
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_clsVar, _dataTable.outArrayPtr);
+        }}
+
+        public void RunLclVarScenario_UnsafeRead()
+        {{
+            var firstOp = Unsafe.Read<{4}<{3}>>(_dataTable.inArrayPtr);
+            var result = {0}.{2}(firstOp);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
+        }}
+
+        public void RunLclVarScenario_Load()
+        {{
+            var firstOp = {1}.Load{4}(({3}*)(_dataTable.inArrayPtr));
+            var result = {0}.{2}(firstOp);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
+        }}
+
+        public void RunLclVarScenario_LoadAligned()
+        {{
+            var firstOp = {1}.LoadAligned{4}(({3}*)(_dataTable.inArrayPtr));
+            var result = {0}.{2}(firstOp);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
+        }}
+
+        public void RunLclFldScenario()
+        {{
+            var test = new SimpleUnaryOpTest__{2}{3}();
+            var result = {0}.{2}(test._fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
+        }}
+
+        public void RunFldScenario()
+        {{
+            var result = {0}.{2}(_fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld, _dataTable.outArrayPtr);
+        }}
+
+        public void RunUnsupportedScenario()
+        {{
+            Succeeded = false;
+
+            try
+            {{
+                RunBasicScenario_UnsafeRead();
+            }}
+            catch (PlatformNotSupportedException)
+            {{
+                Succeeded = true;
+            }}
+        }}
+
+        private void ValidateResult({4}<{3}> firstOp, void* result, [CallerMemberName] string method = "")
+        {{
+            {3}[] inArray = new {3}[ElementCount];
+            {3}[] outArray = new {3}[ElementCount];
+
+            Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), firstOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+
+            ValidateResult(inArray, outArray, method);
+        }}
+
+        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        {{
+            {3}[] inArray = new {3}[ElementCount];
+            {3}[] outArray = new {3}[ElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+
+            ValidateResult(inArray, outArray, method);
+        }}
+
+        private void ValidateResult({3}[] firstOp, {3}[] result, [CallerMemberName] string method = "")
+        {{
+            if ({7})
+            {{
+                Succeeded = false;
+            }}
+            else
+            {{
+                for (var i = 1; i < firstOp.Length; i++)
+                {{
+                    if ({8})
+                    {{
+                        Succeeded = false;
+                        break;
+                    }}
+                }}
+            }}
+
+            if (!Succeeded)
+            {{
+                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{3}>: {{method}} failed:");
+                Console.WriteLine($"    firstOp: ({{string.Join(", ", firstOp)}})");
+                Console.WriteLine($"  result: ({{string.Join(", ", result)}})");
+                Console.WriteLine();
+            }}
+        }}
+    }}
+}}
