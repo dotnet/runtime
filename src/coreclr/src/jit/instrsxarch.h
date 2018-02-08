@@ -265,6 +265,11 @@ INST3( andnpd, "andnpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x55))    /
 INST3( orps,   "orps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x56))    // Or packed singles
 INST3( orpd,   "orpd",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x56))    // Or packed doubles
 INST3( haddpd, "haddpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x7C))    // Horizontal add packed doubles
+INST3( haddps, "haddps", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEDBL(0x7C))    // Horizontal add packed floats
+INST3( hsubpd, "hsubpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0x7D))    // Horizontal subtract packed doubles
+INST3( hsubps, "hsubps", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEDBL(0x7D))    // Horizontal subtract packed floats
+INST3( addsubps, "addsubps", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, SSEDBL(0xD0))    // Add/Subtract packed singles
+INST3( addsubpd, "addsubpd", 0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKDBL(0xD0))    // Add/Subtract packed doubles
 
 // SSE 2 approx arith
 INST3( rcpps,   "rcpps",   0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, PCKFLT(0x53))    // Reciprocal of packed singles
@@ -415,9 +420,16 @@ INST3( pmuldq,       "pmuldq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( blendvps,     "blendvps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x14))   // Variable Blend Packed Singles
 INST3( blendvpd,     "blendvpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x15))   // Variable Blend Packed Doubles
 INST3( pblendvb,     "pblendvb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x10))   // Variable Blend Packed Bytes
+INST3( phaddw,       "phaddw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x01))   // Packed horizontal add of 16-bit integers
+INST3( phsubw,       "phsubw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x05))   // Packed horizontal subtract of 16-bit integers
+INST3( phsubd,       "phsubd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x06))   // Packed horizontal subtract of 32-bit integers
+INST3( phaddsw,      "phaddsw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x03))   // Packed horizontal add of 16-bit integers with saturation
+INST3( phsubsw,      "phsubsw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x07))   // Packed horizontal subtract of 16-bit integers with saturation
 INST3( lddqu,        "lddqu"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0xF0))  // Load Unaligned integer
 INST3( movntdqa,     "movntdqa"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2A))   // Load Double Quadword Non-Temporal Aligned Hint
 INST3( movddup,      "movddup"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0x12))   // Replicate Double FP Values
+INST3( movsldup,     "movsldup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x12))  // Replicate even-indexed Single FP Values  
+INST3( movshdup,     "movshdup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x16))  // Replicate odd-indexed Single FP Values
 
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
