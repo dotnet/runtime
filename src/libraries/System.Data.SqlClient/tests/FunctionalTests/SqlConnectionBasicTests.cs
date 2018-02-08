@@ -81,6 +81,15 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
+        public void ClosedConnectionSchemaRetrieval()
+        {
+            using (SqlConnection connection = new SqlConnection(string.Empty))
+            {
+                Assert.Throws<InvalidOperationException>(() => connection.GetSchema());
+            }
+        }
+
+        [Fact]
         public void ConnectionTimeoutTestWithThread()
         {
             int timeoutSec = 5;
