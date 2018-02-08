@@ -10760,7 +10760,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         if (!srcDoFldAsg && (srcLclVar != nullptr) && !srcSingleLclVarAsg)
         {
-            if (!srcLclVar->lvRegStruct)
+            if (!srcLclVar->lvRegStruct || (srcLclVar->lvType != dest->TypeGet()))
             {
                 lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DNER_BlockOp));
             }
