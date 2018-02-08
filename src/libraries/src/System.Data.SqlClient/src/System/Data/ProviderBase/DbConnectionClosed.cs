@@ -59,6 +59,9 @@ namespace System.Data.ProviderBase
             throw ADP.ClosedConnectionError();
         }
 
+        protected internal override DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string[] restrictions)
+            => throw ADP.ClosedConnectionError();
+
         protected override DbReferenceCollection CreateReferenceCollection()
         {
             throw ADP.ClosedConnectionError();
