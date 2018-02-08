@@ -4,8 +4,6 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Http
 {
@@ -22,7 +20,6 @@ namespace System.Net.Http
         internal ICredentials _defaultProxyCredentials;
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
-        internal bool _useDefaultCredentials = HttpHandlerDefaults.DefaultUseDefaultCredentials;
         internal ICredentials _credentials;
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
@@ -31,16 +28,32 @@ namespace System.Net.Http
         internal int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
         internal int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
 
-        internal ClientCertificateOption _clientCertificateOptions = HttpHandlerDefaults.DefaultClientCertificateOption;
-        internal X509CertificateCollection _clientCertificates;
-
-        internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
-        internal bool _checkCertificateRevocationList = HttpHandlerDefaults.DefaultCheckCertificateRevocationList;
-        internal SslProtocols _sslProtocols = SslProtocols.None;
-
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
 
+        internal SslClientAuthenticationOptions _sslOptions;
+
         internal IDictionary<string, object> _properties;
+
+        public HttpConnectionSettings Clone() =>
+            new HttpConnectionSettings()
+            {
+                _allowAutoRedirect = _allowAutoRedirect,
+                _automaticDecompression = _automaticDecompression,
+                _cookieContainer = _cookieContainer,
+                _credentials = _credentials,
+                _defaultProxyCredentials = _defaultProxyCredentials,
+                _maxAutomaticRedirections = _maxAutomaticRedirections,
+                _maxConnectionsPerServer = _maxConnectionsPerServer,
+                _maxResponseHeadersLength = _maxResponseHeadersLength,
+                _pooledConnectionLifetime = _pooledConnectionLifetime,
+                _pooledConnectionIdleTimeout = _pooledConnectionIdleTimeout,
+                _preAuthenticate = _preAuthenticate,
+                _properties = _properties,
+                _proxy = _proxy,
+                _sslOptions = _sslOptions?.ShallowClone(), // shallow clone the options for basic prevention of mutation issues while processing
+                _useCookies = _useCookies,
+                _useProxy = _useProxy,
+            };
     }
 }
