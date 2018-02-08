@@ -88,10 +88,7 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostbyaddr.cs">
       <Link>Interop\Windows\Winsock\Interop.gethostbyaddr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostbyname.cs">
-      <Link>Interop\Windows\Winsock\Interop.gethostbyname.cs</Link>
-    </Compile>
+    </Compile>    
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostname.cs">
       <Link>Interop\Windows\Winsock\Interop.gethostname.cs</Link>
     </Compile>
