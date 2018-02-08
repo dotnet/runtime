@@ -377,16 +377,20 @@ namespace System.ComponentModel
                     list = new List<Attribute>(_attributes);
                 }
 
-                var set = new HashSet<object>();
+                var map = new Dictionary<object, int>();
 
                 for (int i = 0; i < list.Count;)
                 {
-                    if (set.Add(list[i].TypeId))
+                    int savedIndex = -1;
+                    object typeId = list[i].TypeId;
+                    if (!map.TryGetValue(typeId, out savedIndex))
                     {
-                        ++i;
+                        map.Add(typeId, i);
+                        i++;
                     }
                     else
                     {
+                        list[savedIndex] = list[i];
                         list.RemoveAt(i);
                     }
                 }
