@@ -67,7 +67,7 @@ namespace System.Net.Http
         {
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
-            _managedHandler.SslOptions = _managedHandler.SslOptions;
+            _socketsHttpHandler.SslOptions = _socketsHttpHandler.SslOptions;
         }
     }
 }

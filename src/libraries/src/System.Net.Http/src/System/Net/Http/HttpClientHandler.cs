@@ -5,58 +5,34 @@
 using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 
 namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
         // This partial implementation contains members common to all HttpClientHandler implementations.
-        private const string ManagedHandlerEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USEMANAGEDHTTPCLIENTHANDLER";
-        private const string ManagedHandlerAppCtxSettingName = "System.Net.Http.UseManagedHttpClientHandler";
+        private const string SocketsHttpHandlerEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER";
+        private const string SocketsHttpHandlerAppCtxSettingName = "System.Net.Http.UseSocketsHttpHandler";
 
-        private static LocalDataStoreSlot s_useManagedHandlerSlot;
-
-        private static bool UseManagedHandler
+        private static bool UseSocketsHttpHandler
         {
             get
             {
                 // First check for the AppContext switch, giving it priority over over the environment variable.
-                if (AppContext.TryGetSwitch(ManagedHandlerAppCtxSettingName, out bool isManagedEnabled))
+                if (AppContext.TryGetSwitch(SocketsHttpHandlerAppCtxSettingName, out bool useSocketsHttpHandler))
                 {
-                    return isManagedEnabled;
+                    return useSocketsHttpHandler;
                 }
 
                 // AppContext switch wasn't used. Check the environment variable to see if it's been set to true.
-                string envVar = Environment.GetEnvironmentVariable(ManagedHandlerEnvironmentVariableSettingName);
+                string envVar = Environment.GetEnvironmentVariable(SocketsHttpHandlerEnvironmentVariableSettingName);
                 if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
                 {
                     return true;
                 }
 
-                // TODO #23166: Remove the following TLS check assuming the type is exposed publicly.  If it's not,
-                // re-evaluate the priority ordering of this with regards to the AppContext and environment settings.
-
-                // Then check whether a thread local has been set with the same name.
-                // If it's been set to a Boolean true, also use the managed handler.
-                LocalDataStoreSlot slot = LazyInitializer.EnsureInitialized(ref s_useManagedHandlerSlot, () =>
-                {
-                    LocalDataStoreSlot local = Thread.GetNamedDataSlot(ManagedHandlerEnvironmentVariableSettingName);
-                    if (local == null)
-                    {
-                        try
-                        {
-                            local = Thread.AllocateNamedDataSlot(ManagedHandlerEnvironmentVariableSettingName);
-                        }
-                        catch (ArgumentException)
-                        {
-                            local = Thread.GetNamedDataSlot(ManagedHandlerEnvironmentVariableSettingName);
-                        }
-                    }
-                    return local;
-                });
-                Debug.Assert(slot != null);
-                return Thread.GetData(slot) is bool result && result;
+                // Default to using WinHttpHandler on Windows and CurlHandler on Unix
+                return false;
             }
         }
 

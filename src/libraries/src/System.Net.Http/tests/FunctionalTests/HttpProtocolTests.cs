@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_RequestVersion0X_ThrowsOr11(int minorVersion)
         {
             Type exceptionType = null;
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
                 exceptionType = typeof(NotSupportedException);
             }
@@ -186,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ResponseUnknownVersion1X_Success(int responseMinorVersion)
         {
             bool reportAs11 = PlatformDetection.IsFullFramework;
-            bool reportAs00 = !UseManagedHandler;
+            bool reportAs00 = !UseSocketsHttpHandler;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -279,7 +279,7 @@ namespace System.Net.Http.Functional.Tests
             // CurlHandler reports these as 0.0, except for 2.0 which is reported as 2.0, instead of throwing.
             bool reportAs00 = false;
             bool reportAs20 = false;
-            if (!PlatformDetection.IsWindows && !UseManagedHandler)
+            if (!PlatformDetection.IsWindows && !UseSocketsHttpHandler)
             {
                 if (responseMajorVersion == 2 && responseMinorVersion == 0)
                 {
@@ -366,9 +366,9 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ExpectedStatusCodeAndReason_PlatformBehaviorTest(string statusLine,
             int expectedStatusCode, string reasonWithSpace, string reasonNoSpace)
         {
-            if (UseManagedHandler || PlatformDetection.IsFullFramework)
+            if (UseSocketsHttpHandler || PlatformDetection.IsFullFramework)
             {
-                // ManagedHandler and .NET Framework will keep the space characters.
+                // SocketsHttpHandler and .NET Framework will keep the space characters.
                 await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonWithSpace);
             }
             else
@@ -491,11 +491,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1\t200 OK")]
         [InlineData("HTTP/1.1 200\tOK")]
         [InlineData("HTTP/1.1 200\t")]
-        public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnManagedHandler(string responseString)
+        public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnSocketsHttpHandler(string responseString)
         {
-            if (UseManagedHandler || PlatformDetection.IsFullFramework)
+            if (UseSocketsHttpHandler || PlatformDetection.IsFullFramework)
             {
-                // ManagedHandler and .NET Framework will throw HttpRequestException.
+                // SocketsHttpHandler and .NET Framework will throw HttpRequestException.
                 await GetAsyncThrowsExceptionHelper(responseString);
             }
             // WinRT, WinHttpHandler, and CurlHandler will succeed.
