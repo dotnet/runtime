@@ -63,8 +63,6 @@ namespace System.IO.Tests.Enumeration
         }
     }
 
-    // Unix implementation not finished
-    [ActiveIssue(26715, TestPlatforms.AnyUnix)]
     public class SkipAttributeTests_Directory_GetFiles : SkipAttributeTests
     {
         protected override string[] GetPaths(string directory, EnumerationOptions options)
@@ -73,8 +71,6 @@ namespace System.IO.Tests.Enumeration
         }
     }
 
-    // Unix implementation not finished
-    [ActiveIssue(26715, TestPlatforms.AnyUnix)]
     public class SkipAttributeTests_DirectoryInfo_GetFiles : SkipAttributeTests
     {
         protected override string[] GetPaths(string directory, EnumerationOptions options)

@@ -14,10 +14,6 @@ namespace System.IO
 
         internal string _name;
 
-        protected FileSystemInfo()
-        {
-        }
-
         protected FileSystemInfo(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
