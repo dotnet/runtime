@@ -34,6 +34,12 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity, double.NaN,              0.0)]
+        [InlineData(-3.1415926535897932,      double.NaN,              0.0)]                               //                               value: -(pi)
+        [InlineData(-2.7182818284590452,      double.NaN,              0.0)]                               //                               value: -(e)
+        [InlineData(-1.4142135623730950,      double.NaN,              0.0)]                               //                               value: -(sqrt(2))
+        [InlineData(-1.0,                     double.NaN,              0.0)]
+        [InlineData(-0.69314718055994531,     double.NaN,              0.0)]                               //                               value: -(ln(2))
+        [InlineData(-0.43429448190325183,     double.NaN,              0.0)]                               //                               value: -(log10(e))
         [InlineData(-0.0,                     double.NaN,              0.0)]
         [InlineData( double.NaN,              double.NaN,              0.0)]
         [InlineData( 0.0,                     double.NaN,              0.0)]
@@ -99,6 +105,9 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity,  double.NaN,              0.0)]
+        [InlineData(-3.1415926535897932,       double.NaN,              0.0)]                               //                              value: -(pi)
+        [InlineData(-2.7182818284590452,       double.NaN,              0.0)]                               //                              value: -(e)
+        [InlineData(-1.4142135623730950,       double.NaN,              0.0)]                               //                              value: -(sqrt(2))
         [InlineData(-1.0,                      double.NegativeInfinity, CrossPlatformMachineEpsilon * 10)]
         [InlineData(-0.99627207622074994,     -3.1415926535897932,      CrossPlatformMachineEpsilon * 10)]  // expected: -(pi)
         [InlineData(-0.99132891580059984,     -2.7182818284590452,      CrossPlatformMachineEpsilon * 10)]  // expected: -(e)
@@ -132,6 +141,9 @@ namespace System.Tests
         [InlineData( 0.99132891580059984,      2.7182818284590452,      CrossPlatformMachineEpsilon * 10)]  // expected:  (e)
         [InlineData( 0.99627207622074994,      3.1415926535897932,      CrossPlatformMachineEpsilon * 10)]  // expected:  (pi)
         [InlineData( 1.0,                      double.PositiveInfinity, 0.0)]
+        [InlineData( 1.4142135623730950,       double.NaN,              0.0)]                               //                              value:  (sqrt(2))
+        [InlineData( 2.7182818284590452,       double.NaN,              0.0)]                               //                              value:  (e)
+        [InlineData( 3.1415926535897932,       double.NaN,              0.0)]                               //                              value:  (pi)
         [InlineData( double.PositiveInfinity,  double.NaN,              0.0)]
         public static void Atanh(double value, double expectedResult, double allowedVariance)
         {
