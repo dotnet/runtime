@@ -4903,6 +4903,13 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
     sz = emitInsSizeAM(id, insCodeRM(ins));
+
+    if (Is4ByteSSE4Instruction(ins))
+    {
+        // The 4-Byte SSE4 instructions require two additional bytes
+        sz += 2;
+    }
+
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -10387,28 +10394,18 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         code &= 0x0000FFFF;
     }
 
-    // If byte 4 is 0xC0, then it contains the Mod/RM encoding for a 3-byte
-    // encoding.  Otherwise, this is an instruction with a 4-byte encoding,
-    // and the Mod/RM encoding needs to go in the 5th byte.
-    // TODO-XArch-CQ: Currently, this will only support registers in the 5th byte.
-    // We probably need a different mechanism to identify the 4-byte encodings.
-    if ((code & 0xFF) == 0x00)
+    // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
+    if ((code & 0xFF00) == 0xC000)
+    {
+        dst += emitOutputWord(dst, code | (regCode << 8));
+    }
+    else if ((code & 0xFF) == 0x00)
     {
         // This case happens for SSE4/AVX instructions only
         assert(IsAVXInstruction(ins) || IsSSE4Instruction(ins));
-        if ((code & 0xFF00) == 0xC000)
-        {
-            dst += emitOutputWord(dst, code | (regCode << 8));
-        }
-        else
-        {
-            dst += emitOutputByte(dst, (code >> 8) & 0xFF);
-            dst += emitOutputByte(dst, (0xC0 | regCode));
-        }
-    }
-    else if ((code & 0xFF00) == 0xC000)
-    {
-        dst += emitOutputWord(dst, code | (regCode << 8));
+
+        dst += emitOutputByte(dst, (code >> 8) & 0xFF);
+        dst += emitOutputByte(dst, (0xC0 | regCode));
     }
     else
     {
@@ -10636,28 +10633,18 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
         code &= 0x0000FFFF;
     }
 
-    // If byte 4 is 0xC0, then it contains the Mod/RM encoding for a 3-byte
-    // encoding.  Otherwise, this is an instruction with a 4-byte encoding,
-    // and the MOd/RM encoding needs to go in the 5th byte.
-    // TODO-XArch-CQ: Currently, this will only support registers in the 5th byte.
-    // We probably need a different mechanism to identify the 4-byte encodings.
-    if ((code & 0xFF) == 0x00)
+    // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
+    if ((code & 0xFF00) == 0xC000)
+    {
+        dst += emitOutputWord(dst, code | (regCode << 8));
+    }
+    else if ((code & 0xFF) == 0x00)
     {
         // This case happens for AVX instructions only
         assert(IsAVXInstruction(ins));
-        if ((code & 0xFF00) == 0xC000)
-        {
-            dst += emitOutputByte(dst, (0xC0 | regCode));
-        }
-        else
-        {
-            dst += emitOutputByte(dst, (code >> 8) & 0xFF);
-            dst += emitOutputByte(dst, (0xC0 | regCode));
-        }
-    }
-    else if ((code & 0xFF00) == 0xC000)
-    {
-        dst += emitOutputWord(dst, code | (regCode << 8));
+
+        dst += emitOutputByte(dst, (code >> 8) & 0xFF);
+        dst += emitOutputByte(dst, (0xC0 | regCode));
     }
     else
     {
@@ -11949,28 +11936,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code &= 0x0000FFFF;
             }
 
-            // If byte 4 is 0xC0, then it contains the Mod/RM encoding for a 3-byte
-            // encoding.  Otherwise, this is an instruction with a 4-byte encoding,
-            // and the Mod/RM encoding needs to go in the 5th byte.
-            // TODO-XArch-CQ: Currently, this will only support registers in the 5th byte.
-            // We probably need a different mechanism to identify the 4-byte encodings.
-            if ((code & 0xFF) == 0x00)
+            // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
+            if ((code & 0xFF00) == 0xC000)
+            {
+                dst += emitOutputWord(dst, code | (regcode << 8));
+            }
+            else if ((code & 0xFF) == 0x00)
             {
                 // This case happens for SSE4/AVX instructions only
                 assert(IsAVXInstruction(ins) || IsSSE4Instruction(ins));
-                if ((code & 0xFF00) == 0xC000)
-                {
-                    dst += emitOutputWord(dst, code | (regcode << 8));
-                }
-                else
-                {
-                    dst += emitOutputByte(dst, (code >> 8) & 0xFF);
-                    dst += emitOutputByte(dst, (0xC0 | regcode));
-                }
-            }
-            else if ((code & 0xFF00) == 0xC000)
-            {
-                dst += emitOutputWord(dst, code | (regcode << 8));
+
+                dst += emitOutputByte(dst, (code >> 8) & 0xFF);
+                dst += emitOutputByte(dst, (0xC0 | regcode));
             }
             else
             {
