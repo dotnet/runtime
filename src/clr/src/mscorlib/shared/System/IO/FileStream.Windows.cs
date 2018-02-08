@@ -268,7 +268,15 @@ namespace System.IO
                     // want us to do this.
                     if (_writePos > 0)
                     {
-                        FlushWriteBuffer(!disposing);
+                        try
+                        {
+                            FlushWriteBuffer(!disposing);
+                        }
+                        catch (Exception e) when (IsIoRelatedException(e) && !disposing)
+                        {
+                            // On finalization, ignore failures from trying to flush the write buffer,
+                            // e.g. if this stream is wrapping a pipe and the pipe is now broken.
+                        }
                     }
                 }
             }
