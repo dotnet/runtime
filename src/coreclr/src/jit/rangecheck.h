@@ -79,7 +79,6 @@ struct Limit
     {
         keUndef, // The limit is yet to be computed.
         keBinOpArray,
-        keArray,
         keConstant,
         keDependent, // The limit is dependent on some other value.
         keUnknown,   // The limit could not be determined.
@@ -123,10 +122,6 @@ struct Limit
     {
         return cns;
     }
-    bool IsArray()
-    {
-        return type == keArray;
-    }
     bool IsBinOpArray()
     {
         return type == keBinOpArray;
@@ -143,11 +138,6 @@ struct Limit
                     return false;
                 }
                 cns += i;
-                return true;
-
-            case keArray:
-                type = keBinOpArray;
-                cns  = i;
                 return true;
 
             case keConstant:
@@ -179,9 +169,6 @@ struct Limit
             case keBinOpArray:
                 return l.type == type && l.vn == vn && l.cns == cns;
 
-            case keArray:
-                return l.type == type && l.vn == vn;
-
             case keConstant:
                 return l.type == type && l.cns == cns;
         }
@@ -205,10 +192,6 @@ struct Limit
 
             case keBinOpArray:
                 sprintf_s(buf, size, "VN%04X + %d", vn, cns);
-                return buf;
-
-            case keArray:
-                sprintf_s(buf, size, "VN%04X", vn);
                 return buf;
 
             case keConstant:
