@@ -65,9 +65,9 @@ namespace System.Threading.Channels
 
             public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken)
             {
-                // If there are any items, readers can try to get them.
-                return !_parent._items.IsEmpty ?
-                    ChannelUtilities.s_trueTask :
+                return
+                    cancellationToken.IsCancellationRequested ? Task.FromCanceled<bool>(cancellationToken) :
+                    !_parent._items.IsEmpty ? ChannelUtilities.s_trueTask :
                     WaitToReadAsyncCore(cancellationToken);
 
                 Task<bool> WaitToReadAsyncCore(CancellationToken ct)
