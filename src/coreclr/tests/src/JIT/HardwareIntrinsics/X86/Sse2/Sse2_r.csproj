@@ -115,7 +115,7 @@
     <Compile Include="Xor.UInt64.cs" />
     <Compile Include="Program.Sse2.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable_Aligned.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
