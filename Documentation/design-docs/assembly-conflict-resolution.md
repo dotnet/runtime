@@ -55,7 +55,7 @@ Note that for an app, its probing path comes *after* the framework, so intuitive
 ## Proposed changes for 2.1
 Probe the app location before the framework's. This means flip (3) and (4) under **Probe Ordering** above and treat the app as the highest-level framework. The reason is that there may be frameworks that use OOB packages like apps, and we want to have "app wins" in such cases.
 
-Replace step 6 under **Algorithm** above with:
+Replace step 5 under **Algorithm** above with:
 * If the probing path is a framework, and no [minor] or [major] roll-forward occurred on that framework, then check its deps.json to see if it contains the exact package (by name and version). If so, then use the framework's location
 * If the probing path is a framework, and a [minor] or [major] roll-forward occurred on that framework, then check its deps.json to see if it contains a newer version of the assembly (by File Version and \ or Assembly Version). If so, then use the framework's location
 
