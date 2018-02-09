@@ -12,34 +12,51 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public unsafe struct SimpleBinaryOpTest__DataTable<T> : IDisposable where T : struct
     {
+        private byte[] inArray1;
+        private byte[] inArray2;
+        private byte[] outArray;
+
         private GCHandle inHandle1;
         private GCHandle inHandle2;
         private GCHandle outHandle;
 
-        public T[] inArray1;
-        public T[] inArray2;
-        public T[] outArray;
+        private byte simdSize;
 
-        public SimpleBinaryOpTest__DataTable(T[] inArray1, T[] inArray2, T[] outArray)
+        public SimpleBinaryOpTest__DataTable(T[] inArray1, T[] inArray2, T[] outArray, int simdSize)
         {
-            this.inArray1 = inArray1;
-            this.inArray2 = inArray2;
-            this.outArray = outArray;
+            this.inArray1 = new byte[simdSize * 2];
+            this.inArray2 = new byte[simdSize * 2];
+            this.outArray = new byte[simdSize * 2];
 
-            this.inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
-            this.inHandle2 = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
-            this.outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
+            this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+            this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+            this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+            this.simdSize = unchecked((byte)(simdSize));
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<T, byte>(ref inArray1[0]), this.simdSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<T, byte>(ref inArray2[0]), this.simdSize);
         }
 
-        public void* inArray1Ptr => inHandle1.AddrOfPinnedObject().ToPointer();
-        public void* inArray2Ptr => inHandle2.AddrOfPinnedObject().ToPointer();
-        public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
+        public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), simdSize);
 
         public void Dispose()
         {
             inHandle1.Free();
             inHandle2.Free();
             outHandle.Free();
+        }
+
+        private static unsafe void* Align(byte* buffer, byte expectedAlignment)
+        {
+            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
+            // Then subtract that from the expectedAlignment and add it to the original address
+            // to compute the aligned address.
+
+            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
+            return (void*)(buffer + misalignment);
         }
     }
 }
