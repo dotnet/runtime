@@ -1450,6 +1450,7 @@ public:
                        SIZE_T ilEnCVersion,  // must give the EnC version for non-native bps
                        MethodDesc *nativeMethodDesc,  // must be non-null when m_native, null otherwise
                        DebuggerJitInfo *nativeJITInfo,  // optional when m_native, null otherwise
+                       bool nativeCodeBindAllVersions,
                        BOOL *pSucceed
                        );
 
