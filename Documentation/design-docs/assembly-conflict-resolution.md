@@ -57,6 +57,6 @@ Probe the app location before the framework's. This means flip (3) and (4) under
 
 Replace step 5 under **Algorithm** above with:
 * If the probing path is a framework, and no [minor] or [major] roll-forward occurred on that framework, then check its deps.json to see if it contains the exact package (by name and version). If so, then use the framework's location
-* If the probing path is a framework, and a [minor] or [major] roll-forward occurred on that framework, then check its deps.json to see if it contains a newer version of the assembly (by File Version and \ or Assembly Version). If so, then use the framework's location
+* If the probing path is a framework, and a [minor] or [major] roll-forward occurred on that framework, then check its deps.json to see if it contains a newer version of the assembly (by Assembly Version and then File Version if necessary). If so, then use the framework's location
 
-In order to compare File Version and \ Assembly Version, additional metadata will need to be written to each deps.json file. If this metadata is not present (as in the case of applications published prior to 2.1) then the files will be considered older and will not replace any previously found locations.
+In order to compare Assembly Version and File Version, additional metadata will need to be written to each deps.json file. If this metadata is not present (as in the case of applications published prior to 2.1) then the files will be considered older and will not replace any previously found locations.
