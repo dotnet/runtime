@@ -1897,15 +1897,10 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	}
 	case MONO_RGCTX_INFO_METHOD_RGCTX: {
 		MonoMethodInflated *method = (MonoMethodInflated *)data;
-		MonoVTable *vtable;
 
 		g_assert (method->method.method.is_inflated);
-		g_assert (method->context.method_inst);
 
-		vtable = mono_class_vtable_checked (domain, method->method.method.klass, error);
-		return_val_if_nok (error, NULL);
-
-		return mono_method_lookup_rgctx (vtable, method->context.method_inst);
+		return mini_method_get_rgctx ((MonoMethod*)method);
 	}
 	case MONO_RGCTX_INFO_METHOD_CONTEXT: {
 		MonoMethodInflated *method = (MonoMethodInflated *)data;
@@ -2628,21 +2623,21 @@ mrgctx_equal_func (gconstpointer a, gconstpointer b)
 }
 
 /*
- * mono_method_lookup_rgctx:
+ * mini_method_get_mrgctx:
  * @class_vtable: a vtable
- * @method_inst: the method inst of a generic method
+ * @method: an inflated method
  *
- * Returns the MRGCTX for the generic method(s) with the given
- * method_inst of the given class_vtable.
+ * Returns the MRGCTX for METHOD.
  *
  * LOCKING: Take the domain lock.
  */
-MonoMethodRuntimeGenericContext*
-mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst)
+static MonoMethodRuntimeGenericContext*
+mini_method_get_mrgctx (MonoVTable *class_vtable, MonoMethod *method)
 {
 	MonoDomain *domain = class_vtable->domain;
 	MonoMethodRuntimeGenericContext *mrgctx;
 	MonoMethodRuntimeGenericContext key;
+	MonoGenericInst *method_inst = mini_method_get_context (method)->method_inst;
 
 	g_assert (!mono_class_is_gtd (class_vtable->klass));
 	g_assert (!method_inst->is_open);
@@ -3360,7 +3355,7 @@ mini_method_get_rgctx (MonoMethod *m)
 	MonoVTable *vt = mono_class_vtable_checked (mono_domain_get (), m->klass, error);
 	mono_error_assert_ok (error);
 	if (mini_method_get_context (m)->method_inst) {
-		return mono_method_lookup_rgctx (vt, mini_method_get_context (m)->method_inst);
+		return mini_method_get_mrgctx (vt, m);
 	} else
 		return vt;
 }

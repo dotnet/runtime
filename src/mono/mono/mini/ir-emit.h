@@ -324,9 +324,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 			NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_METHOD_RGCTX, (method)); \
 		} else {														\
 			MonoMethodRuntimeGenericContext *mrgctx;					\
-			MonoVTable *vt = mono_class_vtable_checked ((cfg)->domain, (method)->klass, &(cfg)->error); \
-			mono_error_assert_ok (&(cfg)->error);		\
-			mrgctx = mono_method_lookup_rgctx (vt, mini_method_get_context ((method))->method_inst); \
+			mrgctx = mini_method_get_rgctx ((method));					\
 			NEW_PCONST ((cfg), (dest), (mrgctx));						\
 		}																\
 	} while (0)

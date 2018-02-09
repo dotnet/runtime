@@ -2409,9 +2409,6 @@ mono_class_fill_runtime_generic_context (MonoVTable *class_vtable, guint32 slot,
 gpointer
 mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot, MonoError *error);
 
-MonoMethodRuntimeGenericContext*
-mono_method_lookup_rgctx (MonoVTable *class_vtable, MonoGenericInst *method_inst);
-
 const char*
 mono_rgctx_info_type_to_str (MonoRgctxInfoType type);
 
