@@ -85,6 +85,7 @@ typedef struct
 	unsigned int stack_capacity;
 	unsigned int vt_sp;
 	unsigned int max_vt_sp;
+	unsigned int total_locals_size;
 	int n_data_items;
 	int max_data_items;
 	void **data_items;
@@ -688,11 +689,9 @@ load_local(TransformData *td, int n)
 }
 
 static void 
-store_local(TransformData *td, int n)
+store_local_general (TransformData *td, int offset, MonoType *type)
 {
-	MonoType *type = td->header->locals [n];
 	int mt = mint_type (type);
-	int offset = td->rtm->local_offsets [n];
 	CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
 	if (td->sp [-1].type == STACK_TYPE_I4 && stack_type [mt] == STACK_TYPE_I8) {
@@ -719,6 +718,14 @@ store_local(TransformData *td, int n)
 		ADD_CODE(td, offset); /*FIX for large offset */
 	}
 	--td->sp;
+}
+
+static void
+store_local (TransformData *td, int n)
+{
+	MonoType *type = td->header->locals [n];
+	int offset = td->rtm->local_offsets [n];
+	store_local_general (td, offset, type);
 }
 
 #define SIMPLE_OP(td, op) \
@@ -1423,6 +1430,25 @@ get_basic_blocks (TransformData *td)
 	}
 }
 
+/*
+ * These are additional locals that can be allocated as we transform the code.
+ * They are allocated past the method locals so they are accessed in the same
+ * way, with an offset relative to the frame->locals.
+ */
+static int
+create_interp_local (TransformData *td, MonoType *type)
+{
+	int align, size;
+	int offset = td->total_locals_size;
+
+	size = mono_type_size (type, &align);
+	offset = ALIGN_TO (offset, align);
+
+	td->total_locals_size = offset + size;
+
+	return offset;
+}
+
 static void
 interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformData *td, GArray *line_numbers)
 {
@@ -1727,6 +1753,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	td->seq_points = g_ptr_array_new ();
 	td->relocs = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;
+	td->total_locals_size = rtm->locals_size;
 	rtm->data_items = td->data_items;
 	for (i = 0; i < header->code_size; i++) {
 		td->stack_height [i] = -1;
@@ -2912,8 +2939,16 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td->ip is incremented by interp_transform_call */
 				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE, error, FALSE);
-
 				goto_if_nok (error, exit);
+				/*
+				 * CEE_UNBOX needs to push address of vtype while Nullable.Unbox returns the value type
+				 * We create a local variable in the frame so that we can fetch its address.
+				 */
+				int local_offset = create_interp_local (td, &klass->byval_arg);
+				store_local_general (td, local_offset, &klass->byval_arg);
+				ADD_CODE (td, MINT_LDLOCA_S);
+				ADD_CODE (td, local_offset);
+				PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
 			} else {
 				ADD_CODE (td, MINT_UNBOX);
 				ADD_CODE (td, get_data_item_index (td, klass));
@@ -4418,9 +4453,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			c->data.filter_offset = td->in_offsets [c->data.filter_offset];
 	}
 	rtm->stack_size = (sizeof (stackval)) * (td->max_stack_height + 2); /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
-	rtm->stack_size = (rtm->stack_size + 7) & ~7;
+	rtm->stack_size = ALIGN_TO (rtm->stack_size, MINT_VT_ALIGNMENT);
 	rtm->vt_stack_size = td->max_vt_sp;
-	rtm->alloca_size = rtm->locals_size + rtm->args_size + rtm->vt_stack_size + rtm->stack_size;
+	rtm->total_locals_size = td->total_locals_size;
+	rtm->alloca_size = rtm->total_locals_size + rtm->args_size + rtm->vt_stack_size + rtm->stack_size;
 	rtm->data_items = mono_domain_alloc0 (domain, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 

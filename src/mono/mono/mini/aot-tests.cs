@@ -216,7 +216,6 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	static int test_42_arm64_dyncall_vtypebyval () {
 		var method = typeof (Foo5<string>).GetMethod ("vtype_by_val").MakeGenericMethod (new Type [] { typeof (int), typeof (long?), typeof (long?), typeof (long?), typeof (long?) });
 		long res = (long)method.Invoke (null, new object [] { 1, 2L, 3L, 4L, 42L });
