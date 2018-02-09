@@ -835,25 +835,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         pJitManager->GetNextEHClause(&pEnumState, &EHClause);
         _ASSERTE(IsValidClause(&EHClause));
 
-#if _TARGET_AMD64_
-         if (offs != OffsSkipNop && OffsSkipNop == EHClause.TryStartPC) 
-         {
-            // Ensure that the new offset isnt landing us into a cloned finally
-            // that "appears" to have a try-block which starts with a non-NOP
-            // instruction when actually its a cloned finally.
-            if (!IsClonedFinally(&EHClause))
-            {
-                // If we are at the nop instruction injected by JIT right before a try catch,
-                // we don't want to async abort. This is a workaround to address issue with the C# lock statement bug,
-                // where we could end up leaking a lock.
-                //
-                STRESS_LOG1(LF_EH, LL_INFO100, "AMD64 - TAStackCrawlCallBack: STACKCRAWL AMD64 TA at beginning of a Try catch 0x%x \n", OffsSkipNop );
-                pData->fWithinEHClause = true;
-                return SWA_ABORT;
-            }
-         }
-#endif // _TARGET_AMD64_
- 
         // !!! If this function is called on Aborter thread, we should check for finally only.
 
         // !!! If this function is called on Aborter thread, we should check for finally only.
