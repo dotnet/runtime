@@ -461,16 +461,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Failed because value was out of range. Report nifty error message.
                     string value;
-                    if (exprType <= FUNDTYPE.FT_LASTINTEGRAL)
+                    switch (exprType)
                     {
-                        value = expr.Type.IsUnsigned
-                            ? ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture)
-                            : ((ExprConstant)exprConst).Int64Value.ToString(CultureInfo.InvariantCulture);
-                    }
-                    else
-                    {
-                        Debug.Assert(exprType <= FUNDTYPE.FT_LASTNUMERIC, "Error in constant conversion logic!");
-                        value = ((ExprConstant)exprConst).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
+                        case FUNDTYPE.FT_U1:
+                        case FUNDTYPE.FT_U2:
+                        case FUNDTYPE.FT_U4:
+                        case FUNDTYPE.FT_U8:
+                            value = ((ulong)((ExprConstant)exprConst).Int64Value).ToString(CultureInfo.InvariantCulture);
+                            break;
+
+                        case FUNDTYPE.FT_I1:
+                        case FUNDTYPE.FT_I2:
+                        case FUNDTYPE.FT_I4:
+                        case FUNDTYPE.FT_I8:
+                            value = ((ExprConstant)exprConst).Int64Value.ToString(CultureInfo.InvariantCulture);
+                            break;
+
+                        default:
+                            Debug.Assert(exprType <= FUNDTYPE.FT_LASTNUMERIC, "Error in constant conversion logic!");
+                            value = ((ExprConstant)exprConst).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
+                            break;
                     }
 
                     throw ErrorContext.Error(ErrorCode.ERR_ConstOutOfRangeChecked, value, dest);

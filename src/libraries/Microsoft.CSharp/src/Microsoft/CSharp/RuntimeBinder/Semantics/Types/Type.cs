@@ -103,8 +103,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         [ExcludeFromCodeCoverage] // Should only be called through override.
         public virtual AggregateType UnderlyingEnumType => throw Error.InternalCompilerError();
 
-        public virtual bool IsUnsigned => false;
-
         // Pointer types (or arrays of them) are the only unsafe types.
         // Note that generics may not be instantiated with pointer types
         public virtual bool IsUnsafe() => false;
