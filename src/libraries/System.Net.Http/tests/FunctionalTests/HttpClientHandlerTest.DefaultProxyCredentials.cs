@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue(25640, TestPlatforms.Windows)] // TODO It should be enabled for managed Handler on all platforms
+        [ActiveIssue(25640, TestPlatforms.Windows)] // TODO It should be enabled for SocketsHttpHandler on all platforms
         public void ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed(bool useProxy)
         {
             int port = 0;
@@ -98,9 +98,9 @@ namespace System.Net.Http.Functional.Tests
             // test in another process.
             var psi = new ProcessStartInfo();
             psi.Environment.Add("http_proxy", $"http://localhost:{port}");
-            RemoteInvoke((useProxyString, useManagedHandlerString) =>
+            RemoteInvoke((useProxyString, useSocketsHttpHandlerString) =>
             {
-                using (HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString))
+                using (HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString))
                 using (var client = new HttpClient(handler))
                 {
                     var creds = new NetworkCredential(ExpectedUsername, ExpectedPassword);
@@ -117,7 +117,7 @@ namespace System.Net.Http.Functional.Tests
                     TestHelper.VerifyResponseBody(responseStringTask.Result, responseTask.Result.Content.Headers.ContentMD5, false, null);
                 }
                 return SuccessExitCode;
-            }, useProxy.ToString(), UseManagedHandler.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            }, useProxy.ToString(), UseSocketsHttpHandler.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
             if (useProxy)
             {

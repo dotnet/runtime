@@ -22,9 +22,9 @@ namespace System.Net.Http.Functional.Tests
             "\r\n" +
             s_simpleContent;
 
-        // Retry logic is supported by managed handler, CurlHandler, uap, and netfx.  Only WinHttp does not support. 
+        // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support. 
         private bool IsRetrySupported =>
-            UseManagedHandler || !PlatformDetection.IsWindows || PlatformDetection.IsUap || PlatformDetection.IsFullFramework;
+            UseSocketsHttpHandler || !PlatformDetection.IsWindows || PlatformDetection.IsUap || PlatformDetection.IsFullFramework;
 
         public static Task CreateServerAndClientAsync(Func<Uri, Task> clientFunc, Func<Socket, Task> serverFunc)
         {
