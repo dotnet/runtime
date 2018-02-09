@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class ManagedHandler : HttpMessageHandler
+    public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandler _handler;
@@ -19,7 +19,7 @@ namespace System.Net.Http
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(ManagedHandler));
+                throw new ObjectDisposedException(nameof(SocketsHttpHandler));
             }
         }
 
@@ -169,7 +169,7 @@ namespace System.Net.Http
 
         public SslClientAuthenticationOptions SslOptions
         {
-            get => _settings._sslOptions;
+            get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
             set
             {
                 CheckDisposedOrStarted();

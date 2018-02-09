@@ -15,15 +15,17 @@ namespace System.Net.Http
     {
         // Only one of these two handlers will be initialized.
         private readonly CurlHandler _curlHandler;
-        private readonly ManagedHandler _managedHandler;
+        private readonly SocketsHttpHandler _socketsHttpHandler;
         private readonly DiagnosticsHandler _diagnosticsHandler;
 
-        public HttpClientHandler()
+        public HttpClientHandler() : this(UseSocketsHttpHandler) { }
+
+        private HttpClientHandler(bool useSocketsHttpHandler) // used by parameterless ctor and as hook for testing
         {
-            if (UseManagedHandler)
+            if (useSocketsHttpHandler)
             {
-                _managedHandler = new ManagedHandler() { SslOptions = new SslClientAuthenticationOptions() };
-                _diagnosticsHandler = new DiagnosticsHandler(_managedHandler);
+                _socketsHttpHandler = new SocketsHttpHandler();
+                _diagnosticsHandler = new DiagnosticsHandler(_socketsHttpHandler);
             }
             else
             {
@@ -36,7 +38,7 @@ namespace System.Net.Http
         {
             if (disposing)
             {
-                ((HttpMessageHandler)_curlHandler ?? _managedHandler).Dispose();
+                ((HttpMessageHandler)_curlHandler ?? _socketsHttpHandler).Dispose();
             }
             base.Dispose(disposing);
         }
@@ -49,7 +51,7 @@ namespace System.Net.Http
 
         public bool UseCookies
         {
-            get => _curlHandler != null ? _curlHandler.UseCookies : _managedHandler.UseCookies;
+            get => _curlHandler != null ? _curlHandler.UseCookies : _socketsHttpHandler.UseCookies;
             set
             {
                 if (_curlHandler != null)
@@ -58,14 +60,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.UseCookies = value;
+                    _socketsHttpHandler.UseCookies = value;
                 }
             }
         }
 
         public CookieContainer CookieContainer
         {
-            get => _curlHandler != null ? _curlHandler.CookieContainer : _managedHandler.CookieContainer;
+            get => _curlHandler != null ? _curlHandler.CookieContainer : _socketsHttpHandler.CookieContainer;
             set
             {
                 if (_curlHandler != null)
@@ -74,7 +76,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.CookieContainer = value;
+                    _socketsHttpHandler.CookieContainer = value;
                 }
             }
         }
@@ -89,7 +91,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    return _managedHandler.SslOptions.LocalCertificateSelectionCallback != null ?
+                    return _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback != null ?
                         ClientCertificateOption.Automatic :
                         ClientCertificateOption.Manual;
                 }
@@ -106,12 +108,12 @@ namespace System.Net.Http
                     {
                         case ClientCertificateOption.Manual:
                             ThrowForModifiedManagedSslOptionsIfStarted();
-                            _managedHandler.SslOptions.LocalCertificateSelectionCallback = null;
+                            _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = null;
                             break;
 
                         case ClientCertificateOption.Automatic:
                             ThrowForModifiedManagedSslOptionsIfStarted();
-                            _managedHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate();
+                            _socketsHttpHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate();
                             break;
 
                         default:
@@ -136,8 +138,8 @@ namespace System.Net.Http
                         throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
                     }
 
-                    return _managedHandler.SslOptions.ClientCertificates ??
-                        (_managedHandler.SslOptions.ClientCertificates = new X509CertificateCollection());
+                    return _socketsHttpHandler.SslOptions.ClientCertificates ??
+                        (_socketsHttpHandler.SslOptions.ClientCertificates = new X509CertificateCollection());
                 }
             }
         }
@@ -148,7 +150,7 @@ namespace System.Net.Http
             {
                 return _curlHandler != null ?
                     _curlHandler.ServerCertificateCustomValidationCallback :
-                    (_managedHandler.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
+                    (_socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback?.Target as ConnectHelper.CertificateCallbackMapper)?.FromHttpClientHandler;
             }
             set
             {
@@ -159,8 +161,8 @@ namespace System.Net.Http
                 else
                 {
                     ThrowForModifiedManagedSslOptionsIfStarted();
-                    _managedHandler.SslOptions.RemoteCertificateValidationCallback = value != null ?
-                        new ConnectHelper.CertificateCallbackMapper(value).ForManagedHandler :
+                    _socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback = value != null ?
+                        new ConnectHelper.CertificateCallbackMapper(value).ForSocketsHttpHandler :
                         null;
                 }
             }
@@ -168,7 +170,7 @@ namespace System.Net.Http
 
         public bool CheckCertificateRevocationList
         {
-            get => _curlHandler != null ? _curlHandler.CheckCertificateRevocationList : _managedHandler.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
+            get => _curlHandler != null ? _curlHandler.CheckCertificateRevocationList : _socketsHttpHandler.SslOptions.CertificateRevocationCheckMode == X509RevocationMode.Online;
             set
             {
                 if (_curlHandler != null)
@@ -178,14 +180,14 @@ namespace System.Net.Http
                 else
                 {
                     ThrowForModifiedManagedSslOptionsIfStarted();
-                    _managedHandler.SslOptions.CertificateRevocationCheckMode = value ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
+                    _socketsHttpHandler.SslOptions.CertificateRevocationCheckMode = value ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
                 }
             }
         }
 
         public SslProtocols SslProtocols
         {
-            get => _curlHandler != null ? _curlHandler.SslProtocols : _managedHandler.SslOptions.EnabledSslProtocols;
+            get => _curlHandler != null ? _curlHandler.SslProtocols : _socketsHttpHandler.SslOptions.EnabledSslProtocols;
             set
             {
                 if (_curlHandler != null)
@@ -196,14 +198,14 @@ namespace System.Net.Http
                 {
                     SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
                     ThrowForModifiedManagedSslOptionsIfStarted();
-                    _managedHandler.SslOptions.EnabledSslProtocols = value;
+                    _socketsHttpHandler.SslOptions.EnabledSslProtocols = value;
                 }
             }
         }
 
         public DecompressionMethods AutomaticDecompression
         {
-            get => _curlHandler != null ? _curlHandler.AutomaticDecompression : _managedHandler.AutomaticDecompression;
+            get => _curlHandler != null ? _curlHandler.AutomaticDecompression : _socketsHttpHandler.AutomaticDecompression;
             set
             {
                 if (_curlHandler != null)
@@ -212,14 +214,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.AutomaticDecompression = value;
+                    _socketsHttpHandler.AutomaticDecompression = value;
                 }
             }
         }
 
         public bool UseProxy
         {
-            get => _curlHandler != null ? _curlHandler.UseProxy : _managedHandler.UseProxy;
+            get => _curlHandler != null ? _curlHandler.UseProxy : _socketsHttpHandler.UseProxy;
             set
             {
                 if (_curlHandler != null)
@@ -228,14 +230,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.UseProxy = value;
+                    _socketsHttpHandler.UseProxy = value;
                 }
             }
         }
 
         public IWebProxy Proxy
         {
-            get => _curlHandler != null ? _curlHandler.Proxy : _managedHandler.Proxy;
+            get => _curlHandler != null ? _curlHandler.Proxy : _socketsHttpHandler.Proxy;
             set
             {
                 if (_curlHandler != null)
@@ -244,14 +246,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.Proxy = value;
+                    _socketsHttpHandler.Proxy = value;
                 }
             }
         }
 
         public ICredentials DefaultProxyCredentials
         {
-            get => _curlHandler != null ? _curlHandler.DefaultProxyCredentials : _managedHandler.DefaultProxyCredentials;
+            get => _curlHandler != null ? _curlHandler.DefaultProxyCredentials : _socketsHttpHandler.DefaultProxyCredentials;
             set
             {
                 if (_curlHandler != null)
@@ -260,14 +262,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.DefaultProxyCredentials = value;
+                    _socketsHttpHandler.DefaultProxyCredentials = value;
                 }
             }
         }
 
         public bool PreAuthenticate
         {
-            get => _curlHandler != null ? _curlHandler.PreAuthenticate : _managedHandler.PreAuthenticate;
+            get => _curlHandler != null ? _curlHandler.PreAuthenticate : _socketsHttpHandler.PreAuthenticate;
             set
             {
                 if (_curlHandler != null)
@@ -276,7 +278,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.PreAuthenticate = value;
+                    _socketsHttpHandler.PreAuthenticate = value;
                 }
             }
         }
@@ -295,7 +297,7 @@ namespace System.Net.Http
 
         public ICredentials Credentials
         {
-            get => _curlHandler != null ? _curlHandler.Credentials : _managedHandler.Credentials;
+            get => _curlHandler != null ? _curlHandler.Credentials : _socketsHttpHandler.Credentials;
             set
             {
                 if (_curlHandler != null)
@@ -304,14 +306,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.Credentials = value;
+                    _socketsHttpHandler.Credentials = value;
                 }
             }
         }
 
         public bool AllowAutoRedirect
         {
-            get => _curlHandler != null ? _curlHandler.AllowAutoRedirect : _managedHandler.AllowAutoRedirect;
+            get => _curlHandler != null ? _curlHandler.AllowAutoRedirect : _socketsHttpHandler.AllowAutoRedirect;
             set
             {
                 if (_curlHandler != null)
@@ -320,14 +322,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.AllowAutoRedirect = value;
+                    _socketsHttpHandler.AllowAutoRedirect = value;
                 }
             }
         }
 
         public int MaxAutomaticRedirections
         {
-            get => _curlHandler != null ? _curlHandler.MaxAutomaticRedirections : _managedHandler.MaxAutomaticRedirections;
+            get => _curlHandler != null ? _curlHandler.MaxAutomaticRedirections : _socketsHttpHandler.MaxAutomaticRedirections;
             set
             {
                 if (_curlHandler != null)
@@ -336,14 +338,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.MaxAutomaticRedirections = value;
+                    _socketsHttpHandler.MaxAutomaticRedirections = value;
                 }
             }
         }
 
         public int MaxConnectionsPerServer
         {
-            get => _curlHandler != null ? _curlHandler.MaxConnectionsPerServer : _managedHandler.MaxConnectionsPerServer;
+            get => _curlHandler != null ? _curlHandler.MaxConnectionsPerServer : _socketsHttpHandler.MaxConnectionsPerServer;
             set
             {
                 if (_curlHandler != null)
@@ -352,14 +354,14 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.MaxConnectionsPerServer = value;
+                    _socketsHttpHandler.MaxConnectionsPerServer = value;
                 }
             }
         }
 
         public int MaxResponseHeadersLength
         {
-            get => _curlHandler != null ? _curlHandler.MaxResponseHeadersLength : _managedHandler.MaxResponseHeadersLength;
+            get => _curlHandler != null ? _curlHandler.MaxResponseHeadersLength : _socketsHttpHandler.MaxResponseHeadersLength;
             set
             {
                 if (_curlHandler != null)
@@ -368,18 +370,18 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    _managedHandler.MaxResponseHeadersLength = value;
+                    _socketsHttpHandler.MaxResponseHeadersLength = value;
                 }
             }
         }
 
         public IDictionary<string, object> Properties => _curlHandler != null ?
             _curlHandler.Properties :
-            _managedHandler.Properties;
+            _socketsHttpHandler.Properties;
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
             DiagnosticsHandler.IsEnabled() ? _diagnosticsHandler.SendAsync(request, cancellationToken) :
             _curlHandler != null ? _curlHandler.SendAsync(request, cancellationToken) :
-            _managedHandler.SendAsync(request, cancellationToken);
+            _socketsHttpHandler.SendAsync(request, cancellationToken);
     }
 }

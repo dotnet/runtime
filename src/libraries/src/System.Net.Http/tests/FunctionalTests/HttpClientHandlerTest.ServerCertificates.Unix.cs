@@ -53,7 +53,7 @@ namespace System.Net.Http.Functional.Tests
         {
             get
             {
-                if (UseManagedHandler)
+                if (UseSocketsHttpHandler)
                 {
                     return true;
                 }

@@ -100,9 +100,9 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #26186: The managed handler is failing on some OSes.
+                // TODO #26186: SocketsHttpHandler is failing on some OSes.
                 return;
             }
 
@@ -141,9 +141,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(SupportedSSLVersionServers))]
         public async Task GetAsync_SupportedSSLVersion_Succeeds(SslProtocols sslProtocols, string url)
         {
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #26186: The managed handler is failing on some OSes.
+                // TODO #26186: SocketsHttpHandler is failing on some OSes.
                 return;
             }
 
@@ -197,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseManagedHandler && !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (UseSocketsHttpHandler && !PlatformDetection.IsWindows10Version1607OrGreater)
             {
                 // On Windows, https://github.com/dotnet/corefx/issues/21925#issuecomment-313408314
                 // On Linux, an older version of OpenSSL may permit negotiating SSLv3.
