@@ -496,14 +496,11 @@ do                                                      \
 #endif // FEATURE_COMINTEROP
             if (fDefault || ntype == NATIVE_TYPE_INT || ntype == NATIVE_TYPE_UINT)
             {
-                if (sizeof(LPVOID)==4)
-                {
-                    INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
-                }
-                else
-                {
-                    INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
-                }
+#ifdef _TARGET_64BIT_
+                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+#else // !_TARGET_64BIT_
+                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+#endif // !_TARGET_64BIT_
             }
             else
             {
@@ -543,20 +540,11 @@ do                                                      \
 #endif // FEATURE_COMINTEROP
             if (fDefault)
             {
-                switch (sizeof(LPVOID))
-                {
-                    case 4:
-                        INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
-                        break;
-                        
-                    case 8:
-                        INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
-                        break;
-
-                    default:
-                        INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_BADMANAGED));
-                        break;
-                }
+#ifdef _TARGET_64BIT_
+                INITFIELDMARSHALER(NFT_COPY8, FieldMarshaler_Copy8, ());
+#else // !_TARGET_64BIT_
+                INITFIELDMARSHALER(NFT_COPY4, FieldMarshaler_Copy4, ());
+#endif // !_TARGET_64BIT_
             }
             else
             {
