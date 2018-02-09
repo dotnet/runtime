@@ -29,6 +29,8 @@ import sys
 # Globals
 ##########################################################################
 
+testing = False
+
 Corefx_url = 'https://github.com/dotnet/corefx.git'
 
 # This should be factored out of build.sh
@@ -181,6 +183,29 @@ def log(message):
 
     print '[%s]: %s' % (sys.argv[0], message)
 
+def copy_files(source_dir, target_dir):
+    """ Copy any files in the source_dir to the target_dir.
+        The copy is not recursive.
+        The directories must already exist.
+    Args:
+        source_dir (str): source directory path
+        target_dir (str): target directory path
+    Returns:
+        Nothing
+    """
+
+    global testing
+    assert os.path.isdir(source_dir)
+    assert os.path.isdir(target_dir)
+
+    for source_filename in os.listdir(source_dir):
+        source_pathname = os.path.join(source_dir, source_filename)
+        if os.path.isfile(source_pathname):
+            target_pathname = os.path.join(target_dir, source_filename)
+            log('Copy: %s => %s' % (source_pathname, target_pathname))
+            if not testing:
+                shutil.copy2(source_pathname, target_pathname)
+
 ##########################################################################
 # Main
 ##########################################################################
@@ -188,8 +213,7 @@ def log(message):
 def main(args):
     global Corefx_url
     global Unix_name_map
-
-    testing = False
+    global testing
 
     arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests = validate_args(
         args)
@@ -260,16 +284,43 @@ def main(args):
 
     config_args = '-Release -os:%s -buildArch:%s' % (clr_os, arch)
 
-    # Run the primary (non-test) corefx build
+    # Run the primary (non-test) corefx build. We previously passed the argument:
+    #
+    #    /p:CoreCLROverridePath=<path-to-core_root>
+    #
+    # which causes the corefx build to overwrite its built runtime with the binaries from
+    # the coreclr build. However, this often causes build failures when breaking changes are
+    # in progress (e.g., a breaking change is made in coreclr that has not yet had compensating
+    # changes made in the corefx repo). Instead, build corefx normally. This should always work
+    # since corefx is protected by a CI testing system. Then, overwrite the built corefx
+    # runtime with the runtime built in the coreclr build. The result will be that perhaps
+    # some, hopefully few, corefx tests will fail, but the builds will never fail.
 
     command = ' '.join(('build.cmd' if Is_windows else './build.sh',
-                        config_args,
-                        '-- /p:CoreCLROverridePath=%s' % core_root))
+                        config_args))
 
     log(command)
     returncode = 0 if testing else os.system(command)
     if returncode != 0:
         sys.exit(1)
+
+    # Override the built corefx runtime (which it picked up by copying from packages determined
+    # by its dependencies.props file). Note that we always build Release corefx.
+    # We must copy all files, not just the files that already exist in the corefx runtime
+    # directory. This is required so we copy over all altjit compilers.
+    # TODO: it might be cleaner to encapsulate the knowledge of how to do this in the
+    # corefx msbuild files somewhere.
+
+    fx_runtime = os.path.join(fx_root,
+                             'bin',
+                             'testhost',
+                             'netcoreapp-%s-%s-%s' % (clr_os, 'Release', arch),
+                             'shared',
+                             'Microsoft.NETCore.App',
+                             '9.9.9')
+
+    log('Updating CoreCLR: %s => %s' % (core_root, fx_runtime))
+    copy_files(core_root, fx_runtime)
 
     # Build the build-tests command line.
 
