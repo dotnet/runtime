@@ -207,7 +207,7 @@ HRESULT CordbFunctionBreakpoint::Activate(BOOL fActivate)
 
         BOOL codeIsIL = m_code->IsIL();
 
-        pEvent->BreakpointData.isIL = m_offsetIsIl;
+        pEvent->BreakpointData.isIL = m_offsetIsIl ? true : false;
         pEvent->BreakpointData.offset = m_offset;
         if (codeIsIL)
         {
