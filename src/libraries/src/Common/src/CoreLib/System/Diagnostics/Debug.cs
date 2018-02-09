@@ -95,7 +95,7 @@ namespace System.Diagnostics
                 string stackTrace;
                 try
                 {
-                    stackTrace = new StackTrace(0, true).ToString();
+                    stackTrace = new StackTrace(0, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
                 }
                 catch
                 {
@@ -113,7 +113,7 @@ namespace System.Diagnostics
                 string stackTrace;
                 try
                 {
-                    stackTrace = new StackTrace(0, true).ToString();
+                    stackTrace = new StackTrace(0, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
                 }
                 catch
                 {
