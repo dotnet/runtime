@@ -289,8 +289,8 @@ do                                                      \
         }
         else if (corElemType == ELEMENT_TYPE_PTR)
         {
-            pfwalk->m_managedSize = sizeof(LPVOID);
-            pfwalk->m_managedAlignmentReq = sizeof(LPVOID);
+            pfwalk->m_managedSize = TARGET_POINTER_SIZE;
+            pfwalk->m_managedAlignmentReq = TARGET_POINTER_SIZE;
         }
         else if (corElemType == ELEMENT_TYPE_VALUETYPE)
         {

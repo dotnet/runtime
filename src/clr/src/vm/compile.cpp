@@ -1028,7 +1028,7 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
 
     nStackSlots = nStackBytes / sizeof(TADDR) + NUM_ARGUMENT_REGISTERS;
 #else
-    nStackSlots = (sizeof(TransitionBlock) + nStackBytes - TransitionBlock::GetOffsetOfArgumentRegisters()) / sizeof(TADDR);
+    nStackSlots = (sizeof(TransitionBlock) + nStackBytes - TransitionBlock::GetOffsetOfArgumentRegisters()) / TARGET_POINTER_SIZE;
 #endif
 
     for (UINT pos = 0; pos < nStackSlots; pos++)
@@ -1040,7 +1040,7 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
             (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
             (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
 #else
-        ofs = TransitionBlock::GetOffsetOfArgumentRegisters() + pos * sizeof(TADDR);
+        ofs = TransitionBlock::GetOffsetOfArgumentRegisters() + pos * TARGET_POINTER_SIZE;
 #endif
 
         CORCOMPILE_GCREFMAP_TOKENS token = *(CORCOMPILE_GCREFMAP_TOKENS *)(pFrame + ofs);
@@ -1083,7 +1083,7 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
             (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
             (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
 #else
-        ofs = TransitionBlock::GetOffsetOfArgumentRegisters() + pos * sizeof(TADDR);
+        ofs = TransitionBlock::GetOffsetOfArgumentRegisters() + pos * TARGET_POINTER_SIZE;
 #endif
 
         if (token != 0)
@@ -2113,7 +2113,7 @@ void CEECompileInfo::EncodeTypeLayout(CORINFO_CLASS_HANDLE classHandle, SigBuild
 
     // Check everything 
     dwFlags |= READYTORUN_LAYOUT_Alignment;
-    if (dwAlignment == sizeof(void *))
+    if (dwAlignment == TARGET_POINTER_SIZE)
         dwFlags |= READYTORUN_LAYOUT_Alignment_Native;
 
     dwFlags |= READYTORUN_LAYOUT_GCLayout;
@@ -2139,7 +2139,7 @@ void CEECompileInfo::EncodeTypeLayout(CORINFO_CLASS_HANDLE classHandle, SigBuild
 
     if ((dwFlags & READYTORUN_LAYOUT_GCLayout) && !(dwFlags & READYTORUN_LAYOUT_GCLayout_Empty))
     {
-        size_t cbGCRefMap = (dwSize / sizeof(TADDR) + 7) / 8;
+        size_t cbGCRefMap = (dwSize / TARGET_POINTER_SIZE + 7) / 8;
         _ASSERTE(cbGCRefMap > 0);
 
         BYTE * pGCRefMap = (BYTE *)_alloca(cbGCRefMap);
