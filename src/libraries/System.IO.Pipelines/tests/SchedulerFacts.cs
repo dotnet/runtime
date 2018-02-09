@@ -52,34 +52,31 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DefaultReaderSchedulerRunsInline()
         {
-            using (var pool = new TestMemoryPool())
-            {
-                var pipe = new Pipe(new PipeOptions(pool));
+            var pipe = new Pipe();
 
-                var id = 0;
+            var id = 0;
 
-                Func<Task> doRead = async () => {
-                    ReadResult result = await pipe.Reader.ReadAsync();
+            Func<Task> doRead = async () => {
+                ReadResult result = await pipe.Reader.ReadAsync();
 
-                    Assert.Equal(Thread.CurrentThread.ManagedThreadId, id);
+                Assert.Equal(Thread.CurrentThread.ManagedThreadId, id);
 
-                    pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
+                pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
 
-                    pipe.Reader.Complete();
-                };
+                pipe.Reader.Complete();
+            };
 
-                Task reading = doRead();
+            Task reading = doRead();
 
-                id = Thread.CurrentThread.ManagedThreadId;
+            id = Thread.CurrentThread.ManagedThreadId;
 
-                PipeWriter buffer = pipe.Writer;
-                buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
-                await buffer.FlushAsync();
+            PipeWriter buffer = pipe.Writer;
+            buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+            await buffer.FlushAsync();
 
-                pipe.Writer.Complete();
+            pipe.Writer.Complete();
 
-                await reading;
-            }
+            await reading;
         }
 
         [Fact]
@@ -199,6 +196,40 @@ namespace System.IO.Pipelines.Tests
                     await reading;
                 }
             }
+        }
+
+        [Fact]
+        public async Task ThreadPoolScheduler_SchedulesOnThreadPool()
+        {
+            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool));
+
+            async Task DoRead()
+            {
+                int oid = Thread.CurrentThread.ManagedThreadId;
+
+                ReadResult result = await pipe.Reader.ReadAsync();
+
+                Assert.NotEqual(oid, Thread.CurrentThread.ManagedThreadId);
+                Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
+                pipe.Reader.Complete();
+            }
+
+            bool callbackRan = false;
+            Task reading = DoRead();
+
+            PipeWriter buffer = pipe.Writer;
+            pipe.Writer.OnReaderCompleted((state, exception) =>
+                {
+                    callbackRan = true;
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                }, null);
+            buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+            await buffer.FlushAsync();
+
+            await reading;
+
+            Assert.True(callbackRan);
         }
     }
 }

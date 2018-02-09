@@ -187,7 +187,7 @@ namespace System.IO.Pipelines.Tests
         {
             Memory<byte> buffer = Pipe.Writer.GetMemory(1);
             var exception = Assert.Throws<InvalidOperationException>(() => Pipe.Writer.Advance(buffer.Length + 1));
-            Assert.Equal("Can't advance past buffer size", exception.Message);
+            Assert.Equal("Can't advance past buffer size.", exception.Message);
         }
 
         [Fact]

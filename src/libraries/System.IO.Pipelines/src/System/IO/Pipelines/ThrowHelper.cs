@@ -14,7 +14,7 @@ namespace System.IO.Pipelines
 
         internal static void ThrowArgumentNullException(ExceptionArgument argument) { throw CreateArgumentNullException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
+        private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentNullException(argument.ToString()); }
 
         public static void ThrowInvalidOperationException_NotWritingNoAlloc()
         {
@@ -157,7 +157,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_ResetIncompleteReaderWriter()
         {
-            return new InvalidOperationException(SR.AdvanceToInvalidCursor);
+            return new InvalidOperationException(SR.ReaderAndWriterHasToBeCompleted);
         }
     }
 

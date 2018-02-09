@@ -13,7 +13,7 @@
     <Compile Include="FlushResultTests.cs" />
     <Compile Include="PipeCompletionCallbacksTests.cs" />
     <Compile Include="PipeLengthTests.cs" />
-    <Compile Include="PipelineReaderWriterFacts.cs" />
+    <Compile Include="PipeReaderWriterFacts.cs" />
     <Compile Include="PipePoolTests.cs" />
     <Compile Include="PipeResetTests.cs" />
     <Compile Include="PipeTest.cs" />
@@ -26,6 +26,11 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <TargetingPackExclusions Include="System.IO.Pipelines" />
+    <ReferenceFromRuntime Include="System.IO.Pipelines" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

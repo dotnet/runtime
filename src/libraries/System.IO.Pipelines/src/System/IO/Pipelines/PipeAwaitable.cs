@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.IO.Pipelines
 {
+    [DebuggerDisplay("CancelledState: {_canceledState}, IsCompleted: {IsCompleted}")]
     internal struct PipeAwaitable
     {
         private static readonly Action _awaitableIsCompleted = () => { };
@@ -132,11 +134,6 @@ namespace System.IO.Pipelines
             }
 
             return false;
-        }
-
-        public override string ToString()
-        {
-            return $"CancelledState: {_canceledState}, {nameof(IsCompleted)}: {IsCompleted}";
         }
 
         private enum CanceledState
