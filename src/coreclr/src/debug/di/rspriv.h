@@ -5338,11 +5338,7 @@ const BOOL bILCode = TRUE;
 // B/C of generics, a single IL function may get jitted multiple times and
 // be associated w/ multiple native code blobs (CordbNativeCode).
 //
-class CordbFunction : public CordbBase, 
-                      public ICorDebugFunction, 
-                      public ICorDebugFunction2, 
-                      public ICorDebugFunction3, 
-                      public ICorDebugFunction4
+class CordbFunction : public CordbBase, public ICorDebugFunction, public ICorDebugFunction2, public ICorDebugFunction3
 {
 public:
     //-----------------------------------------------------------
@@ -5399,11 +5395,6 @@ public:
     // ICorDebugFunction3
     //-----------------------------------------------------------
     COM_METHOD GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedILCode);
-
-    //-----------------------------------------------------------
-    // ICorDebugFunction4
-    //-----------------------------------------------------------
-    COM_METHOD CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
 
     //-----------------------------------------------------------
     // Internal members
@@ -5749,8 +5740,6 @@ public:
     HRESULT GetLocalVariableType(DWORD dwIndex, const Instantiation * pInst, CordbType ** ppResultType);
     mdSignature GetLocalVarSigToken();
 
-    COM_METHOD CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
-
 private:
     // Read the actual bytes of IL code into the data member m_rgbCode.
     // Helper routine for GetCode
@@ -5782,9 +5771,7 @@ protected:
 * rejitID. Thus it is 1:N with a given instantiation of CordbFunction.
 * ------------------------------------------------------------------------- */
 
-class CordbReJitILCode : public CordbILCode, 
-                         public ICorDebugILCode, 
-                         public ICorDebugILCode2
+class CordbReJitILCode : public CordbILCode, public ICorDebugILCode, public ICorDebugILCode2
 {
 public:
     // Initialize a new CordbILCode instance
@@ -5809,7 +5796,7 @@ public:
     //-----------------------------------------------------------
     COM_METHOD GetLocalVarSigToken(mdSignature *pmdSig);
     COM_METHOD GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR_IL_MAP map[]);
-    
+
 private:
     HRESULT Init(DacSharedReJitInfo* pSharedReJitInfo);
 
@@ -7573,7 +7560,7 @@ class CordbFunctionBreakpoint : public CordbBreakpoint,
                                 public ICorDebugFunctionBreakpoint
 {
 public:
-    CordbFunctionBreakpoint(CordbCode *code, SIZE_T offset, BOOL offsetIsIl);
+    CordbFunctionBreakpoint(CordbCode *code, SIZE_T offset);
     ~CordbFunctionBreakpoint();
 
     virtual void Neuter();
@@ -7634,7 +7621,6 @@ public:
     // leaked.
     RSExtSmartPtr<CordbCode> m_code;
     SIZE_T          m_offset;
-    BOOL            m_offsetIsIl;
 };
 
 /* ------------------------------------------------------------------------- *
