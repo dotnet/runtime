@@ -490,10 +490,16 @@ namespace System.Threading.Channels.Tests
             AssertSynchronousTrue(c.Reader.WaitToReadAsync());
         }
 
-        [Fact]
-        public void Precancellation_WaitToReadAsync_ReturnsImmediately()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Precancellation_WaitToReadAsync_ReturnsImmediately(bool dataAvailable)
         {
             Channel<int> c = CreateChannel();
+            if (dataAvailable)
+            {
+                Assert.True(c.Writer.TryWrite(42));
+            }
 
             Task writeTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
             Assert.Equal(TaskStatus.Canceled, writeTask.Status);
