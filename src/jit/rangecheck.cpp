@@ -129,12 +129,6 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
             return false;
         }
 
-        // If lower limit is len return false.
-        if (range.LowerLimit().IsArray())
-        {
-            return false;
-        }
-
         // Since upper limit is bounded by the array, return true if lower bound is good.
         if (range.LowerLimit().IsConstant() && range.LowerLimit().GetConstant() >= 0)
         {
@@ -601,9 +595,8 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
             {
                 continue;
             }
-            limit.type = Limit::keArray;
-            limit.vn   = info.vnBound;
-            cmpOper    = (genTreeOps)info.cmpOper;
+            limit   = Limit(Limit::keBinOpArray, info.vnBound, 0);
+            cmpOper = (genTreeOps)info.cmpOper;
         }
         // Current assertion is of the form (i < 100) != 0
         else if (curAssertion->IsConstantBound())
@@ -631,7 +624,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
             continue;
         }
 
-        assert(limit.IsBinOpArray() || limit.IsArray() || limit.IsConstant());
+        assert(limit.IsBinOpArray() || limit.IsConstant());
 
         // Make sure the assertion is of the form != 0 or == 0.
         if (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT))
@@ -694,10 +687,9 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         }
 
         // Check if the incoming limit from assertions tightens the existing upper limit.
-        if ((pRange->uLimit.IsArray() || pRange->uLimit.IsBinOpArray()) && pRange->uLimit.vn == arrLenVN)
+        if (pRange->uLimit.IsBinOpArray() && (pRange->uLimit.vn == arrLenVN))
         {
             // We have checked the current range's (pRange's) upper limit is either of the form:
-            //      length
             //      length + cns
             //      and length == the bndsChkCandidate's arrLen
             //
@@ -711,7 +703,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
                 continue;
             }
 
-            int curCns = (pRange->uLimit.IsBinOpArray()) ? pRange->uLimit.cns : 0;
+            int curCns = pRange->uLimit.cns;
             int limCns = (limit.IsBinOpArray()) ? limit.cns : 0;
 
             // Incoming limit doesn't tighten the existing upper limit.
@@ -723,7 +715,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         }
         else
         {
-            // Current range's upper bound is not "length or length + cns" and the
+            // Current range's upper bound is not "length + cns" and the
             // incoming limit is not on the same length as the bounds check candidate.
             // So we could skip this assertion. But in cases, of Dependent or Unknown
             // type of upper limit, the incoming assertion still tightens the upper
@@ -945,17 +937,6 @@ bool RangeCheck::GetLimitMax(Limit& limit, int* pMax)
                 return false;
             }
             max1 = tmp + limit.GetConstant();
-        }
-        break;
-
-        case Limit::keArray:
-        {
-            int tmp = GetArrLength(limit.vn);
-            if (tmp <= 0)
-            {
-                tmp = ARRLEN_MAX;
-            }
-            max1 = tmp;
         }
         break;
 
