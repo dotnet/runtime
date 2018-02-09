@@ -316,34 +316,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return uninstantiatedType;
         }
 
-        public override bool IsUnsigned
-        {
-            get
-            {
-                AggregateSymbol agg = OwningAggregate;
-                if (agg.IsEnum())
-                {
-                    agg = OwningAggregate.GetUnderlyingType().OwningAggregate;
-                }
-                else if (!agg.IsPredefined())
-                {
-                    return false;
-                }
-
-                switch (agg.GetPredefType())
-                {
-                    case PredefinedType.PT_UINTPTR:
-                    case PredefinedType.PT_BYTE:
-                    case PredefinedType.PT_USHORT:
-                    case PredefinedType.PT_ULONG:
-                    case PredefinedType.PT_UINT:
-                        return true;
-                }
-
-                return false;
-            }
-        }
-
         public override FUNDTYPE FundamentalType
         {
             get
