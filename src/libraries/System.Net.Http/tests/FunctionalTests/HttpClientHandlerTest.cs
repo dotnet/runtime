@@ -312,11 +312,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
-            if (PlatformDetection.IsNetCore && !UseManagedHandler)
+            if (PlatformDetection.IsNetCore && !UseSocketsHttpHandler)
             {
                 // [ActiveIssue(24862)]
                 // WinHttpHandler and CurlHandler do not use the Host header to influence the SSL auth.
-                // .NET Framework and ManagedHandler do.
+                // .NET Framework and SocketsHttpHandler do.
                 return;
             }
 
@@ -504,9 +504,9 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteInvoke(async useManagedHandlerString =>
+            RemoteInvoke(async useSocketsHttpHandlerString =>
             {
-                using (var client = CreateHttpClient(useManagedHandlerString))
+                using (var client = CreateHttpClient(useSocketsHttpHandlerString))
                 {
                     Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
                     using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -516,7 +516,7 @@ namespace System.Net.Http.Functional.Tests
 
                     return SuccessExitCode;
                 }
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -572,7 +572,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             int statusCode, string oldMethod, string newMethod)
         {
-            if (!PlatformDetection.IsWindows && !UseManagedHandler && statusCode == 300 && oldMethod == "POST")
+            if (!PlatformDetection.IsWindows && !UseSocketsHttpHandler && statusCode == 300 && oldMethod == "POST")
             {
                 // Known behavior: curl does not change method to "GET"
                 // https://github.com/dotnet/corefx/issues/26434
@@ -692,7 +692,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithoutLocation_ReturnsOriginalResponse()
         {
             // [ActiveIssue(24819, TestPlatforms.Windows)]
-            if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore && !UseManagedHandler)
+            if (PlatformDetection.IsWindows && PlatformDetection.IsNetCore && !UseSocketsHttpHandler)
             {
                 return;
             }
@@ -1086,44 +1086,48 @@ namespace System.Net.Http.Functional.Tests
             return new KeyValuePair<string, string>(name, value);
         }
 
-        public static object[][] CookieNameValues =
+        public static IEnumerable<object[]> CookieNameValuesAndUseCookies()
         {
-            // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
-            // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
-            // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
-            // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
-            // iteration index, which would cause header values to be missed if not handled correctly.
-            //
-            // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
-            //  * 0-127 chars: succeeds, index advances from 0 to 1.
-            //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
-            //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
-            //
-            // The below overall header value lengths were chosen to exercise reading header values at these
-            // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
-
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 129) },
-
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 254) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 255) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256) },
-            new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257) },
-
-            new object[]
+            foreach (bool useCookies in new[] { true, false })
             {
-                new KeyValuePair<string, string>(
-                    ".AspNetCore.Antiforgery.Xam7_OeLcN4",
-                    "CfDJ8NGNxAt7CbdClq3UJ8_6w_4661wRQZT1aDtUOIUKshbcV4P0NdS8klCL5qGSN-PNBBV7w23G6MYpQ81t0PMmzIN4O04fqhZ0u1YPv66mixtkX3iTi291DgwT3o5kozfQhe08-RAExEmXpoCbueP_QYM")
+                // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
+                // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
+                // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
+                // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
+                // iteration index, which would cause header values to be missed if not handled correctly.
+                //
+                // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
+                //  * 0-127 chars: succeeds, index advances from 0 to 1.
+                //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
+                //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
+                //
+                // The below overall header value lengths were chosen to exercise reading header values at these
+                // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
+
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 129), useCookies };
+
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 254), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 255), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256), useCookies };
+                yield return new object[] { GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257), useCookies };
+
+                yield return new object[]
+                {
+                    new KeyValuePair<string, string>(
+                        ".AspNetCore.Antiforgery.Xam7_OeLcN4",
+                        "CfDJ8NGNxAt7CbdClq3UJ8_6w_4661wRQZT1aDtUOIUKshbcV4P0NdS8klCL5qGSN-PNBBV7w23G6MYpQ81t0PMmzIN4O04fqhZ0u1YPv66mixtkX3iTi291DgwT3o5kozfQhe08-RAExEmXpoCbueP_QYM"),
+                    useCookies
+                };
             }
-        };
+        }
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(CookieNameValues))]
-        public async Task GetAsync_ResponseWithSetCookieHeaders_AllCookiesRead(KeyValuePair<string, string> cookie1)
+        [MemberData(nameof(CookieNameValuesAndUseCookies))]
+        public async Task GetAsync_ResponseWithSetCookieHeaders_AllCookiesRead(KeyValuePair<string, string> cookie1, bool useCookies)
         {
             var cookie2 = new KeyValuePair<string, string>(".AspNetCore.Session", "RAExEmXpoCbueP_QYM");
             var cookie3 = new KeyValuePair<string, string>("name", "value");
@@ -1131,28 +1135,39 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getResponseTask,
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
-                            $"Set-Cookie   : {cookie2.Key}={cookie2.Value}; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
-                            $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
-                            "\r\n"));
+                    handler.UseCookies = useCookies;
 
-                    using (HttpResponseMessage response = await getResponseTask)
+                    using (var client = new HttpClient(handler))
                     {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+                        Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                        await TestHelper.WhenAllCompletedOrAnyFailed(
+                            getResponseTask,
+                            LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                                $"HTTP/1.1 200 OK\r\n" +
+                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                                $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
+                                $"Set-Cookie   : {cookie2.Key}={cookie2.Value}; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
+                                $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
+                                "\r\n"));
 
-                        Assert.Equal(3, cookies.Count);
-                        Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
-                        Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
-                        Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                        using (HttpResponseMessage response = await getResponseTask)
+                        {
+                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                            CookieCollection cookies = handler.CookieContainer.GetCookies(url);
+                            if (useCookies)
+                            {
+                                Assert.Equal(3, cookies.Count);
+                                Assert.Equal(cookie1.Value, cookies[cookie1.Key].Value);
+                                Assert.Equal(cookie2.Value, cookies[cookie2.Key].Value);
+                                Assert.Equal(cookie3.Value, cookies[cookie3.Key].Value);
+                            }
+                            else
+                            {
+                                Assert.Equal(0, cookies.Count);
+                            }
+                        }
                     }
                 }
             });
@@ -1411,9 +1426,9 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Dispose_DisposingHandlerCancelsActiveOperationsWithoutResponses()
         {
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #23131: The ManagedHandler isn't correctly handling disposal of the handler.
+                // TODO #23131: The SocketsHttpHandler isn't correctly handling disposal of the handler.
                 // It should cause the outstanding requests to be canceled with OperationCanceledExceptions,
                 // whereas currently it's resulting in ObjectDisposedExceptions.
                 return;
@@ -1757,7 +1772,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage response = await client.SendAsync(req))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    if (UseManagedHandler)
+                    if (UseSocketsHttpHandler)
                     {
                         const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
                         if (expectContinue == true && version == "1.1")
@@ -1798,7 +1813,7 @@ namespace System.Net.Http.Functional.Tests
                         canReadFunc: () => true,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
 
-                    if (UseManagedHandler || PlatformDetection.IsUap)
+                    if (UseSocketsHttpHandler || PlatformDetection.IsUap)
                     {
                         HttpRequestException requestException = await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
                         Assert.Same(error, requestException.InnerException);
@@ -2048,7 +2063,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
-                    if (method == "TRACE" && (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || UseManagedHandler))
+                    if (method == "TRACE" && (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || UseSocketsHttpHandler))
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE' 
                         // verb and a request body. The usual response from a server is "400 Bad Request".
@@ -2090,8 +2105,8 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
         {
-            // Managed handler treats 0.0 as a bad version, and throws.
-            if (UseManagedHandler)
+            // SocketsHttpHandler treats 0.0 as a bad version, and throws.
+            if (UseSocketsHttpHandler)
             {
                 return;
             }
@@ -2115,9 +2130,9 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
                 return;
             }
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #23134: The managed handler doesn't yet support HTTP/2.
+                // TODO #23134: SocketsHttpHandler doesn't yet support HTTP/2.
                 return;
             }
 
@@ -2167,9 +2182,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #23134: The managed handler doesn't yet support HTTP/2.
+                // TODO #23134: SocketsHttpHandler doesn't yet support HTTP/2.
                 return;
             }
 
@@ -2246,9 +2261,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CredentialsForProxyNonRfcCompliant))]
         public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_NonRfcCompliant(ICredentials creds, bool wrapCredsInCache)
         {
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #23135: ManagedHandler currently gets error "System.NotImplementedException : Basic auth: can't handle ':' in domain "dom:\ain""
+                // TODO #23135: SocketsHttpHandler currently gets error "System.NotImplementedException : Basic auth: can't handle ':' in domain "dom:\ain""
                 return;
             }
 

@@ -84,8 +84,8 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\AuthenticationHelper.Digest.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\AuthenticationHelper.Digest.cs</Link>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs">
       <Link>ProductionCode\System\Net\Http\ByteArrayContent.cs</Link>
@@ -297,11 +297,11 @@
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs">
       <Link>ProductionCode\System\Net\Http\StringContent.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Unix\CurlResponseHeaderReader.cs">
+    <Compile Include="..\..\src\System\Net\Http\CurlHandler\CurlResponseHeaderReader.cs">
       <Link>ProductionCode\System\Net\Http\CurlResponseHeaderReader.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpEnvironmentProxy.cs">
-      <Link>ProductionCode\System\Net\Http\HttpEnvironmentProxy.cs</Link>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>

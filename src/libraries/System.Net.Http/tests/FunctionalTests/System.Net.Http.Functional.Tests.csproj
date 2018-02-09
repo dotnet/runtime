@@ -118,11 +118,11 @@
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="ManagedHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
-    <Compile Include="ReadOnlyMemoryContentTest.cs" />
     <Compile Include="HttpClientTest.netcoreapp.cs" />
     <Compile Include="HttpMethodTest.netcoreapp.cs" />
+    <Compile Include="ReadOnlyMemoryContentTest.cs" />
+    <Compile Include="SocketsHttpHandlerTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonTestPath)\System\IO\StreamSpanExtensions.netstandard.cs">
