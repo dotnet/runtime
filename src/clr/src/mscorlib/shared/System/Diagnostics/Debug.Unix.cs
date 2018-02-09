@@ -21,10 +21,8 @@ namespace System.Diagnostics
                 // In Core, we do not show a dialog.
                 // Fail in order to avoid anyone catching an exception and masking
                 // an assert failure.
-
-                // We can safely ignore errorSource since it's a CoreCLR specific argument for distinguishing calls from Debug.Assert and Environment.FailFast
                 var ex = new DebugAssertException(message, detailMessage, stackTrace);
-                Environment.FailFast(ex.Message, ex);
+                Environment.FailFast(ex.Message, ex, errorSource);
             }
         }
 
