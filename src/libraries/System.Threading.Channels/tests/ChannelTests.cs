@@ -131,6 +131,72 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FieldAccessException>(() => t);
         }
 
+        [Fact]
+        public async void TestBaseClassReadAsync()
+        {
+            WrapperChannel<int> channel = new WrapperChannel<int>(10);
+            ChannelReader<int> reader = channel.Reader;
+            ChannelWriter<int> writer = channel.Writer;
+
+            // 1- do it through synchronous TryRead()
+            writer.TryWrite(50);
+            Assert.Equal(50, await reader.ReadAsync());
+
+            // 2- do it through async
+            ValueTask<int> readTask = reader.ReadAsync();
+            writer.TryWrite(100);
+            Assert.Equal(100, await readTask);
+
+            // 3- use cancellation token
+            CancellationToken ct = new CancellationToken(true); // cancelled token
+            await Assert.ThrowsAsync<TaskCanceledException>(() => reader.ReadAsync(ct).AsTask());
+
+            // 4- throw during reading
+            readTask = reader.ReadAsync();
+            ((WrapperChannelReader<int>)reader).ForceThrowing = true;
+            writer.TryWrite(200);
+            await Assert.ThrowsAsync<ChannelClosedException>(() => readTask.AsTask());
+
+            // 5- close the channel while waiting reading
+            ((WrapperChannelReader<int>)reader).ForceThrowing = false;
+            Assert.Equal(200, await reader.ReadAsync());
+            readTask = reader.ReadAsync();
+            channel.Writer.TryComplete();
+            await Assert.ThrowsAsync<ChannelClosedException>(() => readTask.AsTask());
+        }
+
+        // This reader doesn't override ReadAsync to force using the base class ReadAsync method
+        private sealed class WrapperChannelReader<T> : ChannelReader<T>
+        {
+            private ChannelReader<T> _reader;
+            internal bool ForceThrowing { get; set; }
+
+            public WrapperChannelReader(Channel<T> channel) {_reader = channel.Reader; }
+
+            public override bool TryRead(out T item)
+            {
+                if (ForceThrowing)
+                    throw new InvalidOperationException();
+
+                return _reader.TryRead(out item);
+            }
+
+            public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken)
+            {
+                return _reader.WaitToReadAsync(cancellationToken);
+            }
+        }
+
+        public class WrapperChannel<T> : Channel<T>
+        {
+            public WrapperChannel(int capacity)
+            {
+                Channel<T> channel = Channel.CreateBounded<T>(capacity);
+                Writer = channel.Writer;
+                Reader = new WrapperChannelReader<T>(channel);
+            }
+        }
+
         private sealed class TestChannelWriter<T> : ChannelWriter<T>
         {
             private readonly Random _rand = new Random(42);
