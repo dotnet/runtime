@@ -10777,6 +10777,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                                                                             pEvent->BreakpointData.encVersion,
                                                                             pMethodDesc,
                                                                             pDJI,
+                                                                            pEvent->BreakpointData.nativeCodeMethodDescToken == NULL,
                                                                             &fSuccess);
 
                 TRACE_ALLOC(pDebuggerBP);

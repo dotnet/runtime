@@ -365,12 +365,12 @@ DWORD WINAPI CallStopGoThreadProc(LPVOID parameter)
     // Calling Stop + Continue will synchronize the process and force any queued events to be called.
     // Stop is synchronous and will block until debuggee is synchronized.
     hr = pProc->Stop(INFINITE);
-    SIMPLIFYING_ASSUMPTION(SUCCEEDED(hr));
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
     // Continue will resume the debuggee. If there are queued events (which we expect in this case)
     // then continue will drain the event queue instead of actually resuming the process.
     hr = pProc->Continue(FALSE);
-    SIMPLIFYING_ASSUMPTION(SUCCEEDED(hr));
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
     // This thread just needs to trigger an event dispatch. Now that it's done that, it can exit.
     return 0;
@@ -833,7 +833,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
     EX_CATCH_HRESULT(hrIgnore);
     // Dont' expect errors here (but could probably return it up to become an
     // unrecoverable error if necessary). We still want to call Continue thought.
-    SIMPLIFYING_ASSUMPTION(SUCCEEDED(hrIgnore));
+    SIMPLIFYING_ASSUMPTION_SUCCEEDED(hrIgnore);
 
     //
     // Continue the debuggee if needed.
@@ -873,7 +873,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             {
                 ::Sleep(500);
                 hrIgnore = GetNativePipeline()->EnsureThreadsRunning();
-                SIMPLIFYING_ASSUMPTION(SUCCEEDED(hrIgnore));
+                SIMPLIFYING_ASSUMPTION_SUCCEEDED(hrIgnore);
             }
         }
     }    
