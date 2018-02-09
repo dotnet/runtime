@@ -1,0 +1,49 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+//
+
+// This tests an interop call (resulting in RETURNTRAP in its epilog)
+// when there are live 256 bit values at the callsite.
+// The bug was that codegen for RETURNTRAP node requested a single temp register
+// and asserted that there was only one. In this case the set of temp registers
+// includes floating-point registers that may be needed for saving/restoring the upper
+// part of 256-bit registers. The fix was for codegen to request a single temp int register
+// and assert that there was only one.
+
+using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
+class Test
+{
+    static Random random;
+
+    public static int Main ()
+    {
+        random = new Random ();
+        VectorSingle_op_Division_VectorSingle_VectorSingle (5);
+        return 100;
+    }
+
+    [MethodImpl (MethodImplOptions.NoInlining)]
+    public static void VectorSingle_op_Division_VectorSingle_VectorSingle (long iterations)
+    {
+        Vector<float> dividend = CreateRandomVector ();
+        Vector<float> divisor = CreateRandomVector ();
+
+        Vector<float> result = dividend / divisor;
+        GC.Collect ();
+        for (long iteration = 0L; iteration < iterations; iteration++) {
+            result = dividend / divisor;
+        }
+        GC.KeepAlive (new object [1] { result });
+    }
+
+    [MethodImpl (MethodImplOptions.NoInlining)]
+    static Vector<float> CreateRandomVector ()
+    {
+        return new Vector<float> ((float)(random.NextDouble () + 1.0));
+    }
+}
+
