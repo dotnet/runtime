@@ -274,17 +274,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 // This ensures that the type we pick is something that the user could have written.
 
-                CType actualType = _symbolTable.GetCTypeFromType(t);
-                CType bestType;
-
-                bool res = _semanticChecker.GetTypeManager().GetBestAccessibleType(_semanticChecker, _bindingContext, actualType, out bestType);
-
                 // Since the actual type of these arguments are never going to be pointer
                 // types or ref/out types (they are in fact boxed into an object), we have
                 // a guarantee that we will always be able to find a best accessible type
                 // (which, in the worst case, may be object).
-                Debug.Assert(res, "Unexpected failure of GetBestAccessibleType in construction of argument array");
 
+                CType actualType = _symbolTable.GetCTypeFromType(t);
+                CType bestType = _semanticChecker.GetTypeManager().GetBestAccessibleType(_semanticChecker, _bindingContext.ContextForMemberLookup, actualType);
                 t = bestType.AssociatedSystemType;
             }
 
