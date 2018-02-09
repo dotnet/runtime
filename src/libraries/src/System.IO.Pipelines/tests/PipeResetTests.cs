@@ -39,7 +39,7 @@ namespace System.IO.Pipelines.Tests
 
             _pipe.Reset();
 
-            //Assert.Equal(0, _pipe.Length);
+            Assert.Equal(0, _pipe.Length);
         }
 
         [Fact]
