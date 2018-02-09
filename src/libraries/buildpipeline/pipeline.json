@@ -18,7 +18,7 @@
             "PB_BuildArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -stripSymbols",
             "PB_BuildTestsArguments": "-buildArch=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
-            "PB_TargetQueue": "Centos.73.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1710.Amd64+OpenSuse.423.Amd64+SLES.12.Amd64+Fedora.26.Amd64+Fedora.27.Amd64",
+            "PB_TargetQueue": "Centos.73.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1710.Amd64+Ubuntu.1804.Amd64+OpenSuse.423.Amd64+SLES.12.Amd64+Fedora.26.Amd64+Fedora.27.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
           },
           "ReportingParameters": {
