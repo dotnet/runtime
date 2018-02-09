@@ -12,28 +12,44 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public unsafe struct SimpleUnaryOpTest__DataTable<T> : IDisposable where T : struct
     {
+        private byte[] inArray;
+        private byte[] outArray;
+
         private GCHandle inHandle;
         private GCHandle outHandle;
 
-        public T[] inArray;
-        public T[] outArray;
+        private byte simdSize;
 
-        public SimpleUnaryOpTest__DataTable(T[] inArray, T[] outArray)
+        public SimpleUnaryOpTest__DataTable(T[] inArray, T[] outArray, int simdSize)
         {
-            this.inArray = inArray;
-            this.outArray = outArray;
+            this.inArray = new byte[simdSize * 2];
+            this.outArray = new byte[simdSize * 2];
 
-            this.inHandle = GCHandle.Alloc(inArray, GCHandleType.Pinned);
-            this.outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
+            this.inHandle = GCHandle.Alloc(this.inArray, GCHandleType.Pinned);
+            this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+            this.simdSize = unchecked((byte)(simdSize));
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArrayPtr), ref Unsafe.As<T, byte>(ref inArray[0]), this.simdSize);
         }
 
-        public void* inArrayPtr => inHandle.AddrOfPinnedObject().ToPointer();
-        public void* outArrayPtr => outHandle.AddrOfPinnedObject().ToPointer();
+        public void* inArrayPtr => Align((byte*)(inHandle.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), simdSize);
 
         public void Dispose()
         {
             inHandle.Free();
             outHandle.Free();
+        }
+
+        private static unsafe void* Align(byte* buffer, byte expectedAlignment)
+        {
+            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
+            // Then subtract that from the expectedAlignment and add it to the original address
+            // to compute the aligned address.
+
+            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
+            return (void*)(buffer + misalignment);
         }
     }
 }
