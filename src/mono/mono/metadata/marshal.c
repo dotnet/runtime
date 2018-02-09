@@ -7596,8 +7596,10 @@ typedef enum {
 	/* Initialized an object handle to null, pass to the icalls,
 	   write the value out from the handle when the icall returns */
 	ICALL_HANDLES_WRAP_OBJ_OUT,
-	/* Wrap the argument (a valuetype reference) in a handle to pin its enclosing object,
-	   but pass the raw reference to the icall */
+	/* Wrap the argument (a valuetype reference) in a handle to pin its
+	   enclosing object, but pass the raw reference to the icall.  This is
+	   also how we pass byref generic parameter arguments to generic method
+	   icalls (eg, System.Array:GetGenericValueImpl<T>(int idx, T out value)) */
 	ICALL_HANDLES_WRAP_VALUETYPE_REF,
 } IcallHandlesWrap;
 
@@ -7614,8 +7616,32 @@ typedef struct {
  *
  */
 static IcallHandlesWrap
-signature_param_uses_handles (MonoMethodSignature *sig, int param)
+signature_param_uses_handles (MonoMethodSignature *sig, MonoMethodSignature *generic_sig, int param)
 {
+	/* If there is a generic parameter that isn't passed byref, we don't
+	 * know how to pass it to an icall that expects some arguments to be
+	 * wrapped in handles: if the actual argument type is a reference type
+	 * we'd need to wrap it in a handle, otherwise we'd want to pass it as is.
+	 */
+	/* FIXME: There is one icall that will some day cause us trouble here:
+	 * System.Threading.Interlocked:CompareExchange<T> (ref T location, T
+	 * new, T old) where T:class.  What will save us is that 'T:class'
+	 * constraint.  We should eventually relax the assertion, below, to
+	 * allow generic parameters that are constrained to be reference types.
+	 */
+	g_assert (!generic_sig || !mono_type_is_generic_parameter (generic_sig->params [param]));
+
+	/* If the parameter in the generic version of the method signature is a
+	 * byref type variable T&, pass the corresponding argument by pinning
+	 * the memory and passing the raw pointer to the icall.  Note that we
+	 * do this even if the actual instantiation is a byref reference type
+	 * like string& since the C code for the icall has to work uniformly
+	 * for both valuetypes and reference types.
+	 */
+	if (generic_sig && mono_type_is_byref (generic_sig->params [param]) &&
+	    (generic_sig->params [param]->type == MONO_TYPE_VAR  || generic_sig->params [param]->type == MONO_TYPE_MVAR))
+		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
+
 	if (MONO_TYPE_IS_REFERENCE (sig->params [param])) {
 		if (mono_signature_param_is_out (sig, param))
 			return ICALL_HANDLES_WRAP_OBJ_OUT;
@@ -8112,6 +8138,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 		if (uses_handles) {
 			MonoMethodSignature *ret;
+			MonoMethodSignature *generic_sig = NULL;
+
+			if (method->is_inflated) {
+				ERROR_DECL (error);
+				MonoMethod *generic_method = ((MonoMethodInflated*)method)->declaring;
+				generic_sig = mono_method_signature_checked (generic_method, error);
+				mono_error_assert_ok (error);
+			}
 
 			/* Add a MonoError argument and figure out which args need to be wrapped in handles */
 			// FIXME: The stuff from mono_metadata_signature_dup_internal_with_padding ()
@@ -8122,7 +8156,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 			handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
 			for (int i = 0; i < csig->param_count; ++i) {
-				IcallHandlesWrap w = signature_param_uses_handles (csig, i);
+
+				IcallHandlesWrap w = signature_param_uses_handles (csig, generic_sig, i);
 				handles_locals [i].wrap = w;
 				switch (w) {
 				case ICALL_HANDLES_WRAP_OBJ:
