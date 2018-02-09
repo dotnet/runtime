@@ -574,11 +574,17 @@
   "quality": "definition",
   "drafts": [],
   "queue": {
-    "id": 36,
-    "name": "DotNet-Build",
+    "_links": {
+      "self": {
+        "href": "https://devdiv.visualstudio.com/DefaultCollection/_apis/build/Queues/330"
+      }
+    },
+    "id": 330,
+    "name": "DotNetCore-Build",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/build/Queues/330",
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 97,
+      "name": "DotNetCore-Build"
     }
   },
   "id": 2943,
