@@ -9956,18 +9956,13 @@ void Compiler::fgRemoveStmt(BasicBlock* block,
 DONE:
     fgStmtRemoved = true;
 
-    if (optValnumCSE_phase)
+    noway_assert(!optValnumCSE_phase);
+
+    if (updateRefCount)
     {
-        optValnumCSE_UnmarkCSEs(stmt->gtStmtExpr, nullptr);
-    }
-    else
-    {
-        if (updateRefCount)
+        if (fgStmtListThreaded)
         {
-            if (fgStmtListThreaded)
-            {
-                DecLclVarRefCountsVisitor::WalkTree(this, stmt->gtStmtExpr);
-            }
+            DecLclVarRefCountsVisitor::WalkTree(this, stmt->gtStmtExpr);
         }
     }
 
