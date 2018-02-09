@@ -136,6 +136,44 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
+        {
+            if (IsNetfxHandler)
+            {
+                // Netfx handler does not support custom cookie header
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+                    requestMessage.Headers.Add("Cookie", "A=1");
+                    requestMessage.Headers.Add("Cookie", "B=2");
+                    requestMessage.Headers.Add("Cookie", "C=3");
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+
+                    List<string> requestLines = await serverTask;
+
+                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie: ")));
+
+                    // Multiple Cookie header values are treated as any other header values and are 
+                    // concatenated using ", " as the separator.
+
+                    var cookieValues = requestLines.Single(s => s.StartsWith("Cookie: ")).Substring(8).Split(new string[] { ", " }, StringSplitOptions.None);
+                    Assert.Contains("A=1", cookieValues);
+                    Assert.Contains("B=2", cookieValues);
+                    Assert.Contains("C=3", cookieValues);
+                    Assert.Equal(3, cookieValues.Count());
+                }
+            });
+        }
+
+        [Fact]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent()
         {
             if (IsNetfxHandler)
@@ -173,6 +211,71 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains(s_expectedCookieHeaderValue, cookies);
                     Assert.Contains(s_customCookieHeaderValue, cookies);
                     Assert.Equal(2, cookies.Count());
+                }
+            });
+        }
+
+        [Fact]
+        public async Task GetAsync_SetCookieContainerAndMultipleCookieHeaders_BothCookiesSent()
+        {
+            if (IsNetfxHandler)
+            {
+                // Netfx handler does not support custom cookie header
+                return;
+            }
+
+            if (IsCurlHandler)
+            {
+                // Issue #26983
+                // CurlHandler ignores container cookies when custom Cookie header is set.
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                handler.CookieContainer = CreateSingleCookieContainer(url);
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+                    requestMessage.Headers.Add("Cookie", "A=1");
+                    requestMessage.Headers.Add("Cookie", "B=2");
+
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    List<string> requestLines = await serverTask;
+
+                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie: ")));
+
+                    // Multiple Cookie header values are treated as any other header values and are 
+                    // concatenated using ", " as the separator.  The container cookie is concatenated to
+                    // one of these values using the "; " cookie separator.
+
+                    var cookieValues = requestLines.Single(s => s.StartsWith("Cookie: ")).Substring(8).Split(new string[] { ", " }, StringSplitOptions.None);
+                    Assert.Equal(2, cookieValues.Count());
+
+                    // Find container cookie and remove it so we can validate the rest of the cookie header values
+                    bool sawContainerCookie = false;
+                    for (int i = 0; i < cookieValues.Length; i++)
+                    {
+                        if (cookieValues[i].Contains(';'))
+                        {
+                            Assert.False(sawContainerCookie);
+
+                            var cookies = cookieValues[i].Split(new string[] { "; " }, StringSplitOptions.None);
+                            Assert.Equal(2, cookies.Count());
+                            Assert.Contains(s_expectedCookieHeaderValue, cookies);
+
+                            sawContainerCookie = true;
+                            cookieValues[i] = cookies.Where(c => c != s_expectedCookieHeaderValue).Single();
+                        }
+                    }
+
+                    Assert.Contains("A=1", cookieValues);
+                    Assert.Contains("B=2", cookieValues);
                 }
             });
         }

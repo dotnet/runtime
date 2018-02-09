@@ -147,7 +147,7 @@ namespace System.Net.Http
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
 
-        private async Task WriteHeadersAsync(HttpHeaders headers, string cookies, CancellationToken cancellationToken)
+        private async Task WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer, CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
             {
@@ -160,12 +160,12 @@ namespace System.Net.Http
                 {
                     await WriteStringAsync(values[0], cancellationToken).ConfigureAwait(false);
 
-                    if (cookies != null && header.Key == HttpKnownHeaderNames.Cookie)
+                    if (cookiesFromContainer != null && header.Key == HttpKnownHeaderNames.Cookie)
                     {
                         await WriteTwoBytesAsync((byte)';', (byte)' ', cancellationToken).ConfigureAwait(false);
-                        await WriteStringAsync(cookies, cancellationToken).ConfigureAwait(false);
+                        await WriteStringAsync(cookiesFromContainer, cancellationToken).ConfigureAwait(false);
 
-                        cookies = null;
+                        cookiesFromContainer = null;
                     }
 
                     for (int i = 1; i < values.Length; i++)
@@ -178,11 +178,11 @@ namespace System.Net.Http
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
 
-            if (cookies != null)
+            if (cookiesFromContainer != null)
             {
                 await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, cancellationToken).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
-                await WriteAsciiStringAsync(cookies, cancellationToken).ConfigureAwait(false);
+                await WriteAsciiStringAsync(cookiesFromContainer, cancellationToken).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
         }
