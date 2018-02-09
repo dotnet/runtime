@@ -151,13 +151,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseSocketsHttpHandler)
-            {
-                // Issue #26984
-                // SocketsHttpHandler is incorrectly combining cookie header values using "," instead of ";".
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -187,13 +180,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent()
         {
-            if (UseManagedHandler)
-            {
-                // Issue #26985
-                // SocketsHttpHandler sends the cookie from the original request on the second request.
-                return;
-            }
-
             const string path1 = "/foo";
             const string path2 = "/bar";
 
