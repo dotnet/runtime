@@ -294,7 +294,6 @@ static void ConvertHostEntPlatformToPal(struct HostEntry* hostEntry, struct host
     }
 }
 
-#if !HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
 #if !HAVE_GETHOSTBYNAME_R
 static int copy_hostent(struct hostent* from, struct hostent* to,
                         char* buffer, size_t buflen)
@@ -307,51 +306,6 @@ static int copy_hostent(struct hostent* from, struct hostent* to,
     (void)buffer; // unused arg
     (void)buflen; // unused arg
     return ENOSYS;
-}
-
-/*
-Note: we're assuming that all access to these functions are going through these shims on the platforms, which do not provide
-      thread-safe functions to get host name or address. If that is not the case (which is very likely) race condition is
-      possible, for instance; if other libs (such as libcurl) call gethostby[name/addr] simultaneously.
-*/
-static pthread_mutex_t lock_hostbyx_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static int gethostbyname_r(char const* hostname, struct hostent* result,
-                           char* buffer, size_t buflen, struct hostent** entry, int* error)
-{
-    assert(hostname != NULL);
-    assert(result != NULL);
-    assert(buffer != NULL);
-    assert(entry != NULL);
-    assert(error != NULL);
-
-    if (hostname == NULL || entry == NULL || error == NULL || buffer == NULL || result == NULL)
-    {
-        if (error != NULL)
-        {
-            *error = GetHostErrorCodes_BAD_ARG;
-        }
-
-        return GetHostErrorCodes_BAD_ARG;
-    }
-
-    pthread_mutex_lock(&lock_hostbyx_mutex);
-
-    *entry = gethostbyname(hostname);
-    if ((!(*entry)) || ((*entry)->h_addrtype != AF_INET) || ((*entry)->h_length != 4))
-    {
-        *error = h_errno;
-        *entry = NULL;
-    }
-    else
-    {
-        h_errno = copy_hostent(*entry, result, buffer, buflen);
-        *entry = (h_errno == 0) ? result : NULL;
-    }
-
-    pthread_mutex_unlock(&lock_hostbyx_mutex);
-
-    return h_errno;
 }
 
 static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, struct hostent* result,
@@ -373,8 +327,6 @@ static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, s
         return GetHostErrorCodes_BAD_ARG;
     }
 
-    pthread_mutex_lock(&lock_hostbyx_mutex);
-
     *entry = gethostbyaddr((const char*)addr, (unsigned int)len, type);
     if ((!(*entry)) || ((*entry)->h_addrtype != AF_INET) || ((*entry)->h_length != 4))
     {
@@ -387,8 +339,6 @@ static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, s
         *entry = (h_errno == 0) ? result : NULL;
     }
 
-    pthread_mutex_unlock(&lock_hostbyx_mutex);
-
     return h_errno;
 }
 #undef HAVE_GETHOSTBYNAME_R
@@ -397,85 +347,7 @@ static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, s
 #define HAVE_GETHOSTBYADDR_R 1
 #endif /* !HAVE_GETHOSTBYNAME_R */
 
-#if HAVE_GETHOSTBYNAME_R
-static int GetHostByNameHelper(const uint8_t* hostname, struct hostent** entry)
-{
-    assert(hostname != NULL);
-    assert(entry != NULL);
-
-    size_t scratchLen = 512;
-
-    for (;;)
-    {
-        size_t bufferSize;
-        uint8_t* buffer;
-        if (!add_s(sizeof(struct hostent), scratchLen, &bufferSize) ||
-            (buffer = (uint8_t*)malloc(bufferSize)) == NULL)
-        {
-            return GetHostErrorCodes_NO_MEM;
-        }
-
-        struct hostent* result = (struct hostent*)buffer;
-        char* scratch = (char*)&buffer[sizeof(struct hostent)];
-
-        int getHostErrno = 0;
-        int err = gethostbyname_r((const char*)hostname, result, scratch, scratchLen, entry, &getHostErrno);
-        if (!err && *entry != NULL)
-        {
-            assert(*entry == result);
-            return 0;
-        }
-        else if (err == ERANGE)
-        {
-            free(buffer);
-            size_t tmpScratchLen;
-            if (!multiply_s(scratchLen, (size_t)2, &tmpScratchLen))
-            {
-                *entry = NULL;
-                return GetHostErrorCodes_NO_MEM;
-            }
-            scratchLen = tmpScratchLen;
-        }
-        else
-        {
-            free(buffer);
-            *entry = NULL;
-            return getHostErrno ? getHostErrno : HOST_NOT_FOUND;
-        }
-    }
-}
-#endif /* HAVE_GETHOSTBYNAME_R */
-#endif /* !HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR */
-
-int32_t SystemNative_GetHostByName(const uint8_t* hostname, struct HostEntry* entry)
-{
-    if (hostname == NULL || entry == NULL)
-    {
-        return GetHostErrorCodes_BAD_ARG;
-    }
-
-    struct hostent* hostEntry = NULL;
-    int error = 0;
-
-#if HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
-    hostEntry = gethostbyname((const char*)hostname);
-    error = h_errno;
-#elif HAVE_GETHOSTBYNAME_R
-    error = GetHostByNameHelper(hostname, &hostEntry);
-#else
-#error Platform does not provide thread-safe gethostbyname
-#endif
-
-    if (hostEntry == NULL)
-    {
-        return ConvertGetHostErrorPlatformToPal(error);
-    }
-
-    ConvertHostEntPlatformToPal(entry, hostEntry);
-    return Error_SUCCESS;
-}
-
-#if !HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR && HAVE_GETHOSTBYADDR_R
+#if HAVE_GETHOSTBYADDR_R
 static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int type, struct hostent** entry)
 {
     assert(addr != NULL);
@@ -523,7 +395,7 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
         }
     }
 }
-#endif /* !HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR && HAVE_GETHOSTBYADDR_R */
+#endif /* HAVE_GETHOSTBYADDR_R */
 
 int32_t SystemNative_GetHostByAddress(const struct IPAddress* address, struct HostEntry* entry)
 {
@@ -559,10 +431,7 @@ int32_t SystemNative_GetHostByAddress(const struct IPAddress* address, struct Ho
     struct hostent* hostEntry = NULL;
     int error = 0;
 
-#if HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
-    hostEntry = gethostbyaddr(addr, addrLen, type);
-    error = h_errno;
-#elif HAVE_GETHOSTBYADDR_R
+#if HAVE_GETHOSTBYADDR_R
     error = GetHostByAddrHelper(addr, addrLen, type, &hostEntry);
 #else
 #error Platform does not provide thread-safe gethostbyname
@@ -692,9 +561,6 @@ void SystemNative_FreeHostEntry(struct HostEntry* entry)
 
             case HOST_ENTRY_HANDLE_HOSTENT:
             {
-#if !HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
-                free(entry->AddressListHandle);
-#endif
                 break;
             }
 
