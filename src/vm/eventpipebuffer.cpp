@@ -260,7 +260,7 @@ bool EventPipeBuffer::EnsureConsistency()
         _ASSERTE(pInstance->EnsureConsistency());
 
         // Validate that payload and length match.
-        _ASSERTE((pInstance->GetData() != NULL && pInstance->GetDataLength() > 0) || (pInstance->GetData() != NULL && pInstance->GetDataLength() == 0));
+        _ASSERTE((pInstance->GetData() != NULL && pInstance->GetDataLength() > 0) || (pInstance->GetData() == NULL && pInstance->GetDataLength() == 0));
 
         // Skip the event.
         ptr += sizeof(*pInstance) + pInstance->GetDataLength();
