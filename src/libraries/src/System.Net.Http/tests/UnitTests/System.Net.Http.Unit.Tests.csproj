@@ -367,6 +367,61 @@
     <Compile Include="StreamToStreamCopyTest.cs" />
     <Compile Include="HttpEnvironmentProxyTest.cs" />
   </ItemGroup>
+  <!-- <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'"> -->
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="HttpSystemProxyTest.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs">
+      <Link>ProductionCode\System\Net\Http\HttpSystemProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinInetProxyHelper.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpTraceHelper.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.certificates_types.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.certificates_types.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs">
+      <Link>Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
+      <Link>Common\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
+      <Link>Common\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
+      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp_types.cs">
+      <Link>Common\Interop\Windows\winhttp\Interop.winhttp_types.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeSafeWinHttpHandle.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestControl.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\APICallHistory.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestServer.cs">
+      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard' And '$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
       <Link>Common\System\SerializableAttribute.cs</Link>
