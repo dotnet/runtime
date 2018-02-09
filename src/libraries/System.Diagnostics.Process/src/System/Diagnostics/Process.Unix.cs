@@ -624,13 +624,10 @@ namespace System.Diagnostics
         private unsafe static (uint? userId, uint? groupId) GetUserAndGroupIds(string userName)
         {
             Interop.Sys.Passwd? passwd;
-#if DEBUG
-            // Use an artificially small buffer in DEBUG to test the fallback path
-            const int BufLen = 2;
-#else
             // First try with a buffer that should suffice for 99% of cases.
+            // Note: on CentOS/RedHat 7.1 systems, getpwnam_r returns 'user not found' if the buffer is too small
+            // see https://bugs.centos.org/view.php?id=7324
             const int BufLen = 1024;
-#endif
             byte* stackBuf = stackalloc byte[BufLen];
             if (TryGetPasswd(userName, stackBuf, BufLen, out passwd))
             {
