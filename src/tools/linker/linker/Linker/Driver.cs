@@ -45,13 +45,18 @@ namespace Mono.Linker {
 
 		public static int Main (string [] args)
 		{
+			return Execute (args);
+		}
+
+		public static int Execute (string[] args, ILogger customLogger = null)
+		{
 			if (args.Length == 0)
 				Usage ("No parameters specified");
 
 			try {
 
 				Driver driver = new Driver (args);
-				driver.Run ();
+				driver.Run (customLogger);
 
 			} catch (Exception e) {
 				Console.WriteLine ("Fatal error in {0}", _linker);
@@ -75,10 +80,13 @@ namespace Mono.Linker {
 			return _queue.Count > 0;
 		}
 
-		public void Run ()
+		public void Run (ILogger customLogger = null)
 		{
 			Pipeline p = GetStandardPipeline ();
 			using (LinkContext context = GetDefaultContext (p)) {
+				if (customLogger != null)
+					context.Logger = customLogger;
+
 				I18nAssemblies assemblies = I18nAssemblies.All;
 				var custom_steps = new List<string> ();
 				bool dumpDependencies = false;

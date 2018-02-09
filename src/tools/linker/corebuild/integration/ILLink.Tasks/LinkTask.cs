@@ -61,7 +61,8 @@ namespace ILLink.Tasks
 			string [] args = GenerateCommandLineCommands ();
 			var argsString = String.Join (" ", args);
 			Log.LogMessageFromText ($"illink {argsString}", MessageImportance.Normal);
-			int ret = Mono.Linker.Driver.Main (args);
+			var logger = new AdapterLogger (Log);
+			int ret = Mono.Linker.Driver.Execute (args, logger);
 			return ret == 0;
 		}
 
