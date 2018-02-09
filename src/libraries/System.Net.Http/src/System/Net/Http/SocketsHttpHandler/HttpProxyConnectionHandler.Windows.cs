@@ -8,10 +8,7 @@ namespace System.Net.Http
     {
         private static IWebProxy ConstructSystemProxy()
         {
-            // Windows normally does not use environment but it has system
-            // configuration. That has not been implemented yet.
-            // TODO #23150: windows portion
-            return null;
+            return HttpSystemProxy.TryCreate(out IWebProxy proxy) ? proxy : null;
         }
     }
 }
