@@ -557,5 +557,56 @@ namespace System.IO.Pipelines.Tests
 
             _pipe.Reader.AdvanceTo(buffer.Start, buffer.Start);
         }
+
+        [Fact]
+        public async Task DoubleReadThrows()
+        {
+            await _pipe.Writer.WriteAsync(new byte[1]);
+            PipeAwaiter<ReadResult> awaiter = _pipe.Reader.ReadAsync();
+            ReadResult result = awaiter.GetAwaiter().GetResult();
+
+            Assert.Throws<InvalidOperationException>(() => awaiter.GetAwaiter().GetResult());
+
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.Start);
+        }
+
+        [Fact]
+        public void GetResultBeforeCompletedThrows()
+        {
+            PipeAwaiter<ReadResult> awaiter = _pipe.Reader.ReadAsync();
+
+            Assert.Throws<InvalidOperationException>(() => awaiter.GetAwaiter().GetResult());
+        }
+
+        [Fact]
+        public void CompleteAfterAdvanceThrows()
+        {
+            _pipe.Writer.WriteEmpty(4);
+
+            Assert.Throws<InvalidOperationException>(() => _pipe.Writer.Complete());
+
+            _pipe.Commit();
+        }
+
+        [Fact]
+        public async Task AdvanceWithoutReadThrows()
+        {
+            await _pipe.Writer.WriteAsync(new byte[3]);
+            ReadResult readResult = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(readResult.Buffer.Start);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(readResult.Buffer.End));
+            Assert.Equal("No reading operation to complete.", exception.Message);
+        }
+
+        [Fact]
+        public async Task TryReadAfterReadAsyncThrows()
+        {
+            await _pipe.Writer.WriteAsync(new byte[3]);
+            ReadResult readResult = await _pipe.Reader.ReadAsync();
+
+            Assert.Throws<InvalidOperationException>(() => _pipe.Reader.TryRead(out _));
+            _pipe.Reader.AdvanceTo(readResult.Buffer.Start);
+        }
     }
 }

@@ -9,6 +9,7 @@ using System.Runtime.ExceptionServices;
 
 namespace System.IO.Pipelines
 {
+    [DebuggerDisplay("IsCompleted: {" + nameof(IsCompleted) + "}")]
     internal struct PipeCompletion
     {
         private static readonly ArrayPool<PipeCompletionCallback> CompletionCallbackPool = ArrayPool<PipeCompletionCallback>.Shared;

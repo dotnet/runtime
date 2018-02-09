@@ -419,14 +419,14 @@ namespace System.IO.Pipelines
                     _readerAwaitable.Reset();
                 }
 
-                _readingState.End();
-
                 while (returnStart != null && returnStart != returnEnd)
                 {
                     returnStart.ResetMemory();
                     ReturnSegmentUnsynchronized(returnStart);
                     returnStart = returnStart.NextSegment;
                 }
+
+                _readingState.End();
             }
 
             TrySchedule(_writerScheduler, continuation);
@@ -467,7 +467,7 @@ namespace System.IO.Pipelines
         {
             if (callback == null)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.callback);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callback);
             }
 
             PipeCompletionCallbacks completionCallbacks;
