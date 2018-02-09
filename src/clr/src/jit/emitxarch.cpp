@@ -492,10 +492,13 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
-        assert(hasVexPrefix(code));
+        if (TakesVexPrefix(ins))
+        {
+            assert(hasVexPrefix(code));
 
-        // W-bit is the only bit that is added in non bit-inverted form.
-        return emitter::code_t(code | 0x00008000000000ULL);
+            // W-bit is the only bit that is added in non bit-inverted form.
+            return emitter::code_t(code | 0x00008000000000ULL);
+        }
     }
 #ifdef _TARGET_AMD64_
     return emitter::code_t(code | 0x4800000000ULL);
@@ -512,10 +515,13 @@ emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // Right now support 3-byte VEX prefix
-        assert(hasVexPrefix(code));
+        if (TakesVexPrefix(ins))
+        {
+            assert(hasVexPrefix(code));
 
-        // R-bit is added in bit-inverted form.
-        return code & 0xFF7FFFFFFFFFFFULL;
+            // R-bit is added in bit-inverted form.
+            return code & 0xFF7FFFFFFFFFFFULL;
+        }
     }
 
     return code | 0x4400000000ULL;
@@ -526,10 +532,13 @@ emitter::code_t emitter::AddRexXPrefix(instruction ins, code_t code)
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // Right now support 3-byte VEX prefix
-        assert(hasVexPrefix(code));
+        if (TakesVexPrefix(ins))
+        {
+            assert(hasVexPrefix(code));
 
-        // X-bit is added in bit-inverted form.
-        return code & 0xFFBFFFFFFFFFFFULL;
+            // X-bit is added in bit-inverted form.
+            return code & 0xFFBFFFFFFFFFFFULL;
+        }
     }
 
     return code | 0x4200000000ULL;
@@ -540,10 +549,13 @@ emitter::code_t emitter::AddRexBPrefix(instruction ins, code_t code)
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
         // Right now support 3-byte VEX prefix
-        assert(hasVexPrefix(code));
+        if (TakesVexPrefix(ins))
+        {
+            assert(hasVexPrefix(code));
 
-        // B-bit is added in bit-inverted form.
-        return code & 0xFFDFFFFFFFFFFFULL;
+            // B-bit is added in bit-inverted form.
+            return code & 0xFFDFFFFFFFFFFFULL;
+        }
     }
 
     return code | 0x4100000000ULL;
