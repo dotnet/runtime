@@ -1959,7 +1959,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     // Check for the RemotingProxy Attribute
     // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
-    if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % sizeof(void*) != 0))
+    if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
     }
@@ -7908,7 +7908,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         // value types can never get large enough to allocate on the LOH). 
         if (!IsValueClass())
         {
-            dwOffsetBias = sizeof(MethodTable*);
+            dwOffsetBias = TARGET_POINTER_SIZE;
             dwCumulativeInstanceFieldPos += dwOffsetBias;
         }
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -8089,14 +8089,14 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
 #if !defined(_WIN64) && (DATA_ALIGNMENT > 4) 
                 dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos,
-                    (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : sizeof(void*));
+                    (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : TARGET_POINTER_SIZE);
 #else // !(!defined(_WIN64) && (DATA_ALIGNMENT > 4))
 #ifdef FEATURE_64BIT_ALIGNMENT
                 if (pByValueMT->RequiresAlign8())
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
-                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, sizeof(void*));
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
 #endif // !(!defined(_WIN64) && (DATA_ALIGNMENT > 4))
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
@@ -8129,8 +8129,8 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
-            if (dwNumInstanceFieldBytes > sizeof(void*)) {
-                minAlign = sizeof(void*);
+            if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
+                minAlign = TARGET_POINTER_SIZE;
             }
             else {
                 minAlign = 1;
@@ -8319,9 +8319,9 @@ MethodTableBuilder::HandleExplicitLayout(
     // 3. If an OREF does overlap with another OREF, the class is marked unverifiable.
     // 4. If an overlap of any kind occurs, the class will be marked NotTightlyPacked (affects ValueType.Equals()).
     //
-    char emptyObject[sizeof(void*)];
-    char isObject[sizeof(void*)];
-    for (i = 0; i < sizeof(void*); i++)
+    char emptyObject[TARGET_POINTER_SIZE];
+    char isObject[TARGET_POINTER_SIZE];
+    for (i = 0; i < TARGET_POINTER_SIZE; i++)
     {
         emptyObject[i] = empty;
         isObject[i]    = oref;
@@ -8409,7 +8409,7 @@ MethodTableBuilder::HandleExplicitLayout(
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
                 if (pByValueMT->ContainsPointers())
                 {
-                    if ((pFD->GetOffset_NoLogging() & ((ULONG)sizeof(void*) - 1)) == 0)
+                    if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) == 0)
                     {
                         ExplicitFieldTrust::TrustLevel trust;
                         DWORD firstObjectOverlapOffsetInsideValueClass = ((DWORD)(-1));
@@ -8518,7 +8518,7 @@ MethodTableBuilder::HandleExplicitLayout(
     S_UINT32 dwInstanceSliceOffset = S_UINT32(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0);
     if (bmtGCSeries->numSeries != 0)
     {
-        dwInstanceSliceOffset.AlignUp(sizeof(void*));
+        dwInstanceSliceOffset.AlignUp(TARGET_POINTER_SIZE);
     }
     if (dwInstanceSliceOffset.IsOverflow())
     {
@@ -8546,10 +8546,10 @@ MethodTableBuilder::HandleExplicitLayout(
         }
     }
     
-    // The GC requires that all valuetypes containing orefs be sized to a multiple of sizeof(void*).
+    // The GC requires that all valuetypes containing orefs be sized to a multiple of TARGET_POINTER_SIZE.
     if (bmtGCSeries->numSeries != 0)
     {
-        numInstanceFieldBytes.AlignUp(sizeof(void*));
+        numInstanceFieldBytes.AlignUp(TARGET_POINTER_SIZE);
     }
     if (numInstanceFieldBytes.IsOverflow())
     {
@@ -8711,7 +8711,7 @@ void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
         bmtGCSeries->pSeries[bmtGCSeries->numSeries].offset = (DWORD)(loc - pFieldLayout);
         bmtGCSeries->pSeries[bmtGCSeries->numSeries].len = (DWORD)(cur - loc);
 
-        CONSISTENCY_CHECK(IS_ALIGNED(cur - loc, sizeof(size_t)));
+        CONSISTENCY_CHECK(IS_ALIGNED(cur - loc, TARGET_POINTER_SIZE));
 
         bmtGCSeries->numSeries++;
         loc = cur;
@@ -8757,7 +8757,7 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
         }
 
-        UINT32 dwInstanceSliceOffset = AlignUp(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0, sizeof(void*));
+        UINT32 dwInstanceSliceOffset = AlignUp(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0, TARGET_POINTER_SIZE);
 
         // Build the pointer series map for this pointers in this instance
         CGCDescSeries *pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
@@ -9929,7 +9929,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
 
     BYTE *pData = (BYTE *)pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbTotalSize));
 
-    _ASSERTE(IS_ALIGNED(pData, sizeof(size_t)));
+    _ASSERTE(IS_ALIGNED(pData, TARGET_POINTER_SIZE));
     
     // There should be no overflows if we have allocated the memory succesfully
     _ASSERTE(!cbTotalSize.IsOverflow());

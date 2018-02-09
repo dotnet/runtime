@@ -183,7 +183,7 @@ struct TransitionBlock
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         _ASSERTE(offset != TransitionBlock::StructInRegsOffset);
 #endif        
-        return (offset - GetOffsetOfArgumentRegisters()) / sizeof(TADDR);
+        return (offset - GetOffsetOfArgumentRegisters()) / TARGET_POINTER_SIZE;
     }
 
     static UINT GetStackArgumentIndexFromOffset(int offset)
@@ -242,7 +242,7 @@ struct TransitionBlock
         negSpaceSize += sizeof(FloatArgumentRegisters);
 #endif
 #ifdef _TARGET_ARM_
-        negSpaceSize += sizeof(TADDR); // padding to make FloatArgumentRegisters address 8-byte aligned
+        negSpaceSize += TARGET_POINTER_SIZE; // padding to make FloatArgumentRegisters address 8-byte aligned
 #endif
         return negSpaceSize;
     }
@@ -752,7 +752,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     ret += (int) offsetof(ArgumentRegisters, x[8]);
 #else
     if (this->HasThis())
-        ret += sizeof(void *);
+        ret += TARGET_POINTER_SIZE;
 #endif
 
     return ret;
@@ -774,12 +774,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetVASigCookieOffset()
 
     if (this->HasThis())
     {
-        ret += sizeof(void*);
+        ret += TARGET_POINTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += sizeof(void*);
+        ret += TARGET_POINTER_SIZE;
     }
 
     return ret;
@@ -827,12 +827,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
 
     if (this->HasThis())
     {
-        ret += sizeof(void*);
+        ret += TARGET_POINTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += sizeof(void*);
+        ret += TARGET_POINTER_SIZE;
     }
 
     return ret;
