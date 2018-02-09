@@ -418,14 +418,6 @@ namespace System.Net.Http.Functional.Tests
             yield return "HTTP/1.1 2345";
             yield return "HTTP/A.1 200 OK";
             yield return "HTTP/X.Y.Z 200 OK";
-            yield return "HTTP/1.A 200 OK";
-            yield return "HTTP/1.1 ";
-            yield return "HTTP/1.1 !11";
-            yield return "HTTP/1.1 a11";
-            yield return "HTTP/1.1 abc";
-            yield return "HTTP/1.1\t\t";
-            yield return "HTTP/1.1\t";
-            yield return "HTTP/1.1  ";
             
             // Only pass on .NET Core Windows & ManagedHandler.
             if (PlatformDetection.IsNetCore && PlatformDetection.IsWindows)
@@ -434,6 +426,19 @@ namespace System.Net.Http.Functional.Tests
                 yield return "HTTP/3.5 200 OK";
                 yield return "HTTP/1.12 200 OK";
                 yield return "HTTP/12.1 200 OK";
+            }
+
+            // Skip these test cases on CurlHandler since the behavior is different.
+            if (PlatformDetection.IsWindows)
+            {
+                yield return "HTTP/1.A 200 OK";
+                yield return "HTTP/1.1 ";
+                yield return "HTTP/1.1 !11";
+                yield return "HTTP/1.1 a11";
+                yield return "HTTP/1.1 abc";
+                yield return "HTTP/1.1\t\t";
+                yield return "HTTP/1.1\t";
+                yield return "HTTP/1.1  ";
             }
             
             // Skip these test cases on UAP since the behavior is different.
