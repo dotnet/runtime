@@ -9,6 +9,14 @@ namespace System.IO.Enumeration
     /// </summary>
     public unsafe ref struct FileSystemEntry
     {
+        private const int FileNameBufferSize = 256;
+        internal Interop.Sys.DirectoryEntry _directoryEntry;
+        private FileStatus _status;
+        private Span<char> _pathBuffer;
+        private ReadOnlySpan<char> _fullPath;
+        private ReadOnlySpan<char> _fileName;
+        private fixed char _fileNameBuffer[FileNameBufferSize];
+
         internal static bool Initialize(
             ref FileSystemEntry entry,
             Interop.Sys.DirectoryEntry directoryEntry,
@@ -44,10 +52,6 @@ namespace System.IO.Enumeration
             return isDirectory;
         }
 
-        internal Interop.Sys.DirectoryEntry _directoryEntry;
-        private FileStatus _status;
-        private Span<char> _pathBuffer;
-        private ReadOnlySpan<char> _fullPath;
 
         private ReadOnlySpan<char> FullPath
         {
@@ -58,11 +62,29 @@ namespace System.IO.Enumeration
                     ReadOnlySpan<char> directory = Directory;
                     directory.CopyTo(_pathBuffer);
                     _pathBuffer[directory.Length] = Path.DirectorySeparatorChar;
-                    ReadOnlySpan<char> fileName = _directoryEntry.InodeName;
+                    ReadOnlySpan<char> fileName = FileName;
                     fileName.CopyTo(_pathBuffer.Slice(directory.Length + 1));
                     _fullPath = _pathBuffer.Slice(0, directory.Length + 1 + fileName.Length);
                 }
                 return _fullPath;
+            }
+        }
+
+        public ReadOnlySpan<char> FileName
+        {
+            get
+            {
+                if (_directoryEntry.Name != null)
+                {
+                    fixed (char* c = _fileNameBuffer)
+                    {
+                        Span<char> buffer = new Span<char>(c, FileNameBufferSize);
+                        _fileName = _directoryEntry.GetName(buffer);
+                    }
+                    _directoryEntry.Name = null;
+                }
+
+                return _fileName;
             }
         }
 
@@ -81,7 +103,6 @@ namespace System.IO.Enumeration
         /// </summary>
         public string OriginalRootDirectory { get; private set; }
 
-        public ReadOnlySpan<char> FileName => _directoryEntry.InodeName;
         public FileAttributes Attributes => _status.GetAttributes(FullPath, FileName);
         public long Length => _status.GetLength(FullPath);
         public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath);
@@ -94,11 +115,11 @@ namespace System.IO.Enumeration
             string fullPath = ToFullPath();
             if (_status.InitiallyDirectory)
             {
-                return DirectoryInfo.Create(fullPath, _directoryEntry.InodeName, ref _status);
+                return DirectoryInfo.Create(fullPath, new string(FileName), ref _status);
             }
             else
             {
-                return FileInfo.Create(fullPath, _directoryEntry.InodeName, ref _status);
+                return FileInfo.Create(fullPath, new string(FileName), ref _status);
             }
         }
 
