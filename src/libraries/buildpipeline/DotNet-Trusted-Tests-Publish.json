@@ -242,12 +242,18 @@
   "quality": "definition",
   "defaultBranch": "refs/heads/master",
   "queue": {
-    "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+    "_links": {
+      "self": {
+        "href": "https://devdiv.visualstudio.com/DefaultCollection/_apis/build/Queues/330"
+      }
     },
-    "id": 36,
-    "name": "DotNet-Build"
+    "id": 330,
+    "name": "DotNetCore-Build",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/build/Queues/330",
+    "pool": {
+      "id": 97,
+      "name": "DotNetCore-Build"
+    }
   },
   "path": "\\",
   "type": "build",
