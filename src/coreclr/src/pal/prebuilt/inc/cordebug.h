@@ -577,6 +577,13 @@ typedef interface ICorDebugFunction3 ICorDebugFunction3;
 #endif 	/* __ICorDebugFunction3_FWD_DEFINED__ */
 
 
+#ifndef __ICorDebugFunction4_FWD_DEFINED__
+#define __ICorDebugFunction4_FWD_DEFINED__
+typedef interface ICorDebugFunction4 ICorDebugFunction4;
+
+#endif  /* __ICorDebugFunction4_FWD_DEFINED__ */
+
+
 #ifndef __ICorDebugCode_FWD_DEFINED__
 #define __ICorDebugCode_FWD_DEFINED__
 typedef interface ICorDebugCode ICorDebugCode;
@@ -12085,7 +12092,88 @@ EXTERN_C const IID IID_ICorDebugFunction3;
 
 
 
-#endif 	/* __ICorDebugFunction3_INTERFACE_DEFINED__ */
+#endif  /* __ICorDebugFunction3_INTERFACE_DEFINED__ */
+
+
+#ifndef __ICorDebugFunction4_INTERFACE_DEFINED__
+#define __ICorDebugFunction4_INTERFACE_DEFINED__
+
+/* interface ICorDebugFunction4 */
+/* [unique][uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ICorDebugFunction4;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("72965963-34fd-46e9-9434-b817fe6e7f43")
+    ICorDebugFunction4 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE CreateNativeBreakpoint( 
+            ICorDebugFunctionBreakpoint **ppBreakpoint) = 0;
+        
+    };
+    
+    
+#else   /* C style interface */
+
+    typedef struct ICorDebugFunction4Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICorDebugFunction4 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICorDebugFunction4 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICorDebugFunction4 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *CreateNativeBreakpoint )( 
+            ICorDebugFunction4 * This,
+            ICorDebugFunctionBreakpoint **ppBreakpoint);
+        
+        END_INTERFACE
+    } ICorDebugFunction4Vtbl;
+
+    interface ICorDebugFunction4
+    {
+        CONST_VTBL struct ICorDebugFunction4Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICorDebugFunction4_QueryInterface(This,riid,ppvObject)  \
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICorDebugFunction4_AddRef(This) \
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICorDebugFunction4_Release(This)    \
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICorDebugFunction4_CreateNativeBreakpoint(This,ppBreakpoint)    \
+    ( (This)->lpVtbl -> CreateNativeBreakpoint(This,ppBreakpoint) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif  /* C style interface */
+
+
+
+
+#endif  /* __ICorDebugFunction4_INTERFACE_DEFINED__ */
+
 
 
 #ifndef __ICorDebugCode_INTERFACE_DEFINED__
