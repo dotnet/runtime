@@ -97,6 +97,7 @@
   </Target>
 
   <ItemGroup>
+    <Compile Include="AdapterLogger.cs" />
     <Compile Include="LinkTask.cs" />
     <Compile Include="CompareSizes.cs" />
     <Compile Include="ComputeManagedAssemblies.cs" />
