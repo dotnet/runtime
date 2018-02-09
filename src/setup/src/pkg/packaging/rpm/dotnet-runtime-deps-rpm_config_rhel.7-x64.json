@@ -30,15 +30,7 @@
     },
     
     "rpm_dependencies":[{
-        "package_name": "compat-openssl10",
-        "package_version": ""
-    },
-    {
-        "package_name": "libicu",
-        "package_version": ""
-    },
-    {
-        "package_name": "libunwind",
+        "package_name": "openssl-libs",
         "package_version": ""
     },
     {
