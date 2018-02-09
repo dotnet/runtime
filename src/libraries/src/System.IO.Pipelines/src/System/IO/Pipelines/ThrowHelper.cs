@@ -12,6 +12,10 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
 
+        internal static void ThrowArgumentNullException(ExceptionArgument argument) { throw CreateArgumentNullException(argument); }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
+
         public static void ThrowInvalidOperationException_NotWritingNoAlloc()
         {
             throw CreateInvalidOperationException_NotWritingNoAlloc();
@@ -20,7 +24,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_NotWritingNoAlloc()
         {
-            return new InvalidOperationException("No writing operation. Make sure GetMemory() was called.");
+            return new InvalidOperationException(SR.NoWritingOperation);
         }
 
         public static void ThrowInvalidOperationException_AlreadyReading()
@@ -31,7 +35,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_AlreadyReading()
         {
-            return new InvalidOperationException("Already reading.");
+            return new InvalidOperationException(SR.ReadingIsInProgress);
         }
 
         public static void ThrowInvalidOperationException_NoReadToComplete()
@@ -42,7 +46,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_NoReadToComplete()
         {
-            return new InvalidOperationException("No reading operation to complete.");
+            return new InvalidOperationException(SR.NoReadingOperationToComplete);
         }
 
         public static void ThrowInvalidOperationException_NoConcurrentOperation()
@@ -53,7 +57,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_NoConcurrentOperation()
         {
-            return new InvalidOperationException("Concurrent reads or writes are not supported.");
+            return new InvalidOperationException(SR.ConcurrentOperationsNotSupported);
         }
 
         public static void ThrowInvalidOperationException_GetResultNotCompleted()
@@ -64,7 +68,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_GetResultNotCompleted()
         {
-            return new InvalidOperationException("Can't GetResult unless completed");
+            return new InvalidOperationException(SR.GetResultBeforeCompleted);
         }
 
         public static void ThrowInvalidOperationException_NoWritingAllowed()
@@ -75,7 +79,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_NoWritingAllowed()
         {
-            return new InvalidOperationException("Writing is not allowed after writer was completed");
+            return new InvalidOperationException(SR.ReadingAfterCompleted);
         }
 
         public static void ThrowInvalidOperationException_NoReadingAllowed()
@@ -87,7 +91,7 @@ namespace System.IO.Pipelines
 
         public static Exception CreateInvalidOperationException_NoReadingAllowed()
         {
-            return new InvalidOperationException("Reading is not allowed after reader was completed");
+            return new InvalidOperationException(SR.WritingAfterCompleted);
         }
 
         public static void ThrowInvalidOperationException_CompleteWriterActiveWriter()
@@ -98,7 +102,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_CompleteWriterActiveWriter()
         {
-            return new InvalidOperationException("Can't complete writer while writing.");
+            return new InvalidOperationException(SR.CannotCompleteWhiteWriting);
         }
 
         public static void ThrowInvalidOperationException_CompleteReaderActiveReader()
@@ -109,7 +113,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_CompleteReaderActiveReader()
         {
-            return new InvalidOperationException("Can't complete reader while reading.");
+            return new InvalidOperationException(SR.CannotCompleteWhileReading);
         }
 
         public static void ThrowInvalidOperationException_AdvancingPastBufferSize()
@@ -120,7 +124,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_AdvancingPastBufferSize()
         {
-            return new InvalidOperationException("Can't advance past buffer size");
+            return new InvalidOperationException(SR.CannotAdvancePastCurrentBufferSize);
         }
 
         public static void ThrowInvalidOperationException_BackpressureDeadlock()
@@ -131,7 +135,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_BackpressureDeadlock()
         {
-            return new InvalidOperationException("Advancing examined to the end would cause pipe to deadlock because FlushAsync is waiting");
+            return new InvalidOperationException(SR.BackpressureDeadlock);
         }
 
         public static void ThrowInvalidOperationException_AdvanceToInvalidCursor()
@@ -142,13 +146,30 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_AdvanceToInvalidCursor()
         {
-            return new InvalidOperationException("Pipe is already advanced past provided cursor");
+            return new InvalidOperationException(SR.AdvanceToInvalidCursor);
+        }
+
+        public static void ThrowInvalidOperationException_ResetIncompleteReaderWriter()
+        {
+            throw CreateInvalidOperationException_ResetIncompleteReaderWriter();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static Exception CreateInvalidOperationException_ResetIncompleteReaderWriter()
+        {
+            return new InvalidOperationException(SR.AdvanceToInvalidCursor);
         }
     }
 
     internal enum ExceptionArgument
     {
         minimumSize,
-        bytesWritten
+        bytesWritten,
+        callback,
+        options,
+
+        pauseWriterThreshold,
+
+        resumeWriterThreshold
     }
 }

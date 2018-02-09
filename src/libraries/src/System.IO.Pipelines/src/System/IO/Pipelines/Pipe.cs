@@ -80,22 +80,7 @@ namespace System.IO.Pipelines
         {
             if (options == null)
             {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            if (options.ResumeWriterThreshold < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options.ResumeWriterThreshold));
-            }
-
-            if (options.PauseWriterThreshold < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options.PauseWriterThreshold));
-            }
-
-            if (options.ResumeWriterThreshold > options.PauseWriterThreshold)
-            {
-                throw new ArgumentException(nameof(options.PauseWriterThreshold) + " should be greater or equal to " + nameof(options.ResumeWriterThreshold), nameof(options.PauseWriterThreshold));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
             }
 
             _bufferSegmentPool = new BufferSegment[SegmentPoolSize];
@@ -482,7 +467,7 @@ namespace System.IO.Pipelines
         {
             if (callback == null)
             {
-                throw new ArgumentNullException(nameof(callback));
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.callback);
             }
 
             PipeCompletionCallbacks completionCallbacks;
@@ -521,7 +506,7 @@ namespace System.IO.Pipelines
         {
             if (callback == null)
             {
-                throw new ArgumentNullException(nameof(callback));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callback);
             }
 
             PipeCompletionCallbacks completionCallbacks;
@@ -763,7 +748,7 @@ namespace System.IO.Pipelines
             {
                 if (!_disposed)
                 {
-                    throw new InvalidOperationException("Both reader and writer need to be completed to be able to reset ");
+                    ThrowHelper.ThrowInvalidOperationException_ResetIncompleteReaderWriter();
                 }
 
                 _disposed = false;
