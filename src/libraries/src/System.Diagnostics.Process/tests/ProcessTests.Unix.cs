@@ -319,7 +319,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestStartWithNormalUser()
         {
-            TestStartWithUserName();
+            TestStartWithUserName(GetCurrentRealUserName());
         }
 
         /// <summary>
@@ -331,26 +331,16 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestStartWithRootUser()
         {
-            RunTestAsSudo((Func<int>)TestStartWithUserName);
+            RunTestAsSudo(TestStartWithUserName, GetCurrentRealUserName());
         }
 
-        public static int TestStartWithUserName()
+        public static int TestStartWithUserName(string realUserName)
         {
+            Assert.NotNull(realUserName);
+            Assert.NotEqual("root", realUserName);
+
             using (ProcessTests testObject = new ProcessTests())
             {
-                string realUserName;
-                if (geteuid() == 0)
-                {
-                    realUserName = Environment.GetEnvironmentVariable("SUDO_USER");
-                }
-                else
-                {
-                    realUserName = Environment.UserName;
-                }
-
-                Assert.NotNull(realUserName);
-                Assert.NotEqual("root", realUserName);
-
                 using (Process p = testObject.CreateProcessPortable(GetCurrentEffectiveUserId))
                 {
                     p.StartInfo.UserName = realUserName;
@@ -374,6 +364,18 @@ namespace System.Diagnostics.Tests
             return (int)geteuid();
         }
 
+        private static string GetCurrentRealUserName()
+        {
+            string realUserName = geteuid() == 0 ?
+                Environment.GetEnvironmentVariable("SUDO_USER") :
+                Environment.UserName;
+
+            Assert.NotNull(realUserName);
+            Assert.NotEqual("root", realUserName);
+
+            return realUserName;
+        }
+
         /// <summary>
         /// Tests when running as root and starting a new process as a normal user,
         /// the new process can't elevate back to root.
@@ -383,18 +385,16 @@ namespace System.Diagnostics.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void TestStartWithRootUserCannotElevate()
         {
-            RunTestAsSudo((Func<int>)TestStartWithUserNameCannotElevate);
+            RunTestAsSudo(TestStartWithUserNameCannotElevate, GetCurrentRealUserName());
         }
 
-        public static int TestStartWithUserNameCannotElevate()
+        public static int TestStartWithUserNameCannotElevate(string realUserName)
         {
+            Assert.NotNull(realUserName);
+            Assert.NotEqual("root", realUserName);
+
             using (ProcessTests testObject = new ProcessTests())
             {
-                // This test should only be called with sudo
-                string realUserName = Environment.GetEnvironmentVariable("SUDO_USER");
-                Assert.NotNull(realUserName);
-                Assert.NotEqual("root", realUserName);
-
                 using (Process p = testObject.CreateProcessPortable(SetEffectiveUserIdToRoot))
                 {
                     p.StartInfo.UserName = realUserName;
@@ -415,14 +415,14 @@ namespace System.Diagnostics.Tests
             return seteuid(0);
         }
 
-        private void RunTestAsSudo(Func<int> testMethod)
+        private void RunTestAsSudo(Func<string, int> testMethod, string arg)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions()
             {
                 Start = false,
                 RunAsSudo = true
             };
-            Process p = RemoteInvoke(testMethod, options).Process;
+            Process p = RemoteInvoke(testMethod, arg, options).Process;
             AddProcessForDispose(p);
 
             p.Start();
