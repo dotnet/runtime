@@ -995,15 +995,6 @@ mono_get_array_new_va_icall (int rank)
 }
 
 gboolean
-mini_class_is_system_array (MonoClass *klass)
-{
-	if (klass->parent == mono_defaults.array_class)
-		return TRUE;
-	else
-		return FALSE;
-}
-
-gboolean
 mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 {
 	MonoAssembly *assembly = method->klass->image->assembly;
@@ -4347,6 +4338,15 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			return NULL;
 	}
 	return code;
+}
+
+gboolean
+mini_class_is_system_array (MonoClass *klass)
+{
+	if (klass->parent == mono_defaults.array_class)
+		return TRUE;
+	else
+		return FALSE;
 }
 
 /*
