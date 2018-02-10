@@ -1236,7 +1236,6 @@ ves_imethod (InterpFrame *frame, ThreadContext *context)
 	MonoMethod *method = frame->imethod->method;
 	const char *name = method->name;
 	MonoObject *obj = (MonoObject*) frame->stack_args->data.p;
-	ERROR_DECL (error);
 
 	mono_class_init (method->klass);
 
