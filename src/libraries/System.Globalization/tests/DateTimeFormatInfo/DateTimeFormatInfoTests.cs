@@ -59,12 +59,12 @@ namespace System.Globalization.Tests
             expectedFormattedString = formattedTime.Replace(timeSep, dtfi.TimeSeparator);
             Assert.Equal(expectedFormattedString, d.ToString("HH:mm:ss", dtfi));
         }
-        
+
         [Theory]
         [MemberData(nameof(DateTimeFormatInfo_TestData))]
         public void NativeCalendarNameTest(DateTimeFormatInfo dtfi, Calendar calendar, string nativeCalendarName)
         {
-            try 
+            try
             {
                 dtfi.Calendar = calendar;
                 Assert.Equal(nativeCalendarName, dtfi.NativeCalendarName);
@@ -77,8 +77,8 @@ namespace System.Globalization.Tests
                     Assert.True(calendar is PersianCalendar, "Exception can occur only with PersianCalendar");
                 }
                 else // !PlatformDetection.IsWindows
-                {                 
-                    Assert.True(calendar is HijriCalendar || calendar is UmAlQuraCalendar || calendar is ThaiBuddhistCalendar || 
+                {
+                    Assert.True(calendar is HijriCalendar || calendar is UmAlQuraCalendar || calendar is ThaiBuddhistCalendar ||
                                 calendar is HebrewCalendar || calendar is KoreanCalendar, "failed to set the calendar on DTFI");
                 }
             }
@@ -131,7 +131,35 @@ namespace System.Globalization.Tests
             for (DayOfWeek day=DayOfWeek.Sunday; day <= DayOfWeek.Saturday; day++)
             {
                 Assert.Equal(shortestDayNames[(int) day], dtfi.GetShortestDayName(day));
-            } 
+            }
+        }
+
+        [Fact]
+        public void TestHebrewMonths()
+        {
+            CultureInfo ci = new CultureInfo("he-IL");
+            ci.DateTimeFormat.Calendar = new HebrewCalendar();
+
+            Assert.Equal(13, ci.DateTimeFormat.MonthNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.MonthGenitiveNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.AbbreviatedMonthNames.Length);
+            Assert.Equal(13, ci.DateTimeFormat.AbbreviatedMonthGenitiveNames.Length);
+
+            DateTime dt = ci.DateTimeFormat.Calendar.ToDateTime(5779, 1, 1, 0, 0, 0, 0); // leap year
+            for (int i = 0; i < 13; i++)
+            {
+                string formatted = dt.ToString(ci.DateTimeFormat.LongDatePattern, ci);
+                Assert.Equal(dt, DateTime.ParseExact(formatted, ci.DateTimeFormat.LongDatePattern, ci));
+                dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
+            }
+
+            dt = ci.DateTimeFormat.Calendar.ToDateTime(5778, 1, 1, 0, 0, 0, 0); // non leap year
+            for (int i = 0; i < 12; i++)
+            {
+                string formatted = dt.ToString(ci.DateTimeFormat.LongDatePattern, ci);
+                Assert.Equal(dt, DateTime.ParseExact(formatted, ci.DateTimeFormat.LongDatePattern, ci));
+                dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
+            }
         }
     }
 }
