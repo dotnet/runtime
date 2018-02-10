@@ -9,7 +9,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 2
 #define LOG_VERSION_MINOR 0
-#define LOG_DATA_VERSION 15
+#define LOG_DATA_VERSION 16
 
 /*
  * Changes in major/minor versions:
@@ -78,6 +78,7 @@
                TYPE_HEAP_ROOT now has a different, saner format
                added TYPE_VTABLE metadata load event
                changed TYPE_ALLOC and TYPE_HEAP_OBJECT to include a vtable pointer instead of a class pointer
+ * version 16: removed TYPE_COVERAGE
  */
 
 /*
@@ -331,42 +332,6 @@
  * 		else:
  * 			[value: uleb128/sleb128/double] counter value, can be sleb128, uleb128 or double (determined by using type)
  *
- * type coverage format
- * type: TYPE_COVERAGE
- * exinfo: one of TYPE_COVERAGE_METHOD, TYPE_COVERAGE_STATEMENT, TYPE_COVERAGE_ASSEMBLY, TYPE_COVERAGE_CLASS
- * if exinfo == TYPE_COVERAGE_METHOD
- *  [assembly: string] name of assembly
- *  [class: string] name of the class
- *  [name: string] name of the method
- *  [signature: string] the signature of the method
- *  [filename: string] the file path of the file that contains this method
- *  [token: uleb128] the method token
- *  [method_id: uleb128] an ID for this data to associate with the buffers of TYPE_COVERAGE_STATEMENTS
- *  [len: uleb128] the number of TYPE_COVERAGE_BUFFERS associated with this method
- * if exinfo == TYPE_COVERAGE_STATEMENTS
- *  [method_id: uleb128] an the TYPE_COVERAGE_METHOD buffer to associate this with
- *  [offset: uleb128] the il offset relative to the previous offset
- *  [counter: uleb128] the counter for this instruction
- *  [line: uleb128] the line of filename containing this instruction
- *  [column: uleb128] the column containing this instruction
- * if exinfo == TYPE_COVERAGE_ASSEMBLY
- *  [name: string] assembly name
- *  [guid: string] assembly GUID
- *  [filename: string] assembly filename
- *  [number_of_methods: uleb128] the number of methods in this assembly
- *  [fully_covered: uleb128] the number of fully covered methods
- *  [partially_covered: uleb128] the number of partially covered methods
- *    currently partially_covered will always be 0, and fully_covered is the
- *    number of methods that are fully and partially covered.
- * if exinfo == TYPE_COVERAGE_CLASS
- *  [name: string] assembly name
- *  [class: string] class name
- *  [number_of_methods: uleb128] the number of methods in this class
- *  [fully_covered: uleb128] the number of fully covered methods
- *  [partially_covered: uleb128] the number of partially covered methods
- *    currently partially_covered will always be 0, and fully_covered is the
- *    number of methods that are fully and partially covered.
- *
  * type meta format:
  * type: TYPE_META
  * exinfo: one of: TYPE_SYNC_POINT
@@ -375,17 +340,16 @@
  */
 
 enum {
-	TYPE_ALLOC,
-	TYPE_GC,
-	TYPE_METADATA,
-	TYPE_METHOD,
-	TYPE_EXCEPTION,
-	TYPE_MONITOR,
-	TYPE_HEAP,
-	TYPE_SAMPLE,
-	TYPE_RUNTIME,
-	TYPE_COVERAGE,
-	TYPE_META,
+	TYPE_ALLOC = 0,
+	TYPE_GC = 1,
+	TYPE_METADATA = 2,
+	TYPE_METHOD = 3,
+	TYPE_EXCEPTION = 4,
+	TYPE_MONITOR = 5,
+	TYPE_HEAP = 6,
+	TYPE_SAMPLE = 7,
+	TYPE_RUNTIME = 8,
+	TYPE_META = 10,
 	/* extended type for TYPE_HEAP */
 	TYPE_HEAP_START  = 0 << 4,
 	TYPE_HEAP_END    = 1 << 4,
@@ -431,11 +395,6 @@ enum {
 	TYPE_SAMPLE_COUNTERS      = 4 << 4,
 	/* extended type for TYPE_RUNTIME */
 	TYPE_JITHELPER = 1 << 4,
-	/* extended type for TYPE_COVERAGE */
-	TYPE_COVERAGE_ASSEMBLY = 0 << 4,
-	TYPE_COVERAGE_METHOD   = 1 << 4,
-	TYPE_COVERAGE_STATEMENT = 2 << 4,
-	TYPE_COVERAGE_CLASS = 3 << 4,
 	/* extended type for TYPE_META */
 	TYPE_SYNC_POINT = 0 << 4,
 };
@@ -509,9 +468,6 @@ typedef struct {
 	// Whether to do method prologue/epilogue instrumentation. Only used at startup.
 	gboolean enter_leave;
 
-	// Whether to collect code coverage by instrumenting basic blocks.
-	gboolean collect_coverage;
-
 	//Emit a report at the end of execution
 	gboolean do_report;
 
@@ -547,9 +503,6 @@ typedef struct {
 
 	//Name of the generated mlpd file
 	const char *output_filename;
-
-	//Filter files used by the code coverage mode
-	GPtrArray *cov_filter_files;
 
 	// Port to listen for profiling commands (e.g. "heapshot" for on-demand heapshot).
 	int command_port;

@@ -78,7 +78,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	if (match_option (arg, "help", NULL)) {
 		usage ();
 	} else if (match_option (arg, "nodefaults", NULL)) {
-		mono_profiler_printf_err ("nodefaults can only be used as the first argument");
+		mono_profiler_printf_err ("The nodefaults option can only be used as the first argument.");
 	} else if (match_option (arg, "report", NULL)) {
 		config->do_report = TRUE;
 	} else if (match_option (arg, "debug", NULL)) {
@@ -105,10 +105,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		config->enter_leave = TRUE;
 	} else if (match_option (arg, "nocalls", NULL)) {
 		if (!compat_args_parsing)
-			mono_profiler_printf_err ("Could not parse argument: %s", arg);
+			mono_profiler_printf_err ("Could not parse argument '%s'", arg);
 	} else if (match_option (arg, "coverage", NULL)) {
-		g_warning ("the log profiler support for code coverage is obsolete, use the \"coverage\" profiler");
-		config->collect_coverage = TRUE;
+		mono_profiler_printf_err ("The log profiler no longer supports code coverage. Please use the dedicated coverage profiler instead. See mono-profilers(1) for more information.");
 	} else if (match_option (arg, "zip", NULL)) {
 		config->use_zip = TRUE;
 	} else if (match_option (arg, "output", &val)) {
@@ -141,17 +140,11 @@ parse_arg (const char *arg, ProfilerConfig *config)
 			spec[speclen - 1] = '\0';
 		char *errstr;
 		if (!mono_callspec_parse (spec, &config->callspec, &errstr)) {
-			mono_profiler_printf_err (
-			    "Could not parse callspec: '%s': %s", spec,
-			    errstr);
+			mono_profiler_printf_err ("Could not parse callspec '%s': %s", spec, errstr);
 			g_free (errstr);
 			mono_callspec_cleanup (&config->callspec);
 		}
 		g_free (spec);
-	} else if (match_option (arg, "covfilter-file", &val)) {
-		if (config->cov_filter_files == NULL)
-			config->cov_filter_files = g_ptr_array_new ();
-		g_ptr_array_add (config->cov_filter_files, g_strdup (val));
 	} else {
 		int i;
 
@@ -169,7 +162,7 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		}
 
 		if (i == G_N_ELEMENTS (event_list))
-			mono_profiler_printf_err ("Could not parse argument: %s", arg);
+			mono_profiler_printf_err ("Could not parse argument '%s'", arg);
 	}
 }
 

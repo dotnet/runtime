@@ -25,9 +25,7 @@ lib_LTLIBRARIES = \
 	$(vtune_libs)
 
 suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
-suppression_DATA = \
-	mono-profiler-coverage.suppression \
-	mono-profiler-log.suppression
+suppression_DATA = mono-profiler-coverage.suppression
 
 # FIXME: The profiler tests currently don't work with coop because the
 # sampling infrastructure depends on signals being available.
