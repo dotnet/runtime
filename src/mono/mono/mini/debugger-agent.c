@@ -4811,7 +4811,10 @@ get_set_notification_method (MonoClass* async_builder_class)
 	ERROR_DECL (error);
 	GPtrArray* array = mono_class_get_methods_by_name (async_builder_class, "SetNotificationForWaitCompletion", 0x24, FALSE, FALSE, error);
 	mono_error_assert_ok (error);
-	g_assert (array->len == 1);
+	if (array->len == 0) {
+		g_ptr_array_free (array, TRUE);
+		return NULL;
+	}
 	MonoMethod* set_notification_method = (MonoMethod *)g_ptr_array_index (array, 0);
 	g_ptr_array_free (array, TRUE);
 	return set_notification_method;
@@ -4897,7 +4900,9 @@ get_this_async_id (StackFrame *frame)
 	return get_objid (obj);
 }
 
-static void
+// Returns true if TaskBuilder has NotifyDebuggerOfWaitCompletion method
+// false if not(AsyncVoidBuilder)
+static gboolean
 set_set_notification_for_wait_completion_flag (StackFrame *frame)
 {
 	MonoClassField *builder_field = mono_class_get_field_from_name (frame->method->klass, "<>t__builder");
@@ -4909,11 +4914,15 @@ set_set_notification_for_wait_completion_flag (StackFrame *frame)
 	gboolean arg = TRUE;
 	ERROR_DECL (error);
 	args [0] = &arg;
-	mono_runtime_invoke_checked (get_set_notification_method (mono_class_from_mono_type (builder_field->type)), builder, args, error);
+	MonoMethod* method = get_set_notification_method (mono_class_from_mono_type (builder_field->type));
+	if (method == NULL)
+		return FALSE;
+	mono_runtime_invoke_checked (method, builder, args, error);
 	mono_error_assert_ok (error);
+	return TRUE;
 }
 
-static MonoMethod* notify_debugger_of_wait_completion_method_cache = NULL;
+static MonoMethod* notify_debugger_of_wait_completion_method_cache;
 
 static MonoMethod*
 get_notify_debugger_of_wait_completion_method (void)
@@ -5695,14 +5704,16 @@ ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint* sp, MonoSeqPointI
 				ss_req->depth = STEP_DEPTH_OUT;//setting depth to step-out is important, don't inline IF, because code later depends on this
 			}
 			if (ss_req->depth == STEP_DEPTH_OUT) {
-				set_set_notification_for_wait_completion_flag (frames [0]);
-				ss_req->async_id = get_this_async_id (frames [0]);
-				ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
-				ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
-				if (ss_req_bp_cache)
-					g_hash_table_destroy (ss_req_bp_cache);
-				mono_debug_free_method_async_debug_info (asyncMethod);
-				return;
+				//If we are inside `async void` method, do normal step-out
+				if (set_set_notification_for_wait_completion_flag (frames [0])) {
+					ss_req->async_id = get_this_async_id (frames [0]);
+					ss_req->async_stepout_method = get_notify_debugger_of_wait_completion_method ();
+					ss_bp_add_one (ss_req, &ss_req_bp_count, &ss_req_bp_cache, ss_req->async_stepout_method, 0);
+					if (ss_req_bp_cache)
+						g_hash_table_destroy (ss_req_bp_cache);
+					mono_debug_free_method_async_debug_info (asyncMethod);
+					return;
+				}
 			}
 		}
 
