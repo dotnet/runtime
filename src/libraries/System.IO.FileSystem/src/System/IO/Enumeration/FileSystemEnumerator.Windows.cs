@@ -196,6 +196,11 @@ namespace System.IO.Enumeration
                 _entry = (Interop.NtDll.FILE_FULL_DIR_INFORMATION*)_pinnedBuffer.AddrOfPinnedObject();
         }
 
+        private void DequeueNextDirectory()
+        {
+            (_directoryHandle, _currentPath) = _pending.Dequeue();
+        }
+
         private void InternalDispose(bool disposing)
         {
             // It is possible to fail to allocate the lock, but the finalizer will still run
