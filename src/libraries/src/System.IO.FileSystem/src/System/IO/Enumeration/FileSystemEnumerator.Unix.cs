@@ -24,7 +24,7 @@ namespace System.IO.Enumeration
         private string _currentPath;
         private SafeDirectoryHandle _directoryHandle;
         private bool _lastEntryFound;
-        private Queue<(SafeDirectoryHandle Handle, string Path)> _pending;
+        private Queue<string> _pending;
 
         private Interop.Sys.DirectoryEntry _entry;
         private TResult _current;
@@ -70,7 +70,6 @@ namespace System.IO.Enumeration
         private SafeDirectoryHandle CreateDirectoryHandle(string path)
         {
             // TODO: https://github.com/dotnet/corefx/issues/26715
-            // - Check access denied option and allow through if specified.
             // - Use IntPtr handle directly
             SafeDirectoryHandle handle = Interop.Sys.OpenDir(path);
             if (handle.IsInvalid)
@@ -141,23 +140,9 @@ namespace System.IO.Enumeration
                         else if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
                         {
                             // Recursion is on and the directory was accepted, Queue it
-                            string subdirectory = PathHelpers.CombineNoChecks(_currentPath, entry.FileName);
-                            SafeDirectoryHandle subdirectoryHandle = CreateDirectoryHandle(subdirectory);
-                            if (subdirectoryHandle != null)
-                            {
-                                try
-                                {
-                                    if (_pending == null)
-                                        _pending = new Queue<(SafeDirectoryHandle, string)>();
-                                    _pending.Enqueue((subdirectoryHandle, subdirectory));
-                                }
-                                catch
-                                {
-                                    // Couldn't queue the handle, close it and rethrow
-                                    subdirectoryHandle.Dispose();
-                                    throw;
-                                }
-                            }
+                            if (_pending == null)
+                                _pending = new Queue<string>();
+                            _pending.Enqueue(PathHelpers.CombineNoChecks(_currentPath, entry.FileName));
                         }
                     }
 
@@ -198,6 +183,12 @@ namespace System.IO.Enumeration
             }
         }
 
+        private void DequeueNextDirectory()
+        {
+            _currentPath = _pending.Dequeue();
+            _directoryHandle = CreateDirectoryHandle(_currentPath);
+        }
+
         private static bool IsAccessError(int error)
             => error == (int)Interop.Error.EACCES || error == (int)Interop.Error.EBADF
                 || error == (int)Interop.Error.EPERM;
@@ -210,15 +201,9 @@ namespace System.IO.Enumeration
                 lock(_lock)
                 {
                     _lastEntryFound = true;
+                    _pending = null;
 
                     CloseDirectoryHandle();
-
-                    if (_pending != null)
-                    {
-                        while (_pending.Count > 0)
-                            _pending.Dequeue().Handle.Dispose();
-                        _pending = null;
-                    }
 
                     if (_pathBuffer != null)
                         ArrayPool<char>.Shared.Return(_pathBuffer);
