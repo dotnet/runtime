@@ -12523,16 +12523,9 @@ void ThrowExceptionForJit(HRESULT res)
             COMPlusThrowOM();              
             break; 
             
-#ifdef _TARGET_X86_
-        // Currently, only x86 JIT returns adequate error codes. The x86 JIT is also the
-        // JIT that has more limitations and given that to get this message for 64 bit
-        // is going to require some code churn (either changing their EH handlers or
-        // fixing the 3 or 4 code sites they have that return CORJIT_INTERNALERROR independently
-        // of the error, the least risk fix is making this x86 only.
         case CORJIT_INTERNALERROR:
             COMPlusThrow(kInvalidProgramException, (UINT) IDS_EE_JIT_COMPILER_ERROR);
             break;   
-#endif
 
         case CORJIT_BADCODE:
         default:                    
