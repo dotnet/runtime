@@ -169,6 +169,9 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
     <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs">
+      <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
