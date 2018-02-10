@@ -308,6 +308,13 @@ static int copy_hostent(struct hostent* from, struct hostent* to,
     return ENOSYS;
 }
 
+/*
+Note: we're assuming that all access to these functions are going through these shims on the platforms, which do not provide
+thread-safe functions to get host name or address. If that is not the case (which is very likely) race condition is
+possible, for instance; if other libs (such as libcurl) call gethostby[name/addr] simultaneously.
+*/
+static pthread_mutex_t lock_hostbyx_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, struct hostent* result,
                            char* buffer, size_t buflen, struct hostent** entry, int* error)
 {
@@ -327,6 +334,8 @@ static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, s
         return GetHostErrorCodes_BAD_ARG;
     }
 
+    pthread_mutex_lock(&lock_hostbyx_mutex);
+
     *entry = gethostbyaddr((const char*)addr, (unsigned int)len, type);
     if ((!(*entry)) || ((*entry)->h_addrtype != AF_INET) || ((*entry)->h_length != 4))
     {
@@ -339,11 +348,12 @@ static int gethostbyaddr_r(const uint8_t* addr, const socklen_t len, int type, s
         *entry = (h_errno == 0) ? result : NULL;
     }
 
+    pthread_mutex_unlock(&lock_hostbyx_mutex);
+
     return h_errno;
 }
 #undef HAVE_GETHOSTBYNAME_R
 #undef HAVE_GETHOSTBYADDR_R
-#define HAVE_GETHOSTBYNAME_R 1
 #define HAVE_GETHOSTBYADDR_R 1
 #endif /* !HAVE_GETHOSTBYNAME_R */
 
