@@ -2894,6 +2894,10 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 	if (!mono_method_is_generic_impl (method))
 		return FALSE;
 
+	if (MONO_CLASS_IS_INTERFACE (method->klass))
+		/* Default Interface Methods don't work yet with gshared */
+		return FALSE;
+
 	/*
 	if (!mono_debug_count ())
 		allow_partial = FALSE;

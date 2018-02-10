@@ -21,7 +21,8 @@ typedef enum {
 	PROP_EVENT_INFO = 6, /* MonoClassEventInfo* */
 	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
-	PROP_WEAK_BITMAP = 9
+	PROP_WEAK_BITMAP = 9,
+	PROP_DIM_CONFLICTS = 10 /* GSList of MonoMethod* */
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -104,7 +105,6 @@ mono_class_try_get_generic_container (MonoClass *klass)
 		return m_classgtd_get_generic_container ((MonoClassGtd*)klass);
 	return NULL;
 }
-
 
 void
 mono_class_set_generic_container (MonoClass *klass, MonoGenericContainer *container)
@@ -422,6 +422,51 @@ mono_class_get_weak_bitmap (MonoClass *klass, int *nbits)
 	g_assert (prop);
 	*nbits = prop->nbits;
 	return prop->bits;
+}
+
+gboolean
+mono_class_has_dim_conflicts (MonoClass *klass)
+{
+	if (klass->has_dim_conflicts)
+		return TRUE;
+
+	if (mono_class_is_ginst (klass)) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+
+		return gklass->has_dim_conflicts;
+	}
+
+	return FALSE;
+}
+
+typedef struct {
+	MonoPropertyBagItem head;
+
+	GSList *data;
+} DimConflictData;
+
+void
+mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts)
+{
+	DimConflictData *info = mono_class_alloc (klass, sizeof (DimConflictData));
+	info->data = conflicts;
+
+	g_assert (!mono_class_is_ginst (klass));
+
+	info->head.tag = PROP_DIM_CONFLICTS;
+	mono_property_bag_add (&klass->infrequent_data, info);
+}
+
+GSList*
+mono_class_get_dim_conflicts (MonoClass *klass)
+{
+	if (mono_class_is_ginst (klass))
+		return mono_class_get_dim_conflicts (mono_class_get_generic_class (klass)->container_class);
+
+	DimConflictData *info = mono_property_bag_get (&klass->infrequent_data, PROP_DIM_CONFLICTS);
+
+	g_assert (info);
+	return info->data;
 }
 
 #ifdef MONO_CLASS_DEF_PRIVATE

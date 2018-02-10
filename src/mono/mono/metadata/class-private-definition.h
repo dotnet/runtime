@@ -80,6 +80,7 @@ struct _MonoClass {
 	guint fields_inited : 1; /* setup_fields () has finished */
 	guint has_failure : 1; /* See mono_class_get_exception_data () for a MonoErrorBoxed with the details */
 	guint has_weak_fields : 1; /* class has weak reference fields */
+	guint has_dim_conflicts : 1; /* Class has conflicting default interface methods */
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;

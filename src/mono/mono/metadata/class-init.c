@@ -2498,7 +2498,8 @@ mono_class_need_stelemref_method (MonoClass *klass)
 }
 
 static int
-apply_override (MonoClass *klass, MonoMethod **vtable, MonoMethod *decl, MonoMethod *override)
+apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable, MonoMethod *decl, MonoMethod *override,
+				GHashTable **override_map, GHashTable **override_class_map, GHashTable **conflict_map)
 {
 	int dslot;
 	dslot = mono_method_get_vtable_slot (decl);
@@ -2517,10 +2518,136 @@ apply_override (MonoClass *klass, MonoMethod **vtable, MonoMethod *decl, MonoMet
 		vtable [dslot]->slot = dslot;
 	}
 
-	if (mono_security_core_clr_enabled ())
-		mono_security_core_clr_check_override (klass, vtable [dslot], decl);
+	if (!*override_map) {
+		*override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		*override_class_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	}
+	GHashTable *map = *override_map;
+	GHashTable *class_map = *override_class_map;
+
+	MonoMethod *prev_override = g_hash_table_lookup (map, decl);
+	MonoClass *prev_override_class = g_hash_table_lookup (class_map, decl);
+
+	g_hash_table_insert (map, decl, override);
+	g_hash_table_insert (class_map, decl, override_class);
+
+	/* Collect potentially conflicting overrides which are introduced by default interface methods */
+	if (prev_override) {
+		ERROR_DECL (error);
+
+		/*
+		 * The override methods are part of the generic definition, need to inflate them so their
+		 * parent class becomes the actual interface/class containing the override, i.e.
+		 * IFace<T> in:
+		 * class Foo<T> : IFace<T>
+		 * This is needed so the mono_class_is_assignable_from () calls in the
+		 * conflict resolution work.
+		 */
+		if (mono_class_is_ginst (override_class)) {
+			override = mono_class_inflate_generic_method_checked (override, &mono_class_get_generic_class (override_class)->context, error);
+			mono_error_assert_ok (error);
+		}
+
+		if (mono_class_is_ginst (prev_override_class)) {
+			prev_override = mono_class_inflate_generic_method_checked (prev_override, &mono_class_get_generic_class (prev_override_class)->context, error);
+			mono_error_assert_ok (error);
+		}
+
+		if (!*conflict_map)
+			*conflict_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		GHashTable *cmap = *conflict_map;
+		GSList *entries = g_hash_table_lookup (cmap, decl);
+		if (!(decl->flags & METHOD_ATTRIBUTE_ABSTRACT))
+			entries = g_slist_prepend (entries, decl);
+		entries = g_slist_prepend (entries, prev_override);
+		entries = g_slist_prepend (entries, override);
+
+		g_hash_table_insert (cmap, decl, entries);
+	}
 
 	return TRUE;
+}
+
+static void
+handle_dim_conflicts (MonoMethod **vtable, MonoClass *klass, GHashTable *conflict_map)
+{
+	GHashTableIter iter;
+	MonoMethod *decl;
+	GSList *entries, *l, *l2;
+	GSList *dim_conflicts = NULL;
+
+	g_hash_table_iter_init (&iter, conflict_map);
+	while (g_hash_table_iter_next (&iter, (gpointer*)&decl, (gpointer*)&entries)) {
+		/*
+		 * Iterate over the candidate methods, remove ones whose class is less concrete than the
+		 * class of another one.
+		 */
+		/* This is O(n^2), but that shouldn't be a problem in practice */
+		for (l = entries; l; l = l->next) {
+			for (l2 = entries; l2; l2 = l2->next) {
+				MonoMethod *m1 = l->data;
+				MonoMethod *m2 = l2->data;
+				if (!m1 || !m2 || m1 == m2)
+					continue;
+				if (mono_class_is_assignable_from (m1->klass, m2->klass))
+					l->data = NULL;
+				else if (mono_class_is_assignable_from (m2->klass, m1->klass))
+					l2->data = NULL;
+			}
+		}
+		int nentries = 0;
+		MonoMethod *impl = NULL;
+		for (l = entries; l; l = l->next) {
+			if (l->data) {
+				nentries ++;
+				impl = l->data;
+			}
+		}
+		if (nentries > 1) {
+			/* If more than one method is left, we have a conflict */
+			if (decl->is_inflated)
+				decl = ((MonoMethodInflated*)decl)->declaring;
+			dim_conflicts = g_slist_prepend (dim_conflicts, decl);
+			/*
+			  for (l = entries; l; l = l->next) {
+			  if (l->data)
+			  printf ("%s %s %s\n", mono_class_full_name (klass), mono_method_full_name (decl, TRUE), mono_method_full_name (l->data, TRUE));
+			  }
+			*/
+		} else {
+			/*
+			 * Use the implementing method computed above instead of the already
+			 * computed one, which depends on interface ordering.
+			 */
+			int ic_offset = mono_class_interface_offset (klass, decl->klass);
+			int im_slot = ic_offset + decl->slot;
+			vtable [im_slot] = impl;
+		}
+		g_slist_free (entries);
+	}
+	if (dim_conflicts) {
+		mono_loader_lock ();
+		klass->has_dim_conflicts = 1;
+		mono_loader_unlock ();
+
+		/*
+		 * Exceptions are thrown at method call time and only for the methods which have
+		 * conflicts, so just save them in the class.
+		 */
+
+		/* Make a copy of the list from the class mempool */
+		GSList *conflicts = mono_class_alloc0 (klass, g_slist_length (dim_conflicts) * sizeof (GSList));
+		int i = 0;
+		for (l = dim_conflicts; l; l = l->next) {
+			conflicts [i].data = l->data;
+			conflicts [i].next = &conflicts [i + 1];
+			i ++;
+		}
+		conflicts [i - 1].next = NULL;
+
+		mono_class_set_dim_conflicts (klass, conflicts);
+		g_slist_free (dim_conflicts);
+	}
 }
 
 static void
@@ -2664,6 +2791,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	guint32 max_iid;
 	GPtrArray *ifaces = NULL;
 	GHashTable *override_map = NULL;
+	GHashTable *override_class_map = NULL;
+	GHashTable *conflict_map = NULL;
 	MonoMethod *cm;
 #if (DEBUG_INTERFACE_VTABLE_CODE|TRACE_INTERFACE_VTABLE_CODE)
 	int first_non_interface_slot;
@@ -2746,6 +2875,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		mono_memory_barrier ();
 		klass->vtable = tmp;
 
+		mono_loader_lock ();
+		klass->has_dim_conflicts = gklass->has_dim_conflicts;
+		mono_loader_unlock ();
+
 		/* Have to set method->slot for abstract virtual methods */
 		if (klass->methods && gklass->methods) {
 			int mcount = mono_class_get_method_count (klass);
@@ -2823,12 +2956,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		for (int i = 0; i < iface_onum; i++) {
 			MonoMethod *decl = iface_overrides [i*2];
 			MonoMethod *override = iface_overrides [i*2 + 1];
-			if (!apply_override (klass, vtable, decl, override))
+			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
-
-			if (!override_map)
-				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
-			g_hash_table_insert (override_map, decl, override);
 		}
 		g_free (iface_overrides);
 	}
@@ -2838,12 +2967,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *override = overrides [i*2 + 1];
 		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
-			if (!apply_override (klass, vtable, decl, override))
+			if (!apply_override (klass, klass, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
-
-			if (!override_map)
-				override_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
-			g_hash_table_insert (override_map, decl, override);
 		}
 	}
 
@@ -3106,6 +3231,14 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 		g_hash_table_destroy (override_map);
 		override_map = NULL;
+	}
+
+	if (override_class_map)
+		g_hash_table_destroy (override_class_map);
+
+	if (conflict_map) {
+		handle_dim_conflicts (vtable, klass, conflict_map);
+		g_hash_table_destroy (conflict_map);
 	}
 
 	g_slist_free (virt_methods);

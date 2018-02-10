@@ -2915,16 +2915,6 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 		EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
 
 		return mrgctx_var;
-	} else if (MONO_CLASS_IS_INTERFACE (cfg->method->klass)) {
-		MonoInst *mrgctx_loc, *mrgctx_var;
-
-		/* Default interface methods need an mrgctx since the vtabke at runtime points at an implementing class */
-		mrgctx_loc = mono_get_vtable_var (cfg);
-		EMIT_NEW_TEMPLOAD (cfg, mrgctx_var, mrgctx_loc->inst_c0);
-
-		g_assert (mono_method_needs_static_rgctx_invoke (cfg->method, TRUE));
-
-		return mrgctx_var;
 	} else if (method->flags & METHOD_ATTRIBUTE_STATIC || method->klass->valuetype) {
 		MonoInst *vtable_loc, *vtable_var;
 
