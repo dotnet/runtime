@@ -75,7 +75,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(address));
             }
 
-            IPHostEntry ipHostEntry = InternalGetHostByAddress(IPAddress.Parse(address), false);
+            IPHostEntry ipHostEntry = InternalGetHostByAddress(IPAddress.Parse(address));
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
@@ -92,79 +92,51 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(address));
             }
 
-            IPHostEntry ipHostEntry = InternalGetHostByAddress(address, false);
+            IPHostEntry ipHostEntry = InternalGetHostByAddress(address);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
         } // GetHostByAddress
         
         // Does internal IPAddress reverse and then forward lookups (for Legacy and current public methods).
-        private static IPHostEntry InternalGetHostByAddress(IPAddress address, bool includeIPv6)
+        private static IPHostEntry InternalGetHostByAddress(IPAddress address)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(null, address);
-            
+                        
             //
-            // IPv6 Changes: We need to use the new getnameinfo / getaddrinfo functions
-            //               for resolution of IPv6 addresses.
+            // Try to get the data for the host from it's address
             //
+            // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
+            // will only return that address and not the full list.
 
-            if (SocketProtocolSupportPal.OSSupportsIPv6 || includeIPv6)
+            // Do a reverse lookup to get the host name.
+            SocketError errorCode;
+            int nativeErrorCode;
+            string name = NameResolutionPal.TryGetNameInfo(address, out errorCode, out nativeErrorCode);
+            if (errorCode == SocketError.Success)
             {
-                //
-                // Try to get the data for the host from it's address
-                //
-                // We need to call getnameinfo first, because getaddrinfo w/ the ipaddress string
-                // will only return that address and not the full list.
-
-                // Do a reverse lookup to get the host name.
-                SocketError errorCode;
-                int nativeErrorCode;
-                string name = NameResolutionPal.TryGetNameInfo(address, out errorCode, out nativeErrorCode);
+                // Do the forward lookup to get the IPs for that host name
+                IPHostEntry hostEntry;
+                errorCode = NameResolutionPal.TryGetAddrInfo(name, out hostEntry, out nativeErrorCode);
                 if (errorCode == SocketError.Success)
                 {
-                    // Do the forward lookup to get the IPs for that host name
-                    IPHostEntry hostEntry;
-                    errorCode = NameResolutionPal.TryGetAddrInfo(name, out hostEntry, out nativeErrorCode);
-                    if (errorCode == SocketError.Success)
-                    {
-                        return hostEntry;
-                    }
-
-                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode));
-
-                    // One of two things happened:
-                    // 1. There was a ptr record in dns, but not a corollary A/AAA record.
-                    // 2. The IP was a local (non-loopback) IP that resolved to a connection specific dns suffix.
-                    //    - Workaround, Check "Use this connection's dns suffix in dns registration" on that network
-                    //      adapter's advanced dns settings.
-
-                    // Just return the resolved host name and no IPs.
                     return hostEntry;
                 }
 
-                throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode));
+
+                // One of two things happened:
+                // 1. There was a ptr record in dns, but not a corollary A/AAA record.
+                // 2. The IP was a local (non-loopback) IP that resolved to a connection specific dns suffix.
+                //    - Workaround, Check "Use this connection's dns suffix in dns registration" on that network
+                //      adapter's advanced dns settings.
+
+                // Just return the resolved host name and no IPs.
+                return hostEntry;
             }
 
-            //
-            // If IPv6 is not enabled (maybe config switch) but we've been
-            // given an IPv6 address then we need to bail out now.
-            //
-            else
-            {
-                if (address.AddressFamily == AddressFamily.InterNetworkV6)
-                {
-                    //
-                    // Protocol not supported
-                    //
-                    throw new SocketException((int)SocketError.ProtocolNotSupported);
-                }
-                //
-                // Use gethostbyaddr() to try to resolve the IP address
-                //
-                // End IPv6 Changes
-                //
-                return NameResolutionPal.GetHostByAddr(address);
-            }
+            throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
+            
         } // InternalGetHostByAddress
 
         /*****************************************************************************
@@ -209,7 +181,7 @@ namespace System.Net
             {
                 try
                 {
-                    ipHostEntry = InternalGetHostByAddress(address, false);
+                    ipHostEntry = InternalGetHostByAddress(address);
                 }
                 catch (SocketException ex)
                 {
@@ -257,7 +229,7 @@ namespace System.Net
             {
                 if (result.address != null)
                 {
-                    hostEntry = InternalGetHostByAddress(result.address, result.includeIPv6);
+                    hostEntry = InternalGetHostByAddress(result.address);
                 }
                 else
                 {
@@ -442,7 +414,7 @@ namespace System.Net
                     throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
                 }
 
-                ipHostEntry = InternalGetHostByAddress(address, true);
+                ipHostEntry = InternalGetHostByAddress(address);
             }
             else
             {
@@ -469,7 +441,7 @@ namespace System.Net
                 throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(address)));
             }
 
-            IPHostEntry ipHostEntry = InternalGetHostByAddress(address, true);
+            IPHostEntry ipHostEntry = InternalGetHostByAddress(address);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, ipHostEntry);
             return ipHostEntry;
