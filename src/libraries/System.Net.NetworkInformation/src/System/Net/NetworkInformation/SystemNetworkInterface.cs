@@ -123,7 +123,7 @@ namespace System.Net.NetworkInformation
             // If we don't have any interfaces detected, return empty.
             if (result == Interop.IpHlpApi.ERROR_NO_DATA || result == Interop.IpHlpApi.ERROR_INVALID_PARAMETER)
             {
-                return new SystemNetworkInterface[0];
+                return Array.Empty<SystemNetworkInterface>();
             }
 
             // Otherwise we throw on an error.

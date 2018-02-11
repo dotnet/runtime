@@ -1106,7 +1106,7 @@ namespace System.Xml.Serialization
             if (arraySize != null && arraySize.Length > 0)
                 dimensions = arraySize.Split(null);
             else
-                dimensions = new string[0];
+                dimensions = Array.Empty<string>();
 
             soapArrayInfo.dimensions = 0;
             soapArrayInfo.length = -1;
@@ -2411,7 +2411,7 @@ namespace System.Xml.Serialization
 
         internal void GenerateEnd()
         {
-            GenerateEnd(new string[0], new XmlMapping[0], new Type[0]);
+            GenerateEnd(Array.Empty<string>(), Array.Empty<XmlMapping>(), Array.Empty<Type>());
         }
         internal void GenerateEnd(string[] methods, XmlMapping[] xmlMappings, Type[] types)
         {
@@ -3573,7 +3573,7 @@ namespace System.Xml.Serialization
                 Writer.Write(", ");
                 WriteQuotedCSharpString(structMapping.Namespace);
                 Writer.WriteLine(");");
-                members = new Member[0];
+                members = Array.Empty<Member>();
                 anyFixups = false;
                 fixupMethodName = null;
             }
