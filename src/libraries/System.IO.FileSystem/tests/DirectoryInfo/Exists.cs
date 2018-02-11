@@ -38,6 +38,12 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void Root()
+        {
+            Assert.True(new DirectoryInfo(Path.GetPathRoot(Directory.GetCurrentDirectory())).Exists);
+        }
+
+        [Fact]
         public void DotPath()
         {
             Assert.True(new DirectoryInfo(Path.Combine(TestDirectory, ".")).Exists);
