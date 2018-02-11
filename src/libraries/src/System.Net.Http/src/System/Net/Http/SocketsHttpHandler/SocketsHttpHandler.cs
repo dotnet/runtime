@@ -264,17 +264,35 @@ namespace System.Net.Http
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
+            Exception error = ValidateAndNormalizeRequest(request);
+            if (error != null)
+            {
+                return Task.FromException<HttpResponseMessage>(error);
+            }
+
+            return handler.SendAsync(request, cancellationToken);
+        }
+
+        private Exception ValidateAndNormalizeRequest(HttpRequestMessage request)
+        {
             if (request.Version.Major == 0)
             {
-                return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_version));
+                return new NotSupportedException(SR.net_http_unsupported_version);
             }
 
             // Add headers to define content transfer, if not present
-            if (request.Content != null &&
-                (!request.HasHeaders || request.Headers.TransferEncodingChunked != true) &&
-                request.Content.Headers.ContentLength == null)
+            bool transferEncodingChunkedSet = request.HasHeaders && request.Headers.TransferEncodingChunked.GetValueOrDefault();
+            if (request.Content == null)
             {
-                // We have content, but neither Transfer-Encoding or Content-Length is set.
+                if (transferEncodingChunkedSet)
+                {
+                    return new HttpRequestException(SR.net_http_client_execution_error,
+                        new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
+                }
+            }
+            else if (!transferEncodingChunkedSet && request.Content.Headers.ContentLength == null)
+            {
+                // We have content, but neither Transfer-Encoding nor Content-Length is set.
                 request.Headers.TransferEncodingChunked = true;
             }
 
@@ -283,7 +301,7 @@ namespace System.Net.Http
                 // HTTP 1.0 does not support chunking
                 if (request.Headers.TransferEncodingChunked == true)
                 {
-                    return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_chunking));
+                    return new NotSupportedException(SR.net_http_unsupported_chunking);
                 }
 
                 // HTTP 1.0 does not support Expect: 100-continue; just disable it.
@@ -293,7 +311,7 @@ namespace System.Net.Http
                 }
             }
 
-            return handler.SendAsync(request, cancellationToken);
+            return null;
         }
     }
 }

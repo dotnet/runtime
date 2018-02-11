@@ -1339,6 +1339,24 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Fact]
+        public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
+        {
+            if (IsNetfxHandler)
+            {
+                // no exception thrown
+                return;
+            }
+
+            var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com");
+            req.Headers.TransferEncodingChunked = true;
+            using (HttpClient c = CreateHttpClient())
+            {
+                HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(() => c.SendAsync(req));
+                Assert.IsType<InvalidOperationException>(error.InnerException);
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
