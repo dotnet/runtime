@@ -8,7 +8,6 @@
 #include "common.h"
 #include "peimagelayout.h"
 #include "peimagelayout.inl"
-#include "pefingerprint.h"
 
 #ifndef DACCESS_COMPILE
 PEImageLayout* PEImageLayout::CreateFlat(const void *flat, COUNT_T size,PEImage* pOwner)
@@ -270,9 +269,6 @@ RawImageLayout::RawImageLayout(const void *flat, COUNT_T size,PEImage* pOwner)
     m_pOwner=pOwner;
     m_Layout=LAYOUT_FLAT;
 
-    PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
-
-
     if (size)
     {
         HandleHolder mapping(WszCreateFileMapping(INVALID_HANDLE_VALUE, NULL, 
@@ -303,9 +299,6 @@ RawImageLayout::RawImageLayout(const void *mapped, PEImage* pOwner, BOOL bTakeOw
     m_pOwner=pOwner;
     m_Layout=LAYOUT_MAPPED;
 
-    PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
-
-
     if (bTakeOwnership)
     {
 #ifndef FEATURE_PAL
@@ -333,9 +326,6 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
     m_Layout=LAYOUT_LOADED;    
     m_pOwner=source->m_pOwner;
     _ASSERTE(!source->IsMapped());
-
-    PEFingerprintVerificationHolder verifyHolder(source->m_pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
-
     
     if (!source->HasNTHeaders())
         EEFileLoadException::Throw(GetPath(), COR_E_BADIMAGEFORMAT);
@@ -380,8 +370,6 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
 
     // If mapping was requested, try to do SEC_IMAGE mapping
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening OS mapped %S (hFile %p)\n", (LPCWSTR) GetPath(), hFile));
-
-    PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
 
 #ifndef FEATURE_PAL
 
@@ -532,9 +520,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, BOOL bNTSafeLoad, BOOL bTh
     m_Layout=LAYOUT_LOADED;    
     m_pOwner=pOwner;
 
-    PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
-
-
     DWORD dwFlags = GetLoadWithAlteredSearchPathFlag();
     if (bNTSafeLoad)
         dwFlags|=DONT_RESOLVE_DLL_REFERENCES;
@@ -568,9 +553,6 @@ FlatImageLayout::FlatImageLayout(HANDLE hFile, PEImage* pOwner)
     m_Layout=LAYOUT_FLAT;    
     m_pOwner=pOwner;    
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening flat %S\n", (LPCWSTR) GetPath()));
-
-    PEFingerprintVerificationHolder verifyHolder(pOwner);  // Do not remove: This holder ensures the IL file hasn't changed since the runtime started making assumptions about it.
-
 
     COUNT_T size = SafeGetFileSize(hFile, NULL);
     if (size == 0xffffffff && GetLastError() != NOERROR)
