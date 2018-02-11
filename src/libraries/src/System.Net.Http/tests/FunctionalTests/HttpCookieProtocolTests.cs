@@ -62,8 +62,8 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.UseCookies = useCookies;
                 handler.CookieContainer = CreateSingleCookieContainer(url, cookieName, cookieValue);
+                handler.UseCookies = useCookies;
 
                 using (HttpClient client = new HttpClient(handler))
                 {
