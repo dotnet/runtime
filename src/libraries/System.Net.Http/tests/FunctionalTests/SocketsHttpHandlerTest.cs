@@ -279,10 +279,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
-                            $"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
+                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendResponseAsync($"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -294,6 +293,8 @@ namespace System.Net.Http.Functional.Tests
 
                             TextReader clientReader = new StreamReader(clientStream);
                             TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
+                            TextReader serverReader = connection.Reader;
+                            TextWriter serverWriter = connection.Writer;
 
                             const string helloServer = "hello server";
                             const string helloClient = "hello client";
@@ -309,8 +310,6 @@ namespace System.Net.Http.Functional.Tests
                             serverWriter.WriteLine(goodbyeClient);
                             Assert.Equal(goodbyeClient, clientReader.ReadLine());
                         }
-
-                        return null;
                     });
                 }
             });
@@ -370,26 +369,19 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClient())
             {
-                await LoopbackServer.CreateServerAsync(async (listener, uri) =>
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
                     // Make multiple requests iteratively.
                     for (int i = 0; i < 2; i++)
                     {
                         Task<string> request = client.GetStringAsync(uri);
-                        await LoopbackServer.AcceptSocketAsync(listener, async (server, serverStream, serverReader, serverWriter) =>
+                        await server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                        await request;
+
+                        if (i == 0)
                         {
-                            while (!string.IsNullOrWhiteSpace(await serverReader.ReadLineAsync()));
-                            await serverWriter.WriteAsync(LoopbackServer.DefaultHttpResponse);
-                            await request;
-
-                            server.Shutdown(SocketShutdown.Both);
-                            if (i == 0)
-                            {
-                                await Task.Delay(2000); // give client time to see the closing before next connect
-                            }
-
-                            return null;
-                        });
+                            await Task.Delay(2000); // give client time to see the closing before next connect
+                        }
                     }
                 });
             }
@@ -400,7 +392,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClient())
             {
-                await LoopbackServer.CreateServerAsync(async (listener, uri) =>
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
                 {
                     string responseBody =
                         "HTTP/1.1 200 OK\r\n" +
@@ -411,23 +403,18 @@ namespace System.Net.Http.Functional.Tests
 
                     // Make first request.
                     Task<string> request1 = client.GetStringAsync(uri);
-                    await LoopbackServer.AcceptSocketAsync(listener, async (server1, serverStream1, serverReader1, serverWriter1) =>
+                    await server.AcceptConnectionAsync(async connection1 =>
                     {
-                        while (!string.IsNullOrWhiteSpace(await serverReader1.ReadLineAsync()));
-                        await serverWriter1.WriteAsync(responseBody);
+                        await connection1.ReadRequestHeaderAndSendResponseAsync(responseBody);
                         await request1;
 
                         // Make second request and expect it to be served from a different connection.
                         Task<string> request2 = client.GetStringAsync(uri);
-                        await LoopbackServer.AcceptSocketAsync(listener, async (server2, serverStream2, serverReader2, serverWriter2) =>
+                        await server.AcceptConnectionAsync(async connection2 =>
                         {
-                            while (!string.IsNullOrWhiteSpace(await serverReader2.ReadLineAsync()));
-                            await serverWriter2.WriteAsync(responseBody);
+                            await connection2.ReadRequestHeaderAndSendResponseAsync(responseBody);
                             await request2;
-                            return null;
                         });
-
-                        return null;
                     });
                 });
             }
@@ -449,14 +436,13 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = new HttpClient(handler))
                 {
-                    await LoopbackServer.CreateServerAsync(async (listener, uri) =>
+                    await LoopbackServer.CreateServerAsync(async (server, uri) =>
                     {
                         // Make first request.
                         Task<string> request1 = client.GetStringAsync(uri);
-                        await LoopbackServer.AcceptSocketAsync(listener, async (server1, serverStream1, serverReader1, serverWriter1) =>
+                        await server.AcceptConnectionAsync(async connection =>
                         {
-                            while (!string.IsNullOrWhiteSpace(await serverReader1.ReadLineAsync()));
-                            await serverWriter1.WriteAsync(LoopbackServer.DefaultHttpResponse);
+                            await connection.ReadRequestHeaderAndSendDefaultResponseAsync();
                             await request1;
 
                             // Wait a small amount of time before making the second request, to give the first request time to timeout.
@@ -464,15 +450,11 @@ namespace System.Net.Http.Functional.Tests
 
                             // Make second request and expect it to be served from a different connection.
                             Task<string> request2 = client.GetStringAsync(uri);
-                            await LoopbackServer.AcceptSocketAsync(listener, async (server2, serverStream2, serverReader2, serverWriter2) =>
+                            await server.AcceptConnectionAsync(async connection2 =>
                             {
-                                while (!string.IsNullOrWhiteSpace(await serverReader2.ReadLineAsync()));
-                                await serverWriter2.WriteAsync(LoopbackServer.DefaultHttpResponse);
+                                await connection2.ReadRequestHeaderAndSendDefaultResponseAsync();
                                 await request2;
-                                return null;
                             });
-
-                            return null;
                         });
                     });
                 }
