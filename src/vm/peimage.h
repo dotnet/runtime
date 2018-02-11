@@ -19,7 +19,6 @@
 #include "peimagelayout.h"
 #include "sstring.h"
 #include "holder.h"
-#include "pefingerprint.h"
 
 class SimpleRWLock;
 // --------------------------------------------------------------------------------
