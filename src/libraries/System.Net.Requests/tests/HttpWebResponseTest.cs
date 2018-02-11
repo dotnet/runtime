@@ -23,7 +23,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Type: {expectedContentType}\r\n" +
@@ -46,7 +46,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         "Content-Length: 5\r\n" +

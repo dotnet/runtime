@@ -86,10 +86,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     client.Timeout = Timeout.InfiniteTimeSpan;
 
-                    var ep = (IPEndPoint)server.LocalEndPoint;
                     Task<string>[] tasks =
                         (from i in Enumerable.Range(0, numRequests)
-                         select client.GetStringAsync($"http://{ep.Address}:{ep.Port}"))
+                         select client.GetStringAsync(url))
                          .ToArray();
 
                     Assert.All(tasks, t =>
@@ -119,14 +118,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task<HttpResponseMessage> getAsync = client.GetAsync(url, completionOption);
 
-                LoopbackServer.AcceptSocketAsync(server, (s, stream, reader, writer) =>
+                server.AcceptConnectionAsync(connection => 
                 {
-                    while (!string.IsNullOrEmpty(reader.ReadLine())) ;
+                    while (!string.IsNullOrEmpty(connection.Reader.ReadLine())) ;
 
-                    writer.Write(responseText);
-                    s.Shutdown(SocketShutdown.Send);
+                    connection.Writer.Write(responseText);
+                    connection.Socket.Shutdown(SocketShutdown.Send);
 
-                    return Task.FromResult<List<string>>(null);
+                    return Task.CompletedTask;
                 }).GetAwaiter().GetResult();
 
                 getAsync.GetAwaiter().GetResult().Dispose();
@@ -140,14 +139,12 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task<HttpResponseMessage> getAsync = client.GetAsync(url, completionOption);
 
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                await server.AcceptConnectionAsync(async connection => 
                 {
-                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
+                    while (!string.IsNullOrEmpty(await connection.Reader.ReadLineAsync().ConfigureAwait(false))) ;
 
-                    await writer.WriteAsync(responseText).ConfigureAwait(false);
-                    s.Shutdown(SocketShutdown.Send);
-
-                    return null;
+                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
+                    connection.Socket.Shutdown(SocketShutdown.Send);
                 });
 
                 (await getAsync.ConfigureAwait(false)).Dispose();
@@ -169,15 +166,13 @@ namespace System.Net.Http.Functional.Tests
                 var content = new ByteArrayContent(new byte[numBytes]);
                 Task<HttpResponseMessage> postAsync = client.PostAsync(url, content);
 
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                await server.AcceptConnectionAsync(async connection => 
                 {
-                    while (!string.IsNullOrEmpty(await reader.ReadLineAsync().ConfigureAwait(false))) ;
-                    for (int i = 0; i < numBytes; i++) Assert.NotEqual(-1, reader.Read());
+                    while (!string.IsNullOrEmpty(await connection.Reader.ReadLineAsync().ConfigureAwait(false))) ;
+                    for (int i = 0; i < numBytes; i++) Assert.NotEqual(-1, connection.Reader.Read());
 
-                    await writer.WriteAsync(responseText).ConfigureAwait(false);
-                    s.Shutdown(SocketShutdown.Send);
-
-                    return null;
+                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
+                    connection.Socket.Shutdown(SocketShutdown.Send);
                 });
 
                 (await postAsync.ConfigureAwait(false)).Dispose();
@@ -194,10 +189,10 @@ namespace System.Net.Http.Functional.Tests
                     Func<Task<WeakReference>> getAsync = () => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(t => new WeakReference(t.Result));
                     Task<WeakReference> wrt = getAsync();
 
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-                        await writer.WriteAsync(CreateResponse(new string('a', 32 * 1024)));
+                        while (!string.IsNullOrEmpty(await connection.Reader.ReadLineAsync())) ;
+                        await connection.Writer.WriteAsync(CreateResponse(new string('a', 32 * 1024)));
 
                         WeakReference wr = wrt.GetAwaiter().GetResult();
                         Assert.True(SpinWait.SpinUntil(() =>
@@ -207,8 +202,6 @@ namespace System.Net.Http.Functional.Tests
                             GC.Collect();
                             return !wr.IsAlive;
                         }, 10 * 1000), "Response object should have been collected");
-
-                        return null;
                     });
                 }
             });

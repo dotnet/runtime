@@ -57,11 +57,11 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server),
+                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
                         client.GetAsync(url));
                 });
                 Assert.Throws<InvalidOperationException>(() => handler.SslProtocols = SslProtocols.Tls12);
@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 if (requestOnlyThisProtocol)
                 {
@@ -119,7 +119,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }
@@ -215,23 +215,25 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
             if (!BackendSupportsSslConfiguration)
+            {
                 return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 var options = new LoopbackServer.Options { UseSsl = true };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         client.GetAsync(url),
-                        LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                        server.AcceptConnectionAsync(async connection =>
                         {
-                            Assert.Equal(SslProtocols.Tls12, Assert.IsType<SslStream>(stream).SslProtocol);
-                            await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
-                            return null;
-                        }, options));
+                            Assert.Equal(SslProtocols.Tls12, Assert.IsType<SslStream>(connection.Stream).SslProtocol);
+                            await connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                        }));
                 }, options);
             }
         }
@@ -250,13 +252,13 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             {
                 handler.SslProtocols = allowedProtocol;
-                handler.ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        Assert.ThrowsAsync(exceptedServerException, () => LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options)),
+                        Assert.ThrowsAsync(exceptedServerException, () => server.AcceptConnectionSendDefaultResponseAndCloseAsync()),
                         Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
                 }, options);
             }
@@ -271,7 +273,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient(handler))
             {
                 handler.SslProtocols = SslProtocols.Tls11 | SslProtocols.Tls12;
-                handler.ServerCertificateCustomValidationCallback = LoopbackServer.AllowAllCertificates;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 if (BackendSupportsSslConfiguration)
                 {
@@ -281,7 +283,7 @@ namespace System.Net.Http.Functional.Tests
                     await LoopbackServer.CreateServerAsync(async (server, url) =>
                     {
                         await TestHelper.WhenAllCompletedOrAnyFailed(
-                            Assert.ThrowsAsync<IOException>(() => LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options)),
+                            Assert.ThrowsAsync<IOException>(() => server.AcceptConnectionSendDefaultResponseAndCloseAsync()),
                             Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
                     }, options);
 
@@ -291,7 +293,7 @@ namespace System.Net.Http.Functional.Tests
                         await LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
                             await TestHelper.WhenAllCompletedOrAnyFailed(
-                                LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                                server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
                                 client.GetAsync(url));
                         }, options);
                     }

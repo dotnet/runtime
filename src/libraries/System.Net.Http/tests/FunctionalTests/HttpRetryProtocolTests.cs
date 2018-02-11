@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAndClientAsync(async url =>
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
@@ -52,20 +52,18 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                // Accept first connection
+                await server.AcceptConnectionAsync(async connection =>
                 {
                     // Initial response
-                    await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, s_simpleResponse);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(s_simpleResponse);
 
                     // Second response: Read request headers, then close connection
-                    await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, "");
-                    s.Close();
-
-                    // Client should reconnect.  Accept that connection and send response.
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server, s_simpleResponse);
-
-                    return null;
+                    await connection.ReadRequestHeaderAsync();
                 });
+
+                // Client should reconnect.  Accept that connection and send response.
+                await server.AcceptConnectionSendResponseAndCloseAsync(s_simpleResponse);
             });
         }
 
@@ -77,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAndClientAsync(async url =>
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
@@ -102,33 +100,29 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                // Accept first connection
+                await server.AcceptConnectionAsync(async connection =>
                 {
                     // Initial response
-                    await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, s_simpleResponse);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(s_simpleResponse);
 
                     // Second response: Read request headers, then close connection
-                    List<string> lines = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, "");
+                    List<string> lines = await connection.ReadRequestHeaderAsync();
                     Assert.Contains("Expect: 100-continue", lines);
-                    s.Close();
+                });
 
-                    // Client should reconnect.  Accept that connection and send response.
-                    await LoopbackServer.AcceptSocketAsync(server, async (s2, stream2, reader2, writer2) =>
-                    {
-                        List<string> lines2 = await LoopbackServer.ReadWriteAcceptedAsync(s2, reader2, writer2, "");
-                        Assert.Contains("Expect: 100-continue", lines2);
+                // Client should reconnect.  Accept that connection and send response.
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    List<string> lines = await connection.ReadRequestHeaderAsync();
+                    Assert.Contains("Expect: 100-continue", lines);
 
-                        await writer2.WriteAsync("HTTP/1.1 100 Continue\r\n\r\n");
+                    await connection.Writer.WriteAsync("HTTP/1.1 100 Continue\r\n\r\n");
 
-                        string contentLine = await reader2.ReadLineAsync();
-                        Assert.Equal(s_simpleContent, contentLine + "\r\n");
+                    string contentLine = await connection.Reader.ReadLineAsync();
+                    Assert.Equal(s_simpleContent, contentLine + "\r\n");
 
-                        await writer2.WriteAsync(s_simpleResponse);
-
-                        return null;
-                    });
-
-                    return null;
+                    await connection.Writer.WriteAsync(s_simpleResponse);
                 });
             });
         }

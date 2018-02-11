@@ -69,18 +69,17 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getAsync = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, reader, writer) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
                         var cts = new CancellationTokenSource();
                         Task serverTask = Task.Run(async delegate
                         {
-                            while (!string.IsNullOrEmpty(await reader.ReadLineAsync()));
-                            await writer.WriteAsync("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nMyInfiniteHeader: ");
+                            await connection.ReadRequestHeaderAndSendResponseAsync("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nMyInfiniteHeader: ");
                             try
                             {
                                 while (!cts.IsCancellationRequested)
                                 {
-                                    await writer.WriteAsync(new string('s', 16000));
+                                    await connection.Writer.WriteAsync(new string('s', 16000));
                                     await Task.Delay(1);
                                 }
                             }
@@ -90,7 +89,6 @@ namespace System.Net.Http.Functional.Tests
                         await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
                         cts.Cancel();
                         await serverTask;
-                        return null;
                     });
                 }
             });
@@ -118,9 +116,9 @@ namespace System.Net.Http.Functional.Tests
                     }
                     Task<HttpResponseMessage> getAsync = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, reader, writer) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, responseHeaders);
+                        Task serverTask = connection.ReadRequestHeaderAndSendResponseAsync(responseHeaders);
 
                         if (shouldSucceed)
                         {
@@ -132,8 +130,6 @@ namespace System.Net.Http.Functional.Tests
                             await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
                             try { await serverTask; } catch { }
                         }
-                        
-                        return null;
                     });
                 }
             });

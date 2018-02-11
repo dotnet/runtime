@@ -32,7 +32,7 @@ namespace System.Net.Tests
                 request.ContinueDelegate = continueDelegate;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
                 DateTimeOffset utcNow = DateTimeOffset.UtcNow;
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {utcNow:R}\r\n" +
                         "Content-Type: application/json;charset=UTF-8\r\n" +
@@ -53,7 +53,7 @@ namespace System.Net.Tests
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
                 DateTimeOffset utcNow = DateTimeOffset.UtcNow;
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {utcNow:R}\r\n" +
                         "Content-Type: application/json;charset=UTF-8\r\n" +
@@ -86,7 +86,7 @@ namespace System.Net.Tests
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
                 DateTimeOffset utcNow = DateTimeOffset.UtcNow;
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {utcNow:R}\r\n" +
                         "Content-Type: application/json;charset=UTF-8\r\n" +
@@ -121,7 +121,7 @@ namespace System.Net.Tests
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
                 DateTimeOffset utcNow = DateTimeOffset.UtcNow;
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {utcNow:R}\r\n" +
                         "Content-Length: 0\r\n" +
