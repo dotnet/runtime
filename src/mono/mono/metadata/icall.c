@@ -8191,14 +8191,6 @@ mono_lookup_internal_call (MonoMethod *method)
 	return mono_lookup_internal_call_full (method, NULL);
 }
 
-#ifdef ENABLE_ICALL_SYMBOL_MAP
-static int
-func_cmp (gconstpointer key, gconstpointer p)
-{
-	return (gsize)key - (gsize)*(gsize*)p;
-}
-#endif
-
 /*
  * mono_lookup_icall_symbol:
  *

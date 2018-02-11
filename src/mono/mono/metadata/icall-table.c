@@ -336,11 +336,18 @@ icall_table_lookup (char *classname, char *methodname, char *sigstart, gboolean 
 	return NULL;
 }
 
+#ifdef ENABLE_ICALL_SYMBOL_MAP
+static int
+func_cmp (gconstpointer key, gconstpointer p)
+{
+	return (gsize)key - (gsize)*(gsize*)p;
+}
+#endif
+
 static const char*
 lookup_icall_symbol (gpointer func)
 {
 #ifdef ENABLE_ICALL_SYMBOL_MAP
-	gpointer func;
 	int i;
 	gpointer slot;
 	static gconstpointer *functions_sorted;
