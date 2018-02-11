@@ -52,7 +52,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }

@@ -374,7 +374,7 @@ namespace System.Net.Tests
             {
                 Task<string> download = wc.DownloadStringTaskAsync(url.ToString());
                 Assert.Null(wc.ResponseHeaders);
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: 0\r\n" +
@@ -430,7 +430,7 @@ namespace System.Net.Tests
             {
                 Task<string> download = wc.DownloadStringTaskAsync(url.ToString());
                 Assert.Null(wc.ResponseHeaders);
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: 0\r\n" +
@@ -522,7 +522,7 @@ namespace System.Net.Tests
                 }
 
                 Task<string> download = DownloadStringAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: {ExpectedText.Length}\r\n" +
@@ -543,7 +543,7 @@ namespace System.Net.Tests
                 wc.DownloadProgressChanged += (s, e) => downloadProgressInvoked.TrySetResult(true);
 
                 Task<byte[]> download = DownloadDataAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: {ExpectedText.Length}\r\n" +
@@ -576,7 +576,7 @@ namespace System.Net.Tests
                 };
 
                 Task<byte[]> download = DownloadDataAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: {largeText.Length}\r\n" +
@@ -601,7 +601,7 @@ namespace System.Net.Tests
                 {
                     var wc = new WebClient();
                     Task download = DownloadFileAsync(wc, url.ToString(), tempPath);
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                    await server.AcceptConnectionSendResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             $"Content-Length: {ExpectedText.Length}\r\n" +
@@ -625,7 +625,7 @@ namespace System.Net.Tests
             {
                 var wc = new WebClient();
                 Task<Stream> download = OpenReadAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                await server.AcceptConnectionSendResponseAndCloseAsync(
                         "HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: {ExpectedText.Length}\r\n" +

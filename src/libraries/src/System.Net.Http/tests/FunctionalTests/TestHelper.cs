@@ -3,15 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    // TODO (#5525): This class will eventually be moved to Common once the HttpTestServers are finalized.
     public static class TestHelper
     {
         public static bool JsonMessageContainsKeyValue(string message, string key, string value)
@@ -83,29 +85,17 @@ namespace System.Net.Http.Functional.Tests
 
         public static Task WhenAllCompletedOrAnyFailed(params Task[] tasks)
         {
-            var tcs = new TaskCompletionSource<bool>();
-
-            int remaining = tasks.Length;
-            foreach (var task in tasks)
-            {
-                task.ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        tcs.SetException(t.Exception.InnerExceptions);
-                    }
-                    else if (t.IsCanceled)
-                    {
-                        tcs.SetCanceled();
-                    }
-                    else if (Interlocked.Decrement(ref remaining) == 0)
-                    {
-                        tcs.SetResult(true);
-                    }
-                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            }
-
-            return tcs.Task;
+            return TaskTimeoutExtensions.WhenAllOrAnyFailed(tasks);
         }
+
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> AllowAllCertificates = (_, __, ___, ____) => true;
+
+        public static IPAddress GetIPv6LinkLocalAddress() =>
+            NetworkInterface
+                .GetAllNetworkInterfaces()
+                .SelectMany(i => i.GetIPProperties().UnicastAddresses)
+                .Select(a => a.Address)
+                .Where(a => a.IsIPv6LinkLocal)
+                .FirstOrDefault();
     }
 }

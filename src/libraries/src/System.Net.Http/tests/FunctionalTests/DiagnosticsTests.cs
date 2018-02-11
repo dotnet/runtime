@@ -148,8 +148,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
-                            Task<List<string>> requestLines = LoopbackServer.AcceptSocketAsync(server,
-                                    (s, stream, reader, writer) => LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer));
+                            Task<List<string>> requestLines = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
                             Task<HttpResponseMessage> response = client.GetAsync(url);
                             await Task.WhenAll(response, requestLines);
 
@@ -186,7 +185,7 @@ namespace System.Net.Http.Functional.Tests
                             await LoopbackServer.CreateServerAsync(async (server, url) =>
                             {
                                 await TestHelper.WhenAllCompletedOrAnyFailed(
-                                    LoopbackServer.ReadRequestAndSendResponseAsync(server),
+                                    server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
                                     client.GetAsync(url));
                             });
 
@@ -284,11 +283,10 @@ namespace System.Net.Http.Functional.Tests
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
                             CancellationTokenSource tcs = new CancellationTokenSource();
-                            Task request = LoopbackServer.AcceptSocketAsync(server,
-                                (s, stream, reader, writer) =>
+                            Task request = server.AcceptConnectionAsync(connection =>
                                 {
                                     tcs.Cancel();
-                                    return LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
+                                    return connection.ReadRequestHeaderAndSendDefaultResponseAsync();
                                 });
                             Task response = client.GetAsync(url, tcs.Token);
                             await Assert.ThrowsAnyAsync<Exception>(() => TestHelper.WhenAllCompletedOrAnyFailed(response, request));
@@ -358,8 +356,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
-                            Task<List<string>> requestLines = LoopbackServer.AcceptSocketAsync(server,
-                                (s, stream, reader, writer) => LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer));
+                            Task<List<string>> requestLines = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
                             Task<HttpResponseMessage> response = client.GetAsync(url);
                             await Task.WhenAll(response, requestLines);
 
@@ -610,12 +607,11 @@ namespace System.Net.Http.Functional.Tests
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
                             CancellationTokenSource tcs = new CancellationTokenSource();
-                            Task request = LoopbackServer.AcceptSocketAsync(server,
-                                (s, stream, reader, writer) =>
-                                {
-                                    tcs.Cancel();
-                                    return LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer);
-                                });
+                            Task request = server.AcceptConnectionAsync(connection =>
+                            {
+                                tcs.Cancel();
+                                return connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                            });
                             Task response = client.GetAsync(url, tcs.Token);
                             await Assert.ThrowsAnyAsync<Exception>(() => TestHelper.WhenAllCompletedOrAnyFailed(response, request));
                         }).Wait();
