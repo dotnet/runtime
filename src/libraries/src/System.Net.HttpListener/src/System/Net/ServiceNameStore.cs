@@ -297,11 +297,11 @@ namespace System.Net
                 }
                 catch (System.Net.Sockets.SocketException)
                 {
-                    return new string[0];
+                    return Array.Empty<string>();
                 }
                 catch (System.Security.SecurityException)
                 {
-                    return new string[0];
+                    return Array.Empty<string>();
                 }
             }
             else if (!hostname.Contains("."))

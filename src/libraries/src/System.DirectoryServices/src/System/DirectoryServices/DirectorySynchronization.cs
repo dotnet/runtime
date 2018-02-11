@@ -9,7 +9,7 @@ namespace System.DirectoryServices
     public class DirectorySynchronization
     {
         private DirectorySynchronizationOptions _option = DirectorySynchronizationOptions.None;
-        private byte[] _cookie = new byte[0];
+        private byte[] _cookie = Array.Empty<byte>();
 
         public DirectorySynchronization()
         {

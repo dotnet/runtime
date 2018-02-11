@@ -291,7 +291,7 @@ namespace System.Security.Permissions
                 }
             }
             else
-                _idArray = new IDRole[0];
+                _idArray = Array.Empty<IDRole>();
         }
 
         public override string ToString()

@@ -103,8 +103,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void Clear()
         {
-            object[] newValues = new object[0];
-            _propSetter(newValues);
+            _propSetter(Array.Empty<object>());
         }
 
         /// <devdoc>
@@ -128,7 +127,7 @@ namespace System.DirectoryServices
         {
             object value = _propGetter();
             if (value == null)
-                return new object[0];
+                return Array.Empty<object>();
             else
                 return (object[])value;
         }

@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Xml
         internal byte[] GetDigestedBytes(HashAlgorithm hash)
         {
             _c14nDoc.WriteHash(hash, DocPosition.BeforeRootElement, _ancMgr);
-            hash.TransformFinalBlock(new byte[0], 0, 0);
+            hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
             byte[] res = (byte[])hash.Hash.Clone();
             // reinitialize the hash so it is still usable after the call
             hash.Initialize();

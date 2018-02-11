@@ -1253,7 +1253,7 @@ namespace System.Xml.Serialization
         {
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
-                MethodInfo enumerator = type.GetMethod("GetEnumerator", new Type[0]);
+                MethodInfo enumerator = type.GetMethod("GetEnumerator", Array.Empty<Type>());
 
                 if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
                 {

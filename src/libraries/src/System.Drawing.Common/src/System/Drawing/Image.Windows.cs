@@ -866,7 +866,7 @@ namespace System.Drawing
                 Debug.Assert(count >= 0, "FrameDimensionsList returns bad count");
                 if (count <= 0)
                 {
-                    return new Guid[0];
+                    return Array.Empty<Guid>();
                 }
 
                 int size = (int)Marshal.SizeOf(typeof(Guid));
@@ -1059,7 +1059,7 @@ namespace System.Drawing
                     throw SafeNativeMethods.Gdip.StatusException(status);
 
                 if (size == 0 || count == 0)
-                    return new PropertyItem[0];
+                    return Array.Empty<PropertyItem>();
 
                 IntPtr propdata = Marshal.AllocHGlobal(size);
                 try
