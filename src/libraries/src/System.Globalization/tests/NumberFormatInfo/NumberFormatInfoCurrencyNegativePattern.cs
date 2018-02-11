@@ -13,7 +13,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> CurrencyNegativePattern_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 0 } };
-            yield return new object[] { CultureInfo.GetCultureInfo("bg-BG").NumberFormat, new int[] { 8 } };
+            yield return new object[] { CultureInfo.GetCultureInfo("bg-BG").NumberFormat, new int[] { 0, 8 } };
         }
 
         [Theory]
