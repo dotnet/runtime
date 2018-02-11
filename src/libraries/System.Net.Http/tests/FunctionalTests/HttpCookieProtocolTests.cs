@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace System.Net.Http.Functional.Tests
         private const string s_cookieName = "ABC";
         private const string s_cookieValue = "123";
         private const string s_expectedCookieHeaderValue = "ABC=123";
+
         private const string s_customCookieHeaderValue = "CustomCookie=456";
 
         private const string s_simpleContent = "Hello world!";
@@ -23,12 +25,17 @@ namespace System.Net.Http.Functional.Tests
         // Send cookie tests
         //
 
-        private static CookieContainer CreateSingleCookieContainer(Uri uri)
+        private static CookieContainer CreateSingleCookieContainer(Uri uri) => CreateSingleCookieContainer(uri, s_cookieName, s_cookieValue);
+
+        private static CookieContainer CreateSingleCookieContainer(Uri uri, string cookieName, string cookieValue)
         {
             var container = new CookieContainer();
-            container.Add(uri, new Cookie(s_cookieName, s_cookieValue));
+            container.Add(uri, new Cookie(cookieName, cookieValue));
             return container;
         }
+
+        private static string GetCookieHeaderValue(string cookieName, string cookieValue) => $"{cookieName}={cookieValue}";
+
 
         [Fact]
         public async Task GetAsync_DefaultCoookieContainer_NoCookieSent()
@@ -48,13 +55,15 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
-        public async Task GetAsync_SetCookieContainer_CookieSent()
+        [Theory]
+        [MemberData(nameof(CookieNamesValuesAndUseCookies))]
+        public async Task GetAsync_SetCookieContainer_CookieSent(string cookieName, string cookieValue, bool useCookies)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.CookieContainer = CreateSingleCookieContainer(url);
+                handler.UseCookies = useCookies;
+                handler.CookieContainer = CreateSingleCookieContainer(url, cookieName, cookieValue);
 
                 using (HttpClient client = new HttpClient(handler))
                 {
@@ -64,8 +73,15 @@ namespace System.Net.Http.Functional.Tests
 
                     List<string> requestLines = await serverTask;
 
-                    Assert.Contains($"Cookie: {s_expectedCookieHeaderValue}", requestLines);
-                    Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie:")));
+                    if (useCookies)
+                    {
+                        Assert.Contains($"Cookie: {GetCookieHeaderValue(cookieName, cookieValue)}", requestLines);
+                        Assert.Equal(1, requestLines.Count(s => s.StartsWith("Cookie:")));
+                    }
+                    else
+                    {
+                        Assert.Equal(0, requestLines.Count(s => s.StartsWith("Cookie:")));
+                    }
                 }
             });
         }
@@ -323,24 +339,34 @@ namespace System.Net.Http.Functional.Tests
         // Receive cookie tests
         //
 
-        [Fact]
-        public async Task GetAsync_ReceiveSetCookieHeader_CookieAdded()
+        [Theory]
+        [MemberData(nameof(CookieNamesValuesAndUseCookies))]
+        public async Task GetAsync_ReceiveSetCookieHeader_CookieAdded(string cookieName, string cookieValue, bool useCookies)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
+                handler.UseCookies = useCookies;
 
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        $"HTTP/1.1 200 Ok\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: {s_expectedCookieHeaderValue}\r\n\r\n{s_simpleContent}");
+                        $"HTTP/1.1 200 Ok\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: {GetCookieHeaderValue(cookieName, cookieValue)}\r\n\r\n{s_simpleContent}");
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
-                    Assert.Equal(1, collection.Count);
-                    Assert.Equal(s_cookieName, collection[0].Name);
-                    Assert.Equal(s_cookieValue, collection[0].Value);
+
+                    if (useCookies)
+                    {
+                        Assert.Equal(1, collection.Count);
+                        Assert.Equal(cookieName, collection[0].Name);
+                        Assert.Equal(cookieValue, collection[0].Value);
+                    }
+                    else
+                    {
+                        Assert.Equal(0, collection.Count);
+                    }
                 }
             });
         }
@@ -356,7 +382,14 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        $"HTTP/1.1 200 Ok\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: A=1\r\nSet-Cookie: B=2\r\nSet-Cookie: C=3\r\n\r\n{s_simpleContent}");
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        $"Set-Cookie: A=1; Path=/\r\n" +
+                        $"Set-Cookie   : B=2; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
+                        $"Set-Cookie:    C=3; Path=/\r\n" +
+                        $"Content-Length: {s_simpleContent.Length}\r\n" +
+                        $"\r\n" +
+                        $"{s_simpleContent}");
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -511,6 +544,63 @@ namespace System.Net.Http.Functional.Tests
                     return null;
                 });
             });
+        }
+
+        // 
+        // MemberData stuff
+        //
+
+        private static string GenerateCookie(string name, char repeat, int overallHeaderValueLength)
+        {
+            string emptyHeaderValue = $"{name}=; Path=/";
+
+            Debug.Assert(overallHeaderValueLength > emptyHeaderValue.Length);
+
+            int valueCount = overallHeaderValueLength - emptyHeaderValue.Length;
+            return new string(repeat, valueCount);
+        }
+
+        public static IEnumerable<object[]> CookieNamesValuesAndUseCookies()
+        {
+            foreach (bool useCookies in new[] { true, false })
+            {
+                yield return new object[] { "ABC", "123", useCookies };
+                yield return new object[] { "Hello", "World", useCookies };
+                yield return new object[] { "foo", "bar", useCookies };
+
+                yield return new object[] { ".AspNetCore.Session", "RAExEmXpoCbueP_QYM", useCookies };
+
+                yield return new object[]
+                {
+                    ".AspNetCore.Antiforgery.Xam7_OeLcN4",
+                    "CfDJ8NGNxAt7CbdClq3UJ8_6w_4661wRQZT1aDtUOIUKshbcV4P0NdS8klCL5qGSN-PNBBV7w23G6MYpQ81t0PMmzIN4O04fqhZ0u1YPv66mixtkX3iTi291DgwT3o5kozfQhe08-RAExEmXpoCbueP_QYM",
+                    useCookies
+                };
+
+                // WinHttpHandler calls WinHttpQueryHeaders to iterate through multiple Set-Cookie header values,
+                // using an initial buffer size of 128 chars. If the buffer is not large enough, WinHttpQueryHeaders
+                // returns an insufficient buffer error, allowing WinHttpHandler to try again with a larger buffer.
+                // Sometimes when WinHttpQueryHeaders fails due to insufficient buffer, it still advances the
+                // iteration index, which would cause header values to be missed if not handled correctly.
+                //
+                // In particular, WinHttpQueryHeader behaves as follows for the following header value lengths:
+                //  * 0-127 chars: succeeds, index advances from 0 to 1.
+                //  * 128-255 chars: fails due to insufficient buffer, index advances from 0 to 1.
+                //  * 256+ chars: fails due to insufficient buffer, index stays at 0.
+                //
+                // The below overall header value lengths were chosen to exercise reading header values at these
+                // edges, to ensure WinHttpHandler does not miss multiple Set-Cookie headers.
+
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 126), useCookies };
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 127), useCookies };
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 128), useCookies };
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 129), useCookies };
+
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 254), useCookies };
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 255), useCookies };
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 256), useCookies };
+                yield return new object[] { "foo", GenerateCookie(name: "foo", repeat: 'a', overallHeaderValueLength: 257), useCookies };
+            }
         }
     }
 }
