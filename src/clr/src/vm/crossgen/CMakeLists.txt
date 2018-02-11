@@ -58,7 +58,6 @@ set(VM_CROSSGEN_SOURCES
     ../dllimport.cpp
     ../dllimportcallback.cpp
     ../pefile.cpp
-    ../pefingerprint.cpp
     ../peimage.cpp
     ../peimagelayout.cpp
     ../pendingload.cpp
