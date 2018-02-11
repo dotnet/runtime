@@ -266,7 +266,7 @@ namespace System.Xml.Serialization
             StructMapping mapping = new StructMapping();
             mapping.IsSoap = true;
             mapping.TypeDesc = typeDesc;
-            mapping.Members = new MemberMapping[0];
+            mapping.Members = Array.Empty<MemberMapping>();
             mapping.IncludeInSchema = false;
             mapping.TypeName = Soap.UrType;
             mapping.Namespace = XmlSchema.Namespace;
@@ -739,7 +739,7 @@ namespace System.Xml.Serialization
                 attribute.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(accessorType), (a.SoapAttribute == null ? String.Empty : a.SoapAttribute.DataType), limiter);
                 attribute.Default = GetDefaultValue(model.FieldTypeDesc, a);
                 accessor.Attribute = attribute;
-                accessor.Elements = new ElementAccessor[0];
+                accessor.Elements = Array.Empty<ElementAccessor>();
             }
             else
             {

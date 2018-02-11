@@ -671,7 +671,7 @@ namespace System.DirectoryServices
             else
             {
                 adsSearch.ExecuteSearch(Filter, null, -1, out resultsHandle);
-                properties = new string[0];
+                properties = Array.Empty<string>();
             }
 
             SearchResultCollection result = new SearchResultCollection(clonedRoot, resultsHandle, properties, this);

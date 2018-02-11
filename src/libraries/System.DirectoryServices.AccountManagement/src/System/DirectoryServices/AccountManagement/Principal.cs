@@ -635,7 +635,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else if (this.unpersisted)
             {
-                return new object[0];
+                return Array.Empty<object>();
             }
             else
             {
@@ -645,7 +645,7 @@ namespace System.DirectoryServices.AccountManagement
                 int valCount = de.Properties[attribute].Count;
 
                 if (valCount == 0)
-                    return new object[0];
+                    return Array.Empty<object>();
                 else
                 {
                     object[] objectArray = new object[valCount];
