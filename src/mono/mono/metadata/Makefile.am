@@ -77,7 +77,13 @@ if SUPPORT_BOEHM
 boehm_libraries = libmonoruntime.la
 endif
 
+if DISABLE_ICALL_TABLES
+icall_table_libraries = libmono-icall-table.la
+endif
+
 noinst_LTLIBRARIES = libmonoruntime-config.la $(boehm_libraries) $(sgen_libraries)
+
+lib_LTLIBRARIES = $(icall_table_libraries)
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
@@ -99,6 +105,14 @@ libmonoruntime_config_la_SOURCES = \
 	mono-config-dirs.c
 libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" -DMONO_RELOC_LIBDIR=\"../$(reloc_libdir)\"
 
+#
+# This library contains the icall tables if the runtime was configured with --disable-icall-tables
+#
+if DISABLE_ICALL_TABLES
+libmono_icall_table_la_SOURCES = \
+	icall-table.c
+endif
+
 CLEANFILES = mono-bundle.stamp
 
 null_sources = \
@@ -108,6 +122,11 @@ null_gc_sources = \
 	null-gc.c \
 	null-gc-handles.h \
 	null-gc-handles.c
+
+if !DISABLE_ICALL_TABLES
+icall_tables_sources = \
+	icall-table.c
+endif
 
 common_sources = \
 	$(platform_sources)	\
@@ -157,6 +176,7 @@ common_sources = \
 	icall.c			\
 	icall-internals.h \
 	icall-def.h		\
+	icall-table.h	\
 	image.c			\
 	image-internals.h	\
 	jit-info.c		\
@@ -299,11 +319,11 @@ sgen_sources = \
 	sgen-mono.c		\
 	sgen-client-mono.h
 
-libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
+libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
 libmonoruntime_la_LIBADD = libmonoruntime-config.la
 
-libmonoruntimesgen_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(sgen_sources)
+libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(gc_dependent_sources) $(sgen_sources)
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)
 libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la
 

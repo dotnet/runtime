@@ -82,6 +82,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/file-mmap.h>
 #include <mono/metadata/seq-points-data.h>
+#include <mono/metadata/icall-table.h>
 #include <mono/metadata/handle.h>
 #include <mono/metadata/w32mutex.h>
 #include <mono/metadata/w32semaphore.h>
@@ -105,6 +106,11 @@
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
+#endif
+
+/* icalls are defined ICALL_EXPORT so they are not static */
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #endif
 
 extern MonoStringHandle ves_icall_System_Environment_GetOSVersionString (MonoError *error);
@@ -7181,7 +7187,7 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError 
 	return mcpath;
 }
 
-static MonoStringHandle
+ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config (MonoError *error)
 {
 	error_init (error);
@@ -7942,197 +7948,25 @@ ves_icall_System_IO_LogcatTextWriter_Log (const char *appname, gint32 level, con
 	g_log (appname, (GLogLevelFlags)level, message);
 }
 
-#ifndef DISABLE_ICALL_TABLES
-
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) Icall_ ## id,
-#define HANDLES(inner) inner
-
-enum {
-#include "metadata/icall-def.h"
-	Icall_last
-};
-
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,first) Icall_type_ ## id,
-#define ICALL(id,name,func)
-#undef HANDLES
-#define HANDLES(inner) inner
-enum {
-#include "metadata/icall-def.h"
-	Icall_type_num
-};
-
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,firstic) {(Icall_ ## firstic)},
-#define ICALL(id,name,func)
-#undef HANDLES
-#define HANDLES(inner) inner
-typedef struct {
-	guint16 first_icall;
-} IcallTypeDesc;
-
-static const IcallTypeDesc
-icall_type_descs [] = {
-#include "metadata/icall-def.h"
-	{Icall_last}
-};
-
-#define icall_desc_num_icalls(desc) ((desc) [1].first_icall - (desc) [0].first_icall)
-
-#undef HANDLES
-#define HANDLES(inner) inner
-#undef ICALL_TYPE
-#define ICALL_TYPE(id,name,first)
-#undef ICALL
-
-#ifdef HAVE_ARRAY_ELEM_INIT
-#define MSGSTRFIELD(line) MSGSTRFIELD1(line)
-#define MSGSTRFIELD1(line) str##line
-
-static const struct msgstrtn_t {
-#define ICALL(id,name,func)
-#undef ICALL_TYPE
-#define ICALL_TYPE(id,name,first) char MSGSTRFIELD(__LINE__) [sizeof (name)];
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-} icall_type_names_str = {
-#define ICALL_TYPE(id,name,first) (name),
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-};
-static const guint16 icall_type_names_idx [] = {
-#define ICALL_TYPE(id,name,first) [Icall_type_ ## id] = offsetof (struct msgstrtn_t, MSGSTRFIELD(__LINE__)),
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-};
-#define icall_type_name_get(id) ((const char*)&icall_type_names_str + icall_type_names_idx [(id)])
-
-static const struct msgstr_t {
-#undef ICALL
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) char MSGSTRFIELD(__LINE__) [sizeof (name)];
-#include "metadata/icall-def.h"
-#undef ICALL
-} icall_names_str = {
-#define ICALL(id,name,func) (name),
-#include "metadata/icall-def.h"
-#undef ICALL
-};
-static const guint16 icall_names_idx [] = {
-#define ICALL(id,name,func) [Icall_ ## id] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
-#include "metadata/icall-def.h"
-#undef ICALL
-};
-#define icall_name_get(id) ((const char*)&icall_names_str + icall_names_idx [(id)])
-
-#else
-
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,first) name,
-#define ICALL(id,name,func)
-static const char* const
-icall_type_names [] = {
-#include "metadata/icall-def.h"
-	NULL
-};
-
-#define icall_type_name_get(id) (icall_type_names [(id)])
-
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) name,
-static const char* const
-icall_names [] = {
-#include "metadata/icall-def.h"
-	NULL
-};
-#define icall_name_get(id) icall_names [(id)]
-
-#endif /* !HAVE_ARRAY_ELEM_INIT */
-
-#undef HANDLES
-#define HANDLES(inner) inner
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) func,
-static const gconstpointer
-icall_functions [] = {
-#include "metadata/icall-def.h"
-	NULL
-};
-
-#ifdef ENABLE_ICALL_SYMBOL_MAP
-#undef HANDLES
-#define HANDLES(inner) inner
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) #func,
-static const gconstpointer
-icall_symbols [] = {
-#include "metadata/icall-def.h"
-	NULL
-};
-#endif
-
-#undef ICALL_TYPE
-#undef ICALL
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) 0,
-#undef HANDLES
-#define HANDLES(inner) 1,
-static const guchar
-icall_uses_handles [] = {
-#include "metadata/icall-def.h"
-#undef ICALL
-#undef HANDLES
-};
-
-#endif /* DISABLE_ICALL_TABLES */
-
+static MonoIcallTableCallbacks icall_table;
 static mono_mutex_t icall_mutex;
 static GHashTable *icall_hash = NULL;
 static GHashTable *jit_icall_hash_name = NULL;
 static GHashTable *jit_icall_hash_addr = NULL;
 
 void
+mono_install_icall_table_callbacks (MonoIcallTableCallbacks *cb)
+{
+	g_assert (cb->version == MONO_ICALL_TABLE_CALLBACKS_VERSION);
+	memcpy (&icall_table, cb, sizeof (MonoIcallTableCallbacks));
+}
+
+void
 mono_icall_init (void)
 {
 #ifndef DISABLE_ICALL_TABLES
-	int i = 0;
-
-	/* check that tables are sorted: disable in release */
-	if (TRUE) {
-		int j;
-		const char *prev_class = NULL;
-		const char *prev_method;
-		
-		for (i = 0; i < Icall_type_num; ++i) {
-			const IcallTypeDesc *desc;
-			int num_icalls;
-			prev_method = NULL;
-			if (prev_class && strcmp (prev_class, icall_type_name_get (i)) >= 0)
-				g_print ("class %s should come before class %s\n", icall_type_name_get (i), prev_class);
-			prev_class = icall_type_name_get (i);
-			desc = &icall_type_descs [i];
-			num_icalls = icall_desc_num_icalls (desc);
-			/*g_print ("class %s has %d icalls starting at %d\n", prev_class, num_icalls, desc->first_icall);*/
-			for (j = 0; j < num_icalls; ++j) {
-				const char *methodn = icall_name_get (desc->first_icall + j);
-				if (prev_method && strcmp (prev_method, methodn) >= 0)
-					g_print ("method %s should come before method %s\n", methodn, prev_method);
-				prev_method = methodn;
-			}
-		}
-	}
+	mono_icall_table_init ();
 #endif
-
 	icall_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 	mono_os_mutex_init (&icall_mutex);
 }
@@ -8205,115 +8039,6 @@ mono_add_internal_call (const char *name, gconstpointer method)
 	mono_icall_unlock ();
 }
 
-#ifndef DISABLE_ICALL_TABLES
-
-#ifdef HAVE_ARRAY_ELEM_INIT
-static int
-compare_method_imap (const void *key, const void *elem)
-{
-	const char* method_name = (const char*)&icall_names_str + (*(guint16*)elem);
-	return strcmp (key, method_name);
-}
-
-static gsize
-find_slot_icall (const IcallTypeDesc *imap, const char *name)
-{
-	const guint16 *nameslot = (const guint16 *)mono_binary_search (name, icall_names_idx + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names_idx [0]), compare_method_imap);
-	if (!nameslot)
-		return -1;
-	return (nameslot - &icall_names_idx [0]);
-}
-
-static gboolean
-find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
-{
-	gsize slotnum = find_slot_icall (imap, name);
-	if (slotnum == -1)
-		return FALSE;
-	return (gboolean)icall_uses_handles [slotnum];
-}
-
-static gpointer
-find_method_icall (const IcallTypeDesc *imap, const char *name)
-{
-	gsize slotnum = find_slot_icall (imap, name);
-	if (slotnum == -1)
-		return NULL;
-	return (gpointer)icall_functions [slotnum];
-}
-
-static int
-compare_class_imap (const void *key, const void *elem)
-{
-	const char* class_name = (const char*)&icall_type_names_str + (*(guint16*)elem);
-	return strcmp (key, class_name);
-}
-
-static const IcallTypeDesc*
-find_class_icalls (const char *name)
-{
-	const guint16 *nameslot = (const guint16 *)mono_binary_search (name, icall_type_names_idx, Icall_type_num, sizeof (icall_type_names_idx [0]), compare_class_imap);
-	if (!nameslot)
-		return NULL;
-	return &icall_type_descs [nameslot - &icall_type_names_idx [0]];
-}
-
-#else /* HAVE_ARRAY_ELEM_INIT */
-
-static int
-compare_method_imap (const void *key, const void *elem)
-{
-	const char** method_name = (const char**)elem;
-	return strcmp (key, *method_name);
-}
-
-static gsize
-find_slot_icall (const IcallTypeDesc *imap, const char *name)
-{
-	const char **nameslot = mono_binary_search (name, icall_names + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names [0]), compare_method_imap);
-	if (!nameslot)
-		return -1;
-	return nameslot - icall_names;
-}
-
-static gpointer
-find_method_icall (const IcallTypeDesc *imap, const char *name)
-{
-	gsize slotnum = find_slot_icall (imap, name);
-	if (slotnum == -1)
-		return NULL;
-	return (gpointer)icall_functions [slotnum];
-}
-
-static gboolean
-find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
-{
-	gsize slotnum = find_slot_icall (imap, name);
-	if (slotnum == -1)
-		return FALSE;
-	return (gboolean)icall_uses_handles [slotnum];
-}
-
-static int
-compare_class_imap (const void *key, const void *elem)
-{
-	const char** class_name = (const char**)elem;
-	return strcmp (key, *class_name);
-}
-
-static const IcallTypeDesc*
-find_class_icalls (const char *name)
-{
-	const char **nameslot = mono_binary_search (name, icall_type_names, Icall_type_num, sizeof (icall_type_names [0]), compare_class_imap);
-	if (!nameslot)
-		return NULL;
-	return &icall_type_descs [nameslot - icall_type_names];
-}
-
-#endif /* HAVE_ARRAY_ELEM_INIT */
-
-#endif /* DISABLE_ICALL_TABLES */
-
 /* 
  * we should probably export this as an helper (handle nested types).
  * Returns the number of chars written in buf.
@@ -8335,13 +8060,11 @@ concat_class_name (char *buf, int bufsize, MonoClass *klass)
 	return nspacelen + cnamelen;
 }
 
-#ifdef DISABLE_ICALL_TABLES
 static void
 no_icall_table (void)
 {
 	g_assert_not_reached ();
 }
-#endif
 
 /**
  * mono_lookup_internal_call_full:
@@ -8359,11 +8082,12 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 	char *sigstart;
 	char *tmpsig;
 	char mname [2048];
+	char *classname;
 	int typelen = 0, mlen, siglen;
 	gpointer res;
-#ifndef DISABLE_ICALL_TABLES
-	const IcallTypeDesc *imap = NULL;
-#endif
+
+	if (uses_handles)
+		*uses_handles = FALSE;
 
 	g_assert (method != NULL);
 
@@ -8389,9 +8113,7 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 			return NULL;
 	}
 
-#ifndef DISABLE_ICALL_TABLES
-	imap = find_class_icalls (mname);
-#endif
+	classname = g_strdup (mname);
 
 	mname [typelen] = ':';
 	mname [typelen + 1] = ':';
@@ -8403,78 +8125,61 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 
 	tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
 	siglen = strlen (tmpsig);
-	if (typelen + mlen + siglen + 6 > sizeof (mname))
+	if (typelen + mlen + siglen + 6 > sizeof (mname)) {
+		g_free (classname);
 		return NULL;
+	}
 	sigstart [0] = '(';
 	memcpy (sigstart + 1, tmpsig, siglen);
 	sigstart [siglen + 1] = ')';
 	sigstart [siglen + 2] = 0;
 	g_free (tmpsig);
-	
+
 	mono_icall_lock ();
 
 	res = g_hash_table_lookup (icall_hash, mname);
 	if (res) {
-		if (uses_handles)
-			*uses_handles = FALSE;
-		mono_icall_unlock ();;
+		g_free (classname);
+		mono_icall_unlock ();
 		return res;
 	}
 	/* try without signature */
 	*sigstart = 0;
 	res = g_hash_table_lookup (icall_hash, mname);
 	if (res) {
-		if (uses_handles)
-			*uses_handles = FALSE;
+		g_free (classname);
 		mono_icall_unlock ();
 		return res;
 	}
 
-#ifdef DISABLE_ICALL_TABLES
-	mono_icall_unlock ();
-	/* Fail only when the result is actually used */
-	/* mono_marshal_get_native_wrapper () depends on this */
-	if (method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor"))
-		return ves_icall_System_String_ctor_RedirectToCreateString;
-	else
-		return no_icall_table;
-#else
-	/* it wasn't found in the static call tables */
-	if (!imap) {
-		if (uses_handles)
-			*uses_handles = FALSE;
+	if (!icall_table.lookup) {
 		mono_icall_unlock ();
+		g_free (classname);
+		/* Fail only when the result is actually used */
+		/* mono_marshal_get_native_wrapper () depends on this */
+		if (method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor"))
+			return ves_icall_System_String_ctor_RedirectToCreateString;
+		else
+			return no_icall_table;
+	} else {
+		res = icall_table.lookup (classname, sigstart - mlen, sigstart, uses_handles);
+		g_free (classname);
+
+		mono_icall_unlock ();
+
+		if (res)
+			return res;
+
+		g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
+		g_print ("\nYour mono runtime and class libraries are out of sync.\n");
+		g_print ("The out of sync library is: %s\n", method->klass->image->name);
+		g_print ("\nWhen you update one from git you need to update, compile and install\nthe other too.\n");
+		g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
+		g_print ("If you see other errors or faults after this message they are probably related\n");
+		g_print ("and you need to fix your mono install first.\n");
+
 		return NULL;
 	}
-	res = find_method_icall (imap, sigstart - mlen);
-	if (res) {
-		if (uses_handles)
-			*uses_handles = find_uses_handles_icall (imap, sigstart - mlen);
-		mono_icall_unlock ();
-		return res;
-	}
-	/* try _with_ signature */
-	*sigstart = '(';
-	res = find_method_icall (imap, sigstart - mlen);
-	if (res) {
-		if (uses_handles)
-			*uses_handles = find_uses_handles_icall (imap, sigstart - mlen);
-		mono_icall_unlock ();
-		return res;
-	}
-
-	g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
-	g_print ("\nYour mono runtime and class libraries are out of sync.\n");
-	g_print ("The out of sync library is: %s\n", method->klass->image->name);
-	g_print ("\nWhen you update one from git you need to update, compile and install\nthe other too.\n");
-	g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
-	g_print ("If you see other errors or faults after this message they are probably related\n");
-	g_print ("and you need to fix your mono install first.\n");
-
-	mono_icall_unlock ();
-
-	return NULL;
-#endif
 }
 
 /**
@@ -8502,59 +8207,14 @@ func_cmp (gconstpointer key, gconstpointer p)
 const char*
 mono_lookup_icall_symbol (MonoMethod *m)
 {
-#ifdef DISABLE_ICALL_TABLES
-	g_assert_not_reached ();
-	return NULL;
-#else
-#ifdef ENABLE_ICALL_SYMBOL_MAP
+	if (!icall_table.lookup_icall_symbol)
+		return NULL;
+
 	gpointer func;
-	int i;
-	gpointer slot;
-	static gconstpointer *functions_sorted;
-	static const char**symbols_sorted;
-	static gboolean inited;
-
-	if (!inited) {
-		gboolean changed;
-
-		functions_sorted = g_malloc (G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		memcpy (functions_sorted, icall_functions, G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		symbols_sorted = g_malloc (G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		memcpy (symbols_sorted, icall_symbols, G_N_ELEMENTS (icall_functions) * sizeof (gpointer));
-		/* Bubble sort the two arrays */
-		changed = TRUE;
-		while (changed) {
-			changed = FALSE;
-			for (i = 0; i < G_N_ELEMENTS (icall_functions) - 1; ++i) {
-				if (functions_sorted [i] > functions_sorted [i + 1]) {
-					gconstpointer tmp;
-
-					tmp = functions_sorted [i];
-					functions_sorted [i] = functions_sorted [i + 1];
-					functions_sorted [i + 1] = tmp;
-					tmp = symbols_sorted [i];
-					symbols_sorted [i] = symbols_sorted [i + 1];
-					symbols_sorted [i + 1] = tmp;
-					changed = TRUE;
-				}
-			}
-		}
-	}
-
 	func = mono_lookup_internal_call (m);
 	if (!func)
 		return NULL;
-	slot = mono_binary_search (func, functions_sorted, G_N_ELEMENTS (icall_functions), sizeof (gpointer), func_cmp);
-	if (!slot)
-		return NULL;
-	g_assert (slot);
-	return symbols_sorted [(gpointer*)slot - (gpointer*)functions_sorted];
-#else
-	fprintf (stderr, "icall symbol maps not enabled, pass --enable-icall-symbol-map to configure.\n");
-	g_assert_not_reached ();
-	return 0;
-#endif
-#endif
+	return icall_table.lookup_icall_symbol (func);
 }
 
 static MonoType*
