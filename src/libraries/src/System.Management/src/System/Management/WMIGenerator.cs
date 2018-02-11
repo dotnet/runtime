@@ -2787,7 +2787,7 @@ namespace System.Management
         ///     The code generated changes if the method is static function
         ///        public &lt;retType&gt; Method1(&lt;type&gt; param1, &lt;type&gt; param2,...) {
         ///            ManagementBaseObject inParams = null;
-        ///               ManagementObject classObj = new ManagementObject(null, "WIN32_SHARE", null); // the clasname
+        ///            ManagementObject classObj = new ManagementObject(null, "WIN32_SHARE", null); // the classname
         ///            inParams = classObj.GetMethodParameters("Create");
         ///            inParams["&lt;inparam1&gt;"] = &lt;Value&gt;;
         ///            inParams["&lt;inoutparam2&gt;"] = &lt;Value&gt;;
