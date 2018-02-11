@@ -224,7 +224,6 @@ set(VM_SOURCES_WKS
     nativeoverlapped.cpp
     objectlist.cpp
     olevariant.cpp
-    pefingerprint.cpp
     pendingload.cpp
     profattach.cpp
     profattachclient.cpp
