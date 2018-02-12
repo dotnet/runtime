@@ -147,7 +147,7 @@ namespace System.Net.Http
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
 
-        private async Task WriteHeadersAsync(HttpHeaders headers, CancellationToken cancellationToken)
+        private async Task WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer, CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
             {
@@ -159,6 +159,15 @@ namespace System.Net.Http
                 if (values.Length > 0)
                 {
                     await WriteStringAsync(values[0], cancellationToken).ConfigureAwait(false);
+
+                    if (cookiesFromContainer != null && header.Key == HttpKnownHeaderNames.Cookie)
+                    {
+                        await WriteTwoBytesAsync((byte)';', (byte)' ', cancellationToken).ConfigureAwait(false);
+                        await WriteStringAsync(cookiesFromContainer, cancellationToken).ConfigureAwait(false);
+
+                        cookiesFromContainer = null;
+                    }
+
                     for (int i = 1; i < values.Length; i++)
                     {
                         await WriteTwoBytesAsync((byte)',', (byte)' ', cancellationToken).ConfigureAwait(false);
@@ -166,6 +175,14 @@ namespace System.Net.Http
                     }
                 }
 
+                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+            }
+
+            if (cookiesFromContainer != null)
+            {
+                await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, cancellationToken).ConfigureAwait(false);
+                await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
+                await WriteAsciiStringAsync(cookiesFromContainer, cancellationToken).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
         }
@@ -233,10 +250,21 @@ namespace System.Net.Http
                 await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes,
                                       cancellationToken).ConfigureAwait(false);
 
-                // Write request headers
-                if (request.HasHeaders)
+                // Determine cookies to send
+                string cookies = null;
+                if (_pool.Pools.Settings._useCookies)
                 {
-                    await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
+                    cookies = _pool.Pools.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                    if (cookies == "")
+                    {
+                        cookies = null;
+                    }
+                }
+
+                // Write request headers
+                if (request.HasHeaders || cookies != null)
+                {
+                    await WriteHeadersAsync(request.Headers, cookies, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (request.Content == null)
@@ -251,7 +279,7 @@ namespace System.Net.Http
                 else
                 {
                     // Write content headers
-                    await WriteHeadersAsync(request.Content.Headers, cancellationToken).ConfigureAwait(false);
+                    await WriteHeadersAsync(request.Content.Headers, null, cancellationToken).ConfigureAwait(false);
                 }
 
                 // Write special additional headers.  If a host isn't in the headers list, then a Host header
@@ -449,6 +477,13 @@ namespace System.Net.Http
                 ((HttpConnectionContent)response.Content).SetStream(responseStream);
 
                 if (NetEventSource.IsEnabled) Trace($"Received response: {response}");
+
+                // Process Set-Cookie headers.
+                if (_pool.Pools.Settings._useCookies)
+                {
+                    CookieHelper.ProcessReceivedCookies(response, _pool.Pools.Settings._cookieContainer);
+                }
+
                 return response;
             }
             catch (Exception error)
