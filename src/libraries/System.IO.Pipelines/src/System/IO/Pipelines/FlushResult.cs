@@ -9,34 +9,34 @@ namespace System.IO.Pipelines
     /// </summary>
     public struct FlushResult
     {
-        internal ResultFlags ResultFlags;
+        internal ResultFlags _resultFlags;
 
         /// <summary>
         /// Creates a new instance of <see cref="FlushResult"/> setting <see cref="IsCanceled"/> and <see cref="IsCompleted"/> flags
         /// </summary>
         public FlushResult(bool isCanceled, bool isCompleted)
         {
-            ResultFlags = ResultFlags.None;
+            _resultFlags = ResultFlags.None;
 
             if (isCanceled)
             {
-                ResultFlags |= ResultFlags.Canceled;
+                _resultFlags |= ResultFlags.Canceled;
             }
 
             if (isCompleted)
             {
-                ResultFlags |= ResultFlags.Completed;
+                _resultFlags |= ResultFlags.Completed;
             }
         }
 
         /// <summary>
         /// True if the current <see cref="PipeWriter.FlushAsync"/> operation was canceled, otherwise false.
         /// </summary>
-        public bool IsCanceled => (ResultFlags & ResultFlags.Canceled) != 0;
+        public bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
 
         /// <summary>
         /// True if the <see cref="PipeWriter"/> is complete otherwise false
         /// </summary>
-        public bool IsCompleted => (ResultFlags & ResultFlags.Completed) != 0;
+        public bool IsCompleted => (_resultFlags & ResultFlags.Completed) != 0;
     }
 }
