@@ -70,6 +70,21 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public Type OperandType { get; }
 
+        /// <summary>
+        /// Determines whether string values for <see cref="Minimum"/> and <see cref="Maximum"/> are parsed in the invariant
+        /// culture rather than the current culture in effect at the time of the validation.
+        /// </summary>
+        public bool ParseLimitsInInvariantCulture { get; set; }
+
+        /// <summary>
+        /// Determines whether any conversions necessary from the value being validated to <see cref="OperandType"/> as set
+        /// by the <c>type</c> parameter of the <see cref="RangeAttribute(Type, string, string)"/> constructor are carried
+        /// out in the invariant culture rather than the current culture in effect at the time of the validation.
+        /// </summary>
+        /// <remarks>This property has no effects with the constructors with <see cref="int"/> or <see cref="double"/>
+        /// parameters, for which the invariant culture is always used for any conversions of the validated value.</remarks>
+        public bool ConvertValueInInvariantCulture { get; set; }
+
         private Func<object, object> Conversion { get; set; }
 
         private void Initialize(IComparable minimum, IComparable maximum, Func<object, object> conversion)
@@ -192,10 +207,25 @@ namespace System.ComponentModel.DataAnnotations
                     }
 
                     TypeConverter converter = TypeDescriptor.GetConverter(type);
-                    IComparable min = (IComparable)converter.ConvertFromString((string)minimum);
-                    IComparable max = (IComparable)converter.ConvertFromString((string)maximum);
+                    IComparable min = (IComparable)(ParseLimitsInInvariantCulture
+                        ? converter.ConvertFromInvariantString((string)minimum)
+                        : converter.ConvertFromString((string)minimum));
+                    IComparable max = (IComparable)(ParseLimitsInInvariantCulture
+                        ? converter.ConvertFromInvariantString((string)maximum)
+                        : converter.ConvertFromString((string)maximum));
 
-                    Func<object, object> conversion = value => (value != null && value.GetType() == type) ? value : converter.ConvertFrom(value);
+                    Func<object, object> conversion;
+                    if (ConvertValueInInvariantCulture)
+                    {
+                        conversion = value => value?.GetType() == type
+                            ? value
+                            : converter.ConvertFrom(null, CultureInfo.InvariantCulture, value);
+                    }
+                    else
+                    {
+                        conversion = value => value?.GetType() == type ? value : converter.ConvertFrom(value);
+                    }
+
                     Initialize(min, max, conversion);
                 }
             }
