@@ -132,7 +132,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionCloseReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />

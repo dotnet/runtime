@@ -234,11 +234,6 @@ namespace System.Net.Http
                 handler = new HttpProxyConnectionHandler(settings, handler);
             }
 
-            if (settings._useCookies)
-            {
-                handler = new CookieHandler(CookieContainer, handler);
-            }
-
             if (settings._credentials != null || settings._allowAutoRedirect)
             {
                 handler = new AuthenticateAndRedirectHandler(settings._preAuthenticate, settings._credentials, settings._allowAutoRedirect, settings._maxAutomaticRedirections, handler);
