@@ -119,32 +119,18 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<SslStream> EstablishSslConnectionAsync(HttpConnectionSettings settings, string host, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
+        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
         {
-            // Create the options bag to use.  Since we mutate it, we don't just use the shared instance.
-            SslClientAuthenticationOptions sslOptions;
-            if (settings._sslOptions != null)
-            {
-                sslOptions = settings._sslOptions.ShallowClone();
-                sslOptions.ApplicationProtocols = null; // explicitly ignore any ApplicationProtocols set
-            }
-            else
-            {
-                sslOptions = new SslClientAuthenticationOptions();
-            }
-
-            // Use the specified host, regardless of what was provided.
-            sslOptions.TargetHost = host;
-
             // If there's a cert validation callback, and if it came from HttpClientHandler,
             // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
             RemoteCertificateValidationCallback callback = sslOptions.RemoteCertificateValidationCallback;
             if (callback != null && callback.Target is CertificateCallbackMapper mapper)
             {
-                Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> fromHttpClientHandler = mapper.FromHttpClientHandler;
+                sslOptions = sslOptions.ShallowClone(); // Clone as we're about to mutate it and don't want to affect the cached copy
+                Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> localFromHttpClientHandler = mapper.FromHttpClientHandler;
                 HttpRequestMessage localRequest = request;
                 sslOptions.RemoteCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
-                    fromHttpClientHandler(localRequest, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    localFromHttpClientHandler(localRequest, certificate as X509Certificate2, chain, sslPolicyErrors);
             }
 
             // Create the SslStream, authenticate, and return it.
