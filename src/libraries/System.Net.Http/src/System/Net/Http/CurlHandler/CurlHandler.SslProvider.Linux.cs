@@ -127,12 +127,12 @@ namespace System.Net.Http
             {
                 if (certProvider != null)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_clientcerts_notsupported, CurlVersionDescription, CurlSslVersionDescription));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_clientcerts_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.OpenSsl10Description));
                 }
 
                 if (easy._handler.CheckCertificateRevocationList)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_revocation_notsupported, CurlVersionDescription, CurlSslVersionDescription));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_revocation_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.OpenSsl10Description));
                 }
 
                 if (easy._handler.ServerCertificateCustomValidationCallback != null)
@@ -145,7 +145,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_callback_notsupported, CurlVersionDescription, CurlSslVersionDescription));
+                        throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_callback_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.OpenSsl10Description));
                     }
                 }
                 else

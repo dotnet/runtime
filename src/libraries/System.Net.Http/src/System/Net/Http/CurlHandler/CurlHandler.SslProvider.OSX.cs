@@ -29,11 +29,7 @@ namespace System.Net.Http
                     // only via writing it to a file and letting it load the PFX.
                     // This would require that a) we write said file, and b) that it contaminate the default
                     // keychain (because their PFX loader loads to the default keychain).
-                    throw new PlatformNotSupportedException(
-                        SR.Format(
-                            SR.net_http_libcurl_clientcerts_notsupported,
-                            CurlVersionDescription,
-                            CurlSslVersionDescription));
+                    throw new PlatformNotSupportedException(SR.net_http_libcurl_clientcerts_notsupported_os);
                 }
 
                 // Revocation checking is always on for darwinssl (SecureTransport).
@@ -44,9 +40,10 @@ namespace System.Net.Http
                 {
                     throw new PlatformNotSupportedException(
                         SR.Format(
-                            SR.net_http_libcurl_revocation_notsupported,
+                            SR.net_http_libcurl_revocation_notsupported_sslbackend,
                             CurlVersionDescription,
-                            CurlSslVersionDescription));
+                            CurlSslVersionDescription,
+                            Interop.Http.SecureTransportDescription));
                 }
 
                 if (easy._handler.ServerCertificateCustomValidationCallback != null)
@@ -87,11 +84,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        throw new PlatformNotSupportedException(
-                            SR.Format(
-                                SR.net_http_libcurl_callback_notsupported,
-                                CurlVersionDescription,
-                                CurlSslVersionDescription));
+                        throw new PlatformNotSupportedException(SR.net_http_libcurl_callback_notsupported_os);
                     }
                 }
 
