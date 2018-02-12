@@ -916,7 +916,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 GenTree* op3 = argList->Rest()->Rest()->Current();
 
-#if NYI_ARM64_HW_INTRINSIC_CONTAINMENT
                 // TODO-ARM64-CQ Support containing NI_ARM64_SIMD_GetItem (vector element to element move)
                 if (op3->OperIs(GT_HWIntrinsic) && (op3->AsHWIntrinsic()->gtHWIntrinsicId == NI_ARM64_SIMD_GetItem))
                 {
@@ -927,7 +926,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         MakeSrcContained(node, op3);
                     }
                 }
-#endif // NYI_ARM64_HW_INTRINSIC_CONTAINMENT
             }
             break;
 
