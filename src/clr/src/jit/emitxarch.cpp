@@ -12072,21 +12072,35 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_ARD:
         case IF_RRW_ARD:
         case IF_RWR_RRD_ARD:
-            code    = insCodeRM(ins);
-            code    = AddVexPrefixIfNeeded(ins, code, size);
-            regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputAM(dst, id, code | regcode);
-            sz      = emitSizeOfInsDsc(id);
+            code = insCodeRM(ins);
+            if (Is4ByteSSE4OrAVXInstruction(ins))
+            {
+                dst = emitOutputAM(dst, id, code);
+            }
+            else
+            {
+                code    = AddVexPrefixIfNeeded(ins, code, size);
+                regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputAM(dst, id, code | regcode);
+            }
+            sz = emitSizeOfInsDsc(id);
             break;
 
         case IF_RWR_RRD_ARD_CNS:
         {
             emitGetInsAmdCns(id, &cnsVal);
-            code    = insCodeRM(ins);
-            code    = AddVexPrefixIfNeeded(ins, code, size);
-            regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
-            sz      = emitSizeOfInsDsc(id);
+            code = insCodeRM(ins);
+            if (Is4ByteSSE4OrAVXInstruction(ins))
+            {
+                dst = emitOutputAM(dst, id, code, &cnsVal);
+            }
+            else
+            {
+                code    = AddVexPrefixIfNeeded(ins, code, size);
+                regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
+            }
+            sz = emitSizeOfInsDsc(id);
             break;
         }
 
