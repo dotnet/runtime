@@ -6,7 +6,7 @@ function GetCMakeVersions
   $items = @()
   $items += @(Get-ChildItem hklm:\SOFTWARE\Wow6432Node\Kitware -ErrorAction SilentlyContinue)
   $items += @(Get-ChildItem hklm:\SOFTWARE\Kitware -ErrorAction SilentlyContinue)
-  return $items | where { $_.PSChildName.StartsWith("CMake ") }
+  return $items | where { $_.PSChildName.StartsWith("CMake") }
 }
 
 function GetCMakeInfo($regKey)
@@ -17,7 +17,13 @@ function GetCMakeInfo($regKey)
   catch {
     return $null
   }
-  $cmakeDir = (Get-ItemProperty $regKey.PSPath).'(default)'
+  $itemProperty = Get-ItemProperty $regKey.PSPath;
+  if (Get-Member -inputobject $itemProperty -name "InstallDir" -Membertype Properties) {
+    $cmakeDir = $itemProperty.InstallDir
+  }
+  else {
+    $cmakeDir = $itemProperty.'(default)'
+  }
   $cmakePath = [System.IO.Path]::Combine($cmakeDir, "bin\cmake.exe")
   if (![System.IO.File]::Exists($cmakePath)) {
     return $null
