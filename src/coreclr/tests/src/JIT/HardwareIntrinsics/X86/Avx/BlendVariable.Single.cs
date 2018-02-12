@@ -97,7 +97,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); _data3[i] = (float)(((i % 2) == 0) ? -0.0E0 : 1.0E0); }
+            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); _data3[i] = (float)(((i % 2) == 0) ? -0.0 : 1.0); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data2[0]), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data1[0]), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar3), ref Unsafe.As<Single, byte>(ref _data3[0]), VectorSize);
@@ -109,12 +109,12 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); _data3[i] = (float)(((i % 2) == 0) ? -0.0E0 : 1.0E0); }
+            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); _data3[i] = (float)(((i % 2) == 0) ? -0.0 : 1.0); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld3), ref Unsafe.As<Single, byte>(ref _data3[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); _data3[i] = (float)(((i % 2) == 0) ? -0.0E0 : 1.0E0); }
+            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); _data3[i] = (float)(((i % 2) == 0) ? -0.0 : 1.0); }
             _dataTable = new SimpleTernaryOpTest__DataTable<Single>(_data1, _data2, _data3, new Single[ElementCount], VectorSize);
         }
 
