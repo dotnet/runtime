@@ -4,9 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{1032D5F6-5AE7-4002-A0E4-FEBEADFEA977}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp2.1'">$(DefineConstants);netcoreapp21</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />

@@ -4,14 +4,14 @@
 namespace System.Buffers
 {
     /// <summary>
-    /// Represents a <see cref="Byte"/> sink
+    /// Represents a <typeparam name="T"/> sink
     /// </summary>
-    public interface IBufferWriter
+    public interface IBufferWriter<T>
     {
         /// <summary>
-        /// Notifies <see cref="IBufferWriter"/> that <paramref name="bytes"/> amount of data was written to <see cref="Span{Byte}"/>/<see cref="Memory{Byte}"/>
+        /// Notifies <see cref="IBufferWriter{T}"/> that <paramref name="count"/> amount of data was written to <see cref="Span{T}"/>/<see cref="Memory{T}"/>
         /// </summary>
-        void Advance(int bytes);
+        void Advance(int count);
 
         /// <summary>
         /// Requests the <see cref="Memory{Byte}"/> of at least <paramref name="minimumLength"/> in size.
@@ -24,5 +24,10 @@ namespace System.Buffers
         /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
         Span<byte> GetSpan(int minimumLength = 0);
+
+        /// <summary>
+        /// Returns the maximum buffer size supported by this <see cref="IBufferWriter{T}"/>.
+        /// </summary>
+        int MaxBufferSize { get; }
     }
 }
