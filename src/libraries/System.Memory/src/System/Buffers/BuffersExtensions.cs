@@ -58,38 +58,35 @@ namespace System.Buffers
         /// <summary>
         /// Writes contents of <paramref name="source"/> to <paramref name="bufferWriter"/>
         /// </summary>
-        public static void Write(this IBufferWriter bufferWriter, ReadOnlySpan<byte> source)
+        public static void Write<T>(this IBufferWriter<T> bufferWriter, ReadOnlySpan<byte> source)
         {
-            Span<byte> span = bufferWriter.GetSpan();
+            Span<byte> destination = bufferWriter.GetSpan();
 
             // Fast path, try copying to the available memory directly
-            if (source.Length <= span.Length)
+            if (source.Length <= destination.Length)
             {
-                source.CopyTo(span);
+                source.CopyTo(destination);
                 bufferWriter.Advance(source.Length);
                 return;
             }
 
-            var remaining = source.Length;
-            var offset = 0;
-
-            while (remaining > 0)
+            while (source.Length > 0)
             {
-                var writable = Math.Min(remaining, span.Length);
-
-                span = bufferWriter.GetSpan(writable);
-
-                if (writable == 0)
+                int writeSize;
+                if (destination.Length == 0)
                 {
-                    continue;
+                    writeSize = Math.Min(source.Length, bufferWriter.MaxBufferSize);
+                    destination = bufferWriter.GetSpan(writeSize);
+                }
+                else
+                {
+                    writeSize = destination.Length;
                 }
 
-                source.Slice(offset, writable).CopyTo(span);
-
-                remaining -= writable;
-                offset += writable;
-
-                bufferWriter.Advance(writable);
+                bufferWriter.Advance(writeSize);
+                source.Slice(0, writeSize).CopyTo(destination);
+                source = source.Slice(writeSize);
+                destination = default;
             }
         }
     }

@@ -73,7 +73,7 @@ namespace System.IO.Pipelines
         public abstract void Schedule(System.Action action);
         public abstract void Schedule(System.Action<object> action, object state);
     }
-    public abstract partial class PipeWriter : System.Buffers.IBufferWriter
+    public abstract partial class PipeWriter : System.Buffers.IBufferWriter<byte>
     {
         protected PipeWriter() { }
         public abstract void Advance(int bytes);
@@ -83,6 +83,7 @@ namespace System.IO.Pipelines
         public abstract System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public abstract System.Memory<byte> GetMemory(int minimumLength = 0);
         public abstract System.Span<byte> GetSpan(int minimumLength = 0);
+        public abstract int MaxBufferSize { get; }
         public abstract void OnReaderCompleted(System.Action<System.Exception, object> callback, object state);
         public virtual System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }

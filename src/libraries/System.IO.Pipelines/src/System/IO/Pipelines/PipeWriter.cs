@@ -10,7 +10,7 @@ namespace System.IO.Pipelines
     /// <summary>
     /// Defines a class that provides a pipeline to which data can be written.
     /// </summary>
-    public abstract class PipeWriter : IBufferWriter
+    public abstract class PipeWriter : IBufferWriter<byte>
     {
         /// <summary>
         /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more items will be written to it.
@@ -46,6 +46,9 @@ namespace System.IO.Pipelines
 
         /// <inheritdoc />
         public abstract Span<byte> GetSpan(int minimumLength = 0);
+
+        /// <inheritdoc />
+        public abstract int MaxBufferSize { get; }
 
         /// <summary>
         /// Writes <paramref name="source"/> to the pipe and makes data accessible to <see cref="PipeReader"/>

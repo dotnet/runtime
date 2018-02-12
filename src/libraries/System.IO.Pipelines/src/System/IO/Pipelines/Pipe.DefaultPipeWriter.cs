@@ -36,6 +36,8 @@ namespace System.IO.Pipelines
 
             public override Span<byte> GetSpan(int minimumLength = 0) => _pipe.GetMemory(minimumLength).Span;
 
+            public override int MaxBufferSize => _pipe._pool.MaxBufferSize;
+
             public bool IsCompleted => _pipe.IsFlushAsyncCompleted;
 
             public FlushResult GetResult() => _pipe.GetFlushAsyncResult();
