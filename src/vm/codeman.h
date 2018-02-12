@@ -1245,6 +1245,9 @@ public:
     // Special version with profiler hook
     static BOOL IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference, BOOL *pfFailedReaderLock);
 
+    // Returns method's start address for a given PC
+    static PCODE GetCodeStartAddress(PCODE currentPC);
+
     // Returns methodDesc for given PC
     static MethodDesc * GetCodeMethodDesc(PCODE currentPC);
 

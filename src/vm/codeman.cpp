@@ -4156,6 +4156,19 @@ ExecutionManager::FindCodeRangeWithLock(PCODE currentPC)
     return GetRangeSection(currentPC);
 }
 
+
+//**************************************************************************
+PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(currentPC != NULL);
+
+    EECodeInfo codeInfo(currentPC);
+    if (!codeInfo.IsValid())
+        return NULL;
+    return (PCODE)codeInfo.GetStartAddress();
+}
+
 //**************************************************************************
 MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
 {
