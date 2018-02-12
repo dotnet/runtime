@@ -184,7 +184,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(27058)]
         [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public async Task UnreadResponseMessage_Collectible()
         {
@@ -192,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Func<Task<WeakReference>> getAsync = async () => new WeakReference(await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead));
+                    Func<Task<WeakReference>> getAsync = () => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(t => new WeakReference(t.Result));
                     Task<WeakReference> wrt = getAsync();
 
                     await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
