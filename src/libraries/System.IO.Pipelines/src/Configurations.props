@@ -4,7 +4,7 @@
     <BuildConfigurations>
       netstandard1.1;
       netstandard;
-      netcoreapp2.1;
+      netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
