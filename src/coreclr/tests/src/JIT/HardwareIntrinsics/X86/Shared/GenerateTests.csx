@@ -166,6 +166,19 @@ private static readonly (string templateFileName, string[] templateData)[] Sse2I
     ("SimpleBinOpTest.template", new string[] { "Sse2", "Sse2",  "Xor",                          "UInt64", "Vector128", "16",       "(ulong)(random.Next(0, int.MaxValue))",                "(ulong)(left[0] ^ right[0]) != result[0]",                                                                                           "(ulong)(left[i] ^ right[i]) != result[i]"}),
 };
 
+private static readonly (string templateFileName, string[] templateData)[] Sse41Inputs = new []
+{
+    // TemplateName                             Isa,   LoadIsa, Method,                BaseType,     VectorType,     VectorSize,        NextValue,                                      ValidateFirstResult,                                                                                                              ValidateRemainingResults
+    ("SimpleBinOpTest.template", new string[] { "Sse41", "Sse2",     "CompareEqual",     "Int64",  "Vector128", "16",       "(long)(random.Next(int.MinValue, int.MaxValue))",      "result[0] != ((left[0] == right[0]) ? unchecked((long)(-1)) : 0)",                               "result[i] != ((left[i] == right[i]) ? unchecked((long)(-1)) : 0)"}),
+    ("SimpleBinOpTest.template", new string[] { "Sse41", "Sse2",     "CompareEqual",     "UInt64", "Vector128", "16",       "(ulong)(random.Next(0, int.MaxValue))",                "result[0] != ((left[0] == right[0]) ? unchecked((ulong)(-1)) : 0)",                              "result[i] != ((left[i] == right[i]) ? unchecked((ulong)(-1)) : 0)"}),
+};
+
+private static readonly (string templateFileName, string[] templateData)[] Sse42Inputs = new []
+{
+    // TemplateName                             Isa,   LoadIsa, Method,                BaseType,     VectorType,     VectorSize,        NextValue,                                      ValidateFirstResult,                                                                                                              ValidateRemainingResults
+    ("SimpleBinOpTest.template", new string[] { "Sse42", "Sse2",     "CompareGreaterThan","Int64", "Vector128", "16",       "(long)(random.Next(int.MinValue, int.MaxValue))",      "result[0] != ((left[0] > right[0]) ? unchecked((long)(-1)) : 0)",                                "result[i] != ((left[i] > right[i]) ? unchecked((long)(-1)) : 0)"}),
+};
+
 private static readonly (string templateFileName, string[] templateData)[] AvxInputs = new []
 {
     // TemplateName                             Isa,   LoadIsa, Method,                BaseType,     VectorType,     VectorSize,        NextValue,                             ValidateFirstResult,                                                                                                                       ValidateRemainingResults
@@ -230,11 +243,14 @@ private static readonly (string templateFileName, string[] templateData)[] Avx2I
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "Byte",   "Vector256", "32",       "(byte)(random.Next(0, byte.MaxValue))",                "result[0] != ((left[0] == right[0]) ? unchecked((byte)(-1)) : 0)",                               "result[i] != ((left[i] == right[i]) ? unchecked((byte)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "Int16",  "Vector256", "32",       "(short)(random.Next(short.MinValue, short.MaxValue))", "result[0] != ((left[0] == right[0]) ? unchecked((short)(-1)) : 0)",                              "result[i] != ((left[i] == right[i]) ? unchecked((short)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "Int32",  "Vector256", "32",       "(int)(random.Next(int.MinValue, int.MaxValue))",       "result[0] != ((left[0] == right[0]) ? unchecked((int)(-1)) : 0)",                                "result[i] != ((left[i] == right[i]) ? unchecked((int)(-1)) : 0)"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "Int64",  "Vector256", "32",       "(long)(random.Next(int.MinValue, int.MaxValue))",      "result[0] != ((left[0] == right[0]) ? unchecked((long)(-1)) : 0)",                               "result[i] != ((left[i] == right[i]) ? unchecked((long)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "SByte",  "Vector256", "32",       "(sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue))", "result[0] != ((left[0] == right[0]) ? unchecked((sbyte)(-1)) : 0)",                              "result[i] != ((left[i] == right[i]) ? unchecked((sbyte)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "UInt16", "Vector256", "32",       "(ushort)(random.Next(0, ushort.MaxValue))",            "result[0] != ((left[0] == right[0]) ? unchecked((ushort)(-1)) : 0)",                             "result[i] != ((left[i] == right[i]) ? unchecked((ushort)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "UInt32", "Vector256", "32",       "(uint)(random.Next(0, int.MaxValue))",                 "result[0] != ((left[0] == right[0]) ? unchecked((uint)(-1)) : 0)",                               "result[i] != ((left[i] == right[i]) ? unchecked((uint)(-1)) : 0)"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareEqual",     "UInt64", "Vector256", "32",       "(ulong)(random.Next(0, int.MaxValue))",                "result[0] != ((left[0] == right[0]) ? unchecked((ulong)(-1)) : 0)",                              "result[i] != ((left[i] == right[i]) ? unchecked((ulong)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareGreaterThan","Int16", "Vector256", "32",       "(short)(random.Next(short.MinValue, short.MaxValue))", "result[0] != ((left[0] > right[0]) ? unchecked((short)(-1)) : 0)",                               "result[i] != ((left[i] > right[i]) ? unchecked((short)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareGreaterThan","Int32", "Vector256", "32",       "(int)(random.Next(int.MinValue, int.MaxValue))",       "result[0] != ((left[0] > right[0]) ? unchecked((int)(-1)) : 0)",                                 "result[i] != ((left[i] > right[i]) ? unchecked((int)(-1)) : 0)"}),
+    ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareGreaterThan","Int64", "Vector256", "32",       "(long)(random.Next(int.MinValue, int.MaxValue))",      "result[0] != ((left[0] > right[0]) ? unchecked((long)(-1)) : 0)",                                "result[i] != ((left[i] > right[i]) ? unchecked((long)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "CompareGreaterThan","SByte", "Vector256", "32",       "(sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue))", "result[0] != ((left[0] > right[0]) ? unchecked((sbyte)(-1)) : 0)",                               "result[i] != ((left[i] > right[i]) ? unchecked((sbyte)(-1)) : 0)"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "Or",               "Byte",   "Vector256", "32",       "(byte)(random.Next(0, byte.MaxValue))",                "(byte)(left[0] | right[0]) != result[0]",                                                        "(byte)(left[i] | right[i]) != result[i]"}),
     ("SimpleBinOpTest.template", new string[] { "Avx2", "Avx",     "Or",               "Int16",  "Vector256", "32",       "(short)(random.Next(short.MinValue, short.MaxValue))", "(short)(left[0] | right[0]) != result[0]",                                                       "(short)(left[i] | right[i]) != result[i]"}),
@@ -315,5 +331,7 @@ private static void ProcessInput(StreamWriter testListFile, (string templateFile
 
 ProcessInputs("Sse", SseInputs);
 ProcessInputs("Sse2", Sse2Inputs);
+ProcessInputs("Sse41", Sse41Inputs);
+ProcessInputs("Sse42", Sse42Inputs);
 ProcessInputs("Avx", AvxInputs);
 ProcessInputs("Avx2", Avx2Inputs);
