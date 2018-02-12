@@ -4605,7 +4605,7 @@ mono_thread_request_interruption (gboolean running_managed)
 
 /*This function should be called by a thread after it has exited all of
  * its handle blocks at interruption time.*/
-MonoException*
+void
 mono_thread_resume_interruption (gboolean exec)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -4613,7 +4613,7 @@ mono_thread_resume_interruption (gboolean exec)
 
 	/* The thread may already be stopping */
 	if (thread == NULL)
-		return NULL;
+		return;
 
 	LOCK_THREAD (thread);
 	still_aborting = (thread->state & (ThreadState_AbortRequested)) != 0;
@@ -4621,17 +4621,15 @@ mono_thread_resume_interruption (gboolean exec)
 
 	/*This can happen if the protected block called Thread::ResetAbort*/
 	if (!still_aborting)
-		return NULL;
+		return;
 
 	if (!mono_thread_set_interruption_requested (thread))
-		return NULL;
+		return;
 
 	mono_thread_info_self_interrupt ();
 
-	if (exec)
-		return mono_thread_execute_interruption ();
-	else
-		return NULL;
+	if (exec) // Ignore the exception here, it will be raised later.
+		mono_thread_execute_interruption ();
 }
 
 gboolean mono_thread_interruption_requested ()
