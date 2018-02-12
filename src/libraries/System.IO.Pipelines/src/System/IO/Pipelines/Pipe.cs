@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -11,13 +12,13 @@ namespace System.IO.Pipelines
     /// <summary>
     /// Default <see cref="PipeWriter"/> and <see cref="PipeReader"/> implementation.
     /// </summary>
-    public sealed class Pipe
+    public sealed partial class Pipe
     {
         private const int SegmentPoolSize = 16;
 
-        private static readonly Action<object> _signalReaderAwaitable = state => ((Pipe)state).ReaderCancellationRequested();
-        private static readonly Action<object> _signalWriterAwaitable = state => ((Pipe)state).WriterCancellationRequested();
-        private static readonly Action<object> _invokeCompletionCallbacks = state => ((PipeCompletionCallbacks)state).Execute();
+        private static readonly Action<object> s_signalReaderAwaitable = state => ((Pipe)state).ReaderCancellationRequested();
+        private static readonly Action<object> s_signalWriterAwaitable = state => ((Pipe)state).WriterCancellationRequested();
+        private static readonly Action<object> s_invokeCompletionCallbacks = state => ((PipeCompletionCallbacks)state).Execute();
 
         // This sync objects protects the following state:
         // 1. _commitHead & _commitHeadIndex
@@ -27,11 +28,16 @@ namespace System.IO.Pipelines
 
         private readonly MemoryPool<byte> _pool;
         private readonly int _minimumSegmentSize;
-        private readonly long _maximumSizeHigh;
-        private readonly long _maximumSizeLow;
+        private readonly long _pauseWriterThreshold;
+        private readonly long _resumeWriterThreshold;
 
         private readonly PipeScheduler _readerScheduler;
         private readonly PipeScheduler _writerScheduler;
+
+        private readonly BufferSegment[] _bufferSegmentPool;
+
+        private readonly DefaultPipeReader _reader;
+        private readonly DefaultPipeWriter _writer;
 
         private long _length;
         private long _currentWriteLength;
@@ -43,8 +49,6 @@ namespace System.IO.Pipelines
 
         private PipeCompletion _writerCompletion;
         private PipeCompletion _readerCompletion;
-
-        private readonly BufferSegment[] _bufferSegmentPool;
 
         // The read head which is the extent of the IPipelineReader's consumed bytes
         private BufferSegment _readHead;
@@ -60,9 +64,6 @@ namespace System.IO.Pipelines
         private PipeReaderState _readingState;
 
         private bool _disposed;
-
-        private DefaultPipeReader _reader;
-        private DefaultPipeWriter _writer;
 
         internal long Length => _length;
 
@@ -91,8 +92,8 @@ namespace System.IO.Pipelines
 
             _pool = options.Pool;
             _minimumSegmentSize = options.MinimumSegmentSize;
-            _maximumSizeHigh = options.PauseWriterThreshold;
-            _maximumSizeLow = options.ResumeWriterThreshold;
+            _pauseWriterThreshold = options.PauseWriterThreshold;
+            _resumeWriterThreshold = options.ResumeWriterThreshold;
             _readerScheduler = options.ReaderScheduler ?? PipeScheduler.Inline;
             _writerScheduler = options.WriterScheduler ?? PipeScheduler.Inline;
             _readerAwaitable = new PipeAwaitable(completed: false);
@@ -147,8 +148,6 @@ namespace System.IO.Pipelines
 
             return _writingHead.AvailableMemory.Slice(_writingHead.End, _writingHead.WritableBytes);
         }
-
-        internal Span<byte> GetSpan(int minimumSize) => GetMemory(minimumSize).Span;
 
         private BufferSegment AllocateWriteHeadUnsynchronized(int count)
         {
@@ -242,8 +241,8 @@ namespace System.IO.Pipelines
             _length += _currentWriteLength;
 
             // Do not reset if reader is complete
-            if (_maximumSizeHigh > 0 &&
-                _length >= _maximumSizeHigh &&
+            if (_pauseWriterThreshold > 0 &&
+                _length >= _pauseWriterThreshold &&
                 !_readerCompletion.IsCompleted)
             {
                 _writerAwaitable.Reset();
@@ -300,7 +299,7 @@ namespace System.IO.Pipelines
 
                 awaitable = _readerAwaitable.Complete();
 
-                cancellationTokenRegistration = _writerAwaitable.AttachToken(cancellationToken, _signalWriterAwaitable, this);
+                cancellationTokenRegistration = _writerAwaitable.AttachToken(cancellationToken, s_signalWriterAwaitable, this);
             }
 
             cancellationTokenRegistration.Dispose();
@@ -330,7 +329,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_readerScheduler, _invokeCompletionCallbacks, completionCallbacks);
+                TrySchedule(_readerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
             }
 
             TrySchedule(_readerScheduler, awaitable);
@@ -378,8 +377,8 @@ namespace System.IO.Pipelines
                     long oldLength = _length;
                     _length -= consumedBytes;
 
-                    if (oldLength >= _maximumSizeLow &&
-                        _length < _maximumSizeLow)
+                    if (oldLength >= _resumeWriterThreshold &&
+                        _length < _resumeWriterThreshold)
                     {
                         continuation = _writerAwaitable.Complete();
                     }
@@ -389,7 +388,7 @@ namespace System.IO.Pipelines
                     // might be using tailspace
                     if (consumed.Index == returnEnd.Length && _writingHead != returnEnd)
                     {
-                        var nextBlock = returnEnd.NextSegment;
+                        BufferSegment nextBlock = returnEnd.NextSegment;
                         if (_commitHead == returnEnd)
                         {
                             _commitHead = nextBlock;
@@ -452,7 +451,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_writerScheduler, _invokeCompletionCallbacks, completionCallbacks);
+                TrySchedule(_writerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
             }
 
             TrySchedule(_writerScheduler, awaitable);
@@ -478,7 +477,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_readerScheduler, _invokeCompletionCallbacks, completionCallbacks);
+                TrySchedule(_readerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
             }
         }
 
@@ -517,7 +516,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_writerScheduler, _invokeCompletionCallbacks, completionCallbacks);
+                TrySchedule(_writerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
             }
         }
 
@@ -530,7 +529,7 @@ namespace System.IO.Pipelines
             }
             lock (_sync)
             {
-                cancellationTokenRegistration = _readerAwaitable.AttachToken(token, _signalReaderAwaitable, this);
+                cancellationTokenRegistration = _readerAwaitable.AttachToken(token, s_signalReaderAwaitable, this);
             }
             cancellationTokenRegistration.Dispose();
             return new PipeAwaiter<ReadResult>(_reader);
@@ -754,113 +753,6 @@ namespace System.IO.Pipelines
                 _disposed = false;
                 ResetState();
             }
-        }
-
-        private sealed class DefaultPipeReader : PipeReader, IPipeAwaiter<ReadResult>
-        {
-            private readonly Pipe _pipe;
-
-            public DefaultPipeReader(Pipe pipe)
-            {
-                _pipe = pipe;
-            }
-
-            public override bool TryRead(out ReadResult result)
-            {
-                return _pipe.TryRead(out result);
-            }
-
-            public override PipeAwaiter<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
-            {
-                return _pipe.ReadAsync(cancellationToken);
-            }
-
-            public override void AdvanceTo(SequencePosition consumed)
-            {
-                _pipe.AdvanceReader(consumed);
-            }
-
-            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
-            {
-                _pipe.AdvanceReader(consumed, examined);
-            }
-
-            public override void CancelPendingRead()
-            {
-                _pipe.CancelPendingRead();
-            }
-
-            public override void Complete(Exception exception = null)
-            {
-                _pipe.CompleteReader(exception);
-            }
-
-            public override void OnWriterCompleted(Action<Exception, object> callback, object state)
-            {
-                _pipe.OnWriterCompleted(callback, state);
-            }
-
-            public bool IsCompleted => _pipe.IsReadAsyncCompleted;
-
-            public ReadResult GetResult() => _pipe.GetReadAsyncResult();
-
-            public void OnCompleted(Action continuation) => _pipe.OnReadAsyncCompleted(continuation);
-        }
-
-        private sealed class DefaultPipeWriter : PipeWriter, IPipeAwaiter<FlushResult>
-        {
-            private readonly Pipe _pipe;
-
-            public DefaultPipeWriter(Pipe pipe)
-            {
-                _pipe = pipe;
-            }
-
-            public override void Complete(Exception exception = null)
-            {
-                _pipe.CompleteWriter(exception);
-            }
-
-            public override void CancelPendingFlush()
-            {
-                _pipe.CancelPendingFlush();
-            }
-
-            public override void OnReaderCompleted(Action<Exception, object> callback, object state)
-            {
-                _pipe.OnReaderCompleted(callback, state);
-            }
-
-            public override PipeAwaiter<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
-            {
-                return _pipe.FlushAsync(cancellationToken);
-            }
-
-            public override void Commit()
-            {
-                _pipe.Commit();
-            }
-
-            public override void Advance(int bytes)
-            {
-                _pipe.Advance(bytes);
-            }
-
-            public override Memory<byte> GetMemory(int minimumLength = 0)
-            {
-                return _pipe.GetMemory(minimumLength);
-            }
-
-            public override Span<byte> GetSpan(int minimumLength = 0)
-            {
-                return _pipe.GetSpan(minimumLength);
-            }
-
-            public bool IsCompleted => _pipe.IsFlushAsyncCompleted;
-
-            public FlushResult GetResult() => _pipe.GetFlushAsyncResult();
-
-            public void OnCompleted(Action continuation) => _pipe.OnFlushAsyncCompleted(continuation);
         }
     }
 }

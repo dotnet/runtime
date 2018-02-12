@@ -27,15 +27,14 @@ namespace System.IO.Pipelines
             long resumeWriterThreshold = 0,
             int minimumSegmentSize = 2048)
         {
+            if (pauseWriterThreshold < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.pauseWriterThreshold);
+            }
 
             if (resumeWriterThreshold < 0 && resumeWriterThreshold > pauseWriterThreshold)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.resumeWriterThreshold);
-            }
-
-            if (pauseWriterThreshold < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.pauseWriterThreshold);
             }
 
             Pool = pool ?? MemoryPool<byte>.Shared;

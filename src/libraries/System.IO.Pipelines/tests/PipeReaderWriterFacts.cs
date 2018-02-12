@@ -88,7 +88,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task AdvanceShouldResetStateIfReadCancelled()
+        public async Task AdvanceShouldResetStateIfReadCanceled()
         {
             _pipe.Reader.CancelPendingRead();
 
@@ -436,7 +436,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ReadingCanBeCancelled()
+        public async Task ReadingCanBeCanceled()
         {
             var cts = new CancellationTokenSource();
             cts.Token.Register(() => { _pipe.Writer.Complete(new OperationCanceledException(cts.Token)); });
@@ -607,6 +607,12 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Throws<InvalidOperationException>(() => _pipe.Reader.TryRead(out _));
             _pipe.Reader.AdvanceTo(readResult.Buffer.Start);
+        }
+
+        [Fact]
+        public void GetMemoryZeroReturnsNonEmpty()
+        {
+            Assert.True(_pipe.Writer.GetMemory(0).Length > 0);
         }
     }
 }

@@ -2,9 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\src\System.IO.Pipelines.csproj">
+    <ProjectReference Include="..\ref\System.IO.Pipelines.csproj">
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+    <ProjectReference Include="..\src\System.IO.Pipelines.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
