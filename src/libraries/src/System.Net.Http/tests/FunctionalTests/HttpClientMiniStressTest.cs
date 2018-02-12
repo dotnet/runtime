@@ -12,8 +12,6 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     public class HttpClientMiniStress : HttpClientTestBase
     {
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
@@ -186,6 +184,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [ActiveIssue(27058)]
         [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public async Task UnreadResponseMessage_Collectible()
         {
@@ -222,7 +221,7 @@ namespace System.Net.Http.Functional.Tests
             "Content-Type: text/plain\r\n" +
             $"Content-Length: {asciiBody.Length}\r\n" +
             "\r\n" +
-            $"{asciiBody}\r\n";
+            $"{asciiBody}";
 
         private static Task ForCountAsync(int count, int dop, Func<int, Task> bodyAsync)
         {
