@@ -24,6 +24,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Fakes\FakeContextAwareResult.cs" />
     <Compile Include="NameResolutionPalTests.cs" />
     <Compile Include="Fakes\DebugThreadTracking.cs" />
     <Compile Include="Fakes\DnsFake.cs" />
@@ -33,6 +34,9 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\NameResolutionUtilities.cs">
       <Link>ProductionCode\System\Net\NameResolutionUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\DnsResolveAsyncResult.cs">
+      <Link>ProductionCode\System\Net\DnsResolveAsyncResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Sockets\ProtocolType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
@@ -52,6 +56,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
       <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
+	<Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
+      <Link>Common\System\Net\ByteOrder.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="..\..\src\System\Net\NameResolutionPal.Windows.cs">
@@ -65,6 +72,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>System\Net\SocketProtocolSupportPal.Windows</Link>
+    </Compile>
+	<Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
+      <Link>Common\System\Net\SocketAddressPal.Windows</Link>
     </Compile>
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
@@ -116,6 +126,24 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
       <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfoEx.cs">
+      <Link>Interop\Windows\Winsock\AddressInfoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs">
+      <Link>Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
+      <Link>Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
@@ -123,9 +151,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Interop.CheckedAccess.cs">
       <Link>Common\System\Net\Internals\Interop.CheckedAccess.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
-      <Link>Common\System\Net\Internals\ByteOrder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InteropIPAddressExtensions.Unix.cs">
       <Link>Common\System\Net\InteropIPAddressExtensions.Unix.cs</Link>
