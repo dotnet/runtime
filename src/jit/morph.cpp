@@ -18010,11 +18010,13 @@ void Compiler::fgPromoteStructs()
 
     if (!opts.OptEnabled(CLFLG_STRUCTPROMOTE))
     {
+        JITDUMP("  promotion opt flag not enabled\n");
         return;
     }
 
     if (fgNoStructPromotion)
     {
+        JITDUMP("  promotion disabled by JitNoStructPromotion\n");
         return;
     }
 
@@ -18051,11 +18053,7 @@ void Compiler::fgPromoteStructs()
 
     if (info.compIsVarArgs)
     {
-        return;
-    }
-
-    if (getNeedsGSSecurityCookie())
-    {
+        JITDUMP("  promotion disabled because of varargs\n");
         return;
     }
 
