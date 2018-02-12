@@ -14,8 +14,6 @@ namespace System.ServiceProcess.Tests
     {
         public const string LocalServiceName = "NT AUTHORITY\\LocalService";
 
-        private string _removalStack;
-
         public TestServiceInstaller()
         {
         }
@@ -94,7 +92,7 @@ namespace System.ServiceProcess.Tests
                     ServiceCommandLine, null, IntPtr.Zero, servicesDependedOn, username, password);
 
                 if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception();
+                    throw new Win32Exception("Cannot create service");
 
                 // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
                 // across the p/invoke calls below.
@@ -106,7 +104,7 @@ namespace System.ServiceProcess.Tests
                     bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DESCRIPTION, ref serviceDesc);
                     Marshal.FreeHGlobal(serviceDesc.description);
                     if (!success)
-                        throw new Win32Exception();
+                        throw new Win32Exception("Cannot set description");
                 }
 
                 // Start the service after creating it
@@ -130,24 +128,30 @@ namespace System.ServiceProcess.Tests
 
         public void RemoveService()
         {
-            if (ServiceName == null)
-                throw new InvalidOperationException($"Already removed service at stack ${_removalStack}");
-
-            // Store the stack for logging in case we're called twice
             try
             {
-                throw new Exception();
+                StopService();
             }
-            catch (Exception e)
+            finally
             {
-                _removalStack = e.StackTrace;
-            }
+                // If the service didn't stop promptly, we will get a TimeoutException.
+                // This means the test service has gotten "jammed".
+                // Meantime we still want this service to get deleted, so we'll go ahead and call
+                // DeleteService, which will schedule it to get deleted on reboot.
+                // We won't catch the exception: we do want the test to fail.
 
-            // Stop the service
+                DeleteService();
+
+                ServiceName = null;
+            }
+        }
+
+        private void StopService()
+        {
             using (ServiceController svc = new ServiceController(ServiceName))
             {
                 // The Service exists at this point, but OpenService is failing, possibly because its being invoked concurrently for another service.
-                // https://github.com/dotnet/corefx/issues/23388 
+                // https://github.com/dotnet/corefx/issues/23388
                 if (svc.Status != ServiceControllerStatus.Stopped)
                 {
                     try
@@ -156,6 +160,7 @@ namespace System.ServiceProcess.Tests
                     }
                     catch (InvalidOperationException)
                     {
+                        // Already stopped
                         ServiceName = null;
                         return;
                     }
@@ -163,10 +168,13 @@ namespace System.ServiceProcess.Tests
                     svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
                 }
             }
+        }
 
+        private void DeleteService()
+        {
             IntPtr serviceManagerHandle = Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL);
             if (serviceManagerHandle == IntPtr.Zero)
-                throw new Win32Exception();
+                throw new Win32Exception("Could not open SCM");
 
             IntPtr serviceHandle = IntPtr.Zero;
             try
@@ -175,10 +183,10 @@ namespace System.ServiceProcess.Tests
                     ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE);
 
                 if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception();
+                    throw new Win32Exception($"Could not find service {ServiceName}");
 
                 if (!Interop.Advapi32.DeleteService(serviceHandle))
-                    throw new Win32Exception();
+                    throw new Win32Exception($"Could not delete service {ServiceName}");
             }
             finally
             {
@@ -187,8 +195,6 @@ namespace System.ServiceProcess.Tests
 
                 Interop.Advapi32.CloseServiceHandle(serviceManagerHandle);
             }
-
-            ServiceName = null;
         }
     }
 }
