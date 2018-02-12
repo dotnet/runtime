@@ -187,8 +187,14 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            var ticks = value.ScalarValue.AsDateTime.Ticks;
-            collector.AddScalar(ticks < 504911232000000000 ? 0 : ticks - 504911232000000000);
+            DateTime dateTime = value.ScalarValue.AsDateTime;
+            const long UTCMinTicks = 504911232000000000;
+            long dateTimeTicks = 0;
+            // We cannot translate dates sooner than 1/1/1601 in UTC.
+            // To avoid getting an ArgumentOutOfRangeException we compare with 1/1/1601 DateTime ticks
+            if (dateTime.Ticks > UTCMinTicks)
+                dateTimeTicks = dateTime.ToFileTimeUtc();
+            collector.AddScalar(dateTimeTicks);
         }
     }
 
