@@ -27,6 +27,9 @@
     <Compile Include="..\..\src\System\Net\DNS.cs">
       <Link>ProductionCode\System\Net\DNS.cs</Link>
     </Compile>
+	<Compile Include="..\..\src\System\Net\DnsResolveAsyncResult.cs">
+      <Link>ProductionCode\System\Net\DnsResolveAsyncResult.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InitializationTest.cs" />

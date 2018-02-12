@@ -10,6 +10,8 @@ namespace System.Net
 {
     internal static class NameResolutionPal
     {
+        public static bool SupportsGetAddrInfoAsync => false;
+
         internal static int FakesEnsureSocketsAreInitializedCallCount
         {
             get;
@@ -45,6 +47,11 @@ namespace System.Net
         }
 
         internal static string TryGetNameInfo(IPAddress address, out SocketError errorCode, out int nativeErrorCode)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal static void GetAddrInfoAsync(DnsResolveAsyncResult asyncResult)
         {
             throw new NotImplementedException();
         }
