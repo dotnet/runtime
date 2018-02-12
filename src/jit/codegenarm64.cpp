@@ -5336,7 +5336,6 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
     genConsumeRegs(op3);
 
     regNumber op1Reg = op1->gtRegNum;
-    regNumber op3Reg = op3->gtRegNum;
 
     assert(genIsValidFloatReg(targetReg));
     assert(genIsValidFloatReg(op1Reg));
@@ -5355,6 +5354,8 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
     if (op3->isContained())
     {
         // Handle vector element to vector element case
+        regNumber op3Reg = op3->gtGetOp1()->gtRegNum;
+
         assert(genIsValidFloatReg(op3Reg));
         assert(op2->isContainedIntOrIImmed());
         assert(op3->OperIs(GT_HWIntrinsic));
@@ -5370,6 +5371,8 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
     {
         // Handle scalar to vector element case
         // TODO-ARM64-CQ handle containing scalar const where possible
+        regNumber op3Reg = op3->gtRegNum;
+
         auto emitSwCase = [&](int element) {
             assert(element >= 0);
             assert(element < elements);
