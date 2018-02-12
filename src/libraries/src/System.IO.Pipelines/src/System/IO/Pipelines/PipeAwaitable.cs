@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.IO.Pipelines
 {
-    [DebuggerDisplay("CancelledState: {_canceledState}, IsCompleted: {IsCompleted}")]
+    [DebuggerDisplay("CanceledState: {_canceledState}, IsCompleted: {IsCompleted}")]
     internal struct PipeAwaitable
     {
         private static readonly Action _awaitableIsCompleted = () => { };
@@ -67,7 +67,7 @@ namespace System.IO.Pipelines
 
             // Change the state from observed -> not cancelled.
             // We only want to reset the cancelled state if it was observed
-            if (_canceledState == CanceledState.CancellationObserved)
+            if (_canceledState == CanceledState.CancelationObserved)
             {
                 _canceledState = CanceledState.NotCanceled;
             }
@@ -120,7 +120,7 @@ namespace System.IO.Pipelines
 
             if (_canceledState >= CanceledState.CancellationPreRequested)
             {
-                _canceledState = CanceledState.CancellationObserved;
+                _canceledState = CanceledState.CancelationObserved;
 
                 // Do not reset awaitable if we were not awaiting in the first place
                 if (!isPrerequested)
@@ -139,7 +139,7 @@ namespace System.IO.Pipelines
         private enum CanceledState
         {
             NotCanceled = 0,
-            CancellationObserved = 1,
+            CancelationObserved = 1,
             CancellationPreRequested = 2,
             CancellationRequested = 3,
         }

@@ -126,7 +126,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void FlushAsyncNotCompletedAfterCancellationTokenCancelled()
+        public void FlushAsyncNotCompletedAfterCancellationTokenCanceled()
         {
             var onCompletedCalled = false;
             var cts = new CancellationTokenSource();
@@ -151,7 +151,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void FlushAsyncReturnsCanceledIfCancelledBeforeFlush()
+        public void FlushAsyncReturnsCanceledIfCanceledBeforeFlush()
         {
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
 
@@ -165,7 +165,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void FlushAsyncReturnsCanceledIfFlushCancelled()
+        public void FlushAsyncReturnsCanceledIfFlushCanceled()
         {
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
             PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
@@ -216,7 +216,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void FlushAsyncThrowsIfPassedCancelledCancellationToken()
+        public void FlushAsyncThrowsIfPassedCanceledCancellationToken()
         {
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
@@ -240,7 +240,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void GetResultThrowsIfFlushAsyncCancelledAfterOnCompleted()
+        public void GetResultThrowsIfFlushAsyncCanceledAfterOnCompleted()
         {
             var onCompletedCalled = false;
             var cancellationTokenSource = new CancellationTokenSource();
@@ -263,7 +263,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void GetResultThrowsIfFlushAsyncCancelledBeforeOnCompleted()
+        public void GetResultThrowsIfFlushAsyncCanceledBeforeOnCompleted()
         {
             var onCompletedCalled = false;
             var cancellationTokenSource = new CancellationTokenSource();

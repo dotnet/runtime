@@ -84,7 +84,7 @@ namespace System.IO.Pipelines
         public abstract System.Memory<byte> GetMemory(int minimumLength = 0);
         public abstract System.Span<byte> GetSpan(int minimumLength = 0);
         public abstract void OnReaderCompleted(System.Action<System.Exception, object> callback, object state);
-        public virtual System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> WriteAsync(System.ReadOnlyMemory<byte> source) { throw null; }
+        public virtual System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial struct ReadResult
     {

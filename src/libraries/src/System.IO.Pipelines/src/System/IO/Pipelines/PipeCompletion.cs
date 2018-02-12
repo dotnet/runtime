@@ -12,10 +12,10 @@ namespace System.IO.Pipelines
     [DebuggerDisplay("IsCompleted: {" + nameof(IsCompleted) + "}")]
     internal struct PipeCompletion
     {
-        private static readonly ArrayPool<PipeCompletionCallback> CompletionCallbackPool = ArrayPool<PipeCompletionCallback>.Shared;
+        private static readonly ArrayPool<PipeCompletionCallback> s_completionCallbackPool = ArrayPool<PipeCompletionCallback>.Shared;
+        private static readonly Exception s_completedNoException = new Exception();
 
         private const int InitialCallbacksSize = 1;
-        private static readonly Exception _completedNoException = new Exception();
 
         private Exception _exception;
 
@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
             if (_exception == null)
             {
                 // Set the exception object to the exception passed in or a sentinel value
-                _exception = exception ?? _completedNoException;
+                _exception = exception ?? s_completedNoException;
             }
             return GetCallbacks();
         }
@@ -38,7 +38,7 @@ namespace System.IO.Pipelines
         {
             if (_callbacks == null)
             {
-                _callbacks = CompletionCallbackPool.Rent(InitialCallbacksSize);
+                _callbacks = s_completionCallbackPool.Rent(InitialCallbacksSize);
             }
 
             int newIndex = _callbackCount;
@@ -46,9 +46,9 @@ namespace System.IO.Pipelines
 
             if (newIndex == _callbacks.Length)
             {
-                PipeCompletionCallback[] newArray = CompletionCallbackPool.Rent(_callbacks.Length * 2);
+                PipeCompletionCallback[] newArray = s_completionCallbackPool.Rent(_callbacks.Length * 2);
                 Array.Copy(_callbacks, newArray, _callbacks.Length);
-                CompletionCallbackPool.Return(_callbacks, clearArray: true);
+                s_completionCallbackPool.Return(_callbacks, clearArray: true);
                 _callbacks = newArray;
             }
 
@@ -71,9 +71,9 @@ namespace System.IO.Pipelines
                 return false;
             }
 
-            if (_exception != _completedNoException)
+            if (_exception != s_completedNoException)
             {
-                ThrowFailed();
+                ThrowLatchedException();
             }
 
             return true;
@@ -87,9 +87,9 @@ namespace System.IO.Pipelines
                 return null;
             }
 
-            var callbacks = new PipeCompletionCallbacks(CompletionCallbackPool,
+            var callbacks = new PipeCompletionCallbacks(s_completionCallbackPool,
                 _callbackCount,
-                _exception == _completedNoException ? null : _exception,
+                _exception == s_completedNoException ? null : _exception,
                 _callbacks);
 
             _callbacks = null;
@@ -105,7 +105,7 @@ namespace System.IO.Pipelines
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void ThrowFailed()
+        private void ThrowLatchedException()
         {
             ExceptionDispatchInfo.Capture(_exception).Throw();
         }

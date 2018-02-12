@@ -1,5 +1,6 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Threading;
@@ -49,10 +50,10 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Writes <paramref name="source"/> to the pipe and makes data accessible to <see cref="PipeReader"/>
         /// </summary>
-        public virtual PipeAwaiter<FlushResult> WriteAsync(ReadOnlyMemory<byte> source)
+        public virtual PipeAwaiter<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             this.Write(source.Span);
-            return FlushAsync();
+            return FlushAsync(cancellationToken);
         }
     }
 }

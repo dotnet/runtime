@@ -13,7 +13,7 @@ namespace System.IO.Pipelines.Tests
     public class ReadAsyncCancellationTests : PipeTest
     {
         [Fact]
-        public async Task AdvanceShouldResetStateIfReadCancelled()
+        public async Task AdvanceShouldResetStateIfReadCanceled()
         {
             Pipe.Reader.CancelPendingRead();
 
@@ -190,7 +190,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void GetResultThrowsIfReadAsyncCancelledAfterOnCompleted()
+        public void GetResultThrowsIfReadAsyncCanceledAfterOnCompleted()
         {
             var onCompletedCalled = false;
             var cancellationTokenSource = new CancellationTokenSource();
@@ -210,7 +210,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void GetResultThrowsIfReadAsyncCancelledBeforeOnCompleted()
+        public void GetResultThrowsIfReadAsyncCanceledBeforeOnCompleted()
         {
             var onCompletedCalled = false;
             var cancellationTokenSource = new CancellationTokenSource();
@@ -305,7 +305,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void ReadAsyncNotCompletedAfterCancellationTokenCancelled()
+        public void ReadAsyncNotCompletedAfterCancellationTokenCanceled()
         {
             var onCompletedCalled = false;
             var cts = new CancellationTokenSource();
@@ -362,7 +362,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void ReadAsyncThrowsIfPassedCancelledCancellationToken()
+        public void ReadAsyncThrowsIfPassedCanceledCancellationToken()
         {
             var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
@@ -388,7 +388,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ReadingCanBeCancelled()
+        public async Task ReadingCanBeCanceled()
         {
             var cts = new CancellationTokenSource();
             cts.Token.Register(() => { Pipe.Writer.Complete(new OperationCanceledException(cts.Token)); });

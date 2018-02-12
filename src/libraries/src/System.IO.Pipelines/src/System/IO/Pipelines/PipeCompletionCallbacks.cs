@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace System.IO.Pipelines
 {
-    internal class PipeCompletionCallbacks
+    internal sealed class PipeCompletionCallbacks
     {
         private readonly ArrayPool<PipeCompletionCallback> _pool;
         private readonly int _count;
@@ -33,7 +33,7 @@ namespace System.IO.Pipelines
             {
                 List<Exception> exceptions = null;
 
-                for (var i = 0; i < _count; i++)
+                for (int i = 0; i < _count; i++)
                 {
                     PipeCompletionCallback callback = _callbacks[i];
                     try
