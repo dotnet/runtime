@@ -30,7 +30,7 @@ namespace System.IO.Pipelines
             get => _end;
             set
             {
-                Debug.Assert(Start - value <= AvailableMemory.Length);
+                Debug.Assert(value - Start <= AvailableMemory.Length);
 
                 _end = value;
                 Memory = AvailableMemory.Slice(Start, _end - Start);

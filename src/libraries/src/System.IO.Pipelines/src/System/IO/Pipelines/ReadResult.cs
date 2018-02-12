@@ -11,40 +11,40 @@ namespace System.IO.Pipelines
     /// </summary>
     public struct ReadResult
     {
-        internal ReadOnlySequence<byte> ResultBuffer;
-        internal ResultFlags ResultFlags;
+        internal ReadOnlySequence<byte> _resultBuffer;
+        internal ResultFlags _resultFlags;
 
         /// <summary>
         /// Creates a new instance of <see cref="ReadResult"/> setting <see cref="IsCanceled"/> and <see cref="IsCompleted"/> flags
         /// </summary>
         public ReadResult(ReadOnlySequence<byte> buffer, bool isCanceled, bool isCompleted)
         {
-            ResultBuffer = buffer;
-            ResultFlags = ResultFlags.None;
+            _resultBuffer = buffer;
+            _resultFlags = ResultFlags.None;
 
             if (isCompleted)
             {
-                ResultFlags |= ResultFlags.Completed;
+                _resultFlags |= ResultFlags.Completed;
             }
             if (isCanceled)
             {
-                ResultFlags |= ResultFlags.Canceled;
+                _resultFlags |= ResultFlags.Canceled;
             }
         }
 
         /// <summary>
         /// The <see cref="ReadOnlySequence{Byte}"/> that was read
         /// </summary>
-        public ReadOnlySequence<byte> Buffer => ResultBuffer;
+        public ReadOnlySequence<byte> Buffer => _resultBuffer;
 
         /// <summary>
         /// True if the current <see cref="PipeReader.ReadAsync"/> operation was canceled, otherwise false.
         /// </summary>
-        public bool IsCanceled => (ResultFlags & ResultFlags.Canceled) != 0;
+        public bool IsCanceled => (_resultFlags & ResultFlags.Canceled) != 0;
 
         /// <summary>
         /// True if the <see cref="PipeReader"/> is complete
         /// </summary>
-        public bool IsCompleted => (ResultFlags & ResultFlags.Completed) != 0;
+        public bool IsCompleted => (_resultFlags & ResultFlags.Completed) != 0;
     }
 }

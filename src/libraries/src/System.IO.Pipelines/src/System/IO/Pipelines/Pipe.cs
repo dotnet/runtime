@@ -111,10 +111,6 @@ namespace System.IO.Pipelines
             _length = 0;
         }
 
-        /// <summary>
-        /// Allocates memory from the pipeline to write into.
-        /// </summary>
-        /// <param name="minimumSize">The minimum size buffer to allocate</param>
         internal Memory<byte> GetMemory(int minimumSize)
         {
             if (_writerCompletion.IsCompleted)
@@ -267,14 +263,13 @@ namespace System.IO.Pipelines
                 Debug.Assert(_writingHead.Next == null);
 
                 Memory<byte> buffer = _writingHead.AvailableMemory;
-                int bufferIndex = _writingHead.End + bytesWritten;
 
-                if (bufferIndex > buffer.Length)
+                if (_writingHead.End > buffer.Length - bytesWritten)
                 {
                     ThrowHelper.ThrowInvalidOperationException_AdvancingPastBufferSize();
                 }
 
-                _writingHead.End = bufferIndex;
+                _writingHead.End += bytesWritten;
                 _currentWriteLength += bytesWritten;
             }
             else if (bytesWritten < 0)
@@ -639,13 +634,13 @@ namespace System.IO.Pipelines
         {
             if (_writerCompletion.IsCompletedOrThrow())
             {
-                result.ResultFlags |= ResultFlags.Completed;
+                result._resultFlags |= ResultFlags.Completed;
             }
 
             bool isCanceled = _readerAwaitable.ObserveCancelation();
             if (isCanceled)
             {
-                result.ResultFlags |= ResultFlags.Canceled;
+                result._resultFlags |= ResultFlags.Canceled;
             }
 
             // No need to read end if there is no head
@@ -654,7 +649,7 @@ namespace System.IO.Pipelines
             if (head != null)
             {
                 // Reading commit head shared with writer
-                result.ResultBuffer = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex - _commitHead.Start);
+                result._resultBuffer = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex - _commitHead.Start);
             }
 
             if (isCanceled)
@@ -682,11 +677,11 @@ namespace System.IO.Pipelines
                 // Change the state from to be canceled -> observed
                 if (_writerAwaitable.ObserveCancelation())
                 {
-                    result.ResultFlags |= ResultFlags.Canceled;
+                    result._resultFlags |= ResultFlags.Canceled;
                 }
                 if (_readerCompletion.IsCompletedOrThrow())
                 {
-                    result.ResultFlags |= ResultFlags.Completed;
+                    result._resultFlags |= ResultFlags.Completed;
                 }
             }
 
