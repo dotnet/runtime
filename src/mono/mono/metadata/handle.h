@@ -399,7 +399,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 	 } while (0)
 
 #define MONO_HANDLE_ARRAY_SETREF(HANDLE, IDX, VALUE) do {	\
-		int __idx = (IDX);	\
+		uintptr_t __idx = (IDX);	\
    		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);		\
 		do {							\
 			MONO_HANDLE_SUPPRESS_SCOPE(1);			\
@@ -408,7 +408,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 	} while (0)
 
 #define MONO_HANDLE_ARRAY_SETVAL(HANDLE, TYPE, IDX, VALUE) do {		\
-		int __idx = (IDX);					\
+		uintptr_t __idx = (IDX);				\
    		TYPE __val = (VALUE);					\
 		do {							\
 			MONO_HANDLE_SUPPRESS_SCOPE(1);			\
@@ -418,7 +418,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 
 #define MONO_HANDLE_ARRAY_SETRAW(HANDLE, IDX, VALUE) do {	\
 		MONO_HANDLE_SUPPRESS_SCOPE(1);			\
-		int __idx = MONO_HANDLE_UNSUPPRESS(IDX);	\
+		uintptr_t __idx = MONO_HANDLE_UNSUPPRESS(IDX);	\
 		MonoObject *__val = (MonoObject*)(VALUE);	\
 		mono_array_setref_fast (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), __idx, __val); \
 	} while (0)
@@ -426,7 +426,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 /* N.B. DEST is evaluated AFTER all the other arguments */
 #define MONO_HANDLE_ARRAY_GETVAL(DEST, HANDLE, TYPE, IDX) do {		\
 		MonoArrayHandle __arr = (HANDLE);			\
-		int __idx = (IDX);					\
+		uintptr_t __idx = (IDX);				\
 		TYPE __result = MONO_HANDLE_SUPPRESS (mono_array_get (MONO_HANDLE_RAW(__arr), TYPE, __idx)); \
 		(DEST) =  __result;					\
 	} while (0)
