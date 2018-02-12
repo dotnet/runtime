@@ -155,7 +155,7 @@ namespace System.Threading.Channels.Tests
             readTask = reader.ReadAsync();
             ((WrapperChannelReader<int>)reader).ForceThrowing = true;
             writer.TryWrite(200);
-            await Assert.ThrowsAsync<ChannelClosedException>(() => readTask.AsTask());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => readTask.AsTask());
 
             // 5- close the channel while waiting reading
             ((WrapperChannelReader<int>)reader).ForceThrowing = false;
