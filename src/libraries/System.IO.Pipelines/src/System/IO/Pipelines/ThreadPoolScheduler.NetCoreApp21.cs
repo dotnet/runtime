@@ -11,29 +11,16 @@ namespace System.IO.Pipelines
     {
         public override void Schedule(Action action)
         {
-#if NETCOREAPP2_1
             // Queue to low contention local ThreadPool queue; rather than global queue as per Task
             System.Threading.ThreadPool.QueueUserWorkItem(_actionWaitCallback, action, preferLocal: true);
-#elif NETSTANDARD2_0
-            System.Threading.ThreadPool.QueueUserWorkItem(_actionWaitCallback, action);
-#else
-            Task.Factory.StartNew(action);
-#endif
         }
 
         public override void Schedule(Action<object> action, object state)
         {
-#if NETCOREAPP2_1
             // Queue to low contention local ThreadPool queue; rather than global queue as per Task
             System.Threading.ThreadPool.QueueUserWorkItem(_actionObjectWaitCallback, new ActionObjectAsWaitCallback(action, state), preferLocal: true);
-#elif NETSTANDARD2_0
-            System.Threading.ThreadPool.QueueUserWorkItem(_actionObjectWaitCallback, new ActionObjectAsWaitCallback(action, state));
-#else
-            Task.Factory.StartNew(action, state);
-#endif
         }
 
-#if NETCOREAPP2_1 || NETSTANDARD2_0
         private readonly static WaitCallback _actionWaitCallback = state => ((Action)state)();
 
         private readonly static WaitCallback _actionObjectWaitCallback = state => ((ActionObjectAsWaitCallback)state).Run();
@@ -51,6 +38,5 @@ namespace System.IO.Pipelines
 
             public void Run() => _action(_state);
         }
-#endif
     }
 }

@@ -3,11 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{1032D5F6-5AE7-4002-A0E4-FEBEADFEA977}</ProjectGuid>
-    <RootNamespace>System.Threading.Channels</RootNamespace>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp2.1'">$(DefineConstants);netcoreapp21</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
@@ -15,6 +15,8 @@
     <Compile Include="System\IO\Pipelines\InlineScheduler.cs" />
     <Compile Include="System\IO\Pipelines\IPipeAwaiter.cs" />
     <Compile Include="System\IO\Pipelines\IPipeConnection.cs" />
+    <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeReader.cs" />
+    <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeWriter.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.cs" />
     <Compile Include="System\IO\Pipelines\PipeAwaitable.cs" />
     <Compile Include="System\IO\Pipelines\PipeAwaiter.cs" />
@@ -28,21 +30,26 @@
     <Compile Include="System\IO\Pipelines\PipeWriter.cs" />
     <Compile Include="System\IO\Pipelines\ReadResult.cs" />
     <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.cs" />
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp2.1'">
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetCoreApp21.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.1'">
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard20.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

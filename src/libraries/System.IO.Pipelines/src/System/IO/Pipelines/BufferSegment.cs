@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.IO.Pipelines
 {
-    internal class BufferSegment : IMemoryList<byte>
+    internal sealed class BufferSegment : IMemoryList<byte>
     {
         private OwnedMemory<byte> _ownedMemory;
 

@@ -9,18 +9,18 @@ namespace System.IO.Pipelines
     /// </summary>
     public abstract class PipeScheduler
     {
-        private static readonly ThreadPoolScheduler _threadPoolScheduler = new ThreadPoolScheduler();
-        private static readonly InlineScheduler _inlineScheduler = new InlineScheduler();
+        private static readonly ThreadPoolScheduler s_threadPoolScheduler = new ThreadPoolScheduler();
+        private static readonly InlineScheduler s_inlineScheduler = new InlineScheduler();
 
         /// <summary>
         /// The <see cref="PipeScheduler"/> implementation that queues callbacks to thread pool
         /// </summary>
-        public static PipeScheduler ThreadPool => _threadPoolScheduler;
+        public static PipeScheduler ThreadPool => s_threadPoolScheduler;
 
         /// <summary>
         /// The <see cref="PipeScheduler"/> implementation that runs callbacks inline
         /// </summary>
-        public static PipeScheduler Inline => _inlineScheduler;
+        public static PipeScheduler Inline => s_inlineScheduler;
 
         /// <summary>
         /// Requests <paramref name="action"/> to be run on scheduler

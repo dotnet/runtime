@@ -2,8 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard1.3;
+      netstandard1.1;
       netstandard;
+      netcoreapp2.1;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
