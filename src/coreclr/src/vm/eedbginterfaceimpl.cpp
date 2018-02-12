@@ -469,6 +469,14 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
     return ExecutionManager::IsManagedCode((PCODE)address);
 }
 
+PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(address != NULL);
+
+    return ExecutionManager::GetCodeStartAddress(address);
+}
+
 MethodDesc *EEDbgInterfaceImpl::GetNativeCodeMethodDesc(const PCODE address)
 { 
     CONTRACT(MethodDesc *)

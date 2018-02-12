@@ -1548,7 +1548,7 @@ DebuggerJitInfo * DebuggerMethodInfo::FindJitInfo(MethodDesc * pMD,
  *
  */
 
-DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* fd, TADDR startAddr)
+DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* fd, PCODE startAddr)
 {
     CONTRACTL
     {
@@ -1569,7 +1569,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     if (startAddr == NULL)
     {
         // This will grab the start address for the current code version.
-        startAddr = (TADDR)g_pEEInterface->GetFunctionAddress(fd);
+        startAddr = g_pEEInterface->GetFunctionAddress(fd);
         if (startAddr == NULL)
         {
             return NULL;
@@ -1577,7 +1577,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     }
     else
     {
-        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc((PCODE)startAddr) == fd);
+        _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(startAddr) == fd);
     }
 
     // Check the lsit to see if we've already populated an entry for this JitInfo.

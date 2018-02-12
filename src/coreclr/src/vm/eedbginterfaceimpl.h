@@ -122,6 +122,8 @@ public:
 
     BOOL IsManagedNativeCode(const BYTE *address);
 
+    PCODE GetNativeCodeStartAddress(PCODE address) DAC_UNEXPECTED();
+
     MethodDesc *GetNativeCodeMethodDesc(const PCODE address) DAC_UNEXPECTED();
 
 #ifndef USE_GC_INFO_DECODER
