@@ -35,8 +35,15 @@ namespace System.Net.Http
 
         internal IDictionary<string, object> _properties;
 
-        public HttpConnectionSettings Clone() =>
-            new HttpConnectionSettings()
+        public HttpConnectionSettings Clone()
+        {
+            // Force creation of the cookie container if needed, so the original and clone share the same instance.
+            if (_useCookies && _cookieContainer == null)
+            {
+                _cookieContainer = new CookieContainer();
+            }
+
+            return new HttpConnectionSettings()
             {
                 _allowAutoRedirect = _allowAutoRedirect,
                 _automaticDecompression = _automaticDecompression,
@@ -55,5 +62,6 @@ namespace System.Net.Http
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
             };
+        }
     }
 }
