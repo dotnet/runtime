@@ -3693,6 +3693,10 @@ mini_free_jit_domain_info (MonoDomain *domain)
 	g_hash_table_destroy (info->delegate_trampoline_hash);
 	if (info->static_rgctx_trampoline_hash)
 		g_hash_table_destroy (info->static_rgctx_trampoline_hash);
+	if (info->mrgctx_hash)
+		g_hash_table_destroy (info->mrgctx_hash);
+	if (info->method_rgctx_hash)
+		g_hash_table_destroy (info->method_rgctx_hash);
 	g_hash_table_destroy (info->llvm_vcall_trampoline_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);

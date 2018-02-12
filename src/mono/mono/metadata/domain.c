@@ -439,8 +439,6 @@ mono_domain_create (void)
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
-	domain->method_rgctx_hash = NULL;
-
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
@@ -1203,10 +1201,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
-	if (domain->method_rgctx_hash) {
-		g_hash_table_destroy (domain->method_rgctx_hash);
-		domain->method_rgctx_hash = NULL;
-	}
 	if (domain->generic_virtual_cases) {
 		g_hash_table_destroy (domain->generic_virtual_cases);
 		domain->generic_virtual_cases = NULL;

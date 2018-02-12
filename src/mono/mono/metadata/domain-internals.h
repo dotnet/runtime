@@ -391,8 +391,6 @@ struct _MonoDomain {
 	/* Used when accessing 'domain_assemblies' */
 	mono_mutex_t    assemblies_lock;
 
-	GHashTable	   *method_rgctx_hash;
-
 	GHashTable	   *generic_virtual_cases;
 
 	/* Information maintained by the JIT engine */
