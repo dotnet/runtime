@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
@@ -238,6 +239,30 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                }
+            }
+        }
+
+        [OuterLoop]
+        [Theory, MemberData(nameof(RedirectStatusCodes))]
+        public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(int statusCode)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            using (var client = new HttpClient(handler))
+            {
+                string credentialString = _credential.UserName + ":" + _credential.Password;
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentialString);
+                Uri uri = Configuration.Http.RedirectUriForDestinationUri(
+                    secure: false,
+                    statusCode: statusCode,
+                    destinationUri: Configuration.Http.RemoteEchoServer,
+                    hops: 1);
+                _output.WriteLine("Uri: {0}", uri);
+                using (HttpResponseMessage response = await client.GetAsync(uri))
+                {
+                    string responseText = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
+                    Assert.False(TestHelper.JsonMessageContainsKey(responseText, "Authorization"));
                 }
             }
         }

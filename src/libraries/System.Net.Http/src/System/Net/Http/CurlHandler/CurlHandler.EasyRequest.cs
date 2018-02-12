@@ -113,7 +113,7 @@ namespace System.Net.Http
                 SetProxyOptions(_requestMessage.RequestUri);
                 SetCredentialsOptions(_handler._useDefaultCredentials ? GetDefaultCredentialAndAuth() : _handler.GetCredentials(_requestMessage.RequestUri));
                 SetCookieOption(_requestMessage.RequestUri);
-                SetRequestHeaders();
+                SetRequestHeaders(copyAuthHeaders:true);
                 SetSslOptions();
 
                 EventSourceTrace("Done configuring request.");
@@ -378,7 +378,7 @@ namespace System.Net.Http
 
                 // Set the headers again. This is a workaround for libcurl's limitation in handling 
                 // headers with empty values.
-                SetRequestHeaders();
+                SetRequestHeaders(copyAuthHeaders:false);
             }
 
             private void SetContentLength(CURLoption lengthOption)
@@ -698,7 +698,7 @@ namespace System.Net.Http
                 }
             }
 
-            internal void SetRequestHeaders()
+            internal void SetRequestHeaders(bool copyAuthHeaders)
             {
                 var slist = new SafeCurlSListHandle();
 
@@ -706,7 +706,7 @@ namespace System.Net.Http
                 if (_requestMessage.Content != null)
                 {
                     // Add content request headers
-                    AddRequestHeaders(_requestMessage.Content.Headers, slist);
+                    AddRequestHeaders(_requestMessage.Content.Headers, slist, copyAuthHeaders);
                     suppressContentType = _requestMessage.Content.Headers.ContentType == null;
                 }
                 else
@@ -721,7 +721,7 @@ namespace System.Net.Http
                 }
 
                 // Add request headers
-                AddRequestHeaders(_requestMessage.Headers, slist);
+                AddRequestHeaders(_requestMessage.Headers, slist, copyAuthHeaders);
 
                 // Since libcurl always adds a Transfer-Encoding header, we need to explicitly block
                 // it if caller specifically does not want to set the header
@@ -846,11 +846,12 @@ namespace System.Net.Http
                 return Interop.Http.RegisterSslCtxCallback(_easyHandle, callback, userPointer, ref _callbackHandle);
             }
 
-            private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSListHandle handle)
+            private static void AddRequestHeaders(HttpHeaders headers, SafeCurlSListHandle handle, bool copyAuthHeaders)
             {
                 foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
                 {
-                    if (string.Equals(header.Key, HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(header.Key, HttpKnownHeaderNames.ContentLength, StringComparison.OrdinalIgnoreCase) ||
+                        (!copyAuthHeaders && string.Equals(header.Key, HttpKnownHeaderNames.Authorization, StringComparison.OrdinalIgnoreCase)))
                     {
                         // avoid overriding libcurl's handling via INFILESIZE/POSTFIELDSIZE
                         continue;
