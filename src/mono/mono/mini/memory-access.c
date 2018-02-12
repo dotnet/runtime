@@ -387,6 +387,8 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 		MONO_ADD_INS (cfg->cbb, store);
 
 		mini_emit_write_barrier (cfg, dest, src);
+		return;
+
 	} else if (cfg->gen_write_barriers && (klass->has_references || size_ins) && !native) { 	/* if native is true there should be no references in the struct */
 		/* Avoid barriers when storing to the stack */
 		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
