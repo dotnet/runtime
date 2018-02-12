@@ -58,9 +58,11 @@
     <Compile Include="CompareEqual.Byte.cs" />
     <Compile Include="CompareEqual.Int16.cs" />
     <Compile Include="CompareEqual.Int32.cs" />
+    <Compile Include="CompareEqual.Int64.cs" />
     <Compile Include="CompareEqual.SByte.cs" />
     <Compile Include="CompareEqual.UInt16.cs" />
     <Compile Include="CompareEqual.UInt32.cs" />
+    <Compile Include="CompareEqual.UInt64.cs" />
     <Compile Include="CompareGreaterThan.Int16.cs" />
     <Compile Include="CompareGreaterThan.Int32.cs" />
     <Compile Include="CompareGreaterThan.Int64.cs" />
