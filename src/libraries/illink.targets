@@ -72,7 +72,8 @@
       <!-- reflection heuristics to apply -->
       <ILLinkArgs>$(ILLinkArgs) -h LdtokenTypeMethods,InstanceConstructors</ILLinkArgs>
       <!-- add a linker step to clear initlocals flag on all assemblies before the output step -->
-      <ILLinkArgs Condition="'$(ILLinkClearInitLocals)' == 'true'">$(ILLinkArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps:OutputStep</ILLinkArgs>
+      <!-- TODO Issue #27045: Remove the OS-specific condition once the custom step runs on Unix -->
+      <ILLinkArgs Condition="'$(ILLinkClearInitLocals)' == 'true' AND '$(OS)' == 'Windows_NT'">$(ILLinkArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps:OutputStep</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />

@@ -329,7 +329,7 @@ namespace System.Net.Sockets
 
         public override unsafe int ReadByte()
         {
-            int b;
+            byte b;
             return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
         }
 
