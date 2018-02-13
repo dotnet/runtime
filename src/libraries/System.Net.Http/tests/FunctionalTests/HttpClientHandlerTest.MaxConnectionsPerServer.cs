@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Net.Test.Common;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -75,6 +77,46 @@ namespace System.Net.Http.Functional.Tests
                     from i in Enumerable.Range(0, numRequests)
                     select client.GetAsync(secure ? Configuration.Http.RemoteEchoServer : Configuration.Http.SecureRemoteEchoServer));
             }
+        }
+
+        [OuterLoop("Relies on kicking off GC and waiting for finalizers")]
+        [Fact]
+        public async Task GetAsync_DontDisposeResponse_EventuallyUnblocksWaiters()
+        {
+            if (!UseSocketsHttpHandler)
+            {
+                // Issue #27067. Hang.
+                return;
+            }
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    handler.MaxConnectionsPerServer = 1;
+
+                    // Let server handle two requests.
+                    const string Response = "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nabcdefghijklmnopqrstuvwxyz";
+                    Task serverTask1 = LoopbackServer.ReadRequestAndSendResponseAsync(server, Response);
+                    Task serverTask2 = LoopbackServer.ReadRequestAndSendResponseAsync(server, Response);
+
+                    // Make first request and drop the response, not explicitly disposing of it.
+                    void MakeAndDropRequest() => client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead); // separated out to enable GC of response
+                    MakeAndDropRequest();
+
+                    // A second request should eventually succeed, once the first one is cleaned up.
+                    Task<HttpResponseMessage> secondResponse = client.GetAsync(uri);
+                    Assert.True(SpinWait.SpinUntil(() =>
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        return secondResponse.IsCompleted;
+                    }, 30 * 1000), "Expected second response to have completed");
+
+                    await new[] { serverTask1, serverTask2, secondResponse }.WhenAllOrAnyFailed();
+                }
+            });
         }
     }
 }

@@ -43,11 +43,11 @@ namespace System.Net.Http
         // CONSIDER: We are passing HttpConnectionSettings here, but all we really need are the SSL settings.
         // When we refactor the SSL settings to use SslAuthenticationOptions, just pass that here.
 
-        public HttpConnectionPools(HttpConnectionSettings settings, int maxConnectionsPerServer, bool usingProxy)
+        public HttpConnectionPools(HttpConnectionSettings settings, bool usingProxy)
         {
             _settings = settings;
             _usingProxy = usingProxy;
-            _maxConnectionsPerServer = maxConnectionsPerServer;
+            _maxConnectionsPerServer = settings._maxConnectionsPerServer;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
             // Start out with the timer not running, since we have no pools.
 

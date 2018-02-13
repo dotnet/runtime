@@ -10,14 +10,13 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed partial class HttpConnection : IDisposable
+    internal partial class HttpConnection : IDisposable
     {
         /// <summary>Default size of the read buffer used for the connection.</summary>
         private const int InitialReadBufferSize =
@@ -104,7 +103,9 @@ namespace System.Net.Http
             }
         }
 
-        public void Dispose()
+        public void Dispose() => Dispose(disposing: true);
+
+        protected void Dispose(bool disposing)
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
@@ -112,7 +113,11 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled) Trace("Connection closing.");
                 _pool.DecrementConnectionCount();
-                _stream.Dispose();
+                if (disposing)
+                {
+                    GC.SuppressFinalize(this);
+                    _stream.Dispose();
+                }
             }
         }
 
@@ -1220,7 +1225,7 @@ namespace System.Net.Http
             return true;
         }
 
-        public override string ToString() => $"{nameof(HttpConnection)}({_pool.Key})"; // Description for diagnostic purposes
+        public sealed override string ToString() => $"{nameof(HttpConnection)}({_pool.Key})"; // Description for diagnostic purposes
 
         private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
 
@@ -1233,5 +1238,14 @@ namespace System.Net.Http
                 _currentRequest?.GetHashCode() ?? 0,  // request ID
                 memberName,                   // method name
                 ToString() + ": " + message); // message
+    }
+
+    internal sealed class HttpConnectionWithFinalizer : HttpConnection
+    {
+        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Stream stream, TransportContext transportContext) : base(pool, stream, transportContext) { }
+
+        // This class is separated from HttpConnection so we only pay the price of having a finalizer
+        // when it's actually needed, e.g. when MaxConnectionsPerServer is enabled.
+        ~HttpConnectionWithFinalizer() => Dispose(disposing: false);
     }
 }
