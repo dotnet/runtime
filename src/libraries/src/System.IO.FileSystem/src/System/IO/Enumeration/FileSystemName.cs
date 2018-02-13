@@ -140,8 +140,9 @@ namespace System.IO.Enumeration
             char expressionChar;
 
             Span<int> temp = stackalloc int[0];
-            Span<int> priorMatches = stackalloc int[16];
             Span<int> currentMatches = stackalloc int[16];
+            Span<int> priorMatches = stackalloc int[16];
+            priorMatches.Clear();
 
             int maxState = expression.Length * 2;
             int currentState;
