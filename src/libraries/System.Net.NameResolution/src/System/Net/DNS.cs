@@ -233,7 +233,7 @@ namespace System.Net
 
         // Helpers for async GetHostByName, ResolveToAddresses, and Resolve - they're almost identical
         // If hostName is an IPString and justReturnParsedIP==true then no reverse lookup will be attempted, but the original address is returned.
-        private static IAsyncResult HostResolutionBeginHelper(string hostName, bool justReturnParsedIp, bool includeIPv6, bool throwOnIIPAny, AsyncCallback requestCallback, object state)
+        private static IAsyncResult HostResolutionBeginHelper(string hostName, bool justReturnParsedIp, bool throwOnIIPAny, AsyncCallback requestCallback, object state)
         {
             if (hostName == null)
             {
@@ -252,7 +252,7 @@ namespace System.Net
                     throw new ArgumentException(SR.net_invalid_ip_addr, nameof(hostName));
                 }
 
-                asyncResult = new DnsResolveAsyncResult(ipAddress, null, includeIPv6, state, requestCallback);
+                asyncResult = new DnsResolveAsyncResult(ipAddress, null, state, requestCallback);
 
                 if (justReturnParsedIp)
                 {
@@ -265,7 +265,7 @@ namespace System.Net
             }
             else
             {
-                asyncResult = new DnsResolveAsyncResult(hostName, null, includeIPv6, state, requestCallback);
+                asyncResult = new DnsResolveAsyncResult(hostName, null, state, requestCallback);
             }
 
             // Set up the context, possibly flow.
@@ -294,7 +294,7 @@ namespace System.Net
             return asyncResult;
         }
 
-        private static IAsyncResult HostResolutionBeginHelper(IPAddress address, bool flowContext, bool includeIPv6, AsyncCallback requestCallback, object state)
+        private static IAsyncResult HostResolutionBeginHelper(IPAddress address, bool flowContext, AsyncCallback requestCallback, object state)
         {
             if (address == null)
             {
@@ -309,7 +309,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(null, address);
 
             // Set up the context, possibly flow.
-            DnsResolveAsyncResult asyncResult = new DnsResolveAsyncResult(address, null, includeIPv6, state, requestCallback);
+            DnsResolveAsyncResult asyncResult = new DnsResolveAsyncResult(address, null, state, requestCallback);
             if (flowContext)
             {
                 asyncResult.StartPostingAsyncOp(false);
@@ -368,7 +368,7 @@ namespace System.Net
 
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            IAsyncResult asyncResult = HostResolutionBeginHelper(hostName, true, true, false, requestCallback, stateObject);
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostName, true, true, requestCallback, stateObject);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
@@ -476,7 +476,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostNameOrAddress);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, false, true, true, requestCallback, stateObject);
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, false, true, requestCallback, stateObject);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
@@ -488,7 +488,7 @@ namespace System.Net
 
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            IAsyncResult asyncResult = HostResolutionBeginHelper(address, true, true, requestCallback, stateObject);
+            IAsyncResult asyncResult = HostResolutionBeginHelper(address, true, requestCallback, stateObject);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
@@ -508,7 +508,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostNameOrAddress);
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, true, true, true, requestCallback, state);
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostNameOrAddress, true, true, requestCallback, state);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
@@ -530,7 +530,7 @@ namespace System.Net
 
             NameResolutionPal.EnsureSocketsAreInitialized();
 
-            IAsyncResult asyncResult = HostResolutionBeginHelper(hostName, false, false, false, requestCallback, stateObject);
+            IAsyncResult asyncResult = HostResolutionBeginHelper(hostName, false, false, requestCallback, stateObject);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, asyncResult);
             return asyncResult;
