@@ -777,6 +777,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 //   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 {
+    // TODO: Generate memory barrier instructions for GTF_BLK_VOLATILE flag
     NYI_ARM("genCodeForInitBlkUnroll");
 }
 
@@ -882,6 +883,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     regNumber tmpReg = cpObjNode->ExtractTempReg();
     assert(genIsValidIntReg(tmpReg));
 
+    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpObj operation
+        instGen_MemoryBarrier();
+    }
+
     unsigned slots = cpObjNode->gtSlots;
     emitter* emit  = getEmitter();
 
@@ -938,6 +945,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             ++i;
         }
         assert(gcPtrCount == 0);
+    }
+
+    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpObj operation
+        instGen_MemoryBarrier();
     }
 
     // Clear the gcInfo for registers of source and dest.
@@ -1386,6 +1399,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         if (!data->isContained())
         {
             genConsumeRegs(data);
+        }
+
+        if (tree->gtFlags & GTF_IND_VOLATILE)
+        {
+            // issue a full memory barrier a before volatile StInd
+            instGen_MemoryBarrier();
         }
 
         emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), data->gtRegNum, tree);
