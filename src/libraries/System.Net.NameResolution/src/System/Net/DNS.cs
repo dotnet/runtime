@@ -112,7 +112,7 @@ namespace System.Net
         private static IPHostEntry InternalGetHostByAddress(IPAddress address)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(null, address);
-                        
+
             //
             // Try to get the data for the host from it's address
             //
