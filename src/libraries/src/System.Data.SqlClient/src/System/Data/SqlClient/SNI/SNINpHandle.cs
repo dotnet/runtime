@@ -177,7 +177,7 @@ namespace System.Data.SqlClient.SNI
             }
         }
 
-        public override uint ReceiveAsync(ref SNIPacket packet)
+        public override uint ReceiveAsync(ref SNIPacket packet, bool isMars = false)
         {
             lock (this)
             {
@@ -186,7 +186,7 @@ namespace System.Data.SqlClient.SNI
 
                 try
                 {
-                    packet.ReadFromStreamAsync(_stream, _receiveCallback);
+                    packet.ReadFromStreamAsync(_stream, _receiveCallback, isMars);
                     return TdsEnums.SNI_SUCCESS_IO_PENDING;
                 }
                 catch (ObjectDisposedException ode)

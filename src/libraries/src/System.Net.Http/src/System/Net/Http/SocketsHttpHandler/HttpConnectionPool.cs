@@ -27,6 +27,8 @@ namespace System.Net.Http
 
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
         private readonly byte[] _idnHostAsciiBytes;
+        /// <summary>Options specialized and cached for this pool and its <see cref="_key"/>.</summary>
+        private readonly SslClientAuthenticationOptions _sslOptions;
 
         /// <summary>The head of a list of waiters waiting for a connection.  Null if no one's waiting.</summary>
         private ConnectionWaiter _waitersHead;
@@ -62,6 +64,14 @@ namespace System.Net.Http
             {
                 // Proxy connections should never use SSL
                 Debug.Assert(!key.IsSecure);
+            }
+
+            if (key.IsSecure)
+            {
+                // Precalculate cached SSL options to use for all connections.
+                _sslOptions = _pools.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
+                _sslOptions.ApplicationProtocols = null; // explicitly ignore any ApplicationProtocols set
+                _sslOptions.TargetHost = key.SslHostName; // always use the key's name rather than whatever was specified
             }
         }
 
@@ -194,7 +204,7 @@ namespace System.Net.Http
             TransportContext transportContext = null;
             if (_key.IsSecure)
             {
-                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_pools.Settings, _key.SslHostName, request, stream, cancellationToken).ConfigureAwait(false);
+                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
                 stream = sslStream;
                 transportContext = sslStream.TransportContext;
             }

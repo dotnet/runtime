@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_RequestVersion0X_ThrowsOr11(int minorVersion)
         {
             Type exceptionType = null;
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
                 exceptionType = typeof(NotSupportedException);
             }
@@ -186,7 +186,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ResponseUnknownVersion1X_Success(int responseMinorVersion)
         {
             bool reportAs11 = PlatformDetection.IsFullFramework;
-            bool reportAs00 = !UseManagedHandler;
+            bool reportAs00 = !UseSocketsHttpHandler;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -279,7 +279,7 @@ namespace System.Net.Http.Functional.Tests
             // CurlHandler reports these as 0.0, except for 2.0 which is reported as 2.0, instead of throwing.
             bool reportAs00 = false;
             bool reportAs20 = false;
-            if (!PlatformDetection.IsWindows && !UseManagedHandler)
+            if (!PlatformDetection.IsWindows && !UseSocketsHttpHandler)
             {
                 if (responseMajorVersion == 2 && responseMinorVersion == 0)
                 {
@@ -366,9 +366,9 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ExpectedStatusCodeAndReason_PlatformBehaviorTest(string statusLine,
             int expectedStatusCode, string reasonWithSpace, string reasonNoSpace)
         {
-            if (UseManagedHandler || PlatformDetection.IsFullFramework)
+            if (UseSocketsHttpHandler || PlatformDetection.IsFullFramework)
             {
-                // ManagedHandler and .NET Framework will keep the space characters.
+                // SocketsHttpHandler and .NET Framework will keep the space characters.
                 await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonWithSpace);
             }
             else
@@ -377,13 +377,13 @@ namespace System.Net.Http.Functional.Tests
                 await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonNoSpace);
             }
         }
-
+        
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The following pass on .NET Core but fail on .NET Framework.")]
         [InlineData("HTTP/1.1 200", 200, "")] // This test data requires the fix in .NET Framework 4.7.3
         [InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
         [InlineData("HTTP/1.1 200 O    \t\t  \t\t\t\t  \t K", 200, "O    \t\t  \t\t\t\t  \t K")]
-        // TODO #24713: The following pass on Windows but fail on CurlHandler on Linux.
+        // Only CurlHandler will trim the '\t' at the end and causing failure.
         // [InlineData("HTTP/1.1 999 this\ttoo\t", 999, "this\ttoo\t")]
         public async Task GetAsync_StatusLineNotFollowRFC_SuccessOnCore(string statusLine, int expectedStatusCode, string expectedReason)
         {
@@ -413,51 +413,94 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        public static IEnumerable<string> GetInvalidStatusLine()
+        {
+            yield return "HTTP/1.1 2345";
+            yield return "HTTP/A.1 200 OK";
+            yield return "HTTP/X.Y.Z 200 OK";
+            
+            // Only pass on .NET Core Windows & ManagedHandler.
+            if (PlatformDetection.IsNetCore && PlatformDetection.IsWindows)
+            {
+                yield return "HTTP/0.1 200 OK";
+                yield return "HTTP/3.5 200 OK";
+                yield return "HTTP/1.12 200 OK";
+                yield return "HTTP/12.1 200 OK";
+            }
+
+            // Skip these test cases on CurlHandler since the behavior is different.
+            if (PlatformDetection.IsWindows)
+            {
+                yield return "HTTP/1.A 200 OK";
+                yield return "HTTP/1.1 ";
+                yield return "HTTP/1.1 !11";
+                yield return "HTTP/1.1 a11";
+                yield return "HTTP/1.1 abc";
+                yield return "HTTP/1.1\t\t";
+                yield return "HTTP/1.1\t";
+                yield return "HTTP/1.1  ";
+            }
+            
+            // Skip these test cases on UAP since the behavior is different.
+            if (!PlatformDetection.IsUap)
+            {
+                yield return "HTTP/1.1 200OK";
+                yield return "HTTP/1.1 20c";
+                yield return "HTTP/1.1 23";
+                yield return "HTTP/1.1 2bc";
+            }
+
+            // Skip these test cases on UAP & CurlHandler since the behavior is different.
+            if (!PlatformDetection.IsUap && PlatformDetection.IsWindows)
+            {
+                yield return "NOTHTTP/1.1";
+                yield return "HTTP 1.1 200 OK";
+                yield return "ABCD/1.1 200 OK";
+                yield return "HTTP/1.1";
+                yield return "HTTP\\1.1 200 OK";
+                // ActiveIssue: #26946
+                // yield return "HTTP/1.1 200 O\rK";
+                yield return "NOTHTTP/1.1 200 OK";
+            }
+        }
+        
+        public static TheoryData InvalidStatusLine = GetInvalidStatusLine().ToTheoryData();
+
         [Theory]
-        [InlineData("HTTP/1.1 2345")]
-        [InlineData("HTTP/A.1 200 OK")]
-        [InlineData("HTTP/X.Y.Z 200 OK")]
-        // TODO #24713: The following pass on Windows on .NET Core but fail on .NET Framework.
-        //[InlineData("HTTP/0.1 200 OK")]
-        //[InlineData("HTTP/3.5 200 OK")]
-        //[InlineData("HTTP/1.12 200 OK")]
-        //[InlineData("HTTP/12.1 200 OK")]
-        // TODO #24713: The following pass on Windows on .NET Core but fail on UWP / WinRT.
-        //[InlineData("HTTP/1.1 200 O\nK")]
-        //[InlineData("HTTP/1.1 200OK")]
-        //[InlineData("HTTP/1.1 20c")]
-        //[InlineData("HTTP/1.1 23")]
-        //[InlineData("HTTP/1.1 2bc")]
-        // TODO #24713: The following pass on Windows but fail on CurlHandler on Linux.
-        //[InlineData("NOTHTTP/1.1")]
-        //[InlineData("HTTP/1.A 200 OK")]
-        //[InlineData("HTTP 1.1 200 OK")]
-        //[InlineData("ABCD/1.1 200 OK")]
-        //[InlineData("HTTP/1.1")]
-        //[InlineData("HTTP\\1.1 200 OK")]
-        //[InlineData("HTTP/1.1 ")]
-        //[InlineData("HTTP/1.1 !11")]
-        //[InlineData("HTTP/1.1 a11")]
-        //[InlineData("HTTP/1.1 abc")]
-        //[InlineData("HTTP/1.1 200 O\rK")]
-        //[InlineData("HTTP/1.1\t\t")]
-        //[InlineData("HTTP/1.1\t")]
-        //[InlineData("HTTP/1.1  ")]
-        //[InlineData("NOTHTTP/1.1 200 OK")]
+        [MemberData(nameof(InvalidStatusLine))]
         public async Task GetAsync_InvalidStatusLine_ThrowsException(string responseString)
         {
             await GetAsyncThrowsExceptionHelper(responseString);
+        }
+        
+        [Fact]
+        public async Task GetAsync_ReasonPhraseHasLF_BehaviorDifference()
+        {
+            string responseString = "HTTP/1.1 200 O\nK";
+            int expectedStatusCode = 200;
+            string expectedReason = "O";
+
+            if (IsWinHttpHandler || IsNetfxHandler || IsCurlHandler)
+            {
+                // WinHttpHandler, .NET Framework, and CurlHandler will throw HttpRequestException.
+                await GetAsyncThrowsExceptionHelper(responseString);
+            }
+            else
+            {
+                // UAP and ManagedHandler will allow LF ending.
+                await GetAsyncSuccessHelper(responseString, expectedStatusCode, expectedReason);
+            }
         }
 
         [Theory]
         [InlineData("HTTP/1.1\t200 OK")]
         [InlineData("HTTP/1.1 200\tOK")]
         [InlineData("HTTP/1.1 200\t")]
-        public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnManagedHandler(string responseString)
+        public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnSocketsHttpHandler(string responseString)
         {
-            if (UseManagedHandler || PlatformDetection.IsFullFramework)
+            if (UseSocketsHttpHandler || PlatformDetection.IsFullFramework)
             {
-                // ManagedHandler and .NET Framework will throw HttpRequestException.
+                // SocketsHttpHandler and .NET Framework will throw HttpRequestException.
                 await GetAsyncThrowsExceptionHelper(responseString);
             }
             // WinRT, WinHttpHandler, and CurlHandler will succeed.

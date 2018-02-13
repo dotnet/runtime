@@ -48,7 +48,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingContext.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BindingFlag.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Binding\Better.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Binding\ErrorReporting.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpArgInfo.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpKind.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpSig.cs" />

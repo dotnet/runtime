@@ -17,7 +17,7 @@ internal partial class Interop
 
         internal static bool GetFileAttributesEx(string name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
         {
-            name = PathInternal.EnsureExtendedPrefixOverMaxPath(name);
+            name = PathInternal.EnsureExtendedPrefixIfNeeded(name);
             return GetFileAttributesExPrivate(name, fileInfoLevel, ref lpFileInformation);
         }
     }

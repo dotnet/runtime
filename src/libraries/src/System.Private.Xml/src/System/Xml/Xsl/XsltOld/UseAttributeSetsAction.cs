@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
             if (_useString.Length == 0)
             {
                 // Split creates empty node is spliting empty string
-                _useAttributeSets = new XmlQualifiedName[0];
+                _useAttributeSets = Array.Empty<XmlQualifiedName>();
                 return;
             }
 
@@ -56,7 +56,7 @@ namespace System.Xml.Xsl.XsltOld
                     throw;
                 }
                 // Ignore the whole list in forwards-compatible mode
-                _useAttributeSets = new XmlQualifiedName[0];
+                _useAttributeSets = Array.Empty<XmlQualifiedName>();
             }
         }
 

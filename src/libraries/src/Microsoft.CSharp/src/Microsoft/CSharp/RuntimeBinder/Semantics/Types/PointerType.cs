@@ -24,8 +24,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public override CType BaseOrParameterOrElementType => ReferentType;
 
-        public override bool IsUnsigned => true;
-
         public override FUNDTYPE FundamentalType => FUNDTYPE.FT_PTR;
 
         [ExcludeFromCodeCoverage] // Technically correct, but we can't have constant pointers in dynamically dispatched code.

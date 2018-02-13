@@ -47,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool requestLogged = false;
                 Guid requestGuid = Guid.Empty;
@@ -89,7 +89,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable( s => !s.Contains("HttpRequestOut"));
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                     }
@@ -104,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         /// <remarks>
@@ -115,7 +115,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceNoLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool requestLogged = false;
                 bool responseLogged = false;
@@ -144,7 +144,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
@@ -164,7 +164,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityStopLogged, "HttpRequestOut.Stop was logged while logging disabled.");
                 }
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [ActiveIssue(23771, TestPlatforms.AnyUnix)]
@@ -172,7 +172,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_HttpTracingEnabled_Succeeds()
         {
-            RemoteInvoke(async useManagedHandlerString =>
+            RemoteInvoke(async useSocketsHttpHandlerString =>
             {
                 using (var listener = new TestEventListener("Microsoft-System-Net-Http", EventLevel.Verbose))
                 {
@@ -180,7 +180,7 @@ namespace System.Net.Http.Functional.Tests
                     await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Exercise various code paths to get coverage of tracing
-                        using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                        using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                         {
                             // Do a get to a loopback server
                             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -209,14 +209,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticExceptionLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool exceptionLogged = false;
                 bool responseLogged = false;
@@ -242,7 +242,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable(s => !s.Contains("HttpRequestOut"));
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
                     }
@@ -254,7 +254,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [ActiveIssue(23209)]
@@ -262,7 +262,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool cancelLogged = false;
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
@@ -279,7 +279,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable(s => !s.Contains("HttpRequestOut"));
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
@@ -301,14 +301,14 @@ namespace System.Net.Http.Functional.Tests
                 diagnosticListenerObserver.Disable();
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceActivityLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool requestLogged = false;
                 bool responseLogged = false;
@@ -354,7 +354,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable(s => s.Contains("HttpRequestOut"));
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
@@ -378,14 +378,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceUrlFilteredActivityLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
@@ -408,7 +408,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         return true;
                     });
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                     }
@@ -419,14 +419,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticExceptionActivityLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool exceptionLogged = false;
                 bool activityStopLogged = false;
@@ -453,7 +453,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable();
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
                     }
@@ -465,14 +465,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool requestLogged = false;
                 bool responseLogged = false;
@@ -490,7 +490,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable();
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                     }
@@ -504,14 +504,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool exceptionLogged = false;
                 bool activityLogged = false;
@@ -530,7 +530,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable(s => s.Equals("System.Net.Http.Exception"));
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
                     }
@@ -542,14 +542,14 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_ExpectedDiagnosticStopOnlyActivityLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
@@ -567,7 +567,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable(s => s.Equals("System.Net.Http.HttpRequestOut"));
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                     }
@@ -579,7 +579,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [ActiveIssue(23209)]
@@ -587,7 +587,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledActivityLogging()
         {
-            RemoteInvoke(useManagedHandlerString =>
+            RemoteInvoke(useSocketsHttpHandlerString =>
             {
                 bool cancelLogged = false;
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
@@ -605,7 +605,7 @@ namespace System.Net.Http.Functional.Tests
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable();
-                    using (HttpClient client = CreateHttpClient(useManagedHandlerString))
+                    using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString))
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
@@ -627,7 +627,7 @@ namespace System.Net.Http.Functional.Tests
                 diagnosticListenerObserver.Disable();
 
                 return SuccessExitCode;
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         private static T GetPropertyValueFromAnonymousTypeInstance<T>(object obj, string propertyName)

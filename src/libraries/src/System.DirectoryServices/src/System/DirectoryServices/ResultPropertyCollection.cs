@@ -30,7 +30,7 @@ namespace System.DirectoryServices
                 }
                 else
                 {
-                    return new ResultPropertyValueCollection(new object[0]);
+                    return new ResultPropertyValueCollection(Array.Empty<object>());
                 }
             }
         }

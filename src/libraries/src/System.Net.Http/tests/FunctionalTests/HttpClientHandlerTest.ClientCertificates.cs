@@ -75,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
-            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 return;
             }
@@ -92,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Manual_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
-            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 return;
             }
@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Manual_SendClientCertificateWithClientAuthEKUToRemoteServer_OK()
         {
-            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithClientAuthEKUToRemoteServer_OK)}()");
                 return;
@@ -118,10 +118,10 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteInvoke(async useManagedHandlerString =>
+            RemoteInvoke(async useSocketsHttpHandlerString =>
             {
                 var cert = Configuration.Certificates.GetClientCertificate();
-                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
                 handler.ClientCertificates.Add(cert);
                 using (var client = new HttpClient(handler))
                 {
@@ -135,20 +135,20 @@ namespace System.Net.Http.Functional.Tests
 
                     return SuccessExitCode;
                 }
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden()
         {
-            if (UseManagedHandler)
+            if (UseSocketsHttpHandler)
             {
-                // TODO #23128: The managed handler is currently sending out client certificates when it shouldn't.
+                // TODO #23128: SocketsHttpHandler is currently sending out client certificates when it shouldn't.
                 return;
             }
 
-            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden)}()");
                 return;
@@ -157,10 +157,10 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteInvoke(async useManagedHandlerString =>
+            RemoteInvoke(async useSocketsHttpHandlerString =>
             {
                 var cert = Configuration.Certificates.GetServerCertificate();
-                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
                 handler.ClientCertificates.Add(cert);
                 using (var client = new HttpClient(handler))
                 {
@@ -169,14 +169,14 @@ namespace System.Net.Http.Functional.Tests
 
                     return SuccessExitCode;
                 }
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void Manual_SendClientCertificateWithNoEKUToRemoteServer_OK()
         {
-            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithNoEKUToRemoteServer_OK)}()");
                 return;
@@ -185,10 +185,10 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteInvoke(async useManagedHandlerString =>
+            RemoteInvoke(async useSocketsHttpHandlerString =>
             {
                 var cert = Configuration.Certificates.GetNoEKUCertificate();
-                HttpClientHandler handler = CreateHttpClientHandler(useManagedHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
                 handler.ClientCertificates.Add(cert);
                 using (var client = new HttpClient(handler))
                 {
@@ -202,7 +202,7 @@ namespace System.Net.Http.Functional.Tests
 
                     return SuccessExitCode;
                 }
-            }, UseManagedHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
@@ -215,7 +215,7 @@ namespace System.Net.Http.Functional.Tests
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
         {
-            if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
                 return;
@@ -282,7 +282,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private bool BackendSupportsCustomCertificateHandling =>
-            UseManagedHandler ||
+            UseSocketsHttpHandler ||
             new HttpClientHandler_ServerCertificates_Test().BackendSupportsCustomCertificateHandling;
     }
 }

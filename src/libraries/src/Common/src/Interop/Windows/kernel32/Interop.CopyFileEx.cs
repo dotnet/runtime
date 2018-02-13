@@ -30,8 +30,8 @@ internal partial class Interop
             ref int cancel,
             int flags)
         {
-            src = PathInternal.EnsureExtendedPrefixOverMaxPath(src);
-            dst = PathInternal.EnsureExtendedPrefixOverMaxPath(dst);
+            src = PathInternal.EnsureExtendedPrefixIfNeeded(src);
+            dst = PathInternal.EnsureExtendedPrefixIfNeeded(dst);
             return CopyFileExPrivate(src, dst, progressRoutine, progressData, ref cancel, flags);
         }
     }

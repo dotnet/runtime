@@ -12,8 +12,6 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    using Configuration = System.Net.Test.Common.Configuration;
-
     public class HttpClientMiniStress : HttpClientTestBase
     {
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
@@ -193,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Func<Task<WeakReference>> getAsync = async () => new WeakReference(await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead));
+                    Func<Task<WeakReference>> getAsync = () => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(t => new WeakReference(t.Result));
                     Task<WeakReference> wrt = getAsync();
 
                     await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
@@ -222,7 +220,7 @@ namespace System.Net.Http.Functional.Tests
             "Content-Type: text/plain\r\n" +
             $"Content-Length: {asciiBody.Length}\r\n" +
             "\r\n" +
-            $"{asciiBody}\r\n";
+            $"{asciiBody}";
 
         private static Task ForCountAsync(int count, int dop, Func<int, Task> bodyAsync)
         {

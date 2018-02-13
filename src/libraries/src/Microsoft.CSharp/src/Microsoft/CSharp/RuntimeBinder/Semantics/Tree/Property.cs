@@ -29,6 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (mwtSet != null)
             {
                 MethWithTypeSet = mwtSet;
+                Flags = EXPRFLAG.EXF_LVALUE;
             }
         }
 

@@ -46,6 +46,10 @@
     <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
+      <Link>Common\System\Net\ByteOrder.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\DnsResolveAsyncResult.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
@@ -71,6 +75,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>Common\System\Net\SocketProtocolSupportPal.Windows</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
+      <Link>Common\System\Net\SocketAddressPal.Windows</Link>
     </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -115,12 +122,27 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
       <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\AddressInfoEx.cs">
+      <Link>Interop\Windows\Winsock\AddressInfoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs">
+      <Link>Interop\Windows\Winsock\Interop.GetAddrInfoExW.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
+      <Link>Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
-    <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
-      <Link>Common\System\Net\Internals\ByteOrder.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>
@@ -186,6 +208,7 @@
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

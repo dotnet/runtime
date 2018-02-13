@@ -9,41 +9,82 @@ namespace System.IO.Enumeration
     /// </summary>
     public unsafe ref struct FileSystemEntry
     {
-        // TODO: Unix implementation https://github.com/dotnet/corefx/issues/26715
-        // Inital implementation is naive and not optimized.
+        private const int FileNameBufferSize = 256;
+        internal Interop.Sys.DirectoryEntry _directoryEntry;
+        private FileStatus _status;
+        private Span<char> _pathBuffer;
+        private ReadOnlySpan<char> _fullPath;
+        private ReadOnlySpan<char> _fileName;
+        private fixed char _fileNameBuffer[FileNameBufferSize];
 
-        internal static void Initialize(
+        internal static bool Initialize(
             ref FileSystemEntry entry,
             Interop.Sys.DirectoryEntry directoryEntry,
-            bool isDirectory,
             ReadOnlySpan<char> directory,
             string rootDirectory,
-            string originalRootDirectory)
+            string originalRootDirectory,
+            Span<char> pathBuffer)
         {
             entry._directoryEntry = directoryEntry;
-            entry._isDirectory = isDirectory;
             entry.Directory = directory;
             entry.RootDirectory = rootDirectory;
             entry.OriginalRootDirectory = originalRootDirectory;
+            entry._pathBuffer = pathBuffer;
+
+            // Get from the dir entry whether the entry is a file or directory.
+            // We classify everything as a file unless we know it to be a directory.
+            // (This includes regular files, FIFOs, etc.)
+
+            bool isDirectory = false;
+            if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
+            {
+                // We know it's a directory.
+                isDirectory = true;
+            }
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+                && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
+            {
+                // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
+                isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+            }
+
+            FileStatus.Initialize(ref entry._status, isDirectory);
+            return isDirectory;
         }
 
-        internal Interop.Sys.DirectoryEntry _directoryEntry;
-        private FileSystemInfo _info;
-        private bool _isDirectory;
 
-        private FileSystemInfo Info
+        private ReadOnlySpan<char> FullPath
         {
             get
             {
-                if (_info == null)
+                if (_fullPath.Length == 0)
                 {
-                    string fullPath = PathHelpers.CombineNoChecks(Directory, _directoryEntry.InodeName);
-                    _info = _isDirectory
-                        ? (FileSystemInfo) new DirectoryInfo(fullPath, fullPath, _directoryEntry.InodeName, isNormalized: true)
-                        : new FileInfo(fullPath, fullPath, _directoryEntry.InodeName, isNormalized: true);
-                    _info.Refresh();
+                    ReadOnlySpan<char> directory = Directory;
+                    directory.CopyTo(_pathBuffer);
+                    _pathBuffer[directory.Length] = Path.DirectorySeparatorChar;
+                    ReadOnlySpan<char> fileName = FileName;
+                    fileName.CopyTo(_pathBuffer.Slice(directory.Length + 1));
+                    _fullPath = _pathBuffer.Slice(0, directory.Length + 1 + fileName.Length);
                 }
-                return _info;
+                return _fullPath;
+            }
+        }
+
+        public ReadOnlySpan<char> FileName
+        {
+            get
+            {
+                if (_directoryEntry.Name != null)
+                {
+                    fixed (char* c = _fileNameBuffer)
+                    {
+                        Span<char> buffer = new Span<char>(c, FileNameBufferSize);
+                        _fileName = _directoryEntry.GetName(buffer);
+                    }
+                    _directoryEntry.Name = null;
+                }
+
+                return _fileName;
             }
         }
 
@@ -62,14 +103,25 @@ namespace System.IO.Enumeration
         /// </summary>
         public string OriginalRootDirectory { get; private set; }
 
-        public ReadOnlySpan<char> FileName => _directoryEntry.InodeName;
-        public FileAttributes Attributes => Info.Attributes;
-        public long Length => Info.LengthCore;
-        public DateTimeOffset CreationTimeUtc => Info.CreationTimeCore;
-        public DateTimeOffset LastAccessTimeUtc => Info.LastAccessTimeCore;
-        public DateTimeOffset LastWriteTimeUtc => Info.LastWriteTimeCore;
-        public bool IsDirectory => _isDirectory;
-        public FileSystemInfo ToFileSystemInfo() => Info;
+        public FileAttributes Attributes => _status.GetAttributes(FullPath, FileName);
+        public long Length => _status.GetLength(FullPath);
+        public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath);
+        public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath);
+        public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath);
+        public bool IsDirectory => _status.InitiallyDirectory;
+
+        public FileSystemInfo ToFileSystemInfo()
+        {
+            string fullPath = ToFullPath();
+            if (_status.InitiallyDirectory)
+            {
+                return DirectoryInfo.Create(fullPath, new string(FileName), ref _status);
+            }
+            else
+            {
+                return FileInfo.Create(fullPath, new string(FileName), ref _status);
+            }
+        }
 
         /// <summary>
         /// Returns the full path for find results, based on the initially provided path.
@@ -81,6 +133,6 @@ namespace System.IO.Enumeration
         /// Returns the full path of the find result.
         /// </summary>
         public string ToFullPath() =>
-            PathHelpers.CombineNoChecks(Directory, FileName);
+            new string(FullPath);
     }
 }

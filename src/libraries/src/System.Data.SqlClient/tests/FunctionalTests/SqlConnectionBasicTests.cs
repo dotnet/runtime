@@ -81,6 +81,32 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
+        public void ClosedConnectionSchemaRetrieval()
+        {
+            using (SqlConnection connection = new SqlConnection(string.Empty))
+            {
+                Assert.Throws<InvalidOperationException>(() => connection.GetSchema());
+            }
+        }
+
+        [Theory]
+        [InlineData("RandomStringForTargetServer", false, true)]
+        [InlineData("RandomStringForTargetServer", true, false)]
+        [InlineData(null, false, false)]
+        [InlineData("", false, false)]
+        public void RetrieveWorkstationId(string workstation, bool withDispose, bool shouldMatchSetWorkstationId)
+        {
+            string connectionString = $"Workstation Id={workstation}";
+            SqlConnection conn = new SqlConnection(connectionString);
+            if(withDispose)
+            {
+                conn.Dispose();
+            }
+            string expected = shouldMatchSetWorkstationId ? workstation : Environment.MachineName;
+            Assert.Equal(expected, conn.WorkstationId);
+        }
+
+        [Fact]
         public void ConnectionTimeoutTestWithThread()
         {
             int timeoutSec = 5;

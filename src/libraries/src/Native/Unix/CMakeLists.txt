@@ -148,6 +148,18 @@ if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
     set(CLR_CMAKE_PLATFORM_UNIX 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 
+# CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
+# CLR_ADDITIONAL_COMPILER_OPTIONS - used for passing additional arguments to compiler
+#
+# For example:
+#       ./build-native.sh cmakeargs -DCLR_ADDITIONAL_COMPILER_OPTIONS=<...> cmakeargs -DCLR_ADDITIONAL_LINKER_FLAGS=<...>
+#
+if(CLR_CMAKE_PLATFORM_UNIX)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_ADDITIONAL_LINKER_FLAGS}" )
+    add_compile_options(${CLR_ADDITIONAL_COMPILER_OPTIONS})
+endif(CLR_CMAKE_PLATFORM_UNIX)
+
 if (NOT WIN32)
     if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # Ensure that dsymutil and strip are present

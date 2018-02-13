@@ -17,7 +17,7 @@ internal partial class Interop
 
         internal static bool SetFileAttributes(string name, int attr)
         {
-            name = PathInternal.EnsureExtendedPrefixOverMaxPath(name);
+            name = PathInternal.EnsureExtendedPrefixIfNeeded(name);
             return SetFileAttributesPrivate(name, attr);
         }
     }

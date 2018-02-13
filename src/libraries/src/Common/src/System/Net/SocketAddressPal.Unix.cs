@@ -102,11 +102,11 @@ namespace System.Net
             ThrowOnFailure(err);
         }
 
-        public static unsafe uint GetIPv4Address(byte[] buffer)
+        public static unsafe uint GetIPv4Address(ReadOnlySpan<byte> buffer)
         {
             uint ipAddress;
             Interop.Error err;
-            fixed (byte* rawAddress = buffer)
+            fixed (byte* rawAddress = &MemoryMarshal.GetReference(buffer))
             {
                 err = Interop.Sys.GetIPv4Address(rawAddress, buffer.Length, &ipAddress);
             }
@@ -115,11 +115,11 @@ namespace System.Net
             return ipAddress;
         }
 
-        public static unsafe void GetIPv6Address(byte[] buffer, Span<byte> address, out uint scope)
+        public static unsafe void GetIPv6Address(ReadOnlySpan<byte> buffer, Span<byte> address, out uint scope)
         {
             uint localScope;
             Interop.Error err;
-            fixed (byte* rawAddress = buffer)
+            fixed (byte* rawAddress = &MemoryMarshal.GetReference(buffer))
             fixed (byte* ipAddress = &MemoryMarshal.GetReference(address))
             {
                 err = Interop.Sys.GetIPv6Address(rawAddress, buffer.Length, ipAddress, address.Length, &localScope);

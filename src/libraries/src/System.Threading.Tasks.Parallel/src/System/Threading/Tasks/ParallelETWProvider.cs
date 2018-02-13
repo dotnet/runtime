@@ -113,18 +113,36 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[6];
 
-                    eventPayload[0].Size = sizeof(Int32);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
-                    eventPayload[1].Size = sizeof(Int32);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
-                    eventPayload[2].Size = sizeof(Int32);
-                    eventPayload[2].DataPointer = ((IntPtr)(&ForkJoinContextID));
-                    eventPayload[3].Size = sizeof(Int32);
-                    eventPayload[3].DataPointer = ((IntPtr)(&OperationType));
-                    eventPayload[4].Size = sizeof(Int64);
-                    eventPayload[4].DataPointer = ((IntPtr)(&InclusiveFrom));
-                    eventPayload[5].Size = sizeof(Int64);
-                    eventPayload[5].DataPointer = ((IntPtr)(&ExclusiveTo));
+                    eventPayload[0] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID))
+                    };
+                    eventPayload[1] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OriginatingTaskID))
+                    };
+                    eventPayload[2] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&ForkJoinContextID))
+                    };
+                    eventPayload[3] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OperationType))
+                    };
+                    eventPayload[4] = new EventData
+                    {
+                        Size = sizeof(Int64),
+                        DataPointer = ((IntPtr)(&InclusiveFrom))
+                    };
+                    eventPayload[5] = new EventData
+                    {
+                        Size = sizeof(Int64),
+                        DataPointer = ((IntPtr)(&ExclusiveTo))
+                    };
 
                     WriteEventCore(PARALLELLOOPBEGIN_ID, 6, eventPayload);
                 }
@@ -153,14 +171,26 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[4];
 
-                    eventPayload[0].Size = sizeof(Int32);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
-                    eventPayload[1].Size = sizeof(Int32);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
-                    eventPayload[2].Size = sizeof(Int32);
-                    eventPayload[2].DataPointer = ((IntPtr)(&ForkJoinContextID));
-                    eventPayload[3].Size = sizeof(Int64);
-                    eventPayload[3].DataPointer = ((IntPtr)(&TotalIterations));
+                    eventPayload[0] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID))
+                    };
+                    eventPayload[1] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OriginatingTaskID))
+                    };
+                    eventPayload[2] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&ForkJoinContextID))
+                    };
+                    eventPayload[3] = new EventData
+                    {
+                        Size = sizeof(Int64),
+                        DataPointer = ((IntPtr)(&TotalIterations))
+                    };
 
                     WriteEventCore(PARALLELLOOPEND_ID, 4, eventPayload);
                 }
@@ -189,16 +219,31 @@ namespace System.Threading.Tasks
                 {
                     EventData* eventPayload = stackalloc EventData[5];
 
-                    eventPayload[0].Size = sizeof(Int32);
-                    eventPayload[0].DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID));
-                    eventPayload[1].Size = sizeof(Int32);
-                    eventPayload[1].DataPointer = ((IntPtr)(&OriginatingTaskID));
-                    eventPayload[2].Size = sizeof(Int32);
-                    eventPayload[2].DataPointer = ((IntPtr)(&ForkJoinContextID));
-                    eventPayload[3].Size = sizeof(Int32);
-                    eventPayload[3].DataPointer = ((IntPtr)(&OperationType));
-                    eventPayload[4].Size = sizeof(Int32);
-                    eventPayload[4].DataPointer = ((IntPtr)(&ActionCount));
+                    eventPayload[0] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OriginatingTaskSchedulerID))
+                    };
+                    eventPayload[1] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OriginatingTaskID))
+                    };
+                    eventPayload[2] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&ForkJoinContextID))
+                    };
+                    eventPayload[3] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&OperationType))
+                    };
+                    eventPayload[4] = new EventData
+                    {
+                        Size = sizeof(Int32),
+                        DataPointer = ((IntPtr)(&ActionCount))
+                    };
 
                     WriteEventCore(PARALLELINVOKEBEGIN_ID, 5, eventPayload);
                 }

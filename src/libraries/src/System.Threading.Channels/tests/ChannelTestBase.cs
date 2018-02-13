@@ -1,5 +1,6 @@
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -490,10 +491,16 @@ namespace System.Threading.Channels.Tests
             AssertSynchronousTrue(c.Reader.WaitToReadAsync());
         }
 
-        [Fact]
-        public void Precancellation_WaitToReadAsync_ReturnsImmediately()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Precancellation_WaitToReadAsync_ReturnsImmediately(bool dataAvailable)
         {
             Channel<int> c = CreateChannel();
+            if (dataAvailable)
+            {
+                Assert.True(c.Writer.TryWrite(42));
+            }
 
             Task writeTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
             Assert.Equal(TaskStatus.Canceled, writeTask.Status);

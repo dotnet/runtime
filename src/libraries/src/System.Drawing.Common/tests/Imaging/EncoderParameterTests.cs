@@ -318,7 +318,7 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(int.MinValue)]
         public void Ctor_Encoder_NegativeNumberOfValues_Type_Value_OutOfMemoryException(int numberOfValues)
         {
-            if (numberOfValues == -1 && PlatformDetection.IsUbuntu1710) // [ActiveIssue(24274)]
+            if (numberOfValues == -1 && PlatformDetection.IsUbuntu1710OrHigher) // [ActiveIssue(24274)]
                 return;
 
             IntPtr anyValue = IntPtr.Zero;

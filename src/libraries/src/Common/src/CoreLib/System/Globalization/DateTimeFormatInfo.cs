@@ -1463,7 +1463,7 @@ namespace System.Globalization
         //
         //  Actions: Retrieve the month names used in a leap year.
         //      If this culture does not have different month names in a leap year, the normal month name is returned.
-        //  Agruments: None. (can use abbreviated later if needed)
+        //  Arguments: None. (can use abbreviated later if needed)
         //
         internal String[] internalGetLeapYearMonthNames(/*bool abbreviated*/)
         {

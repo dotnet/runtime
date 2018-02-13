@@ -1079,7 +1079,7 @@ namespace System.Drawing.Printing
 
             int count = FastDeviceCapabilities(SafeNativeMethods.DC_PAPERNAMES, IntPtr.Zero, -1, printerName);
             if (count == -1)
-                return new PaperSize[0];
+                return Array.Empty<PaperSize>();
             int stringSize = Marshal.SystemDefaultCharSize * 64;
             IntPtr namesBuffer = Marshal.AllocCoTaskMem(checked(stringSize * count));
             FastDeviceCapabilities(SafeNativeMethods.DC_PAPERNAMES, namesBuffer, -1, printerName);
@@ -1123,7 +1123,7 @@ namespace System.Drawing.Printing
 
             int count = FastDeviceCapabilities(SafeNativeMethods.DC_BINNAMES, IntPtr.Zero, -1, printerName);
             if (count == -1)
-                return new PaperSource[0];
+                return Array.Empty<PaperSource>();
 
             // Contrary to documentation, DeviceCapabilities returns char[count, 24],
             // not char[count][24]

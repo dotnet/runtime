@@ -748,7 +748,7 @@ namespace System.Drawing
                 }
                 else if (DashStyle == DashStyle.Solid)
                 {
-                    pattern = new float[0];
+                    pattern = Array.Empty<float>();
                 }
                 else
                 {

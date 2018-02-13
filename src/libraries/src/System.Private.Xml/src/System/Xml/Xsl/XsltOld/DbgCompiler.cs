@@ -32,7 +32,7 @@ namespace System.Xml.Xsl.XsltOld
         private DbgData()
         {
             _styleSheet = null;
-            _variables = new VariableAction[0];
+            _variables = Array.Empty<VariableAction>();
         }
         public static DbgData Empty { get { return s_nullDbgData; } }
     }

@@ -235,15 +235,6 @@
   <data name="BadDelArgTypes" xml:space="preserve">
     <value>Delegate '{0}' has some invalid arguments</value>
   </data>
-  <data name="ReturnNotLValue" xml:space="preserve">
-    <value>Cannot modify the return value of '{0}' because it is not a variable</value>
-  </data>
-  <data name="AssgReadonly2" xml:space="preserve">
-    <value>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</value>
-  </data>
-  <data name="AssgReadonlyStatic2" xml:space="preserve">
-    <value>Fields of static readonly field '{0}' cannot be assigned to (except in a static constructor or a variable initializer)</value>
-  </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' does not contain a constructor that takes '{1}' arguments</value>
   </data>

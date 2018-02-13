@@ -20,13 +20,11 @@ namespace System.Net.NameResolution.Tests
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [ActiveIssue(26789, TestPlatforms.OSX)]
         [Theory]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public Task Dns_GetHostEntry_HostString_Ok(string hostName) => TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
 
-        [ActiveIssue(26789, TestPlatforms.OSX)]
         [Theory]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]

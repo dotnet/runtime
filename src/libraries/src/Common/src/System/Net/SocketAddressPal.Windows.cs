@@ -38,7 +38,7 @@ namespace System.Net
             port.HostToNetworkBytes(buffer, 2);
         }
 
-        public static unsafe uint GetIPv4Address(byte[] buffer)
+        public static unsafe uint GetIPv4Address(ReadOnlySpan<byte> buffer)
         {
             unchecked
             {
@@ -49,7 +49,7 @@ namespace System.Net
             }
         }
 
-        public static unsafe void GetIPv6Address(byte[] buffer, Span<byte> address, out uint scope)
+        public static unsafe void GetIPv6Address(ReadOnlySpan<byte> buffer, Span<byte> address, out uint scope)
         {
             for (int i = 0; i < address.Length; i++)
             {
