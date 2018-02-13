@@ -239,7 +239,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
                         Assert.Equal(cert, sslStream.RemoteCertificate);
-                        await connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                        await connection.ReadRequestHeaderAndSendResponseAsync();
                     }));
             };
 

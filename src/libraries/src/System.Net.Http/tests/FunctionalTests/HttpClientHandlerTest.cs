@@ -366,7 +366,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }
@@ -384,7 +384,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }
@@ -550,9 +550,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeaders)
         {
-            string responseHeaders =
-                $"HTTP/1.1 401 Unauthorized\r\nDate: {DateTimeOffset.UtcNow:R}\r\n{authHeaders}Content-Length: 0\r\n\r\n";
-            _output.WriteLine(responseHeaders);
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -560,7 +557,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(responseHeaders);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized);
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
                     using (HttpResponseMessage response = await getResponseTask)
@@ -616,17 +613,13 @@ namespace System.Net.Http.Functional.Tests
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
                         // Original URL will redirect to a different URL
-                        Task<List<string>> serverTask = origServer.AcceptConnectionSendResponseAndCloseAsync(
-                                $"HTTP/1.1 {statusCode} OK\r\n" +
-                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                                $"Location: {redirUrl}\r\n" +
-                                "\r\n");
+                        Task<List<string>> serverTask = origServer.AcceptConnectionSendResponseAndCloseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\n");
                         await Task.WhenAny(getResponseTask, serverTask);
                         Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
                         await serverTask;
 
                         // Redirected URL answers with success
-                        serverTask = redirServer.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                        serverTask = redirServer.AcceptConnectionSendResponseAndCloseAsync();
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                         List<string> receivedRequest = await serverTask;
@@ -726,10 +719,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     Task<HttpResponseMessage> getTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 302 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
 
                     using (HttpResponseMessage response = await getTask)
@@ -851,16 +841,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Task<HttpResponseMessage> getResponseTask = client.GetAsync(origUrl);
 
-                        Task redirectTask = redirectServer.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                        Task redirectTask = redirectServer.AcceptConnectionSendResponseAndCloseAsync();
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(
                             getResponseTask,
-                            origServer.AcceptConnectionSendResponseAndCloseAsync(
-                                $"HTTP/1.1 {statusCode} OK\r\n" +
-                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                                $"Location: {redirectUrl}\r\n" +
-                                "Content-Length: 0\r\n" +
-                                "\r\n"));
+                            origServer.AcceptConnectionSendResponseAndCloseAsync((HttpStatusCode)statusCode, $"Location: {redirectUrl}\r\n"));
 
                         using (HttpResponseMessage response = await getResponseTask)
                         {
@@ -897,14 +882,10 @@ namespace System.Net.Http.Functional.Tests
                     Uri expectedUrl = new Uri(origUrl.ToString() + expectedFragment);
 
                     Task<HttpResponseMessage> getResponse = client.GetAsync(origUrl);
-                    Task firstRequest = origServer.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 302 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Location: {redirectUrl}\r\n" +
-                            "\r\n");
+                    Task firstRequest = origServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectUrl}\r\n");
                     Assert.Equal(firstRequest, await Task.WhenAny(firstRequest, getResponse));
 
-                    Task secondRequest = origServer.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(secondRequest, getResponse);
 
                     using (HttpResponseMessage response = await getResponse)
@@ -1055,7 +1036,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader\r\n" : "") +
@@ -1096,7 +1077,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             "\r\n" +
@@ -1152,7 +1133,7 @@ namespace System.Net.Http.Functional.Tests
                     var tcs = new TaskCompletionSource<bool>();
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                         {
-                            await connection.ReadRequestHeaderAndSendResponseAsync(partialResponse);
+                            await connection.ReadRequestHeaderAndSendCustomResponseAsync(partialResponse);
                             await tcs.Task;
                         });
 
@@ -1177,7 +1158,7 @@ namespace System.Net.Http.Functional.Tests
                     var tcs = new TaskCompletionSource<bool>();
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendResponseAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+                        await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
                         TextWriter writer = connection.Writer;
                         try
                         {
@@ -1273,7 +1254,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendResponseAsync(
+                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "Content-Length: 16000\r\n" +
@@ -1324,14 +1305,14 @@ namespace System.Net.Http.Functional.Tests
                         // Second server connects and sends some but not all headers
                         Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
-                            await connection2.ReadRequestHeaderAndSendResponseAsync($"HTTP/1.1 200 OK\r\n");
+                            await connection2.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 200 OK\r\n");
                             await unblockServers.Task;
                         });
 
                         // Third server connects and sends all headers and some but not all of the body
                         Task serverTask3 = server3.AcceptConnectionAsync(async connection3 =>
                         {
-                            await connection3.ReadRequestHeaderAndSendResponseAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 20\r\n\r\n");
+                            await connection3.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 20\r\n\r\n");
                             await connection3.Writer.WriteAsync("1234567890");
                             await unblockServers.Task;
                             await connection3.Writer.WriteAsync("1234567890");
@@ -1380,7 +1361,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await server.AcceptConnectionSendResponseAndCloseAsync(
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.1 {statusCode}\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "\r\n");
@@ -2082,7 +2063,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponse = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponse, serverTask);
 
                     List<string> receivedRequest = await serverTask;
@@ -2265,7 +2246,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
                     List<string> receivedRequest = await serverTask;

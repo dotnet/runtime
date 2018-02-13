@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(uri);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -69,7 +69,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Host = hostname;
                     request.Headers.Referrer = uri;
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -102,7 +102,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(serverUrl);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        $"HTTP/1.1 302 Redirect\r\nLocation: http://{uri.IdnHost}/\r\n\r\n");
+                        HttpStatusCode.Found, "Location: http://{uri.IdnHost}/\r\n");
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 

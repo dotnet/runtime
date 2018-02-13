@@ -74,7 +74,7 @@ namespace System.Net.Http.Functional.Tests
                         var cts = new CancellationTokenSource();
                         Task serverTask = Task.Run(async delegate
                         {
-                            await connection.ReadRequestHeaderAndSendResponseAsync("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nMyInfiniteHeader: ");
+                            await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nMyInfiniteHeader: ");
                             try
                             {
                                 while (!cts.IsCancellationRequested)
@@ -118,7 +118,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task serverTask = connection.ReadRequestHeaderAndSendResponseAsync(responseHeaders);
+                        Task serverTask = connection.ReadRequestHeaderAndSendCustomResponseAsync(responseHeaders);
 
                         if (shouldSucceed)
                         {

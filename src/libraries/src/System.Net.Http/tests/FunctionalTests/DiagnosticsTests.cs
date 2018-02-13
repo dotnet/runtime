@@ -148,7 +148,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
-                            Task<List<string>> requestLines = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                            Task<List<string>> requestLines = server.AcceptConnectionSendResponseAndCloseAsync();
                             Task<HttpResponseMessage> response = client.GetAsync(url);
                             await Task.WhenAll(response, requestLines);
 
@@ -185,7 +185,7 @@ namespace System.Net.Http.Functional.Tests
                             await LoopbackServer.CreateServerAsync(async (server, url) =>
                             {
                                 await TestHelper.WhenAllCompletedOrAnyFailed(
-                                    server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
+                                    server.AcceptConnectionSendResponseAndCloseAsync(),
                                     client.GetAsync(url));
                             });
 
@@ -286,7 +286,7 @@ namespace System.Net.Http.Functional.Tests
                             Task request = server.AcceptConnectionAsync(connection =>
                                 {
                                     tcs.Cancel();
-                                    return connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                                    return connection.ReadRequestHeaderAndSendResponseAsync();
                                 });
                             Task response = client.GetAsync(url, tcs.Token);
                             await Assert.ThrowsAnyAsync<Exception>(() => TestHelper.WhenAllCompletedOrAnyFailed(response, request));
@@ -356,7 +356,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
-                            Task<List<string>> requestLines = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                            Task<List<string>> requestLines = server.AcceptConnectionSendResponseAndCloseAsync();
                             Task<HttpResponseMessage> response = client.GetAsync(url);
                             await Task.WhenAll(response, requestLines);
 
@@ -610,7 +610,7 @@ namespace System.Net.Http.Functional.Tests
                             Task request = server.AcceptConnectionAsync(connection =>
                             {
                                 tcs.Cancel();
-                                return connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                                return connection.ReadRequestHeaderAndSendResponseAsync();
                             });
                             Task response = client.GetAsync(url, tcs.Token);
                             await Assert.ThrowsAnyAsync<Exception>(() => TestHelper.WhenAllCompletedOrAnyFailed(response, request));

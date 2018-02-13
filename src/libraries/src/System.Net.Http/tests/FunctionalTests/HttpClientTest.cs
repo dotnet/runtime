@@ -125,12 +125,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     Task<string> getTask = client.GetStringAsync(url);
-                    Task serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        $"HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: {contentLength}\r\n" +
-                        "\r\n" +
-                        new string('s', contentLength));
+                    Task serverTask = server.AcceptConnectionSendResponseAndCloseAsync(content: new string('s', contentLength));
                     Task bothTasks = TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
 
                     if (exceptionExpected)
@@ -417,7 +412,7 @@ namespace System.Net.Http.Functional.Tests
                     await Task.Delay(TimeSpan.FromSeconds(.5));
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getTask,
-                        server.AcceptConnectionSendDefaultResponseAndCloseAsync());
+                        server.AcceptConnectionSendResponseAndCloseAsync());
                 });
             }
         }

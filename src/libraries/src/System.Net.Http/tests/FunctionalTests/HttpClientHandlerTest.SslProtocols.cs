@@ -61,7 +61,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 });
                 Assert.Throws<InvalidOperationException>(() => handler.SslProtocols = SslProtocols.Tls12);
@@ -119,7 +119,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }
@@ -232,7 +232,7 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionAsync(async connection =>
                         {
                             Assert.Equal(SslProtocols.Tls12, Assert.IsType<SslStream>(connection.Stream).SslProtocol);
-                            await connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
                         }));
                 }, options);
             }
@@ -258,7 +258,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        Assert.ThrowsAsync(exceptedServerException, () => server.AcceptConnectionSendDefaultResponseAndCloseAsync()),
+                        Assert.ThrowsAsync(exceptedServerException, () => server.AcceptConnectionSendResponseAndCloseAsync()),
                         Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
                 }, options);
             }
@@ -283,7 +283,7 @@ namespace System.Net.Http.Functional.Tests
                     await LoopbackServer.CreateServerAsync(async (server, url) =>
                     {
                         await TestHelper.WhenAllCompletedOrAnyFailed(
-                            Assert.ThrowsAsync<IOException>(() => server.AcceptConnectionSendDefaultResponseAndCloseAsync()),
+                            Assert.ThrowsAsync<IOException>(() => server.AcceptConnectionSendResponseAndCloseAsync()),
                             Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url)));
                     }, options);
 
@@ -293,7 +293,7 @@ namespace System.Net.Http.Functional.Tests
                         await LoopbackServer.CreateServerAsync(async (server, url) =>
                         {
                             await TestHelper.WhenAllCompletedOrAnyFailed(
-                                server.AcceptConnectionSendDefaultResponseAndCloseAsync(),
+                                server.AcceptConnectionSendResponseAndCloseAsync(),
                                 client.GetAsync(url));
                         }, options);
                     }
