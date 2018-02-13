@@ -3358,8 +3358,10 @@ bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refL
 //    False - otherwise
 //
 // Notes:
-//    This helper is designed to be used only from allocateBusyReg().
-//    The caller must have already checked for the case where 'refPosition' is a fixed ref.
+//    This helper is designed to be used only from allocateBusyReg(), where:
+//    - This register was *not* found when looking for a free register, and
+//    - The caller must have already checked for the case where 'refPosition' is a fixed ref
+//      (asserted at the beginning of this method).
 //
 bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
 {
@@ -3370,27 +3372,43 @@ bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition)
     {
         if (!assignedInterval->isActive)
         {
-            // This can only happen if we have a recentRefPosition active at this location that hasn't yet been freed
-            // (Or, in the case of ARM, the other half of a double is either active or has an active recentRefPosition).
+            // This can only happen if we have a recentRefPosition active at this location that hasn't yet been freed.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_ARM_
-            if (refPosition->getInterval()->registerType == TYP_DOUBLE)
+            if (isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation))
             {
-                if (!isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation))
-                {
-                    RegRecord* otherHalfRegRec = findAnotherHalfRegRec(regRec);
-                    assert(otherHalfRegRec->assignedInterval->isActive ||
-                           isRefPositionActive(otherHalfRegRec->assignedInterval->recentRefPosition,
-                                               refPosition->nodeLocation));
-                }
+                return true;
             }
             else
-#endif
             {
-                assert(isRefPositionActive(assignedInterval->recentRefPosition, refPosition->nodeLocation));
+#ifdef _TARGET_ARM_
+                // In the case of TYP_DOUBLE, we may have the case where 'assignedInterval' is inactive,
+                // but the other half register is active. If so, it must be have an active recentRefPosition,
+                // as above.
+                if (refPosition->getInterval()->registerType == TYP_DOUBLE)
+                {
+                    RegRecord* otherHalfRegRec = findAnotherHalfRegRec(regRec);
+                    if (!otherHalfRegRec->assignedInterval->isActive)
+                    {
+                        if (isRefPositionActive(otherHalfRegRec->assignedInterval->recentRefPosition,
+                                                refPosition->nodeLocation))
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            assert(!"Unexpected inactive assigned interval in isRegInUse");
+                            return true;
+                        }
+                    }
+                }
+                else
+#endif
+                {
+                    assert(!"Unexpected inactive assigned interval in isRegInUse");
+                    return true;
+                }
             }
-            return true;
         }
         RefPosition* nextAssignedRef = assignedInterval->getNextRefPosition();
 
