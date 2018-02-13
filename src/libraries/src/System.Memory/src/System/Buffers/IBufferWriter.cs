@@ -17,13 +17,13 @@ namespace System.Buffers
         /// Requests the <see cref="Memory{Byte}"/> of at least <paramref name="minimumLength"/> in size.
         /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
-        Memory<byte> GetMemory(int minimumLength = 0);
+        Memory<T> GetMemory(int minimumLength = 0);
 
         /// <summary>
         /// Requests the <see cref="Span{Byte}"/> of at least <paramref name="minimumLength"/> in size.
         /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
-        Span<byte> GetSpan(int minimumLength = 0);
+        Span<T> GetSpan(int minimumLength = 0);
 
         /// <summary>
         /// Returns the maximum buffer size supported by this <see cref="IBufferWriter{T}"/>.
