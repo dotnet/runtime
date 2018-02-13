@@ -11,6 +11,8 @@ internal static partial class Interop
     {
         internal unsafe struct Passwd
         {
+            internal const int InitialBufferSize = 256;
+
             internal byte* Name;
             internal byte* Password;
             internal uint  UserId;
