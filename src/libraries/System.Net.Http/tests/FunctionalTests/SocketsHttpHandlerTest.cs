@@ -165,7 +165,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 string serverResponse = $"HTTP/1.1 401 UnAuthorized\r\nDate: {DateTimeOffset.UtcNow:R}\r\nWWW-Authenticate: {authenticateHeader}\r\nContent-Length: 0\r\n\r\n";
                 HttpClientHandler handler = CreateHttpClientHandler();
-                Task serverTask = LoopbackServer.ReadRequestAndAuthenticateAsync(server, serverResponse, options);
+                Task serverTask = result ?
+                    LoopbackServer.ReadRequestAndAuthenticateAsync(server, serverResponse, options) :
+                    LoopbackServer.ReadRequestAndSendResponseAsync(server, serverResponse, options);
                 await TestHelper.WhenAllCompletedOrAnyFailed(_createAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, _credentials), serverTask);
             }, options);
         }
@@ -187,13 +189,14 @@ namespace System.Net.Http.Functional.Tests
             }, options);
         }
 
-        [Fact]
-        public async void HttpClientHandler_IncorrectCredentials_Fails()
+        [Theory]
+        [InlineData("HTTP/1.1 401 UnAuthorized\r\nWWW-Authenticate: Basic realm=\"hello\"\r\nContent-Length: 0\r\n\r\n")]
+        [InlineData("HTTP/1.1 401 UnAuthorized\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"testnonce\"\r\nContent-Length: 0\r\n\r\n")]
+        public async void HttpClientHandler_IncorrectCredentials_Fails(string serverResponse)
         {
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                string serverResponse = "HTTP/1.1 401 UnAuthorized\r\nWWW-Authenticate: Basic realm\"hello\"\r\nContent-Length: 0\r\n\r\n";
                 HttpClientHandler handler = CreateHttpClientHandler();
                 Task serverTask = LoopbackServer.ReadRequestAndAuthenticateAsync(server, serverResponse, options);
                 await TestHelper.WhenAllCompletedOrAnyFailed(_createAndValidateRequest(handler, url, HttpStatusCode.Unauthorized, new NetworkCredential("wronguser", "wrongpassword")), serverTask);
