@@ -1736,9 +1736,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     if (method == NULL)
         COMPlusThrowArgumentNull(W("method"));
 
-    void* pRetAddr = _ReturnAddress();
-    MethodDesc * pCreatorMethod = ExecutionManager::GetCodeMethodDesc((PCODE)pRetAddr);
-
     _ASSERTE(gc.refThis);
     _ASSERTE(method);
 
