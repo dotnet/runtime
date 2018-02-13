@@ -79,6 +79,7 @@
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
+    <Compile Include="HttpClientHandlerTest.Authentication.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
@@ -149,6 +150,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsOSX)'=='true'">
     <TestCommandLines Include="ulimit -Sn 4096" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
