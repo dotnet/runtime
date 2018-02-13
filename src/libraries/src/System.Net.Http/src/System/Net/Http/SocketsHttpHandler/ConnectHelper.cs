@@ -125,7 +125,11 @@ namespace System.Net.Http
                 // Not using SSL.
                 return null;
             }
+            return GetHostName(request);
+        }
 
+        public static string GetHostName(HttpRequestMessage request)
+        {
             string hostHeader = request.Headers.Host;
             if (hostHeader == null)
             {
