@@ -2353,10 +2353,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
             return false;
     }
 
-    // For containable nodes, the base type of the original node and the base type of the contained node
-    // should be the same. This helps ensure we aren't reading too many or too few bits.
-    assert(!isContainable || (containingNode->gtSIMDBaseType == node->AsHWIntrinsic()->gtSIMDBaseType));
-
     return isContainable;
 }
 
