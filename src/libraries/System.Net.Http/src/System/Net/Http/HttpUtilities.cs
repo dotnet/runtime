@@ -14,12 +14,8 @@ namespace System.Net.Http
 {
     internal static class HttpUtilities
     {
-        internal static Version DefaultRequestVersion =>
-#if uap
-            HttpVersionInternal.Version20;
-#else
-            HttpVersionInternal.Version11;
-#endif
+        internal static Version DefaultRequestVersion => HttpVersionInternal.Version20;
+
         internal static Version DefaultResponseVersion => HttpVersionInternal.Version11;
 
         internal static bool IsHttpUri(Uri uri)
