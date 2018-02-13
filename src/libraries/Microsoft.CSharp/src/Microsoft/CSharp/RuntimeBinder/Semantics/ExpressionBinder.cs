@@ -466,11 +466,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(mwi.Sym is MethodSymbol && (!mwi.Meth().isOverride || mwi.Meth().isHideByName));
             Debug.Assert(pMemGroup != null);
 
-            bool fConstrained;
             Expr pObject = pMemGroup.OptionalObject;
             CType callingObjectType = pObject?.Type;
             PostBindMethod(mwi);
-            pObject = AdjustMemberObject(mwi, pObject, out fConstrained);
+            pObject = AdjustMemberObject(mwi, pObject);
             pMemGroup.OptionalObject = pObject;
 
             CType pReturnType;
@@ -498,14 +497,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            if (fConstrained && pObject != null)
-            {
-                // Use the constrained prefix.
-                pResult.Flags |= EXPRFLAG.EXF_CONSTRAINED;
-            }
-
             verifyMethodArgs(pResult, callingObjectType);
-
             return pResult;
         }
 
@@ -518,12 +510,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(fwt.GetType() != null && fwt.Field().getClass() == fwt.GetType().OwningAggregate);
 
             CType pFieldType = GetTypes().SubstType(fwt.Field().GetType(), fwt.GetType());
-            pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out _);
+            pOptionalObject = AdjustMemberObject(fwt, pOptionalObject);
 
             checkUnsafe(pFieldType); // added to the binder so we don't bind to pointer ops
 
             // lvalue if the object is an lvalue (or it's static) and the field is not readonly.
-            bool isLValue = objectIsLvalue(pOptionalObject) && !fwt.Field().isReadOnly;
+            // Since dynamic objects for fields come from locals or casts/conversions on locals
+            // (never properties) and hence always have EXF_LVALUE set, the first part of this is
+            // always true, leaving the rest to be determined by the field ctor
+            AssertObjectIsLvalue(pOptionalObject);
 
             AggregateType fieldType = null;
             // If this field is the backing field of a WindowsRuntime event then we need to bind to its
@@ -542,7 +537,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprField pResult = GetExprFactory()
-                .CreateField(pFieldType, pOptionalObject, fwt, isLValue);
+                .CreateField(pFieldType, pOptionalObject, fwt);
 
             Debug.Assert(BindingFlag.BIND_MEMBERSET == (BindingFlag)EXPRFLAG.EXF_MEMBERSET);
             pResult.Flags |= (EXPRFLAG)(bindFlags & BindingFlag.BIND_MEMBERSET);
@@ -597,8 +592,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pwt.Prop().getClass() == pwt.GetType().OwningAggregate);
             Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop() is IndexerSymbol);
 
-            bool fConstrained;
-
             // We keep track of the type of the pObject which we're doing the call through so that we can report 
             // protection access errors later, either below when binding the get, or later when checking that
             // the setter is actually an lvalue.
@@ -613,15 +606,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                      )
                 )
             {
-                pObject = AdjustMemberObject(mwtGet, pObject, out fConstrained);
+                pObject = AdjustMemberObject(mwtGet, pObject);
             }
             else if (mwtSet)
             {
-                pObject = AdjustMemberObject(mwtSet, pObject, out fConstrained);
+                pObject = AdjustMemberObject(mwtSet, pObject);
             }
             else
             {
-                pObject = AdjustMemberObject(pwt, pObject, out fConstrained);
+                pObject = AdjustMemberObject(pwt, pObject);
             }
 
             pMemGroup.OptionalObject = pObject;
@@ -657,21 +650,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprProperty result = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, mwtSet);
-            if (fConstrained && pObject != null)
-            {
-                // Use the constrained prefix.
-                result.Flags |= EXPRFLAG.EXF_CONSTRAINED;
-            }
-
             if (result.OptionalArguments != null)
             {
                 verifyMethodArgs(result, pObjectThrough?.Type);
             }
 
-            if (mwtSet && objectIsLvalue(result.MemberGroup.OptionalObject))
-            {
-                result.Flags |= EXPRFLAG.EXF_LVALUE;
-            }
+            AssertObjectIsLvalue(result.MemberGroup.OptionalObject);
 
             return result;
         }
@@ -994,7 +978,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CheckLvalueProp(prop);
                 }
 
-                markFieldAssigned(expr);
                 return;
             }
 
@@ -1005,41 +988,43 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 case ExpressionKind.Property:
                     ExprProperty prop = (ExprProperty)expr;
-                    if (!prop.MethWithTypeSet)
-                    {
-                        // Assigning to a property without a setter.
-                        // If we have
-                        // bool? b = true; (bool)b = false;
-                        // then this is realized immediately as 
-                        // b.Value = false; 
-                        // and no ExpressionKind.EK_CAST is generated. We'd rather not give a "you're writing
-                        // to a read-only property" error in the case where the property access
-                        // is not explicit in the source code.  Fortunately in this case the
-                        // cast is still hanging around in the parse tree, so we can look for it.
+                    Debug.Assert(!prop.MethWithTypeSet);
+                    // Assigning to a property without a setter.
+                    // If we have
+                    // bool? b = true; (bool)b = false;
+                    // then this is realized immediately as
+                    // b.Value = false;
+                    // and no ExpressionKind.EK_CAST is generated. We'd rather not give a "you're writing
+                    // to a read-only property" error in the case where the property access
+                    // is not explicit in the source code.  Fortunately in this case the
+                    // cast is still hanging around in the parse tree, so we can look for it.
 
-                        // POSSIBLE ERROR: It would be nice to also give this error for other situations
-                        // POSSIBLE ERROR: in which the user is attempting to assign to a value, such as
-                        // POSSIBLE ERROR: an explicit (bool)b.Value = false;
-                        // POSSIBLE ERROR: Unfortunately we cannot use this trick in that situation because
-                        // POSSIBLE ERROR: we've already discarded the OperatorKind.OP_CAST node.  (This is an SyntaxKind.Dot).
+                    // POSSIBLE ERROR: It would be nice to also give this error for other situations
+                    // POSSIBLE ERROR: in which the user is attempting to assign to a value, such as
+                    // POSSIBLE ERROR: an explicit (bool)b.Value = false;
+                    // POSSIBLE ERROR: Unfortunately we cannot use this trick in that situation because
+                    // POSSIBLE ERROR: we've already discarded the OperatorKind.OP_CAST node.  (This is an SyntaxKind.Dot).
 
-                        // SPEC VIOLATION: More generally:
-                        // SPEC VIOLATION: The spec states that the result of any cast is a value, not a
-                        // SPEC VIOLATION: variable. Unfortunately we do not correctly implement this
-                        // SPEC VIOLATION: and we probably should not start implementing it because this
-                        // SPEC VIOLATION: would be a breaking change.  We currently discard "no op" casts
-                        // SPEC VIOLATION: very aggressively rather than generating an ExpressionKind.EK_CAST node.
+                    // SPEC VIOLATION: More generally:
+                    // SPEC VIOLATION: The spec states that the result of any cast is a value, not a
+                    // SPEC VIOLATION: variable. Unfortunately we do not correctly implement this
+                    // SPEC VIOLATION: and we probably should not start implementing it because this
+                    // SPEC VIOLATION: would be a breaking change.  We currently discard "no op" casts
+                    // SPEC VIOLATION: very aggressively rather than generating an ExpressionKind.EK_CAST node.
 
-                        throw ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, prop.PropWithTypeSlot);
-                    }
-                    break;
+                    throw ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, prop.PropWithTypeSlot);
 
-                case ExpressionKind.BoundLambda:
-                case ExpressionKind.Constant:
+                case ExpressionKind.Field:
+                    ExprField field = (ExprField)expr;
+                    Debug.Assert(field.FieldWithType.Field().isReadOnly);
+                    throw ErrorContext.Error(
+                        field.FieldWithType.Field().isStatic
+                            ? ErrorCode.ERR_AssgReadonlyStatic
+                            : ErrorCode.ERR_AssgReadonly);
+
+                default:
                     throw ErrorContext.Error(GetStandardLvalueError(kind));
             }
-
-            TryReportLvalueFailure(expr, kind);
         }
 
         private void PostBindMethod(MethWithInst pMWI)
@@ -1075,13 +1060,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private Expr AdjustMemberObject(SymWithType swt, Expr pObject, out bool pfConstrained)
+        private Expr AdjustMemberObject(SymWithType swt, Expr pObject)
         {
             // Assert that the type is present and is an instantiation of the member's parent.
             Debug.Assert(swt.GetType() != null && swt.GetType().OwningAggregate == swt.Sym.parent as AggregateSymbol);
             bool bIsMatchingStatic = IsMatchingStatic(swt, pObject);
-            pfConstrained = false;
-
             bool isStatic = swt.Sym.isStatic;
 
             // If our static doesn't match, bail out of here.
@@ -1134,23 +1117,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 AggregateSymbol aggCalled = swt.Sym.parent as AggregateSymbol;
                 Debug.Assert(swt.GetType().OwningAggregate == aggCalled);
 
-                // If we're invoking code on a struct-valued field, mark the struct as assigned (to
-                // avoid warning CS0649).
-                if (pObject is ExprField field && !field.FieldWithType.Field().isAssigned && !(swt.Sym is FieldSymbol) &&
-                    typeObj.IsStructType && !typeObj.IsPredefined)
-                {
-                    field.FieldWithType.Field().isAssigned = true;
-                }
-
-                if (pfConstrained &&
-                    (typeObj is TypeParameterType ||
-                     typeObj.IsStructType && swt.GetType().IsReferenceType && swt.Sym.IsVirtual()))
-                {
-                    // For calls on type parameters or virtual calls on struct types (not enums),
-                    // use the constrained prefix.
-                    pfConstrained = true;
-                }
-
                 pObject = tryConvert(pObject, swt.GetType(), CONVERTTYPE.NOUDC);
                 Debug.Assert(pObject != null);
             }
@@ -1196,10 +1162,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // this determines whether the expression as an pObject of a prop or field is an
         // lvalue
-
-        private bool objectIsLvalue(Expr pObject)
+        [Conditional("DEBUG")]
+        private void AssertObjectIsLvalue(Expr pObject)
         {
-            return (
+            Debug.Assert (
                        pObject == null ||  // statics are always lvalues
                        (((pObject.Flags & EXPRFLAG.EXF_LVALUE) != 0) && (pObject.Kind != ExpressionKind.Property)) ||
                        // things marked as lvalues have props/fields which are lvalues, with one exception:  props of structs
@@ -1428,24 +1394,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Sets the isAssigned bit
-
-        private void markFieldAssigned(Expr expr)
-        {
-            if (0 != (expr.Flags & EXPRFLAG.EXF_LVALUE) && expr is ExprField field)
-            {
-                FieldSymbol symbol;
-                do
-                {
-                    symbol = field.FieldWithType.Field();
-                    symbol.isAssigned = true;
-                    expr = field.OptionalObject;
-                }
-                while (symbol.getClass().IsStruct() && !symbol.isStatic && expr != null && (field = expr as ExprField) != null);
-            }
-        }
-
         private static readonly PredefinedType[] s_rgptIntOp =
         {
             PredefinedType.PT_INT,
@@ -1453,8 +1401,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PredefinedType.PT_LONG,
             PredefinedType.PT_ULONG
         };
-
-
 
         internal CType ChooseArrayIndexType(Expr args)
         {

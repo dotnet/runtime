@@ -27,9 +27,9 @@ Guid and Age are used to match PE/COFF image with the associated PDB.
 
 The associated .pdb file may not exist at the path indicated by Path field. If it doesn't the Path, Guid and Age can be used to find the corresponding PDB file locally or on a symbol server. The exact search algorithm used by tools to locate the PDB depends on the tool and its configuration.
 
-If the containing PE/COFF file is deterministic the Guid field above and DateTimeStamp field of the directory entry are  calculated deterministically based solely on the content of the associated .pdb file. Otherwise the value of Guid is random and the value of DateTimeStamp indicates the time and date that the debug data was created.
+If the containing PE/COFF file is deterministic the Guid field above and DateTimeStamp field of the directory entry are calculated deterministically based solely on the content of the associated .pdb file. Otherwise the value of Guid is random and the value of DateTimeStamp indicates the time and date that the debug data was created.
 
-*Version Major=any, Minor=0x504d* of the data format has the same structure as above. The Age shall be 1. The format of the .pdb file that this PE/COFF file was built with is Portable PDB. The Major version specified in the entry indicates the version of the Portable PDB format. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
+<a name="PortableCodeViewEntry"></a> *Version Major=any, Minor=0x504d* of the data format has the same structure as above. The Age shall be 1. The format of the .pdb file that this PE/COFF file was built with is Portable PDB. The Major version specified in the entry indicates the version of the Portable PDB format. Together 16B of the Guid concatenated with 4B of the TimeDateStamp field of the entry form a PDB ID that should be used to match the PE/COFF image with the associated PDB (instead of Guid and Age). Matching PDB ID is stored in the #Pdb stream of the .pdb file.
 
 > A matching PDB may be found whose format is different than the format of the PDB the PE/COFF file was built with. This may happen when the original PDB file is [converted](http://github.com/dotnet/symreader-converter) to the other format without updating the PE/COFF file. This scenario is fully supported. A tool looking for the associated PDB shall determine the actual format of the found PDB based on the signature at the start of the PDB file. The tool may use the version in CodeView entry as a hint to prefer the original format over the converted one if both are available.
 
@@ -65,3 +65,41 @@ UncompressedSize shall be greater than 0. Other values are reserved for future u
 The Major version specified in the entry indicates the version of the Portable PDB format. The Minor version indicates the version of the Embedded Portable PDB data format.
 
 The value of Stamp field in the entry shall be 0.
+
+### PDB Checksum Debug Directory Entry (type 19)
+
+Stores crypto hash of the content of the symbol file the PE/COFF file was built with.
+
+The hash can be used to validate that a given PDB file was built with the PE/COFF file and not altered in any way. 
+
+More than one entry can be present, in case multiple PDBs were produced during the build of the PE/COFF file (e.g. private and public symbols). 
+
+*Version Major=0x0001, Minor=0x0000* of the entry data format is following:
+
+| Offset            | Size          | Field          | Description                                                             |
+|:------------------|:--------------|:---------------|-------------------------------------------------------------------------|
+| 0                 | 4             | Signature      | 0x50, 0x44, 0x42, 0x43 (ASCII string: "PDBC")                           |
+| 4                 | AlgNameLength | AlgorithmName  | Zero-terminated UTF8 string. The name of the crypho hash algorithm.     |
+| 4 + AlgNameLength | ChecksumSize  | Checksum       | Blob. Checksum of the PDB content.                                      |
+
+_AlgorithmName_ is the name of the crypto hash algorithm used to calculate the checksum. The name is case-sensitive.
+
+Supported algorithm names include at least:
+
+| AlgorithmName | ChecksumSize | Description                                                        |
+|:--------------|:-------------|:-------------------------------------------------------------------|
+| `SHA256`      | 32           | The 256-bit secure hash algorithm. Standard: FIPS 180-2, FIPS 198. |
+| `SHA384`      | 48           | The 384-bit secure hash algorithm. Standard: FIPS 180-2, FIPS 198. |
+| `SHA512`      | 64           | The 512-bit secure hash algorithm. Standard: FIPS 180-2, FIPS 198. |
+
+#### Portable PDB Checksum
+
+If the symbol format is Portable PDB the checksum is calculated by hashing the entire content of the PDB file with the PDB ID set to 0 (20 zeroed bytes).
+
+When validating that Portable PDB matches the debug directory record check that the checksums match and that the PDB ID match the data in the corresponding [Portable CodeView record](#PortableCodeViewEntry).
+
+> Excluding the PDB ID allows the compiler to calculate a single hash of the PDB file content and use it to generate both deterministic PDB ID and PDB checksum.
+
+#### Windows PDB Checksum
+
+TODO

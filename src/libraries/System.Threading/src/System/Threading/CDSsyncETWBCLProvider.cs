@@ -76,10 +76,16 @@ namespace System.Threading
                     EventData* eventPayload = stackalloc EventData[2];
 
                     Int32 senseAsInt32 = currentSense ? 1 : 0; // write out Boolean as Int32
-                    eventPayload[0].Size = sizeof(int);
-                    eventPayload[0].DataPointer = ((IntPtr)(&senseAsInt32));
-                    eventPayload[1].Size = sizeof(long);
-                    eventPayload[1].DataPointer = ((IntPtr)(&phaseNum));
+                    eventPayload[0] = new EventData
+                    {
+                        Size = sizeof(int),
+                        DataPointer = ((IntPtr)(&senseAsInt32))
+                    };
+                    eventPayload[1] = new EventData
+                    {
+                        Size = sizeof(long),
+                        DataPointer = ((IntPtr)(&phaseNum))
+                    };
 
                     WriteEventCore(BARRIER_PHASEFINISHED_ID, 2, eventPayload);
                 }

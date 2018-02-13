@@ -155,7 +155,7 @@ namespace System.Xml.Serialization
             TypeDesc typeDesc = Scope.GetTypeDesc(typeof(object));
             StructMapping mapping = new StructMapping();
             mapping.TypeDesc = typeDesc;
-            mapping.Members = new MemberMapping[0];
+            mapping.Members = Array.Empty<MemberMapping>();
             mapping.IncludeInSchema = false;
             mapping.TypeName = Soap.UrType;
             mapping.Namespace = XmlSchema.Namespace;

@@ -56,6 +56,7 @@ namespace System.Net.Http
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
         private Exception _pendingException;
+        private int _allowedReadLineBytes;
 
         private Task<int> _readAheadTask;
         private byte[] _readBuffer;
@@ -146,7 +147,7 @@ namespace System.Net.Http
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
 
-        private async Task WriteHeadersAsync(HttpHeaders headers, CancellationToken cancellationToken)
+        private async Task WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer, CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
             {
@@ -158,6 +159,15 @@ namespace System.Net.Http
                 if (values.Length > 0)
                 {
                     await WriteStringAsync(values[0], cancellationToken).ConfigureAwait(false);
+
+                    if (cookiesFromContainer != null && header.Key == HttpKnownHeaderNames.Cookie)
+                    {
+                        await WriteTwoBytesAsync((byte)';', (byte)' ', cancellationToken).ConfigureAwait(false);
+                        await WriteStringAsync(cookiesFromContainer, cancellationToken).ConfigureAwait(false);
+
+                        cookiesFromContainer = null;
+                    }
+
                     for (int i = 1; i < values.Length; i++)
                     {
                         await WriteTwoBytesAsync((byte)',', (byte)' ', cancellationToken).ConfigureAwait(false);
@@ -165,6 +175,14 @@ namespace System.Net.Http
                     }
                 }
 
+                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+            }
+
+            if (cookiesFromContainer != null)
+            {
+                await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, cancellationToken).ConfigureAwait(false);
+                await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
+                await WriteAsciiStringAsync(cookiesFromContainer, cancellationToken).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
         }
@@ -226,16 +244,27 @@ namespace System.Net.Http
 
                 await WriteStringAsync(request.RequestUri.PathAndQuery, cancellationToken).ConfigureAwait(false);
 
-                // fall-back to 1.1 for all versions other than 1.0
+                // Fall back to 1.1 for all versions other than 1.0
                 Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0); // guaranteed by Version class
                 bool isHttp10 = request.Version.Minor == 0 && request.Version.Major == 1;
                 await WriteBytesAsync(isHttp10 ? s_spaceHttp10NewlineAsciiBytes : s_spaceHttp11NewlineAsciiBytes,
                                       cancellationToken).ConfigureAwait(false);
 
-                // Write request headers
-                if (request.HasHeaders)
+                // Determine cookies to send
+                string cookies = null;
+                if (_pool.Pools.Settings._useCookies)
                 {
-                    await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
+                    cookies = _pool.Pools.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                    if (cookies == "")
+                    {
+                        cookies = null;
+                    }
+                }
+
+                // Write request headers
+                if (request.HasHeaders || cookies != null)
+                {
+                    await WriteHeadersAsync(request.Headers, cookies, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (request.Content == null)
@@ -250,7 +279,7 @@ namespace System.Net.Http
                 else
                 {
                     // Write content headers
-                    await WriteHeadersAsync(request.Content.Headers, cancellationToken).ConfigureAwait(false);
+                    await WriteHeadersAsync(request.Content.Headers, null, cancellationToken).ConfigureAwait(false);
                 }
 
                 // Write special additional headers.  If a host isn't in the headers list, then a Host header
@@ -313,6 +342,7 @@ namespace System.Net.Http
                 }
 
                 // Start to read response.
+                _allowedReadLineBytes = _pool.Pools.Settings._maxResponseHeadersLength * 1024;
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
@@ -378,6 +408,7 @@ namespace System.Net.Http
                             {
                                 ThrowInvalidHttpResponse();
                             }
+
                             ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                         }
                     }
@@ -446,6 +477,13 @@ namespace System.Net.Http
                 ((HttpConnectionContent)response.Content).SetStream(responseStream);
 
                 if (NetEventSource.IsEnabled) Trace($"Received response: {response}");
+
+                // Process Set-Cookie headers.
+                if (_pool.Pools.Settings._useCookies)
+                {
+                    CookieHelper.ProcessReceivedCookies(response, _pool.Pools.Settings._cookieContainer);
+                }
+
                 return response;
             }
             catch (Exception error)
@@ -474,10 +512,7 @@ namespace System.Net.Http
             }
         }
 
-        private static bool LineIsEmpty(ArraySegment<byte> line)
-        {
-            return line.Count == 0;
-        }
+        private static bool LineIsEmpty(ArraySegment<byte> line) => line.Count == 0;
 
         private async Task SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream)
         {
@@ -896,6 +931,11 @@ namespace System.Net.Http
                     }
 
                     // Advance read position past the LF
+                    _allowedReadLineBytes -= lfIndex + 1 - scanOffset;
+                    if (_allowedReadLineBytes < 0)
+                    {
+                        ThrowInvalidHttpResponse();
+                    }
                     _readOffset = lfIndex + 1;
 
                     return new ArraySegment<byte>(_readBuffer, startIndex, length);
@@ -904,6 +944,11 @@ namespace System.Net.Http
                 // Couldn't find LF.  Read more.
                 // Note this may cause _readOffset to change.
                 previouslyScannedBytes = _readLength - _readOffset;
+                _allowedReadLineBytes -= _readLength - scanOffset;
+                if (_allowedReadLineBytes < 0)
+                {
+                    ThrowInvalidHttpResponse();
+                }
                 await FillAsync(cancellationToken).ConfigureAwait(false);
             }
         }

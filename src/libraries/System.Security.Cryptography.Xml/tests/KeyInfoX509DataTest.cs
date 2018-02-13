@@ -1,3 +1,5 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// See the LICENSE file in the project root for more information
 //
 // KeyInfoX509DataTest.cs - Test Cases for KeyInfoX509Data
 //

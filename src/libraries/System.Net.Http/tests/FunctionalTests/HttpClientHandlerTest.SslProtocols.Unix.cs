@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     public partial class HttpClientHandler_SslProtocols_Test
     {
         private bool BackendSupportsSslConfiguration =>
-            UseManagedHandler ||
+            UseSocketsHttpHandler ||
             (Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) ?? false);
 
         private bool SSLv3DisabledByDefault =>

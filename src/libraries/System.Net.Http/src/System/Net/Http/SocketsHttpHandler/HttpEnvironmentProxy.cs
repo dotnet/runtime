@@ -36,7 +36,7 @@ namespace System.Net.Http
                    uri.Equals(_httpsProxy) ? _httpsCred : null;
         }
 
-        public static HttpEnvironmentProxyCredentials TryToCreate(Uri httpProxy, Uri httpsProxy)
+        public static HttpEnvironmentProxyCredentials TryCreate(Uri httpProxy, Uri httpsProxy)
         {
             NetworkCredential httpCred = null;
             NetworkCredential httpsCred = null;
@@ -92,7 +92,7 @@ namespace System.Net.Http
         private string[] _bypass = null;// list of domains not to proxy
         private ICredentials _credentials;
 
-        public static HttpEnvironmentProxy TryToCreate()
+        public static bool TryCreate(out IWebProxy proxy)
         {
             // Get environmental variables. Protocol specific take precedence over
             // general all_*, lower case variable has precedence over upper case.
@@ -122,10 +122,12 @@ namespace System.Net.Http
             // Caller may pick some other proxy type.
             if (httpProxy == null && httpsProxy == null)
             {
-                return null;
+                proxy = null;
+                return false;
             }
 
-            return new HttpEnvironmentProxy(httpProxy, httpsProxy, Environment.GetEnvironmentVariable(EnvNoProxyLC));
+            proxy = new HttpEnvironmentProxy(httpProxy, httpsProxy, Environment.GetEnvironmentVariable(EnvNoProxyLC));
+            return true;
         }
 
         private HttpEnvironmentProxy(Uri httpProxy, Uri httpsProxy, string bypassList)
@@ -133,7 +135,7 @@ namespace System.Net.Http
             _httpProxyUri = httpProxy;
             _httpsProxyUri = httpsProxy;
 
-            _credentials = HttpEnvironmentProxyCredentials.TryToCreate(httpProxy, httpsProxy);
+            _credentials = HttpEnvironmentProxyCredentials.TryCreate(httpProxy, httpsProxy);
 
             if (!string.IsNullOrWhiteSpace(bypassList))
             {
@@ -172,17 +174,12 @@ namespace System.Net.Http
                 value = "http://" + value;
             }
 
-            try
+            if (Uri.TryCreate(value, UriKind.Absolute, out Uri uri) &&
+                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-                Uri uri = new Uri(value);
-                if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
-                {
-                    // We only support http and https for now.
-                    return uri;
-                }
+                // We only support http and https for now.
+                return uri;
             }
-            catch { };
-
             return null;
         }
 

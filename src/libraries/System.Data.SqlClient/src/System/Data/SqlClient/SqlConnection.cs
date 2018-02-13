@@ -306,7 +306,7 @@ namespace System.Data.SqlClient
                 // Note: In Longhorn you'll be able to rename a machine without
                 // rebooting.  Therefore, don't cache this machine name.
                 SqlConnectionString constr = (SqlConnectionString)ConnectionOptions;
-                string result = ((null != constr) ? constr.WorkstationId : string.Empty);
+                string result = constr?.WorkstationId ?? Environment.MachineName;
                 return result;
             }
         }

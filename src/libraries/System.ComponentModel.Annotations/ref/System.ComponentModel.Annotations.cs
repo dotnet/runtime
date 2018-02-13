@@ -204,9 +204,11 @@ namespace System.ComponentModel.DataAnnotations
         public RangeAttribute(double minimum, double maximum) { }
         public RangeAttribute(int minimum, int maximum) { }
         public RangeAttribute(System.Type type, string minimum, string maximum) { }
+        public bool ConvertValueInInvariantCulture { get { throw null; } set { } }
         public object Maximum { get { throw null; } }
         public object Minimum { get { throw null; } }
         public System.Type OperandType { get { throw null; } }
+        public bool ParseLimitsInInvariantCulture { get { throw null; } set { } }
         public override string FormatErrorMessage(string name) { throw null; }
         public override bool IsValid(object value) { throw null; }
     }

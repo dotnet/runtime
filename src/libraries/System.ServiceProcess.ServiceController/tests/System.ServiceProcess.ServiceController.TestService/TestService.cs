@@ -92,10 +92,10 @@ namespace System.ServiceProcess.Tests
 
         private async Task WriteStreamAsync(PipeMessageByteCode code, int command = 0)
         {
-            const int writeTimeout = 60000;
             Task writeCompleted;
             if (_waitClientConnect.IsCompleted)
             {
+                const int writeTimeout = 60000;
                 if (code == PipeMessageByteCode.OnCustomCommand)
                 {
                     writeCompleted = _serverStream.WriteAsync(new byte[] { (byte)command }, 0, 1);
@@ -109,7 +109,8 @@ namespace System.ServiceProcess.Tests
             }
             else
             {
-                throw new TimeoutException($"Client didn't connect to the pipe");
+                // We get here if the service is getting torn down before a client ever connected;
+                // some tests do this.
             }
         }
 

@@ -368,8 +368,22 @@ namespace System.IO
             if (second.Length == 0)
                 return new string(first);
 
-            if (IsPathRooted(second)) // will change to span version after the span pr is merged
+            if (IsPathRooted(second))
                 return new string(second);
+
+            return CombineNoChecksInternal(first, second);
+        }
+
+        private static string CombineNoChecks(string first, string second)
+        {
+			if (string.IsNullOrEmpty(first))
+				return second;
+
+            if (string.IsNullOrEmpty(second))
+                return first;
+
+            if (IsPathRooted(second.AsReadOnlySpan()))
+                return second;
 
             return CombineNoChecksInternal(first, second);
         }
@@ -391,6 +405,23 @@ namespace System.IO
             return CombineNoChecksInternal(first, second, third);            
         }
 
+        private static string CombineNoChecks(string first, string second, string third)
+        {
+            if (string.IsNullOrEmpty(first))
+                return CombineNoChecks(second, third);
+            if (string.IsNullOrEmpty(second))
+                return CombineNoChecks(first, third);
+            if (string.IsNullOrEmpty(third))
+                return CombineNoChecks(first, second);
+
+            if (IsPathRooted(third.AsReadOnlySpan()))
+                return third;
+            if (IsPathRooted(second.AsReadOnlySpan()))
+                return CombineNoChecks(second, third);
+
+            return CombineNoChecksInternal(first, second, third);
+        }
+
         private static string CombineNoChecks(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third, ReadOnlySpan<char> fourth)
         {
             if (first.Length == 0)
@@ -407,6 +438,27 @@ namespace System.IO
             if (IsPathRooted(third))
                 return CombineNoChecks(third, fourth);
             if (IsPathRooted(second))
+                return CombineNoChecks(second, third, fourth);
+
+            return CombineNoChecksInternal(first, second, third, fourth);
+        }
+
+        private static string CombineNoChecks(string first, string second, string third, string fourth)
+        {
+            if (string.IsNullOrEmpty(first))
+                return CombineNoChecks(second, third, fourth);
+            if (string.IsNullOrEmpty(second))
+                return CombineNoChecks(first, third, fourth);
+			if (string.IsNullOrEmpty(third))
+                return CombineNoChecks(first, second, fourth);
+			if (string.IsNullOrEmpty(fourth))
+                return CombineNoChecks(first, second, third);
+
+            if (IsPathRooted(fourth.AsReadOnlySpan()))
+                return fourth;
+            if (IsPathRooted(third.AsReadOnlySpan()))
+                return CombineNoChecks(third, fourth);
+            if (IsPathRooted(second.AsReadOnlySpan()))
                 return CombineNoChecks(second, third, fourth);
 
             return CombineNoChecksInternal(first, second, third, fourth);

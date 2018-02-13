@@ -13,6 +13,8 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
+        public const bool SupportsGetAddrInfoAsync = false;
+
         private static SocketError GetSocketErrorForErrno(int errno)
         {
             switch (errno)
@@ -174,6 +176,11 @@ namespace System.Net
 
             nativeErrorCode = 0;
             return SocketError.Success;
+        }
+
+        internal static void GetAddrInfoAsync(DnsResolveAsyncResult asyncResult)
+        {
+            throw new NotSupportedException();
         }
 
         public static unsafe string TryGetNameInfo(IPAddress addr, out SocketError socketError, out int nativeErrorCode)

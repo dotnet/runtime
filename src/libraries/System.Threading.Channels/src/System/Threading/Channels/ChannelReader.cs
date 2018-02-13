@@ -57,24 +57,17 @@ namespace System.Threading.Channels
 
             async ValueTask<T> ReadAsyncCore(CancellationToken ct)
             {
-                try
+                while (true)
                 {
-                    while (true)
+                    if (!await WaitToReadAsync(ct).ConfigureAwait(false))
                     {
-                        if (!await WaitToReadAsync(ct).ConfigureAwait(false))
-                        {
-                            throw new ChannelClosedException();
-                        }
-
-                        if (TryRead(out T item))
-                        {
-                            return item;
-                        }
+                        throw new ChannelClosedException();
                     }
-                }
-                catch (Exception exc) when (!(exc is ChannelClosedException || exc is OperationCanceledException))
-                {
-                    throw new ChannelClosedException(exc);
+
+                    if (TryRead(out T item))
+                    {
+                        return item;
+                    }
                 }
             }
         }

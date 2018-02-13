@@ -1777,7 +1777,7 @@ namespace System.Drawing
         public Region[] MeasureCharacterRanges(string text, Font font, RectangleF layoutRect, StringFormat stringFormat)
         {
             if ((text == null) || (text.Length == 0))
-                return new Region[0];
+                return Array.Empty<Region>();
 
             if (font == null)
                 throw new ArgumentNullException("font");
@@ -1787,7 +1787,7 @@ namespace System.Drawing
 
             int regcount = stringFormat.GetMeasurableCharacterRangeCount();
             if (regcount == 0)
-                return new Region[0];
+                return Array.Empty<Region>();
 
             IntPtr[] native_regions = new IntPtr[regcount];
             Region[] regions = new Region[regcount];

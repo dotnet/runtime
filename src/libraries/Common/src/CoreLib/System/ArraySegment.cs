@@ -192,7 +192,7 @@ namespace System
             return !(a == b);
         }
 
-        public static implicit operator ArraySegment<T>(T[] array) => new ArraySegment<T>(array);
+        public static implicit operator ArraySegment<T>(T[] array) => array != null ? new ArraySegment<T>(array) : default;
 
         #region IList<T>
         T IList<T>.this[int index]

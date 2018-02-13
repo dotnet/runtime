@@ -26,6 +26,8 @@ namespace System
         public static bool IsUbuntu1604 => false;
         public static bool IsUbuntu1704 => false;
         public static bool IsUbuntu1710 => false;
+        public static bool IsUbuntu1710OrHigher => false;
+        public static bool IsUbuntu1804 => false;
         public static bool IsTizen => false;
         public static bool IsNotFedoraOrRedHatFamily => true;
         public static bool IsFedora => false;

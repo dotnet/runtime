@@ -34,7 +34,7 @@ internal partial class Interop
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
         {
-            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
+            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
             fixed (SECURITY_ATTRIBUTES* sa = &securityAttrs)
             {
                 IntPtr handle = CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, sa, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
@@ -76,7 +76,7 @@ internal partial class Interop
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes)
         {
-            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
+            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
             return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
         }
     }

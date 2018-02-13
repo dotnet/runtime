@@ -236,9 +236,18 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         /// <param name="stream">Stream to read from</param>
         /// <param name="callback">Completion callback</param>
-        public void ReadFromStreamAsync(Stream stream, SNIAsyncCallback callback)
+        public void ReadFromStreamAsync(Stream stream, SNIAsyncCallback callback, bool isMars)
         {
             bool error = false;
+            TaskContinuationOptions options = TaskContinuationOptions.DenyChildAttach;
+            // MARS operations during Sync ADO.Net API calls are Sync over Async. Each API call can request 
+            // threads to execute the async reads. MARS operations do not get the threads quickly enough leading to timeout
+            // To fix the MARS thread exhaustion issue LongRunning continuation option is a temporary solution with its own drawbacks, 
+            // and should be removed after evaluating how to fix MARS threading issues efficiently
+            if (isMars)
+            {
+                options |= TaskContinuationOptions.LongRunning;
+            }
 
             stream.ReadAsync(_data, 0, _capacity).ContinueWith(t =>
             {
@@ -267,7 +276,7 @@ namespace System.Data.SqlClient.SNI
                 callback(this, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
             },
             CancellationToken.None,
-            TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.LongRunning,
+            options,
             TaskScheduler.Default);
         }
 

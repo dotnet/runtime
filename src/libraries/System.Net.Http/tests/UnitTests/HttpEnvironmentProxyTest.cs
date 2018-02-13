@@ -45,10 +45,10 @@ namespace System.Net.Http.Tests
                 Uri u;
 
                 // It should not return object if there are no variables set.
-                Assert.Null(HttpEnvironmentProxy.TryToCreate());
+                Assert.False(HttpEnvironmentProxy.TryCreate(out p));
 
                 Environment.SetEnvironmentVariable("all_proxy", "http://1.1.1.1:3000");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 Assert.Null(p.Credentials);
 
@@ -58,7 +58,7 @@ namespace System.Net.Http.Tests
                 Assert.True(u != null && u.Host == "1.1.1.1");
 
                 Environment.SetEnvironmentVariable("http_proxy", "http://1.1.1.2:3001");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
 
                 // Protocol specific variables should take precedence over all_
@@ -71,7 +71,7 @@ namespace System.Net.Http.Tests
                 // Set https to invalid strings and use only IP & port for http.
                 Environment.SetEnvironmentVariable("http_proxy", "1.1.1.3:3003");
                 Environment.SetEnvironmentVariable("https_proxy", "ab!cd");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
 
                 u = p.GetProxy(fooHttp);
@@ -82,14 +82,14 @@ namespace System.Net.Http.Tests
                 // Try valid URI with unsupported protocol. It will be ignored
                 // to mimic curl behavior.
                 Environment.SetEnvironmentVariable("https_proxy", "socks5://1.1.1.4:3004");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
                 // Set https to valid URI but different from http.
                 Environment.SetEnvironmentVariable("https_proxy", "http://1.1.1.5:3005");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
 
                 u = p.GetProxy(fooHttp);
@@ -109,19 +109,19 @@ namespace System.Net.Http.Tests
                 IWebProxy p;
 
                 Environment.SetEnvironmentVariable("all_proxy", "http://foo:bar@1.1.1.1:3000");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 Assert.NotNull(p.Credentials);
 
                 // Use user only without password.
                 Environment.SetEnvironmentVariable("all_proxy", "http://foo@1.1.1.1:3000");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 Assert.NotNull(p.Credentials);
 
                 // Use different user for http and https
                 Environment.SetEnvironmentVariable("https_proxy", "http://foo1:bar1@1.1.1.1:3000");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 Uri u = p.GetProxy(fooHttp);
                 Assert.NotNull(p.Credentials.GetCredential(u, "Basic"));
@@ -144,7 +144,7 @@ namespace System.Net.Http.Tests
 
                 Environment.SetEnvironmentVariable("no_proxy", ".test.com,, foo.com");
                 Environment.SetEnvironmentVariable("all_proxy", "http://foo:bar@1.1.1.1:3000");
-                p = HttpEnvironmentProxy.TryToCreate();
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
 
                 Assert.True(p.IsBypassed(fooHttp));

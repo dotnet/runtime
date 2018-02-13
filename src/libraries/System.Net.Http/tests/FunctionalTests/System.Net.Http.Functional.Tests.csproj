@@ -98,6 +98,7 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
+    <Compile Include="HttpCookieProtocolTests.cs" />
     <Compile Include="HttpRetryProtocolTests.cs" />
     <Compile Include="IdnaProtocolTests.cs" />
     <Compile Include="HttpProtocolTests.cs" />
@@ -118,11 +119,11 @@
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="ManagedHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
-    <Compile Include="ReadOnlyMemoryContentTest.cs" />
     <Compile Include="HttpClientTest.netcoreapp.cs" />
     <Compile Include="HttpMethodTest.netcoreapp.cs" />
+    <Compile Include="ReadOnlyMemoryContentTest.cs" />
+    <Compile Include="SocketsHttpHandlerTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonTestPath)\System\IO\StreamSpanExtensions.netstandard.cs">

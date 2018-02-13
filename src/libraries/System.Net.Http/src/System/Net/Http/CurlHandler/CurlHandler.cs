@@ -461,7 +461,9 @@ namespace System.Net.Http
 
             if (request.Headers.TransferEncodingChunked.GetValueOrDefault() && (request.Content == null))
             {
-                throw new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content);
+                return Task.FromException<HttpResponseMessage>(
+                    new HttpRequestException(SR.net_http_client_execution_error,
+                        new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content)));
             }
 
             if (_useCookies && _cookieContainer == null)

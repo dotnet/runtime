@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -105,6 +105,9 @@
     <Compile Include="$(CommonPath)\System\Net\HttpVersionInternal.cs">
       <Link>Common\System\Net\HttpVersionInternal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs">
+      <Link>Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
       <Link>Common\System\IO\DelegatingStream.cs</Link>
     </Compile>
@@ -118,42 +121,43 @@
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Managed HttpClientHandler implementation -->
+  <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\Managed\AuthenticateAndRedirectHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Basic.cs" />
-    <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Digest.cs" />
-    <Compile Include="System\Net\Http\Managed\ChunkedEncodingReadStream.cs" />
-    <Compile Include="System\Net\Http\Managed\ChunkedEncodingWriteStream.cs" />
-    <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
-    <Compile Include="System\Net\Http\Managed\ConnectionCloseReadStream.cs" />
-    <Compile Include="System\Net\Http\Managed\ContentLengthReadStream.cs" />
-    <Compile Include="System\Net\Http\Managed\ContentLengthWriteStream.cs" />
-    <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\DecompressionHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\EmptyReadStream.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnection.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnectionContent.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnectionHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnectionKey.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnectionPool.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnectionPools.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpConnectionSettings.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpContentDuplexStream.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpContentReadStream.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpContentStream.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\RawConnectionStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticateAndRedirectHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Basic.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionCloseReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionContent.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionKey.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPool.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPools.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentDuplexStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentReadStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentWriteStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpProxyConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
   </ItemGroup>
-  <!-- Managed HttpClientHandler platform parts -->
+  <!-- SocketsHttpHandler platform parts -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.Unix.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpEnvironmentProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpProxyConnectionHandler.Unix.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.Windows.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpProxyConnectionHandler.Windows.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs" />
   </ItemGroup>
   <!-- Common -->
   <ItemGroup>
@@ -184,7 +188,7 @@
       <Link>Common\System\Net\Mail\WhitespaceReader.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- WinHTTP implementation -->
+  <!-- WinHttpHandler implementation -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
@@ -203,19 +207,19 @@
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
     <Compile Include="@(CompileItem)" />
   </ItemGroup>
-  <!-- Unix -->
+  <!-- CurlHandler implementation -->
   <PropertyGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.MultiAgent.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlException.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlResponseHeaderReader.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.EasyRequest.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.MultiAgent.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlException.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.CurlResponseMessage.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlResponseHeaderReader.cs" />
     <Compile Include="$(CommonPath)\System\StrongToWeakReference.cs">
       <Link>Common\Interop\Unix\StrongToWeakReference.cs</Link>
     </Compile>
@@ -300,6 +304,12 @@
     <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
       <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Unix.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
@@ -368,11 +378,11 @@
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
       <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
     </Compile>
-    <Compile Include="System\Net\Http\Unix\CurlHandler.ClientCertificateProvider.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.ClientCertificateProvider.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.SslProvider.Linux.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="System\Net\Http\OSX\CurlHandler.SslProvider.cs" />
+    <Compile Include="System\Net\Http\CurlHandler\CurlHandler.SslProvider.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Reference Include="Windows" />

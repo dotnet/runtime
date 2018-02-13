@@ -4,14 +4,12 @@
 
 using System.Collections.Generic;
 using System.Net.Security;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class ManagedHandler : HttpMessageHandler
+    public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandler _handler;
@@ -21,7 +19,7 @@ namespace System.Net.Http
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(ManagedHandler));
+                throw new ObjectDisposedException(nameof(SocketsHttpHandler));
             }
         }
 
@@ -51,22 +49,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._cookieContainer = value;
-            }
-        }
-
-        public ClientCertificateOption ClientCertificateOptions
-        {
-            get => _settings._clientCertificateOptions;
-            set
-            {
-                if (value != ClientCertificateOption.Manual &&
-                    value != ClientCertificateOption.Automatic)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
-
-                CheckDisposedOrStarted();
-                _settings._clientCertificateOptions = value;
             }
         }
 
@@ -117,16 +99,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._preAuthenticate = value;
-            }
-        }
-
-        public bool UseDefaultCredentials
-        {
-            get => _settings._useDefaultCredentials;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._useDefaultCredentials = value;
             }
         }
 
@@ -195,47 +167,13 @@ namespace System.Net.Http
             }
         }
 
-        public X509CertificateCollection ClientCertificates
+        public SslClientAuthenticationOptions SslOptions
         {
-            get
-            {
-                if (_settings._clientCertificateOptions != ClientCertificateOption.Manual)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
-                }
-
-                return _settings._clientCertificates ?? (_settings._clientCertificates = new X509Certificate2Collection());
-            }
-        }
-
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
-        {
-            get => _settings._serverCertificateCustomValidationCallback;
+            get => _settings._sslOptions ?? (_settings._sslOptions = new SslClientAuthenticationOptions());
             set
             {
                 CheckDisposedOrStarted();
-                _settings._serverCertificateCustomValidationCallback = value;
-            }
-        }
-
-        public bool CheckCertificateRevocationList
-        {
-            get => _settings._checkCertificateRevocationList;
-            set
-            {
-                CheckDisposedOrStarted();
-                _settings._checkCertificateRevocationList = value;
-            }
-        }
-
-        public SslProtocols SslProtocols
-        {
-            get => _settings._sslProtocols;
-            set
-            {
-                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
-                CheckDisposedOrStarted();
-                _settings._sslProtocols = value;
+                _settings._sslOptions = value;
             }
         }
 
@@ -285,38 +223,34 @@ namespace System.Net.Http
 
         private HttpMessageHandler SetupHandlerChain()
         {
-            HttpMessageHandler handler = new HttpConnectionHandler(_settings);
+            // Clone the settings to get a relatively consistent view that won't change after this point.
+            // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
+            HttpConnectionSettings settings = _settings.Clone();
 
-            if (_settings._useProxy &&
-                (_settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
+            HttpMessageHandler handler = new HttpConnectionHandler(settings);
+
+            if (settings._useProxy && (settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
             {
-                handler = new HttpProxyConnectionHandler(_settings, handler);
+                handler = new HttpProxyConnectionHandler(settings, handler);
             }
 
-            if (_settings._useCookies)
+            if (settings._credentials != null || settings._allowAutoRedirect)
             {
-                handler = new CookieHandler(CookieContainer, handler);
+                handler = new AuthenticateAndRedirectHandler(settings._preAuthenticate, settings._credentials, settings._allowAutoRedirect, settings._maxAutomaticRedirections, handler);
             }
 
-            if (_settings._credentials != null || _settings._allowAutoRedirect)
+            if (settings._automaticDecompression != DecompressionMethods.None)
             {
-                handler = new AuthenticateAndRedirectHandler(_settings._preAuthenticate, _settings._credentials, _settings._allowAutoRedirect, _settings._maxAutomaticRedirections, handler);
+                handler = new DecompressionHandler(settings._automaticDecompression, handler);
             }
 
-            if (_settings._automaticDecompression != DecompressionMethods.None)
-            {
-                handler = new DecompressionHandler(_settings._automaticDecompression, handler);
-            }
-
-            if (Interlocked.CompareExchange(ref _handler, handler, null) == null)
-            {
-                return handler;
-            }
-            else
+            // Ensure a single handler is used for all requests.
+            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
             {
                 handler.Dispose();
-                return _handler;
             }
+
+            return _handler;
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(
@@ -325,17 +259,35 @@ namespace System.Net.Http
             CheckDisposed();
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
+            Exception error = ValidateAndNormalizeRequest(request);
+            if (error != null)
+            {
+                return Task.FromException<HttpResponseMessage>(error);
+            }
+
+            return handler.SendAsync(request, cancellationToken);
+        }
+
+        private Exception ValidateAndNormalizeRequest(HttpRequestMessage request)
+        {
             if (request.Version.Major == 0)
             {
-                return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_version));
+                return new NotSupportedException(SR.net_http_unsupported_version);
             }
 
             // Add headers to define content transfer, if not present
-            if (request.Content != null &&
-                (!request.HasHeaders || request.Headers.TransferEncodingChunked != true) &&
-                request.Content.Headers.ContentLength == null)
+            bool transferEncodingChunkedSet = request.HasHeaders && request.Headers.TransferEncodingChunked.GetValueOrDefault();
+            if (request.Content == null)
             {
-                // We have content, but neither Transfer-Encoding or Content-Length is set.
+                if (transferEncodingChunkedSet)
+                {
+                    return new HttpRequestException(SR.net_http_client_execution_error,
+                        new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
+                }
+            }
+            else if (!transferEncodingChunkedSet && request.Content.Headers.ContentLength == null)
+            {
+                // We have content, but neither Transfer-Encoding nor Content-Length is set.
                 request.Headers.TransferEncodingChunked = true;
             }
 
@@ -344,7 +296,7 @@ namespace System.Net.Http
                 // HTTP 1.0 does not support chunking
                 if (request.Headers.TransferEncodingChunked == true)
                 {
-                    return Task.FromException<HttpResponseMessage>(new NotSupportedException(SR.net_http_unsupported_chunking));
+                    return new NotSupportedException(SR.net_http_unsupported_chunking);
                 }
 
                 // HTTP 1.0 does not support Expect: 100-continue; just disable it.
@@ -354,7 +306,7 @@ namespace System.Net.Http
                 }
             }
 
-            return handler.SendAsync(request, cancellationToken);
+            return null;
         }
     }
 }
