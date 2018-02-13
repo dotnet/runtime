@@ -14,7 +14,7 @@ namespace System.IO.Pipelines
         public bool IsCanceled { get { throw null; } }
         public bool IsCompleted { get { throw null; } }
     }
-    public partial interface IDuplexPipe : System.IDisposable
+    public partial interface IDuplexPipe
     {
         System.IO.Pipelines.PipeReader Input { get; }
         System.IO.Pipelines.PipeWriter Output { get; }

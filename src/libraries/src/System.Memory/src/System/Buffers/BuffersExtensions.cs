@@ -60,7 +60,7 @@ namespace System.Buffers
         /// </summary>
         public static void Write<T>(this IBufferWriter<T> bufferWriter, ReadOnlySpan<T> source)
         {
-            Span<byte> destination = bufferWriter.GetSpan();
+            Span<T> destination = bufferWriter.GetSpan();
 
             // Fast path, try copying to the available memory directly
             if (source.Length <= destination.Length)
