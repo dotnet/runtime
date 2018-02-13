@@ -125,16 +125,10 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
-    // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
-    // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's
-    // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
-    // or we need to just recognize that cancellation in such situations can be left up to the caller to do the
-    // same thing if it's really important.
-    //public sealed class SocketsHttpHandler_CancellationTest : CancellationTest
-    //{
-    //    public SocketsHttpHandler_CancellationTest(ITestOutputHelper output) : base(output) { }
-    //    protected override bool UseSocketsHttpHandler => true;
-    //}
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {

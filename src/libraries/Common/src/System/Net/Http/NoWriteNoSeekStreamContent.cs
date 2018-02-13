@@ -14,10 +14,9 @@ namespace System.Net.Http
     internal sealed class NoWriteNoSeekStreamContent : HttpContent
     {
         private readonly Stream _content;
-        private readonly CancellationToken _cancellationToken;
         private bool _contentConsumed;
 
-        internal NoWriteNoSeekStreamContent(Stream content, CancellationToken cancellationToken)
+        internal NoWriteNoSeekStreamContent(Stream content)
         {
             Debug.Assert(content != null);
             Debug.Assert(content.CanRead);
@@ -25,10 +24,16 @@ namespace System.Net.Http
             Debug.Assert(!content.CanSeek);
 
             _content = content;
-            _cancellationToken = cancellationToken;
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            SerializeToStreamAsync(stream, context, CancellationToken.None);
+
+        internal
+#if HTTP_DLL
+            override
+#endif
+            Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 
@@ -39,7 +44,7 @@ namespace System.Net.Http
             _contentConsumed = true;
 
             const int BufferSize = 8192;
-            Task copyTask = _content.CopyToAsync(stream, BufferSize, _cancellationToken);
+            Task copyTask = _content.CopyToAsync(stream, BufferSize, cancellationToken);
             if (copyTask.IsCompleted)
             {
                 try { _content.Dispose(); } catch { } // same as StreamToStreamCopy behavior
@@ -75,6 +80,10 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult<Stream>(_content);
+        protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(_content);
+
+#if HTTP_DLL
+        internal override Stream TryCreateContentReadStream() => _content;
+#endif
     }
 }

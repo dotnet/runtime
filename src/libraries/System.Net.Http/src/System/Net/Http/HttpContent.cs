@@ -299,7 +299,18 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext context);
 
-        public Task CopyToAsync(Stream stream, TransportContext context)
+        // TODO #9071: Expose this publicly.  Until it's public, only sealed or internal types should override it, and then change
+        // their SerializeToStreamAsync implementation to delegate to this one.  They need to be sealed as otherwise an external
+        // type could derive from it and override SerializeToStreamAsync(stream, context) further, at which point when
+        // HttpClient calls SerializeToStreamAsync(stream, context, cancellationToken), their custom override will be skipped.
+        internal virtual Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            SerializeToStreamAsync(stream, context);
+
+        public Task CopyToAsync(Stream stream, TransportContext context) =>
+            CopyToAsync(stream, context, CancellationToken.None);
+
+        // TODO #9071: Expose this publicly.
+        internal Task CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             CheckDisposed();
             if (stream == null)
@@ -313,11 +324,11 @@ namespace System.Net.Http
                 ArraySegment<byte> buffer;
                 if (TryGetBuffer(out buffer))
                 {
-                    task = stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count);
+                    task = stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken);
                 }
                 else
                 {
-                    task = SerializeToStreamAsync(stream, context);
+                    task = SerializeToStreamAsync(stream, context, cancellationToken);
                     CheckTaskNotNull(task);
                 }
 
@@ -354,7 +365,10 @@ namespace System.Net.Http
         // No "CancellationToken" parameter needed since canceling the CTS will close the connection, resulting
         // in an exception being thrown while we're buffering.
         // If buffering is used without a connection, it is supposed to be fast, thus no cancellation required.
-        public Task LoadIntoBufferAsync(long maxBufferSize)
+        public Task LoadIntoBufferAsync(long maxBufferSize) =>
+            LoadIntoBufferAsync(maxBufferSize, CancellationToken.None);
+
+        internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
             if (maxBufferSize > HttpContent.MaxBufferSize)
@@ -382,7 +396,7 @@ namespace System.Net.Http
 
             try
             {
-                Task task = SerializeToStreamAsync(tempBuffer, null);
+                Task task = SerializeToStreamAsync(tempBuffer, null, cancellationToken);
                 CheckTaskNotNull(task);
                 return LoadIntoBufferAsyncCore(task, tempBuffer);
             }

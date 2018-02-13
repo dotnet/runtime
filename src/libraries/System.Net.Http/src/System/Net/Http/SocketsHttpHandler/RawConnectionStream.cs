@@ -22,17 +22,44 @@ namespace System.Net.Http
                 return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (_connection == null || destination.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
-                int bytesRead = await _connection.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+                ValueTask<int> readTask = _connection.ReadAsync(destination);
+                int bytesRead;
+                if (readTask.IsCompletedSuccessfully)
+                {
+                    bytesRead = readTask.Result;
+                }
+                else
+                {
+                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                    try
+                    {
+                        bytesRead = await readTask.ConfigureAwait(false);
+                    }
+                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                    {
+                        throw CreateOperationCanceledException(exc, cancellationToken);
+                    }
+                    finally
+                    {
+                        ctr.Dispose();
+                    }
+                }
+
                 if (bytesRead == 0)
                 {
+                    // A cancellation request may have caused the EOF.
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     // We cannot reuse this connection, so close it.
                     _connection.Dispose();
                     _connection = null;
@@ -48,15 +75,40 @@ namespace System.Net.Http
                 {
                     throw new ArgumentNullException(nameof(destination));
                 }
-
-                if (_connection != null) // null if response body fully consumed
+                if (bufferSize <= 0)
                 {
-                    await _connection.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
-
-                    // We cannot reuse this connection, so close it.
-                    _connection.Dispose();
-                    _connection = null;
+                    throw new ArgumentOutOfRangeException(nameof(bufferSize));
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (_connection == null)
+                {
+                    // Response body fully consumed
+                    return;
+                }
+
+                Task copyTask = _connection.CopyToAsync(destination);
+                if (!copyTask.IsCompletedSuccessfully)
+                {
+                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                    try
+                    {
+                        await copyTask.ConfigureAwait(false);
+                    }
+                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                    {
+                        throw CreateOperationCanceledException(exc, cancellationToken);
+                    }
+                    finally
+                    {
+                        ctr.Dispose();
+                    }
+                }
+
+                // We cannot reuse this connection, so close it.
+                _connection.Dispose();
+                _connection = null;
             }
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -65,14 +117,63 @@ namespace System.Net.Http
                 return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
             }
 
-            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default) =>
-                _connection == null ? Task.FromException(new IOException(SR.net_http_io_write)) :
-                source.Length > 0 ? _connection.WriteWithoutBufferingAsync(source, cancellationToken) :
-                Task.CompletedTask;
+            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
 
-            public override Task FlushAsync(CancellationToken cancellationToken) =>
-                _connection != null ? _connection.FlushAsync(cancellationToken) :
-                Task.CompletedTask;
+                if (_connection == null)
+                {
+                    return Task.FromException(new IOException(SR.net_http_io_write));
+                }
+
+                if (source.Length == 0)
+                {
+                    return Task.CompletedTask;
+                }
+
+                Task writeTask = _connection.WriteWithoutBufferingAsync(source);
+                return writeTask.IsCompleted ?
+                    writeTask :
+                    WaitWithConnectionCancellationAsync(writeTask, cancellationToken);
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
+                if (_connection == null)
+                {
+                    return Task.CompletedTask;
+                }
+
+                Task flushTask = _connection.FlushAsync();
+                return flushTask.IsCompleted ?
+                    flushTask :
+                    WaitWithConnectionCancellationAsync(flushTask, cancellationToken);
+            }
+
+            private async Task WaitWithConnectionCancellationAsync(Task task, CancellationToken cancellationToken)
+            {
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                try
+                {
+                    await task.ConfigureAwait(false);
+                }
+                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                {
+                    throw CreateOperationCanceledException(exc, cancellationToken);
+                }
+                finally
+                {
+                    ctr.Dispose();
+                }
+            }
         }
     }
 }

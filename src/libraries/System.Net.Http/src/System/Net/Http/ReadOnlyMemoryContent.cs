@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -25,6 +26,9 @@ namespace System.Net.Http
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             stream.WriteAsync(_content);
+
+        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            stream.WriteAsync(_content, cancellationToken);
 
         protected internal override bool TryComputeLength(out long length)
         {

@@ -15,8 +15,7 @@ namespace System.Net.Http
         {
             private ulong _contentBytesRemaining;
 
-            public ContentLengthReadStream(HttpConnection connection, ulong contentLength)
-                : base(connection)
+            public ContentLengthReadStream(HttpConnection connection, ulong contentLength) : base(connection)
             {
                 Debug.Assert(contentLength > 0, "Caller should have checked for 0.");
                 _contentBytesRemaining = contentLength;
@@ -28,8 +27,10 @@ namespace System.Net.Http
                 return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (_connection == null || destination.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
@@ -43,11 +44,35 @@ namespace System.Net.Http
                     destination = destination.Slice(0, (int)_contentBytesRemaining);
                 }
 
-                int bytesRead = await _connection.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+                ValueTask<int> readTask = _connection.ReadAsync(destination);
+                int bytesRead;
+                if (readTask.IsCompletedSuccessfully)
+                {
+                    bytesRead = readTask.Result;
+                }
+                else
+                {
+                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                    try
+                    {
+                        bytesRead = await readTask.ConfigureAwait(false);
+                    }
+                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                    {
+                        throw CreateOperationCanceledException(exc, cancellationToken);
+                    }
+                    finally
+                    {
+                        ctr.Dispose();
+                    }
+                }
 
                 if (bytesRead <= 0)
                 {
-                    // Unexpected end of response stream
+                    // A cancellation request may have caused the EOF.
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Unexpected end of response stream.
                     throw new IOException(SR.net_http_invalid_response);
                 }
 
@@ -70,6 +95,12 @@ namespace System.Net.Http
                 {
                     throw new ArgumentNullException(nameof(destination));
                 }
+                if (bufferSize <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(bufferSize));
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (_connection == null)
                 {
@@ -77,7 +108,23 @@ namespace System.Net.Http
                     return;
                 }
 
-                await _connection.CopyToAsync(destination, _contentBytesRemaining, cancellationToken).ConfigureAwait(false);
+                Task copyTask = _connection.CopyToAsync(destination, _contentBytesRemaining);
+                if (!copyTask.IsCompletedSuccessfully)
+                {
+                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                    try
+                    {
+                        await copyTask.ConfigureAwait(false);
+                    }
+                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                    {
+                        throw CreateOperationCanceledException(exc, cancellationToken);
+                    }
+                    finally
+                    {
+                        ctr.Dispose();
+                    }
+                }
 
                 _contentBytesRemaining = 0;
                 _connection.ReturnConnectionToPool();
