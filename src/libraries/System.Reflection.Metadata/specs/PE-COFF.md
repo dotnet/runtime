@@ -76,11 +76,10 @@ More than one entry can be present, in case multiple PDBs were produced during t
 
 *Version Major=0x0001, Minor=0x0000* of the entry data format is following:
 
-| Offset            | Size          | Field          | Description                                                             |
-|:------------------|:--------------|:---------------|-------------------------------------------------------------------------|
-| 0                 | 4             | Signature      | 0x50, 0x44, 0x42, 0x43 (ASCII string: "PDBC")                           |
-| 4                 | AlgNameLength | AlgorithmName  | Zero-terminated UTF8 string. The name of the crypho hash algorithm.     |
-| 4 + AlgNameLength | ChecksumSize  | Checksum       | Blob. Checksum of the PDB content.                                      |
+| Offset        | Size          | Field          | Description                                                             |
+|:--------------|:--------------|:---------------|-------------------------------------------------------------------------|
+| 0             | AlgNameLength | AlgorithmName  | Zero-terminated UTF8 string. The name of the crypho hash algorithm.     |
+| AlgNameLength | ChecksumSize  | Checksum       | Blob. Checksum of the PDB content.                                      |
 
 _AlgorithmName_ is the name of the crypto hash algorithm used to calculate the checksum. The name is case-sensitive.
 
