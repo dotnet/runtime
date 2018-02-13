@@ -160,6 +160,13 @@ namespace System.ComponentModel.Tests
             Assert.NotEqual(firstAssociatedObject, firstAssociation);
         }
 
+        [Fact]
+        public void DerivedPropertyAttribute() {
+            PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(FooBarDerived))["Value"];
+            var descriptionAttribute = (DescriptionAttribute)property.Attributes[typeof(DescriptionAttribute)];
+            Assert.Equal("Derived", descriptionAttribute.Description);
+        }
+
         private class InvocationRecordingTypeDescriptionProvider : TypeDescriptionProvider
         {
             public bool ReceivedCall { get; private set; } = false;
@@ -219,6 +226,18 @@ namespace System.ComponentModel.Tests
                 ReceivedCall = true;
                 return base.IsSupportedType(type);
             }
+        }
+
+        class FooBarBase
+        {
+            [Description("Base")]
+            public virtual int Value { get; set; }
+        }
+
+        class FooBarDerived : FooBarBase 
+        {
+            [Description("Derived")]
+            public override int Value { get; set; }
         }
 
         private static Tuple<Type, Type>[] s_typesWithConverters =

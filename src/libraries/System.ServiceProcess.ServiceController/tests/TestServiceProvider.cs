@@ -96,6 +96,7 @@ namespace System.ServiceProcess.Tests
 
             testServiceInstaller.ServiceName = TestServiceName;
             testServiceInstaller.DisplayName = TestServiceDisplayName;
+            testServiceInstaller.Description = "__Dummy Test Service__";
 
             if (_dependentServices != null)
             {

@@ -18,7 +18,7 @@ internal partial class Interop
 
         internal static bool DeleteFile(string path)
         {
-            path = PathInternal.EnsureExtendedPrefixOverMaxPath(path);
+            path = PathInternal.EnsureExtendedPrefixIfNeeded(path);
             return DeleteFilePrivate(path);
         }
     }

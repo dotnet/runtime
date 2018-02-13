@@ -22,7 +22,7 @@ namespace System.DirectoryServices.Protocols
             byte[] encodingResult = null;
             // value is allowed to be null in certain scenario, so if it is null, just set it to empty array.
             if (value == null)
-                value = new object[0];
+                value = Array.Empty<object>();
 
             Debug.WriteLine("Begin encoding\n");
 
@@ -235,7 +235,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (binaryValue == null || binaryValue.bv_len == 0)
                 {
-                    encodingResult = new byte[0];
+                    encodingResult = Array.Empty<byte>();
                 }
                 else
                 {

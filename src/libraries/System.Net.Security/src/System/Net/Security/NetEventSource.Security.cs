@@ -343,29 +343,46 @@ namespace System.Net
                     const int NumEventDatas = 8;
                     var descrs = stackalloc EventData[NumEventDatas];
 
-                    descrs[0].DataPointer = (IntPtr)(arg1Ptr);
-                    descrs[0].Size = (arg1.Length + 1) * sizeof(char);
-
-                    descrs[1].DataPointer = (IntPtr)(&arg2);
-                    descrs[1].Size = sizeof(int);
-
-                    descrs[2].DataPointer = (IntPtr)(&arg3);
-                    descrs[2].Size = sizeof(int);
-
-                    descrs[3].DataPointer = (IntPtr)(&arg4);
-                    descrs[3].Size = sizeof(int);
-
-                    descrs[4].DataPointer = (IntPtr)(&arg5);
-                    descrs[4].Size = sizeof(int);
-
-                    descrs[5].DataPointer = (IntPtr)(&arg6);
-                    descrs[5].Size = sizeof(int);
-
-                    descrs[6].DataPointer = (IntPtr)(&arg7);
-                    descrs[6].Size = sizeof(int);
-
-                    descrs[7].DataPointer = (IntPtr)(&arg8);
-                    descrs[7].Size = sizeof(int);
+                    descrs[0] = new EventData
+                    {
+                        DataPointer = (IntPtr)(arg1Ptr),
+                        Size = (arg1.Length + 1) * sizeof(char)
+                    };
+                    descrs[1] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg2),
+                        Size = sizeof(int)
+                    };
+                    descrs[2] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg3),
+                        Size = sizeof(int)
+                    };
+                    descrs[3] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg4),
+                        Size = sizeof(int)
+                    };
+                    descrs[4] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg5),
+                        Size = sizeof(int)
+                    };
+                    descrs[5] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg6),
+                        Size = sizeof(int)
+                    };
+                    descrs[6] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg7),
+                        Size = sizeof(int)
+                    };
+                    descrs[7] = new EventData
+                    {
+                        DataPointer = (IntPtr)(&arg8),
+                        Size = sizeof(int)
+                    };
 
                     WriteEventCore(eventId, NumEventDatas, descrs);
                 }

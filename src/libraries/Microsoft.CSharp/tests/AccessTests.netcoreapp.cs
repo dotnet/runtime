@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
-    public class AccessTests
+    public partial class AccessTests
     {
         private readonly Type _baseType;
         private readonly Type _siblingType;

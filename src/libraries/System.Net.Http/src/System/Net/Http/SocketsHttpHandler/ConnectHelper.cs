@@ -7,7 +7,6 @@ using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +15,23 @@ namespace System.Net.Http
 {
     internal static class ConnectHelper
     {
+        /// <summary>
+        /// Helper type used by HttpClientHandler when wrapping SocketsHttpHandler to map its
+        /// certificate validation callback to the one used by SslStream.
+        /// </summary>
+        internal sealed class CertificateCallbackMapper
+        {
+            public readonly Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> FromHttpClientHandler;
+            public readonly RemoteCertificateValidationCallback ForSocketsHttpHandler;
+
+            public CertificateCallbackMapper(Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> fromHttpClientHandler)
+            {
+                FromHttpClientHandler = fromHttpClientHandler;
+                ForSocketsHttpHandler = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+                    FromHttpClientHandler(sender as HttpRequestMessage, certificate as X509Certificate2, chain, sslPolicyErrors);
+            }
+        }
+
         public static async ValueTask<Stream> ConnectAsync(HttpConnectionKey key, CancellationToken cancellationToken)
         {
             string host = key.Host;
@@ -103,47 +119,31 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<SslStream> EstablishSslConnectionAsync(HttpConnectionSettings settings, string host, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
+        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
         {
-            RemoteCertificateValidationCallback callback = null;
-            if (settings._serverCertificateCustomValidationCallback != null)
+            // If there's a cert validation callback, and if it came from HttpClientHandler,
+            // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
+            RemoteCertificateValidationCallback callback = sslOptions.RemoteCertificateValidationCallback;
+            if (callback != null && callback.Target is CertificateCallbackMapper mapper)
             {
-                callback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
-                {
-                    try
-                    {
-                        return settings._serverCertificateCustomValidationCallback(request, certificate as X509Certificate2, chain, sslPolicyErrors);
-                    }
-                    catch (Exception e)
-                    {
-                        throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
-                    }
-                };
+                sslOptions = sslOptions.ShallowClone(); // Clone as we're about to mutate it and don't want to affect the cached copy
+                Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> localFromHttpClientHandler = mapper.FromHttpClientHandler;
+                HttpRequestMessage localRequest = request;
+                sslOptions.RemoteCertificateValidationCallback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
+                    localFromHttpClientHandler(localRequest, certificate as X509Certificate2, chain, sslPolicyErrors);
             }
 
+            // Create the SslStream, authenticate, and return it.
             var sslStream = new SslStream(stream);
-
             try
             {
-                await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-                {
-                    TargetHost = host,
-                    ClientCertificates = settings._clientCertificates,
-                    EnabledSslProtocols = settings._sslProtocols,
-                    CertificateRevocationCheckMode = settings._checkCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
-                    RemoteCertificateValidationCallback = callback
-                }, cancellationToken).ConfigureAwait(false);
+                await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 sslStream.Dispose();
-                if (e is AuthenticationException || e is IOException)
-                {
-                    throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
-                }
-                throw;
+                throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
             }
-
             return sslStream;
         }
     }

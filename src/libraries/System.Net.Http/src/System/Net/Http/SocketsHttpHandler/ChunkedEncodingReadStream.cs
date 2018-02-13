@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -13,22 +14,55 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingReadStream : HttpContentReadStream
         {
+            /// <summary>How long a chunk indicator is allowed to be.</summary>
+            /// <remarks>
+            /// While most chunks indicators will contain no more than ulong.MaxValue.ToString("X").Length characters,
+            /// "chunk extensions" are allowed. We place a limit on how long a line can be to avoid OOM issues if an
+            /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
+            /// </remarks>
+            private const int MaxChunkBytesAllowed = 16*1024;
+            /// <summary>How long a trailing header can be.  This value is arbitrary and can be changed as needed.</summary>
+            private const int MaxTrailingHeaderLength = 16*1024;
+            /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
 
-            public ChunkedEncodingReadStream(HttpConnection connection)
-                : base(connection)
+            public ChunkedEncodingReadStream(HttpConnection connection) : base(connection)
             {
-                _chunkBytesRemaining = 0;
             }
 
-            private async Task<bool> TryGetNextChunk(CancellationToken cancellationToken)
+            private async Task<bool> TryGetNextChunkAsync(CancellationToken cancellationToken)
             {
                 Debug.Assert(_chunkBytesRemaining == 0);
 
-                // Start of chunk, read chunk size.
-                ulong chunkSize = ParseHexSize(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false));
-                _chunkBytesRemaining = chunkSize;
+                // Read the start of the chunk line.
+                _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
+                ArraySegment<byte> line = await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false);
 
+                // Parse the hex value.
+                if (!Utf8Parser.TryParse(line.AsReadOnlySpan(), out ulong chunkSize, out int bytesConsumed, 'X'))
+                {
+                    throw new IOException(SR.net_http_invalid_response);
+                }
+                else if (bytesConsumed != line.Count)
+                {
+                    // There was data after the chunk size, presumably a "chunk extension".
+                    // Allow tabs and spaces and then stop validating once we get to an extension.
+                    int offset = line.Offset + bytesConsumed, end = line.Count - bytesConsumed + line.Offset;
+                    for (int i = offset; i < end; i++)
+                    {
+                        char c = (char)line.Array[i];
+                        if (c == ';')
+                        {
+                            break;
+                        }
+                        else if (c != ' ' && c != '\t') // not called out in the RFC, but WinHTTP allows it
+                        {
+                            throw new IOException(SR.net_http_invalid_response);
+                        }
+                    }
+                }
+
+                _chunkBytesRemaining = chunkSize;
                 if (chunkSize > 0)
                 {
                     return true;
@@ -36,58 +70,27 @@ namespace System.Net.Http
 
                 // We received a chunk size of 0, which indicates end of response body. 
                 // Read and discard any trailing headers, until we see an empty line.
-                while (!LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
-                    ;
+                while (true)
+                {
+                    _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
+                    if (LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                    {
+                        break;
+                    }
+                }
 
                 _connection.ReturnConnectionToPool();
                 _connection = null;
                 return false;
             }
 
-            private ulong ParseHexSize(ArraySegment<byte> line)
-            {
-                if (line.Count == 0)
-                {
-                    throw new IOException(SR.net_http_invalid_response);
-                }
-
-                ulong size = 0;
-                try
-                {
-                    for (int i = 0; i < line.Count; i++)
-                    {
-                        char c = (char)line[i];
-                        if ((uint)(c - '0') <= '9' - '0')
-                        {
-                            size = checked(size * 16 + ((ulong)c - '0'));
-                        }
-                        else if ((uint)(c - 'a') <= ('f' - 'a'))
-                        {
-                            size = checked(size * 16 + ((ulong)c - 'a' + 10));
-                        }
-                        else if ((uint)(c - 'A') <= ('F' - 'A'))
-                        {
-                            size = checked(size * 16 + ((ulong)c - 'A' + 10));
-                        }
-                        else
-                        {
-                            throw new IOException(SR.net_http_invalid_response);
-                        }
-                    }
-                }
-                catch (OverflowException e)
-                {
-                    throw new IOException(SR.net_http_invalid_response, e);
-                }
-                return size;
-            }
-
-            private async Task ConsumeChunkBytes(ulong bytesConsumed, CancellationToken cancellationToken)
+            private async Task ConsumeChunkBytesAsync(ulong bytesConsumed, CancellationToken cancellationToken)
             {
                 Debug.Assert(bytesConsumed <= _chunkBytesRemaining);
                 _chunkBytesRemaining -= bytesConsumed;
                 if (_chunkBytesRemaining == 0)
                 {
+                    _connection._allowedReadLineBytes = 2; // \r\n
                     if (!LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
                     {
                         ThrowInvalidHttpResponse();
@@ -111,7 +114,7 @@ namespace System.Net.Http
 
                 if (_chunkBytesRemaining == 0)
                 {
-                    if (!await TryGetNextChunk(cancellationToken).ConfigureAwait(false))
+                    if (!await TryGetNextChunkAsync(cancellationToken).ConfigureAwait(false))
                     {
                         // End of response body
                         return 0;
@@ -131,7 +134,7 @@ namespace System.Net.Http
                     throw new IOException(SR.net_http_invalid_response);
                 }
 
-                await ConsumeChunkBytes((ulong)bytesRead, cancellationToken).ConfigureAwait(false);
+                await ConsumeChunkBytesAsync((ulong)bytesRead, cancellationToken).ConfigureAwait(false);
 
                 return bytesRead;
             }
@@ -152,13 +155,13 @@ namespace System.Net.Http
                 if (_chunkBytesRemaining > 0)
                 {
                     await _connection.CopyToAsync(destination, _chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
-                    await ConsumeChunkBytes(_chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
+                    await ConsumeChunkBytesAsync(_chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
                 }
 
-                while (await TryGetNextChunk(cancellationToken).ConfigureAwait(false))
+                while (await TryGetNextChunkAsync(cancellationToken).ConfigureAwait(false))
                 {
                     await _connection.CopyToAsync(destination, _chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
-                    await ConsumeChunkBytes(_chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
+                    await ConsumeChunkBytesAsync(_chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
                 }
             }
         }

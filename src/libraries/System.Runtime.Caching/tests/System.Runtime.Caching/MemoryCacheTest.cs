@@ -1083,7 +1083,7 @@ namespace MonoTests.System.Runtime.Caching
                 Assert.Null(mc.Get("expire5"));
                 Assert.Equal(1, mc.GetCount());
 
-                Thread.Sleep(SlidingExpirationThresholdMSec);
+                Thread.Sleep(SlidingExpirationThresholdMSec + 1000);
 
                 Assert.Null(mc.Get("slidingtest"));
                 Assert.Equal(0, mc.GetCount());

@@ -98,6 +98,28 @@ namespace System.Tests
             var emptyArraySegment = new ArraySegment<T>(new T[1], 0, 0);
             Assert.NotSame(emptyArraySegment.Array, emptyArraySegment.ToArray());
         }
+
+        [Fact]
+        public void Cast_FromNullArray_ReturnsDefault()
+        {
+            ArraySegment<T> fromNull = null;
+            Assert.Null(fromNull.Array);
+            Assert.Equal(0, fromNull.Offset);
+            Assert.Equal(0, fromNull.Count);
+
+            Assert.True(default(ArraySegment<T>) == null);
+            Assert.True(new ArraySegment<T>(Array.Empty<T>()) != null);
+        }
+
+        [Fact]
+        public void Cast_FromValidArray_ReturnsSegmentForWholeArray()
+        {
+            var array = new T[42];
+            ArraySegment<T> fromArray = array;
+            Assert.Same(array, fromArray.Array);
+            Assert.Equal(0, fromArray.Offset);
+            Assert.Equal(42, fromArray.Count);
+        }
     }
 
     public static partial class ArraySegment_Tests

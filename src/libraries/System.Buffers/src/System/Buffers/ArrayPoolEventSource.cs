@@ -34,14 +34,26 @@ namespace System.Buffers
         internal unsafe void BufferRented(int bufferId, int bufferSize, int poolId, int bucketId)
         {
             EventData* payload = stackalloc EventData[4];
-            payload[0].Size = sizeof(int);
-            payload[0].DataPointer = ((IntPtr)(&bufferId));
-            payload[1].Size = sizeof(int);
-            payload[1].DataPointer = ((IntPtr)(&bufferSize));
-            payload[2].Size = sizeof(int);
-            payload[2].DataPointer = ((IntPtr)(&poolId));
-            payload[3].Size = sizeof(int);
-            payload[3].DataPointer = ((IntPtr)(&bucketId));
+            payload[0] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&bufferId))
+            };
+            payload[1] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&bufferSize))
+            };
+            payload[2] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&poolId))
+            };
+            payload[3] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&bucketId))
+            };
             WriteEventCore(1, 4, payload);
         }
 
@@ -54,16 +66,31 @@ namespace System.Buffers
         internal unsafe void BufferAllocated(int bufferId, int bufferSize, int poolId, int bucketId, BufferAllocatedReason reason)
         {
             EventData* payload = stackalloc EventData[5];
-            payload[0].Size = sizeof(int);
-            payload[0].DataPointer = ((IntPtr)(&bufferId));
-            payload[1].Size = sizeof(int);
-            payload[1].DataPointer = ((IntPtr)(&bufferSize));
-            payload[2].Size = sizeof(int);
-            payload[2].DataPointer = ((IntPtr)(&poolId));
-            payload[3].Size = sizeof(int);
-            payload[3].DataPointer = ((IntPtr)(&bucketId));
-            payload[4].Size = sizeof(BufferAllocatedReason);
-            payload[4].DataPointer = ((IntPtr)(&reason));
+            payload[0] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&bufferId))
+            };
+            payload[1] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&bufferSize))
+            };
+            payload[2] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&poolId))
+            };
+            payload[3] = new EventData
+            {
+                Size = sizeof(int),
+                DataPointer = ((IntPtr)(&bucketId))
+            };
+            payload[4] = new EventData
+            {
+                Size = sizeof(BufferAllocatedReason),
+                DataPointer = ((IntPtr)(&reason))
+            };
             WriteEventCore(2, 5, payload);
         }
 

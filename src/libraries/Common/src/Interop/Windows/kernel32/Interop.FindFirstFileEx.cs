@@ -19,7 +19,7 @@ internal partial class Interop
 
         internal static SafeFindHandle FindFirstFile(string fileName, ref WIN32_FIND_DATA data)
         {
-            fileName = PathInternal.EnsureExtendedPrefixOverMaxPath(fileName);
+            fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
 
             // use FindExInfoBasic since we don't care about short name and it has better perf
             return FindFirstFileExPrivate(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);

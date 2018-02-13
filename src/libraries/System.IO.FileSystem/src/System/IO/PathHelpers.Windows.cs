@@ -19,13 +19,6 @@ namespace System.IO
 
     internal static partial class PathHelpers
     {
-        internal static bool ShouldReviseDirectoryPathToCurrent(string path)
-        {
-            // In situations where this method is invoked, "<DriveLetter>:" should be special-cased
-            // to instead go to the current directory.
-            return path != null && path.Length == 2 && path[1] == ':';
-        }
-
         internal static string TrimEndingDirectorySeparator(string path) =>
             EndsInDirectorySeparator(path) ?
                 path.Substring(0, path.Length - 1) :

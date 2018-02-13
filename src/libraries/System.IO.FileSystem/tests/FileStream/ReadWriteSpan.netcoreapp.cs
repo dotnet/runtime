@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -188,6 +189,20 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task NonEmptyFile_CustomOwnedMemory_ReadAsync_GetsExpectedData()
+        {
+            string fileName = GetTestFilePath();
+            File.WriteAllBytes(fileName, TestBuffer);
+
+            using (var fs = CreateFileStream(fileName, FileMode.Open))
+            using (var buffer = new NativeOwnedMemory(TestBuffer.Length))
+            {
+                Assert.Equal(TestBuffer.Length, await fs.ReadAsync(buffer.Memory));
+                Assert.Equal<byte>(TestBuffer, buffer.Memory.ToArray());
+            }
+        }
+
+        [Fact]
         public void ReadOnly_WriteAsync_Throws()
         {
             string fileName = GetTestFilePath();
@@ -238,24 +253,49 @@ namespace System.IO.Tests
                 Assert.Equal(TestBuffer, buffer);
             }
         }
+
+        [Fact]
+        public async Task NonEmptyWriteAsync_CustomOwnedMemory_WritesExpectedData()
+        {
+            using (var mem = new NativeOwnedMemory(TestBuffer.Length))
+            using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
+            {
+                new Memory<byte>(TestBuffer).CopyTo(mem.Memory);
+
+                await fs.WriteAsync(mem.Memory);
+                Assert.Equal(TestBuffer.Length, fs.Length);
+                Assert.Equal(TestBuffer.Length, fs.Position);
+
+                fs.Position = 0;
+                var buffer = new byte[TestBuffer.Length];
+                Assert.Equal(TestBuffer.Length, await fs.ReadAsync(new Memory<byte>(buffer)));
+                Assert.Equal(TestBuffer, buffer);
+            }
+        }
     }
 
     public class Sync_FileStream_ReadWrite_Span : FileStream_ReadWrite_Span
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>
-            new FileStream(path, mode, access, FileShare.None, 0x1000, FileOptions.None);
+            new FileStream(path, mode, access, FileShare.None, bufferSize: 0x1000, FileOptions.None);
     }
 
     public class Async_FileStream_ReadWrite_Span : FileStream_ReadWrite_Span
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>
-            new FileStream(path, mode, access, FileShare.None, 0x1000, FileOptions.Asynchronous);
+            new FileStream(path, mode, access, FileShare.None, bufferSize: 0x1000, FileOptions.Asynchronous);
+    }
+
+    public class Async_NoBuffer_FileStream_ReadWrite_Span : FileStream_ReadWrite_Span
+    {
+        protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>
+            new FileStream(path, mode, access, FileShare.None, bufferSize: 1, FileOptions.Asynchronous);
     }
 
     public sealed class Sync_DerivedFileStream_ReadWrite_Span : Sync_FileStream_ReadWrite_Span
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>
-            new DerivedFileStream(path, mode, access, FileShare.None, 0x1000, FileOptions.None);
+            new DerivedFileStream(path, mode, access, FileShare.None, bufferSize: 0x1000, FileOptions.None);
 
         [Fact]
         public void CallSpanReadWriteOnDerivedFileStream_ArrayMethodsUsed()
@@ -299,7 +339,7 @@ namespace System.IO.Tests
     public sealed class Async_DerivedFileStream_ReadWrite_Span : Async_FileStream_ReadWrite_Span
     {
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access) =>
-            new DerivedFileStream(path, mode, access, FileShare.None, 0x1000, FileOptions.Asynchronous);
+            new DerivedFileStream(path, mode, access, FileShare.None, bufferSize: 0x1000, FileOptions.Asynchronous);
     }
 
     internal sealed class DerivedFileStream : FileStream

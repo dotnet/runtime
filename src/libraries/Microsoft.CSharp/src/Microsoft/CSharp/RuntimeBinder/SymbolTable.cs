@@ -1119,7 +1119,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             field.SetAccess(access);
             field.isReadOnly = fieldInfo.IsInitOnly;
             field.isEvent = false;
-            field.isAssigned = true;
             field.SetType(GetCTypeFromType(fieldInfo.FieldType));
 
             return field;

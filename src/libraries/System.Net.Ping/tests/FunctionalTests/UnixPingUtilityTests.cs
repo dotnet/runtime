@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -33,21 +34,46 @@ namespace System.Net.NetworkInformation.Tests
                 ? UnixCommandLinePing.Ping4UtilityPath
                 : UnixCommandLinePing.Ping6UtilityPath;
 
-            ProcessStartInfo psi = new ProcessStartInfo(utilityPath, arguments);
-            psi.RedirectStandardError = true;
-            psi.RedirectStandardOutput = true;
-            Process p = Process.Start(psi);
+            var p = new Process();
+            p.StartInfo.FileName = utilityPath;
+            p.StartInfo.Arguments = arguments;
+            p.StartInfo.UseShellExecute = false;
+            
+            p.StartInfo.RedirectStandardOutput = true;
+            var stdOutLines = new List<string>();
+            p.OutputDataReceived += new DataReceivedEventHandler(
+                delegate (object sendingProcess, DataReceivedEventArgs outputLine) { stdOutLines.Add(outputLine.Data); }); 
 
-            string pingOutput = p.StandardOutput.ReadToEnd();
-            Assert.True(p.WaitForExit(TestSettings.PingTimeout), "Ping process did not exit in " + TestSettings.PingTimeout + " ms.");
-            if (p.ExitCode == 1 || p.ExitCode == 2)
+            p.StartInfo.RedirectStandardError = true;
+            var stdErrLines = new List<string>();
+            p.ErrorDataReceived += new DataReceivedEventHandler(
+                delegate (object sendingProcess, DataReceivedEventArgs errorLine) { stdErrLines.Add(errorLine.Data); }); 
+
+            p.Start();
+            p.BeginOutputReadLine();
+            p.BeginErrorReadLine();
+
+            string pingOutput;
+            if (!p.WaitForExit(TestSettings.PingTimeout))
             {
-                // Workaround known OSX bug in ping6 utility.
-                Assert.Equal(utilityPath, UnixCommandLinePing.Ping6UtilityPath);
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
-                return;
+                pingOutput = string.Join("\n", stdOutLines);
+                string stdErr = string.Join("\n", stdErrLines);
+                throw new Exception(
+                    $"[{utilityPath} {arguments}] process did not exit in {TestSettings.PingTimeout} ms.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
             }
 
+            // Ensure standard output and error are flushed
+            p.WaitForExit();
+
+            pingOutput = string.Join("\n", stdOutLines);
+            var exitCode = p.ExitCode;
+            if (exitCode != 0)
+            {
+                string stdErr = string.Join("\n", stdErrLines);
+                throw new Exception(
+                    $"[{utilityPath} {arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");
+            }
+            
             try
             {
                 // Validate that the returned data size is correct.
@@ -65,7 +91,9 @@ namespace System.Net.NetworkInformation.Tests
             }
             catch (Exception e)
             {
-                throw new Exception($"Ping output was <{pingOutput}>", e);
+                string stdErr = string.Join("\n", stdErrLines);
+                throw new Exception(
+                    $"Parse error for [{utilityPath} {arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]", e);
             }
         }
 

@@ -2,26 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Security;
-using Microsoft.Win32;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 
 namespace System.IO
 {
     public abstract partial class FileSystemInfo : MarshalByRefObject, ISerializable
     {
+        // FullPath and OriginalPath are documented fields
         protected string FullPath;          // fully qualified path of the file or directory
         protected string OriginalPath;      // path passed in by the user
-        private string _displayPath = "";   // path that can be displayed to the user
 
-        protected FileSystemInfo()
-        {
-        }
+        internal string _name;
 
         protected FileSystemInfo(SerializationInfo info, StreamingContext context)
         {
@@ -34,13 +25,7 @@ namespace System.IO
         }
 
         // Full path of the directory/file
-        public virtual string FullName
-        {
-            get
-            {
-                return FullPath;
-            }
-        }
+        public virtual string FullName => FullPath;
 
         public string Extension
         {
@@ -60,17 +45,22 @@ namespace System.IO
             }
         }
 
-        // For files name of the file is returned, for directories the last directory in hierarchy is returned if possible,
-        // otherwise the fully qualified name s returned
-        public abstract string Name
-        {
-            get;
-        }
+        public virtual string Name => _name;
 
         // Whether a file/directory exists
-        public abstract bool Exists
+        public virtual bool Exists
         {
-            get;
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
 
         // Delete a file/directory
@@ -95,7 +85,6 @@ namespace System.IO
             {
                 return CreationTimeCore.UtcDateTime;
             }
-
             set
             {
                 CreationTimeCore = File.GetUtcDateTimeOffset(value);
@@ -107,7 +96,6 @@ namespace System.IO
         {
             get
             {
-                // depends on the security check in get_LastAccessTimeUtc
                 return LastAccessTimeUtc.ToLocalTime();
             }
             set
@@ -122,7 +110,6 @@ namespace System.IO
             {
                 return LastAccessTimeCore.UtcDateTime;
             }
-
             set
             {
                 LastAccessTimeCore = File.GetUtcDateTimeOffset(value);
@@ -133,10 +120,8 @@ namespace System.IO
         {
             get
             {
-                // depends on the security check in get_LastWriteTimeUtc
                 return LastWriteTimeUtc.ToLocalTime();
             }
-
             set
             {
                 LastWriteTimeUtc = value.ToUniversalTime();
@@ -149,23 +134,15 @@ namespace System.IO
             {
                 return LastWriteTimeCore.UtcDateTime;
             }
-
             set
             {
                 LastWriteTimeCore = File.GetUtcDateTimeOffset(value);
             }
         }
 
-        internal string DisplayPath
-        {
-            get
-            {
-                return _displayPath;
-            }
-            set
-            {
-                _displayPath = value;
-            }
-        }
+        /// <summary>
+        /// Returns the original path. Use FullName or Name properties for the full path or file/directory name.
+        /// </summary>
+        public override string ToString() => OriginalPath ?? string.Empty;
     }
 }

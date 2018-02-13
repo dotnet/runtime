@@ -502,7 +502,7 @@ namespace System.Runtime.Serialization
         public virtual byte[] ReadContentAsBase64()
         {
             if (isEndOfEmptyElement)
-                return new byte[0];
+                return Array.Empty<byte>();
 
             if (dictionaryReader == null)
             {

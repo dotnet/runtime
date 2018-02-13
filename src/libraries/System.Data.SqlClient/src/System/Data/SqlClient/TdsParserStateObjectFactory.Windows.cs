@@ -19,7 +19,7 @@ namespace System.Data.SqlClient
         //private static bool shouldUseLegacyNetorking;
         //public static bool UseManagedSNI { get; } = AppContext.TryGetSwitch(UseLegacyNetworkingOnWindows, out shouldUseLegacyNetorking) ? !shouldUseLegacyNetorking : true;
 
-        public static bool UseManagedSNI { get; } = false;
+        public static bool UseManagedSNI { get; } = true;
 
         public EncryptionOptions EncryptionOptions
         {

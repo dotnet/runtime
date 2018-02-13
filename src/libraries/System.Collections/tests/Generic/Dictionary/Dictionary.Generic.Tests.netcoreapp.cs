@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
+using Common.System;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -217,6 +219,202 @@ namespace System.Collections.Tests
 
             dictionary = new Dictionary<TKey, TValue>();
             Assert.Equal(17, dictionary.EnsureCapacity(13));
+        }
+
+        #endregion
+
+        #region TrimExcess
+
+        [Fact]
+        public void TrimExcess_Generic_NegativeCapacity_Throw()
+        {
+            var dictionary = new Dictionary<TKey, TValue>();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => dictionary.TrimExcess(-1));
+        }
+
+        [Theory]
+        [InlineData(20)]
+        [InlineData(23)]
+        public void TrimExcess_Generic_CapacitySmallerThanCount_Throws(int suggestedCapacity)
+        {
+            var dictionary = new Dictionary<TKey, TValue>();
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => dictionary.TrimExcess(0));
+
+            dictionary = new Dictionary<TKey, TValue>(suggestedCapacity);
+            dictionary.Add(GetNewKey(dictionary), CreateTValue(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => dictionary.TrimExcess(0));
+        }
+
+        [Fact]
+        public void TrimExcess_Generic_LargeInitialCapacity_TrimReducesSize()
+        {
+            var dictionary = new Dictionary<TKey, TValue>(20);
+            dictionary.TrimExcess(7);
+            Assert.Equal(7, dictionary.EnsureCapacity(0));
+        }
+
+        [Theory]
+        [InlineData(20)]
+        [InlineData(23)]
+        public void TrimExcess_Generic_TrimToLargerThanExistingCapacity_DoesNothing(int suggestedCapacity)
+        {
+            var dictionary = new Dictionary<TKey, TValue>();
+            int capacity = dictionary.EnsureCapacity(0);
+            dictionary.TrimExcess(suggestedCapacity);
+            Assert.Equal(capacity, dictionary.EnsureCapacity(0));
+
+            dictionary = new Dictionary<TKey, TValue>(suggestedCapacity/2);
+            capacity = dictionary.EnsureCapacity(0);
+            dictionary.TrimExcess(suggestedCapacity);
+            Assert.Equal(capacity, dictionary.EnsureCapacity(0));
+        }
+
+        [Fact]
+        public void TrimExcess_Generic_DictionaryNotInitialized_CapacityRemainsAsMinPossible()
+        {
+            var dictionary = new Dictionary<TKey, TValue>();
+            Assert.Equal(0, dictionary.EnsureCapacity(0));
+            dictionary.TrimExcess();
+            Assert.Equal(0, dictionary.EnsureCapacity(0));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(85)]
+        [InlineData(89)]
+        public void TrimExcess_Generic_ClearThenTrimNonEmptyDictionary_SetsCapacityTo3(int count)
+        {
+            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+            Assert.Equal(count, dictionary.Count);
+            // The smallest possible capacity size after clearing a dictionary is 3
+            dictionary.Clear();
+            dictionary.TrimExcess();
+            Assert.Equal(3, dictionary.EnsureCapacity(0));
+        }
+
+        [Theory]
+        [InlineData(85)]
+        [InlineData(89)]
+        public void TrimExcess_NoArguments_TrimsToAtLeastCount(int count)
+        {
+            var dictionary = new Dictionary<int, int>(20);
+            for (int i = 0; i < count; i++)
+            {
+                dictionary.Add(i, 0);
+            }
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.EnsureCapacity(0), count, int.MaxValue);
+        }
+
+        [Theory]
+        [InlineData(85)]
+        [InlineData(89)]
+        public void TrimExcess_WithArguments_OnDictionaryWithManyElementsRemoved_TrimsToAtLeastRequested(int finalCount)
+        {
+            const int InitToFinalRatio = 10;
+            int initialCount = InitToFinalRatio * finalCount;
+            var dictionary = new Dictionary<int, int>(initialCount);
+            Assert.InRange(dictionary.EnsureCapacity(0), initialCount, int.MaxValue);
+            for (int i = 0; i < initialCount; i++)
+            {
+                dictionary.Add(i, 0);
+            }
+            for (int i = 0; i < initialCount - finalCount; i++)
+            {
+                dictionary.Remove(i);
+            }
+            for (int i = InitToFinalRatio; i > 0; i--)
+            {
+                dictionary.TrimExcess(i * finalCount);
+                Assert.InRange(dictionary.EnsureCapacity(0), i * finalCount, int.MaxValue);
+            }
+        }
+        
+        [Theory]
+        [InlineData(1000, 900, 5000, 85, 89)]
+        [InlineData(1000, 400, 5000, 85, 89)]
+        [InlineData(1000, 900, 500, 85, 89)]
+        [InlineData(1000, 400, 500, 85, 89)]
+        [InlineData(1000, 400, 500, 1, 3)]
+        public void TrimExcess_NoArgument_TrimAfterEachBulkAddOrRemove_TrimsToAtLeastCount(int initialCount, int numRemove, int numAdd, int newCount, int newCapacity)
+        {
+            Random random = new Random(32);
+            var dictionary = new Dictionary<int, int>();
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.EnsureCapacity(0), dictionary.Count, int.MaxValue);
+
+            var initialKeys = new int[initialCount];
+            for (int i = 0; i < initialCount; i++)
+            {
+                initialKeys[i] = i;
+            }
+            random.Shuffle(initialKeys);
+            foreach (var key in initialKeys)
+            {
+                dictionary.Add(key, 0);
+            }
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.EnsureCapacity(0), dictionary.Count, int.MaxValue);
+
+            random.Shuffle(initialKeys);
+            for (int i = 0; i < numRemove; i++)
+            {
+                dictionary.Remove(initialKeys[i]);
+            }
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.EnsureCapacity(0), dictionary.Count, int.MaxValue);
+
+            var moreKeys = new int[numAdd];
+            for (int i = 0; i < numAdd; i++)
+            {
+                moreKeys[i] = i + initialCount;
+            }
+            random.Shuffle(moreKeys);
+            foreach (var key in moreKeys)
+            {
+                dictionary.Add(key, 0);
+            }
+            int currentCount = dictionary.Count;
+            dictionary.TrimExcess();
+            Assert.InRange(dictionary.EnsureCapacity(0), currentCount, int.MaxValue);
+
+            int[] existingKeys = new int[currentCount];
+            Array.Copy(initialKeys, numRemove, existingKeys, 0, initialCount - numRemove);
+            Array.Copy(moreKeys, 0, existingKeys, initialCount - numRemove, numAdd);
+            random.Shuffle(existingKeys);
+            for (int i = 0; i < currentCount - newCount; i++)
+            {
+                dictionary.Remove(existingKeys[i]);
+            }
+            dictionary.TrimExcess();
+            int finalCapacity = dictionary.EnsureCapacity(0);
+            Assert.InRange(finalCapacity, newCount, initialCount);
+            Assert.Equal(newCapacity, finalCapacity);
+        }
+
+        [Fact]
+        public void TrimExcess_DictionaryHasElementsChainedWithSameHashcode_Success()
+        {
+            var dictionary = new Dictionary<string, int>(7);
+            for (int i = 0; i < 4; i++)
+            {
+                dictionary.Add(i.ToString(), 0);
+            }
+            var s_64bit = new string[] { "95e85f8e-67a3-4367-974f-dd24d8bb2ca2", "eb3d6fe9-de64-43a9-8f58-bddea727b1ca" };
+            var s_32bit = new string[] { "25b1f130-7517-48e3-96b0-9da44e8bfe0e", "ba5a3625-bc38-4bf1-a707-a3cfe2158bae" };
+            string[] chained = (Environment.Is64BitProcess ? s_64bit : s_32bit).ToArray();
+            dictionary.Add(chained[0], 0);
+            dictionary.Add(chained[1], 0);
+            for (int i = 0; i < 4; i++)
+            {
+                dictionary.Remove(i.ToString());
+            }
+            dictionary.TrimExcess(3);
+            Assert.Equal(2, dictionary.Count);
+            int val;
+            Assert.True(dictionary.TryGetValue(chained[0], out val));
+            Assert.True(dictionary.TryGetValue(chained[1], out val));
         }
 
         #endregion

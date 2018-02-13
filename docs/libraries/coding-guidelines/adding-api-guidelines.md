@@ -137,4 +137,4 @@ where you removed types in order to maintain back-compat.
 - Remove old build configurations - The older build configurations will automatically be harvested from
 the last stable packages and thus can be removed.
 - Remove import statements - If not referencing any pre-netstandard stable packages the [imports of dotnet5.x](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Process/src/project.json#L28) are no longer needed and can be removed. We should also remove any dead target frameworks sections.
-- Remove all non-conditionsed `<AssemblyVersion>` properties from csproj's as it should be defined in library\dir.props.
+- Remove all non-conditioned `<AssemblyVersion>` properties from csproj's as it should be defined in library\dir.props.

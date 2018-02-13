@@ -470,10 +470,13 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity, double.NaN,          0.0)]
+        [InlineData(-3.1415926535897932,      double.NaN,          0.0)]                                //                              value: -(pi)
+        [InlineData(-2.7182818284590452,      double.NaN,          0.0)]                                //                              value: -(e)
+        [InlineData(-1.4142135623730950,      double.NaN,          0.0)]                                //                              value: -(sqrt(2))
         [InlineData(-1.0,                     3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]   // expected:  (pi)
         [InlineData(-0.91173391478696510,     2.7182818284590452,  CrossPlatformMachineEpsilon * 10)]   // expected:  (e)
         [InlineData(-0.66820151019031295,     2.3025850929940457,  CrossPlatformMachineEpsilon * 10)]   // expected:  (ln(10))
-        [InlineData( 0.0,                     1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]   // expected:  (pi / 2)
+        [InlineData(-0.0,                     1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]   // expected:  (pi / 2)
         [InlineData( double.NaN,              double.NaN,          0.0)]
         [InlineData( 0.0,                     1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]   // expected:  (pi / 2)
         [InlineData( 0.12775121753523991,     1.4426950408889634,  CrossPlatformMachineEpsilon * 10)]   // expected:  (log2(e))
@@ -487,6 +490,9 @@ namespace System.Tests
         [InlineData( 0.90716712923909839,     0.43429448190325183, CrossPlatformMachineEpsilon)]        // expected:  (log10(e))
         [InlineData( 0.94976571538163866,     0.31830988618379067, CrossPlatformMachineEpsilon)]        // expected:  (1 / pi)
         [InlineData( 1.0,                     0.0,                 0.0 )]
+        [InlineData( 1.4142135623730950,      double.NaN,          0.0)]                                //                              value:  (sqrt(2))
+        [InlineData( 2.7182818284590452,      double.NaN,          0.0)]                                //                              value:  (e)
+        [InlineData( 3.1415926535897932,      double.NaN,          0.0)]                                //                              value:  (pi)
         [InlineData( double.PositiveInfinity, double.NaN,          0.0 )]
         public static void Acos(double value, double expectedResult, double allowedVariance)
         {
@@ -495,6 +501,9 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity,  double.NaN,          0.0)]
+        [InlineData(-3.1415926535897932,       double.NaN,          0.0)]                               //                              value: -(pi)
+        [InlineData(-2.7182818284590452,       double.NaN,          0.0)]                               //                              value: -(e)
+        [InlineData(-1.4142135623730950,       double.NaN,          0.0)]                               //                              value: -(sqrt(2))
         [InlineData(-1.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]  // expected: -(pi / 2)
         [InlineData(-0.99180624439366372,     -1.4426950408889634,  CrossPlatformMachineEpsilon * 10)]  // expected: -(log2(e))
         [InlineData(-0.98776594599273553,     -1.4142135623730950,  CrossPlatformMachineEpsilon * 10)]  // expected: -(sqrt(2))
@@ -524,6 +533,9 @@ namespace System.Tests
         [InlineData( 0.98776594599273553,      1.4142135623730950,  CrossPlatformMachineEpsilon * 10)]  // expected:  (sqrt(2))
         [InlineData( 0.99180624439366372,      1.4426950408889634,  CrossPlatformMachineEpsilon * 10)]  // expected:  (log2(e))
         [InlineData( 1.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]  // expected:  (pi / 2)
+        [InlineData( 1.4142135623730950,       double.NaN,          0.0)]                               //                              value:  (sqrt(2))
+        [InlineData( 2.7182818284590452,       double.NaN,          0.0)]                               //                              value:  (e)
+        [InlineData( 3.1415926535897932,       double.NaN,          0.0)]                               //                              value:  (pi)
         [InlineData( double.PositiveInfinity,  double.NaN,          0.0)]
         public static void Asin(double value, double expectedResult, double allowedVariance)
         {
@@ -920,6 +932,12 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity,  double.NaN,              0.0)]
+        [InlineData(-3.1415926535897932,       double.NaN,              0.0)]                               //                              value: -(pi)
+        [InlineData(-2.7182818284590452,       double.NaN,              0.0)]                               //                              value: -(e)
+        [InlineData(-1.4142135623730950,       double.NaN,              0.0)]                               //                              value: -(sqrt(2))
+        [InlineData(-1.0,                      double.NaN,              0.0)]
+        [InlineData(-0.69314718055994531,      double.NaN,              0.0)]                               //                              value: -(ln(2))
+        [InlineData(-0.43429448190325183,      double.NaN,              0.0)]                               //                              value: -(log10(e))
         [InlineData(-0.0,                      double.NegativeInfinity, 0.0)]
         [InlineData( double.NaN,               double.NaN,              0.0)]
         [InlineData( 0.0,                      double.NegativeInfinity, 0.0)]
@@ -972,6 +990,12 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity,  double.NaN,              0.0)]
+        [InlineData(-3.1415926535897932,       double.NaN,              0.0)]                               //                              value: -(pi)
+        [InlineData(-2.7182818284590452,       double.NaN,              0.0)]                               //                              value: -(e)
+        [InlineData(-1.4142135623730950,       double.NaN,              0.0)]                               //                              value: -(sqrt(2))
+        [InlineData(-1.0,                      double.NaN,              0.0)]
+        [InlineData(-0.69314718055994531,      double.NaN,              0.0)]                               //                              value: -(ln(2))
+        [InlineData(-0.43429448190325183,      double.NaN,              0.0)]                               //                              value: -(log10(e))
         [InlineData(-0.0,                      double.NegativeInfinity, 0.0)]
         [InlineData( double.NaN,               double.NaN,              0.0)]
         [InlineData( 0.0,                      double.NegativeInfinity, 0.0)]

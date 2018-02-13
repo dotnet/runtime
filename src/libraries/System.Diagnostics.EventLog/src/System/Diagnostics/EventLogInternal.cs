@@ -677,7 +677,7 @@ namespace System.Diagnostics
                 return null;
 
             if (insertionStrings == null)
-                insertionStrings = new string[0];
+                insertionStrings = Array.Empty<string>();
 
             string[] listDll = dllNameList.Split(';');
 
@@ -1398,7 +1398,7 @@ namespace System.Diagnostics
         {
             // check arguments
             if (strings == null)
-                strings = new string[0];
+                strings = Array.Empty<string>();
             if (strings.Length >= 256)
                 throw new ArgumentException(SR.TooManyReplacementStrings);
 
@@ -1413,7 +1413,7 @@ namespace System.Diagnostics
                     throw new ArgumentException(SR.LogEntryTooLong);
             }
             if (rawData == null)
-                rawData = new byte[0];
+                rawData = Array.Empty<byte>();
 
             if (Source.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToWrite);
