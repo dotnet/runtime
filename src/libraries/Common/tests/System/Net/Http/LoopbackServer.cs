@@ -183,7 +183,7 @@ namespace System.Net.Test.Common
                     if (string.IsNullOrEmpty(username))
                         return false;
                 }
-                if (trimmedValue.Contains(nameof(userhash)) && trimmedValue.Contains("true"))
+                else if (trimmedValue.Contains(nameof(userhash)) && trimmedValue.Contains("true"))
                 {
                     userhash = true;
                 }
@@ -260,9 +260,6 @@ namespace System.Net.Test.Common
                         startIndex += 1;
                         algorithm = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex).Trim();
                     }
-
-                    if (string.IsNullOrEmpty(algorithm))
-                        algorithm = "sha-256";
                 }
                 else if (trimmedValue.Contains(nameof(opaque)))
                 {
@@ -276,8 +273,13 @@ namespace System.Net.Test.Common
                 }
                 else if (trimmedValue.Contains(nameof(qop)))
                 {
-                    int startIndex = trimmedValue.IndexOf('=');
+                    int startIndex = trimmedValue.IndexOf('"');
                     if (startIndex != -1)
+                    {
+                        startIndex += 1;
+                        qop = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex - 1);
+                    }
+                    else if ((startIndex = trimmedValue.IndexOf('=')) != -1)
                     {
                         startIndex += 1;
                         qop = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex).Trim();
@@ -305,26 +307,39 @@ namespace System.Net.Test.Common
                 return false;
             }
 
+            if (string.IsNullOrEmpty(algorithm))
+                algorithm = "sha-256";
+
             // Calculate response and compare with the client response hash.
             string a1 = options.Username + ":" + realm + ":" + options.Password;
             if (algorithm.Contains("sess"))
             {
-                a1 = ComputeHash(a1, algorithm) + ":" + nonce + ":" + cnonce ?? string.Empty;
+                a1 = ComputeHash(a1, algorithm) + ":" + nonce;
+
+                if (cnonce != null)
+                    a1 += ":" + cnonce;
             }
 
             string a2 = requestMethod + ":" + uri;
-            if (qop.Equals("auth-int"))
+            if (!string.IsNullOrEmpty(qop) && qop.Equals("auth-int"))
             {
                 string content = requestContent ?? string.Empty;
                 a2 = a2 + ":" + ComputeHash(content, algorithm);
             }
 
-            string serverResponseHash = ComputeHash(ComputeHash(a1, algorithm) + ":" +
-                                        nonce + ":" +
-                                        nc + ":" +
-                                        cnonce + ":" +
-                                        qop + ":" +
-                                        ComputeHash(a2, algorithm), algorithm);
+            string serverResponseHash = ComputeHash(a1, algorithm) + ":" + nonce + ":";
+
+            if (nc != null)
+                serverResponseHash += nc + ":";
+
+            if (cnonce != null)
+                serverResponseHash += cnonce + ":";
+
+            if (qop != null)
+                serverResponseHash += qop + ":";
+
+            serverResponseHash += ComputeHash(a2, algorithm);
+            serverResponseHash = ComputeHash(serverResponseHash, algorithm);
 
             return response == serverResponseHash;
         }
@@ -372,7 +387,8 @@ namespace System.Net.Test.Common
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (_options.UseSsl)
                 {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
+                    var sslStream = new SslStream(stream, false, delegate
+                    { return true; });
                     using (var cert = Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
@@ -545,7 +561,8 @@ namespace System.Net.Test.Common
             {
                 var lines = new List<string>();
                 string line;
-                while (!string.IsNullOrEmpty(line = await _reader.ReadLineAsync().ConfigureAwait(false)))
+                while (!string.IsNullOrEmpty(line = reader.ReadLine()));
+                    ;
                 {
                     lines.Add(line);
                 }
