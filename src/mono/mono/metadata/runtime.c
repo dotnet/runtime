@@ -64,10 +64,10 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	//Possible leftover from other domains
 	mono_thread_internal_reset_abort (mono_thread_internal_current ());
 
-	MonoObject *res_obj = mono_runtime_try_invoke (method, domain->domain, NULL, &exc, &error);
-	if (!is_ok (&error)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s due to %s", domain->friendly_name, mono_error_get_message (&error));
-		mono_error_cleanup (&error);
+	MonoObject *res_obj = mono_runtime_try_invoke (method, domain->domain, NULL, &exc, error);
+	if (!is_ok (error)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s due to %s", domain->friendly_name, mono_error_get_message (error));
+		mono_error_cleanup (error);
 	} else if (exc) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s threw exception: %s", domain->friendly_name, exc->vtable->klass->name);
 	} else {
