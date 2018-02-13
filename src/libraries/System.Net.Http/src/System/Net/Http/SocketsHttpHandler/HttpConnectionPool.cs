@@ -123,6 +123,7 @@ namespace System.Net.Http
                     // we can't use the connection, so get rid of it and try again.
                     if (NetEventSource.IsEnabled) conn.Trace("Found invalid connection in pool.");
                     conn.Dispose();
+
                 }
                 if (cachedOnly) {
                     return new ValueTask<HttpConnection>((HttpConnection)null);
@@ -249,6 +250,26 @@ namespace System.Net.Http
             }
 
             return await tunnelResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        }
+
+        public async ValueTask<HttpConnection> UpgradeConnectionToTls(HttpRequestMessage request,  Stream stream, CancellationToken cancellationToken)
+        {
+            SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
+            HttpConnection conn = new HttpConnection(this, sslStream, sslStream.TransportContext);
+
+            if (NetEventSource.IsEnabled)
+            {
+                conn.Trace(
+                        $"Connection upgraded to TLS {_key.Host}:{_key.Port}. " +
+                        $"SslHostName:{_key.SslHostName}. " +
+                        $"SslProtocol:{sslStream.SslProtocol}, " +
+                        $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
+                        $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
+                        $"KeyExchangeAlgorithm:{sslStream.KeyExchangeAlgorithm}, KeyExchangeStrength:{sslStream.KeyExchangeStrength}, " +
+                        $"LocalCert:{sslStream.LocalCertificate}, RemoteCert:{sslStream.RemoteCertificate}");
+            }
+
+            return conn;
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>

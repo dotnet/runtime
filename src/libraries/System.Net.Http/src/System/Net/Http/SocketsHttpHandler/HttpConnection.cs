@@ -49,10 +49,10 @@ namespace System.Net.Http
         private static readonly string s_cancellationMessage = new OperationCanceledException().Message; // use same message as the default ctor
         public static readonly HttpMethod s_httpConnectMethod = new HttpMethod("CONNECT");
 
-        private HttpConnectionPool _pool;
-        private Stream _stream;
+        private readonly HttpConnectionPool _pool;
+        private readonly Stream _stream;
         private readonly TransportContext _transportContext;
-        private bool _usingProxy;
+        private readonly bool _usingProxy;
         private readonly byte[] _idnHostAsciiBytes;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
@@ -252,8 +252,8 @@ namespace System.Net.Http
                 {
                     // RFC 7231 #section-4.3.6.
                     // Write only CONNECT foo.com:345 HTTP/1.1
-                    await WriteAsciiStringAsync(request.RequestUri.IdnHost, cancellationToken).ConfigureAwait(false);
-                    await WriteAsciiStringAsync(String.Format(":{0}", request.RequestUri.Port, cancellationToken).ConfigureAwait(false);
+                    await WriteAsciiStringAsync(ConnectHelper.GetHostName(request), cancellationToken).ConfigureAwait(false);
+                    await WriteAsciiStringAsync(String.Format(":{0}", request.RequestUri.Port), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -441,6 +441,7 @@ namespace System.Net.Http
                         }
                     }
                 }
+
                 // Parse the response headers.
                 while (true)
                 {
@@ -487,7 +488,11 @@ namespace System.Net.Http
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
-                    responseStream = EmptyReadStream.Instance;
+                    responseStream = new RawConnectionStream(this);
+                    // Put connection back to the pool if we upgraded to tunnel.
+                    // We cannot use it for normal HTTP requests any more.
+                    _connectionClose = true;
+
                 }
                 else if (response.Content.Headers.ContentLength != null)
                 {
@@ -1303,33 +1308,6 @@ namespace System.Net.Http
 
             // We're not putting the connection back in the pool. Dispose it.
             Dispose();
-        }
-
-        // rfc2817
-        public async Task UpgradeToTls(HttpConnectionSettings settings, string host, HttpConnectionPool pool, CancellationToken cancellationToken)
-        {
-            SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(settings, host, null, _stream, cancellationToken);
-            _stream = sslStream;
-            _currentRequest = null;
-            _usingProxy = false;
-
-            if (NetEventSource.IsEnabled)
-            {
-                Trace(
-                        $"Connection upgraded to TLS {_pool.Key.Host}:{_pool.Key.Port}. " +
-                        $"SslHostName:{_pool.Key.SslHostName}. " +
-                        $"SslProtocol:{sslStream.SslProtocol}, " +
-                        $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
-                        $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
-                        $"KeyExchangeAlgorithm:{sslStream.KeyExchangeAlgorithm}, KeyExchangeStrength:{sslStream.KeyExchangeStrength}, " +
-                        $"LocalCert:{sslStream.LocalCertificate}, RemoteCert:{sslStream.RemoteCertificate}");
-            }
-            if (pool != null)
-            {
-                _pool.DecrementConnectionCount();
-                _pool = pool;
-                _pool.IncrementConnectionCount();
-           }
         }
 
         private static bool EqualsOrdinal(string left, Span<byte> right)
