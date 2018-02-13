@@ -63,6 +63,7 @@ namespace System.Net
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
         public void HandlerMessage(int handlerId, int workerId, int requestId, string memberName, string message) =>
             WriteEvent(HandlerMessageId, handlerId, workerId, requestId, memberName, message);
+            //Console.WriteLine($"{handlerId}/{workerId}/{requestId}: ({memberName}): {message}");  // uncomment for debugging only
 
         [NonEvent]
         private unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3, string arg4, string arg5)

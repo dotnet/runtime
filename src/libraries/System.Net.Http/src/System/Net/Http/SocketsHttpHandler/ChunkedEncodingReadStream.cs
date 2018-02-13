@@ -30,13 +30,13 @@ namespace System.Net.Http
             {
             }
 
-            private async Task<bool> TryGetNextChunkAsync(CancellationToken cancellationToken)
+            private async Task<bool> TryGetNextChunkAsync()
             {
                 Debug.Assert(_chunkBytesRemaining == 0);
 
                 // Read the start of the chunk line.
                 _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                ArraySegment<byte> line = await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false);
+                ArraySegment<byte> line = await _connection.ReadNextLineAsync().ConfigureAwait(false);
 
                 // Parse the hex value.
                 if (!Utf8Parser.TryParse(line.AsReadOnlySpan(), out ulong chunkSize, out int bytesConsumed, 'X'))
@@ -73,7 +73,7 @@ namespace System.Net.Http
                 while (true)
                 {
                     _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
-                    if (LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                    if (LineIsEmpty(await _connection.ReadNextLineAsync().ConfigureAwait(false)))
                     {
                         break;
                     }
@@ -84,59 +84,77 @@ namespace System.Net.Http
                 return false;
             }
 
-            private async Task ConsumeChunkBytesAsync(ulong bytesConsumed, CancellationToken cancellationToken)
+            private Task ConsumeChunkBytesAsync(ulong bytesConsumed)
             {
                 Debug.Assert(bytesConsumed <= _chunkBytesRemaining);
                 _chunkBytesRemaining -= bytesConsumed;
-                if (_chunkBytesRemaining == 0)
+                return _chunkBytesRemaining != 0 ?
+                    Task.CompletedTask :
+                    ReadNextLineAndThrowIfNotEmptyAsync();
+            }
+
+            private async Task ReadNextLineAndThrowIfNotEmptyAsync()
+            {
+                _connection._allowedReadLineBytes = 2; // \r\n
+                if (!LineIsEmpty(await _connection.ReadNextLineAsync().ConfigureAwait(false)))
                 {
-                    _connection._allowedReadLineBytes = 2; // \r\n
-                    if (!LineIsEmpty(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
-                    {
-                        ThrowInvalidHttpResponse();
-                    }
+                    ThrowInvalidHttpResponse();
                 }
             }
 
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateBufferArgs(buffer, offset, count);
-                return ReadAsync(new Memory<byte>(buffer, offset, count)).AsTask();
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (_connection == null || destination.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
-                if (_chunkBytesRemaining == 0)
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                try
                 {
-                    if (!await TryGetNextChunkAsync(cancellationToken).ConfigureAwait(false))
+                    if (_chunkBytesRemaining == 0)
                     {
-                        // End of response body
-                        return 0;
+                        if (!await TryGetNextChunkAsync().ConfigureAwait(false))
+                        {
+                            // End of response body
+                            return 0;
+                        }
                     }
-                }
 
-                if (_chunkBytesRemaining < (ulong)destination.Length)
+                    if (_chunkBytesRemaining < (ulong)destination.Length)
+                    {
+                        destination = destination.Slice(0, (int)_chunkBytesRemaining);
+                    }
+
+                    int bytesRead = await _connection.ReadAsync(destination).ConfigureAwait(false);
+
+                    if (bytesRead <= 0)
+                    {
+                        // Unexpected end of response stream
+                        throw new IOException(SR.net_http_invalid_response);
+                    }
+
+                    await ConsumeChunkBytesAsync((ulong)bytesRead).ConfigureAwait(false);
+
+                    return bytesRead;
+                }
+                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    destination = destination.Slice(0, (int)_chunkBytesRemaining);
+                    throw new OperationCanceledException(s_cancellationMessage, exc, cancellationToken);
                 }
-
-                int bytesRead = await _connection.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
-
-                if (bytesRead <= 0)
+                finally
                 {
-                    // Unexpected end of response stream
-                    throw new IOException(SR.net_http_invalid_response);
+                    ctr.Dispose();
                 }
-
-                await ConsumeChunkBytesAsync((ulong)bytesRead, cancellationToken).ConfigureAwait(false);
-
-                return bytesRead;
             }
 
             public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
@@ -145,6 +163,12 @@ namespace System.Net.Http
                 {
                     throw new ArgumentNullException(nameof(destination));
                 }
+                if (bufferSize <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(bufferSize));
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (_connection == null)
                 {
@@ -152,16 +176,28 @@ namespace System.Net.Http
                     return;
                 }
 
-                if (_chunkBytesRemaining > 0)
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                try
                 {
-                    await _connection.CopyToAsync(destination, _chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
-                    await ConsumeChunkBytesAsync(_chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
-                }
+                    if (_chunkBytesRemaining > 0)
+                    {
+                        await _connection.CopyToAsync(destination, _chunkBytesRemaining).ConfigureAwait(false);
+                        await ConsumeChunkBytesAsync(_chunkBytesRemaining).ConfigureAwait(false);
+                    }
 
-                while (await TryGetNextChunkAsync(cancellationToken).ConfigureAwait(false))
+                    while (await TryGetNextChunkAsync().ConfigureAwait(false))
+                    {
+                        await _connection.CopyToAsync(destination, _chunkBytesRemaining).ConfigureAwait(false);
+                        await ConsumeChunkBytesAsync(_chunkBytesRemaining).ConfigureAwait(false);
+                    }
+                }
+                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    await _connection.CopyToAsync(destination, _chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
-                    await ConsumeChunkBytesAsync(_chunkBytesRemaining, cancellationToken).ConfigureAwait(false);
+                    throw CreateOperationCanceledException(exc, cancellationToken);
+                }
+                finally
+                {
+                    ctr.Dispose();
                 }
             }
         }

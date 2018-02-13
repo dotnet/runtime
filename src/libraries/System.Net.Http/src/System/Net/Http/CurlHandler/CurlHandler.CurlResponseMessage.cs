@@ -22,7 +22,7 @@ namespace System.Net.Http
                 Debug.Assert(easy != null, "Expected non-null EasyRequest");
                 RequestMessage = easy._requestMessage;
                 ResponseStream = new CurlResponseStream(easy);
-                Content = new NoWriteNoSeekStreamContent(ResponseStream, CancellationToken.None);
+                Content = new NoWriteNoSeekStreamContent(ResponseStream);
 
                 // On Windows, we pass the equivalent of the easy._cancellationToken
                 // in to StreamContent's ctor.  This in turn passes that token through

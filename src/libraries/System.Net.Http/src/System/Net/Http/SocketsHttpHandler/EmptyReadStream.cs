@@ -23,10 +23,13 @@ namespace System.Net.Http
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateBufferArgs(buffer, offset, count);
-                return s_zeroTask;
+                return cancellationToken.IsCancellationRequested ?
+                    Task.FromCanceled<int>(cancellationToken) :
+                    s_zeroTask;
             }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default) =>
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
                 new ValueTask<int>(0);
         }
     }
