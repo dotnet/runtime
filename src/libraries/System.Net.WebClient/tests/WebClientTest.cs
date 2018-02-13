@@ -430,11 +430,7 @@ namespace System.Net.Tests
             {
                 Task<string> download = wc.DownloadStringTaskAsync(url.ToString());
                 Assert.Null(wc.ResponseHeaders);
-                await server.AcceptConnectionSendResponseAndCloseAsync(
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: 0\r\n" +
-                        "\r\n");
+                await server.AcceptConnectionSendDefaultResponseAndCloseAsync();
                 await download;
             });
         }
