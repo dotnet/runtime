@@ -85,7 +85,7 @@ enum GCtype : unsigned
     GCT_BYREF
 };
 
-// TODO-Cleanup:  Move 'insFlags' under _TARGET_ARM_ 
+// TODO-Cleanup:  Move 'insFlags' under _TARGET_ARM_
 enum insFlags: unsigned
 {
     INS_FLAGS_NOT_SET,
@@ -142,13 +142,13 @@ enum insOpts : unsigned
     INS_OPTS_MSL,     // Vector Immediate (shifting ones variant)
 
     INS_OPTS_S_TO_4BYTE,  // Single to INT32
-    INS_OPTS_D_TO_4BYTE,  // Double to INT32  
+    INS_OPTS_D_TO_4BYTE,  // Double to INT32
 
     INS_OPTS_S_TO_8BYTE,  // Single to INT64
     INS_OPTS_D_TO_8BYTE,  // Double to INT64
 
     INS_OPTS_4BYTE_TO_S,  // INT32 to Single
-    INS_OPTS_4BYTE_TO_D,  // INT32 to Double  
+    INS_OPTS_4BYTE_TO_D,  // INT32 to Double
 
     INS_OPTS_8BYTE_TO_S,  // INT64 to Single
     INS_OPTS_8BYTE_TO_D,  // INT64 to Double
@@ -276,8 +276,8 @@ enum emitAttr : unsigned
 
 enum InstructionSet
 {
-#ifdef _TARGET_XARCH_
     InstructionSet_ILLEGAL = 0,
+#ifdef _TARGET_XARCH_
     // Start linear order SIMD instruction sets
     // These ISAs have strictly generation to generation order.
     InstructionSet_SSE     = 1,
@@ -290,7 +290,7 @@ enum InstructionSet
     InstructionSet_AVX2    = 8,
     // Reserve values <32 for future SIMD instruction sets (i.e., AVX512),
     // End linear order SIMD instruction sets.
-    
+
     InstructionSet_AES     = 32,
     InstructionSet_BMI1    = 33,
     InstructionSet_BMI2    = 34,
