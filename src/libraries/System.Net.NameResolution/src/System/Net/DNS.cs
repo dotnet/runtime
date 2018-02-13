@@ -56,12 +56,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(null, hostName);
             IPHostEntry ipHostEntry = null;
 
-            if (hostName.Length > MaxHostName // If 255 chars, the last one must be a dot.
-                || hostName.Length == MaxHostName && hostName[MaxHostName - 1] != '.')
-            {
-                throw new ArgumentOutOfRangeException(nameof(hostName), SR.Format(SR.net_toolong,
-                    nameof(hostName), MaxHostName.ToString(NumberFormatInfo.CurrentInfo)));
-            }
+            ValidateHostName(hostName);
            
             int nativeErrorCode;
             SocketError errorCode = NameResolutionPal.TryGetAddrInfo(hostName, out ipHostEntry, out nativeErrorCode);
