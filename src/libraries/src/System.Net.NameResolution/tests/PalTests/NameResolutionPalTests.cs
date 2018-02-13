@@ -23,12 +23,6 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
-        public void GetHostByAddr_LocalHost()
-        {
-            Assert.NotNull(NameResolutionPal.GetHostByAddr(new IPAddress(0x0100007f)));
-        }
-
-        [Fact]
         public void TryGetAddrInfo_LocalHost()
         {
             IPHostEntry hostEntry;
