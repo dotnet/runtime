@@ -281,7 +281,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendResponseAsync($"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
+                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -375,7 +375,7 @@ namespace System.Net.Http.Functional.Tests
                     for (int i = 0; i < 2; i++)
                     {
                         Task<string> request = client.GetStringAsync(uri);
-                        await server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
                         await request;
 
                         if (i == 0)
@@ -405,14 +405,14 @@ namespace System.Net.Http.Functional.Tests
                     Task<string> request1 = client.GetStringAsync(uri);
                     await server.AcceptConnectionAsync(async connection1 =>
                     {
-                        await connection1.ReadRequestHeaderAndSendResponseAsync(responseBody);
+                        await connection1.ReadRequestHeaderAndSendCustomResponseAsync(responseBody);
                         await request1;
 
                         // Make second request and expect it to be served from a different connection.
                         Task<string> request2 = client.GetStringAsync(uri);
                         await server.AcceptConnectionAsync(async connection2 =>
                         {
-                            await connection2.ReadRequestHeaderAndSendResponseAsync(responseBody);
+                            await connection2.ReadRequestHeaderAndSendCustomResponseAsync(responseBody);
                             await request2;
                         });
                     });
@@ -442,7 +442,7 @@ namespace System.Net.Http.Functional.Tests
                         Task<string> request1 = client.GetStringAsync(uri);
                         await server.AcceptConnectionAsync(async connection =>
                         {
-                            await connection.ReadRequestHeaderAndSendDefaultResponseAsync();
+                            await connection.ReadRequestHeaderAndSendResponseAsync();
                             await request1;
 
                             // Wait a small amount of time before making the second request, to give the first request time to timeout.
@@ -452,7 +452,7 @@ namespace System.Net.Http.Functional.Tests
                             Task<string> request2 = client.GetStringAsync(uri);
                             await server.AcceptConnectionAsync(async connection2 =>
                             {
-                                await connection2.ReadRequestHeaderAndSendDefaultResponseAsync();
+                                await connection2.ReadRequestHeaderAndSendResponseAsync();
                                 await request2;
                             });
                         });

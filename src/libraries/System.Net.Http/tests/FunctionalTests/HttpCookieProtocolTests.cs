@@ -45,7 +45,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     List<string> requestLines = await serverTask;
@@ -68,7 +68,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     List<string> requestLines = await serverTask;
@@ -111,7 +111,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     List<string> requestLines = await serverTask;
@@ -141,7 +141,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     List<string> requestLines = await serverTask;
 
@@ -171,7 +171,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", "C=3");
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     List<string> requestLines = await serverTask;
 
@@ -216,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     List<string> requestLines = await serverTask;
@@ -259,7 +259,7 @@ namespace System.Net.Http.Functional.Tests
                     requestMessage.Headers.Add("Cookie", "B=2");
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     List<string> requestLines = await serverTask;
@@ -321,14 +321,12 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                List<string> request1Lines = await server.AcceptConnectionSendResponseAndCloseAsync(
-                    $"HTTP/1.1 302 Found\r\nContent-Length: 0\r\nLocation: {path2}\r\nConnection: close\r\n\r\n");
+                List<string> request1Lines = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {path2}\r\n");
 
                 Assert.Contains($"Cookie: cookie1=value1", request1Lines);
                 Assert.Equal(1, request1Lines.Count(s => s.StartsWith("Cookie:")));
 
-                List<string> request2Lines = await server.AcceptConnectionSendResponseAndCloseAsync(
-                    $"HTTP/1.1 200 OK\r\nContent-Length: {s_simpleContent.Length}\r\n\r\n{s_simpleContent}");
+                List<string> request2Lines = await server.AcceptConnectionSendResponseAndCloseAsync(content: s_simpleContent);
 
                 Assert.Contains($"Cookie: cookie2=value2", request2Lines);
                 Assert.Equal(1, request2Lines.Count(s => s.StartsWith("Cookie:")));
@@ -352,7 +350,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        $"HTTP/1.1 200 Ok\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: {GetCookieHeaderValue(cookieName, cookieValue)}\r\n\r\n{s_simpleContent}");
+                        HttpStatusCode.OK, $"Set-Cookie: {GetCookieHeaderValue(cookieName, cookieValue)}\r\n", s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -382,14 +380,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        $"HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        HttpStatusCode.OK,
                         $"Set-Cookie: A=1; Path=/\r\n" +
                         $"Set-Cookie   : B=2; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
-                        $"Set-Cookie:    C=3; Path=/\r\n" +
-                        $"Content-Length: {s_simpleContent.Length}\r\n" +
-                        $"\r\n" +
-                        $"{s_simpleContent}");
+                        $"Set-Cookie:    C=3; Path=/\r\n",
+                        s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -420,7 +415,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        $"HTTP/1.1 200 Ok\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: {s_cookieName}={newCookieValue}\r\n\r\n{s_simpleContent}");
+                        HttpStatusCode.OK, $"Set-Cookie: {s_cookieName}={newCookieValue}\r\n", s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -443,7 +438,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
-                        $"HTTP/1.1 200 Ok\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: {s_cookieName}=; Expires=Sun, 06 Nov 1994 08:49:37 GMT\r\n\r\n{s_simpleContent}");
+                        HttpStatusCode.OK, $"Set-Cookie: {s_cookieName}=; Expires=Sun, 06 Nov 1994 08:49:37 GMT\r\n", s_simpleContent);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
@@ -483,12 +478,12 @@ namespace System.Net.Http.Functional.Tests
             async server =>
             {
                 List<string> request1Lines = await server.AcceptConnectionSendResponseAndCloseAsync(
-                    $"HTTP/1.1 302 Found\r\nContent-Length: 0\r\nLocation: {path2}\r\nSet-Cookie: A=1; Path=/\r\nConnection: close\r\n\r\n");
+                    HttpStatusCode.Found, $"Location: {path2}\r\nSet-Cookie: A=1; Path=/\r\n");
 
                 Assert.Equal(0, request1Lines.Count(s => s.StartsWith("Cookie:")));
 
                 List<string> request2Lines = await server.AcceptConnectionSendResponseAndCloseAsync(
-                    $"HTTP/1.1 200 OK\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: B=2; Path=/\r\n\r\n{s_simpleContent}");
+                    HttpStatusCode.OK, $"Set-Cookie: B=2; Path=/\r\n", s_simpleContent);
 
                 Assert.Contains($"Cookie: A=1", request2Lines);
                 Assert.Equal(1, request2Lines.Count(s => s.StartsWith("Cookie:")));
@@ -530,11 +525,16 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    List<string> request1Lines = await connection.ReadRequestHeaderAndSendResponseAsync($"HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nWWW-Authenticate: Basic realm=\"WallyWorld\"\r\nSet-Cookie: A=1; Path=/\r\n\r\n");
+                    List<string> request1Lines = await connection.ReadRequestHeaderAndSendResponseAsync(
+                        HttpStatusCode.Unauthorized,
+                        $"WWW-Authenticate: Basic realm=\"WallyWorld\"\r\nSet-Cookie: A=1; Path=/\r\n");
 
                     Assert.Equal(0, request1Lines.Count(s => s.StartsWith("Cookie:")));
 
-                    List<string> request2Lines = await connection.ReadRequestHeaderAndSendResponseAsync($"HTTP/1.1 200 OK\r\nContent-Length: {s_simpleContent.Length}\r\nSet-Cookie: B=2; Path=/\r\n\r\n{s_simpleContent}");
+                    List<string> request2Lines = await connection.ReadRequestHeaderAndSendResponseAsync(
+                        HttpStatusCode.OK,
+                        $"Set-Cookie: B=2; Path=/\r\n",
+                        s_simpleContent);
 
                     Assert.Contains($"Cookie: A=1", request2Lines);
                     Assert.Equal(1, request2Lines.Count(s => s.StartsWith("Cookie:")));

@@ -15,12 +15,6 @@ namespace System.Net.Http.Functional.Tests
     public class HttpRetryProtocolTests : HttpClientTestBase
     {
         private static readonly string s_simpleContent = "Hello World\r\n";
-        private static readonly string s_simpleResponse =
-            $"HTTP/1.1 200 OK\r\n" +
-            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-            $"Content-Length: {s_simpleContent.Length}\r\n" +
-            "\r\n" +
-            s_simpleContent;
 
         // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support. 
         private bool IsRetrySupported => !IsWinHttpHandler;
@@ -56,14 +50,14 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     // Initial response
-                    await connection.ReadRequestHeaderAndSendResponseAsync(s_simpleResponse);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: s_simpleContent);
 
                     // Second response: Read request headers, then close connection
                     await connection.ReadRequestHeaderAsync();
                 });
 
                 // Client should reconnect.  Accept that connection and send response.
-                await server.AcceptConnectionSendResponseAndCloseAsync(s_simpleResponse);
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: s_simpleContent);
             });
         }
 
@@ -104,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     // Initial response
-                    await connection.ReadRequestHeaderAndSendResponseAsync(s_simpleResponse);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: s_simpleContent);
 
                     // Second response: Read request headers, then close connection
                     List<string> lines = await connection.ReadRequestHeaderAsync();
@@ -122,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
                     string contentLine = await connection.Reader.ReadLineAsync();
                     Assert.Equal(s_simpleContent, contentLine + "\r\n");
 
-                    await connection.Writer.WriteAsync(s_simpleResponse);
+                    await connection.SendResponseAsync(content: s_simpleContent);
                 });
             });
         }

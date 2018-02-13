@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = HttpVersion.Version10;
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -49,7 +49,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = HttpVersion.Version11;
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -83,7 +83,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = new Version(0, minorVersion);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     if (exceptionType == null)
                     {
@@ -123,7 +123,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = new Version(majorVersion, minorVersion);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     if (exceptionType == null)
                     {
@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
                     Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
@@ -184,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
                     Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
@@ -229,7 +229,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
                     Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/0.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
                     if (reportAs10)
@@ -285,7 +285,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
                     Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/{responseMajorVersion}.{responseMinorVersion} 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
 
                     if (reportAs00)
@@ -383,7 +383,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
-                        server.AcceptConnectionSendResponseAndCloseAsync(
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"{statusLine}\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "Content-Length: 0\r\n" +
@@ -496,7 +496,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Task ignoredServerTask = server.AcceptConnectionSendResponseAndCloseAsync(
+                    Task ignoredServerTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
                         responseString + "\r\nContent-Length: 0\r\n\r\n");
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
@@ -515,7 +515,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(
+                    Task<List<string>> serverTask = server.AcceptConnectionSendCustomResponseAndCloseAsync(
                         $"HTTP/1.1 200 OK{lineEnding}Date: {DateTimeOffset.UtcNow:R}{lineEnding}Server: TestServer{lineEnding}Content-Length: 0{lineEnding}{lineEnding}");
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
