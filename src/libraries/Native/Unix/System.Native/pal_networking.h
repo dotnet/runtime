@@ -299,8 +299,6 @@ struct SocketEvent
 
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntry* entry);
 
-//int32_t SystemNative_GetHostByAddress(const struct IPAddress* address, struct HostEntry* entry);
-
 int32_t SystemNative_GetNextIPAddress(const struct HostEntry* entry, void** addressListHandle, struct IPAddress* endPoint);
 
 void SystemNative_FreeHostEntry(struct HostEntry* entry);
