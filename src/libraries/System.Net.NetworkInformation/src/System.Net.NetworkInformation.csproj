@@ -6,6 +6,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />

@@ -21,6 +21,7 @@ namespace System.Net
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
                 ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
+                new Span<ushort>(numbers, IPAddressParserStatics.IPv6AddressShorts).Clear();
                 if (Ipv6StringToAddress(ipSpan, numbers, IPAddressParserStatics.IPv6AddressShorts, out uint scope))
                 {
                     return new IPAddress(numbers, IPAddressParserStatics.IPv6AddressShorts, scope);
