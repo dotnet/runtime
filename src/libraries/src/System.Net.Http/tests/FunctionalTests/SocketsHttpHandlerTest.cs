@@ -316,6 +316,124 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    public sealed class SocketsHttpHandler_Connect_Test : HttpClientTestBase
+    {
+        protected override bool UseSocketsHttpHandler => true;
+
+        [Fact]
+        public async Task ConnectMethod_Success()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url);
+                    // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
+
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    {
+                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
+                            $"HTTP/1.1 200 OK\r\n\r\n");
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);;
+
+                        using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync())
+                        {
+                            Assert.True(clientStream.CanWrite);
+                            Assert.True(clientStream.CanRead);
+                            Assert.False(clientStream.CanSeek);
+
+                            TextReader clientReader = new StreamReader(clientStream);
+                            TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
+
+                            const string helloServer = "hello server";
+                            const string helloClient = "hello client";
+                            const string goodbyeServer = "goodbye server";
+                            const string goodbyeClient = "goodbye client";
+
+                            clientWriter.WriteLine(helloServer);
+                            Assert.Equal(helloServer, serverReader.ReadLine());
+                            serverWriter.WriteLine(helloClient);
+                            Assert.Equal(helloClient, clientReader.ReadLine());
+                            clientWriter.WriteLine(goodbyeServer);
+                            Assert.Equal(goodbyeServer, serverReader.ReadLine());
+                            serverWriter.WriteLine(goodbyeClient);
+                            Assert.Equal(goodbyeClient, clientReader.ReadLine());
+                        }
+
+                        return null;
+                    });
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ConnectMethod_Fails()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url);
+                    // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    {
+                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
+                            $"HTTP/1.1 403 Forbidden\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 7\r\n\r\nerror\r\n");
+
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask);
+                        HttpResponseMessage response = await responseTask;
+
+                        Assert.True(response.StatusCode ==  HttpStatusCode.Forbidden);
+
+                        return null;
+                    });
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ConnectMethod_Proxy()
+        {
+            LoopbackServer.Options options = new LoopbackServer.Options { UseSsl = true };
+            HttpClientHandler handler = CreateHttpClientHandler();
+
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var ep = (IPEndPoint)listener.Server.LocalEndPoint;
+            Uri proxyUrl = new Uri($"http://{ep.Address}:{ep.Port}/");
+
+            //Task proxy = runProxy(listener);
+            Task proxt = LoopbackGetRequestHttpProxy.StartAsync(listener, false, false);
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                // Point handler at out loopback proxy
+                handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null);
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    Task<HttpResponseMessage> responseTask = client.GetAsync(url,  HttpCompletionOption.ResponseHeadersRead);
+
+                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    {
+                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
+                            $"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nOK\r\n");
+
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);;
+                        HttpResponseMessage response = await responseTask.ConfigureAwait(false);;
+
+                        Assert.True(response.StatusCode ==  HttpStatusCode.OK);
+
+                        return null;
+                    }, options);
+                }
+            }, options);
+        }
+    }
+
     public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
