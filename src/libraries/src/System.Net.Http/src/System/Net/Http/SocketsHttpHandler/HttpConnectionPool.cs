@@ -209,7 +209,9 @@ namespace System.Net.Http
                 transportContext = sslStream.TransportContext;
             }
 
-            return new HttpConnection(this, stream, transportContext);
+            return _maxConnections == int.MaxValue ?
+                new HttpConnection(this, stream, transportContext) :
+                new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>

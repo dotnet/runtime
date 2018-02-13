@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed partial class HttpConnection : IDisposable
+    internal partial class HttpConnection : IDisposable
     {
         private sealed class RawConnectionStream : HttpContentDuplexStream
         {
