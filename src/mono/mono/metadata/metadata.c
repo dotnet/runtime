@@ -1755,16 +1755,21 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 		}
 	}
 
-	if (count) { // There are mods, so the MonoType will be of nonstandard size.
-		int size;
+	MonoCustomModContainer *cmods = NULL;
 
-		size = MONO_SIZEOF_TYPE + ((gint32)count) * sizeof (MonoCustomMod);
-		type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
-		type->num_mods = count;
+	if (count) { // There are mods, so the MonoType will be of nonstandard size.
 		if (count > 64) {
 			mono_error_set_bad_image (error, m, "Invalid type with more than 64 modifiers");
 			return NULL;
 		}
+
+		size_t size = mono_sizeof_type_with_mods (count);
+		type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
+		type->has_cmods = TRUE;
+
+		cmods = mono_type_get_cmods (type);
+		cmods->count = count;
+		cmods->image = m;
 	} else {     // The type is of standard size, so we can allocate it on the stack.
 		type = &stype;
 		memset (type, 0, MONO_SIZEOF_TYPE);
@@ -1785,7 +1790,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			break;
 		case MONO_TYPE_CMOD_REQD:
 		case MONO_TYPE_CMOD_OPT:
-			mono_metadata_parse_custom_mod (m, &(type->modifiers [count]), ptr, &ptr);
+			mono_metadata_parse_custom_mod (m, &(cmods->modifiers [count]), ptr, &ptr);
 			count ++;
 			break;
 		default:
@@ -1804,7 +1809,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 		*rptr = ptr;
 
 	// Possibly we can return an already-allocated type instead of the one we decoded
-	if (!type->num_mods && !transient) {
+	if (!type->has_cmods && !transient) {
 		/* no need to free type here, because it is on the stack */
 		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
 			MonoType *ret = type->byref ? m_class_get_this_arg (type->data.klass) : m_class_get_byval_arg (type->data.klass);
@@ -2017,7 +2022,7 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 	MonoMethodSignature *ret;
 	sigsize = sig_header_size = MONO_SIZEOF_METHOD_SIGNATURE + sig->param_count * sizeof (MonoType *) + padding;
 	if (sig->ret)
-		sigsize += MONO_SIZEOF_TYPE;
+		sigsize += mono_sizeof_type (sig->ret);
 
 	if (image) {
 		ret = (MonoMethodSignature *)mono_image_alloc (image, sigsize);
@@ -2034,7 +2039,7 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 		// Danger! Do not alter padding use without changing the dup_add_this below
 		intptr_t end_of_header = (intptr_t)( (char*)(ret) + sig_header_size);
 		ret->ret = (MonoType *)end_of_header;
-		memcpy (ret->ret, sig->ret, MONO_SIZEOF_TYPE);
+		memcpy (ret->ret, sig->ret, mono_sizeof_type (sig->ret));
 	}
 
 	return ret;
@@ -5435,6 +5440,39 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 	if (t1->type != t2->type || t1->byref != t2->byref)
 		return FALSE;
 
+	if (t1->has_cmods != t2->has_cmods)
+		return FALSE;
+
+	if (t1->has_cmods) {
+		MonoCustomModContainer *cm1 = mono_type_get_cmods (t1);
+		MonoCustomModContainer *cm2 = mono_type_get_cmods (t2);
+
+		g_assert (cm1);
+		g_assert (cm2);
+
+		// ECMA 335, 7.1.1:
+		// The CLI itself shall treat required and optional modifiers in the same manner.
+		// Two signatures that differ only by the addition of a custom modifier 
+		// (required or optional) shall not be considered to match.
+		if (cm1->count != cm2->count)
+			return FALSE;
+
+		for (int i=0; i < cm1->count; i++) {
+			if (cm1->modifiers[i].required != cm2->modifiers[i].required)
+				return FALSE;
+
+			// FIXME: propagate error to caller
+			ERROR_DECL (error);
+			MonoClass *c1 = mono_class_get_checked (cm1->image, cm1->modifiers [i].token, error);
+			mono_error_assert_ok (error);
+			MonoClass *c2 = mono_class_get_checked (cm2->image, cm2->modifiers [i].token, error);
+			mono_error_assert_ok (error);
+
+			if (c1 != c2)
+				return FALSE;
+		}
+	}
+
 	switch (t1->type) {
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_BOOLEAN:
@@ -5565,9 +5603,7 @@ MonoType *
 mono_metadata_type_dup (MonoImage *image, const MonoType *o)
 {
 	MonoType *r = NULL;
-	int sizeof_o = MONO_SIZEOF_TYPE;
-	if (o->num_mods)
-		sizeof_o += o->num_mods  * sizeof (MonoCustomMod);
+	size_t sizeof_o = mono_sizeof_type (o);
 
 	r = image ? (MonoType *)mono_image_alloc0 (image, sizeof_o) : (MonoType *)g_malloc (sizeof_o);
 
@@ -7107,3 +7143,40 @@ mono_loader_get_strict_strong_names (void)
 {
 	return check_strong_names_strictly;
 }
+
+
+MonoCustomModContainer *
+mono_type_get_cmods (const MonoType *t)
+{
+	if (!t->has_cmods)
+		return NULL;
+
+	MonoTypeWithModifiers *full = (MonoTypeWithModifiers *)t;
+
+	return &full->cmods;
+}
+
+size_t 
+mono_sizeof_type_with_mods (uint8_t num_mods)
+{
+	size_t accum = 0;
+	accum += sizeof (MonoType);
+	if (num_mods == 0)
+		return accum;
+
+	accum += offsetof (struct _MonoCustomModContainer, modifiers);
+	accum += sizeof (MonoCustomMod) * num_mods;
+	return accum;
+}
+
+size_t 
+mono_sizeof_type (const MonoType *ty)
+{
+	MonoCustomModContainer *cmods = mono_type_get_cmods (ty);
+	if (cmods)
+		return mono_sizeof_type_with_mods (cmods->count);
+	else
+		return sizeof (MonoType);
+}
+
+

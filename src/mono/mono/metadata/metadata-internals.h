@@ -30,13 +30,33 @@ struct _MonoType {
 	} data;
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
-	unsigned int num_mods : 6;  /* max 64 modifiers follow at the end */
+	unsigned int has_cmods : 1;  
 	unsigned int byref    : 1;
 	unsigned int pinned   : 1;  /* valid when included in a local var signature */
-	MonoCustomMod modifiers [MONO_ZERO_LEN_ARRAY]; /* this may grow */
 };
 
-#define MONO_SIZEOF_TYPE (offsetof (struct _MonoType, modifiers))
+typedef struct {
+	MonoType unmodified;
+	MonoCustomModContainer cmods;
+} MonoTypeWithModifiers;
+
+MonoCustomModContainer *
+mono_type_get_cmods (const MonoType *t);
+
+// Note: sizeof (MonoType) is dangerous. It can copy the num_mods
+// field without copying the variably sized array. This leads to
+// memory unsafety on the stack and/or heap, when we try to traverse
+// this array.
+//
+// Use mono_sizeof_monotype 
+// to get the size of the memory to copy.
+#define MONO_SIZEOF_TYPE sizeof (MonoType)
+
+size_t 
+mono_sizeof_type_with_mods (uint8_t num_mods);
+
+size_t 
+mono_sizeof_type (const MonoType *ty);
 
 #define MONO_SECMAN_FLAG_INIT(x)		(x & 0x2)
 #define MONO_SECMAN_FLAG_GET_VALUE(x)		(x & 0x1)

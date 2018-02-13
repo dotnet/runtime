@@ -671,19 +671,20 @@ mono_dynimage_encode_fieldref_signature (MonoDynamicImage *assembly, MonoImage *
 	
 	sigbuffer_add_value (&buf, 0x06);
 	/* encode custom attributes before the type */
-	if (type->num_mods) {
-		for (i = 0; i < type->num_mods; ++i) {
+	if (type->has_cmods) {
+		MonoCustomModContainer *cmods = mono_type_get_cmods (type);
+		for (i = 0; i < cmods->count; ++i) {
 			if (field_image) {
 				ERROR_DECL (error);
-				MonoClass *klass = mono_class_get_checked (field_image, type->modifiers [i].token, error);
+				MonoClass *klass = mono_class_get_checked (field_image, cmods->modifiers [i].token, error);
 				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 
 				token = mono_image_typedef_or_ref (assembly, m_class_get_byval_arg (klass));
 			} else {
-				token = type->modifiers [i].token;
+				token = cmods->modifiers [i].token;
 			}
 
-			if (type->modifiers [i].required)
+			if (cmods->modifiers [i].required)
 				sigbuffer_add_byte (&buf, MONO_TYPE_CMOD_REQD);
 			else
 				sigbuffer_add_byte (&buf, MONO_TYPE_CMOD_OPT);

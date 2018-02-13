@@ -2898,7 +2898,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			header->locals [i] = image_g_new0 (image, MonoType, 1);
 			MonoType *type = mono_reflection_type_get_handle ((MonoReflectionType*)lb->type, error);
 			mono_error_assert_ok (error);
-			memcpy (header->locals [i], type, MONO_SIZEOF_TYPE);
+			memcpy (header->locals [i], type, mono_sizeof_type (type));
 		}
 
 		header->num_clauses = num_clauses;

@@ -309,6 +309,12 @@ typedef struct {
 	unsigned int token    : 31;
 } MonoCustomMod;
 
+typedef struct _MonoCustomModContainer {
+	uint8_t count; /* max 64 modifiers follow at the end */
+	MonoImage *image; /* Image containing types in modifiers array */
+	MonoCustomMod modifiers [1]; /* Actual length is count */
+} MonoCustomModContainer;
+
 struct _MonoArrayType {
 	MonoClass *eklass;
 	// Number of dimensions of the array

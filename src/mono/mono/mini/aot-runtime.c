@@ -633,7 +633,9 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	guint8 *p = buf;
 	MonoType *t;
 
-	t = (MonoType *)g_malloc0 (sizeof (MonoType));
+	// In encode_type, we have g_assert (!t->has_mods);
+	// This is the only reason we can do sizeof (MonoType)
+	t = (MonoType *) g_malloc0 (sizeof (MonoType));
 	error_init (error);
 
 	while (TRUE) {

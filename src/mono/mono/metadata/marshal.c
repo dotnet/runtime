@@ -3624,24 +3624,29 @@ mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *
 
 	sig = mono_method_signature (method);
 
+	MonoCustomModContainer *ret_cmods = NULL;
+	if (sig->ret)
+		ret_cmods = mono_type_get_cmods (sig->ret);
+
 	/* Change default calling convention if needed */
 	/* Why is this a modopt ? */
-	if (sig->ret && sig->ret->num_mods) {
-		for (i = 0; i < sig->ret->num_mods; ++i) {
-			ERROR_DECL (error);
-			MonoClass *cmod_class = mono_class_get_checked (get_method_image (method), sig->ret->modifiers [i].token, error);
-			g_assert (mono_error_ok (error));
-			if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
-				const char *cmod_class_name = m_class_get_name (cmod_class);
-				if (!strcmp (cmod_class_name, "CallConvCdecl"))
-					csig->call_convention = MONO_CALL_C;
-				else if (!strcmp (cmod_class_name, "CallConvStdcall"))
-					csig->call_convention = MONO_CALL_STDCALL;
-				else if (!strcmp (cmod_class_name, "CallConvFastcall"))
-					csig->call_convention = MONO_CALL_FASTCALL;
-				else if (!strcmp (cmod_class_name, "CallConvThiscall"))
-					csig->call_convention = MONO_CALL_THISCALL;
-			}
+	if (!ret_cmods)
+		return;
+
+	for (i = 0; i < ret_cmods->count; ++i) {
+		ERROR_DECL (error);
+		MonoClass *cmod_class = mono_class_get_checked (ret_cmods->image, ret_cmods->modifiers [i].token, error);
+		g_assert (mono_error_ok (error));
+		if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
+			const char *cmod_class_name = m_class_get_name (cmod_class);
+			if (!strcmp (cmod_class_name, "CallConvCdecl"))
+				csig->call_convention = MONO_CALL_C;
+			else if (!strcmp (cmod_class_name, "CallConvStdcall"))
+				csig->call_convention = MONO_CALL_STDCALL;
+			else if (!strcmp (cmod_class_name, "CallConvFastcall"))
+				csig->call_convention = MONO_CALL_FASTCALL;
+			else if (!strcmp (cmod_class_name, "CallConvThiscall"))
+				csig->call_convention = MONO_CALL_THISCALL;
 		}
 	}
 }

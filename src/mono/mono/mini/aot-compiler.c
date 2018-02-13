@@ -3115,7 +3115,9 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
 
-	g_assert (t->num_mods == 0);
+	// Change memory allocation in decode_type if you change
+	g_assert (!t->has_cmods);
+
 	/* t->attrs can be ignored */
 	//g_assert (t->attrs == 0);
 

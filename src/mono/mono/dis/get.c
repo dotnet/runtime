@@ -1150,8 +1150,10 @@ dis_stringify_type (MonoImage *m, MonoType *type, gboolean is_def)
 	char *bare = NULL, *mods = NULL;
 	char *result;
 
-	if (type->num_mods)
-		mods = dis_stringify_modifiers (m, type->num_mods, type->modifiers);
+	if (type->has_cmods) {
+		MonoCustomModContainer *cmods = mono_type_get_cmods (type);
+		mods = dis_stringify_modifiers (cmods->image, cmods->count, cmods->modifiers);
+	}
 
 	switch (type->type){
 	case MONO_TYPE_BOOLEAN:
