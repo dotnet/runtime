@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,28 +10,17 @@ namespace System.Net.Http
 {
     internal abstract class HttpContentWriteStream : HttpContentStream
     {
-        public HttpContentWriteStream(HttpConnection connection, CancellationToken cancellationToken) : base(connection)
-        {
+        public HttpContentWriteStream(HttpConnection connection) : base(connection) =>
             Debug.Assert(connection != null);
-            RequestCancellationToken = cancellationToken;
-        }
 
-        /// <summary>Cancellation token associated with the send operation.</summary>
-        /// <remarks>
-        /// Because of how this write stream is used, the CancellationToken passed into the individual
-        /// stream operations will be the default non-cancelable token and can be ignored.  Instead,
-        /// this token is used.
-        /// </remarks>
-        internal CancellationToken RequestCancellationToken { get; }
+        public sealed override bool CanRead => false;
+        public sealed override bool CanWrite => true;
 
-        public override bool CanRead => false;
-        public override bool CanWrite => true;
+        public sealed override void Flush() => FlushAsync().GetAwaiter().GetResult();
 
-        public override void Flush() => FlushAsync().GetAwaiter().GetResult();
+        public sealed override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) =>
+        public sealed override void Write(byte[] buffer, int offset, int count) =>
             WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
 
         public abstract Task FinishAsync();

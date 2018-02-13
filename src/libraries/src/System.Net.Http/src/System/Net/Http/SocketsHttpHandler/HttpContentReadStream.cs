@@ -13,20 +13,20 @@ namespace System.Net.Http
         {
         }
 
-        public override bool CanRead => true;
-        public override bool CanWrite => false;
+        public sealed override bool CanRead => true;
+        public sealed override bool CanWrite => false;
 
-        public override void Flush() { }
+        public sealed override void Flush() { }
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public sealed override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArgs(buffer, offset, count);
             return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
         }
 
-        public override void CopyTo(Stream destination, int bufferSize) =>
+        public sealed override void CopyTo(Stream destination, int bufferSize) =>
             CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
     }
 }

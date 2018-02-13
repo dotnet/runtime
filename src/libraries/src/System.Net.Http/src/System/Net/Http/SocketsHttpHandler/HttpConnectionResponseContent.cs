@@ -11,15 +11,9 @@ namespace System.Net.Http
 {
     internal partial class HttpConnection : IDisposable
     {
-        private sealed class HttpConnectionContent : HttpContent
+        private sealed class HttpConnectionResponseContent : HttpContent
         {
-            private readonly CancellationToken _cancellationToken;
             private HttpContentStream _stream;
-
-            public HttpConnectionContent(CancellationToken cancellationToken)
-            {
-                _cancellationToken = cancellationToken;
-            }
 
             public void SetStream(HttpContentStream stream)
             {
@@ -41,30 +35,33 @@ namespace System.Net.Http
                 return stream;
             }
 
-            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+                SerializeToStreamAsync(stream, context, CancellationToken.None);
+
+            internal sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
             {
                 Debug.Assert(stream != null);
 
                 using (HttpContentStream contentStream = ConsumeStream())
                 {
                     const int BufferSize = 8192;
-                    await contentStream.CopyToAsync(stream, BufferSize, _cancellationToken).ConfigureAwait(false);
+                    await contentStream.CopyToAsync(stream, BufferSize, cancellationToken).ConfigureAwait(false);
                 }
             }
 
-            protected internal override bool TryComputeLength(out long length)
+            protected internal sealed override bool TryComputeLength(out long length)
             {
                 length = 0;
                 return false;
             }
 
-            protected override Task<Stream> CreateContentReadStreamAsync() =>
+            protected sealed override Task<Stream> CreateContentReadStreamAsync() =>
                 Task.FromResult<Stream>(ConsumeStream());
 
-            internal override Stream TryCreateContentReadStream() =>
+            internal sealed override Stream TryCreateContentReadStream() =>
                 ConsumeStream();
 
-            protected override void Dispose(bool disposing)
+            protected sealed override void Dispose(bool disposing)
             {
                 if (disposing)
                 {

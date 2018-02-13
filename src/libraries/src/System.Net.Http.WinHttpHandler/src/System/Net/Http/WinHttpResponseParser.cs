@@ -92,7 +92,7 @@ namespace System.Net.Http
                     }
                 }
 
-                response.Content = new NoWriteNoSeekStreamContent(decompressedStream, state.CancellationToken);
+                response.Content = new NoWriteNoSeekStreamContent(decompressedStream);
                 response.RequestMessage = request;
 
                 // Parse raw response headers and place them into response message.
