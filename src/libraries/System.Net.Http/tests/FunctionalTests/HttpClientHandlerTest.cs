@@ -626,10 +626,7 @@ namespace System.Net.Http.Functional.Tests
                         await serverTask;
 
                         // Redirected URL answers with success
-                        serverTask = redirServer.AcceptConnectionSendResponseAndCloseAsync(
-                                $"HTTP/1.1 200 OK\r\n" +
-                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                                "\r\n");
+                        serverTask = redirServer.AcceptConnectionSendDefaultResponseAndCloseAsync();
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                         List<string> receivedRequest = await serverTask;
@@ -907,10 +904,7 @@ namespace System.Net.Http.Functional.Tests
                             "\r\n");
                     Assert.Equal(firstRequest, await Task.WhenAny(firstRequest, getResponse));
 
-                    Task secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
+                    Task secondRequest = origServer.AcceptConnectionSendDefaultResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(secondRequest, getResponse);
 
                     using (HttpResponseMessage response = await getResponse)
