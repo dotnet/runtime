@@ -95,9 +95,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
       <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostbyaddr.cs">
-      <Link>Interop\Windows\Winsock\Interop.gethostbyaddr.cs</Link>
     </Compile>    
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.gethostname.cs">
       <Link>Interop\Windows\Winsock\Interop.gethostname.cs</Link>
