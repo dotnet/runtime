@@ -627,7 +627,7 @@ namespace System.Diagnostics
             // First try with a buffer that should suffice for 99% of cases.
             // Note: on CentOS/RedHat 7.1 systems, getpwnam_r returns 'user not found' if the buffer is too small
             // see https://bugs.centos.org/view.php?id=7324
-            const int BufLen = 1024;
+            const int BufLen = Interop.Sys.Passwd.InitialBufferSize;
             byte* stackBuf = stackalloc byte[BufLen];
             if (TryGetPasswd(userName, stackBuf, BufLen, out passwd))
             {
