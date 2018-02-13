@@ -7,6 +7,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="ConversionsTests.cs" />
     <Compile Include="OperatorsTests.cs" />
     <Compile Include="UtilsTests.cs" />
     <Compile Include="StringsTests.cs" />
