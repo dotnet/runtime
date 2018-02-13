@@ -300,46 +300,6 @@ check_function_exists(
     kqueue
     HAVE_KQUEUE)
 
-check_c_source_compiles(
-     "
-     #include <sys/types.h>
-     #include <netdb.h>
-
-     int main()
-     {
-         const void* addr;
-         socklen_t len;
-         int type;
-         struct hostent* result;
-         char* buffer;
-         size_t buflen;
-         struct hostent** entry;
-         int* error;
-         gethostbyaddr_r(addr,  len, type, result, buffer, buflen, entry, error);
-         return 0;
-     }
-     "
-     HAVE_GETHOSTBYADDR_R)
-
-check_c_source_compiles(
-     "
-     #include <sys/types.h>
-     #include <netdb.h>
-
-     int main()
-     {
-         const char* hostname;
-         struct hostent* result;
-         char* buffer;
-         size_t buflen;
-         struct hostent** entry;
-         int* error;
-         gethostbyname_r(hostname, result, buffer, buflen, entry, error);
-         return 0;
-     }
-     "
-     HAVE_GETHOSTBYNAME_R)
-
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 check_c_source_compiles(
      "

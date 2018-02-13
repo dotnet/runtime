@@ -140,21 +140,7 @@ namespace System.Net
                 Aliases = aliases
             };
         }
-
-        public static unsafe IPHostEntry GetHostByAddr(IPAddress addr)
-        {
-            // TODO #2891: Optimize this (or decide if this legacy code can be removed):
-            Interop.Sys.IPAddress address = addr.GetNativeIPAddress();
-            Interop.Sys.HostEntry entry;
-            int err = Interop.Sys.GetHostByAddress(&address, &entry);
-            if (err != 0)
-            {
-                throw SocketExceptionFactory.CreateSocketException(GetSocketErrorForErrno(err), err);
-            }
-
-            return CreateIPHostEntry(entry);
-        }
-
+    
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
         {
             if (name == "")
