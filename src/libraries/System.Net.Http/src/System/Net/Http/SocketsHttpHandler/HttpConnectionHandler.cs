@@ -13,7 +13,7 @@ namespace System.Net.Http
 
         public HttpConnectionHandler(HttpConnectionSettings settings)
         {
-            _connectionPools = new HttpConnectionPools(settings, settings._maxConnectionsPerServer, usingProxy: false);
+            _connectionPools = new HttpConnectionPools(settings, usingProxy: false);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
