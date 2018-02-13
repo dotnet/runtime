@@ -4055,7 +4055,8 @@ CorInfoInitClassResult CEEInfo::initClass(
         else
         // According to the spec, we should be able to do this optimization for both reference and valuetypes.
         // To maintain backward compatibility, we are doing it for reference types only.
-        if (!pMD->IsCtor() && !pTypeToInitMT->IsValueType())
+        // We don't do this for interfaces though, as those don't have instance constructors.
+        if (!pMD->IsCtor() && !pTypeToInitMT->IsValueType() && !pTypeToInitMT->IsInterface())
         {
             // For instance methods of types with precise-initialization
             // semantics, we can assume that the .ctor triggerred the
@@ -4099,7 +4100,7 @@ CorInfoInitClassResult CEEInfo::initClass(
         // This optimization may cause static fields in reference types to be accessed without cctor being triggered
         // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
         // doing it for perf reasons.
-        if (!pTypeToInitMT->IsValueType() && !pTypeToInitMT->GetClass()->IsBeforeFieldInit())
+        if (!pTypeToInitMT->IsValueType() && !pTypeToInitMT->IsInterface() && !pTypeToInitMT->GetClass()->IsBeforeFieldInit())
         {
             if (pTypeToInitMT == GetTypeFromContext(context).AsMethodTable() || pTypeToInitMT == methodBeingCompiled->GetMethodTable())
             {
