@@ -53,7 +53,7 @@ mono_error_prepare (MonoErrorInternal *error)
 	if (error->error_code != MONO_ERROR_NONE)
 		return;
 
-	error->type_name = error->assembly_name = error->member_name = error->full_message = error->exception_name_space = error->exception_name = error->full_message_with_fields = error->first_argument = error->member_signature = NULL;
+	error->type_name = error->assembly_name = error->member_name = error->full_message = error->exception_name_space = error->exception_name = error->full_message_with_fields = error->first_argument = NULL;
 	error->exn.klass = NULL;
 }
 
@@ -150,8 +150,7 @@ mono_error_cleanup (MonoError *oerror)
 	g_free ((char*)error->exception_name_space);
 	g_free ((char*)error->exception_name);
 	g_free ((char*)error->first_argument);
-	g_free ((char*)error->member_signature);
-	error->type_name = error->assembly_name = error->member_name = error->exception_name_space = error->exception_name = error->first_argument = error->member_signature = NULL;
+	error->type_name = error->assembly_name = error->member_name = error->exception_name_space = error->exception_name = error->first_argument = NULL;
 	error->exn.klass = NULL;
 
 }
@@ -187,15 +186,24 @@ mono_error_get_message (MonoError *oerror)
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	if (error->error_code == MONO_ERROR_NONE)
 		return NULL;
+
+	//Those are the simplified errors
+	switch (error->error_code) {
+	case MONO_ERROR_MISSING_METHOD:
+	case MONO_ERROR_BAD_IMAGE:
+	case MONO_ERROR_FILE_NOT_FOUND:
+	case MONO_ERROR_MISSING_FIELD:
+		return error->full_message;
+	}
+
 	if (error->full_message_with_fields)
 		return error->full_message_with_fields;
 
-	error->full_message_with_fields = g_strdup_printf ("%s assembly:%s type:%s member:%s signature:%s",
+	error->full_message_with_fields = g_strdup_printf ("%s assembly:%s type:%s member:%s",
 		error->full_message,
 		get_assembly_name (error),
 		get_type_name (error),
-		error->member_signature,
-		error->member_name ? error->member_name : "<none>");
+		error->member_name);
 
 	return error->full_message_with_fields ? error->full_message_with_fields : error->full_message;
 }
@@ -223,7 +231,6 @@ mono_error_dup_strings (MonoError *oerror, gboolean dup_strings)
 		DUP_STR (exception_name_space);
 		DUP_STR (exception_name);
 		DUP_STR (first_argument);
-		DUP_STR (member_signature);
 	}
 #undef DUP_STR
 }
@@ -256,14 +263,6 @@ mono_error_set_member_name (MonoError *oerror, const char *member_name)
 }
 
 static void
-mono_error_set_member_signature (MonoError *oerror, const char *member_signature)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-
-	error->member_signature = member_signature;
-}
-
-static void
 mono_error_set_type_name (MonoError *oerror, const char *type_name)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
@@ -288,29 +287,6 @@ mono_error_set_corlib_exception (MonoError *oerror, const char *name_space, cons
 
 	error->exception_name_space = name_space;
 	error->exception_name = name;
-}
-
-
-void
-mono_error_set_assembly_load (MonoError *oerror, const char *assembly_name, const char *msg_format, ...)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	mono_error_prepare (error);
-
-	error->error_code = MONO_ERROR_FILE_NOT_FOUND;
-	mono_error_set_assembly_name (oerror, assembly_name);
-
-	set_error_message ();
-}
-
-
-void
-mono_error_set_assembly_load_simple (MonoError *oerror, const char *assembly_name, gboolean refection_only)
-{
-	if (refection_only)
-		mono_error_set_assembly_load (oerror, assembly_name, "Cannot resolve dependency to assembly because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.");
-	else
-		mono_error_set_assembly_load (oerror, assembly_name, "Could not load file or assembly '%s' or one of its dependencies.", assembly_name);
 }
 
 void
@@ -350,51 +326,19 @@ mono_error_set_type_load_name (MonoError *oerror, const char *type_name, const c
 	set_error_message ();
 }
 
+/*
+ * Sets @error to be of type @error_code with message @message
+ * XXX only works for MONO_ERROR_MISSING_METHOD, MONO_ERROR_BAD_IMAGE, MONO_ERROR_FILE_NOT_FOUND and MONO_ERROR_MISSING_FIELD for now
+*/
 void
-mono_error_set_method_load (MonoError *oerror, MonoClass *klass, const char *method_name, const char *signature, const char *msg_format, ...)
+mono_error_set_specific (MonoError *oerror, int error_code, const char *message)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
-	error->error_code = MONO_ERROR_MISSING_METHOD;
-	mono_error_set_class (oerror, klass);
-	mono_error_set_member_name (oerror, method_name);
-	mono_error_set_member_signature (oerror, signature);
-	set_error_message ();
-}
-
-void
-mono_error_set_field_load (MonoError *oerror, MonoClass *klass, const char *field_name, const char *msg_format, ...)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	mono_error_prepare (error);
-
-	error->error_code = MONO_ERROR_MISSING_FIELD;
-	mono_error_set_class (oerror, klass);
-	mono_error_set_member_name (oerror, field_name);
-	set_error_message ();	
-}
-
-void
-mono_error_set_bad_image_name (MonoError *oerror, const char *assembly_name, const char *msg_format, ...)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	mono_error_prepare (error);
-
-	error->error_code = MONO_ERROR_BAD_IMAGE;
-	mono_error_set_assembly_name (oerror, assembly_name);
-	set_error_message ();
-}
-
-void
-mono_error_set_bad_image (MonoError *oerror, MonoImage *image, const char *msg_format, ...)
-{
-	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
-	mono_error_prepare (error);
-
-	error->error_code = MONO_ERROR_BAD_IMAGE;
-	error->assembly_name = image ? mono_image_get_name (image) : "<no_image>";
-	set_error_message ();
+	error->error_code = error_code;
+	error->full_message = message;
+	error->flags |= MONO_ERROR_FREE_STRINGS;
 }
 
 void
@@ -470,20 +414,6 @@ mono_error_set_invalid_operation (MonoError *oerror, const char *msg_format, ...
 	va_list args;
 	va_start (args, msg_format);
 	mono_error_set_generic_errorv (oerror, "System", "InvalidOperationException", msg_format, args);
-	va_end (args);
-}
-
-/**
- * mono_error_set_file_not_found:
- *
- * System.IO.FileNotFoundException
- */
-void
-mono_error_set_file_not_found (MonoError *oerror, const char *msg_format, ...)
-{
-	va_list args;
-	va_start (args, msg_format);
-	mono_error_set_generic_errorv (oerror, "System.IO", "FileNotFoundException", msg_format, args);
 	va_end (args);
 }
 
@@ -630,7 +560,7 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 
 	MonoException* exception = NULL;
-	MonoString *assembly_name = NULL, *type_name = NULL, *method_name = NULL, *field_name = NULL, *msg = NULL;
+	MonoString *assembly_name = NULL, *type_name = NULL;
 	MonoDomain *domain = mono_domain_get ();
 
 	error_init (error_out);
@@ -640,60 +570,16 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		return NULL;
 
 	case MONO_ERROR_MISSING_METHOD:
-		if ((error->type_name || error->exn.klass) && error->member_name) {
-			type_name = get_type_name_as_mono_string (error, domain, error_out);
-			if (!mono_error_ok (error_out))
-				break;
-
-			method_name = string_new_cleanup (domain, error->member_name);
-			if (!method_name) {
-				mono_error_set_out_of_memory (error_out, "Could not allocate method name");
-				break;
-			}
-
-			MonoString *signature = NULL;
-			if (error->member_signature) {
-				signature = string_new_cleanup (domain, error->member_signature);
-				if (!signature) {
-					mono_error_set_out_of_memory (error_out, "Could not allocate signature");
-					break;
-				}
-			}
-
-			MonoString *message = NULL;
-			if (error->full_message && strlen (error->full_message) > 0) {
-				message = string_new_cleanup (domain, error->full_message);
-				if (!message) {
-					mono_error_set_out_of_memory (error_out, "Could not allocate message");
-					break;
-				}
-			}
-			exception = mono_exception_from_name_four_strings_checked (mono_defaults.corlib, "System", "MissingMethodException", type_name, method_name, signature, message, error_out);
-			if (exception)
-				set_message_on_exception (exception, error, error_out);
-		} else {
-			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingMethodException", error->full_message);
-		}
+		exception = mono_corlib_exception_new_with_args ("System", "MissingMethodException", error->full_message, error->first_argument, error_out);
 		break;
-
+	case MONO_ERROR_BAD_IMAGE:
+		exception = mono_corlib_exception_new_with_args ("System", "BadImageFormatException", error->full_message, error->first_argument, error_out);
+		break;
+	case MONO_ERROR_FILE_NOT_FOUND:
+		exception = mono_corlib_exception_new_with_args ("System.IO", "FileNotFoundException", error->full_message, error->first_argument, error_out);
+		break;
 	case MONO_ERROR_MISSING_FIELD:
-		if ((error->type_name || error->exn.klass) && error->member_name) {
-			type_name = get_type_name_as_mono_string (error, domain, error_out);
-			if (!mono_error_ok (error_out))
-				break;
-			
-			field_name = string_new_cleanup (domain, error->member_name);
-			if (!field_name) {
-				mono_error_set_out_of_memory (error_out, "Could not allocate field name");
-				break;
-			}
-			
-			exception = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "MissingFieldException", type_name, field_name, error_out);
-			if (exception)
-				set_message_on_exception (exception, error, error_out);
-		} else {
-			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MissingFieldException", error->full_message);
-		}
+		exception = mono_corlib_exception_new_with_args ("System", "MissingFieldException", error->full_message, error->first_argument, error_out);
 		break;
 
 	case MONO_ERROR_TYPE_LOAD:
@@ -717,35 +603,6 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 				set_message_on_exception (exception, error, error_out);
 		} else {
 			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "TypeLoadException", error->full_message);
-		}
-		break;
-
-	case MONO_ERROR_FILE_NOT_FOUND:
-	case MONO_ERROR_BAD_IMAGE:
-		if (error->assembly_name) {
-			msg = string_new_cleanup (domain, error->full_message);
-			if (!msg) {
-				mono_error_set_out_of_memory (error_out, "Could not allocate message");
-				break;
-			}
-
-			if (error->assembly_name) {
-				assembly_name = string_new_cleanup (domain, error->assembly_name);
-				if (!assembly_name) {
-					mono_error_set_out_of_memory (error_out, "Could not allocate assembly name");
-					break;
-				}
-			}
-
-			if (error->error_code == MONO_ERROR_FILE_NOT_FOUND)
-				exception = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System.IO", "FileNotFoundException", msg, assembly_name, error_out);
-			else
-				exception = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "BadImageFormatException", msg, assembly_name, error_out);
-		} else {
-			if (error->error_code == MONO_ERROR_FILE_NOT_FOUND)
-				exception = mono_exception_from_name_msg (mono_get_corlib (), "System.IO", "FileNotFoundException", error->full_message);
-			else
-				exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "BadImageFormatException", error->full_message);
 		}
 		break;
 
@@ -889,7 +746,6 @@ mono_error_box (const MonoError *ierror, MonoImage *image)
 	DUP_STR (full_message);
 	DUP_STR (full_message_with_fields);
 	DUP_STR (first_argument);
-	DUP_STR (member_signature);
 	to->exn.klass = from->exn.klass;
 
 #undef DUP_STR
@@ -936,9 +792,16 @@ mono_error_set_from_boxed (MonoError *oerror, const MonoErrorBoxed *box)
 	DUP_STR (full_message);
 	DUP_STR (full_message_with_fields);
 	DUP_STR (first_argument);
-	DUP_STR (member_signature);
 	to->exn.klass = from->exn.klass;
 		  
 #undef DUP_STR
 	return (to->flags & MONO_ERROR_INCOMPLETE) == 0 ;
+}
+
+void
+mono_error_set_first_argument (MonoError *oerror, const char *first_argument)
+{
+	MonoErrorInternal* to = (MonoErrorInternal*)oerror;
+	to->first_argument = g_strdup (first_argument);
+	to->flags |= MONO_ERROR_FREE_STRINGS;
 }

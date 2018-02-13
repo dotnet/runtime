@@ -1119,67 +1119,186 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 	g_assert_not_reached ();
 }
 
-
-static MonoException *
-create_exception_four_strings (MonoClass *klass, MonoString *a1, MonoString *a2, MonoString *a3, MonoString *a4, MonoError *error)
+MonoException *
+mono_corlib_exception_new_with_args (const char *name_space, const char *name, const char *arg_0, const char *arg_1, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
-	MonoMethod *method = NULL;
-	MonoObject *o;
-	int count = 4;
-	gpointer args [4];
-	gpointer iter;
-	MonoMethod *m;
+	MonoString *str_0, *str_1;
+	error_init (error);
 
-	o = mono_object_new_checked (domain, klass, error);
-	mono_error_assert_ok (error);
-
-	iter = NULL;
-	while ((m = mono_class_get_methods (klass, &iter))) {
-		MonoMethodSignature *sig;
-
-		if (strcmp (".ctor", mono_method_get_name (m)))
-			continue;
-		sig = mono_method_signature (m);
-		if (sig->param_count != count)
-			continue;
-
-		int i;
-		gboolean good = TRUE;
-		for (i = 0; i < count; ++i) {
-			if (sig->params [i]->type != MONO_TYPE_STRING) {
-				good = FALSE;
-				break;
-			}
-		}
-		if (good) {
-			method = m;
-			break;
-		}
-	}
-
-	g_assert (method);
-
-	args [0] = a1;
-	args [1] = a2;
-	args [2] = a3;
-	args [3] = a4;
-
-	mono_runtime_invoke_checked (method, o, args, error);
+	str_0 = arg_0 ? mono_string_new_checked (domain, arg_0, error) : NULL;
 	return_val_if_nok (error, NULL);
 
-	return (MonoException *) o;
+	str_1 = arg_1 ? mono_string_new_checked (domain, arg_1, error) : NULL;
+	return_val_if_nok (error, NULL);
+
+	return mono_exception_from_name_two_strings_checked (mono_defaults.corlib, name_space, name, str_0, str_1, error);
 }
 
-MonoException *
-mono_exception_from_name_four_strings_checked (MonoImage *image, const char *name_space,
-					      const char *name, MonoString *a1, MonoString *a2, MonoString *a3, MonoString *a4,
-					      MonoError *error)
+void
+mono_error_set_field_missing (MonoError *error, MonoClass *klass, const char *field_name, MonoType *sig, const char *reason, ...)
 {
-	MonoClass *klass;
+	char *result;
+	GString *res;
 
-	error_init (error);
-	klass = mono_class_load_from_name (image, name_space, name);
+	res = g_string_new ("Field not found: ");
 
-	return create_exception_four_strings (klass, a1, a2, a3, a4, error);
+
+	if (sig) {
+		mono_type_get_desc (res, sig, TRUE);
+		g_string_append_c (res, ' ');
+	}
+
+	if (klass) {
+		if (klass->name_space) {
+			g_string_append (res, klass->name_space);
+			g_string_append_c (res, '.');
+		}
+		g_string_append (res, klass->name);
+	}
+	else {
+		g_string_append (res, "<unknown type>");
+	}
+
+	g_string_append_c (res, '.');
+
+	if (field_name)
+		g_string_append (res, field_name);
+	else
+		g_string_append (res, "<unknown field>");
+
+	if (reason && *reason) {
+		va_list args;
+		va_start (args, reason);
+
+		g_string_append (res, " Due to: ");
+		g_string_append_vprintf (res, reason, args);
+		va_end (args);
+	}
+	result = res->str;
+	g_string_free (res, FALSE);
+
+	mono_error_set_specific (error, MONO_ERROR_MISSING_FIELD, result);
+}
+
+/*
+ * Sets @error to a method missing error.
+ */
+void
+mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *method_name, MonoMethodSignature *sig, const char *reason, ...)
+{
+	int i;
+	char *result;
+	GString *res;
+
+	res = g_string_new ("Method not found: ");
+
+	if (sig) {
+		mono_type_get_desc (res, sig->ret, TRUE);
+
+		g_string_append_c (res, ' ');
+	}
+
+	if (klass) {
+		if (klass->name_space) {
+			g_string_append (res, klass->name_space);
+			g_string_append_c (res, '.');
+		}
+		g_string_append (res, klass->name);
+	}
+	else {
+		g_string_append (res, "<unknown type>");
+	}
+
+	g_string_append_c (res, '.');
+
+	if (method_name)
+		g_string_append (res, method_name);
+	else
+		g_string_append (res, "<unknown method>");
+
+	if (sig) {
+		if (sig->generic_param_count) {
+			g_string_append_c (res, '<');
+			for (i = 0; i < sig->generic_param_count; ++i) {
+				if (i > 0)
+					g_string_append (res, ",");
+				g_string_append_printf (res, "!%d", i);
+			}
+			g_string_append_c (res, '>');
+		}
+
+		g_string_append_c (res, '(');
+		for (i = 0; i < sig->param_count; ++i) {
+			if (i > 0)
+				g_string_append_c (res, ',');
+			mono_type_get_desc (res, sig->params [i], TRUE);
+		}
+		g_string_append_c (res, ')');
+	}
+
+	if (reason && *reason) {
+		va_list args;
+		va_start (args, reason);
+
+		g_string_append (res, " Due to: ");
+		g_string_append_vprintf (res, reason, args);
+		va_end (args);
+	}
+	result = res->str;
+	g_string_free (res, FALSE);
+
+	mono_error_set_specific (error, MONO_ERROR_MISSING_METHOD, result);
+}
+
+#define SET_ERROR_MSG(STR_VAR, FMT_STR) do {	\
+	va_list __args;	\
+	va_start (__args, FMT_STR);	\
+	STR_VAR = g_strdup_vprintf (FMT_STR, __args);	\
+	va_end(__args);	\
+} while (0);
+
+/**
+ * \p image_name argument will be g_strdup'd. Called must free passed value
+ */
+void
+mono_error_set_bad_image_by_name (MonoError *error, const char *image_name, const char *msg_format, ...)
+{
+	char *str;
+	SET_ERROR_MSG (str, msg_format);
+
+	mono_error_set_specific (error, MONO_ERROR_BAD_IMAGE, str);
+	if (image_name)
+		mono_error_set_first_argument (error, image_name);
+}
+
+void
+mono_error_set_bad_image (MonoError *error, MonoImage *image, const char *msg_format, ...)
+{
+	char *str;
+	SET_ERROR_MSG (str, msg_format);
+
+	mono_error_set_specific (error, MONO_ERROR_BAD_IMAGE, str);
+	if (image)
+		mono_error_set_first_argument (error, mono_image_get_name (image));
+}
+
+void
+mono_error_set_file_not_found (MonoError *error, const char *file_name, const char *msg_format, ...)
+{
+	char *str;
+	SET_ERROR_MSG (str, msg_format);
+
+	mono_error_set_specific (error, MONO_ERROR_FILE_NOT_FOUND, str);
+	if (file_name)
+		mono_error_set_first_argument (error, file_name);
+}
+
+void
+mono_error_set_simple_file_not_found (MonoError *error, const char *file_name, gboolean refection_only)
+{
+	if (refection_only)
+		mono_error_set_file_not_found (error, file_name, "Cannot resolve dependency to assembly because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event.");
+	else
+		mono_error_set_file_not_found (error, file_name, "Could not load file or assembly '%s' or one of its dependencies.", file_name);
 }

@@ -12,6 +12,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/profiler-private.h>

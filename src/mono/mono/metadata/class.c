@@ -22,6 +22,7 @@
 #include <mono/metadata/image-internals.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/profiler-private.h>
@@ -191,7 +192,8 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		
 		mono_assembly_get_assemblyref (image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
-		mono_error_set_assembly_load_simple (error, human_name, image->assembly ? image->assembly->ref_only : FALSE);
+		mono_error_set_simple_file_not_found (error, human_name, image->assembly ? image->assembly->ref_only : FALSE);
+		g_free (human_name);
 		return NULL;
 	}
 

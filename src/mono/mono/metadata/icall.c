@@ -4976,7 +4976,7 @@ get_manifest_resource_info_internal (MonoReflectionAssemblyHandle assembly_h, Mo
 			i = cols [MONO_MANIFEST_IMPLEMENTATION] >> MONO_IMPLEMENTATION_BITS;
 			mono_assembly_load_reference (assembly->image, i - 1);
 			if (assembly->image->references [i - 1] == REFERENCE_MISSING) {
-				mono_error_set_assembly_load (error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->image->name);
+				mono_error_set_file_not_found (error, NULL, "Assembly %d referenced from assembly %s not found ", i - 1, assembly->image->name);
 				goto leave;
 			}
 			MonoReflectionAssemblyHandle assm_obj = mono_assembly_get_object_handle (mono_domain_get (), assembly->image->references [i - 1], error);
@@ -5109,7 +5109,7 @@ add_file_to_modules_array (MonoDomain *domain, MonoArrayHandle dest, int dest_id
 		goto_if_nok (error, leave);
 		if (!m) {
 			const char *filename = mono_metadata_string_heap (image, cols [MONO_FILE_NAME]);
-			mono_error_set_assembly_load (error, g_strdup (filename), "%s", "");
+			mono_error_set_file_not_found (error, filename, "%s", "");
 			goto leave;
 		}
 		MonoReflectionModuleHandle rm = mono_module_get_object_handle (domain, m, error);
@@ -5406,9 +5406,9 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_name (error, g_strdup (filename), "%s", "");
+			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
 		else
-			mono_error_set_assembly_load (error, g_strdup (filename), "%s", "");
+			mono_error_set_file_not_found (error, filename, "%s", "");
 		g_free (filename);
 		return;
 	}

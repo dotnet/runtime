@@ -9,6 +9,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include <config.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
