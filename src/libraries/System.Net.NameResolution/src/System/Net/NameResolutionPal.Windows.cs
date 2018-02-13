@@ -156,34 +156,6 @@ namespace System.Net
             return HostEntry;
         } // NativeToHostEntry
 
-        public static IPHostEntry GetHostByAddr(IPAddress address)
-        {
-            // TODO #2891: Optimize this (or decide if this legacy code can be removed):
-#pragma warning disable CS0618 // Address is marked obsolete
-            int addressAsInt = unchecked((int)address.Address);
-#pragma warning restore CS0618
-
-#if BIGENDIAN
-            // TODO #2891: above code needs testing for BIGENDIAN.
-
-            addressAsInt = (int)(((uint)addressAsInt << 24) | (((uint)addressAsInt & 0x0000FF00) << 8) |
-                (((uint)addressAsInt >> 8) & 0x0000FF00) | ((uint)addressAsInt >> 24));
-#endif
-
-            IntPtr nativePointer =
-                Interop.Winsock.gethostbyaddr(
-                    ref addressAsInt,
-                    sizeof(int),
-                    ProtocolFamily.InterNetwork);
-            
-            if (nativePointer != IntPtr.Zero)
-            {
-                return NativeToHostEntry(nativePointer);
-            }
-
-            throw new SocketException();
-        }
-
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
         {
             //
