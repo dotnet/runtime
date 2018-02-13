@@ -484,7 +484,7 @@ namespace System.Net.Http
                     responseStream = EmptyReadStream.Instance;
                     ReturnConnectionToPool();
                 }
-                else if (request.Method == s_httpConnectMethod && (int)response.StatusCode == 200)
+                else if (request.Method == s_httpConnectMethod && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
