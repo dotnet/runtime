@@ -104,9 +104,7 @@ namespace System.Net.Test.Common
 
         public async Task AcceptConnectionAsync(Func<Connection, Task> funcAsync)
         {
-            Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false);
-
-            using (s)
+            using (Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false))
             {
                 s.NoDelay = true;
 

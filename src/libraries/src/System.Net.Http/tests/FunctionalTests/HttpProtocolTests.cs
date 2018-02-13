@@ -28,9 +28,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = HttpVersion.Version10;
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
+                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -51,9 +49,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = HttpVersion.Version11;
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
+                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
@@ -87,9 +83,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = new Version(0, minorVersion);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
+                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
 
                     if (exceptionType == null)
                     {
@@ -129,9 +123,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Version = new Version(majorVersion, minorVersion);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask =
-                        server.AcceptConnectionSendResponseAndCloseAsync(
-                            $"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 0\r\n\r\n");
+                    Task<List<string>> serverTask = server.AcceptConnectionSendDefaultResponseAndCloseAsync();
 
                     if (exceptionType == null)
                     {
