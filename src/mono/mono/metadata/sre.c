@@ -3064,8 +3064,10 @@ ctorbuilder_to_mono_method (MonoClass *klass, MonoReflectionCtorBuilder* mb, Mon
 
 	mono_loader_lock ();
 
-	if (!mono_reflection_methodbuilder_from_ctor_builder (&rmb, mb, error))
+	if (!mono_reflection_methodbuilder_from_ctor_builder (&rmb, mb, error)) {
+		mono_loader_unlock ();
 		return NULL;
+	}
 
 	g_assert (klass->image != NULL);
 	sig = ctor_builder_to_signature_raw (klass->image, mb, error); /* FIXME use handles */
@@ -3095,8 +3097,10 @@ methodbuilder_to_mono_method (MonoClass *klass, MonoReflectionMethodBuilderHandl
 	mono_loader_lock ();
 
 	MonoReflectionMethodBuilder *mb = MONO_HANDLE_RAW (ref_mb); /* FIXME use handles */
-	if (!mono_reflection_methodbuilder_from_method_builder (&rmb, mb, error))
+	if (!mono_reflection_methodbuilder_from_method_builder (&rmb, mb, error)) {
+		mono_loader_unlock ();
 		return NULL;
+	}
 
 	g_assert (klass->image != NULL);
 	sig = method_builder_to_signature (klass->image, ref_mb, error);
