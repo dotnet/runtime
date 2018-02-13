@@ -7072,8 +7072,8 @@ void ThrowExceptionForConflictingOverride(
     COMPlusThrow(
         kNotSupportedException,
         IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
-        strInterfaceName,
         strMethodName,
+        strInterfaceName,
         strTargetClassName,
         assemblyName);
 }
