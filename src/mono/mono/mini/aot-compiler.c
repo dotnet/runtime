@@ -9890,27 +9890,31 @@ emit_image_table (MonoAotCompile *acfg)
 static void
 emit_weak_field_indexes (MonoAotCompile *acfg)
 {
-	char symbol [128];
 	GHashTable *indexes;
 	GHashTableIter iter;
 	gpointer key, value;
+	int buf_size;
+	guint8 *buf, *p;
 
 	/* Emit a table of weak field indexes, since computing these at runtime is expensive */
-	sprintf (symbol, "weak_field_indexes");
-	emit_section_change (acfg, ".text", 0);
-	emit_alignment_code (acfg, 8);
-	emit_info_symbol (acfg, symbol);
-
 	mono_assembly_init_weak_fields (acfg->image);
 	indexes = acfg->image->weak_field_indexes;
 	g_assert (indexes);
 
-	emit_int32 (acfg, g_hash_table_size (indexes));
+	buf_size = (g_hash_table_size (indexes) + 1) * 4;
+	buf = p = (guint8 *)g_malloc0 (buf_size);
+
+	encode_int (g_hash_table_size (indexes), p, &p);
 	g_hash_table_iter_init (&iter, indexes);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
 		guint32 index = GPOINTER_TO_UINT (key);
-		emit_int32 (acfg, index);
+		encode_int (index, p, &p);
 	}
+	g_assert (p - buf <= buf_size);
+
+	emit_aot_data (acfg, MONO_AOT_TABLE_WEAK_FIELD_INDEXES, "weak_field_indexes", buf, p - buf);
+
+	g_free (buf);
 }
 
 static void
@@ -10261,6 +10265,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
+
 	if (acfg->data_outfile) {
 		for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
 			symbols [sindex ++] = NULL;
@@ -10278,7 +10283,9 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		else
 			symbols [sindex ++] = NULL;
 		symbols [sindex ++] = "image_table";
+		symbols [sindex ++] = "weak_field_indexes";
 	}
+
 	symbols [sindex ++] = "mem_end";
 	symbols [sindex ++] = "assembly_guid";
 	symbols [sindex ++] = "runtime_version";
@@ -10311,7 +10318,6 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
-	symbols [sindex ++] = "weak_field_indexes";
 
 	g_assert (sindex == MONO_AOT_FILE_INFO_NUM_SYMBOLS);
 

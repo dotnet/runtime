@@ -115,6 +115,7 @@ typedef struct MonoAotModule {
 	guint8 *plt;
 	guint8 *plt_end;
 	guint8 *blob;
+	gpointer weak_field_indexes;
 	/* Maps method indexes to their code */
 	gpointer *methods;
 	/* Sorted array of method addresses */
@@ -2192,6 +2193,7 @@ if (container_assm_name && !container_amodule) {
 		amodule->extra_method_info_offsets = amodule->tables [MONO_AOT_TABLE_EXTRA_METHOD_INFO_OFFSETS];
 		amodule->got_info_offsets = amodule->tables [MONO_AOT_TABLE_GOT_INFO_OFFSETS];
 		amodule->llvm_got_info_offsets = amodule->tables [MONO_AOT_TABLE_LLVM_GOT_INFO_OFFSETS];
+		amodule->weak_field_indexes = amodule->tables [MONO_AOT_TABLE_WEAK_FIELD_INDEXES];
 	} else {
 		amodule->blob = info->blob;
 		amodule->method_info_offsets = (guint32 *)info->method_info_offsets;
@@ -2202,6 +2204,7 @@ if (container_assm_name && !container_amodule) {
 		amodule->extra_method_info_offsets = (guint32 *)info->extra_method_info_offsets;
 		amodule->got_info_offsets = info->got_info_offsets;
 		amodule->llvm_got_info_offsets = info->llvm_got_info_offsets;
+		amodule->weak_field_indexes = info->weak_field_indexes;
 	}
 	amodule->unbox_trampolines = (guint32 *)info->unbox_trampolines;
 	amodule->unbox_trampolines_end = (guint32 *)info->unbox_trampolines_end;
@@ -2637,7 +2640,7 @@ mono_aot_get_weak_field_indexes (MonoImage *image)
 		return NULL;
 
 	/* Initialize weak field indexes from the cached copy */
-	guint32 *indexes = amodule->info.weak_field_indexes;
+	guint32 *indexes = amodule->weak_field_indexes;
 	int len  = indexes [0];
 	GHashTable *indexes_hash = g_hash_table_new (NULL, NULL);
 	for (int i = 0; i < len; ++i)
