@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpRequestMessageTest
     {
-        Version _expectedRequestMessageVersion = PlatformDetection.IsUap ? new Version(2,0) : new Version(1, 1);
+        Version _expectedRequestMessageVersion = !PlatformDetection.IsFullFramework ? new Version(2,0) : new Version(1, 1);
 
         [Fact]
         public void Ctor_Default_CorrectDefaults()
