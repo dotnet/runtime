@@ -109,7 +109,20 @@ namespace System.IO.Enumeration
 
                     bool isDirectory = FileSystemEntry.Initialize(ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
 
-                    if (_options.AttributesToSkip != 0)
+                    bool isSpecialDirectory = false;
+                    if (isDirectory)
+                    {
+                        // Subdirectory found
+                        if (_entry.Name[0] == '.' && (_entry.Name[1] == 0 || (_entry.Name[1] == '.' && _entry.Name[2] == 0)))
+                        {
+                            // "." or "..", don't process unless the option is set
+                            if (!_options.ReturnSpecialDirectories)
+                                continue;
+                            isSpecialDirectory = true;
+                        }
+                    }
+
+                    if (!isSpecialDirectory && _options.AttributesToSkip != 0)
                     {
                         if ((_options.AttributesToSkip & ~(FileAttributes.Directory | FileAttributes.Hidden | FileAttributes.ReparsePoint)) == 0)
                         {
@@ -119,23 +132,16 @@ namespace System.IO.Enumeration
                                 || ((_options.AttributesToSkip & FileAttributes.ReparsePoint) != 0 && _entry.InodeType == Interop.Sys.NodeType.DT_LNK))
                                 continue;
                         }
-                        else if ((_options.AttributesToSkip & entry.Attributes) != 0)
+                        else if (entry.Attributes != (FileAttributes)(-1) && (_options.AttributesToSkip & entry.Attributes) != 0)
                         {
                             // Hitting Attributes on the FileSystemEntry will cause a stat call
                             continue;
                         }
                     }
 
-                    if (isDirectory)
+                    if (isDirectory && !isSpecialDirectory)
                     {
-                        // Subdirectory found
-                        if (_entry.Name[0] == '.' && (_entry.Name[1] == 0 || (_entry.Name[1] == '.' && _entry.Name[2] == 0)))
-                        {
-                            // "." or "..", don't process unless the option is set
-                            if (!_options.ReturnSpecialDirectories)
-                                continue;
-                        }
-                        else if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
+                        if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
                         {
                             // Recursion is on and the directory was accepted, Queue it
                             if (_pending == null)

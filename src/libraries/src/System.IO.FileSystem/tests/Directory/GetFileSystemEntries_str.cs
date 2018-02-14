@@ -175,6 +175,31 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public void HiddenFilesAreReturned()
+        {
+            // Note that APIs that take EnumerationOptions do NOT find hidden files by default
+
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+
+            // Put a period in front to make it hidden on Unix
+            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, "." + GetTestFileName()));
+            fileOne.Create().Dispose();
+            fileTwo.Create().Dispose();
+            if (PlatformDetection.IsWindows)
+                fileTwo.Attributes = fileTwo.Attributes | FileAttributes.Hidden;
+
+            if (TestFiles)
+            {
+                FSAssert.EqualWhenOrdered(new string[] { fileOne.FullName, fileTwo.FullName }, GetEntries(testDirectory.FullName));
+            }
+            else
+            {
+                Assert.Empty(GetEntries(testDirectory.FullName));
+            }
+        }
+
         #endregion
 
         #region PlatformSpecific

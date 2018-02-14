@@ -147,7 +147,7 @@ namespace System.IO.Enumeration
                     if ((_entry->FileAttributes & FileAttributes.Directory) != 0)
                     {
                         // Subdirectory found
-                        if (PathHelpers.IsDotOrDotDot(_entry->FileName))
+                        if (!(_entry->FileName.Length > 2 || _entry->FileName[0] != '.' || (_entry->FileName.Length == 2 && _entry->FileName[1] != '.')))
                         {
                             // "." or "..", don't process unless the option is set
                             if (!_options.ReturnSpecialDirectories)
