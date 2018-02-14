@@ -30,6 +30,8 @@ namespace System.IO.Enumeration
             entry.RootDirectory = rootDirectory;
             entry.OriginalRootDirectory = originalRootDirectory;
             entry._pathBuffer = pathBuffer;
+            entry._fullPath = ReadOnlySpan<char>.Empty;
+            entry._fileName = ReadOnlySpan<char>.Empty;
 
             // Get from the dir entry whether the entry is a file or directory.
             // We classify everything as a file unless we know it to be a directory.
@@ -48,6 +50,7 @@ namespace System.IO.Enumeration
                 isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
+            entry._status = default;
             FileStatus.Initialize(ref entry._status, isDirectory);
             return isDirectory;
         }

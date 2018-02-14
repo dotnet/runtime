@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.IO.Enumeration
+namespace System.IO
 {
     public class EnumerationOptions
     {
@@ -10,9 +10,11 @@ namespace System.IO.Enumeration
         /// For internal use. These are the options we want to use if calling the existing Directory/File APIs where you don't
         /// explicitly specify EnumerationOptions.
         /// </summary>
-        internal static EnumerationOptions Compatible { get; } = new EnumerationOptions { MatchType = MatchType.Dos };
+        internal static EnumerationOptions Compatible { get; } = new EnumerationOptions
+            { MatchType = MatchType.Dos, AttributesToSkip = 0, IgnoreInaccessible = false };
 
-        private static EnumerationOptions CompatibleRecursive { get; } = new EnumerationOptions { RecurseSubdirectories = true, MatchType = MatchType.Dos };
+        private static EnumerationOptions CompatibleRecursive { get; } = new EnumerationOptions
+            { RecurseSubdirectories = true, MatchType = MatchType.Dos, AttributesToSkip = 0, IgnoreInaccessible = false };
 
         /// <summary>
         /// Internal singleton for default options.
@@ -24,6 +26,8 @@ namespace System.IO.Enumeration
         /// </summary>
         public EnumerationOptions()
         {
+            IgnoreInaccessible = true;
+            AttributesToSkip = FileAttributes.Hidden | FileAttributes.System;
         }
 
         /// <summary>
@@ -39,16 +43,18 @@ namespace System.IO.Enumeration
 
         /// <summary>
         /// Should we recurse into subdirectories while enumerating?
+        /// Default is false.
         /// </summary>
         public bool RecurseSubdirectories { get; set; }
 
         /// <summary>
-        /// Skip files/directories when access is denied (e.g. AccessDeniedException/SecurityException)
+        /// Skip files/directories when access is denied (e.g. AccessDeniedException/SecurityException).
+        /// Default is true.
         /// </summary>
         public bool IgnoreInaccessible { get; set; }
 
         /// <summary>
-        /// Suggested buffer size, in bytes.
+        /// Suggested buffer size, in bytes. Default is 0 (no suggestion).
         /// </summary>
         /// <remarks>
         /// Not all platforms use user allocated buffers, and some require either fixed buffers or a
@@ -63,7 +69,7 @@ namespace System.IO.Enumeration
         public int BufferSize { get; set; }
 
         /// <summary>
-        /// Skip entries with the given attributes.
+        /// Skip entries with the given attributes. Default is FileAttributes.Hidden | FileAttributes.System.
         /// </summary>
         public FileAttributes AttributesToSkip { get; set; }
 

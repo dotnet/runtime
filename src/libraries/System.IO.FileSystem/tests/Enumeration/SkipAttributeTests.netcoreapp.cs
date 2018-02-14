@@ -42,10 +42,14 @@ namespace System.IO.Tests.Enumeration
             if (PlatformDetection.IsWindows)
                 fileFour.Attributes = fileTwo.Attributes | FileAttributes.Hidden;
 
-            string[] paths = GetPaths(testDirectory.FullName, new EnumerationOptions { AttributesToSkip = FileAttributes.Hidden });
+            // Default EnumerationOptions is to skip hidden
+            string[] paths = GetPaths(testDirectory.FullName, new EnumerationOptions());
             Assert.Equal(new string[] { fileOne.FullName }, paths);
 
-            paths = GetPaths(testDirectory.FullName, new EnumerationOptions { AttributesToSkip = FileAttributes.Hidden, RecurseSubdirectories = true });
+            paths = GetPaths(testDirectory.FullName, new EnumerationOptions { AttributesToSkip = 0 });
+            FSAssert.EqualWhenOrdered(new string[] { fileOne.FullName, fileTwo.FullName }, paths);
+
+            paths = GetPaths(testDirectory.FullName, new EnumerationOptions { RecurseSubdirectories = true });
             Assert.Equal(new string[] { fileOne.FullName, fileThree.FullName }, paths);
 
             if (PlatformDetection.IsWindows)
@@ -58,7 +62,7 @@ namespace System.IO.Tests.Enumeration
                 Directory.Move(testSubdirectory.FullName, Path.Combine(testDirectory.FullName, "." + testSubdirectory.Name));
             }
 
-            paths = GetPaths(testDirectory.FullName, new EnumerationOptions { AttributesToSkip = FileAttributes.Hidden, RecurseSubdirectories = true });
+            paths = GetPaths(testDirectory.FullName, new EnumerationOptions { RecurseSubdirectories = true });
             Assert.Equal(new string[] { fileOne.FullName }, paths);
         }
     }
