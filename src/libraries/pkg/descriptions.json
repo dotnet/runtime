@@ -893,6 +893,15 @@
     "CommonTypes": []
   },
   {
+    "Name": "System.IO.Pipelines",
+    "Description": "Single producer single consumer byte buffer management.",
+    "CommonTypes": [
+      "System.IO.Pipelines.Pipe",
+      "System.IO.Pipelines.PipeWriter",
+      "System.IO.Pipelines.PipeReader"
+    ]
+  },
+  {
     "Name": "System.IO.Pipes",
     "Description": "Provides a means for interprocess communication through anonymous and/or named pipes.",
     "CommonTypes": [

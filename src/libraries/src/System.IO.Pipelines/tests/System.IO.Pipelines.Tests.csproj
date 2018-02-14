@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{9E984EB2-827E-4029-9647-FB5F8B67C553}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="BackpressureTests.cs" />
+    <Compile Include="FlushAsyncCancellationTests.cs" />
+    <Compile Include="FlushAsyncCompletionTests.cs" />
+    <Compile Include="FlushResultTests.cs" />
+    <Compile Include="PipeCompletionCallbacksTests.cs" />
+    <Compile Include="PipeLengthTests.cs" />
+    <Compile Include="PipeReaderWriterFacts.cs" />
+    <Compile Include="PipePoolTests.cs" />
+    <Compile Include="PipeResetTests.cs" />
+    <Compile Include="PipeTest.cs" />
+    <Compile Include="PipeWriterTests.cs" />
+    <Compile Include="ReadAsyncCancellationTests.cs" />
+    <Compile Include="ReadAsyncCompletionTests.cs" />
+    <Compile Include="ReadResultTests.cs" />
+    <Compile Include="SchedulerFacts.cs" />
+    <Compile Include="TestMemoryPool.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <TargetingPackExclusions Include="System.IO.Pipelines" />
+    <ReferenceFromRuntime Include="System.IO.Pipelines" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
