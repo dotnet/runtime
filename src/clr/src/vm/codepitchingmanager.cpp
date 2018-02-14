@@ -241,7 +241,7 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
             const char* szClassName = className.GetUTF8(scratch);
             const char* szMethodSig = methodSig.GetUTF8(scratch);
 
-            printf("Candidate %lld %s :: %s %s\n",
+            printf("Candidate %lu %s :: %s %s\n",
                    sizeOfCode, szClassName, pMD->GetName(), szMethodSig);
         }
 #endif
@@ -346,7 +346,7 @@ StackWalkAction StackWalkCallback(CrawlFrame* pCf, VOID* data)
     return CrawlFrameVisitor(pCf, (Thread *)data);
 }
 
-static ULONGLONG s_PitchedMethodCounter = 0;
+static ULONG s_PitchedMethodCounter = 0;
 void MethodDesc::PitchNativeCode()
 {
     WRAPPER_NO_CONTRACT;
@@ -383,7 +383,7 @@ void MethodDesc::PitchNativeCode()
     MethodTable * pMT = GetMethodTable();
     _ASSERTE(pMT != nullptr);
 
-    CodeHeader* pCH = ((CodeHeader*)(pCode & ~1)) - 1;
+    CodeHeader* pCH = dac_cast<PTR_CodeHeader>(PCODEToPINSTR(pCode)) - 1;
     _ASSERTE(pCH->GetMethodDesc() == this);
 
     HostCodeHeap* pHeap = HostCodeHeap::GetCodeHeap((TADDR)pCode);
@@ -436,11 +436,8 @@ void MethodDesc::PitchNativeCode()
         const char* szClassName = className.GetUTF8(scratch);
         const char* szMethodSig = methodSig.GetUTF8(scratch);
 
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchPrintStat) != 0)
-        {
-            printf("Pitched %lld %lld %s :: %s %s\n",
-                   s_PitchedMethodCounter, pitchedBytes, szClassName, GetName(), szMethodSig);
-        }
+        printf("Pitched %lu %lu %s :: %s %s\n",
+               s_PitchedMethodCounter, pitchedBytes, szClassName, GetName(), szMethodSig);
     }
 
     DACNotify::DoJITPitchingNotification(this);
@@ -514,7 +511,7 @@ EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
         SimpleWriteLockHolder swlh(s_totalNCSizeLock);
         s_totalNCSize += sizeOfCode;
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchPrintStat) != 0)
-            printf("jitted %lld (bytes) pitched %lld (bytes)\n", s_totalNCSize, s_jitPitchedBytes);
+            printf("jitted %lu (bytes) pitched %lu (bytes)\n", s_totalNCSize, s_jitPitchedBytes);
     }
 }
 #endif

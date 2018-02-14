@@ -795,7 +795,7 @@ struct HostCodeHeap::TrackAllocation * HostCodeHeap::GetTrackAllocation(TADDR co
 {
     LIMITED_METHOD_CONTRACT;
 
-    CodeHeader * pHdr = dac_cast<PTR_CodeHeader>(codeStart) - 1;
+    CodeHeader * pHdr = dac_cast<PTR_CodeHeader>(PCODEToPINSTR(codeStart)) - 1;
 
     // Pointer to the TrackAllocation record is stored just before the code header
     return *((TrackAllocation **)(pHdr) - 1);
