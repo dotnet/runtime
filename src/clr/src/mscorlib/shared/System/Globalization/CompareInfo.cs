@@ -841,6 +841,11 @@ namespace System.Globalization
             if (count < 0 || startIndex > source.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
+            if (source.Length == 0)
+            {
+                return -1;
+            }
+
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
                 return source.IndexOf(value.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase);
@@ -850,7 +855,7 @@ namespace System.Globalization
             // Ordinal can't be selected with other flags
             if ((options & ValidIndexMaskOffFlags) != 0 && (options != CompareOptions.Ordinal))
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
-            
+
             if (_invariantMode)
                 return IndexOfOrdinal(source, new string(value, 1), startIndex, count, ignoreCase: (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0);
 
@@ -1281,7 +1286,7 @@ namespace System.Globalization
             }
 
             //
-            // GetHashCodeOfString does more parameters validation. basically will throw when  
+            // GetHashCodeOfString does more parameters validation. basically will throw when
             // having Ordinal, OrdinalIgnoreCase and StringSort
             //
 
