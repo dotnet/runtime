@@ -19042,6 +19042,13 @@ Compiler::fgWalkResult Compiler::fgMarkAddrTakenLocalsPreCB(GenTree** pTree, fgW
             }
             else
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+                if (tree->gtOp.gtOp1->OperIsSimdHWIntrinsic())
+            {
+                axcStack->Push(AXC_None);
+            }
+            else
+#endif // FEATURE_HW_INTRINSICS
                 if (axc == AXC_Ind)
             {
                 axcStack->Push(AXC_None);

@@ -7681,6 +7681,38 @@ private:
         return pTypeInfo->IsStruct() && isSIMDClass(pTypeInfo->GetClassHandleForValueClass());
     }
 
+    bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+#ifdef FEATURE_HW_INTRINSICS
+        if (isIntrinsicType(clsHnd))
+        {
+            const char* namespaceName = nullptr;
+            (void)getClassNameFromMetadata(clsHnd, &namespaceName);
+            return strcmp(namespaceName, "System.Runtime.Intrinsics") == 0;
+        }
+#endif // FEATURE_HW_INTRINSICS
+        return false;
+    }
+
+    bool isHWSIMDClass(typeInfo* pTypeInfo)
+    {
+#ifdef FEATURE_HW_INTRINSICS
+        return pTypeInfo->IsStruct() && isHWSIMDClass(pTypeInfo->GetClassHandleForValueClass());
+#else
+        return false;
+#endif
+    }
+
+    bool isSIMDorHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
+    {
+        return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
+    }
+
+    bool isSIMDorHWSIMDClass(typeInfo* pTypeInfo)
+    {
+        return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
+    }
+    
     // Get the base (element) type and size in bytes for a SIMD type. Returns TYP_UNKNOWN
     // if it is not a SIMD type or is an unsupported base type.
     var_types getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
