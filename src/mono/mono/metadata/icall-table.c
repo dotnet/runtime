@@ -379,6 +379,7 @@ lookup_icall_symbol (gpointer func)
 				}
 			}
 		}
+		inited = TRUE;
 	}
 
 	slot = mono_binary_search (func, functions_sorted, G_N_ELEMENTS (icall_functions), sizeof (gpointer), func_cmp);
