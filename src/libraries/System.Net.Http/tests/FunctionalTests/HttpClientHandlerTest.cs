@@ -361,12 +361,12 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClient())
             {
-                var options = new LoopbackServer.Options { Address = LoopbackServer.GetIPv6LinkLocalAddress() };
+                var options = new LoopbackServer.Options { Address = TestHelper.GetIPv6LinkLocalAddress() };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }
@@ -384,7 +384,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     _output.WriteLine(url.ToString());
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server, options: options),
+                        server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
                 }, options);
             }
@@ -550,9 +550,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("")] // RFC7235 requires servers to send this header with 401 but some servers don't.
         public async Task GetAsync_ServerNeedsNonStandardAuthAndSetCredential_StatusCodeUnauthorized(string authHeaders)
         {
-            string responseHeaders =
-                $"HTTP/1.1 401 Unauthorized\r\nDate: {DateTimeOffset.UtcNow:R}\r\n{authHeaders}Content-Length: 0\r\n\r\n";
-            _output.WriteLine(responseHeaders);
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
@@ -560,7 +557,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server, responseHeaders);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized);
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
                     using (HttpResponseMessage response = await getResponseTask)
@@ -616,20 +613,13 @@ namespace System.Net.Http.Functional.Tests
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
                         // Original URL will redirect to a different URL
-                        Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
-                                $"HTTP/1.1 {statusCode} OK\r\n" +
-                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                                $"Location: {redirUrl}\r\n" +
-                                "\r\n");
+                        Task<List<string>> serverTask = origServer.AcceptConnectionSendResponseAndCloseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\n");
                         await Task.WhenAny(getResponseTask, serverTask);
                         Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
                         await serverTask;
 
                         // Redirected URL answers with success
-                        serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(redirServer,
-                                $"HTTP/1.1 200 OK\r\n" +
-                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                                "\r\n");
+                        serverTask = redirServer.AcceptConnectionSendResponseAndCloseAsync();
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
 
                         List<string> receivedRequest = await serverTask;
@@ -729,10 +719,7 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     Task<HttpResponseMessage> getTask = client.GetAsync(url);
-                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                            $"HTTP/1.1 302 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found);
                     await TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
 
                     using (HttpResponseMessage response = await getTask)
@@ -854,15 +841,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Task<HttpResponseMessage> getResponseTask = client.GetAsync(origUrl);
 
-                        Task redirectTask = LoopbackServer.ReadRequestAndSendResponseAsync(redirectServer);
+                        Task redirectTask = redirectServer.AcceptConnectionSendResponseAndCloseAsync();
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(
                             getResponseTask,
-                            LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
-                                $"HTTP/1.1 {statusCode} OK\r\n" +
-                                $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                                $"Location: {redirectUrl}\r\n" +
-                                "\r\n"));
+                            origServer.AcceptConnectionSendResponseAndCloseAsync((HttpStatusCode)statusCode, $"Location: {redirectUrl}\r\n"));
 
                         using (HttpResponseMessage response = await getResponseTask)
                         {
@@ -899,17 +882,10 @@ namespace System.Net.Http.Functional.Tests
                     Uri expectedUrl = new Uri(origUrl.ToString() + expectedFragment);
 
                     Task<HttpResponseMessage> getResponse = client.GetAsync(origUrl);
-                    Task firstRequest = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
-                            $"HTTP/1.1 302 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Location: {redirectUrl}\r\n" +
-                            "\r\n");
+                    Task firstRequest = origServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectUrl}\r\n");
                     Assert.Equal(firstRequest, await Task.WhenAny(firstRequest, getResponse));
 
-                    Task secondRequest = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
-                            $"HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
+                    Task secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(secondRequest, getResponse);
 
                     using (HttpResponseMessage response = await getResponse)
@@ -1060,7 +1036,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader\r\n" : "") +
@@ -1101,7 +1077,7 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         getResponseTask,
-                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             "\r\n" +
@@ -1155,13 +1131,11 @@ namespace System.Net.Http.Functional.Tests
                         $"{chunkSize}\r\n";
 
                     var tcs = new TaskCompletionSource<bool>();
-                    Task serverTask =
-                        LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    Task serverTask = server.AcceptConnectionAsync(async connection =>
                         {
-                            var list = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, partialResponse);
+                            await connection.ReadRequestHeaderAndSendCustomResponseAsync(partialResponse);
                             await tcs.Task;
-                            return list;
-                        }, null);
+                        });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
                     tcs.SetResult(true);
@@ -1182,10 +1156,10 @@ namespace System.Net.Http.Functional.Tests
 
                     var cts = new CancellationTokenSource();
                     var tcs = new TaskCompletionSource<bool>();
-                    Task serverTask = LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
-                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-                        await writer.WriteAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+                        await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+                        TextWriter writer = connection.Writer;
                         try
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
@@ -1195,8 +1169,7 @@ namespace System.Net.Http.Functional.Tests
                             }
                         }
                         catch { }
-                        return null;
-                    }, null);
+                    });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
                     cts.Cancel();
@@ -1279,10 +1252,9 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getResponse = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
 
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        while (!string.IsNullOrEmpty(reader.ReadLine())) ;
-                        await writer.WriteAsync(
+                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "Content-Length: 16000\r\n" +
@@ -1299,8 +1271,6 @@ namespace System.Net.Http.Functional.Tests
                                 Assert.True(bytesRead < buffer.Length, "bytesRead should be less than buffer.Length");
                             }
                         }
-
-                        return null;
                     });
                 }
             });
@@ -1318,40 +1288,35 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            await LoopbackServer.CreateServerAsync(async (socket1, url1) =>
+            await LoopbackServer.CreateServerAsync(async (server1, url1) =>
             {
-                await LoopbackServer.CreateServerAsync(async (socket2, url2) =>
+                await LoopbackServer.CreateServerAsync(async (server2, url2) =>
                 {
-                    await LoopbackServer.CreateServerAsync(async (socket3, url3) =>
+                    await LoopbackServer.CreateServerAsync(async (server3, url3) =>
                     {
                         var unblockServers = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
 
                         // First server connects but doesn't send any response yet
-                        Task server1 = LoopbackServer.AcceptSocketAsync(socket1, async (s, stream, reader, writer) =>
+                        Task serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
                         {
                             await unblockServers.Task;
-                            return null;
                         });
 
                         // Second server connects and sends some but not all headers
-                        Task server2 = LoopbackServer.AcceptSocketAsync(socket2, async (s, stream, reader, writer) =>
+                        Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
-                            while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-                            await writer.WriteAsync($"HTTP/1.1 200 OK\r\n");
+                            await connection2.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 200 OK\r\n");
                             await unblockServers.Task;
-                            return null;
                         });
 
                         // Third server connects and sends all headers and some but not all of the body
-                        Task server3 = LoopbackServer.AcceptSocketAsync(socket3, async (s, stream, reader, writer) =>
+                        Task serverTask3 = server3.AcceptConnectionAsync(async connection3 =>
                         {
-                            while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-                            await writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 20\r\n\r\n");
-                            await writer.WriteAsync("1234567890");
+                            await connection3.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 20\r\n\r\n");
+                            await connection3.Writer.WriteAsync("1234567890");
                             await unblockServers.Task;
-                            await writer.WriteAsync("1234567890");
-                            s.Shutdown(SocketShutdown.Send);
-                            return null;
+                            await connection3.Writer.WriteAsync("1234567890");
+                            connection3.Socket.Shutdown(SocketShutdown.Send);
                         });
 
                         // Make three requests
@@ -1396,7 +1361,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             $"HTTP/1.1 {statusCode}\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "\r\n");
@@ -1680,11 +1645,10 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Task responseTask = LoopbackServer.AcceptSocketAsync(server, async (socket, stream, reader, writer) =>
+                Task responseTask = server.AcceptConnectionAsync(async connection =>
                 {
                     var buffer = new byte[1000];
-                    while (await socket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), SocketFlags.None) != 0);
-                    return null;
+                    while (await connection.Socket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), SocketFlags.None) != 0);
                 });
 
                 using (var client = CreateHttpClient())
@@ -2099,7 +2063,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponse = client.SendAsync(request);
-                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponse, serverTask);
 
                     List<string> receivedRequest = await serverTask;
@@ -2282,7 +2246,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
-                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
                     List<string> receivedRequest = await serverTask;
