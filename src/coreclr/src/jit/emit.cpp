@@ -257,13 +257,13 @@ static unsigned totActualSize;
 unsigned emitter::emitIFcounts[emitter::IF_COUNT];
 
 static unsigned  emitSizeBuckets[] = {100, 1024 * 1, 1024 * 2, 1024 * 3, 1024 * 4, 1024 * 5, 1024 * 10, 0};
-static Histogram emitSizeTable(HostAllocator::getHostAllocator(), emitSizeBuckets);
+static Histogram emitSizeTable(emitSizeBuckets);
 
 static unsigned  GCrefsBuckets[] = {0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0};
-static Histogram GCrefsTable(HostAllocator::getHostAllocator(), GCrefsBuckets);
+static Histogram GCrefsTable(GCrefsBuckets);
 
 static unsigned  stkDepthBuckets[] = {0, 1, 2, 5, 10, 16, 32, 128, 1024, 0};
-static Histogram stkDepthTable(HostAllocator::getHostAllocator(), stkDepthBuckets);
+static Histogram stkDepthTable(stkDepthBuckets);
 
 size_t emitter::emitSizeMethod;
 

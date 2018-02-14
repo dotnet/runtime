@@ -695,11 +695,12 @@ inline size_t unsigned_abs(ssize_t x)
 
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
+#define HISTOGRAM_MAX_SIZE_COUNT 64
+
 class Histogram
 {
 public:
-    Histogram(HostAllocator* allocator, const unsigned* const sizeTable);
-    ~Histogram();
+    Histogram(const unsigned* const sizeTable);
 
     void dump(FILE* output);
     void record(unsigned size);
@@ -707,10 +708,9 @@ public:
 private:
     void ensureAllocated();
 
-    HostAllocator*        m_allocator;
     unsigned              m_sizeCount;
     const unsigned* const m_sizeTable;
-    unsigned*             m_counts;
+    unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
 };
 
 #endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
