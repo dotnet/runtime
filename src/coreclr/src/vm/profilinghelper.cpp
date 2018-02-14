@@ -1193,9 +1193,15 @@ HRESULT ProfilingAPIUtility::LoadProfiler(
         // and kill objects without relocating and thus not doing a heap walk.
         if (CORProfilerTrackGC())
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: Turning off concurrent GC at startup.\n"));       
-            g_pConfig->SetGCconcurrent(0);
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: Concurrent GC has been turned off at startup.\n"));       
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: Turning off concurrent GC at startup.\n"));
+            // Previously we would use SetGCConcurrent(0) to indicate to the GC that it shouldn't even
+            // attempt to use concurrent GC. The standalone GC feature create a cycle during startup,
+            // where the profiler couldn't set startup flags for the GC. To overcome this, we call
+            // TempraryDisableConcurrentGC and never enable it again. This has a perf cost, since the
+            // GC will create concurrent GC data structures, but it is acceptable in the context of
+            // this kind of profiling.
+            GCHeapUtilities::GetGCHeap()->TemporaryDisableConcurrentGC();
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: Concurrent GC has been turned off at startup.\n"));
         }
     }
 
