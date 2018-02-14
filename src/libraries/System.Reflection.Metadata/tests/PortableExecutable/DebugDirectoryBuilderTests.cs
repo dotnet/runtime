@@ -46,6 +46,16 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
+        public void AddPdbChecksumEntry_Args()
+        {
+            var builder = new DebugDirectoryBuilder();
+            AssertExtensions.Throws<ArgumentNullException>("algorithmName", () => builder.AddPdbChecksumEntry(null, ImmutableArray.Create((byte)1)));
+            AssertExtensions.Throws<ArgumentException>("algorithmName", () => builder.AddPdbChecksumEntry("", ImmutableArray.Create((byte)1)));
+            AssertExtensions.Throws<ArgumentNullException>("checksum", () => builder.AddPdbChecksumEntry("XXX", default));
+            AssertExtensions.Throws<ArgumentException>("checksum", () => builder.AddPdbChecksumEntry("XXX", ImmutableArray<byte>.Empty));
+        }
+
+        [Fact]
         public void Empty()
         {
             var b = new DebugDirectoryBuilder();
@@ -303,6 +313,96 @@ namespace System.Reflection.PortableExecutable.Tests
                     AssertEx.Equal(new byte[] { 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 }, decoded);
                 }
             }
+        }
+
+        [Fact]
+        public void AddPdbChecksumEntry()
+        {
+            var b = new DebugDirectoryBuilder();
+
+            b.AddPdbChecksumEntry("A", ImmutableArray.Create(new byte[] { 0x01 }));
+            b.AddPdbChecksumEntry("B", ImmutableArray.Create(new byte[] { 0x02, 0x03 }));
+            b.AddPdbChecksumEntry("XYZ", ImmutableArray.Create(new byte[] { 0x04, 0x05, 0x06 }));
+
+            var blob = new BlobBuilder();
+            b.Serialize(blob, new SectionLocation(0x1000, 0x2000), 0x50);
+            AssertEx.Equal(new byte[]
+            {
+                0x00, 0x00, 0x00, 0x00, // Characteristics
+                0x00, 0x00, 0x00, 0x00, // Stamp
+                0x01, 0x00, 0x00, 0x00, // Version
+                0x13, 0x00, 0x00, 0x00, // Type
+                0x03, 0x00, 0x00, 0x00, // SizeOfData
+                0xA4, 0x10, 0x00, 0x00, // AddressOfRawData
+                0xA4, 0x20, 0x00, 0x00, // PointerToRawData
+
+                0x00, 0x00, 0x00, 0x00, // Characteristics
+                0x00, 0x00, 0x00, 0x00, // Stamp
+                0x01, 0x00, 0x00, 0x00, // Version
+                0x13, 0x00, 0x00, 0x00, // Type
+                0x04, 0x00, 0x00, 0x00, // SizeOfData
+                0xA7, 0x10, 0x00, 0x00, // AddressOfRawData
+                0xA7, 0x20, 0x00, 0x00, // PointerToRawData
+
+                0x00, 0x00, 0x00, 0x00, // Characteristics
+                0x00, 0x00, 0x00, 0x00, // Stamp
+                0x01, 0x00, 0x00, 0x00, // Version
+                0x13, 0x00, 0x00, 0x00, // Type
+                0x07, 0x00, 0x00, 0x00, // SizeOfData
+                0xAB, 0x10, 0x00, 0x00, // AddressOfRawData
+                0xAB, 0x20, 0x00, 0x00, // PointerToRawData
+
+                // data
+                (byte)'A', 0x00,
+                0x01,
+
+                // data
+                (byte)'B', 0x00,
+                0x02, 0x03,
+
+                // data
+                (byte)'X', (byte)'Y', (byte)'Z', 0x00,
+                0x04, 0x05, 0x06,
+            }, blob.ToArray());
+        }
+
+        [Fact]
+        public void AddCustomEntry()
+        {
+            var b = new DebugDirectoryBuilder();
+
+            b.AddEntry((DebugDirectoryEntryType)0xA1, version: 0x12345678, stamp: 0xB1C1D1E1);
+
+            b.AddEntry((DebugDirectoryEntryType)0xA2, version: 0xFFFFFFFF, stamp: 0xFFFFFFFF, (a: 1, b: 2), (builder, data) =>
+            {
+                builder.WriteInt32(data.a);
+                builder.WriteInt32(data.b);
+            });
+
+            var blob = new BlobBuilder();
+            b.Serialize(blob, new SectionLocation(0x1000, 0x2000), 0x50);
+            AssertEx.Equal(new byte[]
+            {
+                0x00, 0x00, 0x00, 0x00, // Characteristics
+                0xE1, 0xD1, 0xC1, 0xB1, // Stamp
+                0x78, 0x56, 0x34, 0x12, // Version
+                0xA1, 0x00, 0x00, 0x00, // Type
+                0x00, 0x00, 0x00, 0x00, // SizeOfData
+                0x00, 0x00, 0x00, 0x00, // AddressOfRawData
+                0x00, 0x00, 0x00, 0x00, // PointerToRawData
+
+                0x00, 0x00, 0x00, 0x00, // Characteristics
+                0xFF, 0xFF, 0xFF, 0xFF, // Stamp
+                0xFF, 0xFF, 0xFF, 0xFF, // Version
+                0xA2, 0x00, 0x00, 0x00, // Type
+                0x08, 0x00, 0x00, 0x00, // SizeOfData
+                0x88, 0x10, 0x00, 0x00, // AddressOfRawData
+                0x88, 0x20, 0x00, 0x00, // PointerToRawData
+
+                // data
+                0x01, 0x00, 0x00, 0x00, 
+                0x02, 0x00, 0x00, 0x00
+            }, blob.ToArray());
         }
     }
 }

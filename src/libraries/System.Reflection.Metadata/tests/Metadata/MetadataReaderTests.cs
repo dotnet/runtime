@@ -2641,6 +2641,23 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void DebugMetadataHeader()
+        {
+            var pdbBlob = PortablePdbs.DocumentsPdb;
+            using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(pdbBlob)))
+            {
+                var reader = provider.GetMetadataReader();
+
+                Assert.Equal(default, reader.DebugMetadataHeader.EntryPoint);
+                AssertEx.Equal(new byte[] { 0x89, 0x03, 0x86, 0xAD, 0xFF, 0x27, 0x56, 0x46, 0x9F, 0x3F, 0xE2, 0x18, 0x4B, 0xEF, 0xFC, 0xC0, 0xBE, 0x0C, 0x52, 0xA0 }, reader.DebugMetadataHeader.Id);
+                Assert.Equal(0x7c, reader.DebugMetadataHeader.IdStartOffset);
+
+                var slice = pdbBlob.AsSpan().Slice(reader.DebugMetadataHeader.IdStartOffset, reader.DebugMetadataHeader.Id.Length);
+                AssertEx.Equal(reader.DebugMetadataHeader.Id, slice.ToArray());
+            }
+        }
+
+        [Fact]
         public void GetCustomDebugInformation()
         {
             using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
