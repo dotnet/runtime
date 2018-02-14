@@ -882,8 +882,7 @@ void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
  *  Histogram class.
  */
 
-Histogram::Histogram(HostAllocator* allocator, const unsigned* const sizeTable)
-    : m_allocator(allocator), m_sizeTable(sizeTable), m_counts(nullptr)
+Histogram::Histogram(const unsigned* const sizeTable) : m_sizeTable(sizeTable)
 {
     unsigned sizeCount = 0;
     do
@@ -891,32 +890,15 @@ Histogram::Histogram(HostAllocator* allocator, const unsigned* const sizeTable)
         sizeCount++;
     } while ((sizeTable[sizeCount] != 0) && (sizeCount < 1000));
 
+    assert(sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1);
+
     m_sizeCount = sizeCount;
-}
 
-Histogram::~Histogram()
-{
-    if (m_counts != nullptr)
-    {
-        m_allocator->Free(m_counts);
-    }
-}
-
-// We need to lazy allocate the histogram data so static `Histogram` variables don't try to
-// call the host memory allocator in the loader lock, which doesn't work.
-void Histogram::ensureAllocated()
-{
-    if (m_counts == nullptr)
-    {
-        m_counts = new (m_allocator) unsigned[m_sizeCount + 1];
-        memset(m_counts, 0, (m_sizeCount + 1) * sizeof(*m_counts));
-    }
+    memset(m_counts, 0, (m_sizeCount + 1) * sizeof(*m_counts));
 }
 
 void Histogram::dump(FILE* output)
 {
-    ensureAllocated();
-
     unsigned t = 0;
     for (unsigned i = 0; i < m_sizeCount; i++)
     {
@@ -956,8 +938,6 @@ void Histogram::dump(FILE* output)
 
 void Histogram::record(unsigned size)
 {
-    ensureAllocated();
-
     unsigned i;
     for (i = 0; i < m_sizeCount; i++)
     {
