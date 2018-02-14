@@ -47,13 +47,13 @@ namespace System.IO
         public static string GetFullPath(string path, string basePath)
         {
             if (path == null)
-                throw new ArgumentException(nameof(path));
+                throw new ArgumentNullException(nameof(path));
 
             if (basePath == null)
                 throw new ArgumentNullException(nameof(basePath));
 
             if (!IsPathFullyQualified(basePath))
-                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified);
+                throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 
             if (basePath.Contains('\0') || path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars);
