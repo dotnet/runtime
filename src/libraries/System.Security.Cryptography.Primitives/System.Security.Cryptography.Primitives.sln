@@ -20,24 +20,48 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Security.Cryptography.Primitives.Performance.Tests", "tests\Performance\System.Security.Cryptography.Primitives.Performance.Tests.csproj", "{FB3EA273-567D-414F-B36D-3698BE8D198B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		netcoreapp-Debug|Any CPU = netcoreapp-Debug|Any CPU
+		netcoreapp-Release|Any CPU = netcoreapp-Release|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{101EB757-55A4-4F48-841C-C088640B8F57}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{101EB757-55A4-4F48-841C-C088640B8F57}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.netcoreapp-Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.netcoreapp-Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.netcoreapp-Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{101EB757-55A4-4F48-841C-C088640B8F57}.netcoreapp-Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{101EB757-55A4-4F48-841C-C088640B8F57}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{101EB757-55A4-4F48-841C-C088640B8F57}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.netcoreapp-Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.netcoreapp-Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.netcoreapp-Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.netcoreapp-Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{F050C895-297F-41C6-98C3-406D791AD515}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{F050C895-297F-41C6-98C3-406D791AD515}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.netcoreapp-Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.netcoreapp-Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.netcoreapp-Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{F050C895-297F-41C6-98C3-406D791AD515}.netcoreapp-Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{F050C895-297F-41C6-98C3-406D791AD515}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{F050C895-297F-41C6-98C3-406D791AD515}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.netcoreapp-Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.netcoreapp-Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.netcoreapp-Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.netcoreapp-Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{FB3EA273-567D-414F-B36D-3698BE8D198B}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,5 +70,6 @@ Global
 		{101EB757-55A4-4F48-841C-C088640B8F57} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{F050C895-297F-41C6-98C3-406D791AD515} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+		{FB3EA273-567D-414F-B36D-3698BE8D198B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 	EndGlobalSection
 EndGlobal

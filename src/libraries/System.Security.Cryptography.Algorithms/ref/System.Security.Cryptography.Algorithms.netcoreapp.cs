@@ -31,6 +31,7 @@ namespace System.Security.Cryptography
     }
     public abstract partial class RandomNumberGenerator : System.IDisposable
     {
+        public static void Fill(Span<byte> data) => throw null;
         public virtual void GetBytes(System.Span<byte> data) { }
         public virtual void GetNonZeroBytes(System.Span<byte> data) { }
     }

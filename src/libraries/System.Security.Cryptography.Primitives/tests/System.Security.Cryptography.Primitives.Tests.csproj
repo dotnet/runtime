@@ -27,7 +27,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="CryptoConfigTests.cs" />
+    <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
+    <Compile Include="ZeroMemoryTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
