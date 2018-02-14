@@ -137,13 +137,12 @@ namespace SdtEventSources
         public void EventDateTime(DateTime dt) { WriteEvent(24, dt); }
 
         [Event(25, Keywords = Keywords.HasNoArgs, Level = EventLevel.Informational)]
-        public void EventWithManyTypeArgs(string msg, long l, uint ui, UInt64 ui64,
+        public void EventWithManyTypeArgs(string msg, long l, uint ui, UInt64 ui64, char c,
                                           byte b, sbyte sb, short sh, ushort ush,
                                           float f, double d, Guid guid)
         {
             if (IsEnabled(EventLevel.Informational, Keywords.HasNoArgs))
-                // 4.5 EventSource does not support "Char" type
-                WriteEvent(25, msg, l, ui, ui64, b, sb, sh, ush, f, d, guid);
+                WriteEvent(25, msg, l, ui, ui64, c, b, sb, sh, ush, f, d, guid);
         }
 
         [Event(26)]

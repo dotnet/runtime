@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +14,8 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 #endif
 using Xunit;
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using System.IO;
@@ -23,7 +25,9 @@ namespace BasicEventSourceTests
 {
     public class TestShutdown
     {
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+
+        // TODO: Depends on desktop APIs (AppDomainSetup and Evidence).
+#if USE_ETW && FALSE
         /// <summary>
         /// Test for manifest event being logged during AD/Process shutdown during EventSource Dispose(bool) method.
         /// </summary>
@@ -89,7 +93,6 @@ namespace BasicEventSourceTests
                 };
 
                 // Parse all the events as best we can, and also send unhandled events there as well.  
-                traceEventSource.Registered.All += onEvent;
                 traceEventSource.Dynamic.All += onEvent;
                 traceEventSource.UnhandledEvent += onEvent;
                 traceEventSource.Process();

@@ -74,7 +74,7 @@ namespace BasicEventSourceTests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Depends on inspecting IL at runtime.")]
         public void Test_BadEventSource_MismatchedIds()
         {
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
             // We expect only one session to be on when running the test but if a ETW session was left
             // hanging, it will confuse the EventListener tests.   
             EtwListener.EnsureStopped();
@@ -86,7 +86,7 @@ namespace BasicEventSourceTests
                     var listenerGenerators = new Func<Listener>[]
                     {
                         () => new EventListenerListener(),
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
                         () => new EtwListener()
 #endif // USE_ETW
                     };
