@@ -887,7 +887,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 #if defined(FEATURE_JIT_PITCHING)
         else
         {
-            SavePitchingCandidate(this, sizeOfCode);
+            SavePitchingCandidate(this, *pSizeOfCode);
         }
 #endif
     }
