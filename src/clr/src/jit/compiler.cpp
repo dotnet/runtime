@@ -276,18 +276,18 @@ NodeSizeStats genNodeSizeStats;
 NodeSizeStats genNodeSizeStatsPerFunc;
 
 unsigned  genTreeNcntHistBuckets[] = {10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 5000, 10000, 0};
-Histogram genTreeNcntHist(HostAllocator::getHostAllocator(), genTreeNcntHistBuckets);
+Histogram genTreeNcntHist(genTreeNcntHistBuckets);
 
 unsigned  genTreeNsizHistBuckets[] = {1000, 5000, 10000, 50000, 100000, 500000, 1000000, 0};
-Histogram genTreeNsizHist(HostAllocator::getHostAllocator(), genTreeNsizHistBuckets);
+Histogram genTreeNsizHist(genTreeNsizHistBuckets);
 #endif // MEASURE_NODE_SIZE
 
 /*****************************************************************************/
 #if MEASURE_MEM_ALLOC
 
 unsigned  memSizeHistBuckets[] = {20, 50, 75, 100, 150, 250, 500, 1000, 5000, 0};
-Histogram memAllocHist(HostAllocator::getHostAllocator(), memSizeHistBuckets);
-Histogram memUsedHist(HostAllocator::getHostAllocator(), memSizeHistBuckets);
+Histogram memAllocHist(memSizeHistBuckets);
+Histogram memUsedHist(memSizeHistBuckets);
 
 #endif // MEASURE_MEM_ALLOC
 
@@ -339,16 +339,16 @@ unsigned argTotalGTF_ASGinArgs;
 unsigned argMaxTempsPerMethod;
 
 unsigned  argCntBuckets[] = {0, 1, 2, 3, 4, 5, 6, 10, 0};
-Histogram argCntTable(HostAllocator::getHostAllocator(), argCntBuckets);
+Histogram argCntTable(argCntBuckets);
 
 unsigned  argDWordCntBuckets[] = {0, 1, 2, 3, 4, 5, 6, 10, 0};
-Histogram argDWordCntTable(HostAllocator::getHostAllocator(), argDWordCntBuckets);
+Histogram argDWordCntTable(argDWordCntBuckets);
 
 unsigned  argDWordLngCntBuckets[] = {0, 1, 2, 3, 4, 5, 6, 10, 0};
-Histogram argDWordLngCntTable(HostAllocator::getHostAllocator(), argDWordLngCntBuckets);
+Histogram argDWordLngCntTable(argDWordLngCntBuckets);
 
 unsigned  argTempsCntBuckets[] = {0, 1, 2, 3, 4, 5, 6, 10, 0};
-Histogram argTempsCntTable(HostAllocator::getHostAllocator(), argTempsCntBuckets);
+Histogram argTempsCntTable(argTempsCntBuckets);
 
 #endif // CALL_ARG_STATS
 
@@ -375,12 +375,12 @@ Histogram argTempsCntTable(HostAllocator::getHostAllocator(), argTempsCntBuckets
 //          --------------------------------------------------
 
 unsigned  bbCntBuckets[] = {1, 2, 3, 5, 10, 20, 50, 100, 1000, 10000, 0};
-Histogram bbCntTable(HostAllocator::getHostAllocator(), bbCntBuckets);
+Histogram bbCntTable(bbCntBuckets);
 
 /* Histogram for the IL opcode size of methods with a single basic block */
 
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
-Histogram bbOneBBSizeTable(HostAllocator::getHostAllocator(), bbSizeBuckets);
+Histogram bbOneBBSizeTable(bbSizeBuckets);
 
 #endif // COUNT_BASIC_BLOCKS
 
@@ -411,12 +411,12 @@ bool     loopOverflowThisMethod;  // True if we exceeded the max # of loops in t
 /* Histogram for number of loops in a method */
 
 unsigned  loopCountBuckets[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0};
-Histogram loopCountTable(HostAllocator::getHostAllocator(), loopCountBuckets);
+Histogram loopCountTable(loopCountBuckets);
 
 /* Histogram for number of loop exits */
 
 unsigned  loopExitCountBuckets[] = {0, 1, 2, 3, 4, 5, 6, 0};
-Histogram loopExitCountTable(HostAllocator::getHostAllocator(), loopExitCountBuckets);
+Histogram loopExitCountTable(loopExitCountBuckets);
 
 #endif // COUNT_LOOPS
 
