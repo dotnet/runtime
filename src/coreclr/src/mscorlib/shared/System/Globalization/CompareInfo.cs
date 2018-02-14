@@ -94,7 +94,7 @@ namespace System.Globalization
         **   culture    the ID of the culture
         **   assembly   the assembly which contains the sorting table.
         **Exceptions:
-        **  ArugmentNullException when the assembly is null
+        **  ArgumentNullException when the assembly is null
         **  ArgumentException if culture is invalid.
         ============================================================================*/
         // Assembly constructor should be deprecated, we don't act on the assembly information any more
@@ -121,7 +121,7 @@ namespace System.Globalization
         **   name      the name of the culture
         **   assembly  the assembly which contains the sorting table.
         **Exceptions:
-        **  ArugmentNullException when the assembly is null
+        **  ArgumentNullException when the assembly is null
         **  ArgumentException if name is invalid.
         ============================================================================*/
         // Assembly constructor should be deprecated, we don't act on the assembly information any more
