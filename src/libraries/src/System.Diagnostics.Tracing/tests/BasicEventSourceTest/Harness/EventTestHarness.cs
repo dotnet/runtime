@@ -141,7 +141,7 @@ namespace BasicEventSourceTests
             }
             catch (Exception e)
             {
-                if (e is EventSourceException)
+                if ((e is EventSourceException) && (e.InnerException != null))
                     e = e.InnerException;
                 LogWriteLine("Exception thrown: {0}", e.Message);
 

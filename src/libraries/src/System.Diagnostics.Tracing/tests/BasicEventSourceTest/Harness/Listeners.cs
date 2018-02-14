@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Etlx;
 #endif
 using System;
 using System.Collections.Generic;
@@ -136,14 +138,14 @@ namespace BasicEventSourceTests
             {
                 if (i != 0)
                     sb.Append(',');
-                sb.Append(PayloadString(i, null));
+                sb.Append(PayloadString(i, PayloadNames[i]));
             }
             sb.Append(')');
             return sb.ToString();
         }
     }
 
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
     /**************************************************************************/
     /* Concrete implementation of the Listener abstraction */
 
@@ -165,7 +167,7 @@ namespace BasicEventSourceTests
             // Today you have to be Admin to turn on ETW events (anyone can write ETW events).   
             if (TraceEventSession.IsElevated() != true)
             {
-                throw new ApplicationException("Need to be elevated to run. ");
+                throw new Exception("Need to be elevated to run. ");
             }
 
             if (dataFileName == null)
@@ -214,6 +216,12 @@ namespace BasicEventSourceTests
 
         public override void Dispose()
         {
+            if(_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
             _session.Flush();
             Thread.Sleep(1010);      // Let it drain.
             _session.Dispose();     // This also will kill the real time thread 
@@ -225,7 +233,6 @@ namespace BasicEventSourceTests
                     Debug.WriteLine("Processing data file " + Path.GetFullPath(_dataFileName));
 
                     // Parse all the events as best we can, and also send unhandled events there as well.  
-                    traceEventSource.Registered.All += OnEventHelper;
                     traceEventSource.Dynamic.All += OnEventHelper;
                     traceEventSource.UnhandledEvents += OnEventHelper;
                     // Process all the events in the file.  
@@ -238,11 +245,22 @@ namespace BasicEventSourceTests
     #region private
         private void OnEventHelper(TraceEvent data)
         {
+            // Ignore EventTrace events.
+            if (data.ProviderGuid == EventTraceProviderID)
+                return;
+
+            // Ignore kernel events.
+            if (data.ProviderGuid == KernelProviderID)
+                return;
+
             // Ignore manifest events. 
             if ((int)data.ID == 0xFFFE)
                 return;
             this.OnEvent(new EtwEvent(data));
         }
+
+        private static readonly Guid EventTraceProviderID = new Guid("9e814aad-3204-11d2-9a82-006008a86939");
+        private static readonly Guid KernelProviderID = new Guid("9e814aad-3204-11d2-9a82-006008a86939");
 
         /// <summary>
         /// EtwEvent implements the 'Event' abstraction for ETW events (it has a TraceEvent in it) 
@@ -273,6 +291,7 @@ namespace BasicEventSourceTests
     #endregion
         }
 
+        private bool _disposed;
         private string _dataFileName;
         private volatile TraceEventSession _session;
     #endregion
@@ -334,6 +353,12 @@ namespace BasicEventSourceTests
 
         public override void Dispose()
         {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
             EventTestHarness.LogWriteLine("Disposing Listener");
             _listener.Dispose();
         }
@@ -438,5 +463,7 @@ namespace BasicEventSourceTests
                 return _data.Payload[propertyIndex];
             }
         }
+
+        private bool _disposed;
     }
 }
