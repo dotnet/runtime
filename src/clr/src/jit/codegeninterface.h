@@ -225,10 +225,21 @@ public:
     {
         return m_cgFramePointerRequired;
     }
+
     void setFramePointerRequired(bool value)
     {
         m_cgFramePointerRequired = value;
     }
+
+    //------------------------------------------------------------------------
+    // resetWritePhaseForFramePointerRequired: Return m_cgFramePointerRequired into the write phase.
+    // It is used only before the first phase, that locks this value, currently it is LSRA.
+    // Use it if you want to skip checks that set this value to true if the value is already true.
+    void resetWritePhaseForFramePointerRequired()
+    {
+        m_cgFramePointerRequired.ResetWritePhase();
+    }
+
     void setFramePointerRequiredEH(bool value);
 
     void setFramePointerRequiredGCInfo(bool value)
