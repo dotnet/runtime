@@ -5354,9 +5354,16 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
     if (op3->isContained())
     {
         // Handle vector element to vector element case
+        //
+        // If op3 is contained this is because lowering found an opportunity to contain a Simd.Extract in a Simd.Insert
+        //
         regNumber op3Reg = op3->gtGetOp1()->gtRegNum;
 
         assert(genIsValidFloatReg(op3Reg));
+
+        // op3 containment currently only occurs when
+        //   + op3 is a Simd.Extract() (gtHWIntrinsicId == NI_ARM64_SIMD_GetItem)
+        //   + element & srcLane are immediate constants
         assert(op2->isContainedIntOrIImmed());
         assert(op3->OperIs(GT_HWIntrinsic));
         assert(op3->AsHWIntrinsic()->gtHWIntrinsicId == NI_ARM64_SIMD_GetItem);
@@ -5365,12 +5372,13 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
         int element = (int)op2->AsIntConCommon()->IconValue();
         int srcLane = (int)op3->gtGetOp2()->AsIntConCommon()->IconValue();
 
+        // Emit mov targetReg[element], op3Reg[srcLane]
         getEmitter()->emitIns_R_R_I_I(INS_mov, baseTypeSize, targetReg, op3Reg, element, srcLane);
     }
     else
     {
         // Handle scalar to vector element case
-        // TODO-ARM64-CQ handle containing scalar const where possible
+        // TODO-ARM64-CQ handle containing op3 scalar const where possible
         regNumber op3Reg = op3->gtRegNum;
 
         auto emitSwCase = [&](int element) {
