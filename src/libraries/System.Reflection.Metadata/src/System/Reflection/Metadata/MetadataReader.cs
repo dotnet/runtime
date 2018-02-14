@@ -70,12 +70,12 @@ namespace System.Reflection.Metadata
             // worry about the image (stream) being empty and can handle all image errors by catching BadImageFormatException.
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(length));
+                Throw.ArgumentOutOfRange(nameof(length));
             }
 
             if (metadata == null)
             {
-                throw new ArgumentNullException(nameof(metadata));
+                Throw.ArgumentNull(nameof(metadata));
             }
 
             if (utf8Decoder == null)
@@ -85,28 +85,27 @@ namespace System.Reflection.Metadata
 
             if (!(utf8Decoder.Encoding is UTF8Encoding))
             {
-                throw new ArgumentException(SR.MetadataStringDecoderEncodingMustBeUtf8, nameof(utf8Decoder));
+                Throw.InvalidArgument(SR.MetadataStringDecoderEncodingMustBeUtf8, nameof(utf8Decoder));
             }
 
-            this.Block = new MemoryBlock(metadata, length);
+            Block = new MemoryBlock(metadata, length);
 
             _options = options;
-            this.UTF8Decoder = utf8Decoder;
+            UTF8Decoder = utf8Decoder;
 
-            var headerReader = new BlobReader(this.Block);
-            this.ReadMetadataHeader(ref headerReader, out _versionString);
+            var headerReader = new BlobReader(Block);
+            ReadMetadataHeader(ref headerReader, out _versionString);
             _metadataKind = GetMetadataKind(_versionString);
-            var streamHeaders = this.ReadStreamHeaders(ref headerReader);
+            var streamHeaders = ReadStreamHeaders(ref headerReader);
 
             // storage header and stream headers:
-            MemoryBlock metadataTableStream;
-            MemoryBlock standalonePdbStream;
-            this.InitializeStreamReaders(ref this.Block, streamHeaders, out _metadataStreamKind, out metadataTableStream, out standalonePdbStream);
+            InitializeStreamReaders(Block, streamHeaders, out _metadataStreamKind, out var metadataTableStream, out var pdbStream);
 
             int[] externalTableRowCountsOpt;
-            if (standalonePdbStream.Length > 0)
+            if (pdbStream.Length > 0)
             {
-                ReadStandalonePortablePdbStream(standalonePdbStream, out _debugMetadataHeader, out externalTableRowCountsOpt);
+                int pdbStreamOffset = (int)(pdbStream.Pointer - metadata);
+                ReadStandalonePortablePdbStream(pdbStream, pdbStreamOffset, out _debugMetadataHeader, out externalTableRowCountsOpt);
             }
             else
             {
@@ -115,30 +114,28 @@ namespace System.Reflection.Metadata
 
             var tableReader = new BlobReader(metadataTableStream);
 
-            HeapSizes heapSizes;
-            int[] metadataTableRowCounts;
-            this.ReadMetadataTableHeader(ref tableReader, out heapSizes, out metadataTableRowCounts, out _sortedTables);
+            ReadMetadataTableHeader(ref tableReader, out var heapSizes, out var metadataTableRowCounts, out _sortedTables);
 
-            this.InitializeTableReaders(tableReader.GetMemoryBlockAt(0, tableReader.RemainingBytes), heapSizes, metadataTableRowCounts, externalTableRowCountsOpt);
+            InitializeTableReaders(tableReader.GetMemoryBlockAt(0, tableReader.RemainingBytes), heapSizes, metadataTableRowCounts, externalTableRowCountsOpt);
 
             // This previously could occur in obfuscated assemblies but a check was added to prevent 
             // it getting to this point
-            Debug.Assert(this.AssemblyTable.NumberOfRows <= 1);
+            Debug.Assert(AssemblyTable.NumberOfRows <= 1);
 
             // Although the specification states that the module table will have exactly one row,
             // the native metadata reader would successfully read files containing more than one row.
             // Such files exist in the wild and may be produced by obfuscators.
-            if (standalonePdbStream.Length == 0 && this.ModuleTable.NumberOfRows < 1)
+            if (pdbStream.Length == 0 && ModuleTable.NumberOfRows < 1)
             {
                 throw new BadImageFormatException(SR.Format(SR.ModuleTableInvalidNumberOfRows, this.ModuleTable.NumberOfRows));
             }
 
             //  read 
-            this.NamespaceCache = new NamespaceCache(this);
+            NamespaceCache = new NamespaceCache(this);
 
             if (_metadataKind != MetadataKind.Ecma335)
             {
-                this.WinMDMscorlibRef = FindMscorlibAssemblyRefNoProjection();
+                WinMDMscorlibRef = FindMscorlibAssemblyRefNoProjection();
             }
         }
 
@@ -259,14 +256,14 @@ namespace System.Reflection.Metadata
         }
 
         private void InitializeStreamReaders(
-            ref MemoryBlock metadataRoot, 
+            in MemoryBlock metadataRoot, 
             StreamHeader[] streamHeaders, 
             out MetadataStreamKind metadataStreamKind,
             out MemoryBlock metadataTableStream,
             out MemoryBlock standalonePdbStream)
         {
-            metadataTableStream = default(MemoryBlock);
-            standalonePdbStream = default(MemoryBlock);
+            metadataTableStream = default;
+            standalonePdbStream = default;
             metadataStreamKind = MetadataStreamKind.Illegal;
 
             foreach (StreamHeader streamHeader in streamHeaders)
@@ -517,9 +514,9 @@ namespace System.Reflection.Metadata
         }
 
         // internal for testing
-        internal static void ReadStandalonePortablePdbStream(MemoryBlock block, out DebugMetadataHeader debugMetadataHeader, out int[] externalTableRowCounts)
+        internal static void ReadStandalonePortablePdbStream(MemoryBlock pdbStreamBlock, int pdbStreamOffset, out DebugMetadataHeader debugMetadataHeader, out int[] externalTableRowCounts)
         {
-            var reader = new BlobReader(block);
+            var reader = new BlobReader(pdbStreamBlock);
 
             const int PdbIdSize = 20;
             byte[] pdbId = reader.ReadBytes(PdbIdSize);
@@ -551,7 +548,8 @@ namespace System.Reflection.Metadata
 
             debugMetadataHeader = new DebugMetadataHeader(
                 ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref pdbId),
-                MethodDefinitionHandle.FromRowId(entryPointRowId));
+                MethodDefinitionHandle.FromRowId(entryPointRowId),
+                idStartOffset: pdbStreamOffset);
         }
 
         private const int SmallIndexSize = 2;

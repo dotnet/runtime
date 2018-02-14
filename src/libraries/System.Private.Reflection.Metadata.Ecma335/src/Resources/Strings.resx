@@ -294,6 +294,12 @@
   </data>
   <data name="UnexpectedEmbeddedPortablePdbDataSignature" xml:space="preserve">
     <value>Unexpected Embedded Portable PDB data signature value.</value>
+  </data>  
+  <data name="UnexpectedPdbChecksumDataSignature" xml:space="preserve">
+    <value>Unexpected PDB Checksum data signature value.</value>
+  </data>
+  <data name="InvalidPdbChecksumDataFormat" xml:space="preserve">
+    <value>Invalid PDB Checksum data data format.</value>
   </data>
   <data name="UnexpectedSignatureHeader" xml:space="preserve">
     <value>Expected signature header for '{0}', but found '{1}' (0x{2:x2}).</value>
@@ -354,6 +360,9 @@
   </data>
   <data name="ExpectedNonEmptyList" xml:space="preserve">
     <value>Expected non-empty list.</value>
+  </data>  
+  <data name="ExpectedNonEmptyArray" xml:space="preserve">
+    <value>Expected non-empty array.</value>
   </data>
   <data name="ExpectedNonEmptyString" xml:space="preserve">
     <value>Expected non-empty string.</value>

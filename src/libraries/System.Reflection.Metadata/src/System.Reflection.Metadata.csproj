@@ -81,6 +81,7 @@
     <Compile Include="System\Reflection\PortableExecutable\PEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.EmbeddedPortablePdb.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\PdbChecksumDebugDirectoryData.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEDirectoriesBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaderBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />

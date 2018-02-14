@@ -109,6 +109,12 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void ArgumentEmptyArray(string parameterName)
+        {
+            throw new ArgumentException(SR.ExpectedNonEmptyArray, parameterName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void ValueArgumentNull()
         {
             throw new ArgumentNullException("value");

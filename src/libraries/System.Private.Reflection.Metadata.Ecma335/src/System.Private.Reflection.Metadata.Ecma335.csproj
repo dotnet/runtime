@@ -224,6 +224,7 @@
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\CorFlags.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\CorHeader.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\DebugDirectory\CodeViewDebugDirectoryData.cs" />
+    <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\DebugDirectory\PdbChecksumDebugDirectoryData.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryEntry.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryEntryType.cs" />
     <Compile Include="$(SystemReflectionMetadataPath)System\Reflection\PortableExecutable\DirectoryEntry.cs" />
