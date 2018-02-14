@@ -852,7 +852,7 @@ namespace System.Text
                 {
                     if (ch == 0)
                     {
-                        // Check if there's anthing left to get out of the fallback buffer
+                        // Check if there's anything left to get out of the fallback buffer
                         ch = fallbackBuffer != null ? fallbackBuffer.InternalGetNextChar() : 0;
                         if (ch > 0)
                         {
