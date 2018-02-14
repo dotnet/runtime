@@ -33,7 +33,7 @@ namespace System
                     return false;
                 }
             }
-            
+
             return true;
         }
 
@@ -105,9 +105,12 @@ namespace System
 
         public static ReadOnlySpan<char> Remove(this ReadOnlySpan<char> source, int startIndex, int count)
         {
-            if (startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
-            if (count > source.Length - startIndex) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexCount);
+            if (startIndex < 0)
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
+            if (count > source.Length - startIndex)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_IndexCount);
 
             if (count == 0)
             {
@@ -139,6 +142,15 @@ namespace System
             }
 
             return -1;
+        }
+
+        public static void CheckStringComparison(StringComparison comparisonType)
+        {
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)(comparisonType - StringComparison.CurrentCulture) > (StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture))
+            {
+                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
+            }
         }
     }
 }
