@@ -175,7 +175,8 @@ namespace System
 
             int length = startsWith.Length;
 
-            fixed (char* ap = &str._firstChar) fixed (char* bp = &startsWith._firstChar)
+            fixed (char* ap = &str._firstChar)
+            fixed (char* bp = &startsWith._firstChar)
             {
                 char* a = ap;
                 char* b = bp;
@@ -184,15 +185,23 @@ namespace System
                 // Single int read aligns pointers for the following long reads
                 // No length check needed as this method is called when length >= 2
                 Debug.Assert(length >= 2);
-                if (*(int*)a != *(int*)b) return false;
-                length -= 2; a += 2; b += 2;
+                if (*(int*)a != *(int*)b)
+                    return false;
+                length -= 2;
+                a += 2;
+                b += 2;
 
                 while (length >= 12)
                 {
-                    if (*(long*)a != *(long*)b) return false;
-                    if (*(long*)(a + 4) != *(long*)(b + 4)) return false;
-                    if (*(long*)(a + 8) != *(long*)(b + 8)) return false;
-                    length -= 12; a += 12; b += 12;
+                    if (*(long*)a != *(long*)b)
+                        return false;
+                    if (*(long*)(a + 4) != *(long*)(b + 4))
+                        return false;
+                    if (*(long*)(a + 8) != *(long*)(b + 8))
+                        return false;
+                    length -= 12;
+                    a += 12;
+                    b += 12;
                 }
 #else
                 while (length >= 10)
@@ -208,8 +217,11 @@ namespace System
 
                 while (length >= 2)
                 {
-                    if (*(int*)a != *(int*)b) return false;
-                    length -= 2; a += 2; b += 2;
+                    if (*(int*)a != *(int*)b)
+                        return false;
+                    length -= 2;
+                    a += 2;
+                    b += 2;
                 }
 
                 // PERF: This depends on the fact that the String objects are always zero terminated 
@@ -365,24 +377,21 @@ namespace System
         // for meaning of different comparisonType.
         public static int Compare(String strA, String strB, StringComparison comparisonType)
         {
-            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
-            if ((uint)(comparisonType - StringComparison.CurrentCulture) > (uint)(StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture))
-            {
-                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
-
             if (object.ReferenceEquals(strA, strB))
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return 0;
             }
 
             // They can't both be null at this point.
             if (strA == null)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return -1;
             }
             if (strB == null)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return 1;
             }
 
@@ -420,7 +429,7 @@ namespace System
                     return CompareInfo.CompareOrdinalIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
 
                 default:
-                    throw new NotSupportedException(SR.NotSupported_StringComparison);
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -542,13 +551,11 @@ namespace System
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
         {
-            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-            {
-                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
+            StringSpanHelpers.CheckStringComparison(comparisonType);
 
             if (strA == null || strB == null)
             {
+
                 if (object.ReferenceEquals(strA, strB))
                 {
                     // They're both null
@@ -604,7 +611,7 @@ namespace System
                     return (CompareInfo.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB));
 
                 default:
-                    throw new ArgumentException(SR.NotSupported_StringComparison);
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -746,19 +753,16 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(value));
             }
-
-            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-            {
-                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
-
+            
             if ((Object)this == (Object)value)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return true;
             }
 
             if (value.Length == 0)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return true;
             }
 
@@ -781,6 +785,7 @@ namespace System
 
                 case StringComparison.OrdinalIgnoreCase:
                     return this.Length < value.Length ? false : (CompareInfo.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
+
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
@@ -845,16 +850,15 @@ namespace System
 
         public bool Equals(String value, StringComparison comparisonType)
         {
-            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-
             if ((Object)this == (Object)value)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return true;
             }
 
             if ((Object)value == null)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return false;
             }
 
@@ -913,16 +917,15 @@ namespace System
 
         public static bool Equals(String a, String b, StringComparison comparisonType)
         {
-            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-
             if ((Object)a == (Object)b)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return true;
             }
 
             if ((Object)a == null || (Object)b == null)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return false;
             }
 
@@ -1066,18 +1069,15 @@ namespace System
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (comparisonType < StringComparison.CurrentCulture || comparisonType > StringComparison.OrdinalIgnoreCase)
-            {
-                throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
-            }
-
             if ((Object)this == (Object)value)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return true;
             }
 
             if (value.Length == 0)
             {
+                StringSpanHelpers.CheckStringComparison(comparisonType);
                 return true;
             }
 
@@ -1109,7 +1109,6 @@ namespace System
                     {
                         return false;
                     }
-
                     return (CompareInfo.CompareOrdinalIgnoreCase(this, 0, value.Length, value, 0, value.Length) == 0);
 
                 default:
