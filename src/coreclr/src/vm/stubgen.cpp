@@ -1396,7 +1396,8 @@ void ILCodeStream::EmitLDIND_T(LocalDesc* pType)
         case ELEMENT_TYPE_U8:       EmitLDIND_I8(); break;
         case ELEMENT_TYPE_R4:       EmitLDIND_R4(); break;
         case ELEMENT_TYPE_R8:       EmitLDIND_R8(); break;
-        case ELEMENT_TYPE_FNPTR: // same as ELEMENT_TYPE_I
+        case ELEMENT_TYPE_PTR:      // same as ELEMENT_TYPE_I
+        case ELEMENT_TYPE_FNPTR:    // same as ELEMENT_TYPE_I
         case ELEMENT_TYPE_I:        EmitLDIND_I();  break;
         case ELEMENT_TYPE_U:        EmitLDIND_I();  break;
         case ELEMENT_TYPE_STRING:   // fall through
@@ -1594,7 +1595,8 @@ void ILCodeStream::EmitSTIND_T(LocalDesc* pType)
         case ELEMENT_TYPE_U8:       EmitSTIND_I8(); break;
         case ELEMENT_TYPE_R4:       EmitSTIND_R4(); break;
         case ELEMENT_TYPE_R8:       EmitSTIND_R8(); break;
-        case ELEMENT_TYPE_FNPTR: // same as ELEMENT_TYPE_I
+        case ELEMENT_TYPE_PTR:      // same as ELEMENT_TYPE_I
+        case ELEMENT_TYPE_FNPTR:    // same as ELEMENT_TYPE_I
         case ELEMENT_TYPE_I:        EmitSTIND_I();  break;
         case ELEMENT_TYPE_U:        EmitSTIND_I();  break;
         case ELEMENT_TYPE_STRING:   // fall through
