@@ -771,12 +771,6 @@ PLATFORM_DISABLED_TESTS += \
 	sgen-bridge-xref.exe
 endif
 
-if ENABLE_COOP
-COOP_DISABLED_TESTS= thunks.exe
-else
-COOP_DISABLED_TESTS= 
-endif
-
 PROFILE_DISABLED_TESTS=
 
 if FULL_AOT_TESTS

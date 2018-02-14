@@ -292,6 +292,7 @@ MONO_API MonoObject*
 mono_runtime_invoke_array   (MonoMethod *method, void *obj, MonoArray *params,
 			     MonoObject **exc);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void*
 mono_method_get_unmanaged_thunk (MonoMethod *method);
 

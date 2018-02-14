@@ -3142,8 +3142,6 @@ mono_method_get_unmanaged_thunk (MonoMethod *method)
 	ERROR_DECL (error);
 	gpointer res;
 
-	g_assert (!mono_threads_is_coop_enabled ());
-
 	MONO_ENTER_GC_UNSAFE;
 	method = mono_marshal_get_thunk_invoke_wrapper (method);
 	res = mono_compile_method_checked (method, error);
