@@ -650,6 +650,10 @@ PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on th
                                (GcInfoDecoderFlags)(  DECODE_SECURITY_OBJECT
                                                     | DECODE_CODE_LENGTH
                                                     | DECODE_VARARG
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+                                                    | DECODE_HAS_TAILCALLS
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
+
                                                     | DECODE_INTERRUPTIBILITY),
                                offset);
 

@@ -408,8 +408,23 @@ public:
         m_cgInterruptible = value;
     }
 
+#ifdef _TARGET_ARMARCH_
+    __declspec(property(get = getHasTailCalls, put = setHasTailCalls)) bool hasTailCalls;
+    bool getHasTailCalls()
+    {
+        return m_cgHasTailCalls;
+    }
+    void setHasTailCalls(bool value)
+    {
+        m_cgHasTailCalls = value;
+    }
+#endif // _TARGET_ARMARCH_
+
 private:
     bool m_cgInterruptible;
+#ifdef _TARGET_ARMARCH_
+    bool m_cgHasTailCalls;
+#endif // _TARGET_ARMARCH_
 
     //  The following will be set to true if we've determined that we need to
     //  generate a full-blown pointer register map for the current method.

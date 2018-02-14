@@ -214,6 +214,10 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pContext,
 virtual bool IsGcSafe(EECodeInfo     *pCodeInfo,
                       DWORD           dwRelOffset) = 0;
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
+
 #if defined(_TARGET_AMD64_) && defined(_DEBUG)
 /*
     Locates the end of the last interruptible region in the given code range.
@@ -469,6 +473,11 @@ void QuickUnwindStackFrame(
 virtual
 bool IsGcSafe(  EECodeInfo     *pCodeInfo,
                 DWORD           dwRelOffset);
+
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+virtual
+bool HasTailCalls(EECodeInfo *pCodeInfo);
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
 #if defined(_TARGET_AMD64_) && defined(_DEBUG)
 /*

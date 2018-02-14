@@ -58817,7 +58817,7 @@ RelativePath=JIT\Methodical\tailcall_v4\hijacking\hijacking.cmd
 WorkingDir=JIT\Methodical\tailcall_v4\hijacking
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4122;LONG_RUNNING
+Categories=EXPECTED_PASS;LONG_RUNNING
 HostStyle=0
 
 [smallFrame.cmd_7667]

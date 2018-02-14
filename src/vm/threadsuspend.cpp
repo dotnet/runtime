@@ -6285,6 +6285,19 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // For this, we may need JIT support to do so.
                             notJittedCase = true;
                         }
+                        else if (pCF->HasTailCalls())
+                        {
+                            // Do not hijack functions that have tail calls, since there are two problems:
+                            // 1. When a function that tail calls another one is hijacked, the LR may be
+                            //    stored at a different location in the stack frame of the tail call target.
+                            //    So just by performing tail call, the hijacked location becomes invalid and
+                            //    unhijacking would corrupt stack by writing to that location.
+                            // 2. There is a small window after the caller pops LR from the stack in its
+                            //    epilog and before the tail called function pushes LR in its prolog when
+                            //    the hijacked return address would not be not on the stack and so we would
+                            //    not be able to unhijack.
+                            notJittedCase = true;
+                        }
                         else
                         {
                             // This is the case of IP being inside the method body and LR is 

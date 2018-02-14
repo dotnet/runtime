@@ -353,6 +353,19 @@ bool CrawlFrame::IsGcSafe()
     return GetCodeManager()->IsGcSafe(&codeInfo, GetRelOffset());
 }
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+bool CrawlFrame::HasTailCalls()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    return GetCodeManager()->HasTailCalls(&codeInfo);
+}
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
+
 inline void CrawlFrame::GotoNextFrame()
 {
     CONTRACTL {
