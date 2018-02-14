@@ -4826,8 +4826,32 @@ private:
 
     unsigned fgPtrArgCntCur;
     unsigned fgPtrArgCntMax;
-    hashBv*  fgOutgoingArgTemps;
-    hashBv*  fgCurrentlyInUseArgTemps;
+
+public:
+    //------------------------------------------------------------------------
+    // fgGetPtrArgCntMax: Return the maximum number of pointer-sized stack arguments that calls inside this method
+    // can push on the stack. This value is calculated during morph.
+    //
+    // Return Value:
+    //    Returns fgPtrArgCntMax, that is a private field.
+    //
+    unsigned fgGetPtrArgCntMax() const
+    {
+        return fgPtrArgCntMax;
+    }
+
+    //------------------------------------------------------------------------
+    // fgSetPtrArgCntMax: Set the maximum number of pointer-sized stack arguments that calls inside this method
+    // can push on the stack. This function is used during StackLevelSetter to fix incorrect morph calculations.
+    //
+    void fgSetPtrArgCntMax(unsigned argCntMax)
+    {
+        fgPtrArgCntMax = argCntMax;
+    }
+
+private:
+    hashBv* fgOutgoingArgTemps;
+    hashBv* fgCurrentlyInUseArgTemps;
 
     bool compCanEncodePtrArgCntMax();
 
@@ -5012,7 +5036,10 @@ public:
         BasicBlock*     acdDstBlk; // block  to  which we jump
         unsigned        acdData;
         SpecialCodeKind acdKind; // what kind of a special block is this?
-        unsigned short  acdStkLvl;
+#if !FEATURE_FIXED_OUT_ARGS
+        bool     acdStkLvlInit; // has acdStkLvl value been already set?
+        unsigned acdStkLvl;
+#endif // !FEATURE_FIXED_OUT_ARGS
     };
 
 private:
@@ -5029,6 +5056,13 @@ private:
 
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
+
+    bool fgUseThrowHelperBlocks();
+
+    AddCodeDsc* fgGetAdditionalCodeDescriptors()
+    {
+        return fgAddCodeList;
+    }
 
 private:
     bool fgIsCodeAdded();

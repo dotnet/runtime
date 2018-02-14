@@ -92,6 +92,7 @@ CompPhaseNameMacro(PHASE_RA_ASSIGN_VARS,         "RA assign vars",              
 CompPhaseNameMacro(PHASE_LOWERING_DECOMP,        "Lowering decomposition",         "LWR-DEC",  false, -1, false)
 CompPhaseNameMacro(PHASE_LOWERING,               "Lowering nodeinfo",              "LWR-INFO", false, -1, true)
 #ifndef LEGACY_BACKEND
+CompPhaseNameMacro(PHASE_STACK_LEVEL_SETTER,     "Calculate stack level slots",    "STK-SET",  false, -1, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN,            "Linear scan register alloc",     "LSRA",     true, -1, true)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_BUILD,      "LSRA build intervals",           "LSRA-BLD", false, PHASE_LINEAR_SCAN, false)
 CompPhaseNameMacro(PHASE_LINEAR_SCAN_ALLOC,      "LSRA allocate",                  "LSRA-ALL", false, PHASE_LINEAR_SCAN, false)
