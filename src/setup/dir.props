@@ -77,9 +77,6 @@
 
     <RuntimeDepsDebVersion Condition="'$(RuntimeDepsDebVersion)'==''">$(ProductVersion)</RuntimeDepsDebVersion>
 
-    <UWPCoreRuntimeSdkVersion>6.1.0</UWPCoreRuntimeSdkVersion>
-    <UWPCoreRuntimeSdkFullVersion>$(UWPCoreRuntimeSdkVersion)$(ProductVersionSuffix)</UWPCoreRuntimeSdkFullVersion>
-
     <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
 
     <!--
@@ -260,8 +257,6 @@
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
 
     <CoreHostOutputDir>$(BaseOutputRootPath)corehost\</CoreHostOutputDir>
-    <UWPOutputDir>$(BaseOutputRootPath)uwp\</UWPOutputDir>
-    <CoreRuntimeTaskDir>$(BaseOutputRootPath)Microsoft.Build.Net.CoreRuntimeTask</CoreRuntimeTaskDir>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)/</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackagesBasePath)packages/</PackageOutputPath>
@@ -412,10 +407,6 @@
     <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
     <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductVersion)</RuntimeDependenciesDebPkgName>
     <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <MicrosoftNetCoreRuntimeAppxOutputPath>$(UWPOutputDir)Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion).appx</MicrosoftNetCoreRuntimeAppxOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
