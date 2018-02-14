@@ -55,5 +55,42 @@ namespace System.Security.Cryptography.RNG.Tests
                 Assert.Equal(-1, Array.IndexOf<byte>(rand, 0));
             }
         }
+
+        [Fact]
+        public static void Fill_ZeroLengthSpan()
+        {
+            byte[] rand = { 1 };
+            RandomNumberGenerator.Fill(new Span<byte>(rand, 0, 0));
+            Assert.Equal(1, rand[0]);
+        }
+
+        [Fact]
+        public static void Fill_SpanLength1()
+        {
+            byte[] rand = { 1 };
+            bool replacedValue = false;
+
+            for (int i = 0; i < 10; i++)
+            {
+                RandomNumberGenerator.Fill(rand);
+
+                if (rand[0] != 1)
+                {
+                    replacedValue = true;
+                    break;
+                }
+            }
+
+            Assert.True(replacedValue, "Fill eventually wrote a different byte");
+        }
+
+        [Fact]
+        public static void Fill_RandomDistribution()
+        {
+            byte[] random = new byte[2048];
+            RandomNumberGenerator.Fill(random);
+
+            RandomDataGenerator.VerifyRandomDistribution(random);
+        }
     }
 }

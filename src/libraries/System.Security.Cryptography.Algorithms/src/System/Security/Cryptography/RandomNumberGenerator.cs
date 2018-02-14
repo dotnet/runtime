@@ -91,6 +91,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        public static void Fill(Span<byte> data)
+        {
+            RandomNumberGeneratorImplementation.FillSpan(data);
+        }
+
         internal void VerifyGetBytes(byte[] data, int offset, int count)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));

@@ -42,9 +42,6 @@ namespace System.Net.Http
         // 48='0', 65='A', 97='a'
         private static int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
 
-        // Define a random number generator for cnonce
-        private static RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
-
         public async static Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, ICredentials credentials, DigestResponse digestResponse, string authHeader)
         {
             NetworkCredential credential = credentials.GetCredential(request.RequestUri, Digest);
@@ -218,7 +215,7 @@ namespace System.Net.Http
         {
             const int Length = 16;
             Span<byte> randomNumbers = stackalloc byte[Length * 2];
-            s_rng.GetBytes(randomNumbers);
+            RandomNumberGenerator.Fill(randomNumbers);
 
             StringBuilder sb = StringBuilderCache.Acquire(Length);
             for (int i = 0; i < randomNumbers.Length;)
