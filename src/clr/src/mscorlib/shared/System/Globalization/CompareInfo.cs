@@ -653,6 +653,17 @@ namespace System.Globalization
             return StartsWith(source, prefix, options);
         }
 
+        internal bool IsPrefix(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        {
+            Debug.Assert(prefix.Length != 0);
+            Debug.Assert(source.Length != 0);
+            Debug.Assert((options & ValidIndexMaskOffFlags) == 0);
+            Debug.Assert(!_invariantMode);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
+
+            return StartsWith(source, prefix, options);
+        }
+
         public virtual bool IsPrefix(string source, string prefix)
         {
             return (IsPrefix(source, prefix, 0));
@@ -703,6 +714,17 @@ namespace System.Globalization
             {
                 return source.EndsWith(suffix, (options & CompareOptions.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             }
+
+            return EndsWith(source, suffix, options);
+        }
+
+        internal bool IsSuffix(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        {
+            Debug.Assert(suffix.Length != 0);
+            Debug.Assert(source.Length != 0);
+            Debug.Assert((options & ValidIndexMaskOffFlags) == 0);
+            Debug.Assert(!_invariantMode);
+            Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             return EndsWith(source, suffix, options);
         }
