@@ -79,7 +79,7 @@ namespace System.Net.Http
             _pool = pool;
             _stream = stream;
             _transportContext = transportContext;
-            _usingProxy = pool.Pools.UsingProxy;
+            _usingProxy = pool.UsingProxy;
             _idnHostAsciiBytes = pool.IdnHostAsciiBytes;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
@@ -89,11 +89,11 @@ namespace System.Net.Http
 
             if (NetEventSource.IsEnabled)
             {
-                if (_stream is SslStream sslStream)
+                if (pool.IsSecure)
                 {
+                    var sslStream = (SslStream)_stream;
                     Trace(
-                        $"Secure connection created to {pool.Key.Host}:{pool.Key.Port}. " +
-                        $"SslHostName:{pool.Key.SslHostName}. " +
+                        $"Secure connection created to {pool}. " +
                         $"SslProtocol:{sslStream.SslProtocol}, " +
                         $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
                         $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
@@ -102,7 +102,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    Trace($"Connection created to {pool.Key.Host}:{pool.Key.Port}.");
+                    Trace($"Connection created to {pool}.");
                 }
             }
         }
@@ -261,9 +261,9 @@ namespace System.Net.Http
 
                 // Determine cookies to send
                 string cookiesFromContainer = null;
-                if (_pool.Pools.Settings._useCookies)
+                if (_pool.Settings._useCookies)
                 {
-                    cookiesFromContainer = _pool.Pools.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
+                    cookiesFromContainer = _pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
                     if (cookiesFromContainer == "")
                     {
                         cookiesFromContainer = null;
@@ -357,7 +357,7 @@ namespace System.Net.Http
                 }
 
                 // Start to read response.
-                _allowedReadLineBytes = _pool.Pools.Settings._maxResponseHeadersLength * 1024;
+                _allowedReadLineBytes = _pool.Settings._maxResponseHeadersLength * 1024;
 
                 // We should not have any buffered data here; if there was, it should have been treated as an error
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
@@ -501,9 +501,9 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) Trace($"Received response: {response}");
 
                 // Process Set-Cookie headers.
-                if (_pool.Pools.Settings._useCookies)
+                if (_pool.Settings._useCookies)
                 {
-                    CookieHelper.ProcessReceivedCookies(response, _pool.Pools.Settings._cookieContainer);
+                    CookieHelper.ProcessReceivedCookies(response, _pool.Settings._cookieContainer);
                 }
 
                 return response;
@@ -1290,7 +1290,7 @@ namespace System.Net.Http
             return true;
         }
 
-        public sealed override string ToString() => $"{nameof(HttpConnection)}({_pool.Key})"; // Description for diagnostic purposes
+        public sealed override string ToString() => $"{nameof(HttpConnection)}({_pool})"; // Description for diagnostic purposes
 
         private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
 
