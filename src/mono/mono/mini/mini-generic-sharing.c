@@ -1504,8 +1504,13 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_UNKNOWN);
 
-	/* This is needed to be able to unwind out of interpreted code */
-	mb->method->save_lmf = 1;
+	/*
+	 * This is needed to be able to unwind out of interpreted code to managed.
+	 * When we are called from native code we can't unwind and we might also not
+	 * be attached.
+	 */
+	if (!sig->pinvoke)
+		mb->method->save_lmf = 1;
 
 #ifndef DISABLE_JIT
 	if (sig->ret->type != MONO_TYPE_VOID)

@@ -4581,11 +4581,18 @@ array_constructed:
 			++ip;
 
 			context->original_domain = NULL;
-			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
-			gpointer tls_jit = ((gpointer (*)(void)) mono_tls_get_tls_getter (TLS_KEY_JIT_TLS, FALSE)) ();
+			MonoDomain *tls_domain = (MonoDomain *) mono_tls_get_domain ();
+			gpointer tls_jit = mono_tls_get_jit_tls ();
 
-			if (tls_domain != rtm->domain || !tls_jit)
+			if (tls_domain != rtm->domain || !tls_jit) {
 				context->original_domain = mono_jit_thread_attach (rtm->domain);
+				/*
+				 * Make sure the JitTlsData contains the interp context, in case
+				 * we weren't yet attached at interp_entry time.
+				 */
+				g_assert (context == mono_native_tls_get_value (thread_context_id));
+				set_context (context);
+			}
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_MONO_JIT_DETACH)
