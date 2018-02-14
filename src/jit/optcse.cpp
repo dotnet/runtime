@@ -314,7 +314,7 @@ Compiler::fgWalkResult Compiler::optUnmarkCSEs(GenTree** pTree, fgWalkData* data
 
         if (comp->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE))
         {
-            // If the nested CSE def has persistent side effects then just abort 
+            // If the nested CSE def has persistent side effects then just abort
             // as this case is problematic.
             return WALK_ABORT;
         }
@@ -2131,18 +2131,18 @@ public:
 #endif // DEBUG
 
                 // Now we need to unmark any nested CSE's uses that are found in 'exp'
-                // As well we extract any nested CSE defs that are found in 'exp' and 
+                // As well we extract any nested CSE defs that are found in 'exp' and
                 // these are appended to the sideEffList
 
                 // Afterwards the set of nodes in the 'sideEffectList' are preserved and
                 // all other nodes are removed and have their ref counts decremented
                 //
                 exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
-                bool result = m_pCompiler->optValnumCSE_UnmarkCSEs(exp, &sideEffList);
+                bool result   = m_pCompiler->optValnumCSE_UnmarkCSEs(exp, &sideEffList);
 
                 // When 'result' is false we ran into a case where 'exp contains a nested CSE use
-                // that has persistent side effects.  It very difficult to construct the proper 
-                // side effect list for this case. 
+                // that has persistent side effects.  It is very difficult to construct the proper
+                // side effect list for this case.
                 // Additionally this case is extremely uncommon, so we just give up on replacing
                 // this particular CSE use when we have this case.  [VSO 566984]
                 //
@@ -2159,7 +2159,7 @@ public:
 #endif
                     continue;
                 }
-                else  // We now perform the replacement of the CSE use
+                else // We now perform the replacement of the CSE use
                 {
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
@@ -2176,15 +2176,15 @@ public:
 #ifdef DEBUG
                         if (m_pCompiler->verbose)
                         {
-                            printf("\nThis CSE use has side effects and/or nested CSE defs. Extracted side effects...\n");
+                            printf("\nThis CSE use has side effects and/or nested CSE defs. The sideEffectList:\n");
                             m_pCompiler->gtDispTree(sideEffList);
                             printf("\n");
                         }
 #endif
 
-                        GenTree*       cseVal = cse;
-                        GenTree*       curSideEff = sideEffList;
-                        ValueNumStore* vnStore = m_pCompiler->vnStore;
+                        GenTree*       cseVal         = cse;
+                        GenTree*       curSideEff     = sideEffList;
+                        ValueNumStore* vnStore        = m_pCompiler->vnStore;
                         ValueNumPair   exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
 
                         while ((curSideEff->OperGet() == GT_COMMA) || (curSideEff->OperGet() == GT_ASG))
@@ -2197,7 +2197,7 @@ public:
                             vnStore->VNPUnpackExc(op1->gtVNPair, &op1vnp, &op1Xvnp);
 
                             exceptions_vnp = vnStore->VNPExcSetUnion(exceptions_vnp, op1Xvnp);
-                            curSideEff = op2;
+                            curSideEff     = op2;
                         }
 
                         // We may have inserted a narrowing cast during a previous remorph
@@ -2219,8 +2219,8 @@ public:
                         vnStore->VNPUnpackExc(cseVal->gtVNPair, &op2vnp, &op2Xvnp);
                         exceptions_vnp = vnStore->VNPExcSetUnion(exceptions_vnp, op2Xvnp);
 
-                        /* Create a comma node with the sideEffList as op1 */
-                        cse = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, sideEffList, cseVal);
+                        // Create a comma node with the sideEffList as op1
+                        cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, sideEffList, cseVal);
                         cse->gtVNPair = vnStore->VNPWithExc(op2vnp, exceptions_vnp);
                     }
                 }
