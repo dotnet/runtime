@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace System.Reflection.Metadata
 {
@@ -12,10 +11,16 @@ namespace System.Reflection.Metadata
         public ImmutableArray<byte> Id { get; }
         public MethodDefinitionHandle EntryPoint { get; }
 
-        internal DebugMetadataHeader(ImmutableArray<byte> id, MethodDefinitionHandle entryPoint)
+        /// <summary>
+        /// Gets the offset (in bytes) from the start of the metadata blob to the start of the <see cref="Id"/> blob.
+        /// </summary>
+        public int IdStartOffset { get; }
+
+        internal DebugMetadataHeader(ImmutableArray<byte> id, MethodDefinitionHandle entryPoint, int idStartOffset)
         {
             Id = id;
             EntryPoint = entryPoint;
+            IdStartOffset = idStartOffset;
         }
     }
 }

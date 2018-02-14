@@ -37,7 +37,7 @@ namespace System.Reflection.PortableExecutable
                 type: DebugDirectoryEntryType.EmbeddedPortablePdb, 
                 version: PortablePdbVersions.DebugDirectoryEmbeddedVersion(portablePdbVersion),
                 stamp: 0,
-                dataSize: dataSize);
+                dataSize);
         }
 
         private static int WriteEmbeddedPortablePdbData(BlobBuilder builder, BlobBuilder debugMetadata)

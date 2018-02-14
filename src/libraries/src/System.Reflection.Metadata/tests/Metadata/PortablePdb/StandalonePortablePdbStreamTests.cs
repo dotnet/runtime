@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata.Tests
         {
             fixed (byte* bufferPtr = &buffer[0])
             {
-                MetadataReader.ReadStandalonePortablePdbStream(new MemoryBlock(bufferPtr, buffer.Length), out header, out externalRowCounts);
+                MetadataReader.ReadStandalonePortablePdbStream(new MemoryBlock(bufferPtr, buffer.Length), 0, out header, out externalRowCounts);
             }
         }
 

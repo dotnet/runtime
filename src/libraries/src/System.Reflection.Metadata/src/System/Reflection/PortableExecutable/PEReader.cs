@@ -625,6 +625,43 @@ namespace System.Reflection.PortableExecutable
         }
 
         /// <summary>
+        /// Reads the data pointed to by the specified Debug Directory entry and interprets them as PDB Checksum entry.
+        /// </summary>
+        /// <exception cref="ArgumentException"><paramref name="entry"/> is not a PDB Checksum entry.</exception>
+        /// <exception cref="BadImageFormatException">Bad format of the data.</exception>
+        /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
+        /// <exception cref="InvalidOperationException">PE image not available.</exception>
+        public PdbChecksumDebugDirectoryData ReadPdbChecksumDebugDirectoryData(DebugDirectoryEntry entry)
+        {
+            if (entry.Type != DebugDirectoryEntryType.PdbChecksum)
+            {
+                Throw.InvalidArgument(SR.Format(SR.UnexpectedDebugDirectoryType, nameof(DebugDirectoryEntryType.PdbChecksum)), nameof(entry));
+            }
+
+            using (var block = GetDebugDirectoryEntryDataBlock(entry))
+            {
+                return DecodePdbChecksumDebugDirectoryData(block);
+            }
+        }
+
+        // internal for testing
+        internal static PdbChecksumDebugDirectoryData DecodePdbChecksumDebugDirectoryData(AbstractMemoryBlock block)
+        {
+            var reader = block.GetReader();
+
+            var algorithmName = reader.ReadUtf8NullTerminated();
+            var checksum = reader.ReadBytes(reader.RemainingBytes);
+            if (algorithmName.Length == 0 || checksum.Length == 0)
+            {
+                throw new BadImageFormatException(SR.InvalidPdbChecksumDataFormat);
+            }
+
+            return new PdbChecksumDebugDirectoryData(
+                algorithmName,
+                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref checksum));
+        }
+
+        /// <summary>
         /// Opens a Portable PDB associated with this PE image.
         /// </summary>
         /// <param name="peImagePath">
