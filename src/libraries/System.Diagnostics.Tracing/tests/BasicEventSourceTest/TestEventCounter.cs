@@ -8,7 +8,7 @@ using Microsoft.Diagnostics.Tracing;
 #else
 using System.Diagnostics.Tracing;
 #endif
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue https://github.com/dotnet/corefx/issues/4864 
+#if USE_ETW
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using Xunit;
@@ -63,6 +63,7 @@ namespace BasicEventSourceTests
 
 #if USE_ETW
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
         public void Test_Write_Metric_ETW()
         {
 

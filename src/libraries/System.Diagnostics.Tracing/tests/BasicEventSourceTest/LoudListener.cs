@@ -30,5 +30,10 @@ namespace BasicEventSourceTests
             Debug.Write(string.Format(" (activity {0}{1}) ", eventData.ActivityId, eventData.RelatedActivityId != null ? "->" + eventData.RelatedActivityId : ""));
             Debug.WriteLine(string.Format(" ({0}).", eventData.Payload != null ? string.Join(", ", eventData.Payload) : ""));
         }
+
+        public static EventWrittenEventArgs LastEvent
+        {
+            get { return t_lastEvent; }
+        }
     }
 }

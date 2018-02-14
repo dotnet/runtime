@@ -13,7 +13,7 @@ using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics.Tracing;
 #endif
 using Xunit;
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using System.Diagnostics;
@@ -63,7 +63,7 @@ namespace BasicEventSourceTests
             Test_Write_T(new EventListenerListener(true));
         }
 
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the ETW code path
@@ -414,18 +414,19 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
         public void Test_Write_T_In_Manifest_Serialization()
         {
             using (var eventListener = new EventListenerListener())
             {
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
                 using (var etwListener = new EtwListener())
 #endif
                 {
                     var listenerGenerators = new Func<Listener>[]
                     {
                         () => eventListener,
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
                         () => etwListener
 #endif // USE_ETW
                     };

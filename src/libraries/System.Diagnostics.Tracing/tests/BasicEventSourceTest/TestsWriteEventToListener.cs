@@ -150,7 +150,7 @@ namespace BasicEventSourceTests
                     Assert.Equal(MyFlags.Flag1, (MyFlags)LoudListener.t_lastEvent.Payload[0]);
                     #endregion
 
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
                     #region Validate DateTime
                     DateTime now = DateTime.Now;
                     log.EventDateTime(now);
@@ -178,7 +178,7 @@ namespace BasicEventSourceTests
                     EventSource.SendCommand(log, EventCommand.SendManifest, options);
 
                     Guid guid = Guid.NewGuid();
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
                     log.EventWithManyTypeArgs("Hello", 0, 0, 0, 'a', 0, 0, 0, 0, (float)10.0, (double)11.0, guid);
                     Assert.Equal(25, LoudListener.LastEvent.EventId);
                     Assert.Equal(12, LoudListener.LastEvent.Payload.Count);
@@ -206,7 +206,7 @@ namespace BasicEventSourceTests
                     Assert.Equal(9, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal("s0", (string)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal("s8", (string)LoudListener.t_lastEvent.Payload[8]);
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
                     log.EventWithWeirdArgs(IntPtr.Zero, true, MyLongEnum.LongVal1 /*, 9999999999999999999999999999m*/);
                     Assert.Equal(30, LoudListener.LastEvent.EventId);
                     Assert.Equal(3 /*4*/, LoudListener.LastEvent.Payload.Count);
@@ -255,14 +255,14 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW
         [Fact]
         public void Test_WriteEvent_TransferEvents()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
             using (var log = new EventSourceTest())
             {
-                using (var el = new LoudListener())
+                using (var el = new LoudListener(log))
                 {
                     Guid actid = Guid.NewGuid();
                     log.LogTaskScheduled(actid, "Hello from a test");
