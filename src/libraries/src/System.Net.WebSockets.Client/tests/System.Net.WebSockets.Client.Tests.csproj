@@ -53,6 +53,7 @@
     <Compile Include="ConnectTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="KeepAliveTest.cs" />
+    <Compile Include="LoopbackHelper.cs" />
     <Compile Include="ResourceHelper.cs" />
     <Compile Include="SendReceiveTest.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="SendReceiveTest.cs" />

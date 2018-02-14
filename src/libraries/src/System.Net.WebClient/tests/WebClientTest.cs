@@ -374,12 +374,7 @@ namespace System.Net.Tests
             {
                 Task<string> download = wc.DownloadStringTaskAsync(url.ToString());
                 Assert.Null(wc.ResponseHeaders);
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: 0\r\n" +
-                        "ArbitraryHeader: ArbitraryValue\r\n" +
-                        "\r\n");
+                await server.AcceptConnectionSendResponseAndCloseAsync(additionalHeaders: "ArbitraryHeader: ArbitraryValue\r\n");
                 await download;
             });
 
@@ -430,11 +425,7 @@ namespace System.Net.Tests
             {
                 Task<string> download = wc.DownloadStringTaskAsync(url.ToString());
                 Assert.Null(wc.ResponseHeaders);
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: 0\r\n" +
-                        "\r\n");
+                await server.AcceptConnectionSendResponseAndCloseAsync();
                 await download;
             });
         }
@@ -522,12 +513,7 @@ namespace System.Net.Tests
                 }
 
                 Task<string> download = DownloadStringAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: {ExpectedText.Length}\r\n" +
-                        "\r\n" +
-                        $"{ExpectedText}");
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: ExpectedText);
                 Assert.Equal(ExpectedText, await download);
             });
         }
@@ -543,12 +529,7 @@ namespace System.Net.Tests
                 wc.DownloadProgressChanged += (s, e) => downloadProgressInvoked.TrySetResult(true);
 
                 Task<byte[]> download = DownloadDataAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: {ExpectedText.Length}\r\n" +
-                        "\r\n" +
-                        $"{ExpectedText}");
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: ExpectedText);
                 Assert.Equal(ExpectedText, Encoding.ASCII.GetString(await download));
 
                 if (IsAsync)
@@ -576,12 +557,7 @@ namespace System.Net.Tests
                 };
 
                 Task<byte[]> download = DownloadDataAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: {largeText.Length}\r\n" +
-                        "\r\n" +
-                        $"{largeText}");
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: largeText);
                 Assert.Equal(largeText, Encoding.ASCII.GetString(await download));
 
                 if (IsAsync)
@@ -601,12 +577,7 @@ namespace System.Net.Tests
                 {
                     var wc = new WebClient();
                     Task download = DownloadFileAsync(wc, url.ToString(), tempPath);
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                            "HTTP/1.1 200 OK\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            $"Content-Length: {ExpectedText.Length}\r\n" +
-                            "\r\n" +
-                            $"{ExpectedText}");
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: ExpectedText);
 
                     await download;
                     Assert.Equal(ExpectedText, File.ReadAllText(tempPath));
@@ -625,12 +596,7 @@ namespace System.Net.Tests
             {
                 var wc = new WebClient();
                 Task<Stream> download = OpenReadAsync(wc, url.ToString());
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        "HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Length: {ExpectedText.Length}\r\n" +
-                        "\r\n" +
-                        $"{ExpectedText}");
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: ExpectedText);
 
                 using (var reader = new StreamReader(await download))
                 {
