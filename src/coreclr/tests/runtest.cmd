@@ -68,6 +68,7 @@ set __IlasmRoundTrip=
 set __CollectDumps=
 set __DoCrossgen=
 set __CrossgenAltJit=
+set __PerfTests=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -130,6 +131,11 @@ echo %__MsgPrefix%CORE_ROOT is initially set to: "%CORE_ROOT%"
 shift 
 :ArgsDone
 
+:: Done with argument processing. Check argument values for validity.
+
+if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
+if "%__PerfTests%"=="true" (if defined __GenerateLayoutOnly echo %__MsgPrefix%Error: Don't specify both "PerfTests" and "GenerateLayoutOnly" && exit /b 1)
+
 :: Set the remaining variables based upon the determined configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -140,20 +146,20 @@ set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildTyp
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
-if not exist %__LogsDir% md %__LogsDir%
+:: Set up msbuild and tools environment. Check if msbuild and VS exist.
 
 set _msbuildexe=
 if /i "%__VSVersion%" == "vs2017" (
-  set "__VSToolsRoot=%VS150COMNTOOLS%"
-  set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
+    set "__VSToolsRoot=%VS150COMNTOOLS%"
+    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
 
-  set _msbuildexe="%VS150COMNTOOLS%\..\..\MSBuild\15.0\Bin\MSBuild.exe"
+    set _msbuildexe="%VS150COMNTOOLS%\..\..\MSBuild\15.0\Bin\MSBuild.exe"
 ) else if /i "%__VSVersion%" == "vs2015" (
-  set "__VSToolsRoot=%VS140COMNTOOLS%"
-  set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
+    set "__VSToolsRoot=%VS140COMNTOOLS%"
+    set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
 
-  set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-  if not exist !_msbuildexe! set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
+    set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
+    if not exist !_msbuildexe! set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 )
 
 :: Does VS really exist?
@@ -162,7 +168,10 @@ if not exist "%__VCToolsRoot%\vcvarsall.bat"          goto NoVS
 if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
 
 :: Does MSBuild really exist?
-if not exist %_msbuildexe% echo %__MsgPrefix%Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
+if not exist %_msbuildexe% (
+    echo %__MsgPrefix%Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    exit /b 1
+)
 
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
@@ -189,12 +198,21 @@ if defined DoLink (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:RunTestsViaIllink=true
 )
 
+if not exist %__LogsDir% md %__LogsDir%
+
+REM These log files are created automatically by the test run process. Q: what do they depend on being set?
+set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
+set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
+
 REM Prepare the Test Drop
-echo %__MsgPrefix%Removing 'ni' files and 'lock' folders from %__TestWorkingDir%
-REM Cleans any NI from the last run
-powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
-REM Cleans up any lock folder used for synchronization from last run
-powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
+
+if not defined __GenerateLayoutOnly (
+    echo %__MsgPrefix%Removing 'ni' files and 'lock' folders from %__TestWorkingDir%
+    REM Cleans any NI from the last run
+    powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
+    REM Cleans up any lock folder used for synchronization from last run
+    powershell -NoProfile "Get-ChildItem -path %__TestWorkingDir% -Include 'lock' -Recurse -Force |  where {$_.Attributes -eq 'Directory'}| Remove-Item -force -Recurse"
+)
 
 if defined CORE_ROOT goto SkipCoreRootSetup
 
@@ -207,29 +225,31 @@ xcopy "%__BinDir%" "%CORE_ROOT%"
 
 :SkipCoreRootSetup
 
-
-if defined __TestEnv (if not exist %__TestEnv% echo %__MsgPrefix%Error: Test Environment script %__TestEnv% not found && exit /b 1)
-
-REM These log files are created automatically by the test run process. Q: what do they depend on being set?
-set __TestRunHtmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.html
-set __TestRunXmlLog=%__LogsDir%\TestRun_%__BuildOS%__%__BuildArch%__%__BuildType%.xml
-
-
-if "%__PerfTests%"=="true" goto RunPerfTests
-
-call :ResolveDependecies
-
-if defined __DoCrossgen call :PrecompileFX
-
-if  defined __GenerateLayoutOnly (
-    REM Delete the unecessary mscorlib.ni file.
-    if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
-    exit /b 0
-)
-
 if not exist %CORE_ROOT%\coreclr.dll (
     echo %__MsgPrefix%Error: Ensure you have done a successful build of the Product and %CORE_ROOT% contains runtime binaries.
     exit /b 1
+)
+
+if "%__PerfTests%"=="true" goto RunPerfTests
+
+REM =========================================================================================
+REM ===
+REM === Run normal (non-perf) tests
+REM ===
+REM =========================================================================================
+
+call :SetTestEnvironment
+
+call :ResolveDependencies
+if errorlevel 1 exit /b 1
+
+if defined __DoCrossgen call :PrecompileFX
+
+REM Delete the unecessary mscorlib.ni file.
+if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
+
+if defined __GenerateLayoutOnly (
+    exit /b 0
 )
 
 ::Check if the test Binaries are built
@@ -258,9 +278,6 @@ if "%__CollectDumps%"=="true" (
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting the test run ...
 
-REM Delete the unecessary mscorlib.ni file.
-if exist %CORE_ROOT%\mscorlib.ni.dll del %CORE_ROOT%\mscorlib.ni.dll
-
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline
 set __errorlevel=%errorlevel%
@@ -275,7 +292,13 @@ if %__errorlevel% GEQ 1 (
     exit /b 1
 )
 
-if not defined __PerfTests goto :SkipRunPerfTests
+goto TestsDone
+
+REM =========================================================================================
+REM ===
+REM === Run perf tests
+REM ===
+REM =========================================================================================
 
 :RunPerfTests 
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%  
@@ -290,13 +313,15 @@ if errorlevel 1 (
    echo     Html report: %__TestRunHtmlLog%  
 )  
 
-:SkipRunPerfTests
+goto TestsDone
 
 REM =========================================================================================
 REM ===
 REM === All tests complete!
 REM ===
 REM =========================================================================================
+
+:TestsDone
 
 echo %__MsgPrefix%Test run successful. Refer to the log files for details:
 echo     %__TestRunHtmlLog%
@@ -305,11 +330,10 @@ exit /b 0
 
 REM =========================================================================================
 REM ===
-REM === Helper routines
+REM === Compile the managed assemblies in Core_ROOT before running the tests
 REM ===
 REM =========================================================================================
 
-REM Compile the managed assemblies in Core_ROOT before running the tests
 :PrecompileAssembly
 
 if defined __JitDisasm goto :jitdisasm
@@ -373,15 +397,21 @@ for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%CORE_ROOT%" "%%F" %
 endlocal
 exit /b 0
 
+REM =========================================================================================
+REM ===
+REM === Subroutine to invoke msbuild.
+REM ===
+REM === All arguments are passed to msbuild. The first argument should be the .proj file to invoke.
+REM ===
+REM === On entry, environment variable __BuildLogRootName must be set to a file name prefix for the generated log files.
+REM === All the "standard" environment variables that aren't expected to change per invocation must also be set,
+REM === like __msbuildCommonArgs.
+REM ===
+REM === The build log files will be overwritten, not appended to.
+REM ===
+REM =========================================================================================
+
 :msbuild
-@REM Subroutine to invoke msbuild. All arguments are passed to msbuild. The first argument should be the
-@REM .proj file to invoke.
-@REM
-@REM On entry, __BuildLogRootName must be set to a file name prefix for the generated log file.
-@REM All the "standard" environment variables that aren't expected to change per invocation must also be set,
-@REM like __msbuildCommonArgs.
-@REM
-@REM The build log files will be overwritten, not appended to.
 
 echo %__MsgPrefix%Invoking msbuild
 
@@ -413,12 +443,13 @@ if errorlevel 1 (
 
 exit /b 0
 
-:ResolveDependecies:
+REM =========================================================================================
+REM ===
+REM === Set various environment variables, based on arguments to this script, before invoking the tests.
+REM ===
+REM =========================================================================================
 
-if "%CORE_ROOT%" == "" (
-    echo %__MsgPrefix%Error: Ensure you have done a successful build of the Product and Run - runtest BuildArch BuildType {path to product binaries}.
-    exit /b 1
-)
+:SetTestEnvironment
 
 :: Long GC tests take about 10 minutes per test on average, so
 :: they often bump up against the default 10 minute timeout.
@@ -452,6 +483,15 @@ if defined __IlasmRoundTrip (
     set RunningIlasmRoundTrip=1
 )
 
+exit /b 0
+
+REM =========================================================================================
+REM ===
+REM === Generate the "layout" directory in CORE_ROOT; download dependencies.
+REM ===
+REM =========================================================================================
+
+:ResolveDependencies
 set __BuildLogRootName=Tests_GenerateRuntimeLayout
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:GenerateRuntimeLayout=true 
 if errorlevel 1 (
@@ -462,7 +502,11 @@ echo %__MsgPrefix%Created the runtime layout with all dependencies in %CORE_ROOT
 
 exit /b 0
 
-
+REM =========================================================================================
+REM ===
+REM === Display a help message describing how to use this script.
+REM ===
+REM =========================================================================================
 
 :Usage
 @REM NOTE: The caret character is used to escape meta-characters known to the CMD shell. This character does
@@ -505,16 +549,17 @@ echo gcname ^<name^>             - Runs the tests with COMPlus_GCName=name
 echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
 echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
-echo ^<CORE_ROOT^>               - Path to the runtime to test (if specified).
+echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
 echo.
 echo Note that arguments are not case-sensitive.
 echo.
 echo Examples:
 echo   %0 x86 checked
-echo   %0 x64 release GenerateLayoutOnly
+echo   %0 x64 checked GenerateLayoutOnly
+echo   %0 x64 release
 exit /b 1
 
 :NoVS
-echo Visual Studio 2015 or 2017 (Community is free) is a prerequisite to build this repository.
+echo Visual Studio 2015 or 2017 ^(Community is free^) is a prerequisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
