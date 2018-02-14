@@ -2787,17 +2787,21 @@ void CodeGen::genExitCode(BasicBlock* block)
     genReserveEpilog(block);
 }
 
-/*****************************************************************************
- *
- * Generate code for an out-of-line exception.
- * For debuggable code, we generate the 'throw' inline.
- * For non-dbg code, we share the helper blocks created by fgAddCodeRef().
- */
-
+//------------------------------------------------------------------------
+// genJumpToThrowHlpBlk: Generate code for an out-of-line exception.
+//
+// Notes:
+//   For code that uses throw helper blocks, we share the helper blocks created by fgAddCodeRef().
+//   Otherwise, we generate the 'throw' inline.
+//
+// Arguments:
+//   jumpKind - jump kind to generate;
+//   codeKind - the special throw-helper kind;
+//   failBlk  - optional fail target block, if it is already known;
+//
 void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, GenTree* failBlk)
 {
-    bool useThrowHlpBlk = !compiler->opts.compDbgCode;
-
+    bool useThrowHlpBlk = compiler->fgUseThrowHelperBlocks();
 #if defined(UNIX_X86_ABI) && FEATURE_EH_FUNCLETS
     // Inline exception-throwing code in funclet to make it possible to unwind funclet frames.
     useThrowHlpBlk = useThrowHlpBlk && (compiler->funCurrentFunc()->funKind == FUNC_ROOT);
@@ -2805,41 +2809,47 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
 
     if (useThrowHlpBlk)
     {
-        /* For non-debuggable code, find and use the helper block for
-           raising the exception. The block may be shared by other trees too. */
+        // For code with throw helper blocks, find and use the helper block for
+        // raising the exception. The block may be shared by other trees too.
 
-        BasicBlock* tgtBlk;
+        BasicBlock* excpRaisingBlock;
 
-        if (failBlk)
+        if (failBlk != nullptr)
         {
-            /* We already know which block to jump to. Use that. */
+            // We already know which block to jump to. Use that.
+            assert(failBlk->gtOper == GT_LABEL);
+            excpRaisingBlock = failBlk->gtLabel.gtLabBB;
 
-            noway_assert(failBlk->gtOper == GT_LABEL);
-            tgtBlk = failBlk->gtLabel.gtLabBB;
-            noway_assert(
-                tgtBlk ==
-                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB))->acdDstBlk);
+#ifdef DEBUG
+            Compiler::AddCodeDsc* add =
+                compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(excpRaisingBlock == add->acdDstBlk);
+#if !FEATURE_FIXED_OUT_ARGS
+            assert(add->acdStkLvlInit || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+#endif // DEBUG
         }
         else
         {
-            /* Find the helper-block which raises the exception. */
-
+            // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
-            tgtBlk = add->acdDstBlk;
+            excpRaisingBlock = add->acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+            assert(add->acdStkLvlInit || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
         }
 
-        noway_assert(tgtBlk);
+        noway_assert(excpRaisingBlock != nullptr);
 
-        // Jump to the excption-throwing block on error.
-
-        inst_JMP(jumpKind, tgtBlk);
+        // Jump to the exception-throwing block on error.
+        inst_JMP(jumpKind, excpRaisingBlock);
     }
     else
     {
-        /* The code to throw the exception will be generated inline, and
-           we will jump around it in the normal non-exception case */
+        // The code to throw the exception will be generated inline, and
+        //  we will jump around it in the normal non-exception case.
 
         BasicBlock*  tgtBlk          = nullptr;
         emitJumpKind reverseJumpKind = emitter::emitReverseJumpKind(jumpKind);
@@ -2851,7 +2861,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
 
         genEmitHelperCall(compiler->acdHelper(codeKind), 0, EA_UNKNOWN);
 
-        /* Define the spot for the normal non-exception case to jump to */
+        // Define the spot for the normal non-exception case to jump to.
         if (tgtBlk != nullptr)
         {
             assert(reverseJumpKind != jumpKind);

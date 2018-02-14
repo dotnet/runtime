@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #ifndef LEGACY_BACKEND
 #include "lower.h"
+#include "stacklevelsetter.h"
 #endif // !LEGACY_BACKEND
 
 #include "jittelemetry.h"
@@ -5001,6 +5002,9 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     /* Lower */
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
+
+    StackLevelSetter stackLevelSetter(this); // PHASE_STACK_LEVEL_SETTER
+    stackLevelSetter.Run();
 
     assert(lvaSortAgain == false); // We should have re-run fgLocalVarLiveness() in lower.Run()
     lvaTrackedFixed = true;        // We can not add any new tracked variables after this point.

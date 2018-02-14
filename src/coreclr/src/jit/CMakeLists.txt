@@ -75,6 +75,7 @@ set( JIT_SOURCES
   unwind.cpp
   utils.cpp
   valuenum.cpp
+  stacklevelsetter.cpp
 )
 
 # Add header files to Visual Studio vcxproj, not required for unixes
