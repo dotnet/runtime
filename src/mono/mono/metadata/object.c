@@ -5304,6 +5304,58 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 }
 
 /**
+ * mono_object_new_common_tail:
+ *
+ * This function centralizes post-processing of objects upon creation.
+ * i.e. calling mono_object_register_finalizer and mono_gc_register_obj_with_weak_fields,
+ * and setting error.
+ */
+static MonoObject*
+mono_object_new_common_tail (MonoObject* o, MonoClass* klass, MonoError* error)
+{
+	error_init (error);
+
+	if (G_UNLIKELY (!o)) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", klass->instance_size);
+		return o;
+	}
+
+	if (G_UNLIKELY (klass->has_finalize))
+		mono_object_register_finalizer (o);
+
+	if (G_UNLIKELY (klass->has_weak_fields))
+		mono_gc_register_obj_with_weak_fields (o);
+
+	return o;
+}
+
+#if 0 // FIXMEcoop awaiting https://github.com/mono/mono/pull/6876
+/**
+ * mono_object_new_handle_tail:
+ *
+ * This function centralizes post-processing of objects upon creation.
+ * i.e. calling mono_object_register_finalizer and mono_gc_register_obj_with_weak_fields.
+ */
+static MonoObjectHandle
+mono_object_new_handle_common_tail (MonoObjectHandle o, MonoClass* klass, MonoError* error)
+{
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o))) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
+		return o;
+	}
+
+	if (G_UNLIKELY (klass->has_finalize))
+		mono_object_register_finalizer_handle (o);
+
+	if (G_UNLIKELY (klass->has_weak_fields))
+		mono_gc_register_object_with_weak_fields (o);
+
+	return o;
+}
+
+#endif
+
+/**
  * mono_object_new:
  * \param klass the class of the object that we want to create
  * \returns a newly created object whose definition is
@@ -5385,12 +5437,7 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error)
 
 	MonoObject *o = (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
 
-	if (G_UNLIKELY (!o))
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", mono_class_instance_size (klass));
-	else if (G_UNLIKELY (vtable->klass->has_finalize))
-		mono_object_register_finalizer (o);
-
-	return o;
+	return mono_object_new_common_tail (o, klass, error);
 }
 
 /**
@@ -5508,20 +5555,9 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 
 	MonoObject *o;
 
-	error_init (error);
-
 	o = (MonoObject *)mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
-	if (G_UNLIKELY (!o))
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
-	else if (G_UNLIKELY (vtable->klass->has_finalize || vtable->klass->has_weak_fields)) {
-		if (vtable->klass->has_finalize)
-			mono_object_register_finalizer (o);
-		if (vtable->klass->has_weak_fields)
-			mono_gc_register_obj_with_weak_fields (o);
-	}
-
-	return o;
+	return mono_object_new_common_tail (o, vtable->klass, error);
 }
 
 /**
@@ -5576,6 +5612,8 @@ mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error)
 
 	o = mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
+	// This deliberately skips mono_object_new_common_tail.
+
 	if (G_UNLIKELY (!o))
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
 
@@ -5589,16 +5627,9 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 
 	MonoObject *o;
 
-	error_init (error);
-
 	o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
 
-	if (G_UNLIKELY (!o))
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
-	else if (G_UNLIKELY (vtable->klass->has_finalize))
-		mono_object_register_finalizer (o);
-
-	return o;
+	return mono_object_new_common_tail (o, vtable->klass, error);
 }
 
 /**
@@ -5651,8 +5682,6 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error)
 	MonoObject *o;
 	int size;
 
-	error_init (error);
-
 	size = obj->vtable->klass->instance_size;
 
 	if (obj->vtable->klass->rank)
@@ -5660,17 +5689,11 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error)
 
 	o = (MonoObject *)mono_gc_alloc_obj (obj->vtable, size);
 
-	if (G_UNLIKELY (!o)) {
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
-		return NULL;
-	}
-
 	/* If the object doesn't contain references this will do a simple memmove. */
-	mono_gc_wbarrier_object_copy (o, obj);
+	if (G_LIKELY (o))
+		mono_gc_wbarrier_object_copy (o, obj);
 
-	if (obj->vtable->klass->has_finalize)
-		mono_object_register_finalizer (o);
-	return o;
+	return mono_object_new_common_tail (o, obj->vtable->klass, error);
 }
 
 /**
