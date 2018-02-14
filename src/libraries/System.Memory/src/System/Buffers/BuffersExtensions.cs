@@ -54,5 +54,37 @@ namespace System.Buffers
             sequence.CopyTo(array);
             return array;
         }
+
+        /// <summary>
+        /// Writes contents of <paramref name="source"/> to <paramref name="bufferWriter"/>
+        /// </summary>
+        public static void Write<T>(this IBufferWriter<T> bufferWriter, ReadOnlySpan<T> source)
+        {
+            Span<T> destination = bufferWriter.GetSpan();
+
+            // Fast path, try copying to the available memory directly
+            if (source.Length <= destination.Length)
+            {
+                source.CopyTo(destination);
+                bufferWriter.Advance(source.Length);
+                return;
+            }
+
+            while (source.Length > 0)
+            {
+                int writeSize = destination.Length;
+
+                if (destination.Length == 0)
+                {
+                    writeSize = Math.Min(source.Length, bufferWriter.MaxBufferSize);
+                    destination = bufferWriter.GetSpan(writeSize);
+                }
+
+                source.Slice(0, writeSize).CopyTo(destination);
+                bufferWriter.Advance(writeSize);
+                source = source.Slice(writeSize);
+                destination = default;
+            }
+        }
     }
 }
