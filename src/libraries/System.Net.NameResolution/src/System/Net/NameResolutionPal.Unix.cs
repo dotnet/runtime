@@ -14,27 +14,7 @@ namespace System.Net
     internal static partial class NameResolutionPal
     {
         public const bool SupportsGetAddrInfoAsync = false;
-
-        private static SocketError GetSocketErrorForErrno(int errno)
-        {
-            switch (errno)
-            {
-                case 0:
-                    return SocketError.Success;
-                case (int)Interop.Sys.GetHostErrorCodes.HOST_NOT_FOUND:
-                    return SocketError.HostNotFound;
-                case (int)Interop.Sys.GetHostErrorCodes.NO_DATA:
-                    return SocketError.NoData;
-                case (int)Interop.Sys.GetHostErrorCodes.NO_RECOVERY:
-                    return SocketError.NoRecovery;
-                case (int)Interop.Sys.GetHostErrorCodes.TRY_AGAIN:
-                    return SocketError.TryAgain;
-                default:
-                    Debug.Fail("Unexpected errno: " + errno.ToString());
-                    return SocketError.SocketError;
-            }
-        }
-
+        
         private static SocketError GetSocketErrorForNativeError(int error)
         {
             switch (error)
