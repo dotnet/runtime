@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.IO.Enumeration;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -96,21 +95,6 @@ namespace System.IO
             return CombineNoChecksInternal(first.AsReadOnlySpan(), second, third);
         }
 
-        /// <summary>
-        /// Combines two paths. Does no validation of paths, only concatenates the paths
-        /// and places a directory separator between them if needed.
-        /// </summary>
-        internal unsafe static string CombineNoChecks(string first, string second)
-        {
-            if (string.IsNullOrEmpty(first))
-                return string.IsNullOrEmpty(second) ? string.Empty : second;
-
-            if (string.IsNullOrEmpty(second))
-                return first;
-
-            return CombineNoChecksInternal(first.AsReadOnlySpan(), second.AsReadOnlySpan());
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe static string CombineNoChecksInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
@@ -161,17 +145,6 @@ namespace System.IO
                         new Span<char>((char*)state.Third, state.ThirdLength).CopyTo(destination.Slice(destination.Length - state.ThirdLength));
                     });
             }
-        }
-
-        /// <summary>
-        /// Returns true if the file name is "." or ".."
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsDotOrDotDot(ReadOnlySpan<char> fileName)
-        {
-            return !(fileName.Length > 2
-                || fileName[0] != '.'
-                || (fileName.Length == 2 && fileName[1] != '.'));
         }
 
         public static ReadOnlySpan<char> GetDirectoryNameNoChecks(ReadOnlySpan<char> path)

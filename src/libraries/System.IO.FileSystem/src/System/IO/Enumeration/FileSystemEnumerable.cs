@@ -8,6 +8,9 @@ using System.Threading;
 
 namespace System.IO.Enumeration
 {
+    /// <summary>
+    /// Enumerable that allows utilizing custom filter predicates and tranform delegates.
+    /// </summary>
     public class FileSystemEnumerable<TResult> : IEnumerable<TResult>
     {
         private DelegateEnumerator _enumerator;
