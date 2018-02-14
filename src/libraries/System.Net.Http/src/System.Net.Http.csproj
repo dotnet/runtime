@@ -138,9 +138,8 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionHandler.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionKey.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPool.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPools.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionPoolManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionResponseContent.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionSettings.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpContentDuplexStream.cs" />

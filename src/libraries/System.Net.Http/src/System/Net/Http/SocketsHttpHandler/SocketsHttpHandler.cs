@@ -227,11 +227,13 @@ namespace System.Net.Http
             // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
             HttpConnectionSettings settings = _settings.Clone();
 
-            HttpMessageHandler handler = new HttpConnectionHandler(settings);
+            HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
+
+            HttpMessageHandler handler = new HttpConnectionHandler(poolManager);
 
             if (settings._useProxy && (settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
             {
-                handler = new HttpProxyConnectionHandler(settings, handler);
+                handler = new HttpProxyConnectionHandler(poolManager, settings._proxy, settings._defaultProxyCredentials, handler);
             }
 
             if (settings._credentials != null || settings._allowAutoRedirect)
