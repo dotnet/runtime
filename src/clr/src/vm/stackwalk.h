@@ -310,6 +310,9 @@ public:
      */
     bool IsGcSafe();
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+    bool HasTailCalls();
+#endif // _TARGET_ARM_ || _TARGET_ARM64_
 
     PREGDISPLAY GetRegisterSet()
     {
