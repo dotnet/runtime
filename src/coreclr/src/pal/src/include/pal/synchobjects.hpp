@@ -42,7 +42,14 @@ namespace CorUnix
         DWORD dwMilliseconds,
         BOOL bAlertable,
         BOOL bPrioritize = FALSE);
-    
+
+    DWORD InternalSignalObjectAndWait(
+        CPalThread *thread,
+        HANDLE hObjectToSignal,
+        HANDLE hObjectToWaitOn,
+        DWORD dwMilliseconds,
+        BOOL bAlertable);
+
     PAL_ERROR InternalSleepEx(
         CPalThread * pthrCurrent,
         DWORD dwMilliseconds,

@@ -421,21 +421,15 @@ namespace System.Threading
         ==  SignalAndWait
         ==
         ==================================================*/
-#if PLATFORM_WINDOWS
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int SignalAndWaitOne(SafeWaitHandle waitHandleToSignal, SafeWaitHandle waitHandleToWaitOn, int millisecondsTimeout,
                                             bool hasThreadAffinity, bool exitContext);
-#endif // PLATFORM_WINDOWS       
 
         public static bool SignalAndWait(
                                         WaitHandle toSignal,
                                         WaitHandle toWaitOn)
         {
-#if PLATFORM_UNIX
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // https://github.com/dotnet/coreclr/issues/10441
-#else
             return SignalAndWait(toSignal, toWaitOn, -1, false);
-#endif
         }
 
         public static bool SignalAndWait(
@@ -444,16 +438,12 @@ namespace System.Threading
                                         TimeSpan timeout,
                                         bool exitContext)
         {
-#if PLATFORM_UNIX
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // https://github.com/dotnet/coreclr/issues/10441
-#else
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return SignalAndWait(toSignal, toWaitOn, (int)tm, exitContext);
-#endif
         }
 
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety.")]
@@ -463,9 +453,6 @@ namespace System.Threading
                                         int millisecondsTimeout,
                                         bool exitContext)
         {
-#if PLATFORM_UNIX
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // https://github.com/dotnet/coreclr/issues/10441
-#else
             if (null == toSignal)
             {
                 throw new ArgumentNullException(nameof(toSignal));
@@ -501,7 +488,6 @@ namespace System.Threading
 
             //Timeout
             return false;
-#endif
         }
 
         private static void ThrowAbandonedMutexException()
