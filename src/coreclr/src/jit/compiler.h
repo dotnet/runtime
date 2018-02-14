@@ -7145,6 +7145,18 @@ public:
         codeGen->setInterruptible(value);
     }
 
+#ifdef _TARGET_ARMARCH_
+    __declspec(property(get = getHasTailCalls, put = setHasTailCalls)) bool hasTailCalls;
+    bool getHasTailCalls()
+    {
+        return codeGen->hasTailCalls;
+    }
+    void setHasTailCalls(bool value)
+    {
+        codeGen->setHasTailCalls(value);
+    }
+#endif // _TARGET_ARMARCH_
+
 #if DOUBLE_ALIGN
     const bool genDoubleAlign()
     {

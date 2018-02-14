@@ -36,7 +36,7 @@ set_property(TARGET legacynonjit APPEND_STRING PROPERTY LINK_DEPENDS ${JIT_EXPOR
 
 set(RYUJIT_LINK_LIBRARIES
    utilcodestaticnohost
-   gcinfo
+   gcinfo_arm
 )
 
 if(CLR_CMAKE_PLATFORM_UNIX)
