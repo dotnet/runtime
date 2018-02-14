@@ -10,9 +10,7 @@
   </PropertyGroup>  
 
   <ItemGroup>
-    <ProjectExclusions Include="$(ProjectsBasePath)*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(_BuildUwpDependencies)' != 'true'" />
-    <ProjectExclusions Include="$(ProjectsBasePath)*\Microsoft.Net.UWPCoreRuntimeSdk.builds" Condition="'$(_BuildUwpDependencies)' != 'true'" />
-    <Project Include="$(ProjectsBasePath)*\*.builds" Exclude="@(ProjectExclusions)">
+    <Project Include="$(ProjectsBasePath)*\*.builds">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>  
