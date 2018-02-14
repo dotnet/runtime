@@ -97,9 +97,9 @@ namespace System.Net.Http.Functional.Tests
                     handler.MaxConnectionsPerServer = 1;
 
                     // Let server handle two requests.
-                    const string Response = "HTTP/1.1 200 OK\r\nContent-Length: 26\r\n\r\nabcdefghijklmnopqrstuvwxyz";
-                    Task serverTask1 = LoopbackServer.ReadRequestAndSendResponseAsync(server, Response);
-                    Task serverTask2 = LoopbackServer.ReadRequestAndSendResponseAsync(server, Response);
+                    const string ResponseContent = "abcdefghijklmnopqrstuvwxyz";
+                    Task serverTask1 = server.AcceptConnectionSendResponseAndCloseAsync(content: ResponseContent);
+                    Task serverTask2 = server.AcceptConnectionSendResponseAndCloseAsync(content: ResponseContent);
 
                     // Make first request and drop the response, not explicitly disposing of it.
                     void MakeAndDropRequest() => client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead); // separated out to enable GC of response
