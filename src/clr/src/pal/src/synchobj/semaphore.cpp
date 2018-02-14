@@ -510,7 +510,7 @@ CorUnix::InternalReleaseSemaphore(
     _ASSERTE(lOldCount <= pSemaphoreData->lMaximumCount);
     if (lReleaseCount > pSemaphoreData->lMaximumCount - lOldCount)
     {
-        palError = ERROR_INVALID_PARAMETER;
+        palError = ERROR_TOO_MANY_POSTS;
         goto InternalReleaseSemaphoreExit;
     }
 

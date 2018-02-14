@@ -282,7 +282,6 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
 }
 FCIMPLEND
 
-#ifndef FEATURE_PAL
 FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWaitHandleSignalUNSAFE,SafeHandle* safeWaitHandleWaitUNSAFE, INT32 timeout, CLR_BOOL hasThreadAffinity, CLR_BOOL exitContext)
 {
     FCALL_CONTRACT;
@@ -335,4 +334,3 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
     return retVal;
 }
 FCIMPLEND
-#endif // !FEATURE_PAL

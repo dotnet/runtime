@@ -1494,6 +1494,15 @@ WaitForMultipleObjectsEx(
              IN DWORD dwMilliseconds,
              IN BOOL bAlertable);
 
+PALIMPORT
+DWORD
+PALAPI
+SignalObjectAndWait(
+    IN HANDLE hObjectToSignal,
+    IN HANDLE hObjectToWaitOn,
+    IN DWORD dwMilliseconds,
+    IN BOOL bAlertable);
+
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
 
