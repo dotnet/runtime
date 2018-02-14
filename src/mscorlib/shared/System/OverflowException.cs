@@ -6,7 +6,7 @@
 **
 **
 **
-** Purpose: Exception class for Arthimatic Overflows.
+** Purpose: Exception class for Arithmetic Overflows.
 **
 **
 =============================================================================*/

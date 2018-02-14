@@ -182,7 +182,7 @@ namespace System.Diagnostics.Tracing
             //
 
             //
-            // check if the object has been allready disposed
+            // check if the object has been already disposed
             //
             if (m_disposed) return;
 

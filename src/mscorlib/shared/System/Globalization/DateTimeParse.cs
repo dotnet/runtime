@@ -1200,7 +1200,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
                     else if ((!Char.IsWhiteSpace(ch)))
                     {
-                        // Anthyhing other than whitespace outside hashes is invalid
+                        // Anything other than whitespace outside hashes is invalid
                         if (!foundStart || foundEnd)
                         {
                             return false;
@@ -2108,7 +2108,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
             if (result.Year != -1)
             {
-                // Aleady has a year suffix
+                // Already has a year suffix
                 result.SetBadDateTimeFailure();
                 return false;
             }
@@ -2702,7 +2702,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
 
             //
             // We have to check day of week before we adjust to the time zone.
-            // Otherwise, the value of day of week may change after adjustting to the time zone.
+            // Otherwise, the value of day of week may change after adjusting to the time zone.
             //
             if (raw.dayOfWeek != -1)
             {
@@ -2860,7 +2860,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
 
                 // The constructor should always succeed because of the range check earlier in the function
-                // Althought it is UTC, internally DateTimeOffset does not use this flag
+                // Although it is UTC, internally DateTimeOffset does not use this flag
                 result.parsedDate = new DateTime(utcTicks, DateTimeKind.Utc);
                 result.timeZoneOffset = TimeSpan.Zero;
             }
