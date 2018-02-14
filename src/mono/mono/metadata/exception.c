@@ -920,7 +920,6 @@ mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception, MonoE
 	MonoObject *o;
 	MonoMethod *method;
 	MonoDomain *domain = mono_domain_get ();
-	gpointer params [16];
 
 	klass = mono_class_load_from_name (mono_get_corlib (), "System.Runtime.CompilerServices", "RuntimeWrappedException");
 
@@ -931,9 +930,7 @@ mono_get_exception_runtime_wrapped_checked (MonoObject *wrapped_exception, MonoE
 	method = mono_class_get_method_from_name (klass, ".ctor", 1);
 	g_assert (method);
 
-	params [0] = wrapped_exception;
-
-	mono_runtime_invoke_checked (method, o, params, error);
+	mono_runtime_invoke_checked (method, o, (gpointer*)&wrapped_exception, error);
 	return_val_if_nok (error, NULL);
 
 	return (MonoException *)o;
