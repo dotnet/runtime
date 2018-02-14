@@ -5,4 +5,3 @@ JIT/jit64/opt/cse/HugeField1/HugeField1.sh
 JIT/jit64/opt/cse/HugeField2/HugeField2.sh
 CoreMangLib/cti/system/string/StringFormat1/StringFormat1.sh
 CoreMangLib/cti/system/string/StringFormat2/StringFormat2.sh
-JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
