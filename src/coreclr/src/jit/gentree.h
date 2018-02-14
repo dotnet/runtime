@@ -1294,6 +1294,11 @@ public:
         return gtOper == GT_PUTARG_STK;
     }
 
+    bool OperIsPutArgStkOrSplit() const
+    {
+        return OperIsPutArgStk() || OperIsPutArgSplit();
+    }
+
     bool OperIsPutArgReg() const
     {
         return gtOper == GT_PUTARG_REG;
