@@ -916,7 +916,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 GenTree* op3 = argList->Rest()->Rest()->Current();
 
-                // TODO-ARM64-CQ Support containing NI_ARM64_SIMD_GetItem (vector element to element move)
+                // In the HW intrinsics C# API there is no direct way to specify a vector element to element mov
+                //   VX[a] = VY[b]
+                // In C# this would naturally be expressed by
+                //   Insert(VX, a, Extract(VY, b))
+                // If both a & b are immediate constants contain the extract/getItem so that we can emit
+                //   the single instruction mov Vx[a], Vy[b]
                 if (op3->OperIs(GT_HWIntrinsic) && (op3->AsHWIntrinsic()->gtHWIntrinsicId == NI_ARM64_SIMD_GetItem))
                 {
                     ContainCheckHWIntrinsic(op3->AsHWIntrinsic());
