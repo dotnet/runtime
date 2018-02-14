@@ -3453,7 +3453,12 @@ mini_emit_check_array_type (MonoCompile *cfg, MonoInst *obj, MonoClass *array_cl
 static MonoInst*
 handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int context_used)
 {
-	MonoMethod* method = mono_class_get_method_from_name (klass, "Unbox", 1);
+	MonoMethod* method;
+
+	if (mono_class_get_nullable_param (klass)->enumtype)
+		method = mono_class_get_method_from_name (klass, "UnboxExact", 1);
+	else
+		method = mono_class_get_method_from_name (klass, "Unbox", 1);
 
 	if (context_used) {
 		MonoInst *rgctx, *addr;

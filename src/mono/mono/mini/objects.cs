@@ -1836,6 +1836,31 @@ ncells ) {
 		return 0;
 	}
 
+	enum FooEnum { Bar }
+	//https://github.com/mono/mono/issues/6666
+	public static int test_0_bad_unbox_nullable_of_enum () {
+		try {
+			var enumValue = FooEnum.Bar;
+			object value = (int)enumValue;
+			var res = (FooEnum?)value; // Should throw
+		} catch (InvalidCastException) {
+			return 0;
+		}
+		return 1;
+	}
+
+	//https://github.com/mono/mono/issues/6666
+	public static int test_0_unbox_nullable_of_enum () {
+		try {
+			var enumValue = FooEnum.Bar;
+			object value = (object)enumValue;
+			var res = (FooEnum?)value; // Should not throw
+		} catch (InvalidCastException) {
+			return 1;
+		}
+		return 0;
+	}
+
 	static void decode (out sbyte v) {
 		byte tmp = 134;
 		v = (sbyte)tmp;

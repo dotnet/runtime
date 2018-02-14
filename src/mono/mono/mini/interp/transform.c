@@ -2936,7 +2936,11 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			}
 
 			if (mono_class_is_nullable (klass)) {
-				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
+				MonoMethod *target_method;
+				if (mono_class_get_nullable_param (klass)->enumtype)
+					target_method = mono_class_get_method_from_name (klass, "UnboxExact", 1);
+				else
+					target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td->ip is incremented by interp_transform_call */
 				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE, error, FALSE);
 				goto_if_nok (error, exit);
@@ -2970,7 +2974,11 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				SET_TYPE (td->sp - 1, stack_type [mt], klass);
 				td->ip += 5;
 			} else if (mono_class_is_nullable (klass)) {
-				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
+				MonoMethod *target_method;
+				if (mono_class_get_nullable_param (klass)->enumtype)
+					target_method = mono_class_get_method_from_name (klass, "UnboxExact", 1);
+				else
+					target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td->ip is incremented by interp_transform_call */
 				interp_transform_call (td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE, error, FALSE);
 
