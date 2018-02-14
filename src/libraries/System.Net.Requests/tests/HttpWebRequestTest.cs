@@ -173,7 +173,7 @@ namespace System.Net.Tests
             {
                 HttpWebRequest request = WebRequest.CreateHttp(uri);
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                await server.AcceptConnectionSendResponseAndCloseAsync();
                 using (WebResponse response = await getResponse)
                 {
                     Assert.Throws<InvalidOperationException>(() => request.AutomaticDecompression = DecompressionMethods.Deflate);
@@ -745,7 +745,7 @@ namespace System.Net.Tests
                 request.ProtocolVersion = requestVersion;
 
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                 using (HttpWebResponse response = (HttpWebResponse) await getResponse)
                 {

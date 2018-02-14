@@ -23,13 +23,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        $"HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        $"Content-Type: {expectedContentType}\r\n" +
-                        "Content-Length: 5\r\n" +
-                        "\r\n" +
-                        "12345");
+                await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, $"Content-Type: {expectedContentType}\r\n", "12345");
 
                 using (WebResponse response = await getResponse)
                 {
@@ -46,12 +40,7 @@ namespace System.Net.Tests
                 HttpWebRequest request = WebRequest.CreateHttp(url);
                 request.Method = HttpMethod.Get.Method;
                 Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                        $"HTTP/1.1 200 OK\r\n" +
-                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                        "Content-Length: 5\r\n" +
-                        "\r\n" +
-                        "12345");
+                await server.AcceptConnectionSendResponseAndCloseAsync(content: "12345");
 
                 using (WebResponse response = await getResponse)
                 {

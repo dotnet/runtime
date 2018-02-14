@@ -208,44 +208,112 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(LoopbackServer.TransferType.ContentLength, LoopbackServer.TransferError.ContentLengthTooLarge)]
-        [InlineData(LoopbackServer.TransferType.Chunked, LoopbackServer.TransferError.MissingChunkTerminator)]
-        [InlineData(LoopbackServer.TransferType.Chunked, LoopbackServer.TransferError.ChunkSizeTooLarge)]
+        [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
+        [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]
+        [InlineData(TransferType.Chunked, TransferError.ChunkSizeTooLarge)]
         public async Task ReadAsStreamAsync_InvalidServerResponse_ThrowsIOException(
-            LoopbackServer.TransferType transferType,
-            LoopbackServer.TransferError transferError)
+            TransferType transferType,
+            TransferError transferError)
         {
-            IPEndPoint serverEndPoint;
-            Task serverTask = LoopbackServer.StartTransferTypeAndErrorServer(transferType, transferError, out serverEndPoint);
-
-            await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(serverEndPoint));
-
-            await serverTask;
+            await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
+            {
+                await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(uri));
+            });
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(LoopbackServer.TransferType.None, LoopbackServer.TransferError.None)]
-        [InlineData(LoopbackServer.TransferType.ContentLength, LoopbackServer.TransferError.None)]
-        [InlineData(LoopbackServer.TransferType.Chunked, LoopbackServer.TransferError.None)]
+        [InlineData(TransferType.None, TransferError.None)]
+        [InlineData(TransferType.ContentLength, TransferError.None)]
+        [InlineData(TransferType.Chunked, TransferError.None)]
         public async Task ReadAsStreamAsync_ValidServerResponse_Success(
-            LoopbackServer.TransferType transferType,
-            LoopbackServer.TransferError transferError)
+            TransferType transferType,
+            TransferError transferError)
         {
-            IPEndPoint serverEndPoint;
-            Task serverTask = LoopbackServer.StartTransferTypeAndErrorServer(transferType, transferError, out serverEndPoint);
-
-            await ReadAsStreamHelper(serverEndPoint);
-
-            await serverTask;
+            await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
+            {
+                await ReadAsStreamHelper(uri);
+            });
         }
 
-        private async Task ReadAsStreamHelper(IPEndPoint serverEndPoint)
+        public enum TransferType
+        {
+            None = 0,
+            ContentLength,
+            Chunked
+        }
+
+        public enum TransferError
+        {
+            None = 0,
+            ContentLengthTooLarge,
+            ChunkSizeTooLarge,
+            MissingChunkTerminator
+        }
+
+        public static Task StartTransferTypeAndErrorServer(
+            TransferType transferType,
+            TransferError transferError,
+            Func<Uri, Task> clientFunc)
+        {
+            return LoopbackServer.CreateClientAndServerAsync(
+                clientFunc,
+                server => server.AcceptConnectionAsync(async connection =>
+                {
+                    // Read past request headers.
+                    await connection.ReadRequestHeaderAsync();
+
+                    // Determine response transfer headers.
+                    string transferHeader = null;
+                    string content = "This is some response content.";
+                    if (transferType == TransferType.ContentLength)
+                    {
+                        transferHeader = transferError == TransferError.ContentLengthTooLarge ?
+                            $"Content-Length: {content.Length + 42}\r\n" :
+                            $"Content-Length: {content.Length}\r\n";
+                    }
+                    else if (transferType == TransferType.Chunked)
+                    {
+                        transferHeader = "Transfer-Encoding: chunked\r\n";
+                    }
+
+                    // Write response header
+                    TextWriter writer = connection.Writer;
+                    await writer.WriteAsync("HTTP/1.1 200 OK\r\n").ConfigureAwait(false);
+                    await writer.WriteAsync($"Date: {DateTimeOffset.UtcNow:R}\r\n").ConfigureAwait(false);
+                    await writer.WriteAsync("Content-Type: text/plain\r\n").ConfigureAwait(false);
+                    if (!string.IsNullOrEmpty(transferHeader))
+                    {
+                        await writer.WriteAsync(transferHeader).ConfigureAwait(false);
+                    }
+                    await writer.WriteAsync("\r\n").ConfigureAwait(false);
+
+                    // Write response body
+                    if (transferType == TransferType.Chunked)
+                    {
+                        string chunkSizeInHex = string.Format(
+                            "{0:x}\r\n",
+                            content.Length + (transferError == TransferError.ChunkSizeTooLarge ? 42 : 0));
+                        await writer.WriteAsync(chunkSizeInHex).ConfigureAwait(false);
+                        await writer.WriteAsync($"{content}\r\n").ConfigureAwait(false);
+                        if (transferError != TransferError.MissingChunkTerminator)
+                        {
+                            await writer.WriteAsync("0\r\n\r\n").ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        await writer.WriteAsync($"{content}").ConfigureAwait(false);
+                    }
+                }));
+        }
+
+        private async Task ReadAsStreamHelper(Uri serverUri)
         {
             using (HttpClient client = CreateHttpClient())
             {
                 using (var response = await client.GetAsync(
-                    new Uri($"http://{serverEndPoint.Address}:{(serverEndPoint).Port}/"),
+                    serverUri,
                     HttpCompletionOption.ResponseHeadersRead))
                 using (var stream = await response.Content.ReadAsStreamAsync())
                 {

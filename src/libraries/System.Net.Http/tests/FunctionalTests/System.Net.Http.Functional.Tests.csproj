@@ -74,6 +74,7 @@
     </Compile>
     <Compile Include="ByteArrayContentTest.cs" />
     <Compile Include="ChannelBindingAwareContent.cs" />
+    <Compile Include="DribbleStream.cs" />
     <Compile Include="CustomContent.cs" />
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
