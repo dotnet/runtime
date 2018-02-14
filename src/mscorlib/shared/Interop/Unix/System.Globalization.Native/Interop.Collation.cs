@@ -31,6 +31,14 @@ internal static partial class Interop
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_StartsWith")]
         [return: MarshalAs(UnmanagedType.Bool)]
+        internal unsafe static extern bool StartsWith(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EndsWith")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal unsafe static extern bool EndsWith(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+
+        [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_StartsWith")]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal unsafe static extern bool StartsWith(SafeSortHandle sortHandle, string target, int cwTargetLength, string source, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EndsWith")]
