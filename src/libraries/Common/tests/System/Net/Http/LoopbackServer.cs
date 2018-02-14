@@ -7,7 +7,9 @@ using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
@@ -15,15 +17,9 @@ namespace System.Net.Test.Common
     public sealed class LoopbackServer : IDisposable
     {
         private Socket _listenSocket;
-        private enum AuthenticationProtocols
-        {
-            Basic,
-            Digest,
-            None
-        }
-
         private Options _options;
         private Uri _uri;
+
         // Use CreateServerAsync or similar to create
         private LoopbackServer(Socket listenSocket, Options options)
         {
@@ -31,7 +27,7 @@ namespace System.Net.Test.Common
             _options = options;
 
             var localEndPoint = (IPEndPoint)listenSocket.LocalEndPoint;
-                string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ? 
+            string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
                 $"[{localEndPoint.Address}]" :
                 localEndPoint.Address.ToString();
 
@@ -68,84 +64,260 @@ namespace System.Net.Test.Common
                 {
                     await funcAsync(server);
                 }
-        public static Task<List<string>> ReadRequestAndAuthenticateAsync(Socket server, string response, Options options)
-        {
-            return AcceptSocketAsync(server, (s, stream, reader, writer) => ValidateAuthenticationAsync(s, reader, writer, response, options), options);
-        }
-
             }
         }
 
-        public static async Task<List<string>> ValidateAuthenticationAsync(Socket s, StreamReader reader, StreamWriter writer, string response, Options options)
+        public static Task CreateServerAsync(Func<LoopbackServer, Uri, Task> funcAsync, Options options = null)
         {
-            // Send unauthorized response from server.
-            await ReadWriteAcceptedAsync(s, reader, writer, response);
+            return CreateServerAsync(server => funcAsync(server, server.Uri), options);
+        }
 
-            // Read the request method.
-            string line = await reader.ReadLineAsync().ConfigureAwait(false);
-            int index = line != null ? line.IndexOf(' ') : -1;
-            string requestMethod = null;
-            if (index != -1)
+        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<LoopbackServer, Task> serverFunc)
+        {
+            return CreateServerAsync(async server =>
             {
-                requestMethod = line.Substring(0, index);
-            }
+                Task clientTask = clientFunc(server.Uri);
+                Task serverTask = serverFunc(server);
 
-            // Read the authorization header from client.
-            AuthenticationProtocols protocol = AuthenticationProtocols.None;
-            string clientResponse = null;
-            while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
+                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed();
+            });
+        }
+
+        public async Task AcceptConnectionAsync(Func<Connection, Task> funcAsync)
+        {
+            using (Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false))
             {
-                if (line.StartsWith("Authorization"))
+                s.NoDelay = true;
+
+                Stream stream = new NetworkStream(s, ownsSocket: false);
+                if (_options.UseSsl)
                 {
-                    clientResponse = line;
-                    if (line.Contains(nameof(AuthenticationProtocols.Basic)))
+                    var sslStream = new SslStream(stream, false, delegate
+                    { return true; });
+                    using (var cert = Configuration.Certificates.GetServerCertificate())
                     {
-                        protocol = AuthenticationProtocols.Basic;
-                        break;
+                        await sslStream.AuthenticateAsServerAsync(
+                            cert,
+                            clientCertificateRequired: true, // allowed but not required
+                            enabledSslProtocols: _options.SslProtocols,
+                            checkCertificateRevocation: false).ConfigureAwait(false);
                     }
-                    else if (line.Contains(nameof(AuthenticationProtocols.Digest)))
-                    {
-                        protocol = AuthenticationProtocols.Digest;
-                        break;
-                    }
+                    stream = sslStream;
+                }
+
+                if (_options.StreamWrapper != null)
+                {
+                    stream = _options.StreamWrapper(stream);
+                }
+
+                using (var connection = new Connection(s, stream))
+                {
+                    await funcAsync(connection);
                 }
             }
+        }
 
-            bool success = false;
-            switch (protocol)
+        public async Task<List<string>> AcceptConnectionSendCustomResponseAndCloseAsync(string response)
+        {
+            List<string> lines = null;
+
+            // Note, we assume there's no request body.  
+            // We'll close the connection after reading the request header and sending the response.
+            await AcceptConnectionAsync(async connection =>
             {
-                case AuthenticationProtocols.Basic:
-                    success = IsBasicAuthTokenValid(line, options);
-                    break;
+                lines = await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
+            });
 
-                case AuthenticationProtocols.Digest:
-                    // Read the request content.
-                    string requestContent = null;
-                    while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
+            return lines;
+        }
+
+        public async Task<List<string>> AcceptConnectionPerformAuthenticationAndCloseAsync(string authenticateHeaders)
+        {
+            List<string> lines = null;
+            await AcceptConnectionAsync(async connection =>
+            {
+                await connection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.Unauthorized, authenticateHeaders);
+
+                lines = await connection.ReadRequestHeaderAsync();
+                if (lines.Count == 0)
+                {
+                    await connection.SendResponseAsync(HttpStatusCode.Unauthorized, authenticateHeaders);
+                    return;
+                }
+
+                int index = lines[0] != null ? lines[0].IndexOf(' ') : -1;
+                string requestMethod = null;
+                if (index != -1)
+                {
+                    requestMethod = lines[0].Substring(0, index);
+                }
+
+                // Read the authorization header from client.
+                AuthenticationProtocols protocol = AuthenticationProtocols.None;
+                string clientResponse = null;
+                for (int i = 1; i < lines.Count; i++)
+                {
+                    if (lines[i].StartsWith("Authorization"))
                     {
-                        if (line.Contains("Content-Length"))
+                        clientResponse = lines[i];
+                        if (lines[i].Contains(nameof(AuthenticationProtocols.Basic)))
                         {
-                            line = await reader.ReadLineAsync().ConfigureAwait(false);
-                            while (!string.IsNullOrEmpty(line = await reader.ReadLineAsync().ConfigureAwait(false)))
-                            {
-                                requestContent += line;
-                            }
+                            protocol = AuthenticationProtocols.Basic;
+                            break;
+                        }
+                        else if (lines[i].Contains(nameof(AuthenticationProtocols.Digest)))
+                        {
+                            protocol = AuthenticationProtocols.Digest;
+                            break;
                         }
                     }
+                }
 
-                    success = IsDigestAuthTokenValid(clientResponse, requestContent, requestMethod, options);
-                    break;
-            }
+                bool success = false;
+                switch (protocol)
+                {
+                    case AuthenticationProtocols.Basic:
+                        success = IsBasicAuthTokenValid(clientResponse, _options);
+                        break;
 
-            if (success)
+                    case AuthenticationProtocols.Digest:
+                        // Read the request content.
+                        string requestContent = await connection.ReadRequestContentAsync();
+                        success = IsDigestAuthTokenValid(clientResponse, requestContent, requestMethod, _options);
+                        break;
+                }
+
+                if (success)
+                {
+                    await connection.SendResponseAsync();
+                }
+                else
+                {
+                    await connection.SendResponseAsync(HttpStatusCode.Unauthorized, authenticateHeaders);
+                }
+            });
+
+            return lines;
+        }
+
+        public async Task<List<string>> AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
+        {
+            List<string> lines = null;
+
+            // Note, we assume there's no request body.  
+            // We'll close the connection after reading the request header and sending the response.
+            await AcceptConnectionAsync(async connection =>
             {
-                await writer.WriteAsync(DefaultHttpResponse).ConfigureAwait(false);
-            }
-            else
-            {
-                await writer.WriteAsync(response).ConfigureAwait(false);
-            }
+                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders, content);
+            });
 
+            return lines;
+        }
+
+        // Stolen from HttpStatusDescription code in the product code
+        private static string GetStatusDescription(HttpStatusCode code)
+        {
+            switch ((int)code)
+            {
+                case 100:
+                    return "Continue";
+                case 101:
+                    return "Switching Protocols";
+                case 102:
+                    return "Processing";
+
+                case 200:
+                    return "OK";
+                case 201:
+                    return "Created";
+                case 202:
+                    return "Accepted";
+                case 203:
+                    return "Non-Authoritative Information";
+                case 204:
+                    return "No Content";
+                case 205:
+                    return "Reset Content";
+                case 206:
+                    return "Partial Content";
+                case 207:
+                    return "Multi-Status";
+
+                case 300:
+                    return "Multiple Choices";
+                case 301:
+                    return "Moved Permanently";
+                case 302:
+                    return "Found";
+                case 303:
+                    return "See Other";
+                case 304:
+                    return "Not Modified";
+                case 305:
+                    return "Use Proxy";
+                case 307:
+                    return "Temporary Redirect";
+
+                case 400:
+                    return "Bad Request";
+                case 401:
+                    return "Unauthorized";
+                case 402:
+                    return "Payment Required";
+                case 403:
+                    return "Forbidden";
+                case 404:
+                    return "Not Found";
+                case 405:
+                    return "Method Not Allowed";
+                case 406:
+                    return "Not Acceptable";
+                case 407:
+                    return "Proxy Authentication Required";
+                case 408:
+                    return "Request Timeout";
+                case 409:
+                    return "Conflict";
+                case 410:
+                    return "Gone";
+                case 411:
+                    return "Length Required";
+                case 412:
+                    return "Precondition Failed";
+                case 413:
+                    return "Request Entity Too Large";
+                case 414:
+                    return "Request-Uri Too Long";
+                case 415:
+                    return "Unsupported Media Type";
+                case 416:
+                    return "Requested Range Not Satisfiable";
+                case 417:
+                    return "Expectation Failed";
+                case 422:
+                    return "Unprocessable Entity";
+                case 423:
+                    return "Locked";
+                case 424:
+                    return "Failed Dependency";
+                case 426:
+                    return "Upgrade Required"; // RFC 2817
+
+                case 500:
+                    return "Internal Server Error";
+                case 501:
+                    return "Not Implemented";
+                case 502:
+                    return "Bad Gateway";
+                case 503:
+                    return "Service Unavailable";
+                case 504:
+                    return "Gateway Timeout";
+                case 505:
+                    return "Http Version Not Supported";
+                case 507:
+                    return "Insufficient Storage";
+            }
             return null;
         }
 
@@ -362,151 +534,12 @@ namespace System.Net.Test.Common
             }
         }
 
-        public static Task CreateServerAsync(Func<LoopbackServer, Uri, Task> funcAsync, Options options = null)
-        {
-            return CreateServerAsync(server => funcAsync(server, server.Uri), options);
-        }
-
-        public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<LoopbackServer, Task> serverFunc)
-        {
-            return CreateServerAsync(async server =>
-            {
-                Task clientTask = clientFunc(server.Uri);
-                Task serverTask = serverFunc(server);
-
-                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed();
-            });
-        }
-
-        public async Task AcceptConnectionAsync(Func<Connection, Task> funcAsync)
-        {
-            using (Socket s = await _listenSocket.AcceptAsync().ConfigureAwait(false))
-            {
-                s.NoDelay = true;
-
-                Stream stream = new NetworkStream(s, ownsSocket: false);
-                if (_options.UseSsl)
-                {
-                    var sslStream = new SslStream(stream, false, delegate
-                    { return true; });
-                    using (var cert = Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: _options.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
-                    stream = sslStream;
-                }
-
-                if (_options.StreamWrapper != null)
-                {
-                    stream = _options.StreamWrapper(stream);
-                }
-
-                using (var connection = new Connection(s, stream))
-                {
-                    await funcAsync(connection);
-                }
-            }
-        }
-
-        public async Task<List<string>> AcceptConnectionSendCustomResponseAndCloseAsync(string response)
-        {
-            List<string> lines = null;
-
-            // Note, we assume there's no request body.  
-            // We'll close the connection after reading the request header and sending the response.
-            await AcceptConnectionAsync(async connection =>
-            {
-                lines = await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
-            });
-
-            return lines;
-        }
-
-        public async Task<List<string>> AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
-        {
-            List<string> lines = null;
-
-            // Note, we assume there's no request body.  
-            // We'll close the connection after reading the request header and sending the response.
-            await AcceptConnectionAsync(async connection =>
-            {
-                lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders, content);
-            });
-
-            return lines;
-        }
-
-        // Stolen from HttpStatusDescription code in the product code
-        private static string GetStatusDescription(HttpStatusCode code)
-        {
-            switch ((int)code)
-            {
-                case 100: return "Continue";
-                case 101: return "Switching Protocols";
-                case 102: return "Processing";
-
-                case 200: return "OK";
-                case 201: return "Created";
-                case 202: return "Accepted";
-                case 203: return "Non-Authoritative Information";
-                case 204: return "No Content";
-                case 205: return "Reset Content";
-                case 206: return "Partial Content";
-                case 207: return "Multi-Status";
-
-                case 300: return "Multiple Choices";
-                case 301: return "Moved Permanently";
-                case 302: return "Found";
-                case 303: return "See Other";
-                case 304: return "Not Modified";
-                case 305: return "Use Proxy";
-                case 307: return "Temporary Redirect";
-
-                case 400: return "Bad Request";
-                case 401: return "Unauthorized";
-                case 402: return "Payment Required";
-                case 403: return "Forbidden";
-                case 404: return "Not Found";
-                case 405: return "Method Not Allowed";
-                case 406: return "Not Acceptable";
-                case 407: return "Proxy Authentication Required";
-                case 408: return "Request Timeout";
-                case 409: return "Conflict";
-                case 410: return "Gone";
-                case 411: return "Length Required";
-                case 412: return "Precondition Failed";
-                case 413: return "Request Entity Too Large";
-                case 414: return "Request-Uri Too Long";
-                case 415: return "Unsupported Media Type";
-                case 416: return "Requested Range Not Satisfiable";
-                case 417: return "Expectation Failed";
-                case 422: return "Unprocessable Entity";
-                case 423: return "Locked";
-                case 424: return "Failed Dependency";
-                case 426: return "Upgrade Required"; // RFC 2817
-
-                case 500: return "Internal Server Error";
-                case 501: return "Not Implemented";
-                case 502: return "Bad Gateway";
-                case 503: return "Service Unavailable";
-                case 504: return "Gateway Timeout";
-                case 505: return "Http Version Not Supported";
-                case 507: return "Insufficient Storage";
-            }
-            return null;
-        }
-
         public static string GetHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-            $"Content-Length: {(content == null ? 0 : content.Length)}\r\n" + 
-            additionalHeaders +
-            "\r\n" + 
-            content;
+            $"Content-Length: {(content == null ? 0 : content.Length)}\r\n" +
+            additionalHeaders + "\r\n" +
+            content + "\r\n";
 
         public class Options
         {
@@ -516,6 +549,16 @@ namespace System.Net.Test.Common
             public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
+            public string Username { get; set; }
+            public string Domain { get; set; }
+            public string Password { get; set; }
+        }
+
+        private enum AuthenticationProtocols
+        {
+            Basic,
+            Digest,
+            None
         }
 
         public sealed class Connection : IDisposable
@@ -561,13 +604,31 @@ namespace System.Net.Test.Common
             {
                 var lines = new List<string>();
                 string line;
-                while (!string.IsNullOrEmpty(line = reader.ReadLine()));
-                    ;
+                while (!string.IsNullOrEmpty(line = await _reader.ReadLineAsync().ConfigureAwait(false)))
                 {
                     lines.Add(line);
                 }
 
                 return lines;
+            }
+
+            public async Task<string> ReadRequestContentAsync()
+            {
+                StringBuilder sb = new StringBuilder();
+                string line;
+                while (!string.IsNullOrEmpty(line = await _reader.ReadLineAsync().ConfigureAwait(false)))
+                {
+                    if (line.Contains("Content-Length"))
+                    {
+                        line = await _reader.ReadLineAsync().ConfigureAwait(false);
+                        while (!string.IsNullOrEmpty(line = await _reader.ReadLineAsync().ConfigureAwait(false)))
+                        {
+                            sb.Append(line);
+                        }
+                    }
+                }
+
+                return sb.ToString();
             }
 
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
