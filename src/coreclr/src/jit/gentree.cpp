@@ -1043,19 +1043,16 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
         // R11 = PInvoke cookie param
         return 1;
     }
-    else if (gtCallType == CT_INDIRECT)
+    else if (IsVirtualStub())
     {
-        if (IsVirtualStub())
-        {
-            // R11 = Virtual stub param
-            return 1;
-        }
-        else if (gtCallCookie != nullptr)
-        {
-            // R10 = PInvoke target param
-            // R11 = PInvoke cookie param
-            return 2;
-        }
+        // R11 = Virtual stub param
+        return 1;
+    }
+    else if ((gtCallType == CT_INDIRECT) && (gtCallCookie != nullptr))
+    {
+        // R10 = PInvoke target param
+        // R11 = PInvoke cookie param
+        return 2;
     }
     return 0;
 }
