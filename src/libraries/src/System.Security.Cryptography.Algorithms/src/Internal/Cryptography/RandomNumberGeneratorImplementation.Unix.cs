@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     partial class RandomNumberGeneratorImplementation
     {
-        private void GetBytes(ref byte pbBuffer, int count)
+        private static void GetBytes(ref byte pbBuffer, int count)
         {
             Debug.Assert(count > 0);
 

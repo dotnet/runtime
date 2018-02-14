@@ -36,6 +36,11 @@ namespace System.Security.Cryptography
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         OFB = 3,
     }
+    public static partial class CryptographicOperations
+    {
+        public static bool FixedTimeEquals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) => throw null;
+        public static void ZeroMemory(System.Span<byte> buffer) => throw null;
+    }
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
         public CryptographicUnexpectedOperationException() { }
