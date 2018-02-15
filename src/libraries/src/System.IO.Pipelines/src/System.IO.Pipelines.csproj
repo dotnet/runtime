@@ -11,7 +11,7 @@
     <Compile Include="System\IO\Pipelines\FlushResult.cs" />
     <Compile Include="System\IO\Pipelines\InlineScheduler.cs" />
     <Compile Include="System\IO\Pipelines\IPipeAwaiter.cs" />
-    <Compile Include="System\IO\Pipelines\IPipeConnection.cs" />
+    <Compile Include="System\IO\Pipelines\IDuplexPipe.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeReader.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeWriter.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.cs" />

@@ -50,16 +50,17 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task DefaultReaderSchedulerRunsInline()
+        public async Task DefaultReaderSchedulerRunsOnThreadPool()
         {
             var pipe = new Pipe();
 
             var id = 0;
 
-            Func<Task> doRead = async () => {
+            Func<Task> doRead = async () =>
+            {
                 ReadResult result = await pipe.Reader.ReadAsync();
 
-                Assert.Equal(Thread.CurrentThread.ManagedThreadId, id);
+                Assert.True(Thread.CurrentThread.IsThreadPoolThread);
 
                 pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
 
@@ -80,7 +81,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task DefaultWriterSchedulerRunsInline()
+        public async Task DefaultWriterSchedulerRunsOnThreadPool()
         {
             using (var pool = new TestMemoryPool())
             {
@@ -98,12 +99,13 @@ namespace System.IO.Pipelines.Tests
 
                 var id = 0;
 
-                Func<Task> doWrite = async () => {
+                Func<Task> doWrite = async () =>
+                {
                     await flushAsync;
 
                     pipe.Writer.Complete();
 
-                    Assert.Equal(Thread.CurrentThread.ManagedThreadId, id);
+                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                 };
 
                 Task writing = doWrite();
@@ -132,6 +134,7 @@ namespace System.IO.Pipelines.Tests
                             pool,
                             resumeWriterThreshold: 32,
                             pauseWriterThreshold: 64,
+                            readerScheduler: PipeScheduler.Inline,
                             writerScheduler: scheduler));
 
                     PipeWriter writableBuffer = pipe.Writer.WriteEmpty(64);
@@ -139,7 +142,8 @@ namespace System.IO.Pipelines.Tests
 
                     Assert.False(flushAsync.IsCompleted);
 
-                    Func<Task> doWrite = async () => {
+                    Func<Task> doWrite = async () =>
+                    {
                         int oid = Thread.CurrentThread.ManagedThreadId;
 
                         await flushAsync;
@@ -171,9 +175,10 @@ namespace System.IO.Pipelines.Tests
             {
                 using (var scheduler = new ThreadScheduler())
                 {
-                    var pipe = new Pipe(new PipeOptions(pool, scheduler));
+                    var pipe = new Pipe(new PipeOptions(pool, scheduler, writerScheduler: PipeScheduler.Inline));
 
-                    Func<Task> doRead = async () => {
+                    Func<Task> doRead = async () =>
+                    {
                         int oid = Thread.CurrentThread.ManagedThreadId;
 
                         ReadResult result = await pipe.Reader.ReadAsync();
@@ -201,7 +206,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ThreadPoolScheduler_SchedulesOnThreadPool()
         {
-            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool));
+            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool, writerScheduler: PipeScheduler.Inline));
 
             async Task DoRead()
             {

@@ -91,7 +91,7 @@ namespace System.IO.Pipelines.Tests
 
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool));
+            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             while (pool.CurrentlyRentedBlocks != 3)
             {
                 PipeWriter writableBuffer = pipe.Writer.WriteEmpty(writeSize);
@@ -111,7 +111,7 @@ namespace System.IO.Pipelines.Tests
 
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool));
+            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
 
             // Write two blocks
             Memory<byte> buffer = pipe.Writer.GetMemory(writeSize);
@@ -135,7 +135,7 @@ namespace System.IO.Pipelines.Tests
         {
             var pool = new DisposeTrackingBufferPool();
 
-            var readerWriter = new Pipe(new PipeOptions(pool));
+            var readerWriter = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             await readerWriter.Writer.WriteAsync(new byte[] { 1 });
 
             readerWriter.Writer.Complete();
@@ -153,7 +153,7 @@ namespace System.IO.Pipelines.Tests
             var pool = new DisposeTrackingBufferPool();
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool, minimumSegmentSize: 2020));
+            var pipe = new Pipe(new PipeOptions(pool, minimumSegmentSize: 2020, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
 
             Memory<byte> buffer = pipe.Writer.GetMemory(writeSize);
             int allocatedSize = buffer.Length;
@@ -173,7 +173,7 @@ namespace System.IO.Pipelines.Tests
         public void ReturnsWriteHeadOnComplete()
         {
             var pool = new DisposeTrackingBufferPool();
-            var pipe = new Pipe(new PipeOptions(pool));
+            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             var memory = pipe.Writer.GetMemory(512);
 
             pipe.Reader.Complete();
@@ -185,7 +185,7 @@ namespace System.IO.Pipelines.Tests
         public void ReturnsWriteHeadWhenRequestingLargerBlock()
         {
             var pool = new DisposeTrackingBufferPool();
-            var pipe = new Pipe(new PipeOptions(pool));
+            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             var memory = pipe.Writer.GetMemory(512);
             pipe.Writer.GetMemory(4096);
 
@@ -201,7 +201,7 @@ namespace System.IO.Pipelines.Tests
 
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool));
+            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             await pipe.Writer.WriteAsync(new byte[writeSize]);
 
             pipe.Writer.GetMemory(writeSize);

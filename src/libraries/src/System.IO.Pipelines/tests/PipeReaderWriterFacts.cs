@@ -17,7 +17,7 @@ namespace System.IO.Pipelines.Tests
         public PipelineReaderWriterFacts()
         {
             _pool = new TestMemoryPool();
-            _pipe = new Pipe(new PipeOptions(_pool));
+            _pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
         }
 
         public void Dispose()
@@ -391,7 +391,7 @@ namespace System.IO.Pipelines.Tests
             // Write Hello to another pipeline and get the buffer
             byte[] bytes = Encoding.ASCII.GetBytes("Hello");
 
-            var c2 = new Pipe(new PipeOptions(_pool));
+            var c2 = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
             await c2.Writer.WriteAsync(bytes);
             ReadResult result = await c2.Reader.ReadAsync();
             ReadOnlySequence<byte> c2Buffer = result.Buffer;
