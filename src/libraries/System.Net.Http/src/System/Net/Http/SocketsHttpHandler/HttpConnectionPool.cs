@@ -49,6 +49,12 @@ namespace System.Net.Http
         /// 
         public HttpConnectionPool(HttpConnectionPoolManager poolManager, string host, int port, string sslHostName, Uri proxyUri, int maxConnections)
         {
+            Debug.Assert(proxyUri == null ?
+                    host != null && port != 0 :         // direct http or https connection
+                    (sslHostName == null ?
+                        host == null && port == 0 :     // proxy connection 
+                        host != null && port != 0));    // SSL proxy tunnel
+
             _poolManager = poolManager;
             _host = host;
             _port = port;
@@ -200,12 +206,12 @@ namespace System.Net.Http
 
         private async ValueTask<HttpConnection> CreateConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Stream stream =
-                _proxyUri != null ?
-                    (_sslOptions != null ?
-                        await EstablishProxyTunnel(cancellationToken) :
-                        await ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken)) :
-                    await ConnectHelper.ConnectAsync(_host, _port, cancellationToken);
+            Stream stream = await
+                (_proxyUri == null ?
+                    ConnectHelper.ConnectAsync(_host, _port, cancellationToken) :
+                    (_sslOptions == null ?
+                        ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken) :
+                        EstablishProxyTunnel(cancellationToken))).ConfigureAwait(false);
 
             TransportContext transportContext = null;
             if (_sslOptions != null)
@@ -220,22 +226,25 @@ namespace System.Net.Http
                 new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
         }
 
+        // TODO (#23136):
+        // CONNECT is not yet supported, so this code will not succeed currently.
+
         private async ValueTask<Stream> EstablishProxyTunnel(CancellationToken cancellationToken)
         {
             // Send a CONNECT request to the proxy server to establish a tunnel.
-            HttpRequestMessage tunnelRequest = new HttpRequestMessage(new HttpMethod("CONNECT"), _proxyUri);
+            HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
             tunnelRequest.Headers.Host = $"{_host}:{_port}";    // This specifies destination host/port to connect to
 
             // TODO: For now, we don't support proxy authentication in this scenario.
             // This will get fixed when we refactor proxy auth handling.
 
-            HttpResponseMessage tunnelResponse = await _poolManager.SendAsync(tunnelRequest, null, cancellationToken);
+            HttpResponseMessage tunnelResponse = await _poolManager.SendAsync(tunnelRequest, null, cancellationToken).ConfigureAwait(false);
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {
                 throw new HttpRequestException(SR.Format(SR.net_http_proxy_tunnel_failed, _proxyUri, tunnelResponse.StatusCode));
             }
 
-            return await tunnelResponse.Content.ReadAsStreamAsync();
+            return await tunnelResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
