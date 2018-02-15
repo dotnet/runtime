@@ -1,11 +1,7 @@
-//------------------------------------------------------------------------------
-// <copyright file="SystemEvents.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-/*
- */
 namespace Microsoft.Win32 {
     using System;
     using System.Diagnostics;
@@ -29,11 +25,6 @@ namespace Microsoft.Win32 {
     ///       set of global system events to callers. This
     ///       class cannot be inherited.</para>
     /// </devdoc>
-    [HostProtectionAttribute(MayLeakOnAbort = true)]
-    [
-    // Disabling partial trust scenarios
-    PermissionSet(SecurityAction.LinkDemand, Name="FullTrust")    
-    ]
     [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
     public sealed class SystemEvents {
         // Almost all of our data is static.  We keep a single instance of
@@ -110,8 +101,6 @@ namespace Microsoft.Win32 {
         private static volatile IntPtr processWinStation = IntPtr.Zero;
         private static volatile bool isUserInteractive = false;
         private static bool UserInteractive {
-            [ResourceExposure(ResourceScope.None)]
-            [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
             get {
                 if (Environment.OSVersion.Platform == System.PlatformID.Win32NT) {
                     IntPtr hwinsta = IntPtr.Zero;
@@ -376,8 +365,6 @@ namespace Microsoft.Win32 {
         }
 
         private NativeMethods.WNDCLASS WndClass {
-            [ResourceExposure(ResourceScope.AppDomain | ResourceScope.Assembly)]
-            [ResourceConsumption(ResourceScope.Machine, ResourceScope.AppDomain | ResourceScope.Assembly)]
             get {
                 if (staticwndclass == null) {
                     const string classNameFormat = ".NET-BroadcastEventWindow.{0}.{1}.{2}";
@@ -405,8 +392,6 @@ namespace Microsoft.Win32 {
         }
 
         private IntPtr DefWndProc {
-            [ResourceExposure(ResourceScope.None)]
-            [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
             get {
                 if (defWindowProc == IntPtr.Zero) {
                     string defproc = (Marshal.SystemDefaultCharSize == 1 ? "DefWindowProcA" : "DefWindowProcW");
@@ -427,8 +412,6 @@ namespace Microsoft.Win32 {
         /// <devdoc>
         ///      Goes through the work to register and create a window.
         /// </devdoc>
-        [ResourceExposure(ResourceScope.Process)]
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         private IntPtr CreateBroadcastWindow() {
 
             // Register the window class.
@@ -482,8 +465,6 @@ namespace Microsoft.Win32 {
         ///    <para>Creates a new window timer asociated with the
         ///       system events window.</para>
         /// </devdoc>
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         public static IntPtr CreateTimer(int interval) {
             if (interval <= 0) {
                 throw new ArgumentException(SR.GetString(SR.InvalidLowBoundArgument, "interval", interval.ToString(System.Threading.Thread.CurrentThread.CurrentCulture), "0"));
@@ -499,8 +480,6 @@ namespace Microsoft.Win32 {
             return timerId;                                                            
         }
 
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         private void Dispose() {
             if (windowHandle != IntPtr.Zero) {
 
@@ -547,8 +526,6 @@ namespace Microsoft.Win32 {
         ///  Creates the static resources needed by 
         ///  system events.
         /// </devdoc>
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.AppDomain, ResourceScope.AppDomain)]
         private static void EnsureSystemEvents(bool requireHandle, bool throwOnRefusal) {
 
             // The secondary check here is to detect asp.net.  Asp.net uses multiple
@@ -598,8 +575,6 @@ namespace Microsoft.Win32 {
             }
         }
 
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         private static void EnsureRegisteredSessionNotification() {
             if (!registeredSessionNotification) {
                 IntPtr retval = SafeNativeMethods.LoadLibrary(ExternDll.Wtsapi32);
@@ -738,8 +713,6 @@ namespace Microsoft.Win32 {
             return pref;
         }
 
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         private void Initialize() {
             consoleHandler = new NativeMethods.ConHndlr(this.ConsoleHandlerProc);
             if (!UnsafeNativeMethods.SetConsoleCtrlHandler(consoleHandler, 1)) {
@@ -803,8 +776,6 @@ namespace Microsoft.Win32 {
         /// <devdoc>
         ///     Executes the given delegate on the thread that listens for system events.  Similar to Control.Invoke().
         /// </devdoc>
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         public static void InvokeOnEventsThread(Delegate method) {
             // This method is really only here for GDI+ initialization/shutdown
             EnsureSystemEvents(true, true);
@@ -1026,8 +997,6 @@ namespace Microsoft.Win32 {
         //they are.  Unfortunately, all of CommonAppDataRegistry's friends are on 
         //System.Windows.Forms.Application, and we can't take a dependency to windows forms from here.
         internal static bool UseEverettThreadAffinity {
-            [ResourceExposure(ResourceScope.None)]
-            [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
             get {
                 if (!checkedThreadAffinity) {
                     //No point in locking if we don't have to...
@@ -1195,8 +1164,6 @@ namespace Microsoft.Win32 {
         }
 
         private static volatile object appFileVersion;
-        [ResourceExposure(ResourceScope.Machine)]  // Let's review who calls this, and why.
-        [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         private static FileVersionInfo GetAppFileVersionInfo() {
             if (appFileVersion == null) {
                 Type t = GetAppMainType();
@@ -1245,8 +1212,6 @@ namespace Microsoft.Win32 {
         private static volatile string executablePath = null;
         private static string ExecutablePath {
             [SuppressMessage("Microsoft.Security", "CA2103:ReviewImperativeSecurity")]
-            [ResourceExposure(ResourceScope.Machine)]
-            [ResourceConsumption(ResourceScope.Machine)]
             get {
                 if (executablePath == null) {
                     Assembly asm = Assembly.GetEntryAssembly();
@@ -1393,8 +1358,6 @@ namespace Microsoft.Win32 {
         ///     call Startup with the first activeX control is recreated.  
         /// </devdoc>
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [ResourceExposure(ResourceScope.None)]
-        [ResourceConsumption(ResourceScope.Process, ResourceScope.Process)]
         private static void Shutdown() {
             if (systemEvents != null && systemEvents.windowHandle != IntPtr.Zero) {
                 lock(procLockObject) {
