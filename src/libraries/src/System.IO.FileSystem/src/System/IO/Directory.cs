@@ -255,10 +255,7 @@ namespace System.IO
             return path.Substring(0, PathInternal.GetRootLength(path));
         }
 
-        public static string GetCurrentDirectory()
-        {
-            return FileSystem.GetCurrentDirectory();
-        }
+        public static string GetCurrentDirectory() => Environment.CurrentDirectory;
 
         public static void SetCurrentDirectory(string path)
         {
@@ -267,9 +264,7 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
 
-            string fulldestDirName = Path.GetFullPath(path);
-
-            FileSystem.SetCurrentDirectory(fulldestDirName);
+            Environment.CurrentDirectory = Path.GetFullPath(path);
         }
 
         public static void Move(string sourceDirName, string destDirName)
