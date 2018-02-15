@@ -888,9 +888,17 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
-    GenTree*       op1         = node->gtOp.gtOp1;
-    GenTree*       op2         = node->gtOp.gtOp2;
+    NamedIntrinsic  intrinsicID = node->gtHWIntrinsicId;
+    GenTreeArgList* argList     = nullptr;
+    GenTree*        op1         = node->gtOp.gtOp1;
+    GenTree*        op2         = node->gtOp.gtOp2;
+
+    if (op1->OperIs(GT_LIST))
+    {
+        argList = op1->AsArgList();
+        op1     = argList->Current();
+        op2     = argList->Rest()->Current();
+    }
 
     switch (comp->getHWIntrinsicInfo(node->gtHWIntrinsicId).form)
     {
@@ -898,6 +906,31 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             if (op2->IsCnsIntOrI())
             {
                 MakeSrcContained(node, op2);
+            }
+            break;
+
+        case HWIntrinsicInfo::SimdInsertOp:
+            if (op2->IsCnsIntOrI())
+            {
+                MakeSrcContained(node, op2);
+
+                GenTree* op3 = argList->Rest()->Rest()->Current();
+
+                // In the HW intrinsics C# API there is no direct way to specify a vector element to element mov
+                //   VX[a] = VY[b]
+                // In C# this would naturally be expressed by
+                //   Insert(VX, a, Extract(VY, b))
+                // If both a & b are immediate constants contain the extract/getItem so that we can emit
+                //   the single instruction mov Vx[a], Vy[b]
+                if (op3->OperIs(GT_HWIntrinsic) && (op3->AsHWIntrinsic()->gtHWIntrinsicId == NI_ARM64_SIMD_GetItem))
+                {
+                    ContainCheckHWIntrinsic(op3->AsHWIntrinsic());
+
+                    if (op3->gtOp.gtOp2->isContained())
+                    {
+                        MakeSrcContained(node, op3);
+                    }
+                }
             }
             break;
 
