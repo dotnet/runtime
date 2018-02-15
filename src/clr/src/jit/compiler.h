@@ -7712,7 +7712,7 @@ private:
     {
         return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
     }
-    
+
     // Get the base (element) type and size in bytes for a SIMD type. Returns TYP_UNKNOWN
     // if it is not a SIMD type or is an unsupported base type.
     var_types getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);

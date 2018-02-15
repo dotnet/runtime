@@ -1619,6 +1619,11 @@ public:
     }
 #endif
 
+    bool OperIsSIMDorSimdHWintrinsic() const
+    {
+        return OperIsSIMD() || OperIsSimdHWIntrinsic();
+    }
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
@@ -4265,9 +4270,7 @@ inline bool GenTree::OperIsSimdHWIntrinsic() const
 {
     if (gtOper == GT_HWIntrinsic)
     {
-        // We cannot use AsHWIntrinsic() as it is not declared const
-        const GenTreeHWIntrinsic* hwIntrinsic = reinterpret_cast<const GenTreeHWIntrinsic*>(this);
-        return hwIntrinsic->isSIMD();
+        return this->AsHWIntrinsic()->isSIMD();
     }
     return false;
 }

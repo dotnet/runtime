@@ -3741,7 +3741,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                 if (addr->OperGet() == GT_ADDR)
                                 {
                                     GenTree* addrChild = addr->gtOp.gtOp1;
-                                    if (addrChild->OperGet() == GT_SIMD)
+                                    if (addrChild->OperIsSIMDorSimdHWintrinsic())
                                     {
                                         needCpyBlk = true;
                                     }
@@ -9318,17 +9318,17 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
     unsigned             size;
     CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 #ifdef FEATURE_SIMD
-    // importer introduces cpblk nodes with src = GT_ADDR(GT_SIMD)
+    // importer introduces cpblk nodes with src = GT_ADDR(GT_SIMD/GT_HWIntrinsic)
     // The SIMD type in question could be Vector2f which is 8-bytes in size.
     // The below check is to make sure that we don't turn that copyblk
     // into a assignment, since rationalizer logic will transform the
     // copyblk appropriately. Otherwise, the transformation made in this
     // routine will prevent rationalizer logic and we might end up with
-    // GT_ADDR(GT_SIMD) node post rationalization, leading to a noway assert
+    // GT_ADDR(GT_SIMD/GT_HWIntrinsic) node post rationalization, leading to a noway assert
     // in codegen.
     // TODO-1stClassStructs: This is here to preserve old behavior.
     // It should be eliminated.
-    if (src->OperGet() == GT_SIMD)
+    if (src->OperIsSIMDorSimdHWintrinsic())
     {
         return nullptr;
     }
@@ -10235,13 +10235,13 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         if (varTypeIsSIMD(asgType))
         {
             if ((indirTree != nullptr) && (lclNode == nullptr) && (indirTree->Addr()->OperGet() == GT_ADDR) &&
-                (indirTree->Addr()->gtGetOp1()->gtOper == GT_SIMD))
+                (indirTree->Addr()->gtGetOp1()->OperIsSIMDorSimdHWintrinsic()))
             {
                 assert(!isDest);
                 needsIndirection = false;
                 effectiveVal     = indirTree->Addr()->gtGetOp1();
             }
-            if (effectiveVal->OperIsSIMD() || effectiveVal->OperIsSimdHWIntrinsic())
+            if (effectiveVal->OperIsSIMDorSimdHWintrinsic())
             {
                 needsIndirection = false;
             }
@@ -11390,6 +11390,15 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*   tree,
                 *simdSizeOut          = simdNode->gtSIMDSize;
                 *pBaseTypeOut         = simdNode->gtSIMDBaseType;
             }
+#ifdef FEATURE_HW_INTRINSICS
+            else if (obj->OperIsSimdHWIntrinsic())
+            {
+                ret                          = obj;
+                GenTreeHWIntrinsic* simdNode = obj->AsHWIntrinsic();
+                *simdSizeOut                 = simdNode->gtSIMDSize;
+                *pBaseTypeOut                = simdNode->gtSIMDBaseType;
+            }
+#endif // FEATURE_HW_INTRINSICS
         }
     }
     if (ret != nullptr)
@@ -19036,19 +19045,12 @@ Compiler::fgWalkResult Compiler::fgMarkAddrTakenLocalsPreCB(GenTree** pTree, fgW
 
         case GT_ADDR:
 #ifdef FEATURE_SIMD
-            if (tree->gtOp.gtOp1->OperGet() == GT_SIMD)
+            if (tree->gtOp.gtOp1->OperIsSIMDorSimdHWintrinsic())
             {
                 axcStack->Push(AXC_None);
             }
             else
 #endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                if (tree->gtOp.gtOp1->OperIsSimdHWIntrinsic())
-            {
-                axcStack->Push(AXC_None);
-            }
-            else
-#endif // FEATURE_HW_INTRINSICS
                 if (axc == AXC_Ind)
             {
                 axcStack->Push(AXC_None);
