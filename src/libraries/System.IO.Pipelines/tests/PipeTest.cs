@@ -21,7 +21,9 @@ namespace System.IO.Pipelines.Tests
                 new PipeOptions(
                     _pool,
                     pauseWriterThreshold: pauseWriterThreshold,
-                    resumeWriterThreshold: resumeWriterThreshold
+                    resumeWriterThreshold: resumeWriterThreshold,
+                    readerScheduler: PipeScheduler.Inline,
+                    writerScheduler: PipeScheduler.Inline
                 ));
         }
 

@@ -38,8 +38,8 @@ namespace System.IO.Pipelines
             }
 
             Pool = pool ?? MemoryPool<byte>.Shared;
-            ReaderScheduler = readerScheduler;
-            WriterScheduler = writerScheduler;
+            ReaderScheduler = readerScheduler ?? PipeScheduler.ThreadPool;
+            WriterScheduler = writerScheduler ?? PipeScheduler.ThreadPool;
             PauseWriterThreshold = pauseWriterThreshold;
             ResumeWriterThreshold = resumeWriterThreshold;
             MinimumSegmentSize = minimumSegmentSize;
