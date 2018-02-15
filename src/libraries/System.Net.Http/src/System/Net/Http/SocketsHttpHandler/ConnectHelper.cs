@@ -32,11 +32,8 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Stream> ConnectAsync(HttpConnectionKey key, CancellationToken cancellationToken)
+        public static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
-            string host = key.Host;
-            int port = key.Port;
-
             try
             {
                 // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
