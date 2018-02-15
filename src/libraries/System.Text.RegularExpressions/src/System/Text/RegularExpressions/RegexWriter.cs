@@ -26,8 +26,8 @@ namespace System.Text.RegularExpressions
         private const int EmittedSize = 56;
         private const int IntStackSize = 32;
 
-        private ResizableValueListBuilder<int> _emitted;
-        private ResizableValueListBuilder<int> _intStack;
+        private ValueListBuilder<int> _emitted;
+        private ValueListBuilder<int> _intStack;
         private readonly Dictionary<string, int> _stringHash;
         private readonly List<string> _stringTable;
         private Hashtable _caps;
@@ -35,8 +35,8 @@ namespace System.Text.RegularExpressions
 
         private RegexWriter(Span<int> emittedSpan, Span<int> intStackSpan)
         {
-            _emitted = new ResizableValueListBuilder<int>(emittedSpan);
-            _intStack = new ResizableValueListBuilder<int>(intStackSpan);
+            _emitted = new ValueListBuilder<int>(emittedSpan);
+            _intStack = new ValueListBuilder<int>(intStackSpan);
             _stringHash = new Dictionary<string, int>();
             _stringTable = new List<string>();
             _caps = null;
@@ -49,7 +49,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal static RegexCode Write(RegexTree t)
         {
-            RegexWriter w = new RegexWriter();
+            Span<int> emittedSpan = stackalloc int[EmittedSize];
+            Span<int> intStackSpan = stackalloc int[IntStackSize];
+            var w = new RegexWriter(emittedSpan, intStackSpan);
+
             RegexCode retval = w.RegexCodeFromRegexTree(t);
 #if DEBUG
             if (t.Debug)
@@ -66,60 +69,56 @@ namespace System.Text.RegularExpressions
         /// through the tree and calls EmitFragment to emits code before
         /// and after each child of an interior node, and at each leaf.
         /// </summary>
-        public RegexCode RegexCodeFromRegexTree(RegexTree tree)
+        private RegexCode RegexCodeFromRegexTree(RegexTree tree)
         {
-            Span<int> emittedSpan = stackalloc int[EmittedSize];
-            Span<int> intStackSpan = stackalloc int[IntStackSize];
-            RegexWriter writer = new RegexWriter(emittedSpan, intStackSpan);
-
             // construct sparse capnum mapping if some numbers are unused
             int capsize;
             if (tree._capnumlist == null || tree._captop == tree._capnumlist.Length)
             {
                 capsize = tree._captop;
-                writer._caps = null;
+                _caps = null;
             }
             else
             {
                 capsize = tree._capnumlist.Length;
-                writer._caps = tree._caps;
+                _caps = tree._caps;
                 for (int i = 0; i < tree._capnumlist.Length; i++)
-                    writer._caps[tree._capnumlist[i]] = i;
+                    _caps[tree._capnumlist[i]] = i;
             }
 
             RegexNode curNode = tree._root;
             int curChild = 0;
 
-            writer.Emit(RegexCode.Lazybranch, 0);
+            Emit(RegexCode.Lazybranch, 0);
 
             for (; ; )
             {
                 if (curNode._children == null)
                 {
-                    writer.EmitFragment(curNode._type, curNode, 0);
+                    EmitFragment(curNode._type, curNode, 0);
                 }
                 else if (curChild < curNode._children.Count)
                 {
-                    writer.EmitFragment(curNode._type | BeforeChild, curNode, curChild);
+                    EmitFragment(curNode._type | BeforeChild, curNode, curChild);
 
                     curNode = curNode._children[curChild];
-                    writer._intStack.Append(curChild);
+                    _intStack.Append(curChild);
                     curChild = 0;
                     continue;
                 }
 
-                if (writer._intStack.Length == 0)
+                if (_intStack.Length == 0)
                     break;
 
-                curChild = writer._intStack.Pop();
+                curChild = _intStack.Pop();
                 curNode = curNode._next;
 
-                writer.EmitFragment(curNode._type | AfterChild, curNode, curChild);
+                EmitFragment(curNode._type | AfterChild, curNode, curChild);
                 curChild++;
             }
 
-            writer.PatchJump(0, writer._emitted.Length);
-            writer.Emit(RegexCode.Stop);
+            PatchJump(0, _emitted.Length);
+            Emit(RegexCode.Stop);
 
             RegexPrefix fcPrefix = RegexFCD.FirstChars(tree);
             RegexPrefix prefix = RegexFCD.Prefix(tree);
@@ -134,13 +133,13 @@ namespace System.Text.RegularExpressions
                 bmPrefix = null;
 
             int anchors = RegexFCD.Anchors(tree);
-            int[] emitted = writer._emitted.AsReadOnlySpan().ToArray();
+            int[] emitted = _emitted.AsReadOnlySpan().ToArray();
 
             // Cleaning up and returning the borrowed arrays
-            writer._emitted.Dispose();
-            writer._intStack.Dispose();
+            _emitted.Dispose();
+            _intStack.Dispose();
 
-            return new RegexCode(emitted, writer._stringTable, writer._trackCount, writer._caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
+            return new RegexCode(emitted, _stringTable, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
         }
 
         /// <summary>
