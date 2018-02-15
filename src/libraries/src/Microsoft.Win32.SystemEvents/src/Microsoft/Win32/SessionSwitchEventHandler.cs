@@ -1,11 +1,7 @@
-//------------------------------------------------------------------------------
-// <copyright file="SessionSwitchEventHandler.cs" company="Microsoft">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-/*
- */
 namespace Microsoft.Win32 {
     using System;
     using System.Diagnostics;
@@ -14,7 +10,6 @@ namespace Microsoft.Win32 {
     /// <devdoc>
     /// <para>Represents the method that will handle the <see cref='Microsoft.Win32.SystemEvents.SessionSwitch'/> event.</para>
     /// </devdoc>
-    [HostProtectionAttribute(MayLeakOnAbort = true)]
     public delegate void SessionSwitchEventHandler(object sender, SessionSwitchEventArgs e);
 }
 
