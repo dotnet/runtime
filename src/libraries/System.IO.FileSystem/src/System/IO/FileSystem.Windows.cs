@@ -259,36 +259,6 @@ namespace System.IO
             return (FileAttributes)data.dwFileAttributes;
         }
 
-        public static string GetCurrentDirectory()
-        {
-            StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH + 1);
-            if (Interop.Kernel32.GetCurrentDirectory(sb.Capacity, sb) == 0)
-                throw Win32Marshal.GetExceptionForLastWin32Error();
-            string currentDirectory = sb.ToString();
-            // Note that if we have somehow put our command prompt into short
-            // file name mode (i.e. by running edlin or a DOS grep, etc), then
-            // this will return a short file name.
-            if (currentDirectory.IndexOf('~') >= 0)
-            {
-                int r = Interop.Kernel32.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                if (r == 0 || r >= Interop.Kernel32.MAX_PATH)
-                {
-                    int errorCode = Marshal.GetLastWin32Error();
-                    if (r >= Interop.Kernel32.MAX_PATH)
-                        errorCode = Interop.Errors.ERROR_FILENAME_EXCED_RANGE;
-                    if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND &&
-                        errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND &&
-                        errorCode != Interop.Errors.ERROR_INVALID_FUNCTION &&  // by design - enough said.
-                        errorCode != Interop.Errors.ERROR_ACCESS_DENIED)
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                }
-                currentDirectory = sb.ToString();
-            }
-            StringBuilderCache.Release(sb);
-
-            return currentDirectory;
-        }
-
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
@@ -559,20 +529,6 @@ namespace System.IO
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
                 }
-            }
-        }
-
-        public static void SetCurrentDirectory(string fullPath)
-        {
-            if (!Interop.Kernel32.SetCurrentDirectory(fullPath))
-            {
-                // If path doesn't exist, this sets last error to 2 (File 
-                // not Found).  LEGACY: This may potentially have worked correctly
-                // on Win9x, maybe.
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
-                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
             }
         }
 
