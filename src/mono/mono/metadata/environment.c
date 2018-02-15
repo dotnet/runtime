@@ -70,6 +70,8 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 #elif defined(HAVE_SYS_UTSNAME_H)
 	struct utsname name;
 
+	memset (&name, 0, sizeof (name)); // WSL does not always nul terminate.
+
 	if (uname (&name) >= 0) {
 		return mono_string_new_handle (mono_domain_get (), name.release, error);
 	}
