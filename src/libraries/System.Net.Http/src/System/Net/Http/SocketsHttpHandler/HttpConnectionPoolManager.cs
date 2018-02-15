@@ -4,12 +4,14 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>
-    internal sealed class HttpConnectionPools : IDisposable
+    internal sealed class HttpConnectionPoolManager : IDisposable
     {
         /// <summary>How frequently an operation should be initiated to clean out old pools and connections in those pools.</summary>
         private const int CleanPoolTimeoutMilliseconds =
@@ -22,8 +24,6 @@ namespace System.Net.Http
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
         private readonly Timer _cleaningTimer;
-        /// <summary>True if we are managing proxy connections, false for direct connections.</summary>
-        private readonly bool _usingProxy;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
         // Temporary
@@ -40,13 +40,9 @@ namespace System.Net.Http
         /// <summary>Initializes the pools.</summary>
         /// <param name="maxConnectionsPerServer">The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</param>
         
-        // CONSIDER: We are passing HttpConnectionSettings here, but all we really need are the SSL settings.
-        // When we refactor the SSL settings to use SslAuthenticationOptions, just pass that here.
-
-        public HttpConnectionPools(HttpConnectionSettings settings, bool usingProxy)
+        public HttpConnectionPoolManager(HttpConnectionSettings settings)
         {
             _settings = settings;
-            _usingProxy = usingProxy;
             _maxConnectionsPerServer = settings._maxConnectionsPerServer;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
             // Start out with the timer not running, since we have no pools.
@@ -61,7 +57,7 @@ namespace System.Net.Http
                     restoreFlow = true;
                 }
 
-                _cleaningTimer = new Timer(s => ((HttpConnectionPools)s).RemoveStalePools(), this, Timeout.Infinite, Timeout.Infinite);
+                _cleaningTimer = new Timer(s => ((HttpConnectionPoolManager)s).RemoveStalePools(), this, Timeout.Infinite, Timeout.Infinite);
             }
             finally
             {
@@ -72,17 +68,85 @@ namespace System.Net.Http
         }
 
         public HttpConnectionSettings Settings => _settings;
-        public bool UsingProxy => _usingProxy;
 
-        /// <summary>Gets a pool for the specified endpoint, adding one if none existed.</summary>
-        /// <param name="key">The endpoint for the pool.</param>
-        /// <returns>The retrieved pool.</returns>
-        public HttpConnectionPool GetOrAddPool(HttpConnectionKey key)
+        private static string ParseHostNameFromHeader(string hostHeader)
         {
+            // See if we need to trim off a port.
+            int colonPos = hostHeader.IndexOf(':');
+            if (colonPos >= 0)
+            {
+                // There is colon, which could either be a port separator or a separator in
+                // an IPv6 address.  See if this is an IPv6 address; if it's not, use everything
+                // before the colon as the host name, and if it is, use everything before the last
+                // colon iff the last colon is after the end of the IPv6 address (otherwise it's a
+                // part of the address).
+                int ipV6AddressEnd = hostHeader.IndexOf(']');
+                if (ipV6AddressEnd == -1)
+                {
+                    return hostHeader.Substring(0, colonPos);
+                }
+                else
+                {
+                    colonPos = hostHeader.LastIndexOf(':');
+                    if (colonPos > ipV6AddressEnd)
+                    {
+                        return hostHeader.Substring(0, colonPos);
+                    }
+                }
+            }
+
+            return hostHeader;
+        }
+
+        private static HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri)
+        {
+            Uri uri = request.RequestUri;
+
+            string sslHostName = null;
+            if (HttpUtilities.IsSupportedSecureScheme(uri.Scheme))
+            {
+                string hostHeader = request.Headers.Host;
+                if (hostHeader != null)
+                {
+                    sslHostName = ParseHostNameFromHeader(hostHeader);
+                }
+                else
+                {
+                    // No explicit Host header.  Use host from uri.
+                    sslHostName = uri.IdnHost;
+                }
+            }
+
+            if (proxyUri != null)
+            {
+                Debug.Assert(HttpUtilities.IsSupportedNonSecureScheme(proxyUri.Scheme));
+                if (sslHostName == null)
+                {
+                    // Standard HTTP proxy usage for non-secure requests
+                    // The destination host and port are ignored here, since these connections
+                    // will be shared across any requests that use the proxy.
+                    return new HttpConnectionKey(null, 0, null, proxyUri);
+                }
+                else
+                {
+                    // Tunnel SSL connection through proxy to the destination.
+                    return new HttpConnectionKey(uri.IdnHost, uri.Port, sslHostName, proxyUri);
+                }
+            }
+            else
+            {
+                return new HttpConnectionKey(uri.IdnHost, uri.Port, sslHostName, null);
+            }
+        }
+
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
+        {
+            HttpConnectionKey key = GetConnectionKey(request, proxyUri);
+
             HttpConnectionPool pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
                 if (_pools.TryAdd(key, pool))
                 {
                     // We need to ensure the cleanup timer is running if it isn't
@@ -99,7 +163,7 @@ namespace System.Net.Http
                 }
             }
 
-            return pool;
+            return pool.SendAsync(request, cancellationToken);
         }
 
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
@@ -147,6 +211,42 @@ namespace System.Net.Http
             // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
             // future, there are a variety of possible ways to address it, such as allowing connections to
             // be returned to pools they weren't associated with.
+        }
+
+        internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
+        {
+            public readonly string Host;
+            public readonly int Port;
+            public readonly string SslHostName;     // null if not SSL
+            public readonly Uri ProxyUri;
+
+            public HttpConnectionKey(string host, int port, string sslHostName, Uri proxyUri)
+            {
+                Host = host;
+                Port = port;
+                SslHostName = sslHostName;
+                ProxyUri = proxyUri;
+            }
+
+            // In the common case, SslHostName (when present) is equal to Host.  If so, don't include in hash.
+            public override int GetHashCode() =>
+                (SslHostName == Host ?
+                    HashCode.Combine(Host, Port, ProxyUri) :
+                    HashCode.Combine(Host, Port, SslHostName, ProxyUri));
+
+            public override bool Equals(object obj) =>
+                obj != null &&
+                obj is HttpConnectionKey &&
+                Equals((HttpConnectionKey)obj);
+
+            public bool Equals(HttpConnectionKey other) =>
+                Host == other.Host &&
+                Port == other.Port &&
+                ProxyUri == other.ProxyUri &&
+                SslHostName == other.SslHostName;
+
+            public static bool operator ==(HttpConnectionKey key1, HttpConnectionKey key2) => key1.Equals(key2);
+            public static bool operator !=(HttpConnectionKey key1, HttpConnectionKey key2) => !key1.Equals(key2);
         }
     }
 }
