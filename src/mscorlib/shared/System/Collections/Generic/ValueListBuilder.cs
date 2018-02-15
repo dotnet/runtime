@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    internal ref struct ValueListBuilder<T>
+    internal ref partial struct ValueListBuilder<T>
     {
         private Span<T> _span;
         private T[] _arrayFromPool;
