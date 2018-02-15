@@ -1394,7 +1394,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         assert(structVal->gtObj.gtClass == structHnd);
         return (structVal->gtObj.Addr());
     }
-    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY)
+    else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
+             structVal->OperIsSimdHWIntrinsic())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
@@ -1644,15 +1645,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             }
 
 #ifdef FEATURE_SIMD
-            if (blockNode->OperGet() == GT_SIMD)
-            {
-                parent->gtOp.gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
-                alreadyNormalized  = true;
-            }
-            else
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-                if (blockNode->OperGet() == GT_HWIntrinsic && blockNode->AsHWIntrinsic()->isSIMD())
+            if (blockNode->OperIsSIMDorSimdHWintrinsic())
             {
                 parent->gtOp.gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
                 alreadyNormalized  = true;
