@@ -111,7 +111,7 @@ namespace System.Xml.Serialization
         private string _guidID;
         private string _timeSpanID;
 
-        private static bool s_checkDeserializeAdvances;
+        private static bool s_checkDeserializeAdvances=false;
 
         protected abstract void InitIDs();
 
