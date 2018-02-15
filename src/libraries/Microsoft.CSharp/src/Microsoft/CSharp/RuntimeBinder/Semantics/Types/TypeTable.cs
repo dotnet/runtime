@@ -9,123 +9,120 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal readonly struct KeyPair<Key1, Key2> : IEquatable<KeyPair<Key1, Key2>>
+    internal static class TypeTable
     {
-        private readonly Key1 _pKey1;
-        private readonly Key2 _pKey2;
-
-        public KeyPair(Key1 pKey1, Key2 pKey2)
+        private readonly struct KeyPair<TKey1, TKey2> : IEquatable<KeyPair<TKey1, TKey2>>
         {
-            _pKey1 = pKey1;
-            _pKey2 = pKey2;
-        }
+            private readonly TKey1 _pKey1;
+            private readonly TKey2 _pKey2;
 
-        public bool Equals(KeyPair<Key1, Key2> other)
-        {
-            return EqualityComparer<Key1>.Default.Equals(_pKey1, other._pKey1)
-                && EqualityComparer<Key2>.Default.Equals(_pKey2, other._pKey2);
-        }
+            public KeyPair(TKey1 pKey1, TKey2 pKey2)
+            {
+                _pKey1 = pKey1;
+                _pKey2 = pKey2;
+            }
 
-#if  DEBUG 
-        [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
+            public bool Equals(KeyPair<TKey1, TKey2> other) =>
+                EqualityComparer<TKey1>.Default.Equals(_pKey1, other._pKey1)
+                && EqualityComparer<TKey2>.Default.Equals(_pKey2, other._pKey2);
+
+#if DEBUG
+            [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
 #endif
-        public override bool Equals(object obj)
-        {
-            Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
-            if (!(obj is KeyPair<Key1, Key2>)) return false;
-            return Equals((KeyPair<Key1, Key2>)obj);
+            public override bool Equals(object obj)
+            {
+                Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
+                if (!(obj is KeyPair<TKey1, TKey2>))
+                {
+                    return false;
+                }
+
+                return Equals((KeyPair<TKey1, TKey2>)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = _pKey1 == null ? 0 : _pKey1.GetHashCode();
+                return (hash << 5) - hash + (_pKey2 == null ? 0 : _pKey2.GetHashCode());
+            }
         }
 
-        public override int GetHashCode()
-        {
-            int hash = _pKey1 == null ? 0 : _pKey1.GetHashCode();
-            return (hash << 5) - hash + (_pKey2 == null ? 0 : _pKey2.GetHashCode());
-        }
-    }
-
-    internal sealed class TypeTable
-    {
         // Two way hashes
-        private readonly Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType> _aggregateTable;
-        private readonly Dictionary<KeyPair<CType, int>, ArrayType> _pArrayTable;
-        private readonly Dictionary<KeyPair<CType, bool>, ParameterModifierType> _pParameterModifierTable;
+        private static readonly Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType> s_aggregateTable =
+                new Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType>();
+
+        private static readonly Dictionary<KeyPair<CType, int>, ArrayType> s_arrayTable =
+            new Dictionary<KeyPair<CType, int>, ArrayType>();
+
+        private static readonly Dictionary<KeyPair<CType, bool>, ParameterModifierType> s_parameterModifierTable =
+            new Dictionary<KeyPair<CType, bool>, ParameterModifierType>();
 
         // One way hashes
-        private readonly Dictionary<CType, PointerType> _pPointerTable;
-        private readonly Dictionary<CType, NullableType> _pNullableTable;
-
-        public TypeTable()
-        {
-            _aggregateTable = new Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType>();
-            _pArrayTable = new Dictionary<KeyPair<CType, int>, ArrayType>();
-            _pParameterModifierTable = new Dictionary<KeyPair<CType, bool>, ParameterModifierType>();
-            _pPointerTable = new Dictionary<CType, PointerType>();
-            _pNullableTable = new Dictionary<CType, NullableType>();
-        }
+        private static readonly Dictionary<CType, PointerType> s_pointerTable = new Dictionary<CType, PointerType>();
+        private static readonly Dictionary<CType, NullableType> s_nullableTable = new Dictionary<CType, NullableType>();
 
         private static KeyPair<TKey1, TKey2> MakeKey<TKey1, TKey2>(TKey1 key1, TKey2 key2) =>
             new KeyPair<TKey1, TKey2>(key1, key2);
 
-        public AggregateType LookupAggregate(AggregateSymbol aggregate, AggregateType outer, TypeArray args)
+        public static AggregateType LookupAggregate(AggregateSymbol aggregate, AggregateType outer, TypeArray args)
         {
-            _aggregateTable.TryGetValue(MakeKey(aggregate, MakeKey(outer, args)), out AggregateType result);
+            s_aggregateTable.TryGetValue(MakeKey(aggregate, MakeKey(outer, args)), out AggregateType result);
             return result;
         }
 
-        public void InsertAggregate(
-            AggregateSymbol aggregate, AggregateType outer, TypeArray args, AggregateType pAggregate)
+        public static void InsertAggregate(AggregateSymbol aggregate, AggregateType outer, TypeArray args, AggregateType ats)
         {
             Debug.Assert(LookupAggregate(aggregate, outer, args) == null);
-            _aggregateTable.Add(MakeKey(aggregate, MakeKey(outer, args)), pAggregate);
+            s_aggregateTable.Add(MakeKey(aggregate, MakeKey(outer, args)), ats);
         }
 
         // rankNum is 0 for SZ arrays, equal to rank otherwise.
-        public ArrayType LookupArray(CType pElementType, int rankNum)
+        public static ArrayType LookupArray(CType elementType, int rankNum)
         {
-            _pArrayTable.TryGetValue(new KeyPair<CType, int>(pElementType, rankNum), out ArrayType result);
+            s_arrayTable.TryGetValue(new KeyPair<CType, int>(elementType, rankNum), out ArrayType result);
             return result;
         }
 
-        public void InsertArray(CType pElementType, int rankNum, ArrayType pArray)
+        public static void InsertArray(CType elementType, int rankNum, ArrayType pArray)
         {
-            Debug.Assert(LookupArray(pElementType, rankNum) == null);
-            _pArrayTable.Add(new KeyPair<CType, int>(pElementType, rankNum), pArray);
+            Debug.Assert(LookupArray(elementType, rankNum) == null);
+            s_arrayTable.Add(new KeyPair<CType, int>(elementType, rankNum), pArray);
         }
 
-        public ParameterModifierType LookupParameterModifier(CType pElementType, bool isOut)
+        public static ParameterModifierType LookupParameterModifier(CType elementType, bool isOut)
         {
-            _pParameterModifierTable.TryGetValue(new KeyPair<CType, bool>(pElementType, isOut), out ParameterModifierType result);
+            s_parameterModifierTable.TryGetValue(new KeyPair<CType, bool>(elementType, isOut), out ParameterModifierType result);
             return result;
         }
 
-        public void InsertParameterModifier(CType pElementType, bool isOut, ParameterModifierType pParameterModifier)
+        public static void InsertParameterModifier(CType elementType, bool isOut, ParameterModifierType parameterModifier)
         {
-            Debug.Assert(LookupParameterModifier(pElementType, isOut) == null);
-            _pParameterModifierTable.Add(new KeyPair<CType, bool>(pElementType, isOut), pParameterModifier);
+            Debug.Assert(LookupParameterModifier(elementType, isOut) == null);
+            s_parameterModifierTable.Add(new KeyPair<CType, bool>(elementType, isOut), parameterModifier);
         }
 
-        public PointerType LookupPointer(CType pElementType)
+        public static PointerType LookupPointer(CType elementType)
         {
-            _pPointerTable.TryGetValue(pElementType, out PointerType result);
+            s_pointerTable.TryGetValue(elementType, out PointerType result);
             return result;
         }
 
-        public void InsertPointer(CType pElementType, PointerType pPointer)
+        public static void InsertPointer(CType elementType, PointerType pointer)
         {
-            Debug.Assert(LookupPointer(pElementType) == null);
-            _pPointerTable.Add(pElementType, pPointer);
+            Debug.Assert(LookupPointer(elementType) == null);
+            s_pointerTable.Add(elementType, pointer);
         }
 
-        public NullableType LookupNullable(CType pUnderlyingType)
+        public static NullableType LookupNullable(CType underlyingType)
         {
-            _pNullableTable.TryGetValue(pUnderlyingType, out NullableType result);
+            s_nullableTable.TryGetValue(underlyingType, out NullableType result);
             return result;
         }
 
-        public void InsertNullable(CType pUnderlyingType, NullableType pNullable)
+        public static void InsertNullable(CType underlyingType, NullableType nullable)
         {
-            Debug.Assert(LookupNullable(pUnderlyingType) == null);
-            _pNullableTable.Add(pUnderlyingType, pNullable);
+            Debug.Assert(LookupNullable(underlyingType) == null);
+            s_nullableTable.Add(underlyingType, nullable);
         }
     }
 }

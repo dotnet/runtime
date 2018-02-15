@@ -20,5 +20,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr Argument { get; set; }
 
         public bool IsBoxingCast => (Flags & (EXPRFLAG.EXF_BOX | EXPRFLAG.EXF_FORCE_BOX)) != 0;
+
+        public override object Object
+        {
+            get
+            {
+                Expr arg = Argument;
+                while (arg is ExprCast castArg)
+                {
+                    arg = castArg.Argument;
+                }
+
+                return arg.Object;
+            }
+        }
     }
 }

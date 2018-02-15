@@ -3,99 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class SymbolLoader
+    internal static class SymbolLoader
     {
-        private PredefinedMembers PredefinedMembers { get; }
-        private GlobalSymbolContext GlobalSymbolContext { get; }
-        public ErrorHandling ErrorContext { get; }
-        public SymbolTable RuntimeBinderSymbolTable { get; private set; }
+        public static AggregateSymbol GetPredefAgg(PredefinedType pt) => TypeManager.GetPredefAgg(pt);
 
-        public SymbolLoader()
-        {
-            GlobalSymbolContext globalSymbols = new GlobalSymbolContext();
-            PredefinedMembers = new PredefinedMembers(this);
-            ErrorContext = new ErrorHandling(globalSymbols);
-            GlobalSymbolContext = globalSymbols;
-            Debug.Assert(GlobalSymbolContext != null);
-        }
+        public static AggregateType GetPredefindType(PredefinedType pt) => GetPredefAgg(pt).getThisType();
 
-        public ErrorHandling GetErrorContext()
-        {
-            return ErrorContext;
-        }
-
-        public GlobalSymbolContext GetGlobalSymbolContext()
-        {
-            return GlobalSymbolContext;
-        }
-
-        public PredefinedTypes GetPredefindTypes()
-        {
-            return GlobalSymbolContext.GetPredefTypes();
-        }
-
-        public TypeManager GetTypeManager()
-        {
-            return TypeManager;
-        }
-
-        public TypeManager TypeManager
-        {
-            get { return GlobalSymbolContext.TypeManager; }
-        }
-
-        public PredefinedMembers getPredefinedMembers()
-        {
-            return PredefinedMembers;
-        }
-
-        public BSYMMGR getBSymmgr()
-        {
-            return GlobalSymbolContext.GetGlobalSymbols();
-        }
-
-        public SymFactory GetGlobalSymbolFactory()
-        {
-            return GlobalSymbolContext.GetGlobalSymbolFactory();
-        }
-
-        public AggregateSymbol GetPredefAgg(PredefinedType pt) => GetTypeManager().GetPredefAgg(pt);
-
-        public AggregateType GetPredefindType(PredefinedType pt) => GetPredefAgg(pt).getThisType();
-
-        public Symbol LookupAggMember(Name name, AggregateSymbol agg, symbmask_t mask)
-        {
-            return getBSymmgr().LookupAggMember(name, agg, mask);
-        }
-
-        public static Symbol LookupNextSym(Symbol sym, ParentSymbol parent, symbmask_t kindmask)
-            => BSYMMGR.LookupNextSym(sym, parent, kindmask);
-
-        // It would be nice to make this a virtual method on typeSym.
-        public AggregateType GetAggTypeSym(CType typeSym)
-        {
-            Debug.Assert(typeSym != null);
-            Debug.Assert(typeSym is AggregateType ||
-                   typeSym is ArrayType ||
-                   typeSym is NullableType);
-
-            switch (typeSym.TypeKind)
-            {
-                case TypeKind.TK_AggregateType:
-                    return (AggregateType)typeSym;
-                case TypeKind.TK_ArrayType:
-                    return GetPredefindType(PredefinedType.PT_ARRAY);
-                case TypeKind.TK_NullableType:
-                    return ((NullableType)typeSym).GetAts();
-            }
-            Debug.Assert(false, "Bad typeSym!");
-            return null;
-        }
+        public static Symbol LookupAggMember(Name name, AggregateSymbol agg, symbmask_t mask) => SymbolStore.LookupSym(name, agg, mask);
 
         private static bool IsBaseInterface(AggregateType atsDer, AggregateType pBase)
         {
@@ -167,7 +85,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private bool HasCovariantArrayConversion(ArrayType pSource, ArrayType pDest)
+        private static bool HasCovariantArrayConversion(ArrayType pSource, ArrayType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -178,7 +96,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 HasImplicitReferenceConversion(pSource.ElementType, pDest.ElementType);
         }
 
-        public bool HasIdentityOrImplicitReferenceConversion(CType pSource, CType pDest)
+        public static bool HasIdentityOrImplicitReferenceConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -192,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static bool AreTypesEqualForConversion(CType pType1, CType pType2) => pType1.Equals(pType2);
 
-        private bool HasArrayConversionToInterface(ArrayType pSource, CType pDest)
+        private static bool HasArrayConversionToInterface(ArrayType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -233,7 +151,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return HasIdentityOrImplicitReferenceConversion(pSource.ElementType, atsDest.TypeArgsAll[0]);
         }
 
-        private bool HasImplicitReferenceConversion(CType pSource, CType pDest)
+        private static bool HasImplicitReferenceConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -277,7 +195,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     //   convertible to T.
                                     // * From any interface type S to any interface type T provided S implements an interface
                                     //   convertible to T.
-                                    // * From any interface type S to any interface type T provided S is not T and S is 
+                                    // * From any interface type S to any interface type T provided S is not T and S is
                                     //   an interface convertible to T.
 
                                     return HasAnyBaseInterfaceConversion(aggSource, aggDest);
@@ -300,7 +218,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // 
                             // The spec should actually say
                             //
-                            // * From any delegate type to System.Delegate 
+                            // * From any delegate type to System.Delegate
                             // * From any delegate type to System.MulticastDelegate
                             // * From any delegate type to any interface implemented by System.MulticastDelegate
                             if (aggDest.IsPredefType(PredefinedType.PT_MULTIDEL)
@@ -359,7 +277,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private bool HasAnyBaseInterfaceConversion(CType pDerived, CType pBase)
+        private static bool HasAnyBaseInterfaceConversion(CType pDerived, CType pBase)
         {
             if (!pBase.IsInterfaceType || !(pDerived is AggregateType atsDer))
             {
@@ -386,7 +304,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // The rules for variant interface and delegate conversions are the same:
         //
-        // An interface/delegate type S is convertible to an interface/delegate type T 
+        // An interface/delegate type S is convertible to an interface/delegate type T
         // if and only if T is U<S1, ... Sn> and T is U<T1, ... Tn> such that for all
         // parameters of U:
         //
@@ -396,7 +314,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // * if the ith parameter of U is contravariant then either Si is exactly
         //   equal to Ti, or there is an implicit reference conversion from Ti to Si.
 
-        private bool HasInterfaceConversion(AggregateType pSource, AggregateType pDest)
+        private static bool HasInterfaceConversion(AggregateType pSource, AggregateType pDest)
         {
             Debug.Assert(pSource != null && pSource.IsInterfaceType);
             Debug.Assert(pDest != null && pDest.IsInterfaceType);
@@ -405,7 +323,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         //////////////////////////////////////////////////////////////////////////////
 
-        private bool HasDelegateConversion(AggregateType pSource, AggregateType pDest)
+        private static bool HasDelegateConversion(AggregateType pSource, AggregateType pDest)
         {
             Debug.Assert(pSource != null && pSource.IsDelegateType);
             Debug.Assert(pDest != null && pDest.IsDelegateType);
@@ -414,7 +332,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         //////////////////////////////////////////////////////////////////////////////
 
-        private bool HasVariantConversion(AggregateType pSource, AggregateType pDest)
+        private static bool HasVariantConversion(AggregateType pSource, AggregateType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -422,6 +340,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return true;
             }
+
             AggregateSymbol pAggSym = pSource.OwningAggregate;
             if (pAggSym != pDest.OwningAggregate)
             {
@@ -467,7 +386,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private bool HasImplicitBoxingConversion(CType pSource, CType pDest)
+        private static bool HasImplicitBoxingConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);
@@ -504,7 +423,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return IsBaseClass(pSource, pDest) || HasAnyBaseInterfaceConversion(pSource, pDest);
         }
 
-        public bool HasBaseConversion(CType pSource, CType pDest)
+        public static bool HasBaseConversion(CType pSource, CType pDest)
         {
             // By a "base conversion" we mean:
             //
@@ -515,9 +434,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //
             // In other words, these are conversions that can be made to a base
             // class, base interface or co/contravariant type without any change in
-            // representation other than boxing.  A conversion from, say, int to double, 
+            // representation other than boxing.  A conversion from, say, int to double,
             // is NOT a "base conversion", because representation is changed.  A conversion
-            // from, say, lambda to expression tree is not a "base conversion" because 
+            // from, say, lambda to expression tree is not a "base conversion" because
             // do not have a type.
             //
             // The existence of a base conversion depends solely upon the source and
@@ -590,11 +509,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return false;
         }
-
-        internal void SetSymbolTable(SymbolTable symbolTable)
-        {
-            RuntimeBinderSymbolTable = symbolTable;
-        }
     }
 }
-

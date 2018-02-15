@@ -18,18 +18,14 @@ namespace Microsoft.CSharp.RuntimeBinder
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
             => runtimeBinder.BindIsEvent(this, arguments, locals);
 
-        public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
-            => symbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Info.IsStaticType ? arguments[0].Value as Type : arguments[0].Type);
+        public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
+            => SymbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Info.IsStaticType ? arguments[0].Value as Type : arguments[0].Type);
 
         public bool IsBinderThatCanHaveRefReceiver => false;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => CSharpArgumentInfo.None;
 
         public string Name { get; }
-
-        public Type CallingContext { get; }
-
-        public bool IsChecked => false;
 
         private readonly RuntimeBinder _binder;
 
@@ -43,8 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type callingContext)
         {
             Name = name;
-            CallingContext = callingContext;
-            _binder = RuntimeBinder.GetInstance();
+            _binder = new RuntimeBinder(callingContext);
         }
 
         /// <summary>
