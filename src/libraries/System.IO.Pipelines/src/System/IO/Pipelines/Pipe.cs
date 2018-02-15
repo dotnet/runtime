@@ -94,8 +94,8 @@ namespace System.IO.Pipelines
             _minimumSegmentSize = options.MinimumSegmentSize;
             _pauseWriterThreshold = options.PauseWriterThreshold;
             _resumeWriterThreshold = options.ResumeWriterThreshold;
-            _readerScheduler = options.ReaderScheduler ?? PipeScheduler.Inline;
-            _writerScheduler = options.WriterScheduler ?? PipeScheduler.Inline;
+            _readerScheduler = options.ReaderScheduler;
+            _writerScheduler = options.WriterScheduler;
             _readerAwaitable = new PipeAwaitable(completed: false);
             _writerAwaitable = new PipeAwaitable(completed: true);
             _reader = new DefaultPipeReader(this);
