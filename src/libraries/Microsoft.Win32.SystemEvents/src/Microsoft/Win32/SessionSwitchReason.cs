@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.Win32 {
-    using System.Diagnostics;
-    using System;
+using System.Diagnostics;
+using System;
 
+namespace Microsoft.Win32
+{
     /// <devdoc>
     ///    <para> Specifies the reason for the session switch</para>
     /// </devdoc>
-    public enum SessionSwitchReason {
-
+    public enum SessionSwitchReason
+    {
         /// <devdoc>
         ///      A session was connected to the console session.
         /// </devdoc>
