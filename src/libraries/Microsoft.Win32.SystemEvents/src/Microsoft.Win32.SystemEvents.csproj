@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{91DD22C6-521E-49F9-84E8-1D65BAB97776}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(OSGroup)' != 'Windows_NT'">SR.PlatformNotSupported_SystemEvents</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(OSGroup)' != ''">
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\user32\Interop.Constants.cs</Link>
+    </Compile>
+    <Compile Include="Microsoft\Win32\PowerModeChangedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\PowerModeChangedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\PowerModes.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndingEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndingEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\SessionEndReasons.cs" />
+    <Compile Include="Microsoft\Win32\SessionSwitchEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\SessionSwitchEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\SessionSwitchReason.cs" />
+    <!--Compile Include="Microsoft\Win32\SystemEvents.cs" /-->
+    <Compile Include="Microsoft\Win32\TimerElapsedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\TimerElapsedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceCategories.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangedEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangedEventHandler.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangingEventArgs.cs" />
+    <Compile Include="Microsoft\Win32\UserPreferenceChangingEventHandler.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
