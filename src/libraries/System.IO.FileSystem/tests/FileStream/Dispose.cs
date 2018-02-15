@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -45,6 +46,11 @@ namespace System.IO.Tests
                 : base(path, mode)
             { }
 
+            public MyFileStream(SafeFileHandle handle, FileAccess access, Action<bool> disposeMethod) : base(handle, access)
+            {
+                DisposeMethod = disposeMethod;
+            }
+            
             public Action<bool> DisposeMethod { get; set; }
 
             protected override void Dispose(bool disposing)
@@ -56,6 +62,92 @@ namespace System.IO.Tests
 
                 base.Dispose(disposing);
             }
+        }
+
+
+        [Fact]
+        public void Dispose_CallsVirtualDisposeTrueArg_ThrowsDuringFlushWriteBuffer_DisposeThrows()
+        {
+            RemoteInvoke(() =>
+            {
+                string fileName = GetTestFilePath();
+                using (FileStream fscreate = new FileStream(fileName, FileMode.Create))
+                {
+                    fscreate.WriteByte(0);
+                }
+                bool writeDisposeInvoked = false;
+                Action<bool> writeDisposeMethod = _ => writeDisposeInvoked = true;
+                using (var fsread = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+                {
+                    Action act = () => // separate method to avoid JIT lifetime-extension issues
+                    {
+                        using (var fswrite = new MyFileStream(fsread.SafeFileHandle, FileAccess.Write, writeDisposeMethod))
+                        {
+                            fswrite.WriteByte(0);
+
+                            // Normal dispose should call Dispose(true). Throws due to FS trying to flush write buffer
+                            Assert.Throws<UnauthorizedAccessException>(() => fswrite.Dispose());
+                            Assert.True(writeDisposeInvoked, "Expected Dispose(true) to be called from Dispose()");
+                            writeDisposeInvoked = false;
+
+                            // Only throws on first Dispose call
+                            fswrite.Dispose();
+                            Assert.True(writeDisposeInvoked, "Expected Dispose(true) to be called from Dispose()");
+                            writeDisposeInvoked = false;
+                        }
+                        Assert.True(writeDisposeInvoked, "Expected Dispose(true) to be called from Dispose() again");
+                        writeDisposeInvoked = false;
+                    };
+                    act();
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+                    Assert.False(writeDisposeInvoked, "Expected finalizer to have been suppressed");
+                }
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing fix for https://github.com/dotnet/coreclr/pull/16250")]
+        public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
+        {
+            RemoteInvoke(() =>
+            {
+                string fileName = GetTestFilePath();
+                using (FileStream fscreate = new FileStream(fileName, FileMode.Create))
+                {
+                    fscreate.WriteByte(0);
+                }
+                bool writeDisposeInvoked = false;
+                Action<bool> writeDisposeMethod = (disposing) =>
+                {
+                    writeDisposeInvoked = true;
+                    Assert.False(disposing, "Expected false arg to Dispose(bool)");
+                };
+                using (var fsread = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+                {
+                    Action act = () => // separate method to avoid JIT lifetime-extension issues
+                    {
+                        var fswrite = new MyFileStream(fsread.SafeFileHandle, FileAccess.Write, writeDisposeMethod);
+                        fswrite.WriteByte(0);
+                    };
+                    act();
+                    
+                    // Dispose is not getting called here.
+                    // instead, make sure finalizer gets called and doesnt throw exception
+                    for (int i = 0; i < 2; i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+                    Assert.True(writeDisposeInvoked, "Expected finalizer to be invoked but not throw exception");
+                }
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
