@@ -5301,9 +5301,118 @@ void CodeGen::genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdInsertOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdInsertOp.
+//
+// Consumes one SIMD operand and two scalars
+//
+// The element index operand is typically a const immediate
+// When it is not, a switch table is generated
+//
+// See genHWIntrinsicSwitchTable comments
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
 void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
 {
-    NYI("genHWIntrinsicSimdExtractOp not implemented");
+    GenTreeArgList* argList   = node->gtGetOp1()->AsArgList();
+    GenTree*        op1       = argList->Current();
+    GenTree*        op2       = argList->Rest()->Current();
+    GenTree*        op3       = argList->Rest()->Rest()->Current();
+    var_types       simdType  = op1->TypeGet();
+    var_types       baseType  = node->gtSIMDBaseType;
+    regNumber       targetReg = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+
+    genConsumeRegs(op1);
+    genConsumeRegs(op2);
+    genConsumeRegs(op3);
+
+    regNumber op1Reg = op1->gtRegNum;
+
+    assert(genIsValidFloatReg(targetReg));
+    assert(genIsValidFloatReg(op1Reg));
+
+    emitAttr baseTypeSize = emitTypeSize(baseType);
+
+    int elements = emitTypeSize(simdType) / baseTypeSize;
+
+    if (targetReg != op1Reg)
+    {
+        bool     is16Byte = (node->gtSIMDSize > 8);
+        emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+        getEmitter()->emitIns_R_R(INS_mov, baseTypeSize, targetReg, op1Reg);
+    }
+
+    if (op3->isContained())
+    {
+        // Handle vector element to vector element case
+        //
+        // If op3 is contained this is because lowering found an opportunity to contain a Simd.Extract in a Simd.Insert
+        //
+        regNumber op3Reg = op3->gtGetOp1()->gtRegNum;
+
+        assert(genIsValidFloatReg(op3Reg));
+
+        // op3 containment currently only occurs when
+        //   + op3 is a Simd.Extract() (gtHWIntrinsicId == NI_ARM64_SIMD_GetItem)
+        //   + element & srcLane are immediate constants
+        assert(op2->isContainedIntOrIImmed());
+        assert(op3->OperIs(GT_HWIntrinsic));
+        assert(op3->AsHWIntrinsic()->gtHWIntrinsicId == NI_ARM64_SIMD_GetItem);
+        assert(op3->gtGetOp2()->isContainedIntOrIImmed());
+
+        int element = (int)op2->AsIntConCommon()->IconValue();
+        int srcLane = (int)op3->gtGetOp2()->AsIntConCommon()->IconValue();
+
+        // Emit mov targetReg[element], op3Reg[srcLane]
+        getEmitter()->emitIns_R_R_I_I(INS_mov, baseTypeSize, targetReg, op3Reg, element, srcLane);
+    }
+    else
+    {
+        // Handle scalar to vector element case
+        // TODO-ARM64-CQ handle containing op3 scalar const where possible
+        regNumber op3Reg = op3->gtRegNum;
+
+        auto emitSwCase = [&](int element) {
+            assert(element >= 0);
+            assert(element < elements);
+
+            if (varTypeIsFloating(baseType))
+            {
+                assert(genIsValidFloatReg(op3Reg));
+                getEmitter()->emitIns_R_R_I_I(INS_mov, baseTypeSize, targetReg, op3Reg, element, 0);
+            }
+            else
+            {
+                assert(genIsValidIntReg(op3Reg));
+                getEmitter()->emitIns_R_R_I(INS_mov, baseTypeSize, targetReg, op3Reg, element);
+            }
+        };
+
+        if (op2->isContainedIntOrIImmed())
+        {
+            int element = (int)op2->AsIntConCommon()->IconValue();
+
+            emitSwCase(element);
+        }
+        else
+        {
+            regNumber elementReg = op2->gtRegNum;
+            regNumber tmpReg     = node->GetSingleTempReg();
+
+            genHWIntrinsicSwitchTable(elementReg, tmpReg, elements, emitSwCase);
+        }
+    }
+
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------

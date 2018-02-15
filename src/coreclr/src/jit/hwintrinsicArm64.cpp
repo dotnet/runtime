@@ -162,6 +162,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     switch (getHWIntrinsicInfo(intrinsic).form)
     {
         case HWIntrinsicInfo::SimdBinaryOp:
+        case HWIntrinsicInfo::SimdInsertOp:
         case HWIntrinsicInfo::SimdSelectOp:
         case HWIntrinsicInfo::SimdSetAllOp:
         case HWIntrinsicInfo::SimdUnaryOp:
@@ -232,6 +233,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack(simdType);
 
             return gtNewScalarHWIntrinsicNode(JITtype2varType(sig->retType), op1, op2, intrinsic);
+
+        case HWIntrinsicInfo::SimdInsertOp:
+            if (!mustExpand && !impCheckImmediate(impStackTop(1).val, getSIMDVectorLength(simdSizeBytes, simdBaseType)))
+            {
+                // Immediate lane not constant or out of range
+                return nullptr;
+            }
+            op3 = impPopStack().val;
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(simdType);
+
+            return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
 
         default:
             JITDUMP("Not implemented hardware intrinsic form");
