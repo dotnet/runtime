@@ -1996,6 +1996,114 @@ FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObjec
 }
 FCIMPLEND
 
+static void PrepareMethodHelper(MethodDesc * pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    GCX_PREEMP();
+
+    if (pMD->IsPointingToPrestub())
+        pMD->DoPrestub(NULL);
+
+    if (pMD->IsWrapperStub())
+    {
+        pMD = pMD->GetWrappedMethodDesc();
+        if (pMD->IsPointingToPrestub())
+            pMD->DoPrestub(NULL);
+    }
+}
+
+// This method triggers a given method to be jitted. CoreCLR implementation of this method triggers jiting of the given method only.
+// It does not walk a subset of callgraph to provide CER guarantees.
+FCIMPL3(void, ReflectionInvocation::PrepareMethod, ReflectMethodObject* pMethodUNSAFE, TypeHandle *pInstantiation, UINT32 cInstantiation)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethodUNSAFE, NULL_OK));
+        PRECONDITION(CheckPointer(pInstantiation, NULL_OK));
+    }
+    CONTRACTL_END;
+    
+    REFLECTMETHODREF refMethod = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
+    
+    HELPER_METHOD_FRAME_BEGIN_1(refMethod);
+
+    if (refMethod == NULL)
+        COMPlusThrow(kArgumentException, W("InvalidOperation_HandleIsNotInitialized"));
+
+    MethodDesc *pMD = refMethod->GetMethod();
+
+    if (pMD->IsAbstract())
+        COMPlusThrow(kArgumentException, W("Argument_CannotPrepareAbstract"));
+
+    MethodTable * pExactMT = pMD->GetMethodTable();
+    if (pInstantiation != NULL)
+    {
+        // We were handed an instantiation, check that the method expects it and the right number of types has been provided (the
+        // caller supplies one array containing the class instantiation immediately followed by the method instantiation).
+        if (cInstantiation != (pMD->GetNumGenericMethodArgs() + pMD->GetNumGenericClassArgs()))
+            COMPlusThrow(kArgumentException, W("Argument_InvalidGenericInstantiation"));
+
+        // Check we've got a reasonable looking instantiation.
+        if (!Generics::CheckInstantiation(Instantiation(pInstantiation, cInstantiation)))
+            COMPlusThrow(kArgumentException, W("Argument_InvalidGenericInstantiation"));
+        for (ULONG i = 0; i < cInstantiation; i++)
+            if (pInstantiation[i].ContainsGenericVariables())
+                COMPlusThrow(kArgumentException, W("Argument_InvalidGenericInstantiation"));
+
+        TypeHandle thExactType = ClassLoader::LoadGenericInstantiationThrowing(pMD->GetModule(),
+                                                                               pMD->GetMethodTable()->GetCl(),
+                                                                               Instantiation(pInstantiation, pMD->GetNumGenericClassArgs()));
+        pExactMT = thExactType.AsMethodTable();
+
+        pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+                                                           pExactMT,
+                                                           FALSE,
+                                                           Instantiation(&pInstantiation[pMD->GetNumGenericClassArgs()], pMD->GetNumGenericMethodArgs()),
+                                                           FALSE);
+    }
+
+    if (pMD->ContainsGenericVariables())
+        COMPlusThrow(kArgumentException, W("Argument_InvalidGenericInstantiation"));
+
+    PrepareMethodHelper(pMD);
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
+// This method triggers target of a given method to be jitted. CoreCLR implementation of this method triggers jiting
+// of the given method only. It does not walk a subset of callgraph to provide CER guarantees.
+// In the case of a multi-cast delegate, we rely on the fact that each individual component
+// was prepared prior to the Combine.
+FCIMPL1(void, ReflectionInvocation::PrepareDelegate, Object* delegateUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(delegateUNSAFE, NULL_OK));
+    }
+    CONTRACTL_END;
+    
+    if (delegateUNSAFE == NULL)
+        return;
+
+    OBJECTREF delegate = ObjectToOBJECTREF(delegateUNSAFE);
+    HELPER_METHOD_FRAME_BEGIN_1(delegate);
+
+    MethodDesc *pMD = COMDelegate::GetMethodDesc(delegate);
+
+    PrepareMethodHelper(pMD);
+
+    HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND
+
 // This method checks to see if there is sufficient stack to execute the average Framework method.
 // If there is not, then it throws System.InsufficientExecutionStackException. The limit for each
 // thread is precomputed when the thread is created.
