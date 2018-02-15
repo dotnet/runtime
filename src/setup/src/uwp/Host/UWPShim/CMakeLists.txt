@@ -1,2 +1,0 @@
-add_subdirectory(Console)
-add_subdirectory(Windows)
