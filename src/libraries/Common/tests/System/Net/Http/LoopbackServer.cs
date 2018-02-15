@@ -47,6 +47,7 @@ namespace System.Net.Test.Common
             }
         }
 
+        public Socket ListenSocket => _listenSocket;
         public Uri Uri => _uri;
 
         public static async Task CreateServerAsync(Func<LoopbackServer, Task> funcAsync, Options options = null)
