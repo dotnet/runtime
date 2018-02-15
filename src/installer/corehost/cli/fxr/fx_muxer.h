@@ -14,19 +14,81 @@ int execute_app(
     const int argc,
     const pal::char_t* argv[]);
 
+int execute_host_command(
+    const pal::string_t& impl_dll_dir,
+    corehost_init_t* init,
+    const int argc,
+    const pal::char_t* argv[],
+    pal::char_t result_buffer[],
+    int32_t buffer_size,
+    int32_t* required_buffer_size);
+
 class fx_muxer_t
 {
 public:
-    static int execute(const int argc, const pal::char_t* argv[]);
+    static int execute(
+        const pal::string_t host_command,
+        const int argc,
+        const pal::char_t* argv[],
+        pal::char_t result_buffer[],
+        int32_t buffer_size,
+        int32_t* required_buffer_size);
+    static int parse_path_args(
+        const int argc,
+        const pal::char_t* argv[],
+        pal::string_t& own_dir,
+        pal::string_t& own_dll,
+        pal::string_t& own_name);
+    static int parse_args(
+        const pal::string_t& own_dir,
+        const pal::string_t& own_dll,
+        int argoff,
+        int argc,
+        const pal::char_t* argv[],
+        bool exec_mode,
+        host_mode_t mode,
+        int* new_argoff,
+        pal::string_t& app_candidate,
+        opt_map_t& opts);
+    static int handle_exec(
+        const pal::string_t& own_dir,
+        const pal::string_t& app_candidate,
+        const opt_map_t& opts,
+        int argc,
+        const pal::char_t* argv[],
+        int argoff,
+        host_mode_t mode);
+    static int handle_exec_host_command(
+        const pal::string_t& host_command,
+        const pal::string_t& own_dir,
+        const pal::string_t& app_candidate,
+        const opt_map_t& opts,
+        int argc,
+        const pal::char_t* argv[],
+        int argoff,
+        host_mode_t mode,
+        pal::char_t result_buffer[],
+        int32_t buffer_size,
+        int32_t* required_buffer_size);
+    static int handle_cli(
+        const pal::string_t& own_dir,
+        const pal::string_t& own_dll,
+        int argc,
+        const pal::char_t* argv[]);
     static std::vector<host_option> get_known_opts(bool exec_mode, host_mode_t mode, bool get_all_options = false);
     static bool resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk);
 private:
     static int read_config_and_execute(
+        const pal::string_t& host_command,
         const pal::string_t& own_dir,
         const pal::string_t& app_candidate,
-        const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
-        int new_argc, const pal::char_t** new_argv, host_mode_t mode);
-    static int parse_args_and_execute(const pal::string_t& own_dir, const pal::string_t& own_dll, int argoff, int argc, const pal::char_t* argv[], bool exec_mode, host_mode_t mode, bool* can_execute);
+        const opt_map_t& opts,
+        int new_argc,
+        const pal::char_t** new_argv,
+        host_mode_t mode,
+        pal::char_t out_buffer[],
+        int32_t buffer_size,
+        int32_t* required_buffer_size);
     static bool resolve_hostpolicy_dir(
         host_mode_t mode,
         const pal::string_t& own_dir,

@@ -29,9 +29,6 @@
     <RuntimePackageFile Include="$(PackageOutputPath)**/runtime.*.nupkg" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RuntimePackageFile>
-    <UWPArtifactsToUpload Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)" Condition="Exists('$(MicrosoftNetCoreRuntimeAppxOutputPath)')" >
-      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
-    </UWPArtifactsToUpload>
     <RidAgnosticPackageFile Include="$(PackageOutputPath)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
