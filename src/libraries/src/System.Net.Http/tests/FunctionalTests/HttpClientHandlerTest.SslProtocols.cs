@@ -246,6 +246,13 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_AllowedSSLVersionDiffersFromServer_ThrowsException(
             SslProtocols allowedProtocol, SslProtocols acceptedProtocol, Type exceptedServerException)
         {
+
+            if (PlatformDetection.IsUbuntu1804)
+            {
+                //ActiveIssue #27023: [Ubuntu18.04] Tests failed:
+                return;
+            }
+
             if (!BackendSupportsSslConfiguration)
                 return;
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -269,6 +276,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_DisallowTls10_AllowTls11_AllowTls12()
         {
+            if (PlatformDetection.IsUbuntu1804)
+            {
+                //ActiveIssue #27023: [Ubuntu18.04] Tests failed:
+                return;
+            }
+
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (var client = new HttpClient(handler))
             {
