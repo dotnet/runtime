@@ -477,23 +477,37 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
         // Establish a return point in case the common_signal_handler returns
 
-        volatile bool contextInitialization = true;
-
-        SignalHandlerWorkerReturnPoint returnPoint;
-        RtlCaptureContext(&returnPoint.context);
-
-        // When the signal handler worker completes, it uses setcontext to return to this point
-
-        if (contextInitialization)
+        if (GetCurrentPalThread())
         {
-            contextInitialization = false;
-            ExecuteHandlerOnOriginalStack(code, siginfo, context, &returnPoint);
-            _ASSERTE(FALSE); // The ExecuteHandlerOnOriginalStack should never return
+            volatile bool contextInitialization = true;
+
+            void *ptr = alloca(sizeof(SignalHandlerWorkerReturnPoint) + alignof(SignalHandlerWorkerReturnPoint) - 1);
+            SignalHandlerWorkerReturnPoint *pReturnPoint = (SignalHandlerWorkerReturnPoint *)ALIGN_UP(ptr, alignof(SignalHandlerWorkerReturnPoint));
+            RtlCaptureContext(&pReturnPoint->context);
+
+            // When the signal handler worker completes, it uses setcontext to return to this point
+
+            if (contextInitialization)
+            {
+                contextInitialization = false;
+                ExecuteHandlerOnOriginalStack(code, siginfo, context, pReturnPoint);
+                _ASSERTE(FALSE); // The ExecuteHandlerOnOriginalStack should never return
+            }
+
+            if (pReturnPoint->returnFromHandler)
+            {
+                return;
+            }
         }
-        
-        if (returnPoint.returnFromHandler)
+        else
         {
-            return;
+            // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
+            // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
+            // we can call common_signal_handler on the alternate stack.
+            if (common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr))
+            {
+                return;
+            }
         }
     }
 
