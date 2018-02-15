@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.IO;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,18 +14,17 @@ namespace System.Net.Http
         private readonly HttpMessageHandler _innerHandler;
         private readonly IWebProxy _proxy;
         private readonly ICredentials _defaultCredentials;
-        private readonly HttpConnectionPools _connectionPools;
+        private readonly HttpConnectionPoolManager _poolManager;
         private bool _disposed;
 
-        public HttpProxyConnectionHandler(HttpConnectionSettings settings, HttpMessageHandler innerHandler)
+        public HttpProxyConnectionHandler(HttpConnectionPoolManager poolManager, IWebProxy proxy, ICredentials defaultCredentials, HttpMessageHandler innerHandler)
         {
             Debug.Assert(innerHandler != null);
-            Debug.Assert(settings._useProxy);
 
             _innerHandler = innerHandler;
-            _proxy = settings._proxy ?? ConstructSystemProxy();
-            _defaultCredentials = settings._defaultProxyCredentials;
-            _connectionPools = new HttpConnectionPools(settings, usingProxy: true);
+            _poolManager = poolManager;
+            _proxy = proxy ?? ConstructSystemProxy();
+            _defaultCredentials = defaultCredentials;
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -52,11 +50,7 @@ namespace System.Net.Http
 
         private Task<HttpResponseMessage> GetConnectionAndSendAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
         {
-            Debug.Assert(proxyUri.Scheme == UriScheme.Http);
-
-            var key = new HttpConnectionKey(proxyUri.IdnHost, proxyUri.Port, null);
-            HttpConnectionPool pool = _connectionPools.GetOrAddPool(key);
-            return pool.SendAsync(request, cancellationToken);
+            return _poolManager.SendAsync(request, proxyUri, cancellationToken);
         }
 
         private async Task<HttpResponseMessage> SendWithProxyAsync(
@@ -65,12 +59,6 @@ namespace System.Net.Http
             if (proxyUri.Scheme != UriScheme.Http)
             {
                 throw new InvalidOperationException(SR.net_http_invalid_proxy_scheme);
-            }
-
-            if (!HttpUtilities.IsSupportedNonSecureScheme(request.RequestUri.Scheme))
-            {
-                // TODO #23136: Implement SSL tunneling through proxy
-                throw new NotImplementedException("no support for SSL tunneling through proxy");
             }
 
             HttpResponseMessage response = await GetConnectionAndSendAsync(request, proxyUri, cancellationToken).ConfigureAwait(false);
@@ -151,7 +139,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                _connectionPools.Dispose();
+                _poolManager.Dispose();
                 if (_proxy is IDisposable obj)
                 {
                     obj.Dispose();

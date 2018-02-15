@@ -396,4 +396,7 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
+  <data name="net_http_proxy_tunnel_failed" xml:space="preserve">
+    <value>Unable to establish a tunnel though proxy '{0}'.  The proxy returned status code {1}.</value>
+  </data>
 </root>

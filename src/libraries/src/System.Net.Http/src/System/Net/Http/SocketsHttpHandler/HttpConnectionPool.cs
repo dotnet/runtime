@@ -17,8 +17,10 @@ namespace System.Net.Http
     /// <summary>Provides a pool of connections to the same endpoint.</summary>
     internal sealed class HttpConnectionPool : IDisposable
     {
-        private readonly HttpConnectionPools _pools;
-        private readonly HttpConnectionKey _key;
+        private readonly HttpConnectionPoolManager _poolManager;
+        private readonly string _host;
+        private readonly int _port;
+        private readonly Uri _proxyUri;
 
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
@@ -44,39 +46,44 @@ namespace System.Net.Http
         
         /// <summary>Initializes the pool.</summary>
         /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
-        public HttpConnectionPool(HttpConnectionPools pools, HttpConnectionKey key, int maxConnections = int.MaxValue) // int.MaxValue treated as infinite
+        /// 
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, string host, int port, string sslHostName, Uri proxyUri, int maxConnections)
         {
-            _pools = pools;
-            _key = key;
+            Debug.Assert(proxyUri == null ?
+                    host != null && port != 0 :         // direct http or https connection
+                    (sslHostName == null ?
+                        host == null && port == 0 :     // proxy connection 
+                        host != null && port != 0));    // SSL proxy tunnel
+
+            _poolManager = poolManager;
+            _host = host;
+            _port = port;
+            _proxyUri = proxyUri;
             _maxConnections = maxConnections;
 
-            // Precalculate ASCII bytes for header name
-            // We don't do this for proxy connections because the actual host header varies on a proxy connection.
-            if (!pools.UsingProxy)
+            if (sslHostName != null)
             {
+                // Precalculate cached SSL options to use for all connections.
+                _sslOptions = _poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
+                _sslOptions.ApplicationProtocols = null; // explicitly ignore any ApplicationProtocols set
+                _sslOptions.TargetHost = sslHostName; // always use the key's name rather than whatever was specified
+            }
+
+            if (_host != null)
+            {
+                // Precalculate ASCII bytes for header name
+                // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
                 // CONSIDER: Cache more than just host name -- port, header name, etc
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
-                _idnHostAsciiBytes = Encoding.ASCII.GetBytes(key.Host);
-                Debug.Assert(Encoding.ASCII.GetString(_idnHostAsciiBytes) == key.Host);
-            }
-            else
-            {
-                // Proxy connections should never use SSL
-                Debug.Assert(!key.IsSecure);
-            }
-
-            if (key.IsSecure)
-            {
-                // Precalculate cached SSL options to use for all connections.
-                _sslOptions = _pools.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
-                _sslOptions.ApplicationProtocols = null; // explicitly ignore any ApplicationProtocols set
-                _sslOptions.TargetHost = key.SslHostName; // always use the key's name rather than whatever was specified
+                _idnHostAsciiBytes = Encoding.ASCII.GetBytes(_host);
+                Debug.Assert(Encoding.ASCII.GetString(_idnHostAsciiBytes) == _host);
             }
         }
 
-        public HttpConnectionKey Key => _key;
-        public HttpConnectionPools Pools => _pools;
+        public HttpConnectionSettings Settings => _poolManager.Settings;
+        public bool IsSecure => _sslOptions != null;
+        public bool UsingProxy => (_proxyUri != null && !IsSecure);     // Tunnel doesn't count, only direct proxy usage
         public byte[] IdnHostAsciiBytes => _idnHostAsciiBytes;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
@@ -89,8 +96,8 @@ namespace System.Net.Http
                 return new ValueTask<HttpConnection>(Task.FromCanceled<HttpConnection>(cancellationToken));
             }
 
-            TimeSpan pooledConnectionLifetime = _pools.Settings._pooledConnectionLifetime;
-            TimeSpan pooledConnectionIdleTimeout = _pools.Settings._pooledConnectionIdleTimeout;
+            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+            TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
             DateTimeOffset now = DateTimeOffset.UtcNow;
             List<CachedConnection> list = _idleConnections;
             lock (SyncObj)
@@ -199,10 +206,15 @@ namespace System.Net.Http
 
         private async ValueTask<HttpConnection> CreateConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Stream stream = await ConnectHelper.ConnectAsync(_key, cancellationToken).ConfigureAwait(false);
+            Stream stream = await
+                (_proxyUri == null ?
+                    ConnectHelper.ConnectAsync(_host, _port, cancellationToken) :
+                    (_sslOptions == null ?
+                        ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken) :
+                        EstablishProxyTunnel(cancellationToken))).ConfigureAwait(false);
 
             TransportContext transportContext = null;
-            if (_key.IsSecure)
+            if (_sslOptions != null)
             {
                 SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
                 stream = sslStream;
@@ -212,6 +224,27 @@ namespace System.Net.Http
             return _maxConnections == int.MaxValue ?
                 new HttpConnection(this, stream, transportContext) :
                 new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
+        }
+
+        // TODO (#23136):
+        // CONNECT is not yet supported, so this code will not succeed currently.
+
+        private async ValueTask<Stream> EstablishProxyTunnel(CancellationToken cancellationToken)
+        {
+            // Send a CONNECT request to the proxy server to establish a tunnel.
+            HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
+            tunnelRequest.Headers.Host = $"{_host}:{_port}";    // This specifies destination host/port to connect to
+
+            // TODO: For now, we don't support proxy authentication in this scenario.
+            // This will get fixed when we refactor proxy auth handling.
+
+            HttpResponseMessage tunnelResponse = await _poolManager.SendAsync(tunnelRequest, null, cancellationToken).ConfigureAwait(false);
+            if (tunnelResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException(SR.Format(SR.net_http_proxy_tunnel_failed, _proxyUri, tunnelResponse.StatusCode));
+            }
+
+            return await tunnelResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
@@ -473,8 +506,8 @@ namespace System.Net.Http
         /// </returns>
         public bool CleanCacheAndDisposeIfUnused()
         {
-            TimeSpan pooledConnectionLifetime = _pools.Settings._pooledConnectionLifetime;
-            TimeSpan pooledConnectionIdleTimeout = _pools.Settings._pooledConnectionIdleTimeout;
+            TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
+            TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
 
             List<CachedConnection> list = _idleConnections;
             List<HttpConnection> toDispose = null;
@@ -560,7 +593,16 @@ namespace System.Net.Http
             return false;
         }
 
-        public override string ToString() => $"{nameof(HttpConnectionPool)}(Connections:{_associatedConnectionCount})"; // Description for diagnostic purposes
+        // For diagnostic purposes
+        public override string ToString() =>
+            $"{nameof(HttpConnectionPool)}" +
+            (_proxyUri == null ?
+                (_sslOptions == null ?
+                    $"http://{_host}:{_port}" :
+                    $"https://{_host}:{_port}" + (_sslOptions.TargetHost != _host ? $", SSL TargetHost={_sslOptions.TargetHost}" : null)) :
+                (_sslOptions == null ?
+                    $"Proxy {_proxyUri}" :
+                    $"https://{_host}:{_port}/ tunnelled via Proxy {_proxyUri}" + (_sslOptions.TargetHost != _host ? $", SSL TargetHost={_sslOptions.TargetHost}" : null)));
 
         private void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
