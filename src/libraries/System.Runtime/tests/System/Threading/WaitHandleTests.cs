@@ -321,17 +321,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix doesn't support SignalAndWait
-        public static void SignalAndWait_PlatformNotSupported()
-        {
-            var toSignal = new ManualResetEvent(false);
-            var toWaitOn = new ManualResetEvent(true);
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.SignalAndWait(toSignal, toWaitOn));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.SignalAndWait(toSignal, toWaitOn, 0, false));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.SignalAndWait(toSignal, toWaitOn, TimeSpan.Zero, false));
-        }
-
-        [Fact]
         public static void Close()
         {
             var wh = new ManualResetEvent(false);
