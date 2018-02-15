@@ -203,7 +203,7 @@ namespace System.Net.Http
             Stream stream =
                 _proxyUri != null ?
                     (_sslOptions != null ?
-                        throw new NotSupportedException("SSL Proxy tunneling not currently supported") :
+                        await EstablishProxyTunnel(cancellationToken) :
                         await ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken)) :
                     await ConnectHelper.ConnectAsync(_host, _port, cancellationToken);
 
@@ -218,6 +218,24 @@ namespace System.Net.Http
             return _maxConnections == int.MaxValue ?
                 new HttpConnection(this, stream, transportContext) :
                 new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
+        }
+
+        private async ValueTask<Stream> EstablishProxyTunnel(CancellationToken cancellationToken)
+        {
+            // Send a CONNECT request to the proxy server to establish a tunnel.
+            HttpRequestMessage tunnelRequest = new HttpRequestMessage(new HttpMethod("CONNECT"), _proxyUri);
+            tunnelRequest.Headers.Host = $"{_host}:{_port}";    // This specifies destination host/port to connect to
+
+            // TODO: For now, we don't support proxy authentication in this scenario.
+            // This will get fixed when we refactor proxy auth handling.
+
+            HttpResponseMessage tunnelResponse = await _poolManager.SendAsync(tunnelRequest, null, cancellationToken);
+            if (tunnelResponse.StatusCode != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException(SR.Format(SR.net_http_proxy_tunnel_failed, _proxyUri, tunnelResponse.StatusCode));
+            }
+
+            return await tunnelResponse.Content.ReadAsStreamAsync();
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>

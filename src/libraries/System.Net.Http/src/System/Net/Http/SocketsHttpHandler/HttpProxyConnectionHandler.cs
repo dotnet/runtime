@@ -61,12 +61,6 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_invalid_proxy_scheme);
             }
 
-            if (!HttpUtilities.IsSupportedNonSecureScheme(request.RequestUri.Scheme))
-            {
-                // TODO #23136: Implement SSL tunneling through proxy
-                throw new NotImplementedException("no support for SSL tunneling through proxy");
-            }
-
             HttpResponseMessage response = await GetConnectionAndSendAsync(request, proxyUri, cancellationToken).ConfigureAwait(false);
 
             // Handle proxy authentication
