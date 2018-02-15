@@ -956,7 +956,8 @@ CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe \
 	monitor-abort.exe \
 	monitor-wait-abort.exe \
-	process-stress-3.exe
+	process-stress-3.exe \
+	sleep.exe
 
 if ENABLE_COOP
 CI_PR_DISABLED_TESTS += \
