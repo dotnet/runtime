@@ -7462,7 +7462,10 @@ private:
             return SIMD_AVX2_Supported;
         }
 
-        if (CanUseSSE4())
+        // SIMD_SSE4_Supported actually requires all of SSE3, SSSE3, SSE4.1, and SSE4.2
+        // to be supported. We can only enable it if all four are enabled in the compiler
+        if (compSupports(InstructionSet_SSE42) && compSupports(InstructionSet_SSE41) &&
+            compSupports(InstructionSet_SSSE3) && compSupports(InstructionSet_SSE3))
         {
             return SIMD_SSE4_Supported;
         }
@@ -8024,21 +8027,11 @@ private:
         return false;
     }
 
-    // Whether SSE2 is available
+    // Whether SSE and SSE2 is available
     bool canUseSSE2() const
     {
 #ifdef _TARGET_XARCH_
         return opts.compCanUseSSE2;
-#else
-        return false;
-#endif
-    }
-
-    // Whether SSE3, SSSE3, SSE4.1 and SSE4.2 is available
-    bool CanUseSSE4() const
-    {
-#ifdef _TARGET_XARCH_
-        return opts.compCanUseSSE4;
 #else
         return false;
 #endif
@@ -8169,7 +8162,6 @@ public:
         bool compUseCMOV;
 #ifdef _TARGET_XARCH_
         bool compCanUseSSE2; // Allow CodeGen to use "movq XMM" instructions
-        bool compCanUseSSE4; // Allow CodeGen to use SSE3, SSSE3, SSE4.1 and SSE4.2 instructions
 #endif                       // _TARGET_XARCH_
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
