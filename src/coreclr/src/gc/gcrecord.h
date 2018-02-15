@@ -270,7 +270,7 @@ static BOOL gc_expand_mechanism_mandatory_p[] =
 static char* str_heap_compact_reasons[] = 
 {
     "low on ephemeral space",
-    "high fragmetation",
+    "high fragmentation",
     "couldn't allocate gaps",
     "user specfied compact LOH",
     "last GC before OOM",
