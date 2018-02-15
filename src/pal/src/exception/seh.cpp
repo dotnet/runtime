@@ -344,8 +344,8 @@ CatchHardwareExceptionHolder::~CatchHardwareExceptionHolder()
 
 bool CatchHardwareExceptionHolder::IsEnabled()
 {
-    CPalThread *pThread = InternalGetCurrentThread();
-    return pThread->IsHardwareExceptionsEnabled();
+    CPalThread *pThread = GetCurrentPalThread();
+    return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
 /*++
