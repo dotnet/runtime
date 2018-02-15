@@ -6,6 +6,7 @@
     <ProjectGuid>{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

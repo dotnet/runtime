@@ -58,9 +58,6 @@
     <Compile Include="System\IO\Compression\ZipArchiveEntry.netcoreapp.cs" />
     <Compile Include="System\IO\Compression\ZipCustomStreams.netcoreapp.cs" />
     <Compile Include="System\IO\Compression\PositionPreservingWriteOnlyStreamWrapper.netcoreapp.cs" />
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
-      <Link>Common\System\IO\PathInternal.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>

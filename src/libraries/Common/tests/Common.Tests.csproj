@@ -38,9 +38,6 @@
     <Compile Include="$(CommonPath)\System\Collections\Generic\LargeArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\LargeArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
-      <Link>Common\System\IO\PathInternal.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
@@ -82,9 +79,7 @@
     <Compile Include="Tests\System\StringExtensions.Tests.cs" />
     <Compile Include="Tests\System\Collections\Generic\ArrayBuilderTests.cs" />
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
-    <Compile Include="Tests\System\IO\PathInternal_Unix_Tests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
-    <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
     <Compile Include="System\Net\Sockets\Fletcher32.cs">
       <Link>System\Net\Sockets\Fletcher32.cs</Link>
@@ -142,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="CommonTest\System\" />
+    <Folder Include="Common\System\Security\Cryptography\" />
     <Folder Include="System\Net\Sockets\" />
     <Folder Include="System\Net\VirtualNetwork\" />
   </ItemGroup>

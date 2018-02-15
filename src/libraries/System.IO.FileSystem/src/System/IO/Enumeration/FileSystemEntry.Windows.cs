@@ -68,13 +68,7 @@ namespace System.IO.Enumeration
         public bool IsDirectory => (Attributes & FileAttributes.Directory) != 0;
 
         public FileSystemInfo ToFileSystemInfo()
-        {
-            string fullPath = PathHelpers.CombineNoChecks(Directory, FileName);
-
-            return IsDirectory
-                ? DirectoryInfo.Create(fullPath, ref this)
-                : (FileSystemInfo)FileInfo.Create(fullPath, ref this);
-        }
+            => FileSystemInfo.Create(PathHelpers.CombineNoChecks(Directory, FileName), ref this);
 
         /// <summary>
         /// Returns the full path for find results, based on the initially provided path.

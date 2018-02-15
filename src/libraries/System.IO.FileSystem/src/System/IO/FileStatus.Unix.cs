@@ -37,6 +37,8 @@ namespace System.IO
 
         public FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
         {
+            // IMPORTANT: Attribute logic must match the logic in FileSystemEntry
+
             EnsureStatInitialized(path);
 
             if (!_exists)
@@ -44,51 +46,41 @@ namespace System.IO
 
             FileAttributes attrs = default;
 
-            bool IsReadOnly(ref Interop.Sys.FileStatus fileStatus)
+            Interop.Sys.Permissions readBit, writeBit;
+            if (_fileStatus.Uid == Interop.Sys.GetEUid())
             {
-                Interop.Sys.Permissions readBit, writeBit;
-                if (fileStatus.Uid == Interop.Sys.GetEUid())
-                {
-                    // User effectively owns the file
-                    readBit = Interop.Sys.Permissions.S_IRUSR;
-                    writeBit = Interop.Sys.Permissions.S_IWUSR;
-                }
-                else if (fileStatus.Gid == Interop.Sys.GetEGid())
-                {
-                    // User belongs to a group that effectively owns the file
-                    readBit = Interop.Sys.Permissions.S_IRGRP;
-                    writeBit = Interop.Sys.Permissions.S_IWGRP;
-                }
-                else
-                {
-                    // Others permissions
-                    readBit = Interop.Sys.Permissions.S_IROTH;
-                    writeBit = Interop.Sys.Permissions.S_IWOTH;
-                }
-
-                return
-                    (fileStatus.Mode & (int)readBit) != 0 && // has read permission
-                    (fileStatus.Mode & (int)writeBit) == 0;  // but not write permission
+                // User effectively owns the file
+                readBit = Interop.Sys.Permissions.S_IRUSR;
+                writeBit = Interop.Sys.Permissions.S_IWUSR;
+            }
+            else if (_fileStatus.Gid == Interop.Sys.GetEGid())
+            {
+                // User belongs to a group that effectively owns the file
+                readBit = Interop.Sys.Permissions.S_IRGRP;
+                writeBit = Interop.Sys.Permissions.S_IWGRP;
+            }
+            else
+            {
+                // Others permissions
+                readBit = Interop.Sys.Permissions.S_IROTH;
+                writeBit = Interop.Sys.Permissions.S_IWOTH;
             }
 
-            if (_isDirectory) // this is the one attribute where we follow symlinks
-            {
-                attrs |= FileAttributes.Directory;
-            }
-            if (IsReadOnly(ref _fileStatus))
+            if ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
+                (_fileStatus.Mode & (int)writeBit) == 0)  // but not write permission
             {
                 attrs |= FileAttributes.ReadOnly;
             }
+
             if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
-            {
                 attrs |= FileAttributes.ReparsePoint;
-            }
+
+            if (_isDirectory)
+                attrs |= FileAttributes.Directory;
 
             // If the filename starts with a period, it's hidden.
             if (fileName.Length > 0 && fileName[0] == '.')
-            {
                 attrs |= FileAttributes.Hidden;
-            }
 
             return attrs != default ? attrs : FileAttributes.Normal;
         }
@@ -227,7 +219,7 @@ namespace System.IO
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _isDirectory = false;
-            if (path.Length > 1 && PathInternal.EndsInDirectorySeparator(path))
+            if (path.Length > 1 && PathHelpers.EndsInDirectorySeparator(path))
                 path = path.Slice(0, path.Length - 1);
             int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
@@ -250,6 +242,8 @@ namespace System.IO
             }
 
             _exists = true;
+
+            // IMPORTANT: Is directory logic must match the logic in FileSystemEntry
             _isDirectory = (_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
 
             // If we're a symlink, attempt to check the target to see if it is a directory
