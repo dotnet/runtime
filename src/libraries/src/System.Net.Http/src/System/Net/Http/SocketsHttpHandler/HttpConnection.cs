@@ -43,6 +43,9 @@ namespace System.Net.Http
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
         private static readonly byte[] s_hostKeyAndSeparator = Encoding.ASCII.GetBytes(HttpKnownHeaderNames.Host + ": ");
         private static readonly byte[] s_httpSchemeAndDelimiter = Encoding.ASCII.GetBytes(Uri.UriSchemeHttp + Uri.SchemeDelimiter);
+        private static readonly byte[] s_http1DotBytes = Encoding.ASCII.GetBytes("HTTP/1.");
+        private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
+        private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
         private static readonly string s_cancellationMessage = new OperationCanceledException().Message; // use same message as the default ctor
 
         private readonly HttpConnectionPool _pool;
@@ -635,36 +638,43 @@ namespace System.Net.Http
         // TODO: Remove this overload once https://github.com/dotnet/roslyn/issues/17287 is addressed
         // and the compiler doesn't lift the span temporary from the call site into the async state
         // machine in debug builds.
-        private void ParseStatusLine(ArraySegment<byte> line, HttpResponseMessage response) =>
+        private static void ParseStatusLine(ArraySegment<byte> line, HttpResponseMessage response) =>
             ParseStatusLine((Span<byte>)line, response);
 
-        private void ParseStatusLine(Span<byte> line, HttpResponseMessage response)
+        private static void ParseStatusLine(Span<byte> line, HttpResponseMessage response)
         {
             // We sent the request version as either 1.0 or 1.1.
             // We expect a response version of the form 1.X, where X is a single digit as per RFC.
 
-            const int MinStatusLineLength = 12;     // "HTTP/1.1 123" 
-
-            if (line.Length < MinStatusLineLength ||
-                line[0] != 'H' ||
-                line[1] != 'T' ||
-                line[2] != 'T' ||
-                line[3] != 'P' ||
-                line[4] != '/' ||
-                line[5] != '1' ||
-                line[6] != '.' ||
-                line[8] != ' ')
+            // Validate the beginning of the status line and set the response version.
+            const int MinStatusLineLength = 12; // "HTTP/1.x 123" 
+            if (line.Length < MinStatusLineLength || line[8] != ' ')
             {
                 ThrowInvalidHttpResponse();
             }
 
-            // Set the response HttpVersion
-            byte minorVersion = line[7];
-            response.Version =
-                minorVersion == '1' ? HttpVersion.Version11 :
-                minorVersion == '0' ? HttpVersion.Version10 :
-                !IsDigit(minorVersion) ? throw new HttpRequestException(SR.net_http_invalid_response) :
-                new Version(1, minorVersion - '0');
+            ulong first8Bytes = BitConverter.ToUInt64(line);
+            if (first8Bytes == s_http11Bytes)
+            {
+                response.SetVersionWithoutValidation(HttpVersion.Version11);
+            }
+            else if (first8Bytes == s_http10Bytes)
+            {
+                response.SetVersionWithoutValidation(HttpVersion.Version10);
+            }
+            else
+            {
+                byte minorVersion = line[7];
+                if (IsDigit(minorVersion) &&
+                    line.Slice(0, 7).SequenceEqual(s_http1DotBytes))
+                {
+                    response.SetVersionWithoutValidation(new Version(1, minorVersion - '0'));
+                }
+                else
+                {
+                    ThrowInvalidHttpResponse();
+                }
+            }
 
             // Set the status code
             byte status1 = line[9], status2 = line[10], status3 = line[11];
@@ -672,36 +682,46 @@ namespace System.Net.Http
             {
                 ThrowInvalidHttpResponse();
             }
-
-            response.StatusCode =
-                (HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
+            response.SetStatusCodeWithoutValidation((HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0')));
 
             // Parse (optional) reason phrase
             if (line.Length == MinStatusLineLength)
             {
-                response.ReasonPhrase = string.Empty;
+                response.SetReasonPhraseWithoutValidation(string.Empty);
             }
-            else if (line[MinStatusLineLength] != ' ')
-            {
-                ThrowInvalidHttpResponse();
-            }
-            else
+            else if (line[MinStatusLineLength] == ' ')
             {
                 Span<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                response.ReasonPhrase = knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes) ?
-                                            knownReasonPhrase :
-                                            HttpRuleParser.DefaultHttpEncoding.GetString(reasonBytes);
+                if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
+                {
+                    response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
+                }
+                else
+                {
+                    try
+                    {
+                        response.ReasonPhrase = HttpRuleParser.DefaultHttpEncoding.GetString(reasonBytes);
+                    }
+                    catch (FormatException error)
+                    {
+                        ThrowInvalidHttpResponse(error);
+                    }
+                }
+            }
+            else
+            {
+                ThrowInvalidHttpResponse();
             }
         }
 
         // TODO: Remove this overload once https://github.com/dotnet/roslyn/issues/17287 is addressed
         // and the compiler doesn't lift the span temporary from the call site into the async state
         // machine in debug builds.
-        private void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response) =>
+        private static void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response) =>
             ParseHeaderNameValue((Span<byte>)line, response);
 
-        private void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
+        private static void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
         {
             Debug.Assert(line.Length > 0);
 

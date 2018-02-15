@@ -403,13 +403,14 @@ namespace System.Net.Http.Functional.Tests
             yield return "HTTP/A.1 200 OK";
             yield return "HTTP/X.Y.Z 200 OK";
             
-            // Only pass on .NET Core Windows & ManagedHandler.
+            // Only pass on .NET Core Windows & SocketsHttpHandler.
             if (PlatformDetection.IsNetCore && PlatformDetection.IsWindows)
             {
                 yield return "HTTP/0.1 200 OK";
                 yield return "HTTP/3.5 200 OK";
                 yield return "HTTP/1.12 200 OK";
                 yield return "HTTP/12.1 200 OK";
+                yield return "HTTP/1.1 200 O\rK";
             }
 
             // Skip these test cases on CurlHandler since the behavior is different.
@@ -442,8 +443,6 @@ namespace System.Net.Http.Functional.Tests
                 yield return "ABCD/1.1 200 OK";
                 yield return "HTTP/1.1";
                 yield return "HTTP\\1.1 200 OK";
-                // ActiveIssue: #26946
-                // yield return "HTTP/1.1 200 O\rK";
                 yield return "NOTHTTP/1.1 200 OK";
             }
         }
@@ -471,7 +470,7 @@ namespace System.Net.Http.Functional.Tests
             }
             else
             {
-                // UAP and ManagedHandler will allow LF ending.
+                // UAP and SocketsHttpHandler will allow LF ending.
                 await GetAsyncSuccessHelper(responseString, expectedStatusCode, expectedReason);
             }
         }
