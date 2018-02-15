@@ -5,7 +5,6 @@
 #if USE_ETW
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.Diagnostics.Tracing.Etlx;
 #endif
 using System;
 using System.Collections.Generic;
