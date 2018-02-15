@@ -5,6 +5,7 @@
     <ProjectGuid>{2C58640B-5BED-4E83-9554-CD2B9762643F}</ProjectGuid>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
+    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -33,7 +34,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexReplacement.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
-    <Compile Include="System\Text\RegularExpressions\ResizableValueListBuilder.cs" />
+    <Compile Include="System\Text\RegularExpressions\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <!-- Common or Common-branched source files -->
@@ -42,6 +43,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>Common\System\IO\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\Generic\ValueListBuilder.cs">
+      <Link>Common\System\Collections\Generic\ValueListBuilder.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Files that enable compiled feature -->
