@@ -32,7 +32,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal static class TypeBind
     {
         // Check the constraints of any type arguments in the given Type.
-        public static bool CheckConstraints(CSemanticChecker checker, ErrorHandling errHandling, CType type, CheckConstraintsFlags flags)
+        public static bool CheckConstraints(CType type, CheckConstraintsFlags flags)
         {
             type = type.GetNakedType(false);
 
@@ -81,7 +81,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // outer type has already been checked then don't bother checking it.
             if (ats.OuterType != null && ((flags & CheckConstraintsFlags.Outer) != 0 || !ats.OuterType.ConstraintError.HasValue))
             {
-                if (!CheckConstraints(checker, errHandling, ats.OuterType, flags))
+                if (!CheckConstraints(ats.OuterType, flags))
                 {
                     ats.ConstraintError = true;
                     return false;
@@ -90,7 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (typeVars.Count > 0)
             {
-                if (!CheckConstraintsCore(checker, errHandling, ats.OwningAggregate, typeVars, typeArgsThis, typeArgsAll, null, flags & CheckConstraintsFlags.NoErrors))
+                if (!CheckConstraintsCore(ats.OwningAggregate, typeVars, typeArgsThis, typeArgsAll, null, flags & CheckConstraintsFlags.NoErrors))
                 {
                     ats.ConstraintError = true;
                     return false;
@@ -103,7 +103,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType arg = typeArgsThis[i].GetNakedType(true);
                 if (arg is AggregateType atArg && !atArg.ConstraintError.HasValue)
                 {
-                    CheckConstraints(checker, errHandling, atArg, flags | CheckConstraintsFlags.Outer);
+                    CheckConstraints(atArg, flags | CheckConstraintsFlags.Outer);
                     if (atArg.ConstraintError.GetValueOrDefault())
                     {
                         ats.ConstraintError = true;
@@ -118,7 +118,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
         // Check the constraints on the method instantiation.
-        public static void CheckMethConstraints(CSemanticChecker checker, ErrorHandling errCtx, MethWithInst mwi)
+        public static void CheckMethConstraints(MethWithInst mwi)
         {
             Debug.Assert(mwi.Meth() != null && mwi.GetType() != null && mwi.TypeArgs != null);
             Debug.Assert(mwi.Meth().typeVars.Count == mwi.TypeArgs.Count);
@@ -126,15 +126,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (mwi.TypeArgs.Count > 0)
             {
-                CheckConstraintsCore(checker, errCtx, mwi.Meth(), mwi.Meth().typeVars, mwi.TypeArgs, mwi.GetType().TypeArgsAll, mwi.TypeArgs, CheckConstraintsFlags.None);
+                CheckConstraintsCore(mwi.Meth(), mwi.Meth().typeVars, mwi.TypeArgs, mwi.GetType().TypeArgsAll, mwi.TypeArgs, CheckConstraintsFlags.None);
             }
         }
+
         ////////////////////////////////////////////////////////////////////////////////
         // Check whether typeArgs satisfies the constraints of typeVars. The 
         // typeArgsCls and typeArgsMeth are used for substitution on the bounds. The
         // tree and symErr are used for error reporting.
-
-        private static bool CheckConstraintsCore(CSemanticChecker checker, ErrorHandling errHandling, Symbol symErr, TypeArray typeVars, TypeArray typeArgs, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
+        private static bool CheckConstraintsCore(Symbol symErr, TypeArray typeVars, TypeArray typeArgs, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
         {
             Debug.Assert(typeVars.Count == typeArgs.Count);
             Debug.Assert(typeVars.Count > 0);
@@ -146,7 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 TypeParameterType var = (TypeParameterType)typeVars[i];
                 CType arg = typeArgs[i];
 
-                if (!CheckSingleConstraint(checker, errHandling, symErr, var, arg, typeArgsCls, typeArgsMeth, flags))
+                if (!CheckSingleConstraint(symErr, var, arg, typeArgsCls, typeArgsMeth, flags))
                 {
                     return false;
                 }
@@ -155,7 +155,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private static bool CheckSingleConstraint(CSemanticChecker checker, ErrorHandling errHandling, Symbol symErr, TypeParameterType var, CType arg, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
+        private static bool CheckSingleConstraint(Symbol symErr, TypeParameterType var, CType arg, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
         {
             Debug.Assert(!(arg is PointerType));
             Debug.Assert(!arg.IsStaticClass);
@@ -166,13 +166,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 if (fReportErrors)
                 {
-                    throw errHandling.Error(ErrorCode.ERR_RefConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
+                    throw ErrorHandling.Error(ErrorCode.ERR_RefConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
                 }
 
                 return false;
             }
 
-            TypeArray bnds = checker.SymbolLoader.GetTypeManager().SubstTypeArray(var.Bounds, typeArgsCls, typeArgsMeth);
+            TypeArray bnds = TypeManager.SubstTypeArray(var.Bounds, typeArgsCls, typeArgsMeth);
             int itypeMin = 0;
 
             if (var.HasValConstraint)
@@ -189,7 +189,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (fReportErrors)
                     {
-                        throw errHandling.Error(ErrorCode.ERR_ValConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
+                        throw ErrorHandling.Error(ErrorCode.ERR_ValConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
                     }
 
                     return false;
@@ -205,7 +205,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             for (int j = itypeMin; j < bnds.Count; j++)
             {
                 CType typeBnd = bnds[j];
-                if (!SatisfiesBound(checker, arg, typeBnd))
+                if (!SatisfiesBound(arg, typeBnd))
                 {
                     if (fReportErrors)
                     {
@@ -226,7 +226,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // to which they have an implicit reference conversion
                             error = ErrorCode.ERR_GenericConstraintNotSatisfiedRefType;
                         }
-                        else if (arg is NullableType nubArg && checker.SymbolLoader.HasBaseConversion(nubArg.UnderlyingType, typeBnd))    // This is inlining FBoxingConv
+                        else if (arg is NullableType nubArg && SymbolLoader.HasBaseConversion(nubArg.UnderlyingType, typeBnd))    // This is inlining FBoxingConv
                         {
                             // nullable types do not satisfy bounds to every type that they are boxable to
                             // They only satisfy bounds of object and ValueType
@@ -257,7 +257,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             error = ErrorCode.ERR_GenericConstraintNotSatisfiedValType;
                         }
 
-                        throw errHandling.Error(error, new ErrArg(symErr), new ErrArg(typeBnd, ErrArgFlags.Unique), var, new ErrArg(arg, ErrArgFlags.Unique));
+                        throw ErrorHandling.Error(error, new ErrArg(symErr), new ErrArg(typeBnd, ErrArgFlags.Unique), var, new ErrArg(arg, ErrArgFlags.Unique));
                     }
 
                     return false;
@@ -278,7 +278,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // have all the information necessary yet, if it is not fully bound.
                 // by calling LookupAggMember, it will ensure that we will update all the
                 // information necessary at least for the given method.
-                checker.SymbolLoader.LookupAggMember(NameManager.GetPredefinedName(PredefinedName.PN_CTOR), agg, symbmask_t.MASK_ALL);
+                SymbolLoader.LookupAggMember(NameManager.GetPredefinedName(PredefinedName.PN_CTOR), agg, symbmask_t.MASK_ALL);
 
                 if (agg.HasPubNoArgCtor() && !agg.IsAbstract())
                 {
@@ -288,7 +288,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (fReportErrors)
             {
-                throw errHandling.Error(ErrorCode.ERR_NewConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
+                throw ErrorHandling.Error(ErrorCode.ERR_NewConstraintNotSatisfied, symErr, new ErrArgNoRef(var), arg);
             }
 
             return false;
@@ -299,7 +299,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // typeBnd could be just about any type (since we added naked type parameter
         // constraints).
 
-        private static bool SatisfiesBound(CSemanticChecker checker, CType arg, CType typeBnd)
+        private static bool SatisfiesBound(CType arg, CType typeBnd)
         {
             if (typeBnd == arg)
                 return true;
@@ -341,7 +341,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_TypeParameterType:
                 case TypeKind.TK_ArrayType:
                 case TypeKind.TK_AggregateType:
-                    return checker.SymbolLoader.HasBaseConversion(arg, typeBnd);
+                    return SymbolLoader.HasBaseConversion(arg, typeBnd);
             }
         }
     }

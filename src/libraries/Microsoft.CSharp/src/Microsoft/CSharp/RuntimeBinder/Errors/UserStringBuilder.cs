@@ -10,36 +10,28 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
-    internal sealed class UserStringBuilder
+    internal struct UserStringBuilder
     {
-        private bool m_buildingInProgress;
-        private GlobalSymbolContext m_globalSymbols;
-        private StringBuilder m_strBuilder;
-
-        public UserStringBuilder(
-            GlobalSymbolContext globalSymbols)
-        {
-            Debug.Assert(globalSymbols != null);
-            m_buildingInProgress = false;
-            m_globalSymbols = globalSymbols;
-        }
+        private StringBuilder _strBuilder;
 
         private void BeginString()
         {
-            Debug.Assert(!m_buildingInProgress);
-            m_buildingInProgress = true;
-            m_strBuilder = new StringBuilder();
+            Debug.Assert(_strBuilder == null || _strBuilder.Length == 0);
+            if(_strBuilder == null)
+            {
+                _strBuilder = new StringBuilder();
+            }
         }
 
-        private void EndString(out string s)
+        private string EndString()
         {
-            Debug.Assert(m_buildingInProgress);
-            m_buildingInProgress = false;
-            s = m_strBuilder.ToString();
-            m_strBuilder = null;
+            Debug.Assert(_strBuilder != null);
+            string s = _strBuilder.ToString();
+            _strBuilder.Clear();
+            return s;
         }
 
-        private void ErrSK(out string psz, SYMKIND sk)
+        private static string ErrSK(SYMKIND sk)
         {
             MessageID id;
             switch (sk)
@@ -74,7 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
             }
 
-            ErrId(out psz, id);
+            return ErrId(id);
         }
         /*
          * Create a fill-in string describing a parameter list.
@@ -105,12 +97,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         private void ErrAppendString(string str)
         {
-            m_strBuilder.Append(str);
+            _strBuilder.Append(str);
         }
 
         private void ErrAppendChar(char ch)
         {
-            m_strBuilder.Append(ch);
+            _strBuilder.Append(ch);
         }
 
         private void ErrAppendPrintf(string format, params object[] args)
@@ -143,7 +135,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
             if (pctx != null && !pctx.IsNop && parent is AggregateSymbol agg && 0 != agg.GetTypeVarsAll().Count)
             {
-                CType pType = GetTypeManager().SubstType(agg.getThisType(), pctx);
+                CType pType = TypeManager.SubstType(agg.getThisType(), pctx);
                 ErrAppendType(pType, null);
             }
             else
@@ -153,7 +145,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             ErrAppendChar('.');
         }
 
-        private void ErrAppendTypeParameters(TypeArray @params, SubstContext pctx, bool forClass)
+        private void ErrAppendTypeParameters(TypeArray @params, SubstContext pctx)
         {
             if (@params != null && @params.Count != 0)
             {
@@ -175,7 +167,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendParentSym(meth, pctx);
 
                 // Get the type args from the explicit impl type and substitute using pctx (if there is one).
-                SubstContext ctx = new SubstContext(GetTypeManager().SubstType(meth.swtSlot.GetType(), pctx));
+                SubstContext ctx = new SubstContext(TypeManager.SubstType(meth.swtSlot.GetType(), pctx));
                 ErrAppendSym(meth.swtSlot.Sym, ctx, fArgs);
 
                 // args already added
@@ -270,13 +262,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
             }
 
-            ErrAppendTypeParameters(meth.typeVars, pctx, false);
+            ErrAppendTypeParameters(meth.typeVars, pctx);
 
             if (fArgs)
             {
                 // append argument types
                 ErrAppendChar('(');
-                ErrAppendParamList(GetTypeManager().SubstTypeArray(meth.Params, pctx), meth.isParamArray);
+                ErrAppendParamList(TypeManager.SubstTypeArray(meth.Params, pctx), meth.isParamArray);
                 ErrAppendChar(')');
             }
         }
@@ -284,7 +276,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         private void ErrAppendIndexer(IndexerSymbol indexer, SubstContext pctx)
         {
             ErrAppendString("this[");
-            ErrAppendParamList(GetTypeManager().SubstTypeArray(indexer.Params, pctx), indexer.isParamArray);
+            ErrAppendParamList(TypeManager.SubstTypeArray(indexer.Params, pctx), indexer.isParamArray);
             ErrAppendChar(']');
         }
         private void ErrAppendProperty(PropertySymbol prop, SubstContext pctx)
@@ -294,7 +286,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             {
                 if (prop.swtSlot.Sym != null)
                 {
-                    SubstContext ctx = new SubstContext(GetTypeManager().SubstType(prop.swtSlot.GetType(), pctx));
+                    SubstContext ctx = new SubstContext(TypeManager.SubstType(prop.swtSlot.GetType(), pctx));
                     ErrAppendSym(prop.swtSlot.Sym, ctx);
                 }
                 else if (prop is IndexerSymbol indexer)
@@ -313,16 +305,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
         }
 
-        private void ErrAppendEvent(EventSymbol @event, SubstContext pctx)
-        {
-        }
-
-        private void ErrAppendId(MessageID id)
-        {
-            string str;
-            ErrId(out str, id);
-            ErrAppendString(str);
-        }
+        private void ErrAppendId(MessageID id) => ErrAppendString(ErrId(id));
 
         /*
          * Create a fill-in string describing a symbol.
@@ -336,10 +319,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             switch (sym.getKind())
             {
-                case SYMKIND.SK_AggregateDeclaration:
-                    ErrAppendSym(((AggregateDeclaration)sym).Agg(), pctx);
-                    break;
-
                 case SYMKIND.SK_AggregateSymbol:
                     {
                         // Check for a predefined class with a special "nice" name for
@@ -354,7 +333,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         {
                             ErrAppendParentSym(sym, pctx);
                             ErrAppendName(sym.name);
-                            ErrAppendTypeParameters(((AggregateSymbol)sym).GetTypeVars(), pctx, true);
+                            ErrAppendTypeParameters(((AggregateSymbol)sym).GetTypeVars(), pctx);
                         }
                         break;
                     }
@@ -368,7 +347,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
 
                 case SYMKIND.SK_EventSymbol:
-                    ErrAppendEvent((EventSymbol)sym, pctx);
                     break;
 
                 case SYMKIND.SK_NamespaceSymbol:
@@ -418,7 +396,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             if (pctx != null && !pctx.IsNop)
             {
-                pType = GetTypeManager().SubstType(pType, pctx);
+                pType = TypeManager.SubstType(pType, pctx);
             }
 
             switch (pType.TypeKind)
@@ -451,7 +429,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                             ErrAppendName(pAggType.OwningAggregate.name);
                         }
 
-                        ErrAppendTypeParameters(pAggType.TypeArgsThis, null, true);
+                        ErrAppendTypeParameters(pAggType.TypeArgsThis, null);
                         break;
                     }
 
@@ -570,18 +548,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             switch (parg.eak)
             {
                 case ErrArgKind.SymKind:
-                    ErrSK(out psz, parg.sk);
+                    psz = ErrSK(parg.sk);
                     break;
                 case ErrArgKind.Type:
                     BeginString();
                     ErrAppendType(parg.pType, null);
-                    EndString(out psz);
+                    psz = EndString();
                     fUserStrings = true;
                     break;
                 case ErrArgKind.Sym:
                     BeginString();
                     ErrAppendSym(parg.sym, null);
-                    EndString(out psz);
+                    psz = EndString();
                     fUserStrings = true;
                     break;
                 case ErrArgKind.Name:
@@ -603,7 +581,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         SubstContext ctx = new SubstContext(parg.swtMemo.ats, null);
                         BeginString();
                         ErrAppendSym(parg.swtMemo.sym, ctx, true);
-                        EndString(out psz);
+                        psz = EndString();
                         fUserStrings = true;
                         break;
                     }
@@ -613,7 +591,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         SubstContext ctx = new SubstContext(parg.mpwiMemo.ats, parg.mpwiMemo.typeArgs);
                         BeginString();
                         ErrAppendSym(parg.mpwiMemo.sym, ctx, true);
-                        EndString(out psz);
+                        psz = EndString();
                         fUserStrings = true;
                         break;
                     }
@@ -625,14 +603,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             return result;
         }
 
-        private TypeManager GetTypeManager()
-        {
-            return m_globalSymbols.GetTypes();
-        }
-
-        private void ErrId(out string s, MessageID id)
-        {
-            s = ErrorFacts.GetMessage(id);
-        }
+        private static string ErrId(MessageID id) => ErrorFacts.GetMessage(id);
     }
 }

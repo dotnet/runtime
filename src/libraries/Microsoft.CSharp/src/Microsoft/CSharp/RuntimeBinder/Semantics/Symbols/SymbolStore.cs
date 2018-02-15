@@ -13,30 +13,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // A symbol table is a helper class used by the symbol manager. There are
     // two symbol tables; a global and a local.
 
-    internal sealed class SYMTBL
+    internal static class SymbolStore
     {
-        /////////////////////////////////////////////////////////////////////////////////
-        // Public
+        private static readonly Dictionary<Key, Symbol> s_dictionary = new Dictionary<Key, Symbol>();
 
-        public SYMTBL()
-        {
-            _dictionary = new Dictionary<Key, Symbol>();
-        }
+        public static Symbol LookupSym(Name name, ParentSymbol parent, symbmask_t kindmask) =>
+            s_dictionary.TryGetValue(new Key(name, parent), out Symbol sym) ? FindCorrectKind(sym, kindmask) : null;
 
-        public Symbol LookupSym(Name name, ParentSymbol parent, symbmask_t kindmask)
-        {
-            Key k = new Key(name, parent);
-            Symbol sym;
-
-            if (_dictionary.TryGetValue(k, out sym))
-            {
-                return FindCorrectKind(sym, kindmask);
-            }
-
-            return null;
-        }
-
-        public void InsertChild(ParentSymbol parent, Symbol child)
+        public static void InsertChild(ParentSymbol parent, Symbol child)
         {
             Debug.Assert(child.nextSameName == null);
             Debug.Assert(child.parent == null || child.parent == parent);
@@ -46,7 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             InsertChildNoGrow(child);
         }
 
-        private void InsertChildNoGrow(Symbol child)
+        private static void InsertChildNoGrow(Symbol child)
         {
             switch (child.getKind())
             {
@@ -55,10 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return;
             }
 
-            Key k = new Key(child.name, child.parent);
-            Symbol sym;
-
-            if (_dictionary.TryGetValue(k, out sym))
+            if (s_dictionary.TryGetValue(new Key(child.name, child.parent), out Symbol sym))
             {
                 // Link onto the end of the symbol chain here.
                 while (sym?.nextSameName != null)
@@ -71,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else
             {
-                _dictionary.Add(k, child);
+                s_dictionary.Add(new Key(child.name, child.parent), child);
             }
         }
 
@@ -83,15 +64,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return sym;
                 }
+
                 sym = sym.nextSameName;
             } while (sym != null);
 
             return null;
         }
 
-        private readonly Dictionary<Key, Symbol> _dictionary;
-
-        private sealed class Key : IEquatable<Key>
+        private readonly struct Key : IEquatable<Key>
         {
             private readonly Name _name;
             private readonly ParentSymbol _parent;
@@ -102,21 +82,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _parent = parent;
             }
 
-            public bool Equals(Key other) => other != null && _name.Equals(other._name) && _parent.Equals(other._parent);
+            public bool Equals(Key other) => _name == other._name && _parent == other._parent;
 
-#if  DEBUG 
+#if  DEBUG
             [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
 #endif
             public override bool Equals(object obj)
             {
                 Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
-                return Equals(obj as Key);
+                return obj is Key key && Equals(key);
             }
 
-            public override int GetHashCode()
-            {
-                return _name.GetHashCode() ^ _parent.GetHashCode();
-            }
+            public override int GetHashCode() => _name.GetHashCode() ^ _parent.GetHashCode();
         }
     }
 }

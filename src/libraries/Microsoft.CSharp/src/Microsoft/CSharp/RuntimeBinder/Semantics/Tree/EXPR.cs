@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -36,6 +37,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return _type;
             }
             protected set { _type = value; }
+        }
+
+        [ExcludeFromCodeCoverage] // Should only be called through override.
+        public virtual object Object
+        {
+            get
+            {
+                Debug.Fail("Invalid Expr in GetObject");
+                throw Error.InternalCompilerError();
+            }
         }
     }
 }

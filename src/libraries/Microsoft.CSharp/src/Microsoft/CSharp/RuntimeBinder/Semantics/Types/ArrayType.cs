@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -59,5 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public override FUNDTYPE FundamentalType => FUNDTYPE.FT_REF;
 
         public override ConstValKind ConstValKind => ConstValKind.IntPtr;
+
+        public override AggregateType GetAts() => SymbolLoader.GetPredefindType(PredefinedType.PT_ARRAY);
     }
 }

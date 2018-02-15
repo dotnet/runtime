@@ -32,8 +32,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private TypeArray _typeVarsThis; // Type variables for this generic class, as declarations.
         private TypeArray _typeVarsAll;     // The type variables for this generic class and all containing classes.
 
-        private TypeManager _pTypeManager;     // This is so AGGTYPESYMs can instantiate their baseClass and ifacesAll members on demand.
-
         // First UD conversion operator. This chain is for this type only (not base types).
         // The hasConversion flag indicates whether this or any base types have UD conversions.
         private MethodSymbol _pConvFirst;
@@ -89,7 +87,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 AggregateType pOuterType = isNested() ? GetOuterAgg().getThisType() : null;
 
-                _atsInst = _pTypeManager.GetAggregate(this, pOuterType, GetTypeVars());
+                _atsInst = TypeManager.GetAggregate(this, pOuterType, GetTypeVars());
             }
 
             //Debug.Assert(GetTypeVars().Size == atsInst.GenericArguments.Count);
@@ -223,16 +221,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        public bool HasConversion(SymbolLoader pLoader)
+        public bool HasConversion()
         {
-            pLoader.RuntimeBinderSymbolTable.AddConversionsForType(AssociatedSystemType);
+            SymbolTable.AddConversionsForType(AssociatedSystemType);
 
             if (!_hasConversion.HasValue)
             {
                 // ok, we tried defining all the conversions, and we didn't get anything
                 // for this type.  However, we will still think this type has conversions
                 // if it's base type has conversions.
-                _hasConversion = GetBaseAgg() != null && GetBaseAgg().HasConversion(pLoader);
+                _hasConversion = GetBaseAgg() != null && GetBaseAgg().HasConversion();
             }
 
             return _hasConversion.Value;
@@ -291,11 +289,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    outerTypeVars = BSYMMGR.EmptyTypeArray();
+                    outerTypeVars = TypeArray.Empty;
                 }
 
                 _typeVarsThis = typeVars;
-                _typeVarsAll = _pTypeManager.ConcatenateTypeArrays(outerTypeVars, typeVars);
+                _typeVarsAll = TypeArray.Concat(outerTypeVars, typeVars);
             }
         }
 
@@ -344,16 +342,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _ifacesAll = ifacesAll;
         }
 
-        public TypeManager GetTypeManager()
-        {
-            return _pTypeManager;
-        }
-
-        public void SetTypeManager(TypeManager typeManager)
-        {
-            _pTypeManager = typeManager;
-        }
-
         public MethodSymbol GetFirstUDConversion()
         {
             return _pConvFirst;
@@ -364,9 +352,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pConvFirst = conv;
         }
 
-        public bool InternalsVisibleTo(Assembly assembly)
-        {
-            return _pTypeManager.InternalsVisibleTo(AssociatedAssembly, assembly);
-        }
+        public bool InternalsVisibleTo(Assembly assembly) => TypeManager.InternalsVisibleTo(AssociatedAssembly, assembly);
     }
 }

@@ -8,35 +8,17 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class TypeManager
+    internal static class TypeManager
     {
-        private BSYMMGR _BSymmgr;
-        private PredefinedTypes _predefTypes;
+        private static readonly Dictionary<(Assembly, Assembly), bool> s_internalsVisibleToCache =
+            new Dictionary<(Assembly, Assembly), bool>();
 
-        private readonly TypeTable _typeTable;
-        private SymbolTable _symbolTable;
-
-        private readonly StdTypeVarColl _stvcMethod;
-
-        public TypeManager(BSYMMGR bsymmgr, PredefinedTypes predefTypes)
-        {
-            _typeTable = new TypeTable();
-
-            _stvcMethod = new StdTypeVarColl();
-            _BSymmgr = bsymmgr;
-            _predefTypes = predefTypes;
-        }
-
-        public void InitTypeFactory(SymbolTable table)
-        {
-            _symbolTable = table;
-        }
-
-        public SymbolTable SymbolTable => _symbolTable;
+        private static readonly StdTypeVarColl s_stvcMethod = new StdTypeVarColl();
 
         private sealed class StdTypeVarColl
         {
@@ -58,31 +40,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // comparison when binding. The standard method type variables are useful during
             // binding for signature comparison.
 
-            public TypeParameterType GetTypeVarSym(int iv, TypeManager pTypeManager, bool fMeth)
+            public TypeParameterType GetTypeVarSym(int iv, bool fMeth)
             {
                 Debug.Assert(iv >= 0);
 
                 TypeParameterType tpt;
-                if (iv >= this.prgptvs.Count)
+                if (iv >= prgptvs.Count)
                 {
                     TypeParameterSymbol pTypeParameter = new TypeParameterSymbol();
                     pTypeParameter.SetIsMethodTypeParameter(fMeth);
                     pTypeParameter.SetIndexInOwnParameters(iv);
                     pTypeParameter.SetIndexInTotalParameters(iv);
                     pTypeParameter.SetAccess(ACCESS.ACC_PRIVATE);
-                    tpt = pTypeManager.GetTypeParameter(pTypeParameter);
-                    this.prgptvs.Add(tpt);
+                    tpt = GetTypeParameter(pTypeParameter);
+                    prgptvs.Add(tpt);
                 }
                 else
                 {
-                    tpt = this.prgptvs[iv];
+                    tpt = prgptvs[iv];
                 }
                 Debug.Assert(tpt != null);
                 return tpt;
             }
         }
 
-        public ArrayType GetArray(CType elementType, int args, bool isSZArray)
+        public static ArrayType GetArray(CType elementType, int args, bool isSZArray)
         {
             Debug.Assert(args > 0 && args < 32767);
             Debug.Assert(args == 1 || !isSZArray);
@@ -90,12 +72,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int rankNum = isSZArray ? 0 : args;
 
             // See if we already have an array type of this element type and rank.
-            ArrayType pArray = _typeTable.LookupArray(elementType, rankNum);
+            ArrayType pArray = TypeTable.LookupArray(elementType, rankNum);
             if (pArray == null)
             {
                 // No existing array symbol. Create a new one.
                 pArray = new ArrayType(elementType, args, isSZArray);
-                _typeTable.InsertArray(elementType, rankNum, pArray);
+                TypeTable.InsertArray(elementType, rankNum, pArray);
             }
 
             Debug.Assert(pArray.Rank == args);
@@ -104,25 +86,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pArray;
         }
 
-        public AggregateType GetAggregate(AggregateSymbol agg, AggregateType atsOuter, TypeArray typeArgs)
+        public static AggregateType GetAggregate(AggregateSymbol agg, AggregateType atsOuter, TypeArray typeArgs)
         {
-            Debug.Assert(agg.GetTypeManager() == this);
             Debug.Assert(atsOuter == null || atsOuter.OwningAggregate == agg.Parent, "");
 
             if (typeArgs == null)
             {
-                typeArgs = BSYMMGR.EmptyTypeArray();
+                typeArgs = TypeArray.Empty;
             }
 
             Debug.Assert(agg.GetTypeVars().Count == typeArgs.Count);
-            AggregateType pAggregate = _typeTable.LookupAggregate(agg, atsOuter, typeArgs);
+            AggregateType pAggregate = TypeTable.LookupAggregate(agg, atsOuter, typeArgs);
             if (pAggregate == null)
             {
                 pAggregate = new AggregateType(agg, typeArgs, atsOuter);
 
                 Debug.Assert(!pAggregate.ConstraintError.HasValue);
 
-                _typeTable.InsertAggregate(agg, atsOuter, typeArgs, pAggregate);
+                TypeTable.InsertAggregate(agg, atsOuter, typeArgs, pAggregate);
             }
 
             Debug.Assert(pAggregate.OwningAggregate == agg);
@@ -132,7 +113,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pAggregate;
         }
 
-        public AggregateType GetAggregate(AggregateSymbol agg, TypeArray typeArgsAll)
+        public static AggregateType GetAggregate(AggregateSymbol agg, TypeArray typeArgsAll)
         {
             Debug.Assert(typeArgsAll != null && typeArgsAll.Count == agg.GetTypeVarsAll().Count);
 
@@ -147,21 +128,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int cvarOuter = aggOuter.GetTypeVarsAll().Count;
             Debug.Assert(cvarOuter <= typeArgsAll.Count);
 
-            TypeArray typeArgsOuter = _BSymmgr.AllocParams(cvarOuter, typeArgsAll, 0);
-            TypeArray typeArgsInner = _BSymmgr.AllocParams(agg.GetTypeVars().Count, typeArgsAll, cvarOuter);
+            TypeArray typeArgsOuter = TypeArray.Allocate(cvarOuter, typeArgsAll, 0);
+            TypeArray typeArgsInner = TypeArray.Allocate(agg.GetTypeVars().Count, typeArgsAll, cvarOuter);
             AggregateType atsOuter = GetAggregate(aggOuter, typeArgsOuter);
 
             return GetAggregate(agg, atsOuter, typeArgsInner);
         }
 
-        public PointerType GetPointer(CType baseType)
+        public static PointerType GetPointer(CType baseType)
         {
-            PointerType pPointer = _typeTable.LookupPointer(baseType);
+            PointerType pPointer = TypeTable.LookupPointer(baseType);
             if (pPointer == null)
             {
                 // No existing type. Create a new one.
                 pPointer = new PointerType(baseType);
-                _typeTable.InsertPointer(baseType, pPointer);
+                TypeTable.InsertPointer(baseType, pPointer);
             }
 
             Debug.Assert(pPointer.ReferentType == baseType);
@@ -169,28 +150,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pPointer;
         }
 
-        public NullableType GetNullable(CType pUnderlyingType)
+        public static NullableType GetNullable(CType pUnderlyingType)
         {
             Debug.Assert(!(pUnderlyingType is NullableType), "Attempt to make nullable of nullable");
 
-            NullableType pNullableType = _typeTable.LookupNullable(pUnderlyingType);
+            NullableType pNullableType = TypeTable.LookupNullable(pUnderlyingType);
             if (pNullableType == null)
             {
-                pNullableType = new NullableType(pUnderlyingType, _BSymmgr, this);
-                _typeTable.InsertNullable(pUnderlyingType, pNullableType);
+                pNullableType = new NullableType(pUnderlyingType);
+                TypeTable.InsertNullable(pUnderlyingType, pNullableType);
             }
 
             return pNullableType;
         }
 
-        public ParameterModifierType GetParameterModifier(CType paramType, bool isOut)
+        public static ParameterModifierType GetParameterModifier(CType paramType, bool isOut)
         {
-            ParameterModifierType pParamModifier = _typeTable.LookupParameterModifier(paramType, isOut);
+            ParameterModifierType pParamModifier = TypeTable.LookupParameterModifier(paramType, isOut);
             if (pParamModifier == null)
             {
                 // No existing parammod symbol. Create a new one.
                 pParamModifier = new ParameterModifierType(paramType, isOut);
-                _typeTable.InsertParameterModifier(paramType, isOut, pParamModifier);
+                TypeTable.InsertParameterModifier(paramType, isOut, pParamModifier);
             }
 
             Debug.Assert(pParamModifier.ParameterType == paramType);
@@ -198,16 +179,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pParamModifier;
         }
 
-        public AggregateSymbol GetNullable() => GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
+        public static AggregateSymbol GetNullable() => GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
 
-        private CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
+        private static CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
         {
             Debug.Assert(typeSrc != null);
             SubstContext ctx = new SubstContext(typeArgsCls, typeArgsMeth, denormMeth);
             return ctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, ctx);
         }
 
-        public AggregateType SubstType(AggregateType typeSrc, TypeArray typeArgsCls)
+        public static AggregateType SubstType(AggregateType typeSrc, TypeArray typeArgsCls)
         {
             Debug.Assert(typeSrc != null);
 
@@ -215,10 +196,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, ctx);
         }
 
-        private CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth) =>
+        private static CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth) =>
             SubstType(typeSrc, typeArgsCls, typeArgsMeth, false);
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, SubstContext ctx)
+        public static TypeArray SubstTypeArray(TypeArray taSrc, SubstContext ctx)
         {
             if (taSrc != null && taSrc.Count != 0 && ctx != null && !ctx.IsNop)
             {
@@ -237,7 +218,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             dsts[i] = SubstTypeCore(srcs[i], ctx);
                         }
 
-                        return _BSymmgr.AllocParams(dsts);
+                        return TypeArray.Allocate(dsts);
                     }
                 }
             }
@@ -245,14 +226,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return taSrc;
         }
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
+        public static TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
             => taSrc == null || taSrc.Count == 0
             ? taSrc
             : SubstTypeArray(taSrc, new SubstContext(typeArgsCls, typeArgsMeth, false));
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls) => SubstTypeArray(taSrc, typeArgsCls, null);
+        public static TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls) => SubstTypeArray(taSrc, typeArgsCls, null);
 
-        private AggregateType SubstTypeCore(AggregateType type, SubstContext ctx)
+        private static AggregateType SubstTypeCore(AggregateType type, SubstContext ctx)
         {
             TypeArray args = type.TypeArgsAll;
             if (args.Count > 0)
@@ -267,7 +248,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
-        private CType SubstTypeCore(CType type, SubstContext pctx)
+        private static CType SubstTypeCore(CType type, SubstContext pctx)
         {
             CType typeSrc;
             CType typeDst;
@@ -331,7 +312,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public bool SubstEqualTypes(CType typeDst, CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
+        public static bool SubstEqualTypes(CType typeDst, CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
         {
             if (typeDst.Equals(typeSrc))
             {
@@ -344,7 +325,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return !ctx.IsNop && SubstEqualTypesCore(typeDst, typeSrc, ctx);
         }
 
-        public bool SubstEqualTypeArrays(TypeArray taDst, TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
+        public static bool SubstEqualTypeArrays(TypeArray taDst, TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
         {
             // Handle the simple common cases first.
             if (taDst == taSrc || (taDst != null && taDst.Equals(taSrc)))
@@ -378,7 +359,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return true;
         }
 
-        private bool SubstEqualTypesCore(CType typeDst, CType typeSrc, SubstContext pctx)
+        private static bool SubstEqualTypesCore(CType typeDst, CType typeSrc, SubstContext pctx)
         {
         LRecurse:  // Label used for "tail" recursion.
 
@@ -564,59 +545,36 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public AggregateSymbol GetPredefAgg(PredefinedType pt) => _predefTypes.GetPredefinedAggregate(pt);
+        public static AggregateSymbol GetPredefAgg(PredefinedType pt) => PredefinedTypes.GetPredefinedAggregate(pt);
 
-        public TypeArray ConcatenateTypeArrays(TypeArray pTypeArray1, TypeArray pTypeArray2)
-        {
-            return _BSymmgr.ConcatParams(pTypeArray1, pTypeArray2);
-        }
-
-        public AggregateType SubstType(AggregateType typeSrc, SubstContext ctx) =>
+        public static AggregateType SubstType(AggregateType typeSrc, SubstContext ctx) =>
             ctx == null || ctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, ctx);
 
-        public CType SubstType(CType typeSrc, SubstContext pctx) =>
+        public static CType SubstType(CType typeSrc, SubstContext pctx) =>
             pctx == null || pctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, pctx);
 
-        public CType SubstType(CType typeSrc, AggregateType atsCls)
-        {
-            return SubstType(typeSrc, atsCls, (TypeArray)null);
-        }
+        public static CType SubstType(CType typeSrc, AggregateType atsCls) => SubstType(typeSrc, atsCls, null);
 
-        public CType SubstType(CType typeSrc, AggregateType atsCls, TypeArray typeArgsMeth)
-        {
-            return SubstType(typeSrc, atsCls?.TypeArgsAll, typeArgsMeth);
-        }
+        public static CType SubstType(CType typeSrc, AggregateType atsCls, TypeArray typeArgsMeth) =>
+            SubstType(typeSrc, atsCls?.TypeArgsAll, typeArgsMeth);
 
-        public CType SubstType(CType typeSrc, CType typeCls, TypeArray typeArgsMeth)
-        {
-            return SubstType(typeSrc, (typeCls as AggregateType)?.TypeArgsAll, typeArgsMeth);
-        }
+        public static CType SubstType(CType typeSrc, CType typeCls, TypeArray typeArgsMeth) =>
+            SubstType(typeSrc, (typeCls as AggregateType)?.TypeArgsAll, typeArgsMeth);
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls, TypeArray typeArgsMeth)
-        {
-            return SubstTypeArray(taSrc, atsCls?.TypeArgsAll, typeArgsMeth);
-        }
+        public static TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls, TypeArray typeArgsMeth) =>
+            SubstTypeArray(taSrc, atsCls?.TypeArgsAll, typeArgsMeth);
 
-        public TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls)
-        {
-            return this.SubstTypeArray(taSrc, atsCls, (TypeArray)null);
-        }
+        public static TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls) => SubstTypeArray(taSrc, atsCls, null);
 
-        private bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls, TypeArray typeArgsMeth) =>
+        private static bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls, TypeArray typeArgsMeth) =>
             SubstEqualTypes(typeDst, typeSrc, (typeCls as AggregateType)?.TypeArgsAll, typeArgsMeth, false);
 
-        public bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls)
-        {
-            return SubstEqualTypes(typeDst, typeSrc, typeCls, (TypeArray)null);
-        }
+        public static bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls) => SubstEqualTypes(typeDst, typeSrc, typeCls, null);
 
-        public TypeParameterType GetStdMethTypeVar(int iv)
-        {
-            return _stvcMethod.GetTypeVarSym(iv, this, true);
-        }
+        public static TypeParameterType GetStdMethTypeVar(int iv) => s_stvcMethod.GetTypeVarSym(iv, true);
 
         // These are singletons for each.
-        public TypeParameterType GetTypeParameter(TypeParameterSymbol pSymbol)
+        public static TypeParameterType GetTypeParameter(TypeParameterSymbol pSymbol)
         {
             Debug.Assert(pSymbol.GetTypeParameterType() == null); // Should have been checked first before creating
             return new TypeParameterType(pSymbol);
@@ -626,7 +584,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // RUNTIME BINDER ONLY CHANGE
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        internal CType GetBestAccessibleType(CSemanticChecker semanticChecker, AggregateDeclaration context, CType typeSrc)
+        internal static CType GetBestAccessibleType(AggregateSymbol context, CType typeSrc)
         {
             // This method implements the "best accessible type" algorithm for determining the type
             // of untyped arguments in the runtime binder. It is also used in method type inference
@@ -634,13 +592,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // The new type is returned in an out parameter. The result will be true (and the out param
             // non-null) only when the algorithm could find a suitable accessible type.
-
-            Debug.Assert(semanticChecker != null);
             Debug.Assert(typeSrc != null);
             Debug.Assert(!(typeSrc is ParameterModifierType));
             Debug.Assert(!(typeSrc is PointerType));
 
-            if (semanticChecker.CheckTypeAccess(typeSrc, context))
+            if (CSemanticChecker.CheckTypeAccess(typeSrc, context))
             {
                 // If we already have an accessible type, then use it.
                 return typeSrc;
@@ -653,12 +609,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 for (;;)
                 {
-                    if ((aggSrc.IsInterfaceType || aggSrc.IsDelegateType) && TryVarianceAdjustmentToGetAccessibleType(semanticChecker, context, aggSrc, out CType typeDst))
+                    if ((aggSrc.IsInterfaceType || aggSrc.IsDelegateType) && TryVarianceAdjustmentToGetAccessibleType(context, aggSrc, out CType typeDst))
                     {
                         // If we have an interface or delegate type, then it can potentially be varied by its type arguments
                         // to produce an accessible type, and if that's the case, then return that.
                         // Example: IEnumerable<PrivateConcreteFoo> --> IEnumerable<PublicAbstractFoo>
-                        Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, context));
+                        Debug.Assert(CSemanticChecker.CheckTypeAccess(typeDst, context));
                         return typeDst;
                     }
 
@@ -672,7 +628,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return GetPredefAgg(PredefinedType.PT_OBJECT).getThisType();
                     }
 
-                    if (semanticChecker.CheckTypeAccess(baseType, context))
+                    if (CSemanticChecker.CheckTypeAccess(baseType, context))
                     {
                         return baseType;
                     }
@@ -684,12 +640,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (typeSrc is ArrayType arrSrc)
             {
-                if (TryArrayVarianceAdjustmentToGetAccessibleType(semanticChecker, context, arrSrc, out CType typeDst))
+                if (TryArrayVarianceAdjustmentToGetAccessibleType(context, arrSrc, out CType typeDst))
                 {
                     // Similarly to the interface and delegate case, arrays are covariant in their element type and
                     // so we can potentially produce an array type that is accessible.
                     // Example: PrivateConcreteFoo[] --> PublicAbstractFoo[]
-                    Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, context));
+                    Debug.Assert(CSemanticChecker.CheckTypeAccess(typeDst, context));
                     return typeDst;
                 }
 
@@ -704,7 +660,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetPredefAgg(PredefinedType.PT_VALUE).getThisType();
         }
 
-        private bool TryVarianceAdjustmentToGetAccessibleType(CSemanticChecker semanticChecker, AggregateDeclaration context, AggregateType typeSrc, out CType typeDst)
+        private static bool TryVarianceAdjustmentToGetAccessibleType(AggregateSymbol context, AggregateType typeSrc, out CType typeDst)
         {
             Debug.Assert(typeSrc != null);
             Debug.Assert(typeSrc.IsInterfaceType || typeSrc.IsDelegateType);
@@ -714,7 +670,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateSymbol aggSym = typeSrc.OwningAggregate;
             AggregateType aggOpenType = aggSym.getThisType();
 
-            if (!semanticChecker.CheckTypeAccess(aggOpenType, context))
+            if (!CSemanticChecker.CheckTypeAccess(aggOpenType, context))
             {
                 // if the aggregate symbol itself is not accessible, then forget it, there is no
                 // variance that will help us arrive at an accessible type.
@@ -728,7 +684,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             for (int i = 0; i < newTypeArgsTemp.Length; i++)
             {
                 CType typeArg = typeArgs[i];
-                if (semanticChecker.CheckTypeAccess(typeArg, context))
+                if (CSemanticChecker.CheckTypeAccess(typeArg, context))
                 {
                     // we have an accessible argument, this position is not a problem.
                     newTypeArgsTemp[i] = typeArg;
@@ -741,30 +697,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return false;
                 }
 
-                newTypeArgsTemp[i] = GetBestAccessibleType(semanticChecker, context, typeArg);
+                newTypeArgsTemp[i] = GetBestAccessibleType(context, typeArg);
 
                 // now we either have a value type (which must be accessible due to the above
                 // check, OR we have an inaccessible type (which must be a ref type). In either
                 // case, the recursion worked out and we are OK to vary this argument.
             }
 
-            TypeArray newTypeArgs = semanticChecker.getBSymmgr().AllocParams(typeArgs.Count, newTypeArgsTemp);
+            TypeArray newTypeArgs = TypeArray.Allocate(newTypeArgsTemp);
             CType intermediateType = GetAggregate(aggSym, typeSrc.OuterType, newTypeArgs);
 
             // All type arguments were varied successfully, which means now we must be accessible. But we could
             // have violated constraints. Let's check that out.
 
-            if (!TypeBind.CheckConstraints(semanticChecker, errHandling: null, intermediateType, CheckConstraintsFlags.NoErrors))
+            if (!TypeBind.CheckConstraints(intermediateType, CheckConstraintsFlags.NoErrors))
             {
                 return false;
             }
 
             typeDst = intermediateType;
-            Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, context));
+            Debug.Assert(CSemanticChecker.CheckTypeAccess(typeDst, context));
             return true;
         }
 
-        private bool TryArrayVarianceAdjustmentToGetAccessibleType(CSemanticChecker semanticChecker, AggregateDeclaration context, ArrayType typeSrc, out CType typeDst)
+        private static bool TryArrayVarianceAdjustmentToGetAccessibleType(AggregateSymbol context, ArrayType typeSrc, out CType typeDst)
         {
             Debug.Assert(typeSrc != null);
 
@@ -776,10 +732,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Covariant array conversions exist for reference types only.
             if (elementType.IsReferenceType)
             {
-                CType destElement = GetBestAccessibleType(semanticChecker, context, elementType);
+                CType destElement = GetBestAccessibleType(context, elementType);
                 typeDst = GetArray(destElement, typeSrc.Rank, typeSrc.IsSZArray);
 
-                Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, context));
+                Debug.Assert(CSemanticChecker.CheckTypeAccess(typeDst, context));
                 return true;
             }
 
@@ -787,17 +743,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        public AggregateType ObjectAggregateType => (AggregateType)_symbolTable.GetCTypeFromType(typeof(object));
-
-        private readonly Dictionary<Tuple<Assembly, Assembly>, bool> _internalsVisibleToCalculated
-            = new Dictionary<Tuple<Assembly, Assembly>, bool>();
-
-        internal bool InternalsVisibleTo(Assembly assemblyThatDefinesAttribute, Assembly assemblyToCheck)
+        internal static bool InternalsVisibleTo(Assembly assemblyThatDefinesAttribute, Assembly assemblyToCheck)
         {
-            bool result;
-
-            var key = Tuple.Create(assemblyThatDefinesAttribute, assemblyToCheck);
-            if (!_internalsVisibleToCalculated.TryGetValue(key, out result))
+            (Assembly, Assembly) key = (assemblyThatDefinesAttribute, assemblyToCheck);
+            if (!s_internalsVisibleToCache.TryGetValue(key, out bool result))
             {
                 AssemblyName assyName;
 
@@ -808,20 +757,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 try
                 {
                     assyName = assemblyToCheck.GetName();
+                    result = assemblyThatDefinesAttribute.GetCustomAttributes()
+                        .OfType<InternalsVisibleToAttribute>()
+                        .Select(ivta => new AssemblyName(ivta.AssemblyName))
+                        .Any(an => AssemblyName.ReferenceMatchesDefinition(an, assyName));
                 }
-                catch (System.Security.SecurityException)
+                catch (SecurityException)
                 {
                     result = false;
-                    goto SetMemo;
                 }
 
-                result = assemblyThatDefinesAttribute.GetCustomAttributes()
-                    .OfType<InternalsVisibleToAttribute>()
-                    .Select(ivta => new AssemblyName(ivta.AssemblyName))
-                    .Any(an => AssemblyName.ReferenceMatchesDefinition(an, assyName));
-
-            SetMemo:
-                _internalsVisibleToCalculated[key] = result;
+                s_internalsVisibleToCache[key] = result;
             }
 
             return result;

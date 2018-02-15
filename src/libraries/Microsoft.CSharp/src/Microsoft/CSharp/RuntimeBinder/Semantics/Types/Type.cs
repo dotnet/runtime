@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
@@ -122,5 +123,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public virtual bool IsNonNullableValueType => false;
 
         public virtual bool IsReferenceType => false;
+
+        [ExcludeFromCodeCoverage] // Should only be called through override.
+        public virtual AggregateType GetAts()
+        {
+            Debug.Fail("Bad type for AsAggregateType");
+            return null;
+        }
     }
 }

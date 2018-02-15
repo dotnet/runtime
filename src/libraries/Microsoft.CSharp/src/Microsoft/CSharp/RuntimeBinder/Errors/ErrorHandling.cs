@@ -9,16 +9,9 @@ using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
-    internal sealed class ErrorHandling
+    internal static class ErrorHandling
     {
-        private readonly UserStringBuilder _userStringBuilder;
-
-        public ErrorHandling(GlobalSymbolContext globalSymbols)
-        {
-            _userStringBuilder = new UserStringBuilder(globalSymbols);
-        }
-
-        public RuntimeBinderException Error(ErrorCode id, params ErrArg[] args)
+        public static RuntimeBinderException Error(ErrorCode id, params ErrArg[] args)
         {
             // Create an argument array manually using the type information in the ErrArgs.
             string[] prgpsz = new string[args.Length];
@@ -27,6 +20,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             int ppsz = 0;
             int piarg = 0;
             int cargUnique = 0;
+
+            UserStringBuilder builder = new UserStringBuilder();
 
             for (int iarg = 0; iarg < args.Length; iarg++)
             {
@@ -37,7 +32,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     continue;
 
 
-                if (!_userStringBuilder.ErrArgToString(out prgpsz[ppsz], arg, out bool fUserStrings))
+                if (!builder.ErrArgToString(out prgpsz[ppsz], arg, out bool fUserStrings))
                 {
                     if (arg.eak == ErrArgKind.Int)
                     {

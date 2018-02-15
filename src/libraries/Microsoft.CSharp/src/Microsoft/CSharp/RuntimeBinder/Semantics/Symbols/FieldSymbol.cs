@@ -37,10 +37,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateSymbol getClass() => parent as AggregateSymbol;
 
-        public EventSymbol getEvent(SymbolLoader symbolLoader)
+        public EventSymbol getEvent()
         {
             Debug.Assert(isEvent);
-            return symbolLoader.LookupAggMember(name, getClass(), symbmask_t.MASK_EventSymbol) as EventSymbol;
+            return SymbolLoader.LookupAggMember(name, getClass(), symbmask_t.MASK_EventSymbol) as EventSymbol;
         }
     }
 }

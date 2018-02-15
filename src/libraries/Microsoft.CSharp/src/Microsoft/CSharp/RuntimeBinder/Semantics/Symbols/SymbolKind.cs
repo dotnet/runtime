@@ -8,7 +8,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         SK_NamespaceSymbol,
         SK_AggregateSymbol,
-        SK_AggregateDeclaration,
         SK_TypeParameterSymbol,
         SK_FieldSymbol,
         SK_LocalVariableSymbol,
