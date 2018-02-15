@@ -267,16 +267,10 @@ namespace System.Numerics
         /// <param name="value1">The source vector.</param>
         /// <param name="value2">The scalar value.</param>
         /// <returns>The result of the division.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 operator /(Vector3 value1, float value2)
         {
-            float invDiv = 1.0f / value2;
-
-            return new Vector3(
-                value1.X * invDiv,
-                value1.Y * invDiv,
-                value1.Z * invDiv);
+            return value1 / new Vector3(value2);
         }
 
         /// <summary>
