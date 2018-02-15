@@ -39,9 +39,13 @@ namespace System.Globalization.Tests
                     {
                         return (PlatformDetection.WindowsVersion < 10) ? new int[] { 3 } : new int[] { 6, 3 };
                     }
-                    if (PlatformDetection.ICUVersion.Major >= 59)
+                    if (PlatformDetection.ICUVersion.Major == 59)
                     {
                         return new int[] { 8 };
+                    }
+                    else if (PlatformDetection.ICUVersion.Major > 59)
+                    {
+                        return new int[] { 1 };
                     }
                     else
                     {
