@@ -599,7 +599,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture) /p:BuildRuntimeRpms=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -619,7 +619,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -639,7 +639,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=fedora.26-$(PB_TargetArchitecture) /p:BuildRuntimeRpms=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.26-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -659,7 +659,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=fedora.26-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=fedora.26-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -679,7 +679,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=fedora.27-$(PB_TargetArchitecture) /p:BuildRuntimeRpms=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.27-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -699,7 +699,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=fedora.27-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=fedora.27-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -719,7 +719,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=centos.7-$(PB_TargetArchitecture) /p:BuildRuntimeRpms=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=centos.7-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -739,7 +739,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=centos.7-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=centos.7-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -759,7 +759,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture) /p:BuildRuntimeRpms=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -779,7 +779,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -799,7 +799,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=sles.12-$(PB_TargetArchitecture) /p:BuildRuntimeRpms=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=sles.12-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -819,7 +819,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=sles.12-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=sles.12-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -1095,6 +1095,12 @@
     },
     "DockerCommonCleanCommands": {
       "value": "-c \"HOME=$(PB_GitDirectory); $(PB_GitDirectory)/clean.sh\""
+    },
+    "CommonDockerCommandToBuildRuntimeDepRPMPackage": {
+      "value": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:BuildRuntimeRpms=false"
+    },
+    "CommonDockerCommandToPublishRuntimeDepRPMPackage": {
+      "value": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)"
     }
   },
   "demands": [
