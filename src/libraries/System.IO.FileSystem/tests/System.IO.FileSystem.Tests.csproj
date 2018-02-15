@@ -61,6 +61,7 @@
     <Compile Include="Enumeration\TrimmedPaths.netcoreapp.cs" />
     <Compile Include="Enumeration\ErrorHandlingTests.netcoreapp.cs" />
     <Compile Include="Enumeration\IncludePredicateTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\PatternTransformTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
