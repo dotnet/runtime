@@ -799,9 +799,6 @@ public class BuiltinTests {
 #endif
 }
 
-#if !__MOBILE__
-
-// These are already defined in the mobile profile
 
 // !!! WARNING - GENERATED CODE - DO NOT EDIT !!!
 //
@@ -2399,5 +2396,3 @@ namespace System
 		}
 	}
 }
-
-#endif // !__MOBILE__

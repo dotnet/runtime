@@ -26,11 +26,9 @@ using System.Reflection;
 
 class Tests {
 
-#if !__MOBILE__
 	static int Main (string[] args) {
 		return TestDriver.RunTests (typeof (Tests), args);
 	}
-#endif
 	
 	static public int test_0_many_nested_loops () {
 		// we do the loop a few times otherwise it's too fast
