@@ -62,12 +62,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task PostAsyncExpect100Continue_RetryOnConnectionClosed_Success()
+        public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {
-            if (!IsRetrySupported)
-            {
-                return;
-            }
+            var contentSending = new TaskCompletionSource<bool>();
+            var connectionClosed = new TaskCompletionSource<bool>();
 
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
@@ -78,64 +76,51 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
                     Assert.Equal(s_simpleContent, await response1.Content.ReadAsStringAsync());
 
-                    // Send second request.  Should reuse same connection.  
-                    // The server will close the connection, but HttpClient should retry the request.
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
-                    request.Headers.ExpectContinue = true;
-                    var content = new CustomContent();
-                    request.Content = content;
-
-                    HttpResponseMessage response2 = await client.SendAsync(request);
-                    Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
-                    Assert.Equal(s_simpleContent, await response1.Content.ReadAsStringAsync());
-
-                    Assert.Equal(1, content.SerializeCount);
+                    // Send second request on same connection.  When the Expect: 100-continue timeout
+                    // expires, the content will start to be serialized and will signal the server to
+                    // close the connection; then once the connection is closed, the send will be allowed
+                    // to continue and will fail.
+                    var request = new HttpRequestMessage(HttpMethod.Post, url);
+                    request.Headers.ExpectContinue = true; // use Expect: 100-continue when supported, but the test works regardless
+                    request.Content = new SynchronizedSendContent(contentSending, connectionClosed.Task);
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
                 }
             },
             async server =>
             {
-                // Accept first connection
+                // Accept connection
                 await server.AcceptConnectionAsync(async connection =>
                 {
+                    // Shut down the listen socket so no additional connections can happen
+                    server.ListenSocket.Close();
+
                     // Initial response
                     await connection.ReadRequestHeaderAndSendResponseAsync(content: s_simpleContent);
 
                     // Second response: Read request headers, then close connection
                     List<string> lines = await connection.ReadRequestHeaderAsync();
                     Assert.Contains("Expect: 100-continue", lines);
+                    await contentSending.Task;
                 });
-
-                // Client should reconnect.  Accept that connection and send response.
-                await server.AcceptConnectionAsync(async connection =>
-                {
-                    List<string> lines = await connection.ReadRequestHeaderAsync();
-                    Assert.Contains("Expect: 100-continue", lines);
-
-                    await connection.Writer.WriteAsync("HTTP/1.1 100 Continue\r\n\r\n");
-
-                    string contentLine = await connection.Reader.ReadLineAsync();
-                    Assert.Equal(s_simpleContent, contentLine + "\r\n");
-
-                    await connection.SendResponseAsync(content: s_simpleContent);
-                });
+                connectionClosed.SetResult(true);
             });
         }
 
-        class CustomContent : HttpContent
+        private sealed class SynchronizedSendContent : HttpContent
         {
-            private int _serializeCount;
+            private readonly Task _connectionClosed;
+            private readonly TaskCompletionSource<bool> _sendingContent;
 
-            public CustomContent()
+            public SynchronizedSendContent(TaskCompletionSource<bool> sendingContent, Task connectionClosed)
             {
-                _serializeCount = 0;
+                _connectionClosed = connectionClosed;
+                _sendingContent = sendingContent;
             }
-
-            public int SerializeCount => _serializeCount;
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                _serializeCount++;
-
+                _sendingContent.SetResult(true);
+                await _connectionClosed;
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(s_simpleContent));
             }
 
