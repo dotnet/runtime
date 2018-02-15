@@ -1973,8 +1973,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                     case SpecialNames.CLR_OnesComplement:
                     case SpecialNames.CLR_True:
                     case SpecialNames.CLR_False:
-                    case SpecialNames.CLR_PreIncrement:
-                    case SpecialNames.CLR_PreDecrement:
+                    case SpecialNames.CLR_Increment:
+                    case SpecialNames.CLR_Decrement:
                         return true;
                 }
             }

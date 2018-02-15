@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprMemberGroup : ExprWithType, IExprWithObject
+    internal sealed class ExprMemberGroup : ExprWithType
     {
         public ExprMemberGroup(EXPRFLAG flags, Name name, TypeArray typeArgs, SYMKIND symKind, CType parentType, MethodOrPropertySymbol pMPS, Expr optionalObject, CMemberLookupResults memberLookupResults)
             : base(ExpressionKind.MemberGroup, MethodGroupType.Instance)
