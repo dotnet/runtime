@@ -313,6 +313,9 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 	int target = td->ip + offset - td->il_code;
 	if (target < 0 || target >= td->code_size)
 		g_assert_not_reached ();
+	/* Add exception checkpoint for backward branches */
+	if (offset < 0)
+		ADD_CODE(td, MINT_CHECKPOINT);
 	if (offset > 0 && td->stack_height [target] < 0) {
 		td->stack_height [target] = td->sp - td->stack;
 		if (td->stack_height [target] > 0)

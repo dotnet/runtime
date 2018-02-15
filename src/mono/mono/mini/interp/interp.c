@@ -2794,13 +2794,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				g_warning ("ret.vt: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_BR_S)
-			/* Checkpoint to be able to handle aborts */
-			EXCEPTION_CHECKPOINT;
 			ip += (short) *(ip + 1);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BR)
-			/* Checkpoint to be able to handle aborts */
-			EXCEPTION_CHECKPOINT;
 			ip += (gint32) READ32(ip + 1);
 			MINT_IN_BREAK;
 #define ZEROP_S(datamem, op) \
@@ -3649,6 +3645,11 @@ array_constructed:
 				sp->data.p = mono_get_exception_null_reference ();
 
 			THROW_EX ((MonoException *)sp->data.p, ip);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CHECKPOINT)
+			/* Do synchronous checking of abort requests */
+			EXCEPTION_CHECKPOINT;
+			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE)
 			o = sp [-1].data.p;

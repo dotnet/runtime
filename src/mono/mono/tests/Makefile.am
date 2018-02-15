@@ -1021,7 +1021,6 @@ INTERP_DISABLED_TESTS = \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	appdomain-unload.exe \
-	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
 	block_guard_restore_aligment_on_exit.exe \
 	bug-335131.2.exe \
