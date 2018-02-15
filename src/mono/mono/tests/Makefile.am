@@ -1041,6 +1041,7 @@ INTERP_DISABLED_TESTS = \
 	field-access.exe \
 	handleref.exe \
 	nullable_boxing.2.exe \
+	pinvoke.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
 	safehandle.2.exe \
