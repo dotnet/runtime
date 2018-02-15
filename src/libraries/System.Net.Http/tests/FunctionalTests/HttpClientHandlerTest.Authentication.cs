@@ -43,7 +43,7 @@ namespace System.Net.Http.Functional.Tests
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                string serverAuthenticateHeader = $"WWW-Authenticate: {authenticateHeader}";
+                string serverAuthenticateHeader = $"WWW-Authenticate: {authenticateHeader}\r\n";
                 HttpClientHandler handler = CreateHttpClientHandler();
                 Task serverTask = result ?
                     server.AcceptConnectionPerformAuthenticationAndCloseAsync(serverAuthenticateHeader) :
@@ -55,10 +55,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5")]
-        [InlineData("WWW-Authenticate: Basic realm=\"hello1\"\r\nWWW-Authenticate: Basic realm=\"hello2\"")]
-        [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Basic realm=\"hello\"")]
-        [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Basic realm=\"hello\"")]
+        [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\n")]
+        [InlineData("WWW-Authenticate: Basic realm=\"hello1\"\r\nWWW-Authenticate: Basic realm=\"hello2\"\r\n")]
+        [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\nWWW-Authenticate: Basic realm=\"hello\"\r\n")]
+        [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Basic realm=\"hello\"\r\n")]
         public async void HttpClientHandler_MultipleAuthenticateHeaders_Succeeds(string authenticateHeader)
         {
             if (IsCurlHandler && authenticateHeader.Contains("Digest"))
@@ -77,8 +77,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("WWW-Authenticate: Basic realm=\"hello\"")]
-        [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"testnonce\"")]
+        [InlineData("WWW-Authenticate: Basic realm=\"hello\"\r\n")]
+        [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"testnonce\"\r\n")]
         public async void HttpClientHandler_IncorrectCredentials_Fails(string authenticateHeader)
         {
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
