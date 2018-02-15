@@ -4,29 +4,12 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 using Xunit;
 
 public class PathInternal_Windows_Tests
 {
     [Theory,
-        InlineData(@"\\?\", false),
-        InlineData(@"\\?\?", true),
-        InlineData(@"//?/", false),
-        InlineData(@"//?/*", true),
-        InlineData(@"\\.\>", true),
-        InlineData(@"C:\", false),
-        InlineData(@"C:\<", true),
-        InlineData("\"MyFile\"", true)
-        ]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void HasWildcardCharacters(string path, bool expected)
-    {
-        Assert.Equal(expected, PathInternal.HasWildCardCharacters(path));
-    }
-
-    [Theory,
-        InlineData(PathInternal.ExtendedPathPrefix, PathInternal.ExtendedPathPrefix),
+        InlineData(PathInternal.ExtendedDevicePathPrefix, PathInternal.ExtendedDevicePathPrefix),
         InlineData(@"Foo", @"Foo"),
         InlineData(@"C:\Foo", @"\\?\C:\Foo"),
         InlineData(@"\\.\Foo", @"\\.\Foo"),
@@ -100,83 +83,4 @@ public class PathInternal_Windows_Tests
     {
         Assert.Equal(expected, PathInternal.IsPartiallyQualified(path));
     }
-
-    [Theory,
-        InlineData(@"", 0),
-        InlineData(@"  :", 0),
-        InlineData(@"  C:", 2),
-        InlineData(@"   C:\", 3),
-        InlineData(@"C:\", 0),
-        InlineData(@"  ", 0),
-        InlineData(@"  \", 2),
-        InlineData(@"  8:", 0),
-        InlineData(@"    \\", 4),
-        InlineData(@"\\", 0)
-        ]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void PathStartSkipTest(string path, int expected)
-    {
-        Assert.Equal(expected, PathInternal.PathStartSkip(path));
-    }
-
-    [Theory,
-        InlineData(@"", @""),
-        InlineData(null, null),
-        InlineData(@"\", @"\"),
-        InlineData(@"/", @"\"),
-        InlineData(@"\\", @"\\"),
-        InlineData(@"\\\", @"\\"),
-        InlineData(@"//", @"\\"),
-        InlineData(@"///", @"\\"),
-        InlineData(@"\/", @"\\"),
-        InlineData(@"\/\", @"\\"),
-
-        InlineData(@"a\a", @"a\a"),
-        InlineData(@"a\\a", @"a\a"),
-        InlineData(@"a/a", @"a\a"),
-        InlineData(@"a//a", @"a\a"),
-        InlineData(@"a\", @"a\"),
-        InlineData(@"a\\", @"a\"),
-        InlineData(@"a/", @"a\"),
-        InlineData(@"a//", @"a\"),
-        InlineData(@"\a", @"\a"),
-        InlineData(@"\\a", @"\\a"),
-        InlineData(@"/a", @"\a"),
-        InlineData(@"//a", @"\\a"),
-
-        // Skip tests
-        InlineData(@"  :", @"  :"),
-        InlineData(@"  C:", @"C:"),
-        InlineData(@"   C:\", @"C:\"),
-        InlineData(@"   C:/", @"C:\"),
-        InlineData(@"  ", @"  "),
-        InlineData(@"  \", @"\"),
-        InlineData(@"  /", @"\"),
-        InlineData(@"  8:", @"  8:"),
-        InlineData(@"    \\", @"\\"),
-        InlineData(@"    //", @"\\")
-        ]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void NormalizeDirectorySeparatorTests(string path, string expected)
-    {
-        string result = PathInternal.NormalizeDirectorySeparators(path);
-        Assert.Equal(expected, result);
-        if (string.Equals(path, expected, StringComparison.Ordinal))
-            Assert.Same(path, result);
-    }
-    
-    [Theory,
-        InlineData(@"", @"", StringComparison.OrdinalIgnoreCase, true),
-        InlineData(@"", @"", StringComparison.Ordinal, true),
-        InlineData(@"A", @"a", StringComparison.OrdinalIgnoreCase, true),
-        InlineData(@"A", @"a", StringComparison.Ordinal, true),
-        InlineData(@"C:\", @"c:\", StringComparison.OrdinalIgnoreCase, true),
-        InlineData(@"C:\", @"c:\", StringComparison.Ordinal, false)
-        ]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    public void AreRootsEqual(string first, string second, StringComparison comparisonType, bool expected)
-    {
-        Assert.Equal(expected, PathInternal.AreRootsEqual(first, second, comparisonType));
-    }
-
 }

@@ -33,15 +33,21 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_Path2IsRooted, nameof(path2));
         }
 
-        internal static bool IsRoot(string path)
-        {
-            return path.Length == PathInternal.GetRootLength(path);
-        }
+        internal static bool IsRoot(ReadOnlySpan<char> path)
+            => path.Length == PathInternal.GetRootLength(path);
 
-        internal static bool EndsInDirectorySeparator(string path)
-        {
-            return path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
-        }
+        internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path)
+            => path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
+
+        internal static string TrimEndingDirectorySeparator(string path) =>
+            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+                path.Substring(0, path.Length - 1) :
+                path;
+
+        internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
+            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+                path.Slice(0, path.Length - 1) :
+                path;
 
         /// <summary>
         /// Combines two paths. Does no validation of paths, only concatenates the paths
