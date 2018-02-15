@@ -33,6 +33,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexReplacement.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
+    <Compile Include="System\Text\RegularExpressions\ResizableValueListBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <!-- Common or Common-branched source files -->
@@ -58,6 +59,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Buffers" />
   </ItemGroup>
   <!-- References required for compiled feature -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
