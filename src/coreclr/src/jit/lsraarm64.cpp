@@ -952,6 +952,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     switch (compiler->getHWIntrinsicInfo(intrinsicID).form)
     {
         case HWIntrinsicInfo::SimdExtractOp:
+        case HWIntrinsicInfo::SimdInsertOp:
             if (!op2->isContained())
             {
                 // We need a temp to create a switch table
