@@ -60,8 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Ensure that invariant here.
 
             Debug.Assert(outerType == null || outerType.TypeArgsAll != null);
-            TypeArgsAll = parent.GetTypeManager()
-                .ConcatenateTypeArrays(outerType != null ? outerType.TypeArgsAll : BSYMMGR.EmptyTypeArray(), typeArgsThis);
+            TypeArgsAll = outerType != null ? TypeArray.Concat(outerType.TypeArgsAll, typeArgsThis) : typeArgsThis;
         }
 
         public bool? ConstraintError;       // Did the constraints check produce an error?
@@ -101,10 +100,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If we don't have a generic type definition, then we just need to set our base
                     // class. This is so that if we have a base type that's generic, we'll be
                     // getting the correctly instantiated base type.
-                    TypeManager manager = OwningAggregate.GetTypeManager();
-                    AggregateType baseClass = manager.SymbolTable.GetCTypeFromType(baseSysType) as AggregateType;
+                    AggregateType baseClass = SymbolTable.GetCTypeFromType(baseSysType) as AggregateType;
                     Debug.Assert(baseClass != null);
-                    _baseType = manager.SubstType(baseClass, TypeArgsAll);
+                    _baseType = TypeManager.SubstType(baseClass, TypeArgsAll);
                 }
 
                 return _baseType;
@@ -123,7 +121,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         yield return iface;
                     }
 
-                    yield return OwningAggregate.GetTypeManager().ObjectAggregateType;
+                    yield return PredefinedTypes.GetPredefinedAggregate(PredefinedType.PT_OBJECT).getThisType();
                 }
                 else
                 {
@@ -139,7 +137,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray TypeArgsAll { get; }
 
-        public TypeArray IfacesAll => _ifacesAll ?? (_ifacesAll = OwningAggregate.GetTypeManager().SubstTypeArray(OwningAggregate.GetIfacesAll(), TypeArgsAll));
+        public TypeArray IfacesAll => _ifacesAll ?? (_ifacesAll = TypeManager.SubstTypeArray(OwningAggregate.GetIfacesAll(), TypeArgsAll));
 
         private bool IsCollectionType
         {
@@ -166,24 +164,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public TypeArray GetWinRTCollectionIfacesAll(SymbolLoader pSymbolLoader)
+        public TypeArray WinRTCollectionIfacesAll
         {
-            if (_winrtifacesAll == null)
+            get
             {
-                List<CType> typeList = new List<CType>();
-                foreach (AggregateType type in IfacesAll.Items)
+                if (_winrtifacesAll == null)
                 {
-                    Debug.Assert(type.IsInterfaceType);
-                    if (type.IsCollectionType)
+                    List<CType> typeList = new List<CType>();
+                    foreach (AggregateType type in IfacesAll.Items)
                     {
-                        typeList.Add(type);
+                        Debug.Assert(type.IsInterfaceType);
+                        if (type.IsCollectionType)
+                        {
+                            typeList.Add(type);
+                        }
                     }
+
+                    _winrtifacesAll = TypeArray.Allocate(typeList.ToArray());
                 }
 
-                _winrtifacesAll = pSymbolLoader.getBSymmgr().AllocParams(typeList.Count, typeList.ToArray());
+                return _winrtifacesAll;
             }
-
-            return _winrtifacesAll;
         }
 
         public override bool IsReferenceType => OwningAggregate.IsRefType();
@@ -384,5 +385,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
         }
+
+        public override AggregateType GetAts() => this;
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -42,6 +43,69 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             || Type.FundamentalType == FUNDTYPE.FT_U2, "Bad fundType in getI64Value");
                         return Val.Int32Val;
                 }
+            }
+        }
+
+        public override object Object
+        {
+            get
+            {
+                if (Type is NullType)
+                {
+                    return null;
+                }
+
+                object objval;
+                switch (System.Type.GetTypeCode(Type.AssociatedSystemType))
+                {
+                    case TypeCode.Boolean:
+                        objval = Val.BooleanVal;
+                        break;
+                    case TypeCode.SByte:
+                        objval = Val.SByteVal;
+                        break;
+                    case TypeCode.Byte:
+                        objval = Val.ByteVal;
+                        break;
+                    case TypeCode.Int16:
+                        objval = Val.Int16Val;
+                        break;
+                    case TypeCode.UInt16:
+                        objval = Val.UInt16Val;
+                        break;
+                    case TypeCode.Int32:
+                        objval = Val.Int32Val;
+                        break;
+                    case TypeCode.UInt32:
+                        objval = Val.UInt32Val;
+                        break;
+                    case TypeCode.Int64:
+                        objval = Val.Int64Val;
+                        break;
+                    case TypeCode.UInt64:
+                        objval = Val.UInt64Val;
+                        break;
+                    case TypeCode.Single:
+                        objval = Val.SingleVal;
+                        break;
+                    case TypeCode.Double:
+                        objval = Val.DoubleVal;
+                        break;
+                    case TypeCode.Decimal:
+                        objval = Val.DecimalVal;
+                        break;
+                    case TypeCode.Char:
+                        objval = Val.CharVal;
+                        break;
+                    case TypeCode.String:
+                        objval = Val.StringVal;
+                        break;
+                    default:
+                        objval = Val.ObjectVal;
+                        break;
+                }
+
+                return Type.IsEnumType ? Enum.ToObject(Type.AssociatedSystemType, objval) : objval;
             }
         }
     }

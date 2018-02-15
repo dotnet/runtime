@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed partial class ExpressionBinder
+    internal readonly partial struct ExpressionBinder
     {
         private class UnaOpSig
         {
@@ -58,7 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 this.pfn = uos.pfn;
                 this.fnkind = uos.fnkind;
                 Debug.Assert(pt != PredefinedType.PT_UNDEFINEDINDEX);
-                _type = pt != PredefinedType.PT_UNDEFINEDINDEX ? fnc.GetPredefindType(pt) : null;
+                _type = pt != PredefinedType.PT_UNDEFINEDINDEX ? GetPredefindType(pt) : null;
                 _grflt = LiftFlags.None;
             }
             public bool FPreDef()

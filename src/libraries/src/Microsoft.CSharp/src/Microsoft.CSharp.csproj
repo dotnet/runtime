@@ -56,7 +56,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\COperators.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Declarations\AggregateDeclaration.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExplicitConversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExpressionBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExpressionKind.cs" />
@@ -64,7 +63,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExprFactory.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\EXPRFLAG.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\FundamentalTypes.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GlobalSymbolContext.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinderResult.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ImplicitConversion.cs" />
@@ -94,9 +92,8 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\Symbol.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolKind.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolLoader.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolManagerBase.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolMask.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolTable.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymbolStore.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\SymFactory.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\TypeParameterSymbol.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Symbols\VariableSymbol.cs" />

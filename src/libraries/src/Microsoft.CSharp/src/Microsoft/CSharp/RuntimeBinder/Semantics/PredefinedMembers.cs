@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -190,40 +189,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             this.name = name;
             this.getter = getter;
         }
-    };
+    }
 
     // Loads and caches predefined members.
     // Also finds constructors on delegate types.
-    internal sealed class PredefinedMembers
+    internal static class PredefinedMembers
     {
-        private readonly SymbolLoader _loader;
-        internal SymbolTable RuntimeBinderSymbolTable;
-        private readonly MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
-        private readonly PropertySymbol[] _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
+        private static readonly MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
+        private static readonly PropertySymbol[] _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
 
-        private Name GetMethName(PREDEFMETH method)
+        private static PropertySymbol LoadProperty(PREDEFPROP property)
         {
-            return GetPredefName(GetMethPredefName(method));
+            PredefinedPropertyInfo info = GetPropInfo(property);
+            return LoadProperty(property, NameManager.GetPredefinedName(info.name), info.getter);
         }
 
-        private AggregateSymbol GetMethParent(PREDEFMETH method)
-        {
-            return GetPredefAgg(GetMethPredefType(method));
-        }
-
-        private PropertySymbol LoadProperty(PREDEFPROP property)
-        {
-            return LoadProperty(
-                        property,
-                        GetPropName(property),
-                        GetPropGetter(property));
-        }
-
-        private Name GetPropName(PREDEFPROP property)
-        {
-            return GetPredefName(GetPropPredefName(property));
-        }
-        private PropertySymbol LoadProperty(
+        private static PropertySymbol LoadProperty(
             PREDEFPROP predefProp,
             Name propertyName,
             PREDEFMETH propertyGetter)
@@ -231,7 +212,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(propertyName != null);
             Debug.Assert(propertyGetter >= 0 && propertyGetter < PREDEFMETH.PM_COUNT);
 
-            RuntimeBinderSymbolTable.AddPredefinedPropertyToSymbolTable(
+            SymbolTable.AddPredefinedPropertyToSymbolTable(
                 GetPredefAgg(GetPropPredefType(predefProp)), propertyName);
             MethodSymbol getter = GetMethod(propertyGetter);
 
@@ -241,32 +222,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return property;
         }
 
-        private SymbolLoader GetSymbolLoader()
-        {
-            Debug.Assert(_loader != null);
+        private static AggregateSymbol GetPredefAgg(PredefinedType pt) => SymbolLoader.GetPredefAgg(pt);
 
-            return _loader;
-        }
-
-        private TypeManager GetTypeManager()
-        {
-            return GetSymbolLoader().GetTypeManager();
-        }
-        private BSYMMGR getBSymmgr()
-        {
-            return GetSymbolLoader().getBSymmgr();
-        }
-
-        private Name GetPredefName(PredefinedName pn)
-        {
-            return NameManager.GetPredefinedName(pn);
-        }
-        private AggregateSymbol GetPredefAgg(PredefinedType pt)
-        {
-            return GetSymbolLoader().GetPredefAgg(pt);
-        }
-
-        private CType LoadTypeFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
+        private static CType LoadTypeFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
 
@@ -276,11 +234,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (current)
             {
                 case MethodSignatureEnum.SIG_SZ_ARRAY:
-                    return GetTypeManager()
-                        .GetArray(LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars), 1, true);
+                    return TypeManager.GetArray(LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars), 1, true);
 
                 case MethodSignatureEnum.SIG_METH_TYVAR:
-                    return GetTypeManager().GetStdMethTypeVar(signature[indexIntoSignatures++]);
+                    return TypeManager.GetStdMethTypeVar(signature[indexIntoSignatures++]);
 
                 case MethodSignatureEnum.SIG_CLASS_TYVAR:
                     return classTyVars[signature[indexIntoSignatures++]];
@@ -294,7 +251,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     int typeCount = agg.GetTypeVars().Count;
                     if (typeCount == 0)
                     {
-                        return GetTypeManager().GetAggregate(agg, BSYMMGR.EmptyTypeArray());
+                        return TypeManager.GetAggregate(agg, TypeArray.Empty);
                     }
 
                     CType[] typeArgs = new CType[typeCount];
@@ -303,11 +260,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         typeArgs[iTypeArg] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
                     }
 
-                    return GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(typeArgs));
+                    return TypeManager.GetAggregate(agg, TypeArray.Allocate(typeArgs));
             }
         }
 
-        private TypeArray LoadTypeArrayFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
+        private static TypeArray LoadTypeArrayFromSignature(int[] signature, ref int indexIntoSignatures, TypeArray classTyVars)
         {
             Debug.Assert(signature != null);
 
@@ -322,18 +279,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 ptypes[i] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
             }
 
-            return getBSymmgr().AllocParams(count, ptypes);
+            return TypeArray.Allocate(ptypes);
         }
 
-        public PredefinedMembers(SymbolLoader loader)
-        {
-            _loader = loader;
-            Debug.Assert(_loader != null);
-
-            _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
-            _properties = new PropertySymbol[(int)PREDEFPROP.PP_COUNT];
-
 #if DEBUG
+        static PredefinedMembers()
+        {
             // validate the tables
             for (int i = 0; i < (int)PREDEFMETH.PM_COUNT; i++)
             {
@@ -343,22 +294,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert((int)GetPropInfo((PREDEFPROP)i).property == i);
             }
-#endif
         }
+#endif
 
-        public PropertySymbol GetProperty(PREDEFPROP property)
+        public static PropertySymbol GetProperty(PREDEFPROP property)
         {
             Debug.Assert(property >= 0 && property < PREDEFPROP.PP_COUNT);
             return _properties[(int)property] ?? (_properties[(int)property] = LoadProperty(property));
         }
 
-        public MethodSymbol GetMethod(PREDEFMETH method)
+        public static MethodSymbol GetMethod(PREDEFMETH method)
         {
             Debug.Assert(method >= 0 && method < PREDEFMETH.PM_COUNT);
             return _methods[(int)method] ?? (_methods[(int)method] = LoadMethod(method));
         }
 
-        private MethodSymbol LoadMethod(
+        private static MethodSymbol LoadMethod(
                         AggregateSymbol type,
                         int[] signature,
                         int cMethodTyVars,
@@ -385,17 +336,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (ret == null)
             {
-                RuntimeBinderSymbolTable.AddPredefinedMethodToSymbolTable(type, methodName);
+                SymbolTable.AddPredefinedMethodToSymbolTable(type, methodName);
                 ret = LookupMethodWhileLoading(type, cMethodTyVars, methodName, methodAccess, isStatic, isVirtual, returnType, argumentTypes);
             }
             return ret;
         }
 
-        private MethodSymbol LookupMethodWhileLoading(AggregateSymbol type, int cMethodTyVars, Name methodName, ACCESS methodAccess, bool isStatic, bool isVirtual, CType returnType, TypeArray argumentTypes)
+        private static MethodSymbol LookupMethodWhileLoading(AggregateSymbol type, int cMethodTyVars, Name methodName, ACCESS methodAccess, bool isStatic, bool isVirtual, CType returnType, TypeArray argumentTypes)
         {
-            for (Symbol sym = GetSymbolLoader().LookupAggMember(methodName, type, symbmask_t.MASK_ALL);
+            for (Symbol sym = SymbolLoader.LookupAggMember(methodName, type, symbmask_t.MASK_ALL);
                  sym != null;
-                 sym = SymbolLoader.LookupNextSym(sym, type, symbmask_t.MASK_ALL))
+                 sym = sym.LookupNext(symbmask_t.MASK_ALL))
             {
                 if (sym is MethodSymbol methsym)
                 {
@@ -403,8 +354,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         methsym.isStatic == isStatic &&
                         methsym.isVirtual == isVirtual &&
                         methsym.typeVars.Count == cMethodTyVars &&
-                        GetTypeManager().SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, true) &&
-                        GetTypeManager().SubstEqualTypeArrays(methsym.Params, argumentTypes, null, methsym.typeVars))
+                        TypeManager.SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, true) &&
+                        TypeManager.SubstEqualTypeArrays(methsym.Params, argumentTypes, null, methsym.typeVars))
                     {
                         return methsym;
                     }
@@ -413,21 +364,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        private MethodSymbol LoadMethod(PREDEFMETH method)
+        private static MethodSymbol LoadMethod(PREDEFMETH method)
         {
+            PredefinedMethodInfo info = GetMethInfo(method);
             return LoadMethod(
-                        GetMethParent(method),
-                        GetMethSignature(method),
-                        GetMethTyVars(method),
-                        GetMethName(method),
-                        GetMethAccess(method),
-                        IsMethStatic(method),
-                        IsMethVirtual(method));
-        }
-
-        private static PredefinedName GetPropPredefName(PREDEFPROP property)
-        {
-            return GetPropInfo(property).name;
+                        GetPredefAgg(info.type),
+                        info.signature,
+                        info.cTypeVars,
+                        NameManager.GetPredefinedName(info.name),
+                        info.access,
+                        info.callingConvention == MethodCallingConventionEnum.Static,
+                        info.callingConvention == MethodCallingConventionEnum.Virtual);
         }
 
         private static PREDEFMETH GetPropGetter(PREDEFPROP property)
@@ -465,41 +412,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(s_predefinedMethods[(int)method].method == method);
 
             return s_predefinedMethods[(int)method];
-        }
-
-        private static PredefinedName GetMethPredefName(PREDEFMETH method)
-        {
-            return GetMethInfo(method).name;
-        }
-
-        private static PredefinedType GetMethPredefType(PREDEFMETH method)
-        {
-            return GetMethInfo(method).type;
-        }
-
-        private static bool IsMethStatic(PREDEFMETH method)
-        {
-            return GetMethInfo(method).callingConvention == MethodCallingConventionEnum.Static;
-        }
-
-        private static bool IsMethVirtual(PREDEFMETH method)
-        {
-            return GetMethInfo(method).callingConvention == MethodCallingConventionEnum.Virtual;
-        }
-
-        private static ACCESS GetMethAccess(PREDEFMETH method)
-        {
-            return GetMethInfo(method).access;
-        }
-
-        private static int GetMethTyVars(PREDEFMETH method)
-        {
-            return GetMethInfo(method).cTypeVars;
-        }
-
-        private static int[] GetMethSignature(PREDEFMETH method)
-        {
-            return GetMethInfo(method).signature;
         }
 
         // the list of predefined method definitions.

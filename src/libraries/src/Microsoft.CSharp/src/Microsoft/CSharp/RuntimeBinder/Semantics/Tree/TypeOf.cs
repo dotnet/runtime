@@ -14,5 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public CType SourceType { get; }
+
+        public override object Object => SourceType.AssociatedSystemType;
     }
 }

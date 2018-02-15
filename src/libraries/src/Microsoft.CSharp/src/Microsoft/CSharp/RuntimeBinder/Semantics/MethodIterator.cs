@@ -10,12 +10,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal partial class CMemberLookupResults
     {
-        public partial class CMethodIterator
+        public class CMethodIterator
         {
-            private readonly SymbolLoader _symbolLoader;
-            private readonly CSemanticChecker _semanticChecker;
             // Inputs.
-            private readonly AggregateDeclaration _context;
+            private readonly AggregateSymbol _context;
             private readonly TypeArray _containingTypes;
             private readonly CType _qualifyingType;
             private readonly Name _name;
@@ -26,15 +24,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Internal state.
             private int _currentTypeIndex;
 
-            public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType qualifyingType, AggregateDeclaration context, int arity, EXPRFLAG flags, symbmask_t mask, ArgInfos nonTrailingNamedArguments)
+            public CMethodIterator(Name name, TypeArray containingTypes, CType qualifyingType, AggregateSymbol context, int arity, EXPRFLAG flags, symbmask_t mask, ArgInfos nonTrailingNamedArguments)
             {
                 Debug.Assert(name != null);
-                Debug.Assert(symLoader != null);
-                Debug.Assert(checker != null);
                 Debug.Assert(containingTypes != null);
                 Debug.Assert(containingTypes.Count != 0);
-                _semanticChecker = checker;
-                _symbolLoader = symLoader;
+
                 _name = name;
                 _containingTypes = containingTypes;
                 _qualifyingType = qualifyingType;
@@ -87,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // Check access. If Sym is not accessible, then let it through and mark it.
-                    IsCurrentSymbolInaccessible = !_semanticChecker.CheckAccess(CurrentSymbol, CurrentType, _context, _qualifyingType);
+                    IsCurrentSymbolInaccessible = !CSemanticChecker.CheckAccess(CurrentSymbol, CurrentType, _context, _qualifyingType);
 
                     // Check bogus. If Sym is bogus, then let it through and mark it.
                     IsCurrentSymbolBogus = CSemanticChecker.CheckBogus(CurrentSymbol);
@@ -104,7 +99,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (args != null)
                 {
                     List<Name> paramNames = ExpressionBinder.GroupToArgsBinder
-                        .FindMostDerivedMethod(_symbolLoader, CurrentSymbol, _qualifyingType)
+                        .FindMostDerivedMethod(CurrentSymbol, _qualifyingType)
                         .ParameterNames;
 
                     List<Expr> argExpressions = args.prgexpr;
@@ -129,8 +124,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 for (;;)
                 {
                     CurrentSymbol = (CurrentSymbol == null
-                        ? _symbolLoader.LookupAggMember(_name, CurrentType.OwningAggregate, _mask)
-                        : SymbolLoader.LookupNextSym(CurrentSymbol, CurrentType.OwningAggregate, _mask)) as MethodOrPropertySymbol;
+                        ? SymbolLoader.LookupAggMember(_name, CurrentType.OwningAggregate, _mask)
+                        : CurrentSymbol.LookupNext(_mask)) as MethodOrPropertySymbol;
 
                     // If we couldn't find a sym, we look up the type chain and get the next type.
                     if (CurrentSymbol == null)

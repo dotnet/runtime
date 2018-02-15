@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed partial class ExpressionBinder
+    internal readonly partial struct ExpressionBinder
     {
         private class BinOpSig
         {
@@ -85,8 +85,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 this.grfos = bos.grfos;
                 this.fnkind = bos.fnkind;
 
-                _type1 = pt1 != PredefinedType.PT_UNDEFINEDINDEX ? fnc.GetPredefindType(pt1) : null;
-                _type2 = pt2 != PredefinedType.PT_UNDEFINEDINDEX ? fnc.GetPredefindType(pt2) : null;
+                _type1 = pt1 != PredefinedType.PT_UNDEFINEDINDEX ? GetPredefindType(pt1) : null;
+                _type2 = pt2 != PredefinedType.PT_UNDEFINEDINDEX ? GetPredefindType(pt2) : null;
                 _grflt = LiftFlags.None;
             }
 

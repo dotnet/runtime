@@ -24,8 +24,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             when the source is a reference type and the destination is a base type of the source. Note
             that typeDst.IsRefType() may still return false (when both are type parameters).
         ***************************************************************************************************/
-        public static bool FImpRefConv(SymbolLoader loader, CType typeSrc, CType typeDst) =>
-            typeSrc.IsReferenceType && loader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
+        public static bool FImpRefConv(CType typeSrc, CType typeDst) =>
+            typeSrc.IsReferenceType && SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
 
         /***************************************************************************************************
             Determine whether there is an explicit or implicit reference conversion (or identity conversion)
@@ -71,7 +71,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             The latter two cases can happen with type variables even though the other type variable is not
             a reference type.
         ***************************************************************************************************/
-        public static bool FExpRefConv(SymbolLoader loader, CType typeSrc, CType typeDst)
+        public static bool FExpRefConv(CType typeSrc, CType typeDst)
         {
             Debug.Assert(typeSrc != null);
             Debug.Assert(typeDst != null);
@@ -79,8 +79,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // is there an implicit reference conversion in either direction?
                 // this handles the bulk of the cases ...
-                if (loader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst) ||
-                    loader.HasIdentityOrImplicitReferenceConversion(typeDst, typeSrc))
+                if (SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst) ||
+                    SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeDst, typeSrc))
                 {
                     return true;
                 }
@@ -118,7 +118,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return arrSrc.Rank == arrDst.Rank
                                && arrSrc.IsSZArray == arrDst.IsSZArray
-                               && FExpRefConv(loader, arrSrc.ElementType, arrDst.ElementType);
+                               && FExpRefConv(arrSrc.ElementType, arrDst.ElementType);
                     }
 
                     // *    From a one-dimensional array-type S[] to System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyList<T> 
@@ -136,8 +136,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    AggregateSymbol aggIList = loader.GetPredefAgg(PredefinedType.PT_G_ILIST);
-                    AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
+                    AggregateSymbol aggIList = SymbolLoader.GetPredefAgg(PredefinedType.PT_G_ILIST);
+                    AggregateSymbol aggIReadOnlyList = SymbolLoader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
                         !SymbolLoader.IsBaseAggregate(aggIList, aggDst.OwningAggregate)) &&
@@ -147,13 +147,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    return FExpRefConv(loader, arrSrc.ElementType, typeArgsAll[0]);
+                    return FExpRefConv(arrSrc.ElementType, typeArgsAll[0]);
                 }
 
                 if (typeDst is ArrayType arrayDest && typeSrc is AggregateType aggtypeSrc)
                 {
                     // * From System.Array and the interfaces it implements, to any array-type.
-                    if (loader.HasIdentityOrImplicitReferenceConversion(loader.GetPredefindType(PredefinedType.PT_ARRAY), typeSrc))
+                    if (SymbolLoader.HasIdentityOrImplicitReferenceConversion(SymbolLoader.GetPredefindType(PredefinedType.PT_ARRAY), typeSrc))
                     {
                         return true;
                     }
@@ -167,8 +167,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    AggregateSymbol aggIList = loader.GetPredefAgg(PredefinedType.PT_G_ILIST);
-                    AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
+                    AggregateSymbol aggIList = SymbolLoader.GetPredefAgg(PredefinedType.PT_G_ILIST);
+                    AggregateSymbol aggIReadOnlyList = SymbolLoader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
                         !SymbolLoader.IsBaseAggregate(aggIList, aggtypeSrc.OwningAggregate)) &&
@@ -182,9 +182,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CType typeLst = aggtypeSrc.TypeArgsAll[0];
 
                     Debug.Assert(!(typeArr is MethodGroupType));
-                    return typeArr == typeLst || FExpRefConv(loader, typeArr, typeLst);
+                    return typeArr == typeLst || FExpRefConv(typeArr, typeLst);
                 }
-                if (HasGenericDelegateExplicitReferenceConversion(loader, typeSrc, typeDst))
+                if (HasGenericDelegateExplicitReferenceConversion(typeSrc, typeDst))
                 {
                     return true;
                 }
@@ -193,13 +193,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // conversion of T . U, where T : class, U
                 // .. these constraints implies where U : class
-                return loader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
+                return SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeSrc, typeDst);
             }
             else if (typeDst.IsReferenceType)
             {
                 // conversion of T . U, where U : class, T 
                 // .. these constraints implies where T : class
-                return loader.HasIdentityOrImplicitReferenceConversion(typeDst, typeSrc);
+                return SymbolLoader.HasIdentityOrImplicitReferenceConversion(typeDst, typeSrc);
             }
             return false;
         }
@@ -216,16 +216,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             o If type parameter Xi is declared to be contravariant ("in") then either Si must be identical to Ti, 
               or Si and Ti must both be reference types.
         ***************************************************************************************************/
-        public static bool HasGenericDelegateExplicitReferenceConversion(SymbolLoader loader, CType source, CType target) =>
-            target is AggregateType aggTarget && HasGenericDelegateExplicitReferenceConversion(loader, source, aggTarget);
+        public static bool HasGenericDelegateExplicitReferenceConversion(CType source, CType target) =>
+            target is AggregateType aggTarget && HasGenericDelegateExplicitReferenceConversion(source, aggTarget);
 
-        public static bool HasGenericDelegateExplicitReferenceConversion(SymbolLoader loader, CType pSource, AggregateType pTarget)
+        public static bool HasGenericDelegateExplicitReferenceConversion(CType pSource, AggregateType pTarget)
         {
             if (!(pSource is AggregateType aggSrc) ||
                 !aggSrc.IsDelegateType ||
                 !pTarget.IsDelegateType ||
                 aggSrc.OwningAggregate != pTarget.OwningAggregate ||
-                loader.HasIdentityOrImplicitReferenceConversion(aggSrc, pTarget))
+                SymbolLoader.HasIdentityOrImplicitReferenceConversion(aggSrc, pTarget))
             {
                 return false;
             }
@@ -257,7 +257,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pParam.Covariant)
                 {
-                    if (!FExpRefConv(loader, pSourceArg, pTargetArg))
+                    if (!FExpRefConv(pSourceArg, pTargetArg))
                     {
                         return false;
                     }

@@ -9,7 +9,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed partial class ExpressionBinder
+    internal readonly partial struct ExpressionBinder
     {
         ////////////////////////////////////////////////////////////////////////////////
         // This table is used to implement the last set of 'better' conversion rules
@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new byte[] /* OBJECT*/ {3,     3,      3,      3,      3,      3,      3,      3,      3,      3,      3,      3,      3,      3,       3,       3}
         };
 
-        private BetterType WhichMethodIsBetterTieBreaker(
+        private static BetterType WhichMethodIsBetterTieBreaker(
             CandidateFunctionMember node1,
             CandidateFunctionMember node2,
             CType pTypeThrough,
@@ -83,7 +83,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // See if one's parameter types (un-instantiated) are more specific.
-            BetterType nT = GetGlobalSymbols().CompareTypes(
+            BetterType nT = CompareTypes(
                RearrangeNamedArguments(mpwi1.MethProp().Params, mpwi1, pTypeThrough, args),
                RearrangeNamedArguments(mpwi2.MethProp().Params, mpwi2, pTypeThrough, args));
             if (nT == BetterType.Left || nT == BetterType.Right)
@@ -99,6 +99,79 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Bona-fide tie.
             return BetterType.Neither;
+        }
+
+        private static BetterType CompareTypes(TypeArray ta1, TypeArray ta2)
+        {
+            if (ta1 == ta2)
+            {
+                return BetterType.Same;
+            }
+
+            if (ta1.Count != ta2.Count)
+            {
+                // The one with more parameters is more specific.
+                return ta1.Count > ta2.Count ? BetterType.Left : BetterType.Right;
+            }
+
+            BetterType nTot = BetterType.Neither;
+
+            for (int i = 0; i < ta1.Count; i++)
+            {
+                CType type1 = ta1[i];
+                CType type2 = ta2[i];
+                BetterType nParam = BetterType.Neither;
+
+LAgain:
+                if (type1.TypeKind != type2.TypeKind)
+                {
+                    if (type1 is TypeParameterType)
+                    {
+                        nParam = BetterType.Right;
+                    }
+                    else if (type2 is TypeParameterType)
+                    {
+                        nParam = BetterType.Left;
+                    }
+                }
+                else
+                {
+                    switch (type1.TypeKind)
+                    {
+                        default:
+                            Debug.Assert(false, "Bad kind in CompareTypes");
+                            break;
+                        case TypeKind.TK_TypeParameterType:
+                            break;
+
+                        case TypeKind.TK_PointerType:
+                        case TypeKind.TK_ParameterModifierType:
+                        case TypeKind.TK_ArrayType:
+                        case TypeKind.TK_NullableType:
+                            type1 = type1.BaseOrParameterOrElementType;
+                            type2 = type2.BaseOrParameterOrElementType;
+                            goto LAgain;
+
+                        case TypeKind.TK_AggregateType:
+                            nParam = CompareTypes(((AggregateType)type1).TypeArgsAll, ((AggregateType)type2).TypeArgsAll);
+                            break;
+                    }
+                }
+
+                if (nParam == BetterType.Right || nParam == BetterType.Left)
+                {
+                    if (nTot == BetterType.Same || nTot == BetterType.Neither)
+                    {
+                        nTot = nParam;
+                    }
+                    else if (nParam != nTot)
+                    {
+                        return BetterType.Neither;
+                    }
+                }
+            }
+
+            return nTot;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -126,8 +199,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // By rearranging the arguments as such we make sure that any specified named arguments appear in the same position for both
         // methods and we also maintain the relative order of the other parameters (the type long appears after int in the above example)
 
-        private TypeArray RearrangeNamedArguments(TypeArray pta, MethPropWithInst mpwi,
-            CType pTypeThrough, ArgInfos args)
+        private static TypeArray RearrangeNamedArguments(TypeArray pta, MethPropWithInst mpwi, CType pTypeThrough, ArgInfos args)
         {
 #if DEBUG
             // We never have a named argument that is in a position in the argument
@@ -147,7 +219,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType type = pTypeThrough != null ? pTypeThrough : mpwi.GetType();
             CType[] typeList = new CType[pta.Count];
-            MethodOrPropertySymbol methProp = GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mpwi.MethProp(), type);
+            MethodOrPropertySymbol methProp = GroupToArgsBinder.FindMostDerivedMethod(mpwi.MethProp(), type);
 
             // We initialize the new type array with the parameters for the method. 
             for (int iParam = 0; iParam < pta.Count; iParam++)
@@ -179,7 +251,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            return GetSymbolLoader().getBSymmgr().AllocParams(pta.Count, typeList);
+            return TypeArray.Allocate(typeList);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
