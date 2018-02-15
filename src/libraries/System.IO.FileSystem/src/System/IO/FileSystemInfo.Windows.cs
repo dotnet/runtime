@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security;
+using System.IO.Enumeration;
 
 namespace System.IO
 {
@@ -19,6 +19,16 @@ namespace System.IO
 
         protected FileSystemInfo()
         {
+        }
+
+        internal static unsafe FileSystemInfo Create(string fullPath, ref FileSystemEntry findData)
+        {
+            FileSystemInfo info = findData.IsDirectory
+                ? (FileSystemInfo) new DirectoryInfo(fullPath, fileName: new string(findData.FileName), isNormalized: true)
+                : new FileInfo(fullPath, fileName: new string(findData.FileName), isNormalized: true);
+
+            info.Init(findData._info);
+            return info;
         }
 
         internal void Invalidate()

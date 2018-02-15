@@ -17,7 +17,7 @@ namespace System.IO.Enumeration
         private ReadOnlySpan<char> _fileName;
         private fixed char _fileNameBuffer[FileNameBufferSize];
 
-        internal static bool Initialize(
+        internal static FileAttributes Initialize(
             ref FileSystemEntry entry,
             Interop.Sys.DirectoryEntry directoryEntry,
             ReadOnlySpan<char> directory,
@@ -33,9 +33,7 @@ namespace System.IO.Enumeration
             entry._fullPath = ReadOnlySpan<char>.Empty;
             entry._fileName = ReadOnlySpan<char>.Empty;
 
-            // Get from the dir entry whether the entry is a file or directory.
-            // We classify everything as a file unless we know it to be a directory.
-            // (This includes regular files, FIFOs, etc.)
+            // IMPORTANT: Attribute logic must match the logic in FileStatus
 
             bool isDirectory = false;
             if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_DIR)
@@ -43,16 +41,25 @@ namespace System.IO.Enumeration
                 // We know it's a directory.
                 isDirectory = true;
             }
-            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK || directoryEntry.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
+            else if ((directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
                 && Interop.Sys.Stat(entry.FullPath, out Interop.Sys.FileStatus targetStatus) >= 0)
             {
-                // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
+                // It's a symlink: stat to it to see if we can resolve it to a directory.
                 isDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
 
             entry._status = default;
             FileStatus.Initialize(ref entry._status, isDirectory);
-            return isDirectory;
+
+            FileAttributes attributes = FileAttributes.Normal;
+            if (directoryEntry.InodeType == Interop.Sys.NodeType.DT_LNK)
+                attributes |= FileAttributes.ReparsePoint;
+            if (isDirectory)
+                attributes |= FileAttributes.Directory;
+            if (directoryEntry.Name[0] == '.')
+                attributes |= FileAttributes.Hidden;
+
+            return attributes;
         }
 
 
@@ -116,14 +123,7 @@ namespace System.IO.Enumeration
         public FileSystemInfo ToFileSystemInfo()
         {
             string fullPath = ToFullPath();
-            if (_status.InitiallyDirectory)
-            {
-                return DirectoryInfo.Create(fullPath, new string(FileName), ref _status);
-            }
-            else
-            {
-                return FileInfo.Create(fullPath, new string(FileName), ref _status);
-            }
+            return FileSystemInfo.Create(fullPath, new string(FileName), ref _status);
         }
 
         /// <summary>

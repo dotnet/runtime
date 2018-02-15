@@ -107,7 +107,8 @@ namespace System.IO.Enumeration
                     if (_lastEntryFound)
                         return false;
 
-                    bool isDirectory = FileSystemEntry.Initialize(ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
+                    FileAttributes attributes = FileSystemEntry.Initialize(ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
+                    bool isDirectory = (attributes & FileAttributes.Directory) != 0;
 
                     bool isSpecialDirectory = false;
                     if (isDirectory)
@@ -124,17 +125,14 @@ namespace System.IO.Enumeration
 
                     if (!isSpecialDirectory && _options.AttributesToSkip != 0)
                     {
-                        if ((_options.AttributesToSkip & ~(FileAttributes.Directory | FileAttributes.Hidden | FileAttributes.ReparsePoint)) == 0)
+                        if ((_options.AttributesToSkip & FileAttributes.ReadOnly) != 0)
                         {
-                            // These three we don't have to hit the disk again to evaluate
-                            if (((_options.AttributesToSkip & FileAttributes.Directory) != 0 && isDirectory)
-                                || ((_options.AttributesToSkip & FileAttributes.Hidden) != 0 && _entry.Name[0] == '.')
-                                || ((_options.AttributesToSkip & FileAttributes.ReparsePoint) != 0 && _entry.InodeType == Interop.Sys.NodeType.DT_LNK))
-                                continue;
+                            // ReadOnly is the only attribute that requires hitting entry.Attributes (which hits the disk)
+                            attributes = entry.Attributes;
                         }
-                        else if (entry.Attributes != (FileAttributes)(-1) && (_options.AttributesToSkip & entry.Attributes) != 0)
+
+                        if (attributes != (FileAttributes)(-1) && (_options.AttributesToSkip & attributes) != 0)
                         {
-                            // Hitting Attributes on the FileSystemEntry will cause a stat call
                             continue;
                         }
                     }

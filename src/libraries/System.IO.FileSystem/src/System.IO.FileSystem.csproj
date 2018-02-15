@@ -44,9 +44,6 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Text\ValueStringBuilder.cs">
       <Link>Common\CoreLib\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.cs">
-      <Link>Common\System\IO\PathInternal.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
@@ -62,10 +59,7 @@
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
     <Compile Include="System\IO\CharSpanExtensions.Windows.cs" />
     <Compile Include="System\IO\DisableMediaInsertionPrompt.cs" />
-    <Compile Include="System\IO\DirectoryInfo.Windows.cs" />
-    <Compile Include="System\IO\FileInfo.Windows.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
-    <Compile Include="System\IO\PathHelpers.Windows.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Windows.cs" />
     <Compile Include="System\IO\FileSystem.Windows.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
@@ -285,10 +279,7 @@
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
     <Compile Include="System\IO\CharSpanExtensions.Unix.cs" />
-    <Compile Include="System\IO\FileInfo.Unix.cs" />
-    <Compile Include="System\IO\DirectoryInfo.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
-    <Compile Include="System\IO\PathHelpers.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
