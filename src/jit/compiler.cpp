@@ -2666,44 +2666,41 @@ void Compiler::compSetProcessor()
                     opts.setSupportedISA(InstructionSet_POPCNT);
                 }
             }
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3))
-            {
-                if (configEnableISA(InstructionSet_SSE3))
-                {
-                    opts.setSupportedISA(InstructionSet_SSE3);
-                }
-            }
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41))
-            {
-                if (configEnableISA(InstructionSet_SSE41))
-                {
-                    opts.setSupportedISA(InstructionSet_SSE41);
-                }
-            }
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
-            {
-                if (configEnableISA(InstructionSet_SSE42))
-                {
-                    opts.setSupportedISA(InstructionSet_SSE42);
-                }
-            }
-            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3))
-            {
-                if (configEnableISA(InstructionSet_SSSE3))
-                {
-                    opts.setSupportedISA(InstructionSet_SSSE3);
-                }
-            }
-        }
-    }
 
-    opts.compCanUseSSE4 = false;
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) &&
-        jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
-    {
-        if (JitConfig.EnableSSE3_4() != 0)
-        {
-            opts.compCanUseSSE4 = true;
+            // There are currently two sets of flags that control SSE3 through SSE4.2 support
+            // This is the general EnableSSE3_4 flag and the individual ISA flags. We need to
+            // check both for any given ISA.
+            if (JitConfig.EnableSSE3_4())
+            {
+                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE3))
+                {
+                    if (configEnableISA(InstructionSet_SSE3))
+                    {
+                        opts.setSupportedISA(InstructionSet_SSE3);
+                    }
+                }
+                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41))
+                {
+                    if (configEnableISA(InstructionSet_SSE41))
+                    {
+                        opts.setSupportedISA(InstructionSet_SSE41);
+                    }
+                }
+                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
+                {
+                    if (configEnableISA(InstructionSet_SSE42))
+                    {
+                        opts.setSupportedISA(InstructionSet_SSE42);
+                    }
+                }
+                if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3))
+                {
+                    if (configEnableISA(InstructionSet_SSSE3))
+                    {
+                        opts.setSupportedISA(InstructionSet_SSSE3);
+                    }
+                }
+            }
         }
     }
 
@@ -2716,8 +2713,12 @@ void Compiler::compSetProcessor()
             codeGen->getEmitter()->SetContainsAVX(false);
             codeGen->getEmitter()->SetContains256bitAVX(false);
         }
-        else if (CanUseSSE4())
+        else if (compSupports(InstructionSet_SSSE3) || compSupports(InstructionSet_SSE41) ||
+                 compSupports(InstructionSet_SSE42))
         {
+            // Emitter::UseSSE4 controls whether we support the 4-byte encoding for certain
+            // instructions. We need to check if either is supported independently, since
+            // it is currently possible to enable/disable them separately.
             codeGen->getEmitter()->SetUseSSE4(true);
         }
     }
