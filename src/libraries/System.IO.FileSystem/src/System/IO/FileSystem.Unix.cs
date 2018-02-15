@@ -449,16 +449,6 @@ namespace System.IO
             return name == "." || name == "..";
         }
 
-        public static string GetCurrentDirectory()
-        {
-            return Interop.Sys.GetCwd();
-        }
-
-        public static void SetCurrentDirectory(string fullPath)
-        {
-            Interop.CheckIo(Interop.Sys.ChDir(fullPath), fullPath, isDirectory:true);
-        }
-
         public static FileAttributes GetAttributes(string fullPath)
         {
             FileAttributes attributes = new FileInfo(fullPath, null).Attributes;

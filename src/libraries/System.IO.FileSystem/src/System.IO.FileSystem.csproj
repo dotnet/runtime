@@ -93,50 +93,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SecurityOptions.cs">
-      <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileTypes.cs">
       <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs">
-      <Link>Common\Interop\Windows\Interop.GetFileType.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FlushFileBuffers.cs">
-      <Link>Common\Interop\Windows\Interop.FlushFileBuffers.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetEndOfFile.cs">
-      <Link>Common\Interop\Windows\Interop.SetEndOfFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFilePointerEx.cs">
-      <Link>Common\Interop\Windows\Interop.SetFilePointerEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CancelIoEx.cs">
-      <Link>Common\Interop\Windows\Interop.CancelIoEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
-      <Link>Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
-      <Link>Common\Interop\Windows\Interop.ReadFile_IntPtr.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
-      <Link>Common\Interop\Windows\Interop.WriteFile_IntPtr.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileInformationByHandle.cs">
       <Link>Common\Interop\Windows\Interop.SetFileInformationByHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\Interop.GetCurrentDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCurrentDirectory.cs">
-      <Link>Common\Interop\Windows\Interop.SetCurrentDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathName.cs">
-      <Link>Common\Interop\Windows\Interop.GetLongPathName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FindNextFile.cs">
       <Link>Common\Interop\Windows\Interop.FindNextFile.cs</Link>
