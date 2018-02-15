@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprField : ExprWithType, IExprWithObject
+    internal sealed class ExprField : ExprWithType
     {
         public ExprField(CType type, Expr optionalObject, FieldWithType field)
             : base(ExpressionKind.Field, type)

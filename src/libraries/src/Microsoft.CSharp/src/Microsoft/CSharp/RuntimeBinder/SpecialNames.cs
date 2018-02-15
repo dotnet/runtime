@@ -50,9 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         public const string CLR_True = "op_True";
         public const string CLR_False = "op_False";
 
-        public const string CLR_PreIncrement = "op_Increment";
-        public const string CLR_PostIncrement = "op_Increment";
-        public const string CLR_PreDecrement = "op_Decrement";
-        public const string CLR_PostDecrement = "op_Decrement";
+        public const string CLR_Increment = "op_Increment";
+        public const string CLR_Decrement = "op_Decrement";
     }
 }
