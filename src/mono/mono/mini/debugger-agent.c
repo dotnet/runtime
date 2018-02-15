@@ -4439,7 +4439,7 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 
 		/* Might be AOTed code */
 		mono_class_init (method->klass);
-		code = mono_aot_get_method_checked (domain, method, &oerror);
+		code = mono_aot_get_method (domain, method, &oerror);
 		if (code) {
 			mono_error_assert_ok (&oerror);
 			ji = mono_jit_info_table_find (domain, code);
