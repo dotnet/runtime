@@ -2,31 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.Win32 {
-    using System;
-    using System.Diagnostics;
-    using System.Security.Permissions;
-    
+using System;
+using System.Diagnostics;
+using System.Security.Permissions;
+
+namespace Microsoft.Win32
+{
     /// <devdoc>
     /// <para>Provides data for the <see cref='Microsoft.Win32.SystemEvents.SessionSwitch'/> event.</para>
     /// </devdoc>    
-    public class SessionSwitchEventArgs : EventArgs {
-    
-        private readonly SessionSwitchReason reason;
-    
+    public class SessionSwitchEventArgs : EventArgs
+    {
+        private readonly SessionSwitchReason _reason;
+
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='Microsoft.Win32.SessionSwitchEventArgs'/> class.</para>
         /// </devdoc>
-        public SessionSwitchEventArgs(SessionSwitchReason reason) {
-            this.reason = reason;
+        public SessionSwitchEventArgs(SessionSwitchReason reason)
+        {
+            _reason = reason;
         }
-    
+
         /// <devdoc>
         ///    <para>Gets the reason for the session switch.</para>
         /// </devdoc>
-        public SessionSwitchReason Reason {
-            get {
-                return reason;
+        public SessionSwitchReason Reason
+        {
+            get
+            {
+                return _reason;
             }
         }
     }
