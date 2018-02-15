@@ -488,9 +488,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return SpecialNames.CLR_False;
 
                 case ExpressionType.Increment:
-                    return SpecialNames.CLR_PreIncrement;
+                    return SpecialNames.CLR_Increment;
                 case ExpressionType.Decrement:
-                    return SpecialNames.CLR_PreDecrement;
+                    return SpecialNames.CLR_Decrement;
             }
         }
     }

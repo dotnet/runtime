@@ -191,28 +191,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return assem == sym.GetAssembly() || sym.InternalsVisibleTo(assem);
         }
 
-        /* Returns if the symbol is virtual. */
-        public bool IsVirtual()
-        {
-            switch (_kind)
-            {
-                case SYMKIND.SK_MethodSymbol:
-                    return ((MethodSymbol)this).isVirtual;
-
-                case SYMKIND.SK_EventSymbol:
-                    MethodSymbol methAdd = ((EventSymbol)this).methAdd;
-                    return methAdd != null && methAdd.isVirtual;
-
-                case SYMKIND.SK_PropertySymbol:
-                    PropertySymbol prop = ((PropertySymbol)this);
-                    MethodSymbol meth = prop.GetterMethod ?? prop.SetterMethod;
-                    return meth != null && meth.isVirtual;
-
-                default:
-                    return false;
-            }
-        }
-
         public bool IsOverride()
         {
             switch (_kind)

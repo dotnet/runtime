@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal abstract class ExprWithArgs : ExprWithType, IExprWithObject
+    internal abstract class ExprWithArgs : ExprWithType
     {
         protected ExprWithArgs(ExpressionKind kind, CType type)
             : base(kind, type)
@@ -12,12 +12,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public ExprMemberGroup MemberGroup { get; set; }
-
-        public Expr OptionalObject
-        {
-            get => MemberGroup.OptionalObject;
-            set => MemberGroup.OptionalObject = value;
-        }
 
         public Expr OptionalArguments { get; set; }
 
