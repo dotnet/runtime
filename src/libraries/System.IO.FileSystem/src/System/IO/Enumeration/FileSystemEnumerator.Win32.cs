@@ -48,5 +48,31 @@ namespace System.IO.Enumeration
                     throw Win32Marshal.GetExceptionForWin32Error(error, _currentPath);
             }
         }
+
+        private IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
+        {
+            (int status, IntPtr handle) = Interop.NtDll.CreateFile(
+                relativePath,
+                _directoryHandle,
+                Interop.NtDll.CreateDisposition.FILE_OPEN,
+                Interop.NtDll.DesiredAccess.FILE_LIST_DIRECTORY | Interop.NtDll.DesiredAccess.SYNCHRONIZE,
+                createOptions: Interop.NtDll.CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT | Interop.NtDll.CreateOptions.FILE_DIRECTORY_FILE
+                    | Interop.NtDll.CreateOptions.FILE_OPEN_FOR_BACKUP_INTENT);
+
+            switch ((uint)status)
+            {
+                case Interop.StatusOptions.STATUS_SUCCESS:
+                    return handle;
+                default:
+                    int error = (int)Interop.NtDll.RtlNtStatusToDosError(status);
+
+                    // Note that there are many NT status codes that convert to ERROR_ACCESS_DENIED.
+                    if ((error == Interop.Errors.ERROR_ACCESS_DENIED && _options.IgnoreInaccessible) || ContinueOnError(error))
+                    {
+                        return IntPtr.Zero;
+                    }
+                    throw Win32Marshal.GetExceptionForWin32Error(error, fullPath);
+            }
+        }
     }
 }
