@@ -607,7 +607,7 @@ void LinearScan::BuildNode(GenTree* tree)
 
             // Is this a non-commutative operator, or is op2 a contained memory op?
             // In either case, we need to make op2 remain live until the op is complete, by marking
-            // the source(s) associated with op2 as "delayFree".
+            // the source(s) associated with op2 as "delayFree" if this node defines a register.
             // Note that if op2 of a binary RMW operator is a memory op, even if the operator
             // is commutative, codegen cannot reverse them.
             // TODO-XArch-CQ: This is not actually the case for all RMW binary operators, but there's
@@ -650,7 +650,8 @@ void LinearScan::BuildNode(GenTree* tree)
 
                 delayUseSrc = op1;
             }
-            else if ((op2 != nullptr) && (!tree->OperIsCommutative() || (op2->isContained() && !op2->IsCnsIntOrI())))
+            else if ((info->dstCount != 0) && (op2 != nullptr) &&
+                     (!tree->OperIsCommutative() || (op2->isContained() && !op2->IsCnsIntOrI())))
             {
                 delayUseSrc = op2;
             }
