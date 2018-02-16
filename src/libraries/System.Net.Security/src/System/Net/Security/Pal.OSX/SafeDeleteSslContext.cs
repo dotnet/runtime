@@ -66,7 +66,7 @@ namespace System.Net
                     // let it pass.
                     break;
                 default:
-                    throw new PlatformNotSupportedException(SR.net_encryptionpolicy_notsupported);
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
             }
 
             SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(isServer ? 1 : 0);
