@@ -146,7 +146,6 @@ namespace System.IO.Pipelines.Tests
 
             // Advance writer
             _pipe.Writer.Advance(memory.Length);
-            _pipe.Writer.Commit();
         }
 
         [Fact]
@@ -167,7 +166,6 @@ namespace System.IO.Pipelines.Tests
             Memory<byte> memory = _pipe.Writer.GetMemory();
             // Append one full segment to a pipe
             _pipe.Writer.Write(memory.Span);
-            _pipe.Writer.Commit();
             await _pipe.Writer.FlushAsync();
 
             // Consume entire segment
@@ -176,7 +174,6 @@ namespace System.IO.Pipelines.Tests
 
             // Append empty segment
             _pipe.Writer.GetMemory(1);
-            _pipe.Writer.Commit();
             await _pipe.Writer.FlushAsync();
 
             result = await _pipe.Reader.ReadAsync();
@@ -188,7 +185,6 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(result.Buffer.Start);
             PipeAwaiter<ReadResult> awaitable = _pipe.Reader.ReadAsync();
             Assert.False(awaitable.IsCompleted);
-            _pipe.Writer.Commit();
         }
 
         [Fact]
@@ -579,13 +575,15 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void CompleteAfterAdvanceThrows()
+        public async Task CompleteAfterAdvanceCommits()
         {
             _pipe.Writer.WriteEmpty(4);
 
-            Assert.Throws<InvalidOperationException>(() => _pipe.Writer.Complete());
+            _pipe.Writer.Complete();
 
-            _pipe.Commit();
+            var result = await _pipe.Reader.ReadAsync();
+            Assert.Equal(4, result.Buffer.Length);
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
         }
 
         [Fact]
