@@ -403,18 +403,24 @@ void LinearScan::BuildNode(GenTree* tree)
             // it may be used used multiple during retries
             assert(!tree->gtOp.gtOp1->isContained());
             LocationInfoListNode* op1Info = getLocationInfo(tree->gtOp.gtOp1);
-            op1Info->info.isDelayFree     = true;
             useList.Append(op1Info);
+            LocationInfoListNode* op2Info = nullptr;
             if (!tree->gtOp.gtOp2->isContained())
             {
-                LocationInfoListNode* op2Info = getLocationInfo(tree->gtOp.gtOp2);
-                op2Info->info.isDelayFree     = true;
+                op2Info = getLocationInfo(tree->gtOp.gtOp2);
                 useList.Append(op2Info);
             }
-            info->hasDelayFreeSrc = true;
-
-            // Internals may not collide with target
-            info->isInternalRegDelayFree = true;
+            if (info->dstCount != 0)
+            {
+                op1Info->info.isDelayFree = true;
+                if (op2Info != nullptr)
+                {
+                    op2Info->info.isDelayFree = true;
+                }
+                // Internals may not collide with target
+                info->isInternalRegDelayFree = true;
+                info->hasDelayFreeSrc        = true;
+            }
         }
         break;
 
