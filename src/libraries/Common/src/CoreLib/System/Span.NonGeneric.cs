@@ -23,8 +23,77 @@ namespace System
     /// </summary>
     public static class Span
     {
-        // s_invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
-        private static readonly bool s_invariantMode = GlobalizationMode.Invariant;
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to lowercase.
+        /// </summary>
+        public static int ToLower(this ReadOnlySpan<char> source, Span<char> destination, CultureInfo culture)
+        {
+            if (culture == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            if (GlobalizationMode.Invariant)
+                culture.TextInfo.ToLowerAsciiInvariant(source, destination);
+            else
+                culture.TextInfo.ChangeCase(source, destination, toUpper: false);
+            return source.Length;
+        }
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to lowercase
+        /// using the casing rules of the invariant culture.
+        /// </summary>
+        public static int ToLowerInvariant(this ReadOnlySpan<char> source, Span<char> destination)
+        {
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            if (GlobalizationMode.Invariant)
+                CultureInfo.InvariantCulture.TextInfo.ToLowerAsciiInvariant(source, destination);
+            else
+                CultureInfo.InvariantCulture.TextInfo.ChangeCase(source, destination, toUpper: false);
+            return source.Length;
+        }
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to uppercase.
+        /// </summary>
+        public static int ToUpper(this ReadOnlySpan<char> source, Span<char> destination, CultureInfo culture)
+        {
+            if (culture == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            if (GlobalizationMode.Invariant)
+                culture.TextInfo.ToUpperAsciiInvariant(source, destination);
+            else
+                culture.TextInfo.ChangeCase(source, destination, toUpper: true);
+            return source.Length;
+        }
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to uppercase
+        /// using the casing rules of the invariant culture.
+        /// </summary>
+        public static int ToUpperInvariant(this ReadOnlySpan<char> source, Span<char> destination)
+        {
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            if (GlobalizationMode.Invariant)
+                CultureInfo.InvariantCulture.TextInfo.ToUpperAsciiInvariant(source, destination);
+            else
+                CultureInfo.InvariantCulture.TextInfo.ChangeCase(source, destination, toUpper: true);
+            return source.Length;
+        }
 
         /// <summary>
         /// Determines whether the beginning of the span matches the specified value when compared using the specified comparison option.
@@ -66,7 +135,7 @@ namespace System
         {
             Debug.Assert(value.Length != 0);
 
-            if (s_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 return StartsWithOrdinalHelper(span, value);
             }
@@ -83,7 +152,7 @@ namespace System
         {
             Debug.Assert(value.Length != 0);
 
-            if (s_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 return StartsWithOrdinalIgnoreCaseHelper(span, value);
             }
@@ -220,7 +289,7 @@ namespace System
         {
             Debug.Assert(value.Length != 0);
 
-            if (s_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 return EndsWithOrdinalHelper(span, value);
             }
@@ -237,7 +306,7 @@ namespace System
         {
             Debug.Assert(value.Length != 0);
 
-            if (s_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 return EndsWithOrdinalIgnoreCaseHelper(span, value);
             }

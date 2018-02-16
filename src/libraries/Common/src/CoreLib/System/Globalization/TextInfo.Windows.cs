@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -73,6 +74,43 @@ namespace System.Globalization
 
             Debug.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
             return result;
+        }
+
+        internal unsafe void ChangeCase(ReadOnlySpan<char> source, Span<char> destination, bool toUpper)
+        {
+            Debug.Assert(!_invariantMode);
+            Debug.Assert(destination.Length >= source.Length);
+
+            if (source.IsEmpty)
+            {
+                return;
+            }
+
+            int ret;
+
+            // Check for Invariant to avoid A/V in LCMapStringEx
+            uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pResult = &MemoryMarshal.GetReference(destination))
+            {
+                ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
+                                                    linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
+                                                    pSource,
+                                                    source.Length,
+                                                    pResult,
+                                                    source.Length,
+                                                    null,
+                                                    null,
+                                                    _sortHandle);
+            }
+
+            if (ret == 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+            }
+
+            Debug.Assert(ret == source.Length, "Expected getting the same length of the original span");
         }
 
         private unsafe char ChangeCase(char c, bool toUpper)
