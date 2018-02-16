@@ -230,7 +230,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntr
 
     entry->CanonicalName = NULL;
     entry->Aliases = NULL;
-    entry->AddressListHandle = (void*)info;
+    entry->AddressListHandle = info;
     entry->IPAddressCount = 0;    
 
     // Find the canonical name for this host (if any) and count the number of IP end points.
@@ -291,14 +291,14 @@ static int32_t GetNextIPAddressFromAddrInfo(struct addrinfo** info, struct IPAdd
     return GetAddrInfoErrorFlags_EAI_NOMORE;
 }
 
-int32_t SystemNative_GetNextIPAddress(const struct HostEntry* hostEntry, void** addressListHandle, struct IPAddress* endPoint)
+int32_t SystemNative_GetNextIPAddress(const struct HostEntry* hostEntry, struct addrinfo** addressListHandle, struct IPAddress* endPoint)
 {
     if (hostEntry == NULL || addressListHandle == NULL || endPoint == NULL)
     {
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
     
-    return GetNextIPAddressFromAddrInfo((struct addrinfo**)addressListHandle, endPoint);    
+    return GetNextIPAddressFromAddrInfo(addressListHandle, endPoint);    
 }
 
 void SystemNative_FreeHostEntry(struct HostEntry* entry)
