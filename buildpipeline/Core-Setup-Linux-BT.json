@@ -579,7 +579,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
