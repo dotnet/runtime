@@ -2302,6 +2302,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             break;
 
         case NI_SSE_Shuffle:
+        case NI_SSSE3_AlignRight:
         {
             assert(op1->OperIsList());
             GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();

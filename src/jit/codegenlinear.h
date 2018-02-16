@@ -117,6 +117,7 @@ void genPutArgStkSIMD12(GenTree* treeNode);
 #ifdef FEATURE_HW_INTRINSICS
 void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(_TARGET_XARCH_)
+void genHWIntrinsic_FullRangeImm8(GenTreeHWIntrinsic* node, instruction ins);
 void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins);
 void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins);
 void genSSEIntrinsic(GenTreeHWIntrinsic* node);
