@@ -406,7 +406,6 @@ Compiler::fgWalkResult Compiler::optHasCSEdefWithSideeffect(GenTree** pTree, fgW
     if (IS_CSE_DEF(tree->gtCSEnum))
     {
         // This node is a CSE def
-        assert(IS_CSE_DEF(tree->gtCSEnum));
 
         // If this node contains any persistent side effects then we will return WALK_ABORT.
         //
