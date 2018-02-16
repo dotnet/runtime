@@ -149,8 +149,7 @@ namespace System
         {
             get
             {
-                // The path will likely be under 32 characters, e.g. C:\Windows\system32
-                Span<char> buffer = stackalloc char[32];
+                Span<char> buffer = stackalloc char[260];
                 int requiredSize = Interop.Kernel32.GetSystemDirectoryW(buffer);
 
                 if (requiredSize > buffer.Length)
