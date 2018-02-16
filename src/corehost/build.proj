@@ -55,10 +55,19 @@
 
     <!-- Generate Version files -->
     <ItemGroup>
-      <HostFiles Include="dotnet;hostfxr;hostpolicy" />
+      <HostFiles Include="dotnet">
+       <FileDescription>.NET Core Host</FileDescription>
+      </HostFiles>
+      <HostFiles Include="hostfxr">
+        <FileDescription>.NET Core Host Resolver - $(HostResolverVersion)</FileDescription>
+      </HostFiles>
+      <HostFiles Include="hostpolicy">
+        <FileDescription>.NET Core Host Policy - $(HostPolicyVersion)</FileDescription>
+      </HostFiles>
     </ItemGroup>
+    
     <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Properties="GenerateNativeVersionInfo=true;AssemblyName=%(HostFiles.Identity);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
+             Properties="GenerateNativeVersionInfo=true;FileDescription=%(HostFiles.FileDescription);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
              Targets="GenerateVersionHeader" />
     <PropertyGroup>
       <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
