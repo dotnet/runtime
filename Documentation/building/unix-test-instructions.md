@@ -108,7 +108,7 @@ To run the tests run with the --coreOverlayDir path
 > ~/coreclr$ tests/runtest.sh
 >     --testRootDir=/mnt/coreclr/bin/tests/Linux.x64.Debug
 >     --testNativeBinDir=/mnt/coreclr/bin/obj/Linux.x64.Debug/tests
->     --coreOverlayDir=/mnt/coreclr/bin/tests/Tests/Core_Root
+>     --coreOverlayDir=/mnt/coreclr/bin/tests/Linux.x64.Debug/Tests/Core_Root
 >     --copyNativeTestBin
 > ```
 
