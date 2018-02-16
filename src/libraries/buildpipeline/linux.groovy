@@ -48,7 +48,9 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
             def helixCreator = getUser()
             // Target queues
             def targetHelixQueues = ['Centos.73.Amd64.Open',
+                                     'Centos.74.Amd64.Open',
                                      'RedHat.73.Amd64.Open',
+                                     'RedHat.74.Amd64.Open',
                                      'Debian.87.Amd64.Open',
                                      'Ubuntu.1404.Amd64.Open',
                                      'Ubuntu.1604.Amd64.Open',
