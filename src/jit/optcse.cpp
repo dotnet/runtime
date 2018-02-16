@@ -308,44 +308,119 @@ Compiler::fgWalkResult Compiler::optUnmarkCSEs(GenTree** pTree, fgWalkData* data
     }
     else // optUnmarkCSE(tree) returned false
     {
-        // This node is a CSE def and can not be removed.
+        // This node must be a CSE def and it can not be removed.
         // Instead we will add it to the 'keepList'.
         assert(IS_CSE_DEF(tree->gtCSEnum));
 
-        // If we already have collected any persistent side effects then keepList is non-null
-        //  and we will return WALK_ABORT since we have a CSE def that we must keep.
+        // The prior call to optHasCSEdefWithSideeffect ensures this
         //
-        // If we haven't kept any  side effects yet, we will create new GT_COMMA list with this one.
-        //
-        if ((keepList != nullptr) && comp->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE))
-        {
-            // If this nested CSE def has a persistent side effect and
-            //  we are already keeping other side effects then
-            //  just abort as this case is problematic.
-            // a
-            return WALK_ABORT;
-        }
-        else
-        {
+        assert(!comp->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE));
+
 #ifdef DEBUG
-            if (comp->verbose)
-            {
-                printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(tree->gtCSEnum));
-                printTreeID(tree);
-                printf(" because it is nested inside a CSE use\n");
-            }
+        if (comp->verbose)
+        {
+            printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(tree->gtCSEnum));
+            printTreeID(tree);
+            printf(" because it is nested inside a CSE use\n");
+        }
 #endif // DEBUG
 
-            // This tree and all of its sub-trees are being kept
-            //
-            *wbKeepList = comp->gtBuildCommaList(*wbKeepList, tree);
-
-            return WALK_SKIP_SUBTREES;
-        }
+        // This tree and all of its sub-trees will be kept
+        //
+        *wbKeepList = comp->gtBuildCommaList(*wbKeepList, tree);
+        
+        return WALK_SKIP_SUBTREES;
     }
 
     return WALK_CONTINUE;
 }
+
+//------------------------------------------------------------------------
+// Compiler::optHasCSEdefWithSideeffect
+//    Helper passed to Compiler::fgWalkAllTreesPre() to deternine if
+//    a sub-tree has a CSE def that contains persistent side-effects.
+// Return values:
+//    We will return WALK_ABORT upon encountering the case above.
+//    A final return value of WALK_CONTINUE or WALK_SKIP_SUBTREES means that
+//    there wasn't a CSE def with persistent side-effects.
+//
+//    argument 'pTree' is a pointer to a GenTree*
+//    argument 'data' contains pCallbackData which needs to be cast from void*
+//       to our actual 'wbKeepList' a pointer to a GenTree*
+//
+//    Any nodes visited that are in the 'keepList' are skipped
+//    For visted node not in the 'keepList' we check if the node is a CSE def
+//    and if it is then we check if it has persistent side-effects
+//    and if so we return WALK_ABORT.
+//
+
+/* static */
+Compiler::fgWalkResult Compiler::optHasCSEdefWithSideeffect(GenTree** pTree, fgWalkData* data)
+{
+    GenTree*  tree       = *pTree;
+    Compiler* comp       = data->compiler;
+    GenTree** wbKeepList = (GenTree**)(data->pCallbackData);
+    GenTree*  keepList   = nullptr;
+
+    noway_assert(wbKeepList != nullptr);
+
+    keepList = *wbKeepList;
+
+    // We may already have a side effect list that is being kept
+    //
+    if (keepList)
+    {
+        GenTree* keptTree = keepList;
+
+        while (keptTree->OperGet() == GT_COMMA)
+        {
+            assert(keptTree->OperKind() & GTK_SMPOP);
+            GenTree* op1 = keptTree->gtOp.gtOp1;
+            GenTree* op2 = keptTree->gtGetOp2();
+
+            // For the GT_COMMA case the op1 is part of the original CSE tree
+            // that is being kept because it contains some side-effect
+            //
+            if (tree == op1)
+            {
+                // This tree and all of its sub trees are being kept
+                return WALK_SKIP_SUBTREES;
+            }
+
+            // For the GT_COMMA case, op2 is the remaining side-effects of the
+            // original CSE tree.  This can again be another GT_COMMA or the
+            // final side-effect part.
+            //
+            keptTree = op2;
+        }
+        if (tree == keptTree)
+        {
+            // This tree and all of its sub trees are being kept
+            return WALK_SKIP_SUBTREES;
+        }
+    }
+    // Now 'tree' is known to be a node that is not in the 'keepList',
+    //
+    // We will check if it is a CSE def
+    //
+    if (IS_CSE_DEF(tree->gtCSEnum))
+    {
+        // This node is a CSE def
+        assert(IS_CSE_DEF(tree->gtCSEnum));
+
+        // If this node contains any persistent side effects then we will return WALK_ABORT.
+        //
+        if (comp->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE))
+        {
+            // This nested CSE def contains a persistent side effect 
+            // We just abort now as this case is problematic.
+            //
+            return WALK_ABORT;
+        }
+    }
+    return WALK_CONTINUE;
+}
+
 
 Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* walkData)
 {
@@ -2444,13 +2519,28 @@ bool Compiler::optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree** wbKeepList)
 {
     assert(optValnumCSE_phase);
 
+    // If we have a non-empty *wbKeepList, then we first check for the rare case where we
+    // have a nested CSE def that has side-effects and return false if have this case
+    //
+    if (*wbKeepList != nullptr)
+    {
+        Compiler::fgWalkResult result = fgWalkTreePre(&deadTree, optHasCSEdefWithSideeffect, (void*)wbKeepList);
+        if (result == WALK_ABORT)
+        {
+            return false;
+        }
+    }
+
     // We need to communicate the 'keepList' to optUnmarkCSEs
     // as any part of the 'deadTree' tree that is in the keepList is preserved
     // and is not deleted and does not have its ref counts decremented
     // We communicate this value using the walkData.pCallbackData field
     //
+    
     Compiler::fgWalkResult result = fgWalkTreePre(&deadTree, optUnmarkCSEs, (void*)wbKeepList);
-    return (result != WALK_ABORT);
+    assert(result != WALK_ABORT);
+
+    return true;
 }
 
 /*****************************************************************************
