@@ -89,7 +89,15 @@
           Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')"
     />
 
-    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly);@(ReferencePath)"
+    <ItemGroup>
+      <_DependencyDirectoriesTemp Include="@(ReferencePath->'%(RootDir)%(Directory)')" />
+      <!-- Remove duplicate directories by batching over them -->
+      <!-- Add project references first to give precedence to project-specific files -->
+      <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'=='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
+      <_DependencyDirectories Condition="'%(_DependencyDirectoriesTemp.ReferenceSourceTarget)'!='ProjectReference'" Include="%(_DependencyDirectoriesTemp.Identity)" />
+    </ItemGroup>
+
+    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly);@(_DependencyDirectories)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)" />
