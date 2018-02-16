@@ -16,12 +16,6 @@ namespace System.Net.Http
             {
             }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                ValidateBufferArgs(buffer, offset, count);
-                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
-            }
-
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -74,25 +68,18 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
-            public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                if (destination == null)
-                {
-                    throw new ArgumentNullException(nameof(destination));
-                }
-                if (bufferSize <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(bufferSize));
-                }
+                ValidateCopyToArgs(this, destination, bufferSize);
 
-                cancellationToken.ThrowIfCancellationRequested();
+                return
+                    cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                    _connection != null ? CopyToAsyncCore(destination, bufferSize, cancellationToken) :
+                    Task.CompletedTask; // null if response body fully consumed
+            }
 
-                if (_connection == null)
-                {
-                    // Response body fully consumed
-                    return;
-                }
-
+            private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
                 Task copyTask = _connection.CopyToAsync(destination);
                 if (!copyTask.IsCompletedSuccessfully)
                 {
@@ -109,13 +96,13 @@ namespace System.Net.Http
                     {
                         ctr.Dispose();
                     }
-                }
 
-                // If cancellation is requested and tears down the connection, it could cause the copy
-                // to end early but think it ended successfully. So we prioritize cancellation in this
-                // race condition, and if we find after the copy has completed that cancellation has
-                // been requested, we assume the copy completed due to cancellation and throw.
-                cancellationToken.ThrowIfCancellationRequested();
+                    // If cancellation is requested and tears down the connection, it could cause the copy
+                    // to end early but think it ended successfully. So we prioritize cancellation in this
+                    // race condition, and if we find after the copy has completed that cancellation has
+                    // been requested, we assume the copy completed due to cancellation and throw.
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
 
                 // We cannot reuse this connection, so close it.
                 _connection.Dispose();

@@ -206,8 +206,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(9543)] // fails sporadically with 'WinHttpException : The server returned an invalid or unrecognized response' or 'TaskCanceledException : A task was canceled'
+        [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(6, false)]
         [InlineData(3, true)]
@@ -221,6 +221,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (!UseSocketsHttpHandler)
+            {
+                // Issue #9543: fails sporadically on WinHttpHandler/CurlHandler
+                return;
+            }
+
             var options = new LoopbackServer.Options { UseSsl = true };
 
             Func<X509Certificate2, HttpClient> createClient = (cert) =>
@@ -228,6 +234,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.ServerCertificateCustomValidationCallback = delegate { return true; };
                 handler.ClientCertificates.Add(cert);
+                Assert.True(handler.ClientCertificates.Contains(cert));
                 return new HttpClient(handler);
             };
 
@@ -245,9 +252,9 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                if (reuseClient)
+                using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
                 {
-                    using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
+                    if (reuseClient)
                     {
                         using (HttpClient client = createClient(cert))
                         {
@@ -260,24 +267,54 @@ namespace System.Net.Http.Functional.Tests
                             }
                         }
                     }
-                }
-                else
-                {
-                    for (int i = 0; i < numberOfRequests; i++)
+                    else
                     {
-                        using (X509Certificate2 cert = Configuration.Certificates.GetClientCertificate())
+                        for (int i = 0; i < numberOfRequests; i++)
                         {
                             using (HttpClient client = createClient(cert))
                             {
                                 await makeAndValidateRequest(client, server, url, cert);
                             }
-                        }
 
-                        GC.Collect();
-                        GC.WaitForPendingFinalizers();
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                        }
                     }
                 }
             }, options);
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(ClientCertificateOption.Manual)]
+        [InlineData(ClientCertificateOption.Automatic)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fails with \"Authentication failed\" error.")]
+        public async Task AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable(ClientCertificateOption mode)
+        {
+            if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
+            {
+                _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
+                return;
+            }
+
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (var client = new HttpClient(handler))
+            {
+                handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+                handler.ClientCertificateOptions = mode;
+
+                await LoopbackServer.CreateServerAsync(async server =>
+                {
+                    Task clientTask = client.GetStringAsync(server.Uri);
+                    Task serverTask = server.AcceptConnectionAsync(async connection =>
+                    {
+                        SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
+                        await connection.ReadRequestHeaderAndSendResponseAsync();
+                    });
+
+                    await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed();
+                }, new LoopbackServer.Options { UseSsl = true });
+            }
         }
 
         private bool BackendSupportsCustomCertificateHandling =>

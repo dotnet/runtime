@@ -58,7 +58,7 @@ namespace System.Net.Http
         {
             if (proxyUri.Scheme != UriScheme.Http)
             {
-                throw new InvalidOperationException(SR.net_http_invalid_proxy_scheme);
+                throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }
 
             HttpResponseMessage response = await GetConnectionAndSendAsync(request, proxyUri, cancellationToken).ConfigureAwait(false);

@@ -20,13 +20,9 @@ namespace System.Net.Http
             protected override void Dispose(bool disposing) {  /* nop */ }
             public override void Close() { /* nop */ }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                ValidateBufferArgs(buffer, offset, count);
-                return cancellationToken.IsCancellationRequested ?
-                    Task.FromCanceled<int>(cancellationToken) :
-                    s_zeroTask;
-            }
+            public override int ReadByte() => -1;
+
+            public override int Read(Span<byte> destination) => 0;
 
             public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken) =>
                 cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :

@@ -58,6 +58,7 @@ namespace System.Diagnostics
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
+        /// <param name="arg">The argument to pass to the method.</param>
         /// <param name="options">Options to use for the invocation.</param>
         public static RemoteInvokeHandle RemoteInvoke(
             Func<string, Task<int>> method,
@@ -70,6 +71,19 @@ namespace System.Diagnostics
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="arg1">The first argument to pass to the method.</param>
+        /// <param name="arg2">The second argument to pass to the method.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        public static RemoteInvokeHandle RemoteInvoke(
+            Func<string, string, Task<int>> method,
+            string arg1, string arg2,
+            RemoteInvokeOptions options = null)
+        {
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2 }, options);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="arg">The argument to pass to the method.</param>
         /// <param name="options">Options to use for the invocation.</param>
         public static RemoteInvokeHandle RemoteInvoke(
             Func<string, int> method,

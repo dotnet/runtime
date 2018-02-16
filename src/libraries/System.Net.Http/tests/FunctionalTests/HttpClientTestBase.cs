@@ -37,13 +37,26 @@ namespace System.Net.Http.Functional.Tests
             Debug.Assert(ctor != null, "Couldn't find test constructor on HttpClientHandler");
 
             HttpClientHandler handler = (HttpClientHandler)ctor.Invoke(new object[] { useSocketsHttpHandler });
-
-            FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
-            Debug.Assert(field != null, "Couldn't find _socketsHttpHandler field");
-            object socketsHttpHandler = field.GetValue(handler);
-            Debug.Assert((socketsHttpHandler != null) == useSocketsHttpHandler, $"{nameof(useSocketsHttpHandler)} was {useSocketsHttpHandler}, but _socketsHttpHandler field was {socketsHttpHandler}");
+            Debug.Assert(useSocketsHttpHandler == IsSocketsHttpHandler(handler), "Unexpected handler.");
 
             return handler;
+        }
+
+        protected static bool IsSocketsHttpHandler(HttpClientHandler handler)
+        {
+            FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                return false;
+            }
+
+            object socketsHttpHandler = field.GetValue(handler);
+            if (socketsHttpHandler == null)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

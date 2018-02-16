@@ -290,7 +290,7 @@ namespace System.Threading.Tests
             // Create the two semaphores and the other process with which to synchronize
             using (var inbound = new Semaphore(1, 1, inboundName))
             using (var outbound = new Semaphore(0, 1, outboundName))
-            using (var remote = RemoteInvoke(PingPong_OtherProcess, outboundName, inboundName))
+            using (var remote = RemoteInvoke(new Func<string, string, int>(PingPong_OtherProcess), outboundName, inboundName))
             {
                 // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)

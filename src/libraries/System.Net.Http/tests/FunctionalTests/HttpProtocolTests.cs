@@ -459,18 +459,17 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ReasonPhraseHasLF_BehaviorDifference()
         {
-            string responseString = "HTTP/1.1 200 O\nK";
+            string responseString = "HTTP/1.1 200 O\n";
             int expectedStatusCode = 200;
             string expectedReason = "O";
 
-            if (IsWinHttpHandler || IsNetfxHandler || IsCurlHandler)
+            if (IsNetfxHandler)
             {
-                // WinHttpHandler, .NET Framework, and CurlHandler will throw HttpRequestException.
+                // .NET Framework will throw HttpRequestException.
                 await GetAsyncThrowsExceptionHelper(responseString);
             }
             else
             {
-                // UAP and SocketsHttpHandler will allow LF ending.
                 await GetAsyncSuccessHelper(responseString, expectedStatusCode, expectedReason);
             }
         }
