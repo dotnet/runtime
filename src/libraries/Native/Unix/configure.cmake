@@ -1,3 +1,4 @@
+include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
 include(CheckCSourceCompiles)
@@ -28,6 +29,13 @@ endif ()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
 set(CMAKE_REQUIRED_FLAGS -Werror)
+
+# This compiler warning will fail code as innocuous as:
+# static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+# Check if the compiler knows about this warning so we can disable it
+check_cxx_compiler_flag(
+    -Wzero-as-null-pointer-constant
+    HAVE_ZERO_AS_NULL_POINTER_CONSTANT_FLAG)
 
 # in_pktinfo: Find whether this struct exists
 check_include_files(

@@ -609,6 +609,6 @@ extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const uint8_t** proto
 
 extern "C" int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, const uint8_t* name)
 {
-    return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, name));
+    return static_cast<int32_t>(SSL_set_tlsext_host_name(ssl, const_cast<unsigned char*>(name)));
 }
 
