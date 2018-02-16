@@ -312,10 +312,17 @@ Compiler::fgWalkResult Compiler::optUnmarkCSEs(GenTree** pTree, fgWalkData* data
         // Instead we will add it to the 'keepList'.
         assert(IS_CSE_DEF(tree->gtCSEnum));
 
-        if (comp->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE))
+        // If we already have collected any persistent side effects then keepList is non-null
+        //  and we will return WALK_ABORT since we have a CSE def that we must keep.
+        //
+        // If we haven't kept any  side effects yet, we will create new GT_COMMA list with this one.
+        //
+        if ((keepList != nullptr) && comp->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS_IN_CSE))
         {
-            // If the nested CSE def has persistent side effects then just abort
-            // as this case is problematic.
+            // If this nested CSE def has a persistent side effect and
+            //  we are already keeping other side effects then
+            //  just abort as this case is problematic.
+            // a
             return WALK_ABORT;
         }
         else
