@@ -614,7 +614,10 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	case MONO_ERROR_OUT_OF_MEMORY:
-		exception = mono_get_exception_out_of_memory ();
+		if (domain)
+			exception = domain->out_of_memory_ex;
+		if (!exception)
+			exception = mono_get_exception_out_of_memory ();
 		break;
 
 	case MONO_ERROR_ARGUMENT:
