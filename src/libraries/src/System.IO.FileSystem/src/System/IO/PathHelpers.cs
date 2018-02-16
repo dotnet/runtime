@@ -53,23 +53,6 @@ namespace System.IO
         /// Combines two paths. Does no validation of paths, only concatenates the paths
         /// and places a directory separator between them if needed.
         /// </summary>
-        internal static string CombineNoChecks(string first, ReadOnlySpan<char> second)
-        {
-            if (string.IsNullOrEmpty(first))
-                return second.Length == 0
-                    ? string.Empty
-                    : new string(second);
-
-            if (second.Length == 0)
-                return first;
-
-            return CombineNoChecksInternal(first.AsReadOnlySpan(), second);
-        }
-
-        /// <summary>
-        /// Combines two paths. Does no validation of paths, only concatenates the paths
-        /// and places a directory separator between them if needed.
-        /// </summary>
         internal static string CombineNoChecks(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
             if (first.Length == 0)
@@ -87,9 +70,9 @@ namespace System.IO
         /// Combines three paths. Does no validation of paths, only concatenates the paths
         /// and places a directory separator between them if needed.
         /// </summary>
-        internal static string CombineNoChecks(string first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
+        internal static string CombineNoChecks(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
         {
-            if (string.IsNullOrEmpty(first))
+            if (first.Length == 0)
                 return CombineNoChecks(second, third);
 
             if (second.Length == 0)
@@ -98,7 +81,7 @@ namespace System.IO
             if (third.Length == 0)
                 return CombineNoChecks(first, second);
 
-            return CombineNoChecksInternal(first.AsReadOnlySpan(), second, third);
+            return CombineNoChecksInternal(first, second, third);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
