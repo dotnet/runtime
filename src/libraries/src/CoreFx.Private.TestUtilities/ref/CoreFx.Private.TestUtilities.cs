@@ -103,6 +103,8 @@ namespace System
         public static bool IsInAppContainer { get { throw null; } }
         public static bool IsWinRTSupported { get { throw null; } }
         public static bool IsXmlDsigXsltTransformSupported { get { throw null; } }
+        public static string LibcRelease { get { throw null; } }
+        public static string LibcVersion { get { throw null; } }
         public static System.Version OSXVersion { get { throw null; } }
         public static int WindowsVersion { get { throw null; } }
         public static string GetDistroVersionString() { throw null; }
