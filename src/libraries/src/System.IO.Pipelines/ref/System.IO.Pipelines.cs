@@ -78,7 +78,6 @@ namespace System.IO.Pipelines
         protected PipeWriter() { }
         public abstract void Advance(int bytes);
         public abstract void CancelPendingFlush();
-        public abstract void Commit();
         public abstract void Complete(System.Exception exception = null);
         public abstract System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public abstract System.Memory<byte> GetMemory(int minimumLength = 0);

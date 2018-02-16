@@ -28,8 +28,6 @@ namespace System.IO.Pipelines
 
             public override PipeAwaiter<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => _pipe.FlushAsync(cancellationToken);
 
-            public override void Commit() => _pipe.Commit();
-
             public override void Advance(int bytes) => _pipe.Advance(bytes);
 
             public override Memory<byte> GetMemory(int minimumLength = 0) => _pipe.GetMemory(minimumLength);

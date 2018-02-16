@@ -45,10 +45,6 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_NoReadingAllowed() => new InvalidOperationException(SR.WritingAfterCompleted);
 
-        public static void ThrowInvalidOperationException_CompleteWriterActiveWriter() => throw CreateInvalidOperationException_CompleteWriterActiveWriter();
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_CompleteWriterActiveWriter() => new InvalidOperationException(SR.CannotCompleteWhiteWriting);
-
         public static void ThrowInvalidOperationException_CompleteReaderActiveReader() => throw CreateInvalidOperationException_CompleteReaderActiveReader();
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static Exception CreateInvalidOperationException_CompleteReaderActiveReader() => new InvalidOperationException(SR.CannotCompleteWhileReading);
