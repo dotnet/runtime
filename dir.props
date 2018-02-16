@@ -75,6 +75,7 @@
 
     <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
 
+    <RuntimeDepsRpmVersion Condition="'$(RuntimeDepsRpmVersion)'==''">$(ProductVersion)</RuntimeDepsRpmVersion>
     <RuntimeDepsDebVersion Condition="'$(RuntimeDepsDebVersion)'==''">$(ProductVersion)</RuntimeDepsDebVersion>
 
     <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
@@ -307,7 +308,11 @@
     <TargetsUbuntu>false</TargetsUbuntu>
     <TargetsDebian>false</TargetsDebian>
     <TargetsRhel>false</TargetsRhel>
+    <TargetsOpensuse>false</TargetsOpensuse>
+    <TargetsFedora>false</TargetsFedora>
     <TargetsCentos>false</TargetsCentos>
+    <TargetsOracle>false</TargetsOracle>
+    <TargetsSles>false</TargetsSles>
   </PropertyGroup>
   <Choose>
     <When Condition="$(OutputRid.StartsWith('win'))">
@@ -356,6 +361,27 @@
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
+    <When Condition="$(OutputRid.StartsWith('fedora'))">
+      <PropertyGroup>
+        <TargetsFedora>true</TargetsFedora>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('oracle'))">
+      <PropertyGroup>
+        <TargetsOracle>true</TargetsOracle>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('sles'))">
+      <PropertyGroup>
+        <TargetsSles>true</TargetsSles>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>
@@ -370,7 +396,7 @@
     <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
     <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true'">.deb</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true'">.rpm</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
@@ -390,10 +416,10 @@
     <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
-    <!-- Runtime Deb packages are distro version agnostic --> 
-    <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb'">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    <!-- Runtime Deb and Rpm packages are distro version agnostic --> 
+    <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
     
     <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
   </PropertyGroup>
