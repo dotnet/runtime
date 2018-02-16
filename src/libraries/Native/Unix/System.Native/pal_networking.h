@@ -239,9 +239,8 @@ struct HostEntry
 {
     uint8_t* CanonicalName;  // Canonical name of the host
     uint8_t** Aliases;       // List of aliases for the host
-    void* AddressListHandle; // Handle for host socket addresses
+    struct addrinfo* AddressListHandle; // Handle for host socket addresses
     int32_t IPAddressCount;  // Number of IP end points in the list
-    int32_t HandleType;      // Indicates the type of the handle. Opaque to managed code.
 };
 
 struct IPPacketInformation
