@@ -56,34 +56,12 @@ namespace System.Net.Http
         private async Task<HttpResponseMessage> SendWithProxyAsync(
             Uri proxyUri, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response;
-            HttpRequestMessage savedRequest = null;
-            HttpConnectionPool sslPool = null;
-
             if (proxyUri.Scheme != UriScheme.Http)
             {
                 throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }
 
-            if (HttpUtilities.IsSupportedNonSecureScheme(request.RequestUri.Scheme))
-            {
-                response = await GetConnectionAndSendAsync(request, proxyUri, cancellationToken).ConfigureAwait(false);
-            } else {
-                string sslHostName = ConnectHelper.GetSslHostName(request);
-                HttpConnectionKey key = new HttpConnectionKey(request.RequestUri.IdnHost, request.RequestUri.Port, sslHostName);
-                sslPool = _tlsConnectionPools.GetOrAddPool(key);
-                HttpConnection connection = await sslPool.GetConnectionAsync(request, cancellationToken, true).ConfigureAwait(false);
-                if (connection == null)
-                {
-                    // Get plain connection to proxy.
-                    key = new HttpConnectionKey(proxyUri.IdnHost, proxyUri.Port, null);
-                    HttpConnectionPool pool = _connectionPools.GetOrAddPool(key);
-                    connection = await pool.GetConnectionAsync(request, cancellationToken, false).ConfigureAwait(false);
-                    savedRequest = request;
-                    request = new HttpRequestMessage(HttpConnection.s_httpConnectMethod, request.RequestUri);
-                 }
-                 response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            }
+            HttpResponseMessage response = await GetConnectionAndSendAsync(request, proxyUri, cancellationToken).ConfigureAwait(false);
 
             // Handle proxy authentication
             if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired)
@@ -151,13 +129,6 @@ namespace System.Net.Http
                         }
                     }
                 }
-            }
-            if (savedRequest != null && response.StatusCode == HttpStatusCode.OK)
-            {
-                // CONNECT Request was successful.
-                Stream oldStream = await response.Content.ReadAsStreamAsync();
-                HttpConnection connection = await sslPool.UpgradeConnectionToTls(savedRequest, oldStream, cancellationToken).ConfigureAwait(false);
-                response = await connection.SendAsync(savedRequest, cancellationToken).ConfigureAwait(false);
             }
 
             return response;

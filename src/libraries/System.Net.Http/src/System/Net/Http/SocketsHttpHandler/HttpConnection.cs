@@ -47,7 +47,6 @@ namespace System.Net.Http
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
         private static readonly string s_cancellationMessage = new OperationCanceledException().Message; // use same message as the default ctor
-        public static readonly HttpMethod s_httpConnectMethod = new HttpMethod("CONNECT");
 
         private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
@@ -248,12 +247,12 @@ namespace System.Net.Http
                 await WriteStringAsync(request.Method.Method).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ').ConfigureAwait(false);
 
-                if (request.Method == s_httpConnectMethod)
+                if (request.IsConnectMethod)
                 {
                     // RFC 7231 #section-4.3.6.
                     // Write only CONNECT foo.com:345 HTTP/1.1
-                    await WriteAsciiStringAsync(ConnectHelper.GetHostName(request), cancellationToken).ConfigureAwait(false);
-                    await WriteAsciiStringAsync(String.Format(":{0}", request.RequestUri.Port), cancellationToken).ConfigureAwait(false);
+                    Debug.Assert(request.HasHeaders && request.Headers.Host != null);
+                    await WriteAsciiStringAsync(request.Headers.Host).ConfigureAwait(false);
                 }
                 else
                 {
@@ -261,10 +260,10 @@ namespace System.Net.Http
                     {
                         // Proxied requests contain full URL
                         Debug.Assert(request.RequestUri.Scheme == Uri.UriSchemeHttp);
-                        await WriteBytesAsync(s_httpSchemeAndDelimiter, cancellationToken).ConfigureAwait(false);
-                        await WriteAsciiStringAsync(request.RequestUri.IdnHost, cancellationToken).ConfigureAwait(false);
+                        await WriteBytesAsync(s_httpSchemeAndDelimiter).ConfigureAwait(false);
+                        await WriteAsciiStringAsync(request.RequestUri.IdnHost).ConfigureAwait(false);
                     }
-                    await WriteStringAsync(request.RequestUri.PathAndQuery, cancellationToken).ConfigureAwait(false);
+                    await WriteStringAsync(request.RequestUri.PathAndQuery).ConfigureAwait(false);
                 }
 
                 // Fall back to 1.1 for all versions other than 1.0
@@ -293,7 +292,7 @@ namespace System.Net.Http
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
-                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
+                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head && !request.IsConnectMethod)
                     {
                         await WriteBytesAsync(s_contentLength0NewlineAsciiBytes).ConfigureAwait(false);
                     }
@@ -484,7 +483,7 @@ namespace System.Net.Http
                     responseStream = EmptyReadStream.Instance;
                     ReturnConnectionToPool();
                 }
-                else if (request.Method == s_httpConnectMethod && response.StatusCode == HttpStatusCode.OK)
+                else if (request.IsConnectMethod && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
