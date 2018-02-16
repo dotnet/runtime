@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -328,13 +329,29 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url);
+                    request.Headers.Add(HttpKnownHeaderNames.Host,
+                                        String.Format("{0}:{1}", request.RequestUri.IdnHost, request.RequestUri.Port));
+
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
                     Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
 
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
-                            $"HTTP/1.1 200 OK\r\n\r\n");
+                        // Verify that Host header exist and has same value and URI authority.
+                        List<string> lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                        string authority = lines[0].Split()[1];
+                        string hostHeaderValue = null;
+                        foreach (string line in lines)
+                        {
+                            if (line.StartsWith("Host:",StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                hostHeaderValue = line.Split()[1].Trim();
+                                break;
+                            }
+                        }
+                        Assert.Equal(authority, hostHeaderValue);
+
+                        Task serverTask = connection.SendResponseAsync(HttpStatusCode.OK);
                         await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);;
 
                         using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync())
@@ -345,6 +362,8 @@ namespace System.Net.Http.Functional.Tests
 
                             TextReader clientReader = new StreamReader(clientStream);
                             TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
+                            TextReader serverReader = connection.Reader;
+                            TextWriter serverWriter = connection.Writer;
 
                             const string helloServer = "hello server";
                             const string helloClient = "hello client";
@@ -360,8 +379,6 @@ namespace System.Net.Http.Functional.Tests
                             serverWriter.WriteLine(goodbyeClient);
                             Assert.Equal(goodbyeClient, clientReader.ReadLine());
                         }
-
-                        return null;
                     });
                 }
             });
@@ -375,19 +392,19 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url);
+                    request.Headers.Add(HttpKnownHeaderNames.Host,
+                                        String.Format("{0}:{1}", request.RequestUri.IdnHost, request.RequestUri.Port));
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
                     Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
+                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendCustomResponseAsync(
                             $"HTTP/1.1 403 Forbidden\r\nDate: {DateTimeOffset.UtcNow:R}\r\nContent-Length: 7\r\n\r\nerror\r\n");
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask);
                         HttpResponseMessage response = await responseTask;
 
                         Assert.True(response.StatusCode ==  HttpStatusCode.Forbidden);
-
-                        return null;
                     });
                 }
             });
@@ -415,11 +432,10 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> responseTask = client.GetAsync(url,  HttpCompletionOption.ResponseHeadersRead);
-
-                    await LoopbackServer.AcceptSocketAsync(server, async (s, serverStream, serverReader, serverWriter) =>
+                    Task<HttpResponseMessage> responseTask = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                    await server.AcceptConnectionAsync(async connection =>
                     {
-                        Task<List<string>> serverTask = LoopbackServer.ReadWriteAcceptedAsync(s, serverReader, serverWriter,
+                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendCustomResponseAsync(
                             $"HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nOK\r\n");
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);;
@@ -427,8 +443,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.True(response.StatusCode ==  HttpStatusCode.OK);
 
-                        return null;
-                    }, options);
+                    });
                 }
             }, options);
         }
