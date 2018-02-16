@@ -33,11 +33,6 @@ namespace System.IO.Pipelines
         /// </summary>
         public abstract PipeAwaiter<FlushResult> FlushAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Makes bytes written available to <see cref="PipeReader"/> without running <see cref="PipeReader.ReadAsync"/> continuation.
-        /// </summary>
-        public abstract void Commit();
-
         /// <inheritdoc />
         public abstract void Advance(int bytes);
 

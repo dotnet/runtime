@@ -206,15 +206,6 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal void Commit()
-        {
-            // Changing commit head shared with Reader
-            lock (_sync)
-            {
-                CommitUnsynchronized();
-            }
-        }
-
         internal void CommitUnsynchronized()
         {
             if (_writingHead == null)
@@ -312,10 +303,8 @@ namespace System.IO.Pipelines
 
             lock (_sync)
             {
-                if (_currentWriteLength > 0)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_CompleteWriterActiveWriter();
-                }
+                // Commit any pending buffers
+                CommitUnsynchronized();
 
                 completionCallbacks = _writerCompletion.TryComplete(exception);
                 awaitable = _readerAwaitable.Complete();

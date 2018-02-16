@@ -208,7 +208,7 @@ namespace System.IO.Pipelines.Tests
             ReadResult readResult = await pipe.Reader.ReadAsync();
             pipe.Reader.AdvanceTo(readResult.Buffer.End);
             pipe.Writer.Write(new byte[writeSize]);
-            pipe.Writer.Commit();
+            await pipe.Writer.FlushAsync();
 
             Assert.Equal(1, pool.CurrentlyRentedBlocks);
         }
