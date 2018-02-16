@@ -21,8 +21,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             string osa = RuntimeInformation.OSArchitecture.ToString();
             string pra = RuntimeInformation.ProcessArchitecture.ToString();
             string frd = RuntimeInformation.FrameworkDescription.Trim();
+            string lcr = PlatformDetection.LibcRelease;
+            string lcv = PlatformDetection.LibcVersion;
 
-            Console.WriteLine($@"{dvs} OS={osd} OSVer={osv} OSArch={osa} Arch={pra} Framework={frd}");
+            Console.WriteLine($@"{dvs} OS={osd} OSVer={osv} OSArch={osa} Arch={pra} Framework={frd} LibcRelease={lcr} LibcVersion={lcv}");
         }
 
         [Fact]
