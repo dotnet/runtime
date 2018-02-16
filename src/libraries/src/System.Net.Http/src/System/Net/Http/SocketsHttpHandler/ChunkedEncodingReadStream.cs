@@ -102,12 +102,6 @@ namespace System.Net.Http
                 }
             }
 
-            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                ValidateBufferArgs(buffer, offset, count);
-                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
-            }
-
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -157,25 +151,17 @@ namespace System.Net.Http
                 }
             }
 
-            public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                if (destination == null)
-                {
-                    throw new ArgumentNullException(nameof(destination));
-                }
-                if (bufferSize <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(bufferSize));
-                }
+                ValidateCopyToArgs(this, destination, bufferSize);
 
-                cancellationToken.ThrowIfCancellationRequested();
+                return cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                    _connection != null ? CopyToAsyncCore(destination, bufferSize, cancellationToken) :
+                    Task.CompletedTask;
+            }
 
-                if (_connection == null)
-                {
-                    // Response body fully consumed
-                    return;
-                }
-
+            private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
                 {

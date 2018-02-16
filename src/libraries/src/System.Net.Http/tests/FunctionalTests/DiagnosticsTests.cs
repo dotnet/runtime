@@ -168,10 +168,12 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue(23771, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void SendAsync_HttpTracingEnabled_Succeeds()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SendAsync_HttpTracingEnabled_Succeeds(bool useSsl)
         {
-            RemoteInvoke(async useSocketsHttpHandlerString =>
+            RemoteInvoke(async (useSocketsHttpHandlerString, useSslString) =>
             {
                 using (var listener = new TestEventListener("Microsoft-System-Net-Http", EventLevel.Verbose))
                 {
@@ -191,9 +193,10 @@ namespace System.Net.Http.Functional.Tests
 
                             // Do a post to a remote server
                             byte[] expectedData = Enumerable.Range(0, 20000).Select(i => unchecked((byte)i)).ToArray();
-                            HttpContent content = new ByteArrayContent(expectedData);
+                            Uri remoteServer = bool.Parse(useSslString) ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer;
+                            var content = new ByteArrayContent(expectedData);
                             content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
-                            using (HttpResponseMessage response = await client.PostAsync(Configuration.Http.RemoteEchoServer, content))
+                            using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
                             {
                                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                             }
@@ -208,7 +211,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return SuccessExitCode;
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), useSsl.ToString()).Dispose();
         }
 
         [OuterLoop] // TODO: Issue #11345

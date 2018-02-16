@@ -22,7 +22,7 @@ namespace System.IO.Pipes.Tests
             // another process with which to communicate
             using (var outbound = new NamedPipeServerStream(outName, PipeDirection.Out))
             using (var inbound = new NamedPipeClientStream(".", inName, PipeDirection.In))
-            using (RemoteInvoke(PingPong_OtherProcess, outName, inName))
+            using (RemoteInvoke(new Func<string, string, int>(PingPong_OtherProcess), outName, inName))
             {
                 // Wait for both pipes to be connected
                 Task.WaitAll(outbound.WaitForConnectionAsync(), inbound.ConnectAsync());
@@ -48,7 +48,7 @@ namespace System.IO.Pipes.Tests
             // another process with which to communicate
             using (var outbound = new NamedPipeServerStream(outName, PipeDirection.Out))
             using (var inbound = new NamedPipeClientStream(".", inName, PipeDirection.In))
-            using (RemoteInvoke(PingPong_OtherProcess, outName, inName))
+            using (RemoteInvoke(new Func<string, string, int>(PingPong_OtherProcess), outName, inName))
             {
                 // Wait for both pipes to be connected
                 await Task.WhenAll(outbound.WaitForConnectionAsync(), inbound.ConnectAsync());

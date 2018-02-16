@@ -57,7 +57,7 @@ namespace System.Net.Test.Common
 
             private static X509Certificate2Collection GetCertificateCollection(string certificateFileName)
             {
-                // On Windows, .Net Core applications should not import PFX files in parallel to avoid a known system-level race condition.
+                // On Windows, .NET Core applications should not import PFX files in parallel to avoid a known system-level race condition.
                 // This bug results in corrupting the X509Certificate2 certificate state.
                 try
                 {

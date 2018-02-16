@@ -8,9 +8,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Net.Http.Headers
 {
-#if DEBUG
-    [ContractClass(typeof(HttpHeaderParserContract))]
-#endif
     internal abstract class HttpHeaderParser
     {
         internal const string DefaultSeparator = ", ";
@@ -91,25 +88,4 @@ namespace System.Net.Http.Headers
             return value.ToString();
         }
     }
-
-#if DEBUG
-    [ContractClassFor(typeof(HttpHeaderParser))]
-    internal abstract class HttpHeaderParserContract : HttpHeaderParser
-    {
-        public HttpHeaderParserContract()
-            : base(false)
-        {
-        }
-
-        public override bool TryParseValue(string value, object storeValue, ref int index, out object parsedValue)
-        {
-            // Index may be value.Length (e.g. both 0). This may be allowed for some headers (e.g. Accept but not
-            // allowed by others (e.g. Content-Length). The parser has to decide if this is valid or not.
-            Debug.Assert((value == null) || ((index >= 0) && (index <= value.Length)));
-
-            parsedValue = null;
-            return false;
-        }
-    }
-#endif
 }
