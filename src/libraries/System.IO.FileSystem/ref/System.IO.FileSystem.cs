@@ -251,8 +251,8 @@ namespace System.IO.Enumeration
     public ref struct FileSystemEntry
     {
         public ReadOnlySpan<char> Directory { get { throw null; } }
-        public string RootDirectory { get { throw null; } }
-        public string OriginalRootDirectory { get { throw null; } }
+        public ReadOnlySpan<char> RootDirectory { get { throw null; } }
+        public ReadOnlySpan<char> OriginalRootDirectory { get { throw null; } }
         public ReadOnlySpan<char> FileName { get { throw null; } }
         public FileAttributes Attributes { get { throw null; } }
         public long Length { get { throw null; } }
