@@ -380,7 +380,7 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!HighCharTable[*a]) && (!HighCharTable[*b]))
+                while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!s_highCharTable[*a]) && (!s_highCharTable[*b]))
                 {
                     int charA = *a;
                     int charB = *b;
@@ -427,7 +427,7 @@ namespace System.Globalization
                 char* a = ap;
                 char* b = bp;
 
-                while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!HighCharTable[*a]) && (!HighCharTable[*b]))
+                while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!s_highCharTable[*a]) && (!s_highCharTable[*b]))
                 {
                     int charA = *a;
                     int charB = *b;
@@ -605,7 +605,7 @@ namespace System.Globalization
         }
 
         // See https://github.com/dotnet/coreclr/blob/master/src/utilcode/util_nodependencies.cpp#L970
-        private static readonly bool[] HighCharTable = new bool[0x80]
+        private static readonly bool[] s_highCharTable = new bool[0x80]
         {
             true, /* 0x0, 0x0 */
             true, /* 0x1, .*/
