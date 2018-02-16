@@ -625,7 +625,7 @@ RelativePath=readytorun\tests\mainv1\mainv1.cmd
 WorkingDir=readytorun\tests\mainv1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;JITSTRESS_FAIL;15150
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [ComparerCompare2.cmd_80]
@@ -85145,7 +85145,7 @@ RelativePath=readytorun\tests\mainv2\mainv2.cmd
 WorkingDir=readytorun\tests\mainv2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;JITSTRESS_FAIL;15150
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated1463.cmd_10690]
