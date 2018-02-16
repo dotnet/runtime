@@ -2409,14 +2409,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
         }
     }
-    else if (intrinsicID == NI_SSE_Shuffle) // TODO - change to all IMM intrinsics
+    else if (numArgs == 3)
     {
-        assert(op1->OperIsList());
-        GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
-
-        if (op3->IsCnsIntOrI())
+        switch (category)
         {
-            MakeSrcContained(node, op3);
+            case HW_Category_IMM:
+            {
+                assert(op1->OperIsList());
+                GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
+
+                if (op3->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, op3);
+                }
+                break;
+            }
+
+            default:
+                break;
         }
     }
 }
