@@ -89,7 +89,7 @@ namespace System.Net.Http
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
 
-        public ValueTask<HttpConnection> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool cachedOnly)
+        private ValueTask<HttpConnection> GetConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -123,12 +123,7 @@ namespace System.Net.Http
                     // we can't use the connection, so get rid of it and try again.
                     if (NetEventSource.IsEnabled) conn.Trace("Found invalid connection in pool.");
                     conn.Dispose();
-
                 }
-                if (cachedOnly) {
-                    return new ValueTask<HttpConnection>((HttpConnection)null);
-                }
-
 
                 // No valid cached connections, so we need to create a new one.  If
                 // there's no limit on the number of connections associated with this
@@ -191,7 +186,7 @@ namespace System.Net.Http
             { 
                 // Loop on connection failures and retry if possible.
 
-                HttpConnection connection = await GetConnectionAsync(request, cancellationToken, false).ConfigureAwait(false);
+                HttpConnection connection = await GetConnectionAsync(request, cancellationToken).ConfigureAwait(false);
 
                 if (connection.IsNewConnection)
                 {
@@ -231,9 +226,6 @@ namespace System.Net.Http
                 new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
         }
 
-        // TODO (#23136):
-        // CONNECT is not yet supported, so this code will not succeed currently.
-
         private async ValueTask<Stream> EstablishProxyTunnel(CancellationToken cancellationToken)
         {
             // Send a CONNECT request to the proxy server to establish a tunnel.
@@ -250,26 +242,6 @@ namespace System.Net.Http
             }
 
             return await tunnelResponse.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        }
-
-        public async ValueTask<HttpConnection> UpgradeConnectionToTls(HttpRequestMessage request,  Stream stream, CancellationToken cancellationToken)
-        {
-            SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
-            HttpConnection conn = new HttpConnection(this, sslStream, sslStream.TransportContext);
-
-            if (NetEventSource.IsEnabled)
-            {
-                conn.Trace(
-                        $"Connection upgraded to TLS {_key.Host}:{_key.Port}. " +
-                        $"SslHostName:{_key.SslHostName}. " +
-                        $"SslProtocol:{sslStream.SslProtocol}, " +
-                        $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
-                        $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
-                        $"KeyExchangeAlgorithm:{sslStream.KeyExchangeAlgorithm}, KeyExchangeStrength:{sslStream.KeyExchangeStrength}, " +
-                        $"LocalCert:{sslStream.LocalCertificate}, RemoteCert:{sslStream.RemoteCertificate}");
-            }
-
-            return conn;
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
