@@ -120,26 +120,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Fetch symbol signing tooling",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "filePath",
-        "scriptName": "$(PB_VsoToolsDir)\\scripts\\DotNet-Trusted-Publish\\Fetch-Tools.ps1",
-        "arguments": "$(PB_ToolsRoot)",
-        "workingFolder": "",
-        "inlineScript": "",
-        "failOnStandardError": "true"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Clone repo",
       "timeoutInMinutes": 0,
       "task": {
