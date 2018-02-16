@@ -123,12 +123,6 @@ enum
 
 enum
 {
-    HOST_ENTRY_HANDLE_ADDRINFO = 1,
-    HOST_ENTRY_HANDLE_HOSTENT = 2,
-};
-
-enum
-{
     INET6_ADDRSTRLEN_MANAGED = 65 // Managed code has a longer max IPv6 string length
 };
 
@@ -237,8 +231,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntr
     entry->CanonicalName = NULL;
     entry->Aliases = NULL;
     entry->AddressListHandle = (void*)info;
-    entry->IPAddressCount = 0;
-    entry->HandleType = HOST_ENTRY_HANDLE_ADDRINFO;
+    entry->IPAddressCount = 0;    
 
     // Find the canonical name for this host (if any) and count the number of IP end points.
     for (struct addrinfo* ai = info; ai != NULL; ai = ai->ai_next)
@@ -298,87 +291,21 @@ static int32_t GetNextIPAddressFromAddrInfo(struct addrinfo** info, struct IPAdd
     return GetAddrInfoErrorFlags_EAI_NOMORE;
 }
 
-static int32_t GetNextIPAddressFromHostEnt(struct hostent** hostEntry, struct IPAddress* address)
-{
-    assert(hostEntry != NULL);
-    assert(address != NULL);
-
-    struct hostent* entry = *hostEntry;
-    if (*entry->h_addr_list == NULL)
-    {
-        return GetAddrInfoErrorFlags_EAI_NOMORE;
-    }
-
-    switch (entry->h_addrtype)
-    {
-        case AF_INET:
-        {
-            struct in_addr* inAddr = (struct in_addr*)entry->h_addr_list[0];
-
-            ConvertInAddrToByteArray(address->Address, NUM_BYTES_IN_IPV4_ADDRESS, inAddr);
-            address->IsIPv6 = 0;
-            break;
-        }
-
-        case AF_INET6:
-        {
-            struct in6_addr* in6Addr = (struct in6_addr*)entry->h_addr_list[0];
-
-            ConvertIn6AddrToByteArray(address->Address, NUM_BYTES_IN_IPV6_ADDRESS, in6Addr);
-            address->IsIPv6 = 1;
-            address->ScopeId = 0;
-            break;
-        }
-
-        default:
-            return GetAddrInfoErrorFlags_EAI_NOMORE;
-    }
-
-    entry->h_addr_list = &entry->h_addr_list[1];
-    return GetAddrInfoErrorFlags_EAI_SUCCESS;
-}
-
 int32_t SystemNative_GetNextIPAddress(const struct HostEntry* hostEntry, void** addressListHandle, struct IPAddress* endPoint)
 {
     if (hostEntry == NULL || addressListHandle == NULL || endPoint == NULL)
     {
         return GetAddrInfoErrorFlags_EAI_BADARG;
     }
-
-    switch (hostEntry->HandleType)
-    {
-        case HOST_ENTRY_HANDLE_ADDRINFO:
-            return GetNextIPAddressFromAddrInfo((struct addrinfo**)addressListHandle, endPoint);
-
-        case HOST_ENTRY_HANDLE_HOSTENT:
-            return GetNextIPAddressFromHostEnt((struct hostent**)addressListHandle, endPoint);
-
-        default:
-            return GetAddrInfoErrorFlags_EAI_BADARG;
-    }
+    
+    return GetNextIPAddressFromAddrInfo((struct addrinfo**)addressListHandle, endPoint);    
 }
 
 void SystemNative_FreeHostEntry(struct HostEntry* entry)
 {
     if (entry != NULL)
-    {
-        switch (entry->HandleType)
-        {
-            case HOST_ENTRY_HANDLE_ADDRINFO:
-            {
-                struct addrinfo* ai = (struct addrinfo*)entry->AddressListHandle;
-                freeaddrinfo(ai);
-                break;
-            }
-
-            case HOST_ENTRY_HANDLE_HOSTENT:
-            {
-                break;
-            }
-
-            default:
-                break;
-        }
+    {                
+        freeaddrinfo(entry->AddressListHandle);                        
     }
 }
 
