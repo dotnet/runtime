@@ -33,6 +33,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void Ctor_NullStreamAndZeroBufferSize_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => new StreamContent(null, 0));
+        }
+
+        [Fact]
         public void ContentLength_SetStreamSupportingSeeking_StreamLengthMatchesHeaderValue()
         {
             var source = new MockStream(new byte[10], true, true); // Supports seeking.
