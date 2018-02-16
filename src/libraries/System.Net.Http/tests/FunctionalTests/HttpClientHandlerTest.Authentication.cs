@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Authentication_TestData))]
         public async Task HttpClientHandler_Authentication_Succeeds(string authenticateHeader, bool result)
         {
-            if (IsCurlHandler && authenticateHeader.Contains("Digest"))
+            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest")))
             {
                 // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
                 return;
@@ -75,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("WWW-Authenticate: Digest realm=\"hello\", nonce=\"hello\", algorithm=MD5\r\nWWW-Authenticate: Basic realm=\"hello\"\r\n")]
         public async Task HttpClientHandler_MultipleAuthenticateHeaders_Succeeds(string authenticateHeader)
         {
-            if (IsCurlHandler && authenticateHeader.Contains("Digest"))
+            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest")))
             {
                 // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
                 return;
