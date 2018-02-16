@@ -156,7 +156,7 @@ namespace System.IO.Enumeration
                         {
                             // Recursion is on and the directory was accepted, Queue it
                             string subDirectory = PathHelpers.CombineNoChecks(_currentPath, _entry->FileName);
-                            IntPtr subDirectoryHandle = CreateDirectoryHandle(subDirectory);
+                            IntPtr subDirectoryHandle = CreateRelativeDirectoryHandle(_entry->FileName, subDirectory);
                             if (subDirectoryHandle != IntPtr.Zero)
                             {
                                 try

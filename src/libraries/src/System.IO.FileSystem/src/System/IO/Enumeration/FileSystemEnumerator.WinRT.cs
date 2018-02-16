@@ -38,5 +38,12 @@ namespace System.IO.Enumeration
 
             return true;
         }
+
+        private IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
+        {
+            // We don't have access to any APIs that allow us to pass in a base handle in UAP,
+            // just call our "normal" handle open.
+            return CreateDirectoryHandle(fullPath);
+        }
     }
 }
