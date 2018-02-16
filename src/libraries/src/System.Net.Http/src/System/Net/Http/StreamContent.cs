@@ -11,16 +11,20 @@ namespace System.Net.Http
 {
     public class StreamContent : HttpContent
     {
-        private const int DefaultBufferSize = 4096;
-
         private Stream _content;
         private int _bufferSize;
         private bool _contentConsumed;
         private long _start;
 
         public StreamContent(Stream content)
-            : this(content, DefaultBufferSize)
         {
+            if (content == null)
+            {
+                throw new ArgumentNullException(nameof(content));
+            }
+
+            // Indicate that we should use default buffer size by setting size to 0.
+            InitializeContent(content, 0);
         }
 
         public StreamContent(Stream content, int bufferSize)
@@ -34,6 +38,11 @@ namespace System.Net.Http
                 throw new ArgumentOutOfRangeException(nameof(bufferSize));
             }
 
+            InitializeContent(content, bufferSize);
+        }
+
+        private void InitializeContent(Stream content, int bufferSize)
+        {
             _content = content;
             _bufferSize = bufferSize;
             if (content.CanSeek)
