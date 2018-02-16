@@ -180,11 +180,11 @@ HANDLES(ICALL(INTCFGHOST_1, "get_bundled_app_config", ves_icall_System_Configura
 HANDLES(ICALL(INTCFGHOST_2, "get_bundled_machine_config", ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_config))
 
 ICALL_TYPE(CONSOLE, "System.ConsoleDriver", CONSOLE_1)
-ICALL(CONSOLE_1, "InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable )
-ICALL(CONSOLE_2, "Isatty", ves_icall_System_ConsoleDriver_Isatty )
-ICALL(CONSOLE_3, "SetBreak", ves_icall_System_ConsoleDriver_SetBreak )
-ICALL(CONSOLE_4, "SetEcho", ves_icall_System_ConsoleDriver_SetEcho )
-ICALL(CONSOLE_5, "TtySetup", ves_icall_System_ConsoleDriver_TtySetup )
+HANDLES(ICALL(CONSOLE_1, "InternalKeyAvailable", ves_icall_System_ConsoleDriver_InternalKeyAvailable))
+HANDLES(ICALL(CONSOLE_2, "Isatty", ves_icall_System_ConsoleDriver_Isatty))
+HANDLES(ICALL(CONSOLE_3, "SetBreak", ves_icall_System_ConsoleDriver_SetBreak))
+HANDLES(ICALL(CONSOLE_4, "SetEcho", ves_icall_System_ConsoleDriver_SetEcho))
+HANDLES(ICALL(CONSOLE_5, "TtySetup", ves_icall_System_ConsoleDriver_TtySetup))
 
 ICALL_TYPE(DTIME, "System.DateTime", DTIME_1)
 ICALL(DTIME_1, "GetSystemTimeAsFileTime", mono_100ns_datetime)

@@ -91,7 +91,7 @@ mono_console_init (void)
 static struct termios initial_attr;
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_Isatty (HANDLE handle)
+ves_icall_System_ConsoleDriver_Isatty (HANDLE handle, MonoError* error)
 {
 	return isatty (GPOINTER_TO_INT (handle));
 }
@@ -126,20 +126,19 @@ set_property (gint property, gboolean value)
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean want_echo)
+ves_icall_System_ConsoleDriver_SetEcho (MonoBoolean want_echo, MonoError* error)
 {
-	
 	return set_property (ECHO, want_echo);
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break)
+ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break, MonoError* error)
 {
 	return set_property (IGNBRK, !want_break);
 }
 
 gint32
-ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout)
+ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout, MonoError* error)
 {
 	fd_set rfds;
 	struct timeval tv;
@@ -358,66 +357,66 @@ console_restore_signal_handlers ()
 #endif
 
 static void
-set_control_chars (MonoArray *control_chars, const guchar *cc)
+set_control_chars (gchar *control_chars, const guchar *cc)
 {
 	/* The index into the array comes from corlib/System/ControlCharacters.cs */
 #ifdef VINTR
-	mono_array_set (control_chars, gchar, 0, cc [VINTR]);
+	control_chars [0] = cc [VINTR];
 #endif
 #ifdef VQUIT
-	mono_array_set (control_chars, gchar, 1, cc [VQUIT]);
+	control_chars [1] = cc [VQUIT];
 #endif
 #ifdef VERASE
-	mono_array_set (control_chars, gchar, 2, cc [VERASE]);
+	control_chars [2] = cc [VERASE];
 #endif
 #ifdef VKILL
-	mono_array_set (control_chars, gchar, 3, cc [VKILL]);
+	control_chars [3] = cc [VKILL];
 #endif
 #ifdef VEOF
-	mono_array_set (control_chars, gchar, 4, cc [VEOF]);
+	control_chars [4] = cc [VEOF];
 #endif
 #ifdef VTIME
-	mono_array_set (control_chars, gchar, 5, cc [VTIME]);
+	control_chars [5] = cc [VTIME];
 #endif
 #ifdef VMIN
-	mono_array_set (control_chars, gchar, 6, cc [VMIN]);
+	control_chars [6] = cc [VMIN];
 #endif
 #ifdef VSWTC
-	mono_array_set (control_chars, gchar, 7, cc [VSWTC]);
+	control_chars [7] = cc [VSWTC];
 #endif
 #ifdef VSTART
-	mono_array_set (control_chars, gchar, 8, cc [VSTART]);
+	control_chars [8] = cc [VSTART];
 #endif
 #ifdef VSTOP
-	mono_array_set (control_chars, gchar, 9, cc [VSTOP]);
+	control_chars [9] = cc [VSTOP];
 #endif
 #ifdef VSUSP
-	mono_array_set (control_chars, gchar, 10, cc [VSUSP]);
+	control_chars [10] = cc [VSUSP];
 #endif
 #ifdef VEOL
-	mono_array_set (control_chars, gchar, 11, cc [VEOL]);
+	control_chars [11] = cc [VEOL];
 #endif
 #ifdef VREPRINT
-	mono_array_set (control_chars, gchar, 12, cc [VREPRINT]);
+	control_chars [12] = cc [VREPRINT];
 #endif
 #ifdef VDISCARD
-	mono_array_set (control_chars, gchar, 13, cc [VDISCARD]);
+	control_chars [13] = cc [VDISCARD];
 #endif
 #ifdef VWERASE
-	mono_array_set (control_chars, gchar, 14, cc [VWERASE]);
+	control_chars [14] = cc [VWERASE];
 #endif
 #ifdef VLNEXT
-	mono_array_set (control_chars, gchar, 15, cc [VLNEXT]);
+	control_chars [15] = cc [VLNEXT];
 #endif
 #ifdef VEOL2
-	mono_array_set (control_chars, gchar, 16, cc [VEOL2]);
+	control_chars [16] = cc [VEOL2];
 #endif
 }
 
 MonoBoolean
-ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardown, MonoArray **control_chars, int **size)
+ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHandle teardown, MonoArrayHandleOut control_chars, int **size, MonoError* error)
 {
-	ERROR_DECL (error);
+	// FIXME Lock around the globals?
 
 	int dims;
 
@@ -448,10 +447,10 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 
 	/* 17 is the number of entries set in set_control_chars() above.
 	 * NCCS is the total size, but, by now, we only care about those 17 values*/
-	MonoArray *control_chars_arr = mono_array_new_checked (mono_domain_get (), mono_defaults.byte_class, 17, error);
-	if (mono_error_set_pending_exception (error))
-		return FALSE;
-	mono_gc_wbarrier_generic_store (control_chars, (MonoObject*) control_chars_arr);
+	MonoArrayHandle control_chars_arr = mono_array_new_handle (mono_domain_get (), mono_defaults.byte_class, 17, error);
+	return_val_if_nok (error, FALSE);
+
+	MONO_HANDLE_ASSIGN (control_chars, control_chars_arr);
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
 		return FALSE;
 
@@ -467,25 +466,25 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
 		return FALSE;
 
-	set_control_chars (*control_chars, mono_attr.c_cc);
+	uint32_t h;
+	set_control_chars (MONO_ARRAY_HANDLE_PIN (control_chars_arr, gchar, 0, &h), mono_attr.c_cc);
+	mono_gchandle_free (h);
 	/* If initialized from another appdomain... */
 	if (setup_finished)
 		return TRUE;
 
 	keypad_xmit_str = NULL;
-	if (keypad != NULL) {
-		keypad_xmit_str = mono_string_to_utf8_checked (keypad, error);
-		if (mono_error_set_pending_exception (error))
-			return FALSE;
+	if (!MONO_HANDLE_IS_NULL (keypad)) {
+		keypad_xmit_str = mono_string_handle_to_utf8 (keypad, error);
+		return_val_if_nok (error, FALSE);
 	}
 	
 	console_set_signal_handlers ();
 	setup_finished = TRUE;
 	if (!atexit_called) {
-		if (teardown != NULL) {
-			teardown_str = mono_string_to_utf8_checked (teardown, error);
-			if (mono_error_set_pending_exception (error))
-				return FALSE;
+		if (!MONO_HANDLE_IS_NULL (teardown)) {
+			teardown_str = mono_string_handle_to_utf8 (teardown, error);
+			return_val_if_nok (error, FALSE);
 		}
 
 		mono_atexit (tty_teardown);
