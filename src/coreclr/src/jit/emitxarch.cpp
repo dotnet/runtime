@@ -132,6 +132,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_paddusb:
         case INS_paddusw:
         case INS_paddw:
+        case INS_palignr:
         case INS_pand:
         case INS_pandn:
         case INS_pavgb:
@@ -151,6 +152,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_phsubsw:
         case INS_phsubw:
         case INS_pinsrw:
+        case INS_pmaddubsw:
         case INS_pmaddwd:
         case INS_pmaxsb:
         case INS_pmaxsd:
@@ -165,6 +167,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pminud:
         case INS_pminuw:
         case INS_pmuldq:
+        case INS_pmulhrsw:
         case INS_pmulhuw:
         case INS_pmulhw:
         case INS_pmulld:
@@ -172,6 +175,10 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_pmuludq:
         case INS_por:
         case INS_psadbw:
+        case INS_pshufb:
+        case INS_psignb:
+        case INS_psignd:
+        case INS_psignw:
         case INS_psubb:
         case INS_psubd:
         case INS_psubq:
@@ -3958,6 +3965,12 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
 
     UNATIVE_OFFSET sz = emitInsSizeRR(ins, reg1, reg2, attr);
+
+    if (Is4ByteSSE4Instruction(ins))
+    {
+        // The 4-Byte SSE4 instructions require one additional byte
+        sz += 1;
+    }
 
     /* Special case: "XCHG" uses a different format */
     insFormat fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD);
