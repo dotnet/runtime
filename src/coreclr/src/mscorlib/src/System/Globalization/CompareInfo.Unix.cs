@@ -303,6 +303,87 @@ namespace System.Globalization
             }
         }
 
+        private unsafe bool StartsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!prefix.IsEmpty);
+            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(source.Length >= prefix.Length);
+
+            int length = prefix.Length;
+
+            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* bp = &MemoryMarshal.GetReference(prefix))
+            {
+                char* a = ap;
+                char* b = bp;
+
+                while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!s_highCharTable[*a]) && (!s_highCharTable[*b]))
+                {
+                    int charA = *a;
+                    int charB = *b;
+
+                    if (charA == charB)
+                    {
+                        a++; b++;
+                        length--;
+                        continue;
+                    }
+
+                    // uppercase both chars - notice that we need just one compare per char
+                    if ((uint)(charA - 'a') <= (uint)('z' - 'a')) charA -= 0x20;
+                    if ((uint)(charB - 'a') <= (uint)('z' - 'a')) charB -= 0x20;
+                    
+                    if (charA != charB)
+                        return false;
+
+                    // Next char
+                    a++; b++;
+                    length--;
+                }
+
+                if (length == 0) return true;
+                return Interop.Globalization.StartsWith(_sortHandle, b, length, a, length, options);
+            }
+        }
+
+        private unsafe bool StartsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!prefix.IsEmpty);
+            Debug.Assert(_isAsciiEqualityOrdinal);
+            Debug.Assert(source.Length >= prefix.Length);
+
+            int length = prefix.Length;
+
+            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* bp = &MemoryMarshal.GetReference(prefix))
+            {
+                char* a = ap;
+                char* b = bp;
+
+                while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!s_highCharTable[*a]) && (!s_highCharTable[*b]))
+                {
+                    int charA = *a;
+                    int charB = *b;
+                    
+                    if (charA != charB)
+                        return false;
+
+                    // Next char
+                    a++; b++;
+                    length--;
+                }
+
+                if (length == 0) return true;
+                return Interop.Globalization.StartsWith(_sortHandle, b, length, a, length, options);
+            }
+        }
+
         private bool EndsWith(string source, string suffix, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
@@ -355,30 +436,20 @@ namespace System.Globalization
 
         private unsafe bool EndsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
-            return StartsWithOrdinalIgnoreCaseHelper(source.Slice(source.Length - suffix.Length), suffix, options);
-        }
-
-        private unsafe bool EndsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
-        {
-            return StartsWithOrdinalHelper(source.Slice(source.Length - suffix.Length), suffix, options);
-        }
-
-        private unsafe bool StartsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
-        {
             Debug.Assert(!_invariantMode);
 
             Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!prefix.IsEmpty);
+            Debug.Assert(!suffix.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal);
-            Debug.Assert(source.Length >= prefix.Length);
+            Debug.Assert(source.Length >= suffix.Length);
 
-            int length = prefix.Length;
+            int length = suffix.Length;
 
             fixed (char* ap = &MemoryMarshal.GetReference(source))
-            fixed (char* bp = &MemoryMarshal.GetReference(prefix))
+            fixed (char* bp = &MemoryMarshal.GetReference(suffix))
             {
-                char* a = ap;
-                char* b = bp;
+                char* a = ap + source.Length - 1;
+                char* b = bp + suffix.Length - 1;
 
                 while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!s_highCharTable[*a]) && (!s_highCharTable[*b]))
                 {
@@ -387,7 +458,7 @@ namespace System.Globalization
 
                     if (charA == charB)
                     {
-                        a++; b++;
+                        a--; b--;
                         length--;
                         continue;
                     }
@@ -395,61 +466,52 @@ namespace System.Globalization
                     // uppercase both chars - notice that we need just one compare per char
                     if ((uint)(charA - 'a') <= (uint)('z' - 'a')) charA -= 0x20;
                     if ((uint)(charB - 'a') <= (uint)('z' - 'a')) charB -= 0x20;
-
-                    //Return the (case-insensitive) difference between them.
+                    
                     if (charA != charB)
                         return false;
 
                     // Next char
-                    a++; b++;
+                    a--; b--;
                     length--;
                 }
 
                 if (length == 0) return true;
-                return Interop.Globalization.StartsWith(_sortHandle, b, prefix.Length - length, a, prefix.Length - length, options);
+                return Interop.Globalization.EndsWith(_sortHandle, b - length + 1, length, a - length + 1, length, options);
             }
         }
 
-        private unsafe bool StartsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        private unsafe bool EndsWithOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
 
             Debug.Assert(!source.IsEmpty);
-            Debug.Assert(!prefix.IsEmpty);
+            Debug.Assert(!suffix.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal);
-            Debug.Assert(source.Length >= prefix.Length);
+            Debug.Assert(source.Length >= suffix.Length);
 
-            int length = prefix.Length;
+            int length = suffix.Length;
 
             fixed (char* ap = &MemoryMarshal.GetReference(source))
-            fixed (char* bp = &MemoryMarshal.GetReference(prefix))
+            fixed (char* bp = &MemoryMarshal.GetReference(suffix))
             {
-                char* a = ap;
-                char* b = bp;
+                char* a = ap + source.Length - 1;
+                char* b = bp + suffix.Length - 1;
 
                 while (length != 0 && (*a < 0x80) && (*b < 0x80) && (!s_highCharTable[*a]) && (!s_highCharTable[*b]))
                 {
                     int charA = *a;
                     int charB = *b;
-
-                    if (charA == charB)
-                    {
-                        a++; b++;
-                        length--;
-                        continue;
-                    }
-
-                    //Return the (case-insensitive) difference between them.
+                    
                     if (charA != charB)
                         return false;
 
                     // Next char
-                    a++; b++;
+                    a--; b--;
                     length--;
                 }
 
                 if (length == 0) return true;
-                return Interop.Globalization.StartsWith(_sortHandle, b, prefix.Length - length, a, prefix.Length - length, options);
+                return Interop.Globalization.EndsWith(_sortHandle, b - length + 1, length, a - length + 1, length, options);
             }
         }
 
