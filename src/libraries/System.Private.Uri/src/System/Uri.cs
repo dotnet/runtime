@@ -1409,14 +1409,12 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(character));
             }
 
-            unsafe
+            return string.Create(3, character, (Span<char> chars, char c) =>
             {
-                char* chars = stackalloc char[3];
                 chars[0] = '%';
-                chars[1] = UriHelper.s_hexUpperChars[(character & 0xf0) >> 4];
-                chars[2] = UriHelper.s_hexUpperChars[character & 0xf];
-                return new string(chars, 0, 3);
-            }
+                chars[1] = UriHelper.s_hexUpperChars[(c & 0xf0) >> 4];
+                chars[2] = UriHelper.s_hexUpperChars[c & 0xf];
+            });
         }
 
         //
