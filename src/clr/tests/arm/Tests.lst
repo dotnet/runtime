@@ -881,7 +881,7 @@ RelativePath=GC\Scenarios\DoublinkList\dlstack\dlstack.cmd
 WorkingDir=GC\Scenarios\DoublinkList\dlstack
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;JITSTRESS_FAIL;15156
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Generated1222.cmd_112]

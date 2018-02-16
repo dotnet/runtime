@@ -94,13 +94,9 @@ namespace DoubLink {
 
         public bool runTest(int iRep, int iObj)
         {
-            bool success = false;
-            for(int i=0; i <10; i++)
-            {
-                SetLink(iRep, iObj);
-                MakeLeak(iRep);
-            }
+            CreateDLinkListsWithLeak(iRep, iObj);
 
+            bool success = false;
             if (DrainFinalizerQueue(iRep, iObj))
             {
                 success = true;
@@ -109,6 +105,19 @@ namespace DoubLink {
             Console.WriteLine("{0} DLinkNodes finalized", DLinkNode.FinalCount);
             return success;
 
+        }
+
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        // Do not inline the method that creates GC objects, because it could 
+        // extend their live intervals until the end of the parent method.
+        public void CreateDLinkListsWithLeak(int iRep, int iObj)
+        {
+            for(int i=0; i <10; i++)
+            {
+                SetLink(iRep, iObj);
+                MakeLeak(iRep);
+            }
         }
 
 
