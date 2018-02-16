@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -198,8 +199,35 @@ namespace System.Net.Http.Functional.Tests
 
                         // Send a byte from the server to the client.  The client will receive
                         // the byte on its own, with HttpClient stripping away the chunk encoding.
+                        // Read it in various ways.
                         serverStream.WriteByte(i);
-                        Assert.Equal(i, serverToClientStream.ReadByte());
+                        var buffer = new byte[1];
+                        switch (i % 6)
+                        {
+                            case 0:
+                                Assert.Equal(i, serverToClientStream.ReadByte());
+                                break;
+                            case 1:
+                                Assert.Equal(1, serverToClientStream.Read(buffer, 0, 1));
+                                Assert.Equal(i, buffer[0]);
+                                break;
+                            case 2:
+                                Assert.Equal(1, serverToClientStream.Read(new Span<byte>(buffer)));
+                                Assert.Equal(i, buffer[0]);
+                                break;
+                            case 3:
+                                Assert.Equal(1, await serverToClientStream.ReadAsync(buffer, 0, 1));
+                                Assert.Equal(i, buffer[0]);
+                                break;
+                            case 4:
+                                Assert.Equal(1, await serverToClientStream.ReadAsync(new Memory<byte>(buffer)));
+                                Assert.Equal(i, buffer[0]);
+                                break;
+                            case 5:
+                                Assert.Equal(1, await Task.Factory.FromAsync(serverToClientStream.BeginRead, serverToClientStream.EndRead, buffer, 0, 1, null));
+                                Assert.Equal(i, buffer[0]);
+                                break;
+                        }
                     }
 
                     clientToServerStream.DoneWriting();
@@ -271,7 +299,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
 
         [Fact]
-        public async Task UpgradeConnection_Success()
+        public async Task UpgradeConnection_ReturnsReadableAndWritableStream()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -287,28 +315,97 @@ namespace System.Net.Http.Functional.Tests
 
                         using (Stream clientStream = await (await getResponseTask).Content.ReadAsStreamAsync())
                         {
+                            // Boolean properties returning correct values
                             Assert.True(clientStream.CanWrite);
                             Assert.True(clientStream.CanRead);
                             Assert.False(clientStream.CanSeek);
 
-                            TextReader clientReader = new StreamReader(clientStream);
-                            TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
-                            TextReader serverReader = connection.Reader;
-                            TextWriter serverWriter = connection.Writer;
+                            // Not supported operations
+                            Assert.Throws<NotSupportedException>(() => clientStream.Length);
+                            Assert.Throws<NotSupportedException>(() => clientStream.Position);
+                            Assert.Throws<NotSupportedException>(() => clientStream.Position = 0);
+                            Assert.Throws<NotSupportedException>(() => clientStream.Seek(0, SeekOrigin.Begin));
+                            Assert.Throws<NotSupportedException>(() => clientStream.SetLength(0));
 
-                            const string helloServer = "hello server";
-                            const string helloClient = "hello client";
-                            const string goodbyeServer = "goodbye server";
-                            const string goodbyeClient = "goodbye client";
+                            // Invalid arguments
+                            var nonWritableStream = new MemoryStream(new byte[1], false);
+                            var disposedStream = new MemoryStream();
+                            disposedStream.Dispose();
+                            Assert.Throws<ArgumentNullException>(() => clientStream.CopyTo(null));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => clientStream.CopyTo(Stream.Null, 0));
+                            Assert.Throws<ArgumentNullException>(() => { clientStream.CopyToAsync(null, 100, default); });
+                            Assert.Throws<ArgumentOutOfRangeException>(() => { clientStream.CopyToAsync(Stream.Null, 0, default); });
+                            Assert.Throws<ArgumentOutOfRangeException>(() => { clientStream.CopyToAsync(Stream.Null, -1, default); });
+                            Assert.Throws<NotSupportedException>(() => { clientStream.CopyToAsync(nonWritableStream, 100, default); });
+                            Assert.Throws<ObjectDisposedException>(() => { clientStream.CopyToAsync(disposedStream, 100, default); });
+                            Assert.Throws<ArgumentNullException>(() => clientStream.Read(null, 0, 100));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => clientStream.Read(new byte[1], -1, 1));
+                            Assert.ThrowsAny<ArgumentException>(() => clientStream.Read(new byte[1], 2, 1));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => clientStream.Read(new byte[1], 0, -1));
+                            Assert.ThrowsAny<ArgumentException>(() => clientStream.Read(new byte[1], 0, 2));
+                            Assert.Throws<ArgumentNullException>(() => clientStream.BeginRead(null, 0, 100, null, null));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => clientStream.BeginRead(new byte[1], -1, 1, null, null));
+                            Assert.ThrowsAny<ArgumentException>(() => clientStream.BeginRead(new byte[1], 2, 1, null, null));
+                            Assert.Throws<ArgumentOutOfRangeException>(() => clientStream.BeginRead(new byte[1], 0, -1, null, null));
+                            Assert.ThrowsAny<ArgumentException>(() => clientStream.BeginRead(new byte[1], 0, 2, null, null));
+                            Assert.Throws<ArgumentNullException>(() => clientStream.EndRead(null));
+                            Assert.Throws<ArgumentNullException>(() => { clientStream.ReadAsync(null, 0, 100, default); });
+                            Assert.Throws<ArgumentOutOfRangeException>(() => { clientStream.ReadAsync(new byte[1], -1, 1, default); });
+                            Assert.ThrowsAny<ArgumentException>(() => { clientStream.ReadAsync(new byte[1], 2, 1, default); });
+                            Assert.Throws<ArgumentOutOfRangeException>(() => { clientStream.ReadAsync(new byte[1], 0, -1, default); });
+                            Assert.ThrowsAny<ArgumentException>(() => { clientStream.ReadAsync(new byte[1], 0, 2, default); });
 
-                            clientWriter.WriteLine(helloServer);
-                            Assert.Equal(helloServer, serverReader.ReadLine());
-                            serverWriter.WriteLine(helloClient);
-                            Assert.Equal(helloClient, clientReader.ReadLine());
-                            clientWriter.WriteLine(goodbyeServer);
-                            Assert.Equal(goodbyeServer, serverReader.ReadLine());
-                            serverWriter.WriteLine(goodbyeClient);
-                            Assert.Equal(goodbyeClient, clientReader.ReadLine());
+                            // Validate writing APIs on clientStream
+
+                            clientStream.WriteByte((byte)'!');
+                            clientStream.Write(new byte[] { (byte)'\r', (byte)'\n' }, 0, 2);
+                            Assert.Equal("!", await connection.Reader.ReadLineAsync());
+
+                            clientStream.Write(new Span<byte>(new byte[] { (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o', (byte)'\r', (byte)'\n' }));
+                            Assert.Equal("hello", await connection.Reader.ReadLineAsync());
+
+                            await clientStream.WriteAsync(new byte[] { (byte)'w', (byte)'o', (byte)'r', (byte)'l', (byte)'d', (byte)'\r', (byte)'\n' }, 0, 7);
+                            Assert.Equal("world", await connection.Reader.ReadLineAsync());
+
+                            await clientStream.WriteAsync(new Memory<byte>(new byte[] { (byte)'a', (byte)'n', (byte)'d', (byte)'\r', (byte)'\n' }, 0, 5));
+                            Assert.Equal("and", await connection.Reader.ReadLineAsync());
+
+                            await Task.Factory.FromAsync(clientStream.BeginWrite, clientStream.EndWrite, new byte[] { (byte)'b', (byte)'e', (byte)'y', (byte)'o', (byte)'n', (byte)'d', (byte)'\r', (byte)'\n' }, 0, 8, null);
+                            Assert.Equal("beyond", await connection.Reader.ReadLineAsync());
+
+                            clientStream.Flush();
+                            await clientStream.FlushAsync();
+
+                            // Validate reading APIs on clientStream
+                            await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwxyz"));
+                            var buffer = new byte[1];
+
+                            Assert.Equal('a', clientStream.ReadByte());
+
+                            Assert.Equal(1, clientStream.Read(buffer, 0, 1));
+                            Assert.Equal((byte)'b', buffer[0]);
+
+                            Assert.Equal(1, clientStream.Read(new Span<byte>(buffer, 0, 1)));
+                            Assert.Equal((byte)'c', buffer[0]);
+
+                            Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
+                            Assert.Equal((byte)'d', buffer[0]);
+
+                            Assert.Equal(1, await clientStream.ReadAsync(new Memory<byte>(buffer, 0, 1)));
+                            Assert.Equal((byte)'e', buffer[0]);
+
+                            Assert.Equal(1, await Task.Factory.FromAsync(clientStream.BeginRead, clientStream.EndRead, buffer, 0, 1, null));
+                            Assert.Equal((byte)'f', buffer[0]);
+
+                            var ms = new MemoryStream();
+                            Task copyTask = clientStream.CopyToAsync(ms);
+
+                            string bigString = string.Concat(Enumerable.Repeat("abcdefghijklmnopqrstuvwxyz", 1000));
+                            Task lotsOfDataSent = connection.Socket.SendAsync(Encoding.ASCII.GetBytes(bigString), SocketFlags.None);
+                            connection.Socket.Shutdown(SocketShutdown.Send);
+                            await copyTask;
+                            await lotsOfDataSent;
+                            Assert.Equal("ghijklmnopqrstuvwxyz" + bigString, Encoding.ASCII.GetString(ms.ToArray()));
                         }
                     });
                 }
@@ -789,6 +886,86 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.UseCookies = false);
                 Assert.Throws(expectedExceptionType, () => handler.UseProxy = false);
             }
+        }
+    }
+
+    public sealed class SocketsHttpHandler_ExternalConfiguration_Test : HttpClientTestBase
+    {
+        private const string EnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER";
+        private const string AppContextSettingName = "System.Net.Http.UseSocketsHttpHandler";
+
+        private static bool UseSocketsHttpHandlerEnvironmentVariableIsNotSet =>
+            string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnvironmentVariableSettingName));
+
+        [ConditionalTheory(nameof(UseSocketsHttpHandlerEnvironmentVariableIsNotSet))]
+        [InlineData("true", true)]
+        [InlineData("TRUE", true)]
+        [InlineData("tRuE", true)]
+        [InlineData("1", true)]
+        [InlineData("0", false)]
+        [InlineData("false", false)]
+        [InlineData("helloworld", false)]
+        [InlineData("", false)]
+        public void HttpClientHandler_SettingEnvironmentVariableChangesDefault(string envVarValue, bool expectedUseSocketsHandler)
+        {
+            RemoteInvoke((innerEnvVarValue, innerExpectedUseSocketsHandler) =>
+            {
+                Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, innerEnvVarValue);
+                using (var handler = new HttpClientHandler())
+                {
+                    Assert.Equal(bool.Parse(innerExpectedUseSocketsHandler), IsSocketsHttpHandler(handler));
+                }
+                return SuccessExitCode;
+            }, envVarValue, expectedUseSocketsHandler.ToString()).Dispose();
+        }
+
+        [Fact]
+        public void HttpClientHandler_SettingAppContextChangesDefault()
+        {
+            RemoteInvoke(() =>
+            {
+                AppContext.SetSwitch(AppContextSettingName, isEnabled: true);
+                using (var handler = new HttpClientHandler())
+                {
+                    Assert.True(IsSocketsHttpHandler(handler));
+                }
+
+                AppContext.SetSwitch(AppContextSettingName, isEnabled: false);
+                using (var handler = new HttpClientHandler())
+                {
+                    Assert.False(IsSocketsHttpHandler(handler));
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void HttpClientHandler_AppContextOverridesEnvironmentVariable()
+        {
+            RemoteInvoke(() =>
+            {
+                Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, "true");
+                using (var handler = new HttpClientHandler())
+                {
+                    Assert.True(IsSocketsHttpHandler(handler));
+                }
+
+                AppContext.SetSwitch(AppContextSettingName, isEnabled: false);
+                using (var handler = new HttpClientHandler())
+                {
+                    Assert.False(IsSocketsHttpHandler(handler));
+                }
+
+                AppContext.SetSwitch(AppContextSettingName, isEnabled: true);
+                Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, null);
+                using (var handler = new HttpClientHandler())
+                {
+                    Assert.True(IsSocketsHttpHandler(handler));
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
     }
 }

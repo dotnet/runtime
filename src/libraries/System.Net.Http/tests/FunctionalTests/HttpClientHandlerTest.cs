@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -11,6 +10,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -1015,6 +1015,309 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData(":")]
+        [InlineData("  :  ")]
+        [InlineData("\x1234: \x5678")]
+        [InlineData("nocolon")]
+        [InlineData("no colon")]
+        [InlineData("Content-Length      ")]
+        public async Task GetAsync_InvalidHeaderNameValue_ThrowsHttpRequestException(string invalidHeader)
+        {
+            if (IsCurlHandler && invalidHeader.Contains(':'))
+            {
+                // Issue #27172
+                // CurlHandler allows these headers as long as they have a colon.
+                return;
+            }
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
+                }
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\nContent-Length: 11\r\n{invalidHeader}\r\n\r\nhello world"));
+        }
+
+        [Fact]
+        public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
+        {
+            if (IsWinHttpHandler)
+            {
+                // Issue #27171
+                // Fails consistently with:
+                // System.InvalidCastException: "Unable to cast object of type 'System.Object[]' to type 'System.Net.Http.WinHttpRequestState'"
+                // This appears to be due to adding the Expect: 100-continue header, which causes winhttp
+                // to fail with a "The parameter is incorrect" error, which in turn causes the request to
+                // be torn down, and in doing so, we this this during disposal of the SafeWinHttpHandle.
+                return;
+            }
+
+            // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
+            // Exercises all exposed request.Headers and request.Content.Headers strongly-typed properties
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    byte[] contentArray = Encoding.ASCII.GetBytes("hello world");
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray) };
+
+                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+                    request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("utf-8"));
+                    request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+                    request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("deflate"));
+                    request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue("en-US"));
+                    request.Headers.Add("Accept-Datetime", "Thu, 31 May 2007 20:35:00 GMT");
+                    request.Headers.Add("Access-Control-Request-Method", "GET");
+                    request.Headers.Add("Access-Control-Request-Headers", "GET");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+                    request.Headers.CacheControl = new CacheControlHeaderValue() { NoCache = true };
+                    request.Headers.Connection.Add("close");
+                    request.Headers.Add("Cookie", "$Version=1; Skin=new");
+                    request.Content.Headers.ContentLength = contentArray.Length;
+                    request.Content.Headers.ContentMD5 = MD5.Create().ComputeHash(contentArray);
+                    request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+                    request.Headers.Date = DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT");
+                    request.Headers.Expect.Add(new NameValueWithParametersHeaderValue("100-continue"));
+                    request.Headers.Add("Forwarded", "for=192.0.2.60;proto=http;by=203.0.113.43");
+                    request.Headers.Add("From", "User Name <user@example.com>");
+                    request.Headers.Host = "en.wikipedia.org:8080";
+                    request.Headers.IfMatch.Add(new EntityTagHeaderValue("\"37060cd8c284d8af7ad3082f209582d\""));
+                    request.Headers.IfModifiedSince = DateTimeOffset.Parse("Sat, 29 Oct 1994 19:43:31 GMT");
+                    request.Headers.IfNoneMatch.Add(new EntityTagHeaderValue("\"737060cd8c284d8af7ad3082f209582d\""));
+                    request.Headers.IfRange = new RangeConditionHeaderValue(DateTimeOffset.Parse("Wed, 21 Oct 2015 07:28:00 GMT"));
+                    request.Headers.IfUnmodifiedSince = DateTimeOffset.Parse("Sat, 29 Oct 1994 19:43:31 GMT");
+                    request.Headers.MaxForwards = 10;
+                    request.Headers.Add("Origin", "http://www.example-social-network.com");
+                    request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                    request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic", "QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+                    request.Headers.Range = new RangeHeaderValue(500, 999);
+                    request.Headers.Referrer = new Uri("http://en.wikipedia.org/wiki/Main_Page");
+                    request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("trailers"));
+                    request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("deflate"));
+                    request.Headers.Trailer.Add("MyTrailer");
+                    request.Headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
+                    request.Headers.UserAgent.Add(new ProductInfoHeaderValue(new ProductHeaderValue("Mozilla", "5.0")));
+                    request.Headers.Upgrade.Add(new ProductHeaderValue("HTTPS", "1.3"));
+                    request.Headers.Upgrade.Add(new ProductHeaderValue("IRC", "6.9"));
+                    request.Headers.Upgrade.Add(new ProductHeaderValue("RTA", "x11"));
+                    request.Headers.Upgrade.Add(new ProductHeaderValue("websocket"));
+                    request.Headers.Via.Add(new ViaHeaderValue("1.0", "fred"));
+                    request.Headers.Via.Add(new ViaHeaderValue("1.1", "example.com", null, "(Apache/1.1)"));
+                    request.Headers.Warning.Add(new WarningHeaderValue(199, "-", "\"Miscellaneous warning\""));
+                    request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+                    request.Headers.Add("DNT", "1 (Do Not Track Enabled)");
+                    request.Headers.Add("X-Forwarded-For", "client1");
+                    request.Headers.Add("X-Forwarded-For", "proxy1");
+                    request.Headers.Add("X-Forwarded-For", "proxy2");
+                    request.Headers.Add("X-Forwarded-Host", "en.wikipedia.org:8080");
+                    request.Headers.Add("X-Forwarded-Proto", "https");
+                    request.Headers.Add("Front-End-Https", "https");
+                    request.Headers.Add("X-Http-Method-Override", "DELETE");
+                    request.Headers.Add("X-ATT-DeviceId", "GT-P7320/P7320XXLPG");
+                    request.Headers.Add("X-Wap-Profile", "http://wap.samsungmobile.com/uaprof/SGH-I777.xml");
+                    request.Headers.Add("Proxy-Connection", "keep-alive");
+                    request.Headers.Add("X-UIDH", "...");
+                    request.Headers.Add("X-Csrf-Token", "i8XNjC4b8KVok4uw5RftR38Wgp2BFwql");
+                    request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
+                    request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
+
+                    (await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Dispose();
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    var headersSet = new HashSet<string>();
+                    string line;
+                    while (!string.IsNullOrEmpty(line = await connection.Reader.ReadLineAsync()))
+                    {
+                        Assert.True(headersSet.Add(line));
+                    }
+
+                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+                    while (await connection.Socket.ReceiveAsync(new ArraySegment<byte>(new byte[1000]), SocketFlags.None) > 0);
+
+                    Assert.Contains("Accept-Charset: utf-8", headersSet);
+                    Assert.Contains("Accept-Encoding: gzip, deflate", headersSet);
+                    Assert.Contains("Accept-Language: en-US", headersSet);
+                    Assert.Contains("Accept-Datetime: Thu, 31 May 2007 20:35:00 GMT", headersSet);
+                    Assert.Contains("Access-Control-Request-Method: GET", headersSet);
+                    Assert.Contains("Access-Control-Request-Headers: GET", headersSet);
+                    Assert.Contains("Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", headersSet);
+                    Assert.Contains("Cache-Control: no-cache", headersSet);
+                    Assert.Contains("Connection: close", headersSet, StringComparer.OrdinalIgnoreCase); // NetFxHandler uses "Close" vs "close"
+                    if (!IsNetfxHandler)
+                    {
+                        Assert.Contains("Cookie: $Version=1; Skin=new", headersSet);
+                    }
+                    Assert.Contains("Date: Tue, 15 Nov 1994 08:12:31 GMT", headersSet);
+                    Assert.Contains("Expect: 100-continue", headersSet);
+                    Assert.Contains("Forwarded: for=192.0.2.60;proto=http;by=203.0.113.43", headersSet);
+                    Assert.Contains("From: User Name <user@example.com>", headersSet);
+                    Assert.Contains("Host: en.wikipedia.org:8080", headersSet);
+                    Assert.Contains("If-Match: \"37060cd8c284d8af7ad3082f209582d\"", headersSet);
+                    Assert.Contains("If-Modified-Since: Sat, 29 Oct 1994 19:43:31 GMT", headersSet);
+                    Assert.Contains("If-None-Match: \"737060cd8c284d8af7ad3082f209582d\"", headersSet);
+                    Assert.Contains("If-Range: Wed, 21 Oct 2015 07:28:00 GMT", headersSet);
+                    Assert.Contains("If-Unmodified-Since: Sat, 29 Oct 1994 19:43:31 GMT", headersSet);
+                    Assert.Contains("Max-Forwards: 10", headersSet);
+                    Assert.Contains("Origin: http://www.example-social-network.com", headersSet);
+                    Assert.Contains("Pragma: no-cache", headersSet);
+                    Assert.Contains("Proxy-Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", headersSet);
+                    Assert.Contains("Range: bytes=500-999", headersSet);
+                    Assert.Contains("Referer: http://en.wikipedia.org/wiki/Main_Page", headersSet);
+                    Assert.Contains("TE: trailers, deflate", headersSet);
+                    Assert.Contains("Trailer: MyTrailer", headersSet);
+                    Assert.Contains("Transfer-Encoding: chunked", headersSet);
+                    Assert.Contains("User-Agent: Mozilla/5.0", headersSet);
+                    Assert.Contains("Upgrade: HTTPS/1.3, IRC/6.9, RTA/x11, websocket", headersSet);
+                    Assert.Contains("Via: 1.0 fred, 1.1 example.com (Apache/1.1)", headersSet);
+                    Assert.Contains("Warning: 199 - \"Miscellaneous warning\"", headersSet);
+                    Assert.Contains("X-Requested-With: XMLHttpRequest", headersSet);
+                    Assert.Contains("DNT: 1 (Do Not Track Enabled)", headersSet);
+                    Assert.Contains("X-Forwarded-For: client1, proxy1, proxy2", headersSet);
+                    Assert.Contains("X-Forwarded-Host: en.wikipedia.org:8080", headersSet);
+                    Assert.Contains("X-Forwarded-Proto: https", headersSet);
+                    Assert.Contains("Front-End-Https: https", headersSet);
+                    Assert.Contains("X-Http-Method-Override: DELETE", headersSet);
+                    Assert.Contains("X-ATT-DeviceId: GT-P7320/P7320XXLPG", headersSet);
+                    Assert.Contains("X-Wap-Profile: http://wap.samsungmobile.com/uaprof/SGH-I777.xml", headersSet);
+                    if (!IsNetfxHandler)
+                    {
+                        Assert.Contains("Proxy-Connection: keep-alive", headersSet);
+                    }
+                    Assert.Contains("X-UIDH: ...", headersSet);
+                    Assert.Contains("X-Csrf-Token: i8XNjC4b8KVok4uw5RftR38Wgp2BFwql", headersSet);
+                    Assert.Contains("X-Request-ID: f058ebd6-02f7-4d3f-942e-904344e8cde5, f058ebd6-02f7-4d3f-942e-904344e8cde5", headersSet);
+                });
+            });
+        }
+
+        [Fact]
+        public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly()
+        {
+            // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
+            // Exercises all exposed response.Headers and response.Content.Headers strongly-typed properties
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                using (HttpResponseMessage resp = await client.GetAsync(uri))
+                {
+                    Assert.Equal("1.1", resp.Version.ToString());
+                    Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+                    Assert.Contains("*", resp.Headers.GetValues("Access-Control-Allow-Origin"));
+                    Assert.Contains("text/example;charset=utf-8", resp.Headers.GetValues("Accept-Patch"));
+                    Assert.Contains("bytes", resp.Headers.AcceptRanges);
+                    Assert.Equal(TimeSpan.FromSeconds(12), resp.Headers.Age.GetValueOrDefault());
+                    Assert.Contains("GET", resp.Content.Headers.Allow);
+                    Assert.Contains("HEAD", resp.Content.Headers.Allow);
+                    Assert.Contains("http/1.1=\"http2.example.com:8001\"; ma=7200", resp.Headers.GetValues("Alt-Svc"));
+                    Assert.Equal(TimeSpan.FromSeconds(3600), resp.Headers.CacheControl.MaxAge.GetValueOrDefault());
+                    Assert.Contains("close", resp.Headers.Connection);
+                    Assert.True(resp.Headers.ConnectionClose.GetValueOrDefault());
+                    Assert.Equal("attachment", resp.Content.Headers.ContentDisposition.DispositionType);
+                    Assert.Equal("\"fname.ext\"", resp.Content.Headers.ContentDisposition.FileName);
+                    Assert.Contains("gzip", resp.Content.Headers.ContentEncoding);
+                    Assert.Contains("da", resp.Content.Headers.ContentLanguage);
+                    Assert.Equal(new Uri("/index.htm", UriKind.Relative), resp.Content.Headers.ContentLocation);
+                    Assert.Equal(Convert.FromBase64String("Q2hlY2sgSW50ZWdyaXR5IQ=="), resp.Content.Headers.ContentMD5);
+                    Assert.Equal("bytes", resp.Content.Headers.ContentRange.Unit);
+                    Assert.Equal(21010, resp.Content.Headers.ContentRange.From.GetValueOrDefault());
+                    Assert.Equal(47021, resp.Content.Headers.ContentRange.To.GetValueOrDefault());
+                    Assert.Equal(47022, resp.Content.Headers.ContentRange.Length.GetValueOrDefault());
+                    Assert.Equal("text/html", resp.Content.Headers.ContentType.MediaType);
+                    Assert.Equal("utf-8", resp.Content.Headers.ContentType.CharSet);
+                    Assert.Equal(DateTimeOffset.Parse("Tue, 15 Nov 1994 08:12:31 GMT"), resp.Headers.Date.GetValueOrDefault());
+                    Assert.Equal("\"737060cd8c284d8af7ad3082f209582d\"", resp.Headers.ETag.Tag);
+                    Assert.Equal(DateTimeOffset.Parse("Thu, 01 Dec 1994 16:00:00 GMT"), resp.Content.Headers.Expires.GetValueOrDefault());
+                    Assert.Equal(DateTimeOffset.Parse("Tue, 15 Nov 1994 12:45:26 GMT"), resp.Content.Headers.LastModified.GetValueOrDefault());
+                    Assert.Contains("</feed>; rel=\"alternate\"", resp.Headers.GetValues("Link"));
+                    Assert.Equal(new Uri("http://www.w3.org/pub/WWW/People.html"), resp.Headers.Location);
+                    Assert.Contains("CP=\"This is not a P3P policy!\"", resp.Headers.GetValues("P3P"));
+                    Assert.Contains(new NameValueHeaderValue("no-cache"), resp.Headers.Pragma);
+                    Assert.Contains(new AuthenticationHeaderValue("basic"), resp.Headers.ProxyAuthenticate);
+                    Assert.Contains("max-age=2592000; pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"", resp.Headers.GetValues("Public-Key-Pins"));
+                    Assert.Equal(TimeSpan.FromSeconds(120), resp.Headers.RetryAfter.Delta.GetValueOrDefault());
+                    Assert.Contains(new ProductInfoHeaderValue("Apache", "2.4.1"), resp.Headers.Server);
+                    Assert.Contains("UserID=JohnDoe; Max-Age=3600; Version=1", resp.Headers.GetValues("Set-Cookie"));
+                    Assert.Contains("max-age=16070400; includeSubDomains", resp.Headers.GetValues("Strict-Transport-Security"));
+                    Assert.Contains("Max-Forwards", resp.Headers.Trailer);
+                    Assert.Contains("?", resp.Headers.GetValues("Tk"));
+                    Assert.Contains(new ProductHeaderValue("HTTPS", "1.3"), resp.Headers.Upgrade);
+                    Assert.Contains(new ProductHeaderValue("IRC", "6.9"), resp.Headers.Upgrade);
+                    Assert.Contains(new ProductHeaderValue("websocket"), resp.Headers.Upgrade);
+                    Assert.Contains("Accept-Language", resp.Headers.Vary);
+                    Assert.Contains(new ViaHeaderValue("1.0", "fred"), resp.Headers.Via);
+                    Assert.Contains(new ViaHeaderValue("1.1", "example.com", null, "(Apache/1.1)"), resp.Headers.Via);
+                    Assert.Contains(new WarningHeaderValue(199, "-", "\"Miscellaneous warning\"", DateTimeOffset.Parse("Wed, 21 Oct 2015 07:28:00 GMT")), resp.Headers.Warning);
+                    Assert.Contains(new AuthenticationHeaderValue("Basic"), resp.Headers.WwwAuthenticate);
+                    Assert.Contains("deny", resp.Headers.GetValues("X-Frame-Options"));
+                    Assert.Contains("default-src 'self'", resp.Headers.GetValues("X-WebKit-CSP"));
+                    Assert.Contains("5; url=http://www.w3.org/pub/WWW/People.html", resp.Headers.GetValues("Refresh"));
+                    Assert.Contains("200 OK", resp.Headers.GetValues("Status"));
+                    Assert.Contains("<origin>[, <origin>]*", resp.Headers.GetValues("Timing-Allow-Origin"));
+                    Assert.Contains("42.666", resp.Headers.GetValues("X-Content-Duration"));
+                    Assert.Contains("nosniff", resp.Headers.GetValues("X-Content-Type-Options"));
+                    Assert.Contains("PHP/5.4.0", resp.Headers.GetValues("X-Powered-By"));
+                    Assert.Contains("f058ebd6-02f7-4d3f-942e-904344e8cde5", resp.Headers.GetValues("X-Request-ID"));
+                    Assert.Contains("IE=EmulateIE7", resp.Headers.GetValues("X-UA-Compatible"));
+                    Assert.Contains("1; mode=block", resp.Headers.GetValues("X-XSS-Protection"));
+                }
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                "HTTP/1.1 200 OK\r\n" +
+                "Access-Control-Allow-Origin: *\r\n" +
+                "Accept-Patch: text/example;charset=utf-8\r\n" +
+                "Accept-Ranges: bytes\r\n" +
+                "Age: 12\r\n" +
+                "Allow: GET, HEAD\r\n" +
+                "Alt-Svc: http/1.1=\"http2.example.com:8001\"; ma=7200\r\n" +
+                "Cache-Control: max-age=3600\r\n" +
+                "Connection: close\r\n" +
+                "Content-Disposition: attachment; filename=\"fname.ext\"\r\n" +
+                "Content-Encoding: gzip\r\n" +
+                "Content-Language: da\r\n" +
+                "Content-Location: /index.htm\r\n" +
+                "Content-MD5: Q2hlY2sgSW50ZWdyaXR5IQ==\r\n" +
+                "Content-Range: bytes 21010-47021/47022\r\n" +
+                "Content-Type: text/html; charset=utf-8\r\n" +
+                "Date: Tue, 15 Nov 1994 08:12:31 GMT\r\n" +
+                "ETag: \"737060cd8c284d8af7ad3082f209582d\"\r\n" +
+                "Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n" +
+                "Last-Modified: Tue, 15 Nov 1994 12:45:26 GMT\r\n" +
+                "Link: </feed>; rel=\"alternate\"\r\n" +
+                "Location: http://www.w3.org/pub/WWW/People.html\r\n" +
+                "P3P: CP=\"This is not a P3P policy!\"\r\n" +
+                "Pragma: no-cache\r\n" +
+                "Proxy-Authenticate: Basic\r\n" +
+                "Public-Key-Pins: max-age=2592000; pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"\r\n" +
+                "Retry-After: 120\r\n" +
+                "Server: Apache/2.4.1 (Unix)\r\n" +
+                "Set-Cookie: UserID=JohnDoe; Max-Age=3600; Version=1\r\n" +
+                "Strict-Transport-Security: max-age=16070400; includeSubDomains\r\n" +
+                "Trailer: Max-Forwards\r\n" +
+                "Tk: ?\r\n" +
+                "Upgrade: HTTPS/1.3, IRC/6.9, RTA/x11, websocket\r\n" +
+                "Vary: Accept-Language\r\n" +
+                "Via: 1.0 fred, 1.1 example.com (Apache/1.1)\r\n" +
+                "Warning: 199 - \"Miscellaneous warning\" \"Wed, 21 Oct 2015 07:28:00 GMT\"\r\n" +
+                "WWW-Authenticate: Basic\r\n" +
+                "X-Frame-Options: deny\r\n" +
+                "X-WebKit-CSP: default-src 'self'\r\n" +
+                "Refresh: 5; url=http://www.w3.org/pub/WWW/People.html\r\n" +
+                "Status: 200 OK\r\n" +
+                "Timing-Allow-Origin: <origin>[, <origin>]*\r\n" +
+                "Upgrade-Insecure-Requests: 1\r\n" +
+                "X-Content-Duration: 42.666\r\n" +
+                "X-Content-Type-Options: nosniff\r\n" +
+                "X-Powered-By: PHP/5.4.0\r\n" +
+                "X-Request-ID: f058ebd6-02f7-4d3f-942e-904344e8cde5\r\n" +
+                "X-UA-Compatible: IE=EmulateIE7\r\n" +
+                "X-XSS-Protection: 1; mode=block\r\n" +
+                "\r\n"));
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false)]
@@ -1142,6 +1445,27 @@ namespace System.Net.Http.Functional.Tests
                     await serverTask;
                 }
             });
+        }
+        
+        [Fact]
+        public async Task GetAsync_InvalidChunkTerminator_ThrowsHttpRequestException()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                }
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                "HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "5\r\n" +
+                "hello" + // missing \r\n terminator
+                            //"5\r\n" +
+                            //"world" + // missing \r\n terminator
+                "0\r\n" +
+                "\r\n"));
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -1274,6 +1598,236 @@ namespace System.Net.Http.Functional.Tests
                     });
                 }
             });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [InlineData(null)]
+        public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
+                using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
+                {
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        Assert.Same(responseStream, await response.Content.ReadAsStreamAsync());
+
+                        // Boolean properties returning correct values
+                        Assert.True(responseStream.CanRead);
+                        Assert.False(responseStream.CanWrite);
+                        Assert.False(responseStream.CanSeek);
+
+                        // Not supported operations
+                        Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
+                        Assert.Throws<NotSupportedException>(() => responseStream.Length);
+                        Assert.Throws<NotSupportedException>(() => responseStream.Position);
+                        Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
+                        Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
+                        Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
+                        Assert.Throws<NotSupportedException>(() => responseStream.Write(new Span<byte>(new byte[1])));
+                        Assert.Throws<NotSupportedException>(() => { responseStream.WriteAsync(new Memory<byte>(new byte[1])); });
+                        Assert.Throws<NotSupportedException>(() => { responseStream.WriteAsync(new byte[1], 0, 1); });
+                        Assert.Throws<NotSupportedException>(() => responseStream.WriteByte(1));
+
+                        // Invalid arguments
+                        var nonWritableStream = new MemoryStream(new byte[1], false);
+                        var disposedStream = new MemoryStream();
+                        disposedStream.Dispose();
+                        Assert.Throws<ArgumentNullException>(() => responseStream.CopyTo(null));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.CopyTo(Stream.Null, 0));
+                        Assert.Throws<ArgumentNullException>(() => { responseStream.CopyToAsync(null, 100, default); });
+                        Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.CopyToAsync(Stream.Null, 0, default); });
+                        Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.CopyToAsync(Stream.Null, -1, default); });
+                        Assert.Throws<NotSupportedException>(() => { responseStream.CopyToAsync(nonWritableStream, 100, default); });
+                        Assert.Throws<ObjectDisposedException>(() => { responseStream.CopyToAsync(disposedStream, 100, default); });
+                        Assert.Throws<ArgumentNullException>(() => responseStream.Read(null, 0, 100));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], -1, 1));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 2, 1));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], 0, -1));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 0, 2));
+                        Assert.Throws<ArgumentNullException>(() => responseStream.BeginRead(null, 0, 100, null, null));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.BeginRead(new byte[1], -1, 1, null, null));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.BeginRead(new byte[1], 2, 1, null, null));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.BeginRead(new byte[1], 0, -1, null, null));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.BeginRead(new byte[1], 0, 2, null, null));
+                        Assert.Throws<ArgumentNullException>(() => responseStream.EndRead(null));
+                        if (IsNetfxHandler)
+                        {
+                            // Argument exceptions on netfx are thrown out of these asynchronously rather than synchronously
+                            await Assert.ThrowsAsync<ArgumentNullException>(() => responseStream.ReadAsync(null, 0, 100, default));
+                            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => responseStream.ReadAsync(new byte[1], -1, 1, default));
+                            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => responseStream.ReadAsync(new byte[1], 2, 1, default));
+                            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => responseStream.ReadAsync(new byte[1], 0, -1, default));
+                            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => responseStream.ReadAsync(new byte[1], 0, 2, default));
+                        }
+                        else
+                        {
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.ReadAsync(null, 0, 100, default); });
+                            Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.ReadAsync(new byte[1], -1, 1, default); });
+                            Assert.ThrowsAny<ArgumentException>(() => { responseStream.ReadAsync(new byte[1], 2, 1, default); });
+                            Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.ReadAsync(new byte[1], 0, -1, default); });
+                            Assert.ThrowsAny<ArgumentException>(() => { responseStream.ReadAsync(new byte[1], 0, 2, default); });
+                        }
+
+                        // Various forms of reading
+                        var buffer = new byte[1];
+
+                        Assert.Equal('h', responseStream.ReadByte());
+
+                        Assert.Equal(1, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                        Assert.Equal((byte)'e', buffer[0]);
+
+                        Assert.Equal(1, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                        Assert.Equal((byte)'l', buffer[0]);
+
+                        Assert.Equal(1, await responseStream.ReadAsync(buffer, 0, 1));
+                        Assert.Equal((byte)'l', buffer[0]);
+
+                        Assert.Equal(1, responseStream.Read(new Span<byte>(buffer)));
+                        Assert.Equal((byte)'o', buffer[0]);
+
+                        Assert.Equal(1, responseStream.Read(buffer, 0, 1));
+                        Assert.Equal((byte)' ', buffer[0]);
+
+                        if (!IsNetfxHandler)
+                        {
+                            // Doing any of these 0-byte reads causes the connection to fail.
+                            Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, Array.Empty<byte>(), 0, 0, null));
+                            Assert.Equal(0, await responseStream.ReadAsync(Memory<byte>.Empty));
+                            Assert.Equal(0, await responseStream.ReadAsync(Array.Empty<byte>(), 0, 0));
+                            Assert.Equal(0, responseStream.Read(Span<byte>.Empty));
+                            Assert.Equal(0, responseStream.Read(Array.Empty<byte>(), 0, 0));
+                        }
+
+                        // And copying
+                        var ms = new MemoryStream();
+                        await responseStream.CopyToAsync(ms);
+                        Assert.Equal("world", Encoding.ASCII.GetString(ms.ToArray()));
+
+                        // Read and copy again once we've exhausted all data
+                        ms = new MemoryStream();
+                        await responseStream.CopyToAsync(ms);
+                        responseStream.CopyTo(ms);
+                        Assert.Equal(0, ms.Length);
+                        Assert.Equal(-1, responseStream.ReadByte());
+                        Assert.Equal(0, responseStream.Read(buffer, 0, 1));
+                        Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
+                        Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
+                        Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                        Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                    }
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+                    await connection.Writer.WriteAsync("HTTP/1.1 200 OK\r\n");
+                    switch (chunked)
+                    {
+                        case true:
+                            await connection.Writer.WriteAsync("Transfer-Encoding: chunked\r\n\r\n3\r\nhel\r\n8\r\nlo world\r\n0\r\n\r\n");
+                            break;
+
+                        case false:
+                            await connection.Writer.WriteAsync("Content-Length: 11\r\n\r\nhello world");
+                            break;
+
+                        case null:
+                            await connection.Writer.WriteAsync("\r\nhello world");
+                            break;
+                    }
+                });
+            });
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsync_EmptyResponseBody_HandlerProducesWellBehavedResponseStream()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
+                    using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
+                    using (Stream responseStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        // Boolean properties returning correct values
+                        Assert.True(responseStream.CanRead);
+                        Assert.False(responseStream.CanWrite);
+                        Assert.False(responseStream.CanSeek);
+
+                        // Not supported operations
+                        Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
+                        Assert.Throws<NotSupportedException>(() => responseStream.Length);
+                        Assert.Throws<NotSupportedException>(() => responseStream.Position);
+                        Assert.Throws<NotSupportedException>(() => responseStream.Position = 0);
+                        Assert.Throws<NotSupportedException>(() => responseStream.Seek(0, SeekOrigin.Begin));
+                        Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
+                        Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
+                        Assert.Throws<NotSupportedException>(() => responseStream.Write(new Span<byte>(new byte[1])));
+                        await Assert.ThrowsAsync<NotSupportedException>(() => responseStream.WriteAsync(new Memory<byte>(new byte[1])));
+                        await Assert.ThrowsAsync<NotSupportedException>(() => responseStream.WriteAsync(new byte[1], 0, 1));
+                        Assert.Throws<NotSupportedException>(() => responseStream.WriteByte(1));
+
+                        // Invalid arguments
+                        var nonWritableStream = new MemoryStream(new byte[1], false);
+                        var disposedStream = new MemoryStream();
+                        disposedStream.Dispose();
+                        Assert.Throws<ArgumentNullException>(() => responseStream.CopyTo(null));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.CopyTo(Stream.Null, 0));
+                        Assert.Throws<ArgumentNullException>(() => { responseStream.CopyToAsync(null, 100, default); });
+                        Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.CopyToAsync(Stream.Null, 0, default); });
+                        Assert.Throws<ArgumentOutOfRangeException>(() => { responseStream.CopyToAsync(Stream.Null, -1, default); });
+                        Assert.Throws<NotSupportedException>(() => { responseStream.CopyToAsync(nonWritableStream, 100, default); });
+                        Assert.Throws<ObjectDisposedException>(() => { responseStream.CopyToAsync(disposedStream, 100, default); });
+                        Assert.Throws<ArgumentNullException>(() => responseStream.Read(null, 0, 100));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], -1, 1));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 2, 1));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.Read(new byte[1], 0, -1));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.Read(new byte[1], 0, 2));
+                        Assert.Throws<ArgumentNullException>(() => responseStream.BeginRead(null, 0, 100, null, null));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.BeginRead(new byte[1], -1, 1, null, null));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.BeginRead(new byte[1], 2, 1, null, null));
+                        Assert.Throws<ArgumentOutOfRangeException>(() => responseStream.BeginRead(new byte[1], 0, -1, null, null));
+                        Assert.ThrowsAny<ArgumentException>(() => responseStream.BeginRead(new byte[1], 0, 2, null, null));
+                        Assert.Throws<ArgumentNullException>(() => responseStream.EndRead(null));
+                        if (!IsNetfxHandler)
+                        {
+                            // The netfx handler doesn't validate these arguments.
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.CopyTo(null); });
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.CopyToAsync(null, 100, default); });
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.CopyToAsync(null, 100, default); });
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.Read(null, 0, 100); });
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.ReadAsync(null, 0, 100, default); });
+                            Assert.Throws<ArgumentNullException>(() => { responseStream.BeginRead(null, 0, 100, null, null); });
+                        }
+
+                        // Empty reads
+                        var buffer = new byte[1];
+                        Assert.Equal(-1, responseStream.ReadByte());
+                        Assert.Equal(0, await Task.Factory.FromAsync(responseStream.BeginRead, responseStream.EndRead, buffer, 0, 1, null));
+                        Assert.Equal(0, await responseStream.ReadAsync(new Memory<byte>(buffer)));
+                        Assert.Equal(0, await responseStream.ReadAsync(buffer, 0, 1));
+                        Assert.Equal(0, responseStream.Read(new Span<byte>(buffer)));
+                        Assert.Equal(0, responseStream.Read(buffer, 0, 1));
+
+                        // Empty copies
+                        var ms = new MemoryStream();
+                        await responseStream.CopyToAsync(ms);
+                        Assert.Equal(0, ms.Length);
+                        responseStream.CopyTo(ms);
+                        Assert.Equal(0, ms.Length);
+                    }
+                }
+            },
+            server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
 
         [OuterLoop] // TODO: Issue #11345
@@ -2201,6 +2755,22 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);
                 }
+            }
+        }
+
+        [Fact]
+        public async Task Proxy_SslProxyUnsupported_Throws()
+        {
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (var client = new HttpClient(handler))
+            {
+                handler.Proxy = new WebProxy("https://" + Guid.NewGuid().ToString("N"));
+
+                Type expectedType = IsNetfxHandler || UseSocketsHttpHandler ?
+                    typeof(NotSupportedException) :
+                    typeof(HttpRequestException);
+
+                await Assert.ThrowsAsync(expectedType, () => client.GetAsync("http://" + Guid.NewGuid().ToString("N")));
             }
         }
 

@@ -731,21 +731,21 @@ namespace System.Net.Http
                 pos++;
                 if (pos == line.Length)
                 {
-                    // Ignore invalid header line that doesn't contain ':'.
-                    return;
+                    // Invalid header line that doesn't contain ':'.
+                    ThrowInvalidHttpResponse();
                 }
             }
 
             if (pos == 0)
             {
-                // Ignore invalid empty header name.
-                return;
+                // Invalid empty header name.
+                ThrowInvalidHttpResponse();
             }
 
             if (!HeaderDescriptor.TryGet(line.Slice(0, pos), out HeaderDescriptor descriptor))
             {
-                // Ignore invalid header name
-                return;
+                // Invalid header name
+                ThrowInvalidHttpResponse();
             }
 
             // Eat any trailing whitespace
@@ -754,15 +754,15 @@ namespace System.Net.Http
                 pos++;
                 if (pos == line.Length)
                 {
-                    // Ignore invalid header line that doesn't contain ':'.
-                    return;
+                    // Invalid header line that doesn't contain ':'.
+                    ThrowInvalidHttpResponse();
                 }
             }
 
             if (line[pos++] != ':')
             {
-                // Ignore invalid header line that doesn't contain ':'.
-                return;
+                // Invalid header line that doesn't contain ':'.
+                ThrowInvalidHttpResponse();
             }
 
             // Skip whitespace after colon

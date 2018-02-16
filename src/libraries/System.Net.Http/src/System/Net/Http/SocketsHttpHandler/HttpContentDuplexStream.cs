@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -24,8 +25,23 @@ namespace System.Net.Http
             return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
         }
 
-        public sealed override void Write(byte[] buffer, int offset, int count) =>
-            WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+        public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArgs(buffer, offset, count);
+            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+        }
+
+        public sealed override void Write(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArgs(buffer, offset, count);
+            WriteAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArgs(buffer, offset, count);
+            return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+        }
 
         public sealed override void CopyTo(Stream destination, int bufferSize) =>
             CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();

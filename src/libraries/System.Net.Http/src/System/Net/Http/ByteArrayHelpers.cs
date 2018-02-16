@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace System
 {
     internal static class ByteArrayHelpers
     {
+        // TODO #21395:
+        // Replace with the MemoryExtensions implementation of Equals once it's available
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, ReadOnlySpan<byte> right)
         {
             Debug.Assert(left != null, "Expected non-null string");

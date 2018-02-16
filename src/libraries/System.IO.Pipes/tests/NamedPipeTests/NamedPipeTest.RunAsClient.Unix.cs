@@ -31,7 +31,7 @@ namespace System.IO.Pipes.Tests
         {
             string pipeName = Path.GetRandomFileName();
             uint pairID = (uint)(Math.Abs(new Random(5125123).Next()));
-            RemoteInvoke(ServerConnectAsId, pipeName, pairID.ToString()).Dispose();
+            RemoteInvoke(new Func<string, string, int>(ServerConnectAsId), pipeName, pairID.ToString()).Dispose();
         }
 
         private static int ServerConnectAsId(string pipeName, string pairIDString)
@@ -39,7 +39,7 @@ namespace System.IO.Pipes.Tests
             uint pairID = uint.Parse(pairIDString);
             Assert.NotEqual(-1, seteuid(pairID));
             using (var outbound = new NamedPipeServerStream(pipeName, PipeDirection.Out))
-            using (var handle = RemoteInvoke(ClientConnectAsID, pipeName, pairIDString))
+            using (var handle = RemoteInvoke(new Func<string, string, int>(ClientConnectAsID), pipeName, pairIDString))
             {
                 // Connect as the unpriveleged user, but RunAsClient as the superuser
                 outbound.WaitForConnection();

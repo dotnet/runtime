@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -23,12 +24,11 @@ namespace System.Net.Http
 
         public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandler innerHandler)
         {
-            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
-            if (decompressionMethods == DecompressionMethods.None)
-            {
-                throw new ArgumentOutOfRangeException(nameof(decompressionMethods));
-            }
+            Debug.Assert(decompressionMethods != DecompressionMethods.None);
+            Debug.Assert(innerHandler != null);
+
             _decompressionMethods = decompressionMethods;
+            _innerHandler = innerHandler;
         }
 
         internal bool GZipEnabled => (_decompressionMethods & DecompressionMethods.GZip) != 0;

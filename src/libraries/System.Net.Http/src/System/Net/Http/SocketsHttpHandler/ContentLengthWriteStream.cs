@@ -15,12 +15,6 @@ namespace System.Net.Http
             {
             }
 
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ignored) // token ignored as it comes from SendAsync
-            {
-                ValidateBufferArgs(buffer, offset, count);
-                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), ignored);
-            }
-
             public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken ignored) // token ignored as it comes from SendAsync
             {
                 if (_connection._currentRequest == null)
@@ -35,9 +29,6 @@ namespace System.Net.Http
                 // that are still buffered.
                 return _connection.WriteWithoutBufferingAsync(source);
             }
-
-            public override Task FlushAsync(CancellationToken ignored) => // token ignored as it comes from SendAsync
-                _connection.FlushAsync();
 
             public override Task FinishAsync()
             {
