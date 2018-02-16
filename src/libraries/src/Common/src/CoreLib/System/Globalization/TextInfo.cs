@@ -258,6 +258,16 @@ namespace System.Globalization
             }
         }
 
+        internal void ToLowerAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            Debug.Assert(destination.Length >= source.Length);
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                destination[i] = ToLowerAsciiInvariant(source[i]);
+            }
+        }
+
         private unsafe string ToUpperAsciiInvariant(string s)
         {
             if (s.Length == 0)
@@ -301,6 +311,16 @@ namespace System.Globalization
                 }
 
                 return result;
+            }
+        }
+
+        internal void ToUpperAsciiInvariant(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            Debug.Assert(destination.Length >= source.Length);
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                destination[i] = ToUpperAsciiInvariant(source[i]);
             }
         }
 
