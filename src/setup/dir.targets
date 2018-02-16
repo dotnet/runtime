@@ -78,7 +78,7 @@
       <NativeVersionLines Include="#define VER_COMPANYNAME_STR         &quot;Microsoft Corporation&quot;" />
       <NativeVersionLines Include="#endif" />
       <NativeVersionLines Include="#ifndef VER_FILEDESCRIPTION_STR" />
-      <NativeVersionLines Include="#define VER_FILEDESCRIPTION_STR     &quot;$(AssemblyName)&quot;" />
+      <NativeVersionLines Include="#define VER_FILEDESCRIPTION_STR     &quot;$(FileDescription)&quot;" />
       <NativeVersionLines Include="#endif" />
       <NativeVersionLines Include="#ifndef VER_INTERNALNAME_STR" />
       <NativeVersionLines Include="#define VER_INTERNALNAME_STR        VER_FILEDESCRIPTION_STR" />
