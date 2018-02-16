@@ -6,10 +6,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.IO.Pipelines.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="..\..\System.Buffers\ref\System.Buffers.csproj" />
   </ItemGroup>
