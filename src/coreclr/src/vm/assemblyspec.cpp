@@ -792,9 +792,9 @@ BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB)
 {
     LIMITED_METHOD_CONTRACT;
     
-    BOOL fIsSameInstance = FALSE;
+    BOOL fIsSameInstance = (pBinderA == pBinderB);
     
-    if ((pBinderA != NULL) && (pBinderB != NULL))
+    if (!fIsSameInstance && (pBinderA != NULL) && (pBinderB != NULL))
     {
         // Get the ID for the first binder
         UINT_PTR binderIDA = 0, binderIDB = 0;
