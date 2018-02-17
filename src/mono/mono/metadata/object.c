@@ -3939,8 +3939,9 @@ mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *
  * \p buf.  On failure returns NULL and sets \p error.
  */
 MonoObject*
-mono_nullable_box (guint8 *buf, MonoClass *klass, MonoError *error)
+mono_nullable_box (gpointer vbuf, MonoClass *klass, MonoError *error)
 {
+	guint8 *buf = (guint8*)vbuf;
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
@@ -3963,6 +3964,13 @@ mono_nullable_box (guint8 *buf, MonoClass *klass, MonoError *error)
 	}
 	else
 		return NULL;
+}
+
+MonoObjectHandle
+mono_nullable_box_handle (gpointer buf, MonoClass *klass, MonoError *error)
+{
+	// FIXMEcoop gpointer buf needs more attention
+	return MONO_HANDLE_NEW (MonoObject, mono_nullable_box (buf, klass, error));
 }
 
 /**
@@ -5339,6 +5347,14 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 }
 
+// FIXME these will move to header soon
+static MonoObjectHandle
+mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error);
+
+// FIXME these will move to header soon
+static MonoObjectHandle
+mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error);
+
 /**
  * mono_object_new_common_tail:
  *
@@ -5454,11 +5470,58 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
 }
 
 /**
+ * mono_object_new_handle:
+ * \param klass the class of the object that we want to create
+ * \param error set on error
+ * \returns a newly created object whose definition is
+ * looked up using \p klass.   This will not invoke any constructors,
+ * so the consumer of this routine has to invoke any constructors on
+ * its own to initialize the object.
+ *
+ * It returns NULL on failure and sets \p error.
+ */
+MonoObjectHandle
+mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
+
+	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+
+	return mono_object_new_by_vtable (vtable, error);
+}
+
+/**
  * mono_object_new_pinned:
  *
  *   Same as mono_object_new, but the returned object will be pinned.
  * For SGEN, these objects will only be freed at appdomain unload.
  */
+static MonoObjectHandle
+mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	error_init (error);
+
+	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
+	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+
+	g_assert (vtable->klass == klass);
+
+	int const size = mono_class_instance_size (klass);
+
+	MonoObjectHandle o = mono_gc_alloc_handle_pinned_obj (vtable, size);
+
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o)))
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+	else if (G_UNLIKELY (klass->has_finalize))
+		mono_object_register_finalizer_handle (o);
+
+	return o;
+}
+
 MonoObject *
 mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
@@ -5536,6 +5599,49 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 	return mono_object_new_alloc_specific_checked (vtable, error);
 }
 
+static MonoObjectHandle
+mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
+
+	error_init (error);
+
+	/* check for is_com_object for COM Interop */
+	if (mono_vtable_is_remote (vtable) || mono_class_is_com_object (vtable->klass))
+	{
+		MonoMethod *im = vtable->domain->create_proxy_for_type_method;
+
+		if (im == NULL) {
+			MonoClass *klass = mono_class_get_activation_services_class ();
+
+			if (!klass->inited)
+				mono_class_init (klass);
+
+			im = mono_class_get_method_from_name (klass, "CreateProxyForType", 1);
+			if (!im) {
+				mono_error_set_not_supported (error, "Linked away.");
+				return MONO_HANDLE_NEW (MonoObject, NULL);
+			}
+			vtable->domain->create_proxy_for_type_method = im;
+		}
+
+		// FIXMEcoop
+		gpointer pa[ ] = { mono_type_get_object_checked (mono_domain_get (), &vtable->klass->byval_arg, error) };
+		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+
+		// FIXMEcoop
+		o = MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (im, NULL, pa, error));
+		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+
+		if (!MONO_HANDLE_IS_NULL (o))
+			return o;
+	}
+
+	return mono_object_new_alloc_by_vtable (vtable, error);
+}
+
 MonoObject *
 ves_icall_object_new_specific (MonoVTable *vtable)
 {
@@ -5596,6 +5702,30 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 	return mono_object_new_common_tail (o, vtable->klass, error);
 }
 
+static MonoObjectHandle
+mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	error_init (error);
+
+	MonoClass* const klass = vtable->klass;
+	int const size = klass->instance_size;
+
+	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
+
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL(o))) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+		return o;
+	}
+	if (G_UNLIKELY (klass->has_finalize))
+		mono_object_register_finalizer_handle (o);
+	if (G_UNLIKELY (klass->has_weak_fields))
+		mono_gc_register_object_with_weak_fields (o);
+
+	return o;
+}
+
 /**
  * mono_object_new_fast:
  * \param vtable virtual table for the object.
@@ -5615,32 +5745,6 @@ MonoObject*
 mono_object_new_fast (MonoVTable *vtable)
 {
 	ERROR_DECL (error);
-	MonoObject *o = mono_object_new_fast_checked (vtable, error);
-	mono_error_cleanup (error);
-
-	return o;
-}
-
-/**
- * mono_object_new_fast_checked:
- * \param vtable virtual table for the object.
- * \param error holds the error return value.
- *
- * This function allocates a new \c MonoObject with the type derived
- * from the \p vtable information. The returned object is not tracked
- * for finalization.   If your object implements a finalizer, you should
- * use \c mono_object_new_alloc_specific_checked instead.
- *
- * If there is not enough memory, the \p error parameter will be set
- * and will contain a user-visible message with the amount of bytes
- * that were requested.
- *
- * \returns the allocated object, or NULL if there is not enough memory
- */
-MonoObject*
-mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoObject *o;
 
@@ -5652,6 +5756,8 @@ mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error)
 
 	if (G_UNLIKELY (!o))
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
+
+	mono_error_cleanup (error);
 
 	return o;
 }
@@ -5666,6 +5772,26 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 	o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
 
 	return mono_object_new_common_tail (o, vtable->klass, error);
+}
+
+MonoObjectHandle
+mono_object_new_handle_mature (MonoVTable *vtable, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	error_init (error);
+
+	MonoClass* const klass = vtable->klass;
+	int const size = klass->instance_size;
+
+	MonoObjectHandle o = mono_gc_alloc_handle_mature (vtable, size);
+
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o)))
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+	else if (G_UNLIKELY (klass->has_finalize))
+		mono_object_register_finalizer_handle (o);
+
+	return o;
 }
 
 /**
@@ -5730,6 +5856,37 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error)
 		mono_gc_wbarrier_object_copy (o, obj);
 
 	return mono_object_new_common_tail (o, obj->vtable->klass, error);
+}
+
+MonoObjectHandle
+mono_object_clone_handle (MonoObjectHandle obj, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	error_init (error);
+
+	MonoVTable* const vtable = MONO_HANDLE_GETVAL (obj, vtable);
+	MonoClass* const klass = vtable->klass;
+
+	if (klass->rank)
+		return (MonoObjectHandle)mono_array_clone_in_domain (MONO_HANDLE_DOMAIN (obj), (MonoArrayHandle)obj, error);
+
+	int const size = klass->instance_size;
+
+	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
+
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o))) {
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+		return o;
+	}
+
+	/* If the object doesn't contain references this will do a simple memmove. */
+	mono_gc_wbarrier_object_copy_handle (o, obj);
+
+	if (klass->has_finalize)
+		mono_object_register_finalizer (o);
+
+	return o;
 }
 
 /**
@@ -6500,6 +6657,72 @@ mono_value_box (MonoDomain *domain, MonoClass *klass, gpointer value)
 	MonoObject *result = mono_value_box_checked (domain, klass, value, error);
 	mono_error_cleanup (error);
 	return result;
+}
+
+/**
+ * mono_value_box_checked:
+ * \param domain the domain of the new object
+ * \param class the class of the value
+ * \param value a pointer to the unboxed data
+ * \param error set on error
+ * \returns A newly created object which contains \p value. On failure
+ * returns NULL and sets \p error.
+ */
+MonoObjectHandle
+mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
+{
+	// FIXMEcoop gpointer value needs more attention
+	MONO_REQ_GC_UNSAFE_MODE;
+	MonoObject *res;
+	int size;
+	MonoVTable *vtable;
+
+	error_init (error);
+
+	g_assert (klass->valuetype);
+	if (mono_class_is_nullable (klass))
+		return mono_nullable_box_handle (value, klass, error);
+
+	vtable = mono_class_vtable_checked (domain, klass, error);
+	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+
+	size = mono_class_instance_size (klass);
+
+	MonoObjectHandle res_handle = mono_object_new_alloc_by_vtable (vtable, error);
+	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+	res = MONO_HANDLE_RAW (res_handle);
+
+	size = size - sizeof (MonoObject);
+
+	if (mono_gc_is_moving ()) {
+		g_assert (size == mono_class_value_size (klass, NULL));
+		mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, klass);
+	} else {
+#if NO_UNALIGNED_ACCESS
+		mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+#else
+		switch (size) {
+		case 1:
+			*((guint8 *) res + sizeof (MonoObject)) = *(guint8 *) value;
+			break;
+		case 2:
+			*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint16 *) value;
+			break;
+		case 4:
+			*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *) value;
+			break;
+		case 8:
+			*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
+			break;
+		default:
+			mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+		}
+#endif
+	}
+	if (klass->has_finalize)
+		mono_object_register_finalizer (res);
+
+	return res_handle;
 }
 
 /**
