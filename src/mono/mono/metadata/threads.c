@@ -4506,16 +4506,16 @@ static void CALLBACK dummy_apc (ULONG_PTR param)
 static MonoException*
 mono_thread_execute_interruption (void)
 {
+	MonoException *exc = NULL;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoThread *sys_thread = mono_thread_current ();
 
 	LOCK_THREAD (thread);
+	gboolean unlock = TRUE;
 
 	/* MonoThread::interruption_requested can only be changed with atomics */
-	if (!mono_thread_clear_interruption_requested (thread)) {
-		UNLOCK_THREAD (thread);
-		return NULL;
-	}
+	if (!mono_thread_clear_interruption_requested (thread))
+		goto exit;
 
 	/* this will consume pending APC calls */
 #ifdef HOST_WIN32
@@ -4529,39 +4529,30 @@ mono_thread_execute_interruption (void)
 
 	/* If there's a pending exception and an AbortRequested, the pending exception takes precedence */
 	if (sys_thread->pending_exception) {
-		MonoException *exc;
-
 		exc = sys_thread->pending_exception;
 		sys_thread->pending_exception = NULL;
-
-		UNLOCK_THREAD (thread);
-		return exc;
-	} else if (thread->state & (ThreadState_AbortRequested)) {
-		UNLOCK_THREAD (thread);
-		g_assert (sys_thread->pending_exception == NULL);
-		if (thread->abort_exc == NULL) {
-			/* 
-			 * This might be racy, but it has to be called outside the lock
-			 * since it calls managed code.
-			 */
-			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
+	} else if (thread->state & ThreadState_AbortRequested) {
+		exc = thread->abort_exc;
+		if (exc == NULL) {
+			exc = mono_get_exception_thread_abort ();
+			MONO_OBJECT_SETREF (thread, abort_exc, exc);
 		}
-		return thread->abort_exc;
-	} else if (thread->state & (ThreadState_SuspendRequested)) {
+	} else if (thread->state & ThreadState_SuspendRequested) {
 		/* calls UNLOCK_THREAD (thread) */
 		self_suspend_internal ();
-		return NULL;
+		unlock = FALSE;
 	} else if (thread->thread_interrupt_requested) {
-
 		thread->thread_interrupt_requested = FALSE;
 		UNLOCK_THREAD (thread);
-		
-		return(mono_get_exception_thread_interrupted ());
+		unlock = FALSE;
+		exc = mono_get_exception_thread_interrupted ();
 	}
+
+exit:
+	if (unlock)
+		UNLOCK_THREAD (thread);
 	
-	UNLOCK_THREAD (thread);
-	
-	return NULL;
+	return exc;
 }
 
 /*
