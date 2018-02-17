@@ -161,7 +161,6 @@ namespace System.ServiceProcess.Tests
                     catch (InvalidOperationException)
                     {
                         // Already stopped
-                        ServiceName = null;
                         return;
                     }
 
@@ -183,10 +182,10 @@ namespace System.ServiceProcess.Tests
                     ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE);
 
                 if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception($"Could not find service {ServiceName}");
+                    throw new Win32Exception($"Could not find service '{ServiceName}'");
 
                 if (!Interop.Advapi32.DeleteService(serviceHandle))
-                    throw new Win32Exception($"Could not delete service {ServiceName}");
+                    throw new Win32Exception($"Could not delete service '{ServiceName}'");
             }
             finally
             {
