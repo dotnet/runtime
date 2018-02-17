@@ -169,14 +169,14 @@ namespace System.Security.Cryptography
                 return Interop.AppleCrypto.RsaEncrypt(GetKeys().PublicKey, data, padding);
             }
 
-            public override bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
                 if (padding == null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
 
-                return Interop.AppleCrypto.TryRsaEncrypt(GetKeys().PublicKey, source, destination, padding, out bytesWritten);
+                return Interop.AppleCrypto.TryRsaEncrypt(GetKeys().PublicKey, data, destination, padding, out bytesWritten);
             }
 
             public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
@@ -200,7 +200,7 @@ namespace System.Security.Cryptography
                 return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
             }
 
-            public override bool TryDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+            public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
                 if (padding == null)
                 {
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
 
-                return Interop.AppleCrypto.TryRsaDecrypt(keys.PrivateKey, source, destination, padding, out bytesWritten);
+                return Interop.AppleCrypto.TryRsaDecrypt(keys.PrivateKey, data, destination, padding, out bytesWritten);
             }
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography
                     palAlgId);
             }
 
-            public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+            public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
             {
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 {
@@ -280,19 +280,19 @@ namespace System.Security.Cryptography
                 }
 
                 Interop.AppleCrypto.PAL_HashAlgorithm palAlgId = PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
-                if (source.Length != expectedSize)
+                if (hash.Length != expectedSize)
                 {
                     // Windows: NTE_BAD_DATA ("Bad Data.")
                     // OpenSSL: RSA_R_INVALID_MESSAGE_LENGTH ("invalid message length")
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_BadHashSize_ForAlgorithm,
-                            source.Length,
+                            hash.Length,
                             expectedSize,
                             hashAlgorithm.Name));
                 }
 
-                return Interop.AppleCrypto.TryGenerateSignature(keys.PrivateKey, source, destination, palAlgId, out bytesWritten);
+                return Interop.AppleCrypto.TryGenerateSignature(keys.PrivateKey, hash, destination, palAlgId, out bytesWritten);
             }
 
             public override bool VerifyHash(
@@ -338,8 +338,8 @@ namespace System.Security.Cryptography
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
                 AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
 
-            protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {
