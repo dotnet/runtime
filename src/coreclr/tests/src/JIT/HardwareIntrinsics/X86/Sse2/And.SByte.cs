@@ -28,20 +28,26 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates basic functionality works, using Load
-                test.RunBasicScenario_Load();
+                if (Sse2.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
 
-                // Validates basic functionality works, using LoadAligned
-                test.RunBasicScenario_LoadAligned();
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Load
-                test.RunReflectionScenario_Load();
+                if (Sse2.IsSupported)
+                {
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
 
-                // Validates calling via reflection works, using LoadAligned
-                test.RunReflectionScenario_LoadAligned();
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -49,11 +55,14 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing a local works, using Load
-                test.RunLclVarScenario_Load();
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
 
-                // Validates passing a local works, using LoadAligned
-                test.RunLclVarScenario_LoadAligned();
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -77,10 +86,13 @@ namespace JIT.HardwareIntrinsics.X86
     public sealed unsafe class SimpleBinaryOpTest__AndSByte
     {
         private const int VectorSize = 16;
-        private const int ElementCount = VectorSize / sizeof(SByte);
 
-        private static SByte[] _data1 = new SByte[ElementCount];
-        private static SByte[] _data2 = new SByte[ElementCount];
+        private const int Op1ElementCount = VectorSize / sizeof(SByte);
+        private const int Op2ElementCount = VectorSize / sizeof(SByte);
+        private const int RetElementCount = VectorSize / sizeof(SByte);
+
+        private static SByte[] _data1 = new SByte[Op1ElementCount];
+        private static SByte[] _data2 = new SByte[Op2ElementCount];
 
         private static Vector128<SByte> _clsVar1;
         private static Vector128<SByte> _clsVar2;
@@ -88,15 +100,16 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector128<SByte> _fld1;
         private Vector128<SByte> _fld2;
 
-        private SimpleBinaryOpTest__DataTable<SByte> _dataTable;
+        private SimpleBinaryOpTest__DataTable<SByte, SByte, SByte> _dataTable;
 
         static SimpleBinaryOpTest__AndSByte()
         {
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
         }
 
         public SimpleBinaryOpTest__AndSByte()
@@ -105,12 +118,14 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            _dataTable = new SimpleBinaryOpTest__DataTable<SByte>(_data1, _data2, new SByte[ElementCount], VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            _dataTable = new SimpleBinaryOpTest__DataTable<SByte, SByte, SByte>(_data1, _data2, new SByte[RetElementCount], VectorSize);
         }
 
         public bool IsSupported => Sse2.IsSupported;
@@ -260,9 +275,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Vector128<SByte> left, Vector128<SByte> right, void* result, [CallerMemberName] string method = "")
         {
-            SByte[] inArray1 = new SByte[ElementCount];
-            SByte[] inArray2 = new SByte[ElementCount];
-            SByte[] outArray = new SByte[ElementCount];
+            SByte[] inArray1 = new SByte[Op1ElementCount];
+            SByte[] inArray2 = new SByte[Op2ElementCount];
+            SByte[] outArray = new SByte[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
@@ -273,9 +288,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(void* left, void* right, void* result, [CallerMemberName] string method = "")
         {
-            SByte[] inArray1 = new SByte[ElementCount];
-            SByte[] inArray2 = new SByte[ElementCount];
-            SByte[] outArray = new SByte[ElementCount];
+            SByte[] inArray1 = new SByte[Op1ElementCount];
+            SByte[] inArray2 = new SByte[Op2ElementCount];
+            SByte[] outArray = new SByte[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
@@ -292,7 +307,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
             else
             {
-                for (var i = 1; i < left.Length; i++)
+                for (var i = 1; i < RetElementCount; i++)
                 {
                     if ((sbyte)(left[i] & right[i]) != result[i])
                     {
@@ -304,7 +319,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Sse2)}.{nameof(Sse2.And)}<SByte>: {method} failed:");
+                Console.WriteLine($"{nameof(Sse2)}.{nameof(Sse2.And)}<SByte>(Vector128<SByte>, Vector128<SByte>): {method} failed:");
                 Console.WriteLine($"    left: ({string.Join(", ", left)})");
                 Console.WriteLine($"   right: ({string.Join(", ", right)})");
                 Console.WriteLine($"  result: ({string.Join(", ", result)})");

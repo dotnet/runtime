@@ -10,7 +10,10 @@ using System.Runtime.Intrinsics.X86;
 
 namespace JIT.HardwareIntrinsics.X86
 {
-    public unsafe struct SimpleBinaryOpTest__DataTable<T> : IDisposable where T : struct
+    public unsafe struct SimpleBinaryOpTest__DataTable<TResult, TOp1, TOp2> : IDisposable
+        where TResult : struct
+        where TOp1 : struct
+        where TOp2 : struct
     {
         private byte[] inArray1;
         private byte[] inArray2;
@@ -22,7 +25,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private byte simdSize;
 
-        public SimpleBinaryOpTest__DataTable(T[] inArray1, T[] inArray2, T[] outArray, int simdSize)
+        public SimpleBinaryOpTest__DataTable(TOp1[] inArray1, TOp2[] inArray2, TResult[] outArray, int simdSize)
         {
             this.inArray1 = new byte[simdSize * 2];
             this.inArray2 = new byte[simdSize * 2];
@@ -34,8 +37,8 @@ namespace JIT.HardwareIntrinsics.X86
 
             this.simdSize = unchecked((byte)(simdSize));
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<T, byte>(ref inArray1[0]), this.simdSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<T, byte>(ref inArray2[0]), this.simdSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<TOp1, byte>(ref inArray1[0]), this.simdSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<TOp2, byte>(ref inArray2[0]), this.simdSize);
         }
 
         public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), simdSize);

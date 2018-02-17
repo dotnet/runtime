@@ -38,6 +38,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["AndNot.UInt64"] = AndNotUInt64,
                 ["Average.Byte"] = AverageByte,
                 ["Average.UInt16"] = AverageUInt16,
+                ["BlendVariable.Byte"] = BlendVariableByte,
+                ["BlendVariable.SByte"] = BlendVariableSByte,
                 ["CompareEqual.Byte"] = CompareEqualByte,
                 ["CompareEqual.Int16"] = CompareEqualInt16,
                 ["CompareEqual.Int32"] = CompareEqualInt32,

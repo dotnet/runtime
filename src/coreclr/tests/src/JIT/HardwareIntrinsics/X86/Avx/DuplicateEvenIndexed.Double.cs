@@ -28,20 +28,26 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates basic functionality works, using Load
-                test.RunBasicScenario_Load();
+                if (Avx.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
 
-                // Validates basic functionality works, using LoadAligned
-                test.RunBasicScenario_LoadAligned();
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Load
-                test.RunReflectionScenario_Load();
+                if (Avx.IsSupported)
+                {
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
 
-                // Validates calling via reflection works, using LoadAligned
-                test.RunReflectionScenario_LoadAligned();
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -49,11 +55,14 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing a local works, using Load
-                test.RunLclVarScenario_Load();
+                if (Avx.IsSupported)
+                {
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
 
-                // Validates passing a local works, using LoadAligned
-                test.RunLclVarScenario_LoadAligned();
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -77,21 +86,23 @@ namespace JIT.HardwareIntrinsics.X86
     public sealed unsafe class SimpleUnaryOpTest__DuplicateEvenIndexedDouble
     {
         private const int VectorSize = 32;
-        private const int ElementCount = VectorSize / sizeof(Double);
 
-        private static Double[] _data = new Double[ElementCount];
+        private const int Op1ElementCount = VectorSize / sizeof(Double);
+        private const int RetElementCount = VectorSize / sizeof(Double);
+
+        private static Double[] _data = new Double[Op1ElementCount];
 
         private static Vector256<Double> _clsVar;
 
         private Vector256<Double> _fld;
 
-        private SimpleUnaryOpTest__DataTable<Double> _dataTable;
+        private SimpleUnaryOpTest__DataTable<Double, Double> _dataTable;
 
         static SimpleUnaryOpTest__DuplicateEvenIndexedDouble()
         {
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Double>, byte>(ref _clsVar), ref Unsafe.As<Double, byte>(ref _data[0]), VectorSize);
         }
 
@@ -101,11 +112,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Double>, byte>(ref _fld), ref Unsafe.As<Double, byte>(ref _data[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
-            _dataTable = new SimpleUnaryOpTest__DataTable<Double>(_data, new Double[ElementCount], VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (double)(random.NextDouble()); }
+            _dataTable = new SimpleUnaryOpTest__DataTable<Double, Double>(_data, new Double[RetElementCount], VectorSize);
         }
 
         public bool IsSupported => Avx.IsSupported;
@@ -245,8 +256,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Vector256<Double> firstOp, void* result, [CallerMemberName] string method = "")
         {
-            Double[] inArray = new Double[ElementCount];
-            Double[] outArray = new Double[ElementCount];
+            Double[] inArray = new Double[Op1ElementCount];
+            Double[] outArray = new Double[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
@@ -256,8 +267,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
         {
-            Double[] inArray = new Double[ElementCount];
-            Double[] outArray = new Double[ElementCount];
+            Double[] inArray = new Double[Op1ElementCount];
+            Double[] outArray = new Double[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
@@ -273,7 +284,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
             else
             {
-                for (var i = 1; i < firstOp.Length; i++)
+                for (var i = 1; i < RetElementCount; i++)
                 {
                     if ((i % 2 == 0) ? (BitConverter.DoubleToInt64Bits(firstOp[i]) != BitConverter.DoubleToInt64Bits(result[i])) : (BitConverter.DoubleToInt64Bits(firstOp[i - 1]) != BitConverter.DoubleToInt64Bits(result[i])))
                     {
@@ -285,9 +296,9 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Avx)}.{nameof(Avx.DuplicateEvenIndexed)}<Double>: {method} failed:");
-                Console.WriteLine($"    firstOp: ({string.Join(", ", firstOp)})");
-                Console.WriteLine($"  result: ({string.Join(", ", result)})");
+                Console.WriteLine($"{nameof(Avx)}.{nameof(Avx.DuplicateEvenIndexed)}<Double>(Vector256<Double>): {method} failed:");
+                Console.WriteLine($"  firstOp: ({string.Join(", ", firstOp)})");
+                Console.WriteLine($"   result: ({string.Join(", ", result)})");
                 Console.WriteLine();
             }
         }

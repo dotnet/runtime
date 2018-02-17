@@ -28,20 +28,26 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates basic functionality works, using Load
-                test.RunBasicScenario_Load();
+                if (Avx.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
 
-                // Validates basic functionality works, using LoadAligned
-                test.RunBasicScenario_LoadAligned();
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Load
-                test.RunReflectionScenario_Load();
+                if (Avx.IsSupported)
+                {
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
 
-                // Validates calling via reflection works, using LoadAligned
-                test.RunReflectionScenario_LoadAligned();
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -49,11 +55,14 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing a local works, using Load
-                test.RunLclVarScenario_Load();
+                if (Avx.IsSupported)
+                {
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
 
-                // Validates passing a local works, using LoadAligned
-                test.RunLclVarScenario_LoadAligned();
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -77,11 +86,15 @@ namespace JIT.HardwareIntrinsics.X86
     public sealed unsafe class SimpleTernaryOpTest__BlendVariableSByte
     {
         private const int VectorSize = 32;
-        private const int ElementCount = VectorSize / sizeof(SByte);
 
-        private static SByte[] _data1 = new SByte[ElementCount];
-        private static SByte[] _data2 = new SByte[ElementCount];
-        private static SByte[] _data3 = new SByte[ElementCount];
+        private const int Op1ElementCount = VectorSize / sizeof(SByte);
+        private const int Op2ElementCount = VectorSize / sizeof(SByte);
+        private const int Op3ElementCount = VectorSize / sizeof(SByte);
+        private const int RetElementCount = VectorSize / sizeof(SByte);
+
+        private static SByte[] _data1 = new SByte[Op1ElementCount];
+        private static SByte[] _data2 = new SByte[Op2ElementCount];
+        private static SByte[] _data3 = new SByte[Op3ElementCount];
 
         private static Vector256<SByte> _clsVar1;
         private static Vector256<SByte> _clsVar2;
@@ -91,15 +104,17 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector256<SByte> _fld2;
         private Vector256<SByte> _fld3;
 
-        private SimpleTernaryOpTest__DataTable<SByte> _dataTable;
+        private SimpleTernaryOpTest__DataTable<SByte, SByte, SByte, SByte> _dataTable;
 
         static SimpleTernaryOpTest__BlendVariableSByte()
         {
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
+            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar3), ref Unsafe.As<SByte, byte>(ref _data3[0]), VectorSize);
         }
 
@@ -109,13 +124,17 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
+            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _fld3), ref Unsafe.As<SByte, byte>(ref _data3[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
-            _dataTable = new SimpleTernaryOpTest__DataTable<SByte>(_data1, _data2, _data3, new SByte[ElementCount], VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
+            for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
+            _dataTable = new SimpleTernaryOpTest__DataTable<SByte, SByte, SByte, SByte>(_data1, _data2, _data3, new SByte[RetElementCount], VectorSize);
         }
 
         public bool IsSupported => Avx2.IsSupported;
@@ -275,10 +294,10 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Vector256<SByte> firstOp, Vector256<SByte> secondOp, Vector256<SByte> thirdOp, void* result, [CallerMemberName] string method = "")
         {
-            SByte[] inArray1 = new SByte[ElementCount];
-            SByte[] inArray2 = new SByte[ElementCount];
-            SByte[] inArray3 = new SByte[ElementCount];
-            SByte[] outArray = new SByte[ElementCount];
+            SByte[] inArray1 = new SByte[Op1ElementCount];
+            SByte[] inArray2 = new SByte[Op2ElementCount];
+            SByte[] inArray3 = new SByte[Op3ElementCount];
+            SByte[] outArray = new SByte[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), firstOp);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), secondOp);
@@ -290,10 +309,10 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(void* firstOp, void* secondOp, void* thirdOp, void* result, [CallerMemberName] string method = "")
         {
-            SByte[] inArray1 = new SByte[ElementCount];
-            SByte[] inArray2 = new SByte[ElementCount];
-            SByte[] inArray3 = new SByte[ElementCount];
-            SByte[] outArray = new SByte[ElementCount];
+            SByte[] inArray1 = new SByte[Op1ElementCount];
+            SByte[] inArray2 = new SByte[Op2ElementCount];
+            SByte[] inArray3 = new SByte[Op3ElementCount];
+            SByte[] outArray = new SByte[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(secondOp), VectorSize);
@@ -311,7 +330,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
             else
             {
-                for (var i = 1; i < firstOp.Length; i++)
+                for (var i = 1; i < RetElementCount; i++)
                 {
                     if (((thirdOp[i] >> 7) & 1) == 1 ? secondOp[i] != result[i] : firstOp[i] != result[i])
                     {
@@ -323,11 +342,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Avx2)}.{nameof(Avx2.BlendVariable)}<SByte>: {method} failed:");
-                Console.WriteLine($"    firstOp: ({string.Join(", ", firstOp)})");
-                Console.WriteLine($"   secondOp: ({string.Join(", ", secondOp)})");
+                Console.WriteLine($"{nameof(Avx2)}.{nameof(Avx2.BlendVariable)}<SByte>(Vector256<SByte>, Vector256<SByte>, Vector256<SByte>): {method} failed:");
+                Console.WriteLine($"   firstOp: ({string.Join(", ", firstOp)})");
+                Console.WriteLine($"  secondOp: ({string.Join(", ", secondOp)})");
                 Console.WriteLine($"   thirdOp: ({string.Join(", ", thirdOp)})");
-                Console.WriteLine($"  result: ({string.Join(", ", result)})");
+                Console.WriteLine($"    result: ({string.Join(", ", result)})");
                 Console.WriteLine();
             }
         }
