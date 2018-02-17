@@ -62,6 +62,7 @@
     <Compile Include="Enumeration\ErrorHandlingTests.netcoreapp.cs" />
     <Compile Include="Enumeration\IncludePredicateTests.netcoreapp.cs" />
     <Compile Include="Enumeration\PatternTransformTests.netcoreapp.cs" />
+    <Compile Include="Enumeration\RootTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
