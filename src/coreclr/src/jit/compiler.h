@@ -5772,6 +5772,7 @@ protected:
     static fgWalkPreFn  optHasNonCSEChild;
 
     static fgWalkPreFn optUnmarkCSEs;
+    static fgWalkPreFn optHasCSEdefWithSideeffect;
 
     static int __cdecl optCSEcostCmpEx(const void* op1, const void* op2);
     static int __cdecl optCSEcostCmpSz(const void* op1, const void* op2);
