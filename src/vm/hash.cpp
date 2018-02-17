@@ -878,9 +878,18 @@ void HashMap::Rehash()
     _ASSERTE (OwnLock());
 #endif
 
-    DWORD cbNewSize = g_rgPrimes[m_iPrimeIndex = NewSize()];
+    UPTR newPrimeIndex = NewSize();
 
-    ASSERT(m_iPrimeIndex < 70);
+    ASSERT(newPrimeIndex < g_rgNumPrimes);
+
+    if ((m_iPrimeIndex == newPrimeIndex) && (m_cbDeletes == 0))
+    {
+        return;
+    }
+
+    m_iPrimeIndex = newPrimeIndex;
+
+    DWORD cbNewSize = g_rgPrimes[m_iPrimeIndex];
 
     Bucket* rgBuckets = Buckets();
     UPTR cbCurrSize =   GetSize(rgBuckets);
