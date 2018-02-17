@@ -866,6 +866,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("", "#redirFragment", "#redirFragment", true)]
         [InlineData("#origFragment", "#redirFragment", "#redirFragment", false)]
         [InlineData("#origFragment", "#redirFragment", "#redirFragment", true)]
+        [ActiveIssue(27217)]
         public async Task GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate(
             string origFragment, string redirFragment, string expectedFragment, bool useRelativeRedirect)
         {
