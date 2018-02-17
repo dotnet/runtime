@@ -50,8 +50,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
             CngCommon.HashData(data, offset, count, hashAlgorithm);
 
-        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            CngCommon.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+            CngCommon.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
             CngCommon.HashData(data, hashAlgorithm);
