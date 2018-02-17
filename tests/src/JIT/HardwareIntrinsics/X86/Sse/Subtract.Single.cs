@@ -28,20 +28,26 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates basic functionality works, using Load
-                test.RunBasicScenario_Load();
+                if (Sse.IsSupported)
+                {
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
 
-                // Validates basic functionality works, using LoadAligned
-                test.RunBasicScenario_LoadAligned();
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Load
-                test.RunReflectionScenario_Load();
+                if (Sse.IsSupported)
+                {
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
 
-                // Validates calling via reflection works, using LoadAligned
-                test.RunReflectionScenario_LoadAligned();
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -49,11 +55,14 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing a local works, using Load
-                test.RunLclVarScenario_Load();
+                if (Sse.IsSupported)
+                {
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
 
-                // Validates passing a local works, using LoadAligned
-                test.RunLclVarScenario_LoadAligned();
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -77,10 +86,13 @@ namespace JIT.HardwareIntrinsics.X86
     public sealed unsafe class SimpleBinaryOpTest__SubtractSingle
     {
         private const int VectorSize = 16;
-        private const int ElementCount = VectorSize / sizeof(Single);
 
-        private static Single[] _data1 = new Single[ElementCount];
-        private static Single[] _data2 = new Single[ElementCount];
+        private const int Op1ElementCount = VectorSize / sizeof(Single);
+        private const int Op2ElementCount = VectorSize / sizeof(Single);
+        private const int RetElementCount = VectorSize / sizeof(Single);
+
+        private static Single[] _data1 = new Single[Op1ElementCount];
+        private static Single[] _data2 = new Single[Op2ElementCount];
 
         private static Vector128<Single> _clsVar1;
         private static Vector128<Single> _clsVar2;
@@ -88,15 +100,16 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector128<Single> _fld1;
         private Vector128<Single> _fld2;
 
-        private SimpleBinaryOpTest__DataTable<Single> _dataTable;
+        private SimpleBinaryOpTest__DataTable<Single, Single, Single> _dataTable;
 
         static SimpleBinaryOpTest__SubtractSingle()
         {
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data2[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (float)(random.NextDouble()); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar2), ref Unsafe.As<Single, byte>(ref _data2[0]), VectorSize);
         }
 
         public SimpleBinaryOpTest__SubtractSingle()
@@ -105,12 +118,14 @@ namespace JIT.HardwareIntrinsics.X86
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); }
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (float)(random.NextDouble()); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld2), ref Unsafe.As<Single, byte>(ref _data2[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); _data2[i] = (float)(random.NextDouble()); }
-            _dataTable = new SimpleBinaryOpTest__DataTable<Single>(_data1, _data2, new Single[ElementCount], VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (float)(random.NextDouble()); }
+            for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (float)(random.NextDouble()); }
+            _dataTable = new SimpleBinaryOpTest__DataTable<Single, Single, Single>(_data1, _data2, new Single[RetElementCount], VectorSize);
         }
 
         public bool IsSupported => Sse.IsSupported;
@@ -260,9 +275,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Vector128<Single> left, Vector128<Single> right, void* result, [CallerMemberName] string method = "")
         {
-            Single[] inArray1 = new Single[ElementCount];
-            Single[] inArray2 = new Single[ElementCount];
-            Single[] outArray = new Single[ElementCount];
+            Single[] inArray1 = new Single[Op1ElementCount];
+            Single[] inArray2 = new Single[Op2ElementCount];
+            Single[] outArray = new Single[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
@@ -273,9 +288,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(void* left, void* right, void* result, [CallerMemberName] string method = "")
         {
-            Single[] inArray1 = new Single[ElementCount];
-            Single[] inArray2 = new Single[ElementCount];
-            Single[] outArray = new Single[ElementCount];
+            Single[] inArray1 = new Single[Op1ElementCount];
+            Single[] inArray2 = new Single[Op2ElementCount];
+            Single[] outArray = new Single[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
@@ -292,7 +307,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
             else
             {
-                for (var i = 1; i < left.Length; i++)
+                for (var i = 1; i < RetElementCount; i++)
                 {
                     if (BitConverter.SingleToInt32Bits(left[i] - right[i]) != BitConverter.SingleToInt32Bits(result[i]))
                     {
@@ -304,7 +319,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                Console.WriteLine($"{nameof(Sse)}.{nameof(Sse.Subtract)}<Single>: {method} failed:");
+                Console.WriteLine($"{nameof(Sse)}.{nameof(Sse.Subtract)}<Single>(Vector128<Single>, Vector128<Single>): {method} failed:");
                 Console.WriteLine($"    left: ({string.Join(", ", left)})");
                 Console.WriteLine($"   right: ({string.Join(", ", right)})");
                 Console.WriteLine($"  result: ({string.Join(", ", result)})");

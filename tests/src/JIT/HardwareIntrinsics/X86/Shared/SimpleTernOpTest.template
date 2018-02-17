@@ -19,29 +19,35 @@ namespace JIT.HardwareIntrinsics.X86
 {{
     public static partial class Program
     {{
-        private static void {2}{3}()
+        private static void {2}{4}()
         {{
-            var test = new SimpleTernaryOpTest__{2}{3}();
+            var test = new SimpleTernaryOpTest__{2}{4}();
 
             if (test.IsSupported)
             {{
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates basic functionality works, using Load
-                test.RunBasicScenario_Load();
+                if ({1}.IsSupported)
+                {{
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
 
-                // Validates basic functionality works, using LoadAligned
-                test.RunBasicScenario_LoadAligned();
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }}
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Load
-                test.RunReflectionScenario_Load();
+                if ({1}.IsSupported)
+                {{
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
 
-                // Validates calling via reflection works, using LoadAligned
-                test.RunReflectionScenario_LoadAligned();
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }}
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -49,11 +55,14 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing a local works, using Load
-                test.RunLclVarScenario_Load();
+                if ({1}.IsSupported)
+                {{
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
 
-                // Validates passing a local works, using LoadAligned
-                test.RunLclVarScenario_LoadAligned();
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }}
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -74,48 +83,58 @@ namespace JIT.HardwareIntrinsics.X86
         }}
     }}
 
-    public sealed unsafe class SimpleTernaryOpTest__{2}{3}
+    public sealed unsafe class SimpleTernaryOpTest__{2}{4}
     {{
-        private const int VectorSize = {5};
-        private const int ElementCount = VectorSize / sizeof({3});
+        private const int VectorSize = {11};
 
-        private static {3}[] _data1 = new {3}[ElementCount];
-        private static {3}[] _data2 = new {3}[ElementCount];
-        private static {3}[] _data3 = new {3}[ElementCount];
+        private const int Op1ElementCount = VectorSize / sizeof({6});
+        private const int Op2ElementCount = VectorSize / sizeof({8});
+        private const int Op3ElementCount = VectorSize / sizeof({10});
+        private const int RetElementCount = VectorSize / sizeof({4});
 
-        private static {4}<{3}> _clsVar1;
-        private static {4}<{3}> _clsVar2;
-        private static {4}<{3}> _clsVar3;
+        private static {6}[] _data1 = new {6}[Op1ElementCount];
+        private static {8}[] _data2 = new {8}[Op2ElementCount];
+        private static {10}[] _data3 = new {10}[Op3ElementCount];
 
-        private {4}<{3}> _fld1;
-        private {4}<{3}> _fld2;
-        private {4}<{3}> _fld3;
+        private static {5}<{6}> _clsVar1;
+        private static {7}<{8}> _clsVar2;
+        private static {9}<{10}> _clsVar3;
 
-        private SimpleTernaryOpTest__DataTable<{3}> _dataTable;
+        private {5}<{6}> _fld1;
+        private {7}<{8}> _fld2;
+        private {9}<{10}> _fld3;
 
-        static SimpleTernaryOpTest__{2}{3}()
+        private SimpleTernaryOpTest__DataTable<{4}, {6}, {8}, {10}> _dataTable;
+
+        static SimpleTernaryOpTest__{2}{4}()
         {{
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {6}; _data2[i] = {6}; _data3[i] = {7}; }}
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _clsVar1), ref Unsafe.As<{3}, byte>(ref _data2[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _clsVar2), ref Unsafe.As<{3}, byte>(ref _data1[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _clsVar3), ref Unsafe.As<{3}, byte>(ref _data3[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {12}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{5}<{6}>, byte>(ref _clsVar1), ref Unsafe.As<{6}, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {13}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{7}<{8}>, byte>(ref _clsVar2), ref Unsafe.As<{8}, byte>(ref _data2[0]), VectorSize);
+            for (var i = 0; i < Op3ElementCount; i++) {{ _data3[i] = {14}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{9}<{10}>, byte>(ref _clsVar3), ref Unsafe.As<{10}, byte>(ref _data3[0]), VectorSize);
         }}
 
-        public SimpleTernaryOpTest__{2}{3}()
+        public SimpleTernaryOpTest__{2}{4}()
         {{
             Succeeded = true;
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {6}; _data2[i] = {6}; _data3[i] = {7}; }}
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _fld1), ref Unsafe.As<{3}, byte>(ref _data1[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _fld2), ref Unsafe.As<{3}, byte>(ref _data2[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _fld3), ref Unsafe.As<{3}, byte>(ref _data3[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {12}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{5}<{6}>, byte>(ref _fld1), ref Unsafe.As<{6}, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {13}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{7}<{8}>, byte>(ref _fld2), ref Unsafe.As<{8}, byte>(ref _data2[0]), VectorSize);
+            for (var i = 0; i < Op3ElementCount; i++) {{ _data3[i] = {14}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{9}<{10}>, byte>(ref _fld3), ref Unsafe.As<{10}, byte>(ref _data3[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {6}; _data2[i] = {6}; _data3[i] = {7}; }}
-            _dataTable = new SimpleTernaryOpTest__DataTable<{3}>(_data1, _data2, _data3, new {3}[ElementCount], VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {12}; }}
+            for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {13}; }}
+            for (var i = 0; i < Op3ElementCount; i++) {{ _data3[i] = {14}; }}
+            _dataTable = new SimpleTernaryOpTest__DataTable<{4}, {6}, {8}, {10}>(_data1, _data2, _data3, new {4}[RetElementCount], VectorSize);
         }}
 
         public bool IsSupported => {0}.IsSupported;
@@ -125,9 +144,9 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_UnsafeRead()
         {{
             var result = {0}.{2}(
-                Unsafe.Read<{4}<{3}>>(_dataTable.inArray1Ptr),
-                Unsafe.Read<{4}<{3}>>(_dataTable.inArray2Ptr),
-                Unsafe.Read<{4}<{3}>>(_dataTable.inArray3Ptr)
+                Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr),
+                Unsafe.Read<{9}<{10}>>(_dataTable.inArray3Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -137,9 +156,9 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_Load()
         {{
             var result = {0}.{2}(
-                {1}.Load{4}(({3}*)(_dataTable.inArray1Ptr)),
-                {1}.Load{4}(({3}*)(_dataTable.inArray2Ptr)),
-                {1}.Load{4}(({3}*)(_dataTable.inArray3Ptr))
+                {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr)),
+                {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr)),
+                {1}.Load{9}(({10}*)(_dataTable.inArray3Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -149,9 +168,9 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_LoadAligned()
         {{
             var result = {0}.{2}(
-                {1}.LoadAligned{4}(({3}*)(_dataTable.inArray1Ptr)),
-                {1}.LoadAligned{4}(({3}*)(_dataTable.inArray2Ptr)),
-                {1}.LoadAligned{4}(({3}*)(_dataTable.inArray3Ptr))
+                {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr)),
+                {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr)),
+                {1}.LoadAligned{9}(({10}*)(_dataTable.inArray3Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -160,40 +179,40 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>), typeof({4}<{3}>), typeof({4}<{3}>) }})
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>), typeof({9}<{10}>) }})
                                      .Invoke(null, new object[] {{
-                                        Unsafe.Read<{4}<{3}>>(_dataTable.inArray1Ptr),
-                                        Unsafe.Read<{4}<{3}>>(_dataTable.inArray2Ptr),
-                                        Unsafe.Read<{4}<{3}>>(_dataTable.inArray3Ptr)
+                                        Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr),
+                                        Unsafe.Read<{9}<{10}>>(_dataTable.inArray3Ptr)
                                      }});
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({4}<{3}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
         }}
 
         public void RunReflectionScenario_Load()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>), typeof({4}<{3}>), typeof({4}<{3}>) }})
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>), typeof({9}<{10}>) }})
                                      .Invoke(null, new object[] {{
-                                        {1}.Load{4}(({3}*)(_dataTable.inArray1Ptr)),
-                                        {1}.Load{4}(({3}*)(_dataTable.inArray2Ptr)),
-                                        {1}.Load{4}(({3}*)(_dataTable.inArray3Ptr))
+                                        {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr)),
+                                        {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr)),
+                                        {1}.Load{9}(({10}*)(_dataTable.inArray3Ptr))
                                      }});
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({4}<{3}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
         }}
 
         public void RunReflectionScenario_LoadAligned()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>), typeof({4}<{3}>), typeof({4}<{3}>) }})
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>), typeof({9}<{10}>) }})
                                      .Invoke(null, new object[] {{
-                                        {1}.LoadAligned{4}(({3}*)(_dataTable.inArray1Ptr)),
-                                        {1}.LoadAligned{4}(({3}*)(_dataTable.inArray2Ptr)),
-                                        {1}.LoadAligned{4}(({3}*)(_dataTable.inArray3Ptr))
+                                        {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr)),
+                                        {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr)),
+                                        {1}.LoadAligned{9}(({10}*)(_dataTable.inArray3Ptr))
                                      }});
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({4}<{3}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
         }}
 
@@ -211,9 +230,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_UnsafeRead()
         {{
-            var firstOp = Unsafe.Read<{4}<{3}>>(_dataTable.inArray1Ptr);
-            var secondOp = Unsafe.Read<{4}<{3}>>(_dataTable.inArray2Ptr);
-            var thirdOp = Unsafe.Read<{4}<{3}>>(_dataTable.inArray3Ptr);
+            var firstOp = Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr);
+            var secondOp = Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr);
+            var thirdOp = Unsafe.Read<{9}<{10}>>(_dataTable.inArray3Ptr);
             var result = {0}.{2}(firstOp, secondOp, thirdOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -222,9 +241,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_Load()
         {{
-            var firstOp = {1}.Load{4}(({3}*)(_dataTable.inArray1Ptr));
-            var secondOp = {1}.Load{4}(({3}*)(_dataTable.inArray2Ptr));
-            var thirdOp = {1}.Load{4}(({3}*)(_dataTable.inArray3Ptr));
+            var firstOp = {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr));
+            var secondOp = {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr));
+            var thirdOp = {1}.Load{9}(({10}*)(_dataTable.inArray3Ptr));
             var result = {0}.{2}(firstOp, secondOp, thirdOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -233,9 +252,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_LoadAligned()
         {{
-            var firstOp = {1}.LoadAligned{4}(({3}*)(_dataTable.inArray1Ptr));
-            var secondOp = {1}.LoadAligned{4}(({3}*)(_dataTable.inArray2Ptr));
-            var thirdOp = {1}.LoadAligned{4}(({3}*)(_dataTable.inArray3Ptr));
+            var firstOp = {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr));
+            var secondOp = {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr));
+            var thirdOp = {1}.LoadAligned{9}(({10}*)(_dataTable.inArray3Ptr));
             var result = {0}.{2}(firstOp, secondOp, thirdOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -244,7 +263,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclFldScenario()
         {{
-            var test = new SimpleTernaryOpTest__{2}{3}();
+            var test = new SimpleTernaryOpTest__{2}{4}();
             var result = {0}.{2}(test._fld1, test._fld2, test._fld3);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -273,47 +292,47 @@ namespace JIT.HardwareIntrinsics.X86
             }}
         }}
 
-        private void ValidateResult({4}<{3}> firstOp, {4}<{3}> secondOp, {4}<{3}> thirdOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult({5}<{6}> firstOp, {7}<{8}> secondOp, {9}<{10}> thirdOp, void* result, [CallerMemberName] string method = "")
         {{
-            {3}[] inArray1 = new {3}[ElementCount];
-            {3}[] inArray2 = new {3}[ElementCount];
-            {3}[] inArray3 = new {3}[ElementCount];
-            {3}[] outArray = new {3}[ElementCount];
+            {6}[] inArray1 = new {6}[Op1ElementCount];
+            {8}[] inArray2 = new {8}[Op2ElementCount];
+            {10}[] inArray3 = new {10}[Op3ElementCount];
+            {4}[] outArray = new {4}[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), firstOp);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), secondOp);
             Unsafe.Write(Unsafe.AsPointer(ref inArray3[0]), thirdOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
         }}
 
         private void ValidateResult(void* firstOp, void* secondOp, void* thirdOp, void* result, [CallerMemberName] string method = "")
         {{
-            {3}[] inArray1 = new {3}[ElementCount];
-            {3}[] inArray2 = new {3}[ElementCount];
-            {3}[] inArray3 = new {3}[ElementCount];
-            {3}[] outArray = new {3}[ElementCount];
+            {6}[] inArray1 = new {6}[Op1ElementCount];
+            {8}[] inArray2 = new {8}[Op2ElementCount];
+            {10}[] inArray3 = new {10}[Op3ElementCount];
+            {4}[] outArray = new {4}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(secondOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(thirdOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{6}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{8}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(secondOp), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{10}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(thirdOp), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
         }}
 
-        private void ValidateResult({3}[] firstOp, {3}[] secondOp, {3}[] thirdOp, {3}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({6}[] firstOp, {8}[] secondOp, {10}[] thirdOp, {4}[] result, [CallerMemberName] string method = "")
         {{
-            if ({8})
+            if ({15})
             {{
                 Succeeded = false;
             }}
             else
             {{
-                for (var i = 1; i < firstOp.Length; i++)
+                for (var i = 1; i < RetElementCount; i++)
                 {{
-                    if ({9})
+                    if ({16})
                     {{
                         Succeeded = false;
                         break;
@@ -323,11 +342,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {{
-                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{3}>: {{method}} failed:");
-                Console.WriteLine($"    firstOp: ({{string.Join(", ", firstOp)}})");
-                Console.WriteLine($"   secondOp: ({{string.Join(", ", secondOp)}})");
+                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{4}>({5}<{6}>, {7}<{8}>, {9}<{10}>): {{method}} failed:");
+                Console.WriteLine($"   firstOp: ({{string.Join(", ", firstOp)}})");
+                Console.WriteLine($"  secondOp: ({{string.Join(", ", secondOp)}})");
                 Console.WriteLine($"   thirdOp: ({{string.Join(", ", thirdOp)}})");
-                Console.WriteLine($"  result: ({{string.Join(", ", result)}})");
+                Console.WriteLine($"    result: ({{string.Join(", ", result)}})");
                 Console.WriteLine();
             }}
         }}
