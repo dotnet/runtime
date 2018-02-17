@@ -19,29 +19,35 @@ namespace JIT.HardwareIntrinsics.X86
 {{
     public static partial class Program
     {{
-        private static void {2}{3}()
+        private static void {2}{4}()
         {{
-            var test = new BooleanComparisonOpTest__{2}{3}();
+            var test = new BooleanComparisonOpTest__{2}{4}();
 
             if (test.IsSupported)
             {{
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates basic functionality works, using Load
-                test.RunBasicScenario_Load();
+                if ({1}.IsSupported)
+                {{
+                    // Validates basic functionality works, using Load
+                    test.RunBasicScenario_Load();
 
-                // Validates basic functionality works, using LoadAligned
-                test.RunBasicScenario_LoadAligned();
+                    // Validates basic functionality works, using LoadAligned
+                    test.RunBasicScenario_LoadAligned();
+                }}
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Load
-                test.RunReflectionScenario_Load();
+                if ({1}.IsSupported)
+                {{
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario_Load();
 
-                // Validates calling via reflection works, using LoadAligned
-                test.RunReflectionScenario_LoadAligned();
+                    // Validates calling via reflection works, using LoadAligned
+                    test.RunReflectionScenario_LoadAligned();
+                }}
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -49,11 +55,14 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                // Validates passing a local works, using Load
-                test.RunLclVarScenario_Load();
+                if ({1}.IsSupported)
+                {{
+                    // Validates passing a local works, using Load
+                    test.RunLclVarScenario_Load();
 
-                // Validates passing a local works, using LoadAligned
-                test.RunLclVarScenario_LoadAligned();
+                    // Validates passing a local works, using LoadAligned
+                    test.RunLclVarScenario_LoadAligned();
+                }}
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -74,43 +83,48 @@ namespace JIT.HardwareIntrinsics.X86
         }}
     }}
 
-    public sealed unsafe class BooleanComparisonOpTest__{2}{3}
+    public sealed unsafe class BooleanComparisonOpTest__{2}{4}
     {{
-        private const int VectorSize = {5};
-        private const int ElementCount = VectorSize / sizeof({3});
+        private const int VectorSize = {9};
 
-        private static {3}[] _data1 = new {3}[ElementCount];
-        private static {3}[] _data2 = new {3}[ElementCount];
+        private const int Op1ElementCount = VectorSize / sizeof({6});
+        private const int Op2ElementCount = VectorSize / sizeof({8});
 
-        private static {4}<{3}> _clsVar1;
-        private static {4}<{3}> _clsVar2;
+        private static {6}[] _data1 = new {6}[Op1ElementCount];
+        private static {8}[] _data2 = new {8}[Op2ElementCount];
 
-        private {4}<{3}> _fld1;
-        private {4}<{3}> _fld2;
+        private static {5}<{6}> _clsVar1;
+        private static {7}<{8}> _clsVar2;
 
-        private BooleanComparisonOpTest__DataTable<{3}> _dataTable;
+        private {5}<{6}> _fld1;
+        private {7}<{8}> _fld2;
 
-        static BooleanComparisonOpTest__{2}{3}()
+        private BooleanComparisonOpTest__DataTable<{6}, {8}> _dataTable;
+
+        static BooleanComparisonOpTest__{2}{4}()
         {{
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {6}; _data2[i] = {6}; }}
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _clsVar1), ref Unsafe.As<{3}, byte>(ref _data2[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _clsVar2), ref Unsafe.As<{3}, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {10}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{5}<{6}>, byte>(ref _clsVar1), ref Unsafe.As<{6}, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {11}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{7}<{8}>, byte>(ref _clsVar2), ref Unsafe.As<{8}, byte>(ref _data2[0]), VectorSize);
         }}
 
-        public BooleanComparisonOpTest__{2}{3}()
+        public BooleanComparisonOpTest__{2}{4}()
         {{
             Succeeded = true;
 
             var random = new Random();
 
-            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {6}; _data2[i] = {6}; }}
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _fld1), ref Unsafe.As<{3}, byte>(ref _data1[0]), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}<{3}>, byte>(ref _fld2), ref Unsafe.As<{3}, byte>(ref _data2[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {10}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{5}<{6}>, byte>(ref _fld1), ref Unsafe.As<{6}, byte>(ref _data1[0]), VectorSize);
+            for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {11}; }}
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{7}<{8}>, byte>(ref _fld2), ref Unsafe.As<{8}, byte>(ref _data2[0]), VectorSize);
 
-            for (var i = 0; i < ElementCount; i++) {{ _data1[i] = {6}; _data2[i] = {6}; }}
-            _dataTable = new BooleanComparisonOpTest__DataTable<{3}>(_data1, _data2, VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {10}; }}
+            for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {11}; }}
+            _dataTable = new BooleanComparisonOpTest__DataTable<{6}, {8}>(_data1, _data2, VectorSize);
         }}
 
         public bool IsSupported => {0}.IsSupported;
@@ -120,8 +134,8 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_UnsafeRead()
         {{
             var result = {0}.{2}(
-                Unsafe.Read<{4}<{3}>>(_dataTable.inArray1Ptr),
-                Unsafe.Read<{4}<{3}>>(_dataTable.inArray2Ptr)
+                Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr),
+                Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr)
             );
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
@@ -130,8 +144,8 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_Load()
         {{
             var result = {0}.{2}(
-                {1}.Load{4}(({3}*)(_dataTable.inArray1Ptr)),
-                {1}.Load{4}(({3}*)(_dataTable.inArray2Ptr))
+                {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr)),
+                {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr))
             );
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
@@ -140,8 +154,8 @@ namespace JIT.HardwareIntrinsics.X86
         public void RunBasicScenario_LoadAligned()
         {{
             var result = {0}.{2}(
-                {1}.LoadAligned{4}(({3}*)(_dataTable.inArray1Ptr)),
-                {1}.LoadAligned{4}(({3}*)(_dataTable.inArray2Ptr))
+                {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr)),
+                {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr))
             );
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
@@ -149,10 +163,10 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>), typeof({4}<{3}>) }})
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }})
                                      .Invoke(null, new object[] {{
-                                        Unsafe.Read<{4}<{3}>>(_dataTable.inArray1Ptr),
-                                        Unsafe.Read<{4}<{3}>>(_dataTable.inArray2Ptr)
+                                        Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr),
+                                        Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr)
                                      }});
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
@@ -160,10 +174,10 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_Load()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>), typeof({4}<{3}>) }})
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }})
                                      .Invoke(null, new object[] {{
-                                        {1}.Load{4}(({3}*)(_dataTable.inArray1Ptr)),
-                                        {1}.Load{4}(({3}*)(_dataTable.inArray2Ptr))
+                                        {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr)),
+                                        {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr))
                                      }});
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
@@ -171,10 +185,10 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_LoadAligned()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({4}<{3}>), typeof({4}<{3}>) }})
+            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }})
                                      .Invoke(null, new object[] {{
-                                        {1}.LoadAligned{4}(({3}*)(_dataTable.inArray1Ptr)),
-                                        {1}.LoadAligned{4}(({3}*)(_dataTable.inArray2Ptr))
+                                        {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr)),
+                                        {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr))
                                      }});
 
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
@@ -192,8 +206,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_UnsafeRead()
         {{
-            var left = Unsafe.Read<{4}<{3}>>(_dataTable.inArray1Ptr);
-            var right = Unsafe.Read<{4}<{3}>>(_dataTable.inArray2Ptr);
+            var left = Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr);
+            var right = Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr);
             var result = {0}.{2}(left, right);
 
             ValidateResult(left, right, result);
@@ -201,8 +215,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_Load()
         {{
-            var left = {1}.Load{4}(({3}*)(_dataTable.inArray1Ptr));
-            var right = {1}.Load{4}(({3}*)(_dataTable.inArray2Ptr));
+            var left = {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr));
+            var right = {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr));
             var result = {0}.{2}(left, right);
 
             ValidateResult(left, right, result);
@@ -210,8 +224,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclVarScenario_LoadAligned()
         {{
-            var left = {1}.LoadAligned{4}(({3}*)(_dataTable.inArray1Ptr));
-            var right = {1}.LoadAligned{4}(({3}*)(_dataTable.inArray2Ptr));
+            var left = {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr));
+            var right = {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr));
             var result = {0}.{2}(left, right);
 
             ValidateResult(left, right, result);
@@ -219,7 +233,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunLclFldScenario()
         {{
-            var test = new BooleanComparisonOpTest__{2}{3}();
+            var test = new BooleanComparisonOpTest__{2}{4}();
             var result = {0}.{2}(test._fld1, test._fld2);
 
             ValidateResult(test._fld1, test._fld2, result);
@@ -246,10 +260,10 @@ namespace JIT.HardwareIntrinsics.X86
             }}
         }}
 
-        private void ValidateResult({4}<{3}> left, {4}<{3}> right, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult({5}<{6}> left, {7}<{8}> right, bool result, [CallerMemberName] string method = "")
         {{
-            {3}[] inArray1 = new {3}[ElementCount];
-            {3}[] inArray2 = new {3}[ElementCount];
+            {6}[] inArray1 = new {6}[Op1ElementCount];
+            {8}[] inArray2 = new {8}[Op2ElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
@@ -259,22 +273,22 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(void* left, void* right, bool result, [CallerMemberName] string method = "")
         {{
-            {3}[] inArray1 = new {3}[ElementCount];
-            {3}[] inArray2 = new {3}[ElementCount];
+            {6}[] inArray1 = new {6}[Op1ElementCount];
+            {8}[] inArray2 = new {8}[Op2ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{3}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{6}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{8}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
 
             ValidateResult(inArray1, inArray2, result, method);
         }}
 
-        private void ValidateResult({3}[] left, {3}[] right, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult({6}[] left, {8}[] right, bool result, [CallerMemberName] string method = "")
         {{
-            if ({7})
+            if ({12})
             {{
                 Succeeded = false;
 
-                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{3}>: {{method}} failed:");
+                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{4}>({5}<{6}>, {7}<{8}>): {{method}} failed:");
                 Console.WriteLine($"    left: ({{string.Join(", ", left)}})");
                 Console.WriteLine($"   right: ({{string.Join(", ", right)}})");
                 Console.WriteLine($"  result: ({{string.Join(", ", result)}})");
