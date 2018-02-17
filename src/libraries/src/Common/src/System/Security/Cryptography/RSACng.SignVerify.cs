@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override unsafe bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+        public override unsafe bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
             string hashAlgorithmName = hashAlgorithm.Name;
             if (string.IsNullOrEmpty(hashAlgorithmName))
@@ -89,11 +89,11 @@ namespace System.Security.Cryptography
                     {
                         case RSASignaturePaddingMode.Pkcs1:
                             var pkcs1PaddingInfo = new BCRYPT_PKCS1_PADDING_INFO() { pszAlgId = namePtr };
-                            return keyHandle.TrySignHash(source, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcs1PaddingInfo, out bytesWritten);
+                            return keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, &pkcs1PaddingInfo, out bytesWritten);
 
                         case RSASignaturePaddingMode.Pss:
-                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = source.Length };
-                            return keyHandle.TrySignHash(source, destination, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, out bytesWritten);
+                            var pssPaddingInfo = new BCRYPT_PSS_PADDING_INFO() { pszAlgId = namePtr, cbSalt = hash.Length };
+                            return keyHandle.TrySignHash(hash, destination, AsymmetricPaddingMode.NCRYPT_PAD_PSS_FLAG, &pssPaddingInfo, out bytesWritten);
 
                         default:
                             throw new CryptographicException(SR.Cryptography_UnsupportedPaddingMode);

@@ -27,12 +27,12 @@ namespace System.Security.Cryptography
             EncryptOrDecrypt(data, padding, encrypt: false);
 
         /// <summary>Encrypts data using the public key.</summary>
-        public override bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten) =>
-            TryEncryptOrDecrypt(source, destination, padding, encrypt: true, bytesWritten: out bytesWritten);
+        public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten) =>
+            TryEncryptOrDecrypt(data, destination, padding, encrypt: true, bytesWritten: out bytesWritten);
 
         /// <summary>Decrypts data using the private key.</summary>
-        public override bool TryDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten) =>
-            TryEncryptOrDecrypt(source, destination, padding, encrypt: false, bytesWritten: out bytesWritten);
+        public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten) =>
+            TryEncryptOrDecrypt(data, destination, padding, encrypt: false, bytesWritten: out bytesWritten);
 
         // Conveniently, Encrypt() and Decrypt() are identical save for the actual P/Invoke call to CNG. Thus, both
         // array-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
 
         // Conveniently, Encrypt() and Decrypt() are identical save for the actual P/Invoke call to CNG. Thus, both
         // span-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
-        private unsafe bool TryEncryptOrDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, bool encrypt, out int bytesWritten)
+        private unsafe bool TryEncryptOrDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, bool encrypt, out int bytesWritten)
         {
             if (padding == null)
             {
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography
                 switch (padding.Mode)
                 {
                     case RSAEncryptionPaddingMode.Pkcs1:
-                        return TryEncryptOrDecrypt(keyHandle, source, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encrypt, out bytesWritten);
+                        return TryEncryptOrDecrypt(keyHandle, data, destination, AsymmetricPaddingMode.NCRYPT_PAD_PKCS1_FLAG, null, encrypt, out bytesWritten);
 
                     case RSAEncryptionPaddingMode.Oaep:
                         IntPtr namePtr = Marshal.StringToHGlobalUni(padding.OaepHashAlgorithm.Name);
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography
                                 pbLabel = IntPtr.Zero, // It would nice to put randomized data here but RSAEncryptionPadding does not at this point provide support for this.
                                 cbLabel = 0,
                             };
-                            return TryEncryptOrDecrypt(keyHandle, source, destination, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encrypt, out bytesWritten);
+                            return TryEncryptOrDecrypt(keyHandle, data, destination, AsymmetricPaddingMode.NCRYPT_PAD_OAEP_FLAG, &paddingInfo, encrypt, out bytesWritten);
                         }
                         finally
                         {
