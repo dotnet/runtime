@@ -595,3 +595,9 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 {
 	MONO_CONTEXT_SET_IP (ctx,func);
 }
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *ctx)
+{
+	ctx->pc++;
+}

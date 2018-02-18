@@ -627,3 +627,12 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 		/* Transition to ARM */
 		ctx->cpsr &= ~(1 << 5);
 }
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *ctx)
+{
+	ctx->pc++;
+
+	if (mono_arm_thumb_supported ())
+		ctx->pc |= 1;
+}

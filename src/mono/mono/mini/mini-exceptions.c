@@ -2212,19 +2212,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 */
 						mini_get_interp_callbacks ()->set_resume_state (jit_tls, mono_ex, ei, frame.interp_frame, ei->handler_start);
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
-#if defined(TARGET_AMD64)
-						ctx->gregs [AMD64_RIP] ++;
-#elif defined(TARGET_ARM)
-						ctx->pc ++;
-						if (mono_arm_thumb_supported ())
-							ctx->pc |= 1;
-#elif defined(TARGET_ARM64)
-						ctx->pc ++;
-#elif defined (HOST_WASM)
-						//nada?
-#else
-						NOT_IMPLEMENTED;
-#endif
+						mono_arch_undo_ip_adjustment (ctx);
 					} else {
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					}

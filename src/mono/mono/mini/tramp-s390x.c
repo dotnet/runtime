@@ -603,20 +603,3 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 }	
 
 /*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name	    - mono_arch_get_interp_to_native_trampoline.            */
-/*                                                                  */
-/* Function - 							    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-/*========================= End of Function ========================*/

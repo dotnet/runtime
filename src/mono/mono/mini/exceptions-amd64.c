@@ -1962,3 +1962,9 @@ mono_tasklets_arch_restore (void)
 	return NULL;
 }
 #endif /* !MONO_SUPPORT_TASKLETS || defined(DISABLE_JIT) */
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *ctx)
+{
+	ctx->gregs [AMD64_RIP]++;
+}

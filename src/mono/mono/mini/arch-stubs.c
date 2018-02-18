@@ -66,3 +66,20 @@ mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig
 	return mono_metadata_signature_equal (caller_sig, callee_sig) && !MONO_TYPE_ISSTRUCT (callee_sig->ret);
 }
 #endif
+
+#ifndef MONO_ARCH_INTERPRETER_SUPPORTED
+
+gpointer
+mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *context)
+{
+	g_assert_not_reached ();
+}
+
+#endif

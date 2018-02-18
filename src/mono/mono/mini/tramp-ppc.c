@@ -634,10 +634,3 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 	return ((guint32*)plt_entry) [6];
 #endif
 }
-
-gpointer
-mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
