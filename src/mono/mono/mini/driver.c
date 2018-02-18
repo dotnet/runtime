@@ -1764,7 +1764,7 @@ mono_enable_interp (const char *opts)
 	g_error ("--interpreter on cross-compile runtimes not supported\n");
 #endif
 
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
+#ifndef MONO_ARCH_INTERPRETER_SUPPORTED
 	g_error ("--interpreter not supported on this architecture.\n");
 #endif
 }
