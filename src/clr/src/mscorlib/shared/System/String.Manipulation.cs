@@ -17,13 +17,6 @@ namespace System
     {
         private const int StackallocIntBufferSizeLimit = 128;
 
-        // Workaround for https://github.com/dotnet/coreclr/issues/16197
-        [StructLayout(LayoutKind.Sequential, Size = StackallocIntBufferSizeLimit * sizeof(int))]
-        struct StackallocIntBuffer
-        {
-            private int _dummy;
-        }
-
         private static unsafe void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
@@ -1079,9 +1072,7 @@ namespace System
             if (newValue == null)
                 newValue = string.Empty;
 
-            // Workaround for https://github.com/dotnet/coreclr/issues/16197
-            // Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
-            Span<int> initialSpan; StackallocIntBuffer initialBuffer; unsafe { initialSpan = new Span<int>(&initialBuffer, StackallocIntBufferSizeLimit); }
+            Span<int> initialSpan = stackalloc int[StackallocIntBufferSizeLimit];
             var replacementIndices = new ValueListBuilder<int>(initialSpan);
 
             unsafe
