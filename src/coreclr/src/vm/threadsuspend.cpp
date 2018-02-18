@@ -669,39 +669,6 @@ struct StackCrawlContext
     CrawlFrame  LatchedCF;
 };
 
-
-#if _TARGET_AMD64_
-// Returns the PC for the next instruction
-// If you want to skip ahead of a NOP padding sequence
-// You'll need to call this thing multiple times, until it returns NULL
-
-#define NOP_REX_PREFIX ((char)0x66)
-#define XCHG_EAX_EAX ((char)0x90)
-
-int isAtNop(const void *ip)
-{
-    const char *NextByte = (const char *)ip;
-    STRESS_LOG1(LF_EH, LL_INFO100, "AMD64 - isAtNop ip 0x%p\n", ip);
-    
-    int lpfxCount = 0;
-    //
-    // Read in length prefixes - no effect
-    //
-    for (lpfxCount = 0; lpfxCount < 14; lpfxCount++)
-    {
-        if (NextByte[lpfxCount] != NOP_REX_PREFIX)
-            break;
-    }
-
-    //
-    // xchg eax, eax
-    // 
-    if (NextByte[lpfxCount] == XCHG_EAX_EAX)
-        return (lpfxCount + 1);
-    return 0;
-}
-#endif // _TARGET_AMD64_
-
 // Crawl the stack looking for Thread Abort related information (whether we're executing inside a CER or an error handling clauses
 // of some sort).
 static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlContext *pData)
@@ -801,34 +768,6 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         offs -= 1;
     }
 #endif  // !WIN64EXCEPTIONS
-
-#if _TARGET_AMD64_ 
-    STRESS_LOG1(LF_EH, LL_INFO10, "AMD64 - in TAStackCrawlCallBack 0x%x offset\n", offs);
-    STRESS_LOG1(LF_EH, LL_INFO10, "AMD64 - in TAStackCrawlCallBack frame IP is 0x%p\n", (void *)GetControlPC(pCf->GetRegisterSet()));
-    STRESS_LOG3(LF_EH, LL_INFO100, "AMD64 - in TAStackCrawlCallBack: STACKCRAWL method:%pM (), Frame:%p, FrameVtable = %pV\n",
-              pMD, pFrame, pCf->IsFrameless()?0:(*(void**)pFrame));
-  
-    DWORD OffsSkipNop = offs;
-  
-    if ( pCf->IsFrameless() && pCf->IsActiveFrame())
-    {
-        // If the frame is the top most frame and is managed,
-        // get the ip
-        void *oldIP = (void *)GetControlPC(pCf->GetRegisterSet());
-  
-        // skip over the nop to get newIP
-        int bNop = isAtNop(oldIP);
-  
-        // Skip over the nop if any
-        OffsSkipNop += bNop;
-
-        if (bNop != 0)
-        {
-            STRESS_LOG1(LF_EH, LL_INFO100, "AMD64 - TAStackCrawlCallBack: STACKCRAWL new Offset 0x%x V\n", OffsSkipNop );
-        }
-    }
-#endif // _TARGET_AMD64_
-  
 
     for(ULONG i=0; i < EHCount; i++)
     {
