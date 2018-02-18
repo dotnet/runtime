@@ -5248,16 +5248,23 @@ void LinearScan::allocateRegisters()
 
         if ((regsToFree | delayRegsToFree) != RBM_NONE)
         {
-            bool doFreeRegs = false;
             // Free at a new location, or at a basic block boundary
-            if (currentLocation > prevLocation || refType == RefTypeBB)
+            if (refType == RefTypeBB)
             {
-                doFreeRegs = true;
+                assert(currentLocation > prevLocation);
             }
-
-            if (doFreeRegs)
+            if (currentLocation > prevLocation)
             {
                 freeRegisters(regsToFree);
+                if ((currentLocation > (prevLocation + 1)) && (delayRegsToFree != RBM_NONE))
+                {
+                    // We should never see a delayReg that is delayed until a Location that has no RefPosition
+                    // (that would be the RefPosition that it was supposed to interfere with).
+                    assert(!"Found a delayRegFree associated with Location with no reference");
+                    // However, to be cautious for the Release build case, we will free them.
+                    freeRegisters(delayRegsToFree);
+                    delayRegsToFree = RBM_NONE;
+                }
                 regsToFree      = delayRegsToFree;
                 delayRegsToFree = RBM_NONE;
             }
