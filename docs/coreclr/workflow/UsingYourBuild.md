@@ -47,7 +47,15 @@ dotnet new console
 In order to update with your local changes, the application needs to be self-contained, as opposed to running on the
 shared framework.  In order to do that you will need to add a `RuntimeIdentifier` to your project.
 
-You also need to add a `PlatformTarget`, otherwise the default would be `x86`, and that would generate an incompatibility error.
+```xml
+<PropertyGroup>
+  ...
+  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+</PropertyGroup>
+```
+For Windows you will want `win-x64`, for macOS `osx-x64` and `linux-x64` for Linux.
+
+You might also need to explicitly specify a `PlatformTarget`: it shouldn't be required though, unless for some reason the default `PlatformTarget` on your machine, for that directory, is not `x64`.
 
 ```xml
 <PropertyGroup>
@@ -56,8 +64,6 @@ You also need to add a `PlatformTarget`, otherwise the default would be `x86`, a
   <PlatformTarget>x64</PlatformTarget>
 </PropertyGroup>
 ```
-
-For Windows you will want `win-x64`, for macOS `osx-x64` and `linux-x64` for Linux.
 
 ### Publish
 
