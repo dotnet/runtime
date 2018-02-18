@@ -5356,14 +5356,14 @@ static MonoObjectHandle
 mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error);
 
 /**
- * mono_object_new_common_tail:
+ * object_new_common_tail:
  *
  * This function centralizes post-processing of objects upon creation.
  * i.e. calling mono_object_register_finalizer and mono_gc_register_obj_with_weak_fields,
  * and setting error.
  */
 static MonoObject*
-mono_object_new_common_tail (MonoObject* o, MonoClass* klass, MonoError* error)
+object_new_common_tail (MonoObject *o, MonoClass *klass, MonoError *error)
 {
 	error_init (error);
 
@@ -5381,18 +5381,19 @@ mono_object_new_common_tail (MonoObject* o, MonoClass* klass, MonoError* error)
 	return o;
 }
 
-#if 0 // FIXMEcoop awaiting https://github.com/mono/mono/pull/6876
 /**
- * mono_object_new_handle_tail:
+ * object_new_handle_tail:
  *
  * This function centralizes post-processing of objects upon creation.
  * i.e. calling mono_object_register_finalizer and mono_gc_register_obj_with_weak_fields.
  */
 static MonoObjectHandle
-mono_object_new_handle_common_tail (MonoObjectHandle o, MonoClass* klass, MonoError* error)
+object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *error)
 {
+	error_init (error);
+
 	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o))) {
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
+		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", klass->instance_size);
 		return o;
 	}
 
@@ -5404,8 +5405,6 @@ mono_object_new_handle_common_tail (MonoObjectHandle o, MonoClass* klass, MonoEr
 
 	return o;
 }
-
-#endif
 
 /**
  * mono_object_new:
@@ -5503,8 +5502,6 @@ mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	error_init (error);
-
 	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
 	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 
@@ -5514,12 +5511,7 @@ mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *
 
 	MonoObjectHandle o = mono_gc_alloc_handle_pinned_obj (vtable, size);
 
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o)))
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
-	else if (G_UNLIKELY (klass->has_finalize))
-		mono_object_register_finalizer_handle (o);
-
-	return o;
+	return object_new_handle_common_tail (o, klass, error);
 }
 
 MonoObject *
@@ -5529,14 +5521,12 @@ mono_object_new_pinned (MonoDomain *domain, MonoClass *klass, MonoError *error)
 
 	MonoVTable *vtable;
 
-	error_init (error);
-
 	vtable = mono_class_vtable_checked (domain, klass, error);
 	return_val_if_nok (error, NULL);
 
 	MonoObject *o = (MonoObject *)mono_gc_alloc_pinned_obj (vtable, mono_class_instance_size (klass));
 
-	return mono_object_new_common_tail (o, klass, error);
+	return object_new_common_tail (o, klass, error);
 }
 
 /**
@@ -5699,7 +5689,7 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 
 	o = (MonoObject *)mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
-	return mono_object_new_common_tail (o, vtable->klass, error);
+	return object_new_common_tail (o, vtable->klass, error);
 }
 
 static MonoObjectHandle
@@ -5707,23 +5697,12 @@ mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	error_init (error);
-
 	MonoClass* const klass = vtable->klass;
 	int const size = klass->instance_size;
 
 	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
 
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL(o))) {
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
-		return o;
-	}
-	if (G_UNLIKELY (klass->has_finalize))
-		mono_object_register_finalizer_handle (o);
-	if (G_UNLIKELY (klass->has_weak_fields))
-		mono_gc_register_object_with_weak_fields (o);
-
-	return o;
+	return object_new_handle_common_tail (o, klass, error);
 }
 
 /**
@@ -5752,7 +5731,7 @@ mono_object_new_fast (MonoVTable *vtable)
 
 	o = mono_gc_alloc_obj (vtable, vtable->klass->instance_size);
 
-	// This deliberately skips mono_object_new_common_tail.
+	// This deliberately skips object_new_common_tail.
 
 	if (G_UNLIKELY (!o))
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", vtable->klass->instance_size);
@@ -5771,7 +5750,7 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 
 	o = mono_gc_alloc_mature (vtable, vtable->klass->instance_size);
 
-	return mono_object_new_common_tail (o, vtable->klass, error);
+	return object_new_common_tail (o, vtable->klass, error);
 }
 
 MonoObjectHandle
@@ -5779,19 +5758,12 @@ mono_object_new_handle_mature (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	error_init (error);
-
 	MonoClass* const klass = vtable->klass;
 	int const size = klass->instance_size;
 
 	MonoObjectHandle o = mono_gc_alloc_handle_mature (vtable, size);
 
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o)))
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
-	else if (G_UNLIKELY (klass->has_finalize))
-		mono_object_register_finalizer_handle (o);
-
-	return o;
+	return object_new_handle_common_tail (o, klass, error);
 }
 
 /**
@@ -5855,15 +5827,13 @@ mono_object_clone_checked (MonoObject *obj, MonoError *error)
 	if (G_LIKELY (o))
 		mono_gc_wbarrier_object_copy (o, obj);
 
-	return mono_object_new_common_tail (o, obj->vtable->klass, error);
+	return object_new_common_tail (o, obj->vtable->klass, error);
 }
 
 MonoObjectHandle
 mono_object_clone_handle (MonoObjectHandle obj, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	error_init (error);
 
 	MonoVTable* const vtable = MONO_HANDLE_GETVAL (obj, vtable);
 	MonoClass* const klass = vtable->klass;
@@ -5875,18 +5845,12 @@ mono_object_clone_handle (MonoObjectHandle obj, MonoError *error)
 
 	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
 
-	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o))) {
-		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
-		return o;
+	if (G_LIKELY (!MONO_HANDLE_IS_NULL (o))) {
+		/* If the object doesn't contain references this will do a simple memmove. */
+		mono_gc_wbarrier_object_copy_handle (o, obj);
 	}
 
-	/* If the object doesn't contain references this will do a simple memmove. */
-	mono_gc_wbarrier_object_copy_handle (o, obj);
-
-	if (klass->has_finalize)
-		mono_object_register_finalizer (o);
-
-	return o;
+	return object_new_handle_common_tail (o, klass, error);
 }
 
 /**
