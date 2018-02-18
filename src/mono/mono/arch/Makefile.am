@@ -4,7 +4,7 @@ AM_CPPFLAGS = $(GLIB_CFLAGS) -I$(top_srcdir)
 
 if ARM
 # arm needs to build some stuff even in JIT mode
-SUBDIRS = $(arch_target)
+SUBDIRS = arm
 endif
 
 
