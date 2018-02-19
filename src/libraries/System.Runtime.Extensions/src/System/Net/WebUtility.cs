@@ -5,6 +5,7 @@
 // Don't entity encode high chars (160 to 256)
 #define ENTITY_ENCODE_HIGH_ASCII_CHARS
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -45,20 +46,40 @@ namespace System.Net
                 return value;
             }
 
-            StringBuilder sb = StringBuilderCache.Acquire(value.Length);
-            HtmlEncode(value, index, sb);
-            return StringBuilderCache.GetStringAndRelease(sb);
+            var sb = new ValueStringBuilder(value.Length);
+            HtmlEncode(value, index, ref sb);
+            return sb.ToString();
         }
 
         public static void HtmlEncode(string value, TextWriter output)
         {
-            output.Write(HtmlEncode(value));
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+            if (string.IsNullOrEmpty(value))
+            {
+                output.Write(value);
+                return;
+            }
+
+            // Don't create StringBuilder if we don't have anything to encode
+            int index = IndexOfHtmlEncodingChars(value, 0);
+            if (index == -1)
+            {
+                output.Write(value);
+                return;
+            }
+
+            var sb = new ValueStringBuilder(value.Length);
+            HtmlEncode(value, index, ref sb);
+            output.Write(sb.AsSpan());
+            sb.Dispose();
         }
 
-        private static unsafe void HtmlEncode(string value, int index, StringBuilder output)
+        private static unsafe void HtmlEncode(string value, int index, ref ValueStringBuilder output)
         {
             Debug.Assert(value != null);
-            Debug.Assert(output != null);
             Debug.Assert(0 <= index && index <= value.Length, "0 <= index && index <= value.Length");
 
             int cch = value.Length - index;
@@ -148,27 +169,43 @@ namespace System.Net
                 return value;
             }
 
-            // Don't create StringBuilder if we don't have anything to encode
             if (!StringRequiresHtmlDecoding(value))
             {
                 return value;
             }
 
-            StringBuilder sb = StringBuilderCache.Acquire(value.Length);
-            HtmlDecode(value, sb);
-            return StringBuilderCache.GetStringAndRelease(sb);
+            var sb = new ValueStringBuilder(value.Length);
+            HtmlDecode(value, ref sb);
+            return sb.ToString();
         }
 
         public static void HtmlDecode(string value, TextWriter output)
         {
-            output.Write(HtmlDecode(value));
+            if (output == null)
+            {
+                throw new ArgumentNullException(nameof(output));
+            }
+
+            if (string.IsNullOrEmpty(value))
+            {
+                output.Write(value);
+                return;
+            }
+
+            if (!StringRequiresHtmlDecoding(value))
+            {
+                output.Write(value);
+                return;
+            }
+
+            var sb = new ValueStringBuilder(value.Length);
+            HtmlDecode(value, ref sb);
+            output.Write(sb.AsSpan());
+            sb.Dispose();
         }
 
-        [SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "System.UInt16.TryParse(System.String,System.Globalization.NumberStyles,System.IFormatProvider,System.UInt16@)", Justification = "UInt16.TryParse guarantees that result is zero if the parse fails.")]
-        private static void HtmlDecode(string value, StringBuilder output)
+        private static void HtmlDecode(string value, ref ValueStringBuilder output)
         {
-            Debug.Assert(output != null);
-
             int l = value.Length;
             for (int i = 0; i < l; i++)
             {
