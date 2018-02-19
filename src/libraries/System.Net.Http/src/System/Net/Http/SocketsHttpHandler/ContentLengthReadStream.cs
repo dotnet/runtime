@@ -133,6 +133,32 @@ namespace System.Net.Http
                 _connection.ReturnConnectionToPool();
                 _connection = null;
             }
+
+            public override async Task DrainAsync(int maxDrainBytes)
+            {
+                Debug.Assert(_connection != null);
+                Debug.Assert(_contentBytesRemaining > 0);
+
+                if (_contentBytesRemaining > (ulong)maxDrainBytes)
+                {
+                    return;
+                }
+
+                while (true)
+                {
+                    if (_contentBytesRemaining <= (ulong)_connection.RemainingBuffer.Length)
+                    {
+                        _connection.ConsumeFromRemainingBuffer((int)_contentBytesRemaining);
+                        Finish();
+                        break;
+                    }
+
+                    _contentBytesRemaining -= (ulong)_connection.RemainingBuffer.Length;
+                    _connection.ConsumeFromRemainingBuffer(_connection.RemainingBuffer.Length);
+
+                    await _connection.FillAsync();
+                }
+            }
         }
     }
 }
