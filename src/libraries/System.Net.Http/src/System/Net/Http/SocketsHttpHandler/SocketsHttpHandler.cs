@@ -268,9 +268,20 @@ namespace System.Net.Http
                 handler = new HttpProxyConnectionHandler(poolManager, settings._proxy, settings._defaultProxyCredentials, handler);
             }
 
-            if (settings._credentials != null || settings._allowAutoRedirect)
+            HttpMessageHandler unauthenticatedHandler = handler;
+
+            if (settings._credentials != null)
             {
-                handler = new AuthenticateAndRedirectHandler(settings._preAuthenticate, settings._credentials, settings._allowAutoRedirect, settings._maxAutomaticRedirections, handler);
+                handler = new AuthenticationHandler(settings._preAuthenticate, settings._credentials, handler);
+            }
+
+            if (settings._allowAutoRedirect)
+            {
+                // Just as with WinHttpHandler and CurlHandler, for security reasons, we do not support authentication on redirects
+                // if the credential is anything other than a CredentialCache.
+                // We allow credentials in a CredentialCache since they are specifically tied to URIs.
+                HttpMessageHandler redirectHandler = (settings._credentials is CredentialCache ? handler : unauthenticatedHandler);
+                handler = new RedirectHandler(settings._maxAutomaticRedirections, handler, redirectHandler);
             }
 
             if (settings._automaticDecompression != DecompressionMethods.None)
