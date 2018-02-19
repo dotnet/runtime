@@ -14,27 +14,7 @@ namespace System.Net
     internal static partial class NameResolutionPal
     {
         public const bool SupportsGetAddrInfoAsync = false;
-
-        private static SocketError GetSocketErrorForErrno(int errno)
-        {
-            switch (errno)
-            {
-                case 0:
-                    return SocketError.Success;
-                case (int)Interop.Sys.GetHostErrorCodes.HOST_NOT_FOUND:
-                    return SocketError.HostNotFound;
-                case (int)Interop.Sys.GetHostErrorCodes.NO_DATA:
-                    return SocketError.NoData;
-                case (int)Interop.Sys.GetHostErrorCodes.NO_RECOVERY:
-                    return SocketError.NoRecovery;
-                case (int)Interop.Sys.GetHostErrorCodes.TRY_AGAIN:
-                    return SocketError.TryAgain;
-                default:
-                    Debug.Fail("Unexpected errno: " + errno.ToString());
-                    return SocketError.SocketError;
-            }
-        }
-
+        
         private static SocketError GetSocketErrorForNativeError(int error)
         {
             switch (error)
@@ -140,39 +120,7 @@ namespace System.Net
                 Aliases = aliases
             };
         }
-
-        public static unsafe IPHostEntry GetHostByName(string hostName)
-        {
-            if (hostName == "")
-            {
-                // To match documented behavior on Windows, if an empty string is passed in, use the local host's name.
-                hostName = Dns.GetHostName();
-            }
-
-            Interop.Sys.HostEntry entry;
-            int err = Interop.Sys.GetHostByName(hostName, &entry);
-            if (err != 0)
-            {
-                throw SocketExceptionFactory.CreateSocketException(GetSocketErrorForErrno(err), err);
-            }
-
-            return CreateIPHostEntry(entry);
-        }
-
-        public static unsafe IPHostEntry GetHostByAddr(IPAddress addr)
-        {
-            // TODO #2891: Optimize this (or decide if this legacy code can be removed):
-            Interop.Sys.IPAddress address = addr.GetNativeIPAddress();
-            Interop.Sys.HostEntry entry;
-            int err = Interop.Sys.GetHostByAddress(&address, &entry);
-            if (err != 0)
-            {
-                throw SocketExceptionFactory.CreateSocketException(GetSocketErrorForErrno(err), err);
-            }
-
-            return CreateIPHostEntry(entry);
-        }
-
+    
         public static unsafe SocketError TryGetAddrInfo(string name, out IPHostEntry hostinfo, out int nativeErrorCode)
         {
             if (name == "")

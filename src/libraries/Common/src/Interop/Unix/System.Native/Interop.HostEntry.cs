@@ -31,28 +31,27 @@ internal static partial class Interop
             NO_DATA = 4,
             NO_ADDRESS = NO_DATA,
         }
+
+        //opaque structure to maintain consistency with native function signature
+        internal unsafe struct addrinfo
+        {
+            
+        }    
         
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct HostEntry
         {
             internal byte* CanonicalName;     // Canonical Name of the Host
             internal byte** Aliases;          // List of aliases for the host
-            internal void* AddressListHandle; // Handle for socket address list
-            internal int IPAddressCount;      // Number of IP addresses in the list
-            private int _handleType;          // Opaque handle type information.
+            internal addrinfo* AddressListHandle; // Handle for socket address list
+            internal int IPAddressCount;      // Number of IP addresses in the list            
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName")]
         internal static extern unsafe int GetHostEntryForName(string address, HostEntry* entry);
-
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostByName")]
-        internal static extern unsafe int GetHostByName(string address, HostEntry* entry);
-
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostByAddress")]
-        internal static extern unsafe int GetHostByAddress(IPAddress* address, HostEntry* entry);
-
+        
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNextIPAddress")]
-        internal static extern unsafe int GetNextIPAddress(HostEntry* entry, void** addressListHandle, IPAddress* endPoint);
+        internal static extern unsafe int GetNextIPAddress(HostEntry* entry, addrinfo** addressListHandle, IPAddress* endPoint);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
         internal static extern unsafe void FreeHostEntry(HostEntry* entry);
