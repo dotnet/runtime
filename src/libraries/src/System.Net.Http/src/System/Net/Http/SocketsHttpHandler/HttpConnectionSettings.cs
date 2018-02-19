@@ -30,6 +30,8 @@ namespace System.Net.Http
 
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
+        internal TimeSpan _expect100ContinueTimeout = HttpHandlerDefaults.DefaultExpect100ContinueTimeout;
+        internal TimeSpan _connectTimeout = HttpHandlerDefaults.DefaultConnectTimeout;
 
         internal SslClientAuthenticationOptions _sslOptions;
 
@@ -48,8 +50,10 @@ namespace System.Net.Http
                 _allowAutoRedirect = _allowAutoRedirect,
                 _automaticDecompression = _automaticDecompression,
                 _cookieContainer = _cookieContainer,
+                _connectTimeout = _connectTimeout,
                 _credentials = _credentials,
                 _defaultProxyCredentials = _defaultProxyCredentials,
+                _expect100ContinueTimeout = _expect100ContinueTimeout,
                 _maxAutomaticRedirections = _maxAutomaticRedirections,
                 _maxConnectionsPerServer = _maxConnectionsPerServer,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,

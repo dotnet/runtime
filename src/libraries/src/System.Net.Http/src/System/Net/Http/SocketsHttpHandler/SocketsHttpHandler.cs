@@ -207,6 +207,38 @@ namespace System.Net.Http
             }
         }
 
+        internal TimeSpan ConnectTimeout // TODO #27235: Expose publicly
+        {
+            get => _settings._connectTimeout;
+            set
+            {
+                if ((value <= TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._connectTimeout = value;
+            }
+        }
+
+        internal TimeSpan Expect100ContinueTimeout // TODO #27145: Expose publicly
+        {
+            get => _settings._expect100ContinueTimeout;
+            set
+            {
+                if ((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._expect100ContinueTimeout = value;
+            }
+        }
+
         public IDictionary<string, object> Properties =>
             _settings._properties ?? (_settings._properties = new Dictionary<string, object>());
 

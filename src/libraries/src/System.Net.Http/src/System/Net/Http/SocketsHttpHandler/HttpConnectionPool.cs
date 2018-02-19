@@ -206,24 +206,60 @@ namespace System.Net.Http
 
         private async ValueTask<HttpConnection> CreateConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Stream stream = await
-                (_proxyUri == null ?
-                    ConnectHelper.ConnectAsync(_host, _port, cancellationToken) :
-                    (_sslOptions == null ?
-                        ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken) :
-                        EstablishProxyTunnel(cancellationToken))).ConfigureAwait(false);
-
-            TransportContext transportContext = null;
-            if (_sslOptions != null)
+            // If a non-infinite connect timeout has been set, create and use a new CancellationToken that'll be canceled
+            // when either the original token is canceled or a connect timeout occurs.
+            CancellationTokenSource cancellationWithConnectTimeout = null;
+            if (Settings._connectTimeout != Timeout.InfiniteTimeSpan)
             {
-                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
-                stream = sslStream;
-                transportContext = sslStream.TransportContext;
+                cancellationWithConnectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default);
+                cancellationWithConnectTimeout.CancelAfter(Settings._connectTimeout);
+                cancellationToken = cancellationWithConnectTimeout.Token;
             }
 
-            return _maxConnections == int.MaxValue ?
-                new HttpConnection(this, stream, transportContext) :
-                new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
+            try
+            {
+                Stream stream = await
+                    (_proxyUri == null ?
+                        ConnectHelper.ConnectAsync(_host, _port, cancellationToken) :
+                        (_sslOptions == null ?
+                            ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken) :
+                            EstablishProxyTunnel(cancellationToken))).ConfigureAwait(false);
+
+                TransportContext transportContext = null;
+                if (_sslOptions != null)
+                {
+                    // TODO #25206 and #24430: Register/IsCancellationRequested should be removable once SslStream auth and sockets respect cancellation.
+                    CancellationTokenRegistration ctr = cancellationToken.Register(s => ((Stream)s).Dispose(), stream);
+                    try
+                    {
+                        SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
+                        stream = sslStream;
+                        transportContext = sslStream.TransportContext;
+                        cancellationToken.ThrowIfCancellationRequested(); // to handle race condition where stream is dispose of by cancellation after auth
+                    }
+                    catch (Exception exc)
+                    {
+                        stream.Dispose(); // in case cancellation occurs after successful SSL auth
+                        if (HttpConnection.ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                        {
+                            throw HttpConnection.CreateOperationCanceledException(exc, cancellationToken);
+                        }
+                        throw;
+                    }
+                    finally
+                    {
+                        ctr.Dispose();
+                    }
+                }
+
+                return _maxConnections == int.MaxValue ?
+                    new HttpConnection(this, stream, transportContext) :
+                    new HttpConnectionWithFinalizer(this, stream, transportContext); // finalizer needed to signal the pool when a connection is dropped
+            }
+            finally
+            {
+                cancellationWithConnectTimeout?.Dispose();
+            }
         }
 
         // TODO (#23136):
