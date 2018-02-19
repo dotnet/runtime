@@ -38,5 +38,41 @@ namespace System.Net.Http
 
         public sealed override void CopyTo(Stream destination, int bufferSize) =>
             CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
+
+        public virtual Task DrainAsync(int maxDrainBytes) => Task.CompletedTask;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (_connection != null)
+                {
+                    // Start the asynchronous drain.
+                    // It may complete synchronously, in which case the connection will be put back in the pool synchronously.
+                    // Skip the call to base.Dispose -- it will be deferred until DrainOnDispose finishes.
+                    DrainOnDispose();
+                    return;
+                }
+            }
+
+            base.Dispose(disposing);
+        }
+
+        // Maximum request drain size, 16K.
+        private const int s_maxDrainBytes = 16 * 1024;
+
+        private async void DrainOnDispose()
+        {
+            try
+            {
+                await DrainAsync(s_maxDrainBytes);
+            }
+            catch (Exception)
+            {
+                // Eat any exceptions and just Dispose.
+            }
+
+            base.Dispose(true);
+        }
     }
 }
