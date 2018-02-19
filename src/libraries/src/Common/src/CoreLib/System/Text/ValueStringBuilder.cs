@@ -22,6 +22,13 @@ namespace System.Text
             _pos = 0;
         }
 
+        public ValueStringBuilder(int initialCapacity)
+        {
+            _arrayToReturnToPool = ArrayPool<char>.Shared.Rent(initialCapacity);
+            _chars = _arrayToReturnToPool;
+            _pos = 0;
+        }
+
         public int Length
         {
             get => _pos;
