@@ -4,11 +4,13 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -129,6 +131,209 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
         protected override bool UseSocketsHttpHandler => true;
+
+        // TODO #27235:
+        // Remove these reflection helpers once the property is exposed.
+        private TimeSpan GetConnectTimeout(SocketsHttpHandler handler) =>
+            (TimeSpan)typeof(SocketsHttpHandler).GetProperty("ConnectTimeout", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handler);
+        private void SetConnectTimeout(SocketsHttpHandler handler, TimeSpan timeout)
+        {
+            try
+            {
+                typeof(SocketsHttpHandler).GetProperty("ConnectTimeout", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(handler, timeout);
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null) throw tie.InnerException;
+                throw;
+            }
+        }
+
+        // TODO #27145:
+        // Remove these reflection helpers once the property is exposed.
+        private TimeSpan GetExpect100ContinueTimeout(SocketsHttpHandler handler) =>
+            (TimeSpan)typeof(SocketsHttpHandler).GetProperty("Expect100ContinueTimeout", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handler);
+        private void SetExpect100ContinueTimeout(SocketsHttpHandler handler, TimeSpan timeout)
+        {
+            try
+            {
+                typeof(SocketsHttpHandler).GetProperty("Expect100ContinueTimeout", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(handler, timeout);
+            }
+            catch (TargetInvocationException tie)
+            {
+                if (tie.InnerException != null) throw tie.InnerException;
+                throw;
+            }
+        }
+
+        [Fact]
+        public void ConnectTimeout_Default()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(Timeout.InfiniteTimeSpan, GetConnectTimeout(handler));
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-2)]
+        [InlineData(int.MaxValue + 1L)]
+        public void ConnectTimeout_InvalidValues(long ms)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => SetConnectTimeout(handler, TimeSpan.FromMilliseconds(ms)));
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1)]
+        [InlineData(int.MaxValue - 1)]
+        [InlineData(int.MaxValue)]
+        public void ConnectTimeout_ValidValues_Roundtrip(long ms)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                SetConnectTimeout(handler, TimeSpan.FromMilliseconds(ms));
+                Assert.Equal(TimeSpan.FromMilliseconds(ms), GetConnectTimeout(handler));
+            }
+        }
+
+        [Fact]
+        public void ConnectTimeout_SetAfterUse_Throws()
+        {
+            using (var handler = new SocketsHttpHandler())
+            using (var client = new HttpClient(handler))
+            {
+                SetConnectTimeout(handler, TimeSpan.FromMilliseconds(int.MaxValue));
+                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), GetConnectTimeout(handler));
+                Assert.Throws<InvalidOperationException>(() => SetConnectTimeout(handler, TimeSpan.FromMilliseconds(1)));
+            }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
+        {
+            var releaseServer = new TaskCompletionSource<bool>();
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = new SocketsHttpHandler())
+                using (var invoker = new HttpMessageInvoker(handler))
+                {
+                    SetConnectTimeout(handler, TimeSpan.FromSeconds(1));
+
+                    var sw = Stopwatch.StartNew();
+                    await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                        invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get,
+                            new UriBuilder(uri) { Scheme = "https" }.ToString()), default));
+                    sw.Stop();
+
+                    Assert.InRange(sw.ElapsedMilliseconds, 500, 10_000);
+                    releaseServer.SetResult(true);
+                }
+            }, server => releaseServer.Task); // doesn't establish SSL connection
+        }
+
+
+        [Fact]
+        public void Expect100ContinueTimeout_Default()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(TimeSpan.FromSeconds(1), GetExpect100ContinueTimeout(handler));
+            }
+        }
+
+        [Theory]
+        [InlineData(-2)]
+        [InlineData(int.MaxValue + 1L)]
+        public void Expect100ContinueTimeout_InvalidValues(long ms)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(ms)));
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1)]
+        [InlineData(int.MaxValue - 1)]
+        [InlineData(int.MaxValue)]
+        public void Expect100ContinueTimeout_ValidValues_Roundtrip(long ms)
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(ms));
+                Assert.Equal(TimeSpan.FromMilliseconds(ms), GetExpect100ContinueTimeout(handler));
+            }
+        }
+
+        [Fact]
+        public void Expect100ContinueTimeout_SetAfterUse_Throws()
+        {
+            using (var handler = new SocketsHttpHandler())
+            using (var client = new HttpClient(handler))
+            {
+                SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(int.MaxValue));
+                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), GetExpect100ContinueTimeout(handler));
+                Assert.Throws<InvalidOperationException>(() => SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(1)));
+            }
+        }
+
+        [OuterLoop("Incurs significant delay")]
+        [Fact]
+        public async Task Expect100Continue_WaitsExpectedPeriodOfTimeBeforeSendingContent()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (var handler = new SocketsHttpHandler())
+                using (var invoker = new HttpMessageInvoker(handler))
+                {
+                    TimeSpan delay = TimeSpan.FromSeconds(3);
+
+                    // TODO #27145: Remove reflection once publicly exposed
+                    typeof(SocketsHttpHandler).GetProperty("Expect100ContinueTimeout", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(handler, delay);
+
+                    var tcs = new TaskCompletionSource<bool>();
+                    var content = new SetTcsContent(new MemoryStream(new byte[1]), tcs);
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content };
+                    request.Headers.ExpectContinue = true;
+
+                    var sw = Stopwatch.StartNew();
+                    (await invoker.SendAsync(request, default)).Dispose();
+                    sw.Stop();
+
+                    Assert.InRange(sw.Elapsed, delay - TimeSpan.FromSeconds(.5), delay * 5); // arbitrary wiggle room
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+                    await connection.Reader.ReadAsync(new char[1]);
+                    await connection.SendResponseAsync();
+                });
+            });
+        }
+
+        private sealed class SetTcsContent : StreamContent
+        {
+            private readonly TaskCompletionSource<bool> _tcs;
+
+            public SetTcsContent(Stream stream, TaskCompletionSource<bool> tcs) : base(stream) => _tcs = tcs;
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                _tcs.SetResult(true);
+                return base.SerializeToStreamAsync(stream, context);
+            }
+        }
     }
 
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
