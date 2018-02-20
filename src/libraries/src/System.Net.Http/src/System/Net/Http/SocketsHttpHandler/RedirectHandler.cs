@@ -89,6 +89,11 @@ namespace System.Net.Http
             // Disallow automatic redirection from secure to non-secure schemes
             if (HttpUtilities.IsSupportedSecureScheme(requestUri.Scheme) && !HttpUtilities.IsSupportedSecureScheme(location.Scheme))
             {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, $"Insecure https to http redirect from {requestUri} to {location} blocked.");
+                }
+
                 return null;
             }
 
