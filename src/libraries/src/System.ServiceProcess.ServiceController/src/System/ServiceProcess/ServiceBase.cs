@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
@@ -29,6 +30,7 @@ namespace System.ServiceProcess
         private ServiceMainCallback _mainCallback;
         private IntPtr _handleName;
         private ManualResetEvent _startCompletedSignal;
+        private ExceptionDispatchInfo _startFailedException;
         private int _acceptedCommands;
         private string _serviceName;
         private bool _nameFrozen;          // set to true once we've started running and ServiceName can't be changed any more.
@@ -620,7 +622,21 @@ namespace System.ServiceProcess
 
             // While the service is running, this function will never return. It will return when the service
             // is stopped.
+            // After it returns, SCM might terminate the process at any time
+            // (so subsequent code is not guaranteed to run).
             bool res = StartServiceCtrlDispatcher(entriesPointer);
+
+            foreach (ServiceBase service in services)
+            {
+                if (service._startFailedException != null)
+                {
+                    // Propagate exceptions throw during OnStart.
+                    // Note that this same exception is also thrown from ServiceMainCallback
+                    // (so SCM can see it as well).
+                    service._startFailedException.Throw();
+                }
+            }
+
             string errorMessage = "";
 
             if (!res)
@@ -830,6 +846,12 @@ namespace System.ServiceProcess
             {
                 WriteLogEntry(SR.Format(SR.StartFailed, e.ToString()), true);
                 _status.currentState = ServiceControlStatus.STATE_STOPPED;
+
+                // We capture the exception so that it can be propagated
+                // from ServiceBase.Run.
+                // We also use the presence of this exception to inform SCM
+                // that the service failed to start successfully.
+                _startFailedException = ExceptionDispatchInfo.Capture(e);
             }
             _startCompletedSignal.Set();
         }
@@ -901,8 +923,20 @@ namespace System.ServiceProcess
                 // since NT will terminate this thread right after this function
                 // finishes.
                 _startCompletedSignal = new ManualResetEvent(false);
+                _startFailedException = null;
                 ThreadPool.QueueUserWorkItem(new WaitCallback(this.ServiceQueuedMainCallback), args);
                 _startCompletedSignal.WaitOne();
+
+                if (_startFailedException != null)
+                {
+                    // Inform SCM that the service could not be started successfully.
+                    // (Unless the service has already provided another failure exit code)
+                    if (_status.win32ExitCode == 0)
+                    {
+                        _status.win32ExitCode = ServiceControlStatus.ERROR_EXCEPTION_IN_SERVICE;
+                    }
+                }
+
                 statusOK = SetServiceStatus(_statusHandle, pStatus);
                 if (!statusOK)
                 {

@@ -113,7 +113,8 @@ namespace System.ServiceProcess.Tests
                     if (svc.Status != ServiceControllerStatus.Running)
                     {
                         svc.Start();
-                        svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+                        if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
+                            svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
                     }
                 }
             }
