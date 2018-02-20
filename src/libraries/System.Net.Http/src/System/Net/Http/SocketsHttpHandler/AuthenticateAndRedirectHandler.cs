@@ -132,6 +132,10 @@ namespace System.Net.Http
                     (HttpUtilities.IsSupportedSecureScheme(request.RequestUri.Scheme) && HttpUtilities.IsSupportedSecureScheme(location.Scheme));
                 if (!allowed)
                 {
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(this, $"Insecure https to http redirect from {request.RequestUri} to {location} blocked.");
+                    }
                     break;
                 }
 

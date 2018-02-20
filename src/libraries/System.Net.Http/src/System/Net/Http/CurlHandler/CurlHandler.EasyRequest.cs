@@ -370,6 +370,11 @@ namespace System.Net.Http
                     {
                         SetCookieOption(newUri);
                     }
+
+                    if (newUri.Scheme == Uri.UriSchemeHttp && _requestMessage.RequestUri.Scheme == Uri.UriSchemeHttps)
+                    {
+                        EventSourceTrace("Insecure https to http redirect: {0}", (_requestMessage.RequestUri, newUri));
+                    }
                 }
 
                 // Set up the new credentials, either for the new Uri if we were able to get it, 
