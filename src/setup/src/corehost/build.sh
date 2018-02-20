@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# Why is this a separate script? Why not just invoke 'cmake' and 'make' in the C# build scripts themselves?
-# I really don't know, but it doesn't work when I do that. Something about SIGCHLD not getting from clang to cmake or something.
-#       -anurse
-
 init_rid_plat()
 {
     # Detect Distro
@@ -98,6 +94,8 @@ __portableBuildArgs=
 __configuration=Debug
 __linkPortable=0
 __cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
+__baseIntermediateOutputPath="$RootRepo/Bin/obj"
+__versionSourceFile="$__baseIntermediateOutputPath/version.cpp"
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -149,6 +147,8 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+mkdir -p "$__baseIntermediateOutputPath"
 
 case $__build_arch in
     amd64|x64)
@@ -213,6 +213,13 @@ else
     echo "Install clang-3.5 or clang3.6 or clang3.9"
     exit 1
 fi
+
+if [ ! -f $__versionSourceFile ]; then
+    __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+    echo $__versionSourceLine > $__versionSourceFile
+fi
+
+__cmake_defines="${__cmake_defines} -DVERSION_FILE_PATH:STRING=${__versionSourceFile}"
 
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
