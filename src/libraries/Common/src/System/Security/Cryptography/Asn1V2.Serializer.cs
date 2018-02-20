@@ -1412,6 +1412,50 @@ namespace System.Security.Cryptography.Asn1
         }
 
         /// <summary>
+        /// Read the first ASN.1 data element from <paramref name="source"/> encoded under the specified
+        /// encoding rules into the typed structure.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The type to deserialize as.
+        /// In order to be deserialized the type must have sequential layout, be sealed, and be composed of
+        /// members that are also able to be deserialized by this method.
+        /// </typeparam>
+        /// <param name="source">A view of the encoded bytes to be deserialized.</param>
+        /// <param name="ruleSet">The ASN.1 encoding ruleset to use for reading <paramref name="source"/>.</param>
+        /// <param name="bytesRead">Receives the number of bytes read from <paramref name="source"/>.</param>
+        /// <returns>A deserialized instance of <typeparamref name="T"/>.</returns>
+        /// <remarks>
+        /// Except for where required to for avoiding ambiguity, this method does not check that there are
+        /// no cycles in the type graph for <typeparamref name="T"/>.  If <typeparamref name="T"/> is a
+        /// reference type (class) which includes a cycle in the type graph, 
+        /// then it is possible for the data in <paramref name="source"/> to cause
+        /// an arbitrary extension to the maximum stack depth of this routine, leading to a
+        /// <see cref="StackOverflowException"/>.
+        /// 
+        /// If <typeparamref name="T"/> is a value type (struct) the compiler will enforce that there are no
+        /// cycles in the type graph.
+        /// 
+        /// When reference types are used the onus is on the caller of this method to prevent cycles, or to
+        /// mitigate the possibility of the stack overflow.
+        /// </remarks>
+        /// <exception cref="AsnSerializationConstraintException">
+        ///   A portion of <typeparamref name="T"/> is invalid for deserialization.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Any of the data in <paramref name="source"/> is invalid for mapping to the return value.
+        /// </exception>
+        public static T Deserialize<T>(ReadOnlyMemory<byte> source, AsnEncodingRules ruleSet, out int bytesRead)
+        {
+            Deserializer deserializer = GetDeserializer(typeof(T), null);
+            AsnReader reader = new AsnReader(source, ruleSet);
+            ReadOnlyMemory<byte> firstElement = reader.PeekEncodedValue();
+
+            T t = (T)deserializer(reader);
+            bytesRead = firstElement.Length;
+            return t;
+        }
+
+        /// <summary>
         /// Serialize <paramref name="value"/> into an ASN.1 writer under the specified encoding rules.
         /// </summary>
         /// <typeparam name="T">

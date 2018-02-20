@@ -56,6 +56,22 @@ namespace Internal.Cryptography
             }
         }
 
+        internal static string GetOidFromHashAlgorithm(HashAlgorithmName algName)
+        {
+            if (algName == HashAlgorithmName.MD5)
+                return Oids.Md5;
+            if (algName == HashAlgorithmName.SHA1)
+                return Oids.Sha1;
+            if (algName == HashAlgorithmName.SHA256)
+                return Oids.Sha256;
+            if (algName == HashAlgorithmName.SHA384)
+                return Oids.Sha384;
+            if (algName == HashAlgorithmName.SHA512)
+                return Oids.Sha512;
+
+            throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, algName.Name);
+        }
+
         /// <summary>
         /// This is not just a convenience wrapper for Array.Resize(). In DEBUG builds, it forces the array to move in memory even if no resize is needed. This should be used by
         /// helper methods that do anything of the form "call a native api once to get the estimated size, call it again to get the data and return the data in a byte[] array."
