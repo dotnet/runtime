@@ -206,15 +206,16 @@ namespace System.Text.RegularExpressions
             if (_ignoreTimeout)
                 return;
 
-            if (--_timeoutChecksToSkip != 0)
-                return;
-
-            _timeoutChecksToSkip = TimeoutCheckFrequency;
             DoCheckTimeout();
         }
 
         private void DoCheckTimeout()
         {
+            if (--_timeoutChecksToSkip != 0)
+                return;
+
+            _timeoutChecksToSkip = TimeoutCheckFrequency;
+
             // Note that both, Environment.TickCount and timeoutOccursAt are ints and can overflow and become negative.
             // See the comment in StartTimeoutWatch().
 
