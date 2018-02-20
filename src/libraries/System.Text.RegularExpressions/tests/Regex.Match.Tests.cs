@@ -346,7 +346,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
 
                 return SuccessExitCode;
-            });
+            }).Dispose();
         }
 
         public static IEnumerable<object[]> Match_Advanced_TestData()

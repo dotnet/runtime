@@ -1177,7 +1177,7 @@ namespace System.Tests
                 Assert.Equal(bool.Parse(expectedString), string.Equals(source, target, comparisonType));
 
                 return SuccessExitCode;
-            }, comparison.ToString(), expected.ToString());
+            }, comparison.ToString(), expected.ToString()).Dispose();
         }
 
         [Theory]

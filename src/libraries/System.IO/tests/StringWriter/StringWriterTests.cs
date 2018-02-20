@@ -308,7 +308,7 @@ namespace System.IO.Tests
                 sw.Write((ulong)ulong.MaxValue);
 
                 Assert.Equal("Truea1234.013452342.0123456-92233720368547758081234.5429496729518446744073709551615", sw.ToString());
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -337,7 +337,7 @@ namespace System.IO.Tests
                 Assert.Equal(
                     string.Format("False{0}B{0}987{0}875634{0}1.23457{0}45634563{0}18446744073709551615{0}", Environment.NewLine),
                     sw.ToString());
-            });
+            }).Dispose();
         }
 
         [Fact]
