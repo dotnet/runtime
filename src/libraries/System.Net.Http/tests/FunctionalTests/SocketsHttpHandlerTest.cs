@@ -132,46 +132,12 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
-        // TODO #27235:
-        // Remove these reflection helpers once the property is exposed.
-        private TimeSpan GetConnectTimeout(SocketsHttpHandler handler) =>
-            (TimeSpan)typeof(SocketsHttpHandler).GetProperty("ConnectTimeout", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handler);
-        private void SetConnectTimeout(SocketsHttpHandler handler, TimeSpan timeout)
-        {
-            try
-            {
-                typeof(SocketsHttpHandler).GetProperty("ConnectTimeout", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(handler, timeout);
-            }
-            catch (TargetInvocationException tie)
-            {
-                if (tie.InnerException != null) throw tie.InnerException;
-                throw;
-            }
-        }
-
-        // TODO #27145:
-        // Remove these reflection helpers once the property is exposed.
-        private TimeSpan GetExpect100ContinueTimeout(SocketsHttpHandler handler) =>
-            (TimeSpan)typeof(SocketsHttpHandler).GetProperty("Expect100ContinueTimeout", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(handler);
-        private void SetExpect100ContinueTimeout(SocketsHttpHandler handler, TimeSpan timeout)
-        {
-            try
-            {
-                typeof(SocketsHttpHandler).GetProperty("Expect100ContinueTimeout", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(handler, timeout);
-            }
-            catch (TargetInvocationException tie)
-            {
-                if (tie.InnerException != null) throw tie.InnerException;
-                throw;
-            }
-        }
-
         [Fact]
         public void ConnectTimeout_Default()
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(Timeout.InfiniteTimeSpan, GetConnectTimeout(handler));
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.ConnectTimeout);
             }
         }
 
@@ -183,7 +149,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => SetConnectTimeout(handler, TimeSpan.FromMilliseconds(ms)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(ms));
             }
         }
 
@@ -196,8 +162,8 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                SetConnectTimeout(handler, TimeSpan.FromMilliseconds(ms));
-                Assert.Equal(TimeSpan.FromMilliseconds(ms), GetConnectTimeout(handler));
+                handler.ConnectTimeout = TimeSpan.FromMilliseconds(ms);
+                Assert.Equal(TimeSpan.FromMilliseconds(ms), handler.ConnectTimeout);
             }
         }
 
@@ -207,10 +173,10 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new SocketsHttpHandler())
             using (var client = new HttpClient(handler))
             {
-                SetConnectTimeout(handler, TimeSpan.FromMilliseconds(int.MaxValue));
+                handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
                 client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
-                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), GetConnectTimeout(handler));
-                Assert.Throws<InvalidOperationException>(() => SetConnectTimeout(handler, TimeSpan.FromMilliseconds(1)));
+                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
+                Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
             }
         }
 
@@ -224,7 +190,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = new SocketsHttpHandler())
                 using (var invoker = new HttpMessageInvoker(handler))
                 {
-                    SetConnectTimeout(handler, TimeSpan.FromSeconds(1));
+                    handler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
                     var sw = Stopwatch.StartNew();
                     await Assert.ThrowsAsync<OperationCanceledException>(() =>
@@ -244,7 +210,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromSeconds(1), GetExpect100ContinueTimeout(handler));
+                Assert.Equal(TimeSpan.FromSeconds(1), handler.Expect100ContinueTimeout);
             }
         }
 
@@ -255,7 +221,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(ms)));
+                Assert.Throws<ArgumentOutOfRangeException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(ms));
             }
         }
 
@@ -268,8 +234,8 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(ms));
-                Assert.Equal(TimeSpan.FromMilliseconds(ms), GetExpect100ContinueTimeout(handler));
+                handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(ms);
+                Assert.Equal(TimeSpan.FromMilliseconds(ms), handler.Expect100ContinueTimeout);
             }
         }
 
@@ -279,10 +245,10 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new SocketsHttpHandler())
             using (var client = new HttpClient(handler))
             {
-                SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(int.MaxValue));
+                handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
                 client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
-                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), GetExpect100ContinueTimeout(handler));
-                Assert.Throws<InvalidOperationException>(() => SetExpect100ContinueTimeout(handler, TimeSpan.FromMilliseconds(1)));
+                Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
+                Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
         }
 
@@ -296,9 +262,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var invoker = new HttpMessageInvoker(handler))
                 {
                     TimeSpan delay = TimeSpan.FromSeconds(3);
-
-                    // TODO #27145: Remove reflection once publicly exposed
-                    typeof(SocketsHttpHandler).GetProperty("Expect100ContinueTimeout", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(handler, delay);
+                    handler.Expect100ContinueTimeout = delay;
 
                     var tcs = new TaskCompletionSource<bool>();
                     var content = new SetTcsContent(new MemoryStream(new byte[1]), tcs);

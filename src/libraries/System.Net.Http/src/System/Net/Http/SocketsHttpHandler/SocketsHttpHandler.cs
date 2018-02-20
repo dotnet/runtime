@@ -207,7 +207,7 @@ namespace System.Net.Http
             }
         }
 
-        internal TimeSpan ConnectTimeout // TODO #27235: Expose publicly
+        public TimeSpan ConnectTimeout
         {
             get => _settings._connectTimeout;
             set
@@ -223,7 +223,7 @@ namespace System.Net.Http
             }
         }
 
-        internal TimeSpan Expect100ContinueTimeout // TODO #27145: Expose publicly
+        public TimeSpan Expect100ContinueTimeout
         {
             get => _settings._expect100ContinueTimeout;
             set
