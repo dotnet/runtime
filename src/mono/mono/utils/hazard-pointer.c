@@ -106,13 +106,22 @@ mono_thread_small_id_alloc (void)
 		hazard_table_size = HAZARD_TABLE_MAX_SIZE;
 #else
 		gpointer page_addr;
+#if defined(_AIX)
+		/*
+		 * HACK: allocating the table with none prot will cause i 7.1
+		 * to segfault when accessing or protecting it
+		 */
+		int table_prot = MONO_MMAP_READ | MONO_MMAP_WRITE;
+#else
+		int table_prot = MONO_MMAP_NONE;
+#endif
 		int pagesize = mono_pagesize ();
 		int num_pages = (hazard_table_size * sizeof (MonoThreadHazardPointers) + pagesize - 1) / pagesize;
 
 		if (hazard_table == NULL) {
 			hazard_table = (MonoThreadHazardPointers *volatile) mono_valloc (NULL,
 				sizeof (MonoThreadHazardPointers) * HAZARD_TABLE_MAX_SIZE,
-				MONO_MMAP_NONE, MONO_MEM_ACCOUNT_HAZARD_POINTERS);
+				table_prot, MONO_MEM_ACCOUNT_HAZARD_POINTERS);
 		}
 
 		g_assert (hazard_table != NULL);

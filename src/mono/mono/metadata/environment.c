@@ -67,6 +67,19 @@ ves_icall_System_Environment_GetOSVersionString (MonoError *error)
 				 verinfo.wServicePackMajor << 16);
 		return mono_string_new_handle (mono_domain_get (), version, error);
 	}
+#elif defined(HAVE_SYS_UTSNAME_H) && defined(_AIX)
+	/*
+	 * AIX puts the major version number in .version and minor in .release; so make a
+	 * version string based on that; other Unices seem to cram everything in .release
+	 * and .version is for things like kernel variants.
+	 */
+	struct utsname name;
+	char version [sizeof(name)];
+
+	if (uname (&name) >= 0) {
+		sprintf (version, "%s.%s", name.version, name.release);
+		return mono_string_new_handle (mono_domain_get (), version, error);
+	}
 #elif defined(HAVE_SYS_UTSNAME_H)
 	struct utsname name;
 
