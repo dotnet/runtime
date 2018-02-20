@@ -66,7 +66,7 @@ namespace System.ComponentModel.Tests
                     DateTimeConverterTests.s_converter);
 
                 return SuccessExitCode;
-            });
+            }).Dispose();
         }
     }
 }
