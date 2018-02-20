@@ -4345,7 +4345,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->gtLclNum;
     assert(varNum < compiler->lvaCount);
 
-    getEmitter()->emitIns_R_S(ins_Move_Extend(targetType, false), size, targetReg, varNum, offs);
+    getEmitter()->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
 
     genProduceReg(tree);
 }
