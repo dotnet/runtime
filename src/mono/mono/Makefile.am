@@ -7,10 +7,10 @@ btls_dirs = btls
 endif
 
 if CROSS_COMPILING
-SUBDIRS = $(btls_dirs) eglib arch utils cil metadata $(sgen_dirs) mini dis profiler
+SUBDIRS = $(btls_dirs) eglib arch utils cil $(sgen_dirs) metadata mini dis profiler
 else
 if INSTALL_MONOTOUCH
-SUBDIRS = $(btls_dirs) eglib arch utils metadata $(sgen_dirs) mini profiler
+SUBDIRS = $(btls_dirs) eglib arch utils $(sgen_dirs) metadata mini profiler
 
 monotouch-do-build:
 	@list='$(SUBDIRS)'; for subdir in $$list; do \
@@ -34,7 +34,7 @@ monotouch-do-clean:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
     done;
 else
-SUBDIRS = $(btls_dirs) eglib arch utils cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler 
+SUBDIRS = $(btls_dirs) eglib arch utils cil $(sgen_dirs) metadata mini dis tests unit-tests benchmark profiler
 endif
 endif
-DIST_SUBDIRS = btls eglib arch utils cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler 
+DIST_SUBDIRS = btls eglib arch utils cil $(sgen_dirs) metadata mini dis tests unit-tests benchmark profiler

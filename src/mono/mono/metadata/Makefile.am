@@ -69,6 +69,10 @@ else
 platform_sources += threadpool-worker-default.c
 endif
 
+if BITCODE
+libmonoldflags = -no-undefined
+endif
+
 if SUPPORT_SGEN
 sgen_libraries = libmonoruntimesgen.la
 endif
@@ -111,6 +115,11 @@ libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" 
 if DISABLE_ICALL_TABLES
 libmono_icall_table_la_SOURCES = \
 	icall-table.c
+libmono_icall_table_la_CFLAGS = $(SGEN_DEFINES)
+libmono_icall_table_la_LDFLAGS = $(libmonoldflags)
+if BITCODE
+libmono_icall_table_la_LIBADD = ../eglib/libeglib.la ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+endif
 endif
 
 CLEANFILES = mono-bundle.stamp
