@@ -608,7 +608,7 @@ namespace System.Linq
         {
             Requires.NotNull(keySelector, nameof(keySelector));
 
-            var result = new Dictionary<TKey, T>(comparer);
+            var result = new Dictionary<TKey, T>(immutableArray.Length, comparer);
             foreach (var v in immutableArray)
             {
                 result.Add(keySelector(v), v);
