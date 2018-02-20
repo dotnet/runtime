@@ -239,9 +239,8 @@ struct HostEntry
 {
     uint8_t* CanonicalName;  // Canonical name of the host
     uint8_t** Aliases;       // List of aliases for the host
-    void* AddressListHandle; // Handle for host socket addresses
+    struct addrinfo* AddressListHandle; // Handle for host socket addresses
     int32_t IPAddressCount;  // Number of IP end points in the list
-    int32_t HandleType;      // Indicates the type of the handle. Opaque to managed code.
 };
 
 struct IPPacketInformation
@@ -299,11 +298,7 @@ struct SocketEvent
 
 int32_t SystemNative_GetHostEntryForName(const uint8_t* address, struct HostEntry* entry);
 
-int32_t SystemNative_GetHostByName(const uint8_t* hostname, struct HostEntry* entry);
-
-int32_t SystemNative_GetHostByAddress(const struct IPAddress* address, struct HostEntry* entry);
-
-int32_t SystemNative_GetNextIPAddress(const struct HostEntry* entry, void** addressListHandle, struct IPAddress* endPoint);
+int32_t SystemNative_GetNextIPAddress(const struct HostEntry* entry, struct addrinfo** addressListHandle, struct IPAddress* endPoint);
 
 void SystemNative_FreeHostEntry(struct HostEntry* entry);
 

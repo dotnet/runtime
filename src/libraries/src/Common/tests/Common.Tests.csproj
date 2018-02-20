@@ -71,6 +71,7 @@
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\AssertExtensionTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
+    <Compile Include="Tests\System\IO\PathInternal.Tests.cs" />
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\MarvinTests.cs" />
     <Compile Include="Tests\System\PasteArgumentsTests.cs" />
@@ -95,10 +96,13 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
-      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -122,8 +126,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="..\src\System\IO\PathInternal.Unix.cs">
-      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Unix.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>

@@ -28,11 +28,6 @@ namespace System.Net.Http
         /// <summary>Default size of the write buffer used for the connection.</summary>
         private const int InitialWriteBufferSize = InitialReadBufferSize;
         /// <summary>
-        /// Delay after which we'll send the request payload for ExpectContinue if
-        /// the server hasn't yet responded.
-        /// </summary>
-        private const int Expect100TimeoutMilliseconds = 1000;
-        /// <summary>
         /// Size after which we'll close the connection rather than send the payload in response
         /// to final error status code sent by the server when using Expect: 100-continue.
         /// </summary>
@@ -362,7 +357,7 @@ namespace System.Net.Http
                         allowExpect100ToContinue = new TaskCompletionSource<bool>();
                         var expect100Timer = new Timer(
                             s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
-                            allowExpect100ToContinue, TimeSpan.FromMilliseconds(Expect100TimeoutMilliseconds), Timeout.InfiniteTimeSpan);
+                            allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
                         _sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, stream, expect100Timer, cancellationToken);
                     }
@@ -599,10 +594,10 @@ namespace System.Net.Http
             }, _weakThisRef);
         }
 
-        private static bool ShouldWrapInOperationCanceledException(Exception error, CancellationToken cancellationToken) =>
+        internal static bool ShouldWrapInOperationCanceledException(Exception error, CancellationToken cancellationToken) =>
             !(error is OperationCanceledException) && cancellationToken.IsCancellationRequested;
 
-        private static Exception CreateOperationCanceledException(Exception error, CancellationToken cancellationToken) =>
+        internal static Exception CreateOperationCanceledException(Exception error, CancellationToken cancellationToken) =>
             new OperationCanceledException(s_cancellationMessage, error, cancellationToken);
 
         private static bool LineIsEmpty(ArraySegment<byte> line) => line.Count == 0;

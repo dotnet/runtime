@@ -235,8 +235,8 @@ namespace System.Security.Cryptography
                 protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
                     AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
 
-                protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                    AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+                protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+                    AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
                 protected override void Dispose(bool disposing)
                 {

@@ -308,46 +308,6 @@ check_function_exists(
     kqueue
     HAVE_KQUEUE)
 
-check_c_source_compiles(
-     "
-     #include <sys/types.h>
-     #include <netdb.h>
-
-     int main()
-     {
-         const void* addr;
-         socklen_t len;
-         int type;
-         struct hostent* result;
-         char* buffer;
-         size_t buflen;
-         struct hostent** entry;
-         int* error;
-         gethostbyaddr_r(addr,  len, type, result, buffer, buflen, entry, error);
-         return 0;
-     }
-     "
-     HAVE_GETHOSTBYADDR_R)
-
-check_c_source_compiles(
-     "
-     #include <sys/types.h>
-     #include <netdb.h>
-
-     int main()
-     {
-         const char* hostname;
-         struct hostent* result;
-         char* buffer;
-         size_t buflen;
-         struct hostent** entry;
-         int* error;
-         gethostbyname_r(hostname, result, buffer, buflen, entry, error);
-         return 0;
-     }
-     "
-     HAVE_GETHOSTBYNAME_R)
-
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 check_c_source_compiles(
      "
@@ -371,7 +331,6 @@ check_c_source_compiles(
 set(CMAKE_REQUIRED_FLAGS -Werror)
 
 set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 0)
-set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 0)
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     if (NOT CLR_CMAKE_PLATFORM_ANDROID)
@@ -379,12 +338,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     endif ()
 
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
-
-    if (CLR_CMAKE_PLATFORM_ANDROID)
-       set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 1)
-    endif()
-elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 1)
+    
 endif ()
 
 check_cxx_source_runs(

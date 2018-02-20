@@ -45,21 +45,21 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override unsafe bool TryCreateSignature(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+            public override unsafe bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             {
-                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref source);
+                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref hash);
                 try
                 {
                     using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                     {
-                        return CngCommon.TrySignHash(keyHandle, source, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
+                        return CngCommon.TrySignHash(keyHandle, hash, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
                     }
                 }
                 finally
                 {
                     if (arrayToReturnToArrayPool != null)
                     {
-                        Array.Clear(arrayToReturnToArrayPool, 0, source.Length);
+                        Array.Clear(arrayToReturnToArrayPool, 0, hash.Length);
                         ArrayPool<byte>.Shared.Return(arrayToReturnToArrayPool);
                     }
                 }
@@ -79,16 +79,16 @@ namespace System.Security.Cryptography
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
             }
 
-            public override bool VerifySignature(ReadOnlySpan<byte> rgbHash, ReadOnlySpan<byte> rgbSignature)
+            public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
             {
-                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref rgbHash);
+                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref hash);
                 try
                 {
                     using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                     {
                         unsafe
                         {
-                            return CngCommon.VerifyHash(keyHandle, rgbHash, rgbSignature, AsymmetricPaddingMode.None, null);
+                            return CngCommon.VerifyHash(keyHandle, hash, signature, AsymmetricPaddingMode.None, null);
                         }
                     }
                 }
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
                 {
                     if (arrayToReturnToArrayPool != null)
                     {
-                        Array.Clear(arrayToReturnToArrayPool, 0, rgbHash.Length);
+                        Array.Clear(arrayToReturnToArrayPool, 0, hash.Length);
                         ArrayPool<byte>.Shared.Return(arrayToReturnToArrayPool);
                     }
                 }
