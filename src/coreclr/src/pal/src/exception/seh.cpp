@@ -204,6 +204,38 @@ void ThrowExceptionHelper(PAL_SEHException* ex)
 
 /*++
 Function:
+    EnsureExceptionRecordsOnHeap
+
+    Helper function to move records from stack to heap.
+
+Parameters:
+    PAL_SEHException* exception
+--*/
+static void EnsureExceptionRecordsOnHeap(PAL_SEHException* exception)
+{
+    if( !exception->RecordsOnStack ||
+        exception->ExceptionPointers.ExceptionRecord == NULL )
+    {
+        return;
+    }
+
+    CONTEXT* contextRecord = exception->ExceptionPointers.ContextRecord;
+    EXCEPTION_RECORD* exceptionRecord = exception->ExceptionPointers.ExceptionRecord;
+
+    CONTEXT* contextRecordCopy;
+    EXCEPTION_RECORD* exceptionRecordCopy;
+    AllocateExceptionRecords(&exceptionRecordCopy, &contextRecordCopy);
+
+    *exceptionRecordCopy = *exceptionRecord;
+    *contextRecordCopy = *contextRecord;
+
+    exception->ExceptionPointers.ExceptionRecord = exceptionRecordCopy;
+    exception->ExceptionPointers.ContextRecord = contextRecordCopy;
+    exception->RecordsOnStack = false;
+}
+
+/*++
+Function:
     SEHProcessException
 
     Send the PAL exception to any handler registered.
@@ -250,6 +282,7 @@ SEHProcessException(PAL_SEHException* exception)
                     }
                 }
 
+                EnsureExceptionRecordsOnHeap(exception);
                 if (g_hardwareExceptionHandler(exception))
                 {
                     // The exception happened in managed code and the execution should continue.
@@ -262,6 +295,7 @@ SEHProcessException(PAL_SEHException* exception)
 
         if (CatchHardwareExceptionHolder::IsEnabled())
         {
+            EnsureExceptionRecordsOnHeap(exception);
             PAL_ThrowExceptionFromContext(exception->GetContextRecord(), exception);
         }
     }
