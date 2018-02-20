@@ -1107,11 +1107,16 @@ public class Tests
 	interface IConstrainedCalls {
 		Pair<int, int> vtype_ret<T, T2>(T t, T2 t2) where T: IReturnVType;
 		AnEnum enum_ret<T, T2>(T t, T2 t2) where T: IReturnVType;
+		int normal_args<T, T2> (T t, T2 t2, int i1, int i2, string s, ref int i3) where T : IConstrained2;
 	}
 
 	public interface IReturnVType {
 		Pair<int, int> return_vtype ();
 		AnEnum return_enum ();
+	}
+
+	public interface IConstrained2 {
+		int normal_args (int i1, int i2, string s, ref int i3);
 	}
 
 	public class CConstrainedCalls : IConstrainedCalls {
@@ -1124,6 +1129,10 @@ public class Tests
 		public AnEnum enum_ret<T, T2>(T t, T2 t2) where T : IReturnVType {
 			return t.return_enum ();
 		}
+
+		public int normal_args<T, T2> (T t, T2 t2, int i1, int i2, string s, ref int i3) where T : IConstrained2 {
+			return t.normal_args (i1, i2, s, ref i3);
+		}
 	}
 
 	class ReturnVType : IReturnVType {
@@ -1132,6 +1141,13 @@ public class Tests
 		}
 		public AnEnum return_enum () {
 			return AnEnum.Two;
+		}
+	}
+
+	class ConstrainedCalls : IConstrained2 {
+		public int normal_args (int i1, int i2, string s, ref int i3) {
+			i3 = i3 + 1;
+			return i1 + i2 + i3 + s.Length;
 		}
 	}
 
@@ -1149,6 +1165,14 @@ public class Tests
 		if (r != AnEnum.Two)
 			return 1;
 		return 0;
+	}
+
+	public static int test_14_constrained_normal_args () {
+		IConstrainedCalls c = new CConstrainedCalls ();
+
+		int val = 3;
+		var r = c.normal_args<ConstrainedCalls, int> (new ConstrainedCalls (), 0, 1, 2, "ABC", ref val);
+		return r + val;
 	}
 
 	public struct Pair<T1, T2> {
