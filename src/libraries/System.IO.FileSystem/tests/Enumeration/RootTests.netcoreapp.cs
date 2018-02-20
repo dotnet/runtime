@@ -19,6 +19,9 @@ namespace System.IO.Tests.Enumeration
             {
             }
 
+            protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
+                => !entry.IsDirectory;
+
             protected override string TransformEntry(ref FileSystemEntry entry)
                 => entry.ToFullPath();
 
@@ -29,7 +32,6 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
-        [ActiveIssue(27244)]
         [Fact]
         public void CanRecurseFromRoot()
         {
@@ -45,7 +47,8 @@ namespace System.IO.Tests.Enumeration
                     }
 
                     // Should not get back a full path without a single separator (C:\foo.txt or /foo.txt)
-                    Assert.Equal(Path.DirectorySeparatorChar, recursed.Current.SingleOrDefault(c => c == Path.DirectorySeparatorChar));
+                    int count = recursed.Current.Count(c => c == Path.DirectorySeparatorChar);
+                    Assert.True(count <= 1, $"expected to find just one separator in '{recursed.Current}'");
                 }
 
                 Assert.NotNull(recursed.LastDirectory);
