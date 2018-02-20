@@ -18,11 +18,7 @@ namespace System.Net.Http
         {
             Debug.Assert(initialInnerHandler != null);
             Debug.Assert(redirectInnerHandler != null);
-
-            if (maxAutomaticRedirections < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maxAutomaticRedirections));
-            }
+            Debug.Assert(maxAutomaticRedirections > 0);
 
             _maxAutomaticRedirections = maxAutomaticRedirections;
             _initialInnerHandler = initialInnerHandler;
@@ -54,10 +50,11 @@ namespace System.Net.Http
                 {
                     request.Method = HttpMethod.Get;
                     request.Content = null;
+                    request.Headers.TransferEncodingChunked = false;
                 }
 
                 // Issue the redirected request.
-                response = await _redirectInnerHandler.SendAsync(request, cancellationToken);
+                response = await _redirectInnerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             return response;
@@ -100,15 +97,16 @@ namespace System.Net.Http
 
         private static bool RequestRequiresForceGet(HttpStatusCode statusCode, HttpMethod requestMethod)
         {
-            if (statusCode == HttpStatusCode.Moved ||
-                statusCode == HttpStatusCode.Found ||
-                statusCode == HttpStatusCode.SeeOther ||
-                statusCode == HttpStatusCode.MultipleChoices)
+            switch (statusCode)
             {
-                return requestMethod == HttpMethod.Post;
+                case HttpStatusCode.Moved:
+                case HttpStatusCode.Found:
+                case HttpStatusCode.SeeOther:
+                case HttpStatusCode.MultipleChoices:
+                    return requestMethod == HttpMethod.Post;
+                default:
+                    return false;
             }
-
-            return false;
         }
 
         protected override void Dispose(bool disposing)
