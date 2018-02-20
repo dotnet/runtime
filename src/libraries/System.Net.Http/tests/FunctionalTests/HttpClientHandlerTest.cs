@@ -2775,6 +2775,43 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
+        [Fact]
+        public async Task Proxy_UseSecureProxyTunnel_Success()
+        {
+            LoopbackServer.Options options = new LoopbackServer.Options { UseSsl = true };
+            HttpClientHandler handler = CreateHttpClientHandler();
+
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var ep = (IPEndPoint)listener.Server.LocalEndPoint;
+            Uri proxyUrl = new Uri($"http://{ep.Address}:{ep.Port}/");
+
+            Task proxt = LoopbackGetRequestHttpProxy.StartAsync(listener, false, false);
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                // Point handler at out loopback proxy
+                handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null);
+                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    Task<HttpResponseMessage> responseTask = client.GetAsync(url);
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendResponseAsync(content: "OK\r\n");
+
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);
+                        HttpResponseMessage response = await responseTask.ConfigureAwait(false);
+
+                        Assert.True(response.StatusCode ==  HttpStatusCode.OK);
+
+                    });
+                }
+            }, options);
+        }
+
         private static IEnumerable<object[]> BypassedProxies()
         {
             yield return new object[] { null };
