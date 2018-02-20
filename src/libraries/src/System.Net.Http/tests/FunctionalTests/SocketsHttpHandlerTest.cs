@@ -622,7 +622,8 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
-        // TODO: Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
+        // TODO: ISSUE #27272
+        // Currently the subsequent tests sometimes fail/hang with WinHttpHandler / CurlHandler.
         // In theory they should pass with any handler that does appropriate connection pooling.
         // We should understand why they sometimes fail there and ideally move them to be
         // used by all handlers this test project tests.
@@ -684,6 +685,25 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await Task.Delay(2000); // give client time to see the closing before next connect
                         }
+                    }
+                });
+            }
+        }
+
+        [Fact]
+        public async Task ServerSendsGarbageAfterInitialRequest_SubsequentRequestUsesDifferentConnection()
+        {
+            using (HttpClient client = CreateHttpClient())
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    // Make multiple requests iteratively.
+                    for (int i = 0; i < 2; i++)
+                    {
+                        Task<string> request = client.GetStringAsync(uri);
+                        string response = LoopbackServer.GetHttpResponse() + "here is a bunch of garbage";
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
+                        await request;
                     }
                 });
             }

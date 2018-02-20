@@ -1251,6 +1251,13 @@ namespace System.Net.Http
                 }
             }
 
+            // If we have extraneous data in the read buffer, don't reuse the connection;
+            // otherwise we'd interpret this as part of the next response.
+            if (_readOffset != _readLength)
+            {
+                _connectionClose = true;
+            }
+
             // If server told us it's closing the connection, don't put this back in the pool.
             // And if we incurred an error while transferring request content, also skip the pool.
             if (!_connectionClose &&
@@ -1268,7 +1275,6 @@ namespace System.Net.Http
                     // at any point to understand if the connection has been closed or if errant data
                     // has been sent on the connection by the server, either of which would mean we
                     // should close the connection and not use it for subsequent requests.
-                    Debug.Assert(_readLength == _readOffset, $"{_readLength} != {_readOffset}");
                     _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
 
                     // Put connection back in the pool.
