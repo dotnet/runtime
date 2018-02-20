@@ -178,48 +178,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public virtual void Dispose_WithUnfinishedWriteAsync()
-        {
-            byte[] buffer = new byte[100000];
-            Random rand = new Random();
-            rand.NextBytes(buffer);
-
-            using (var writeStream = new ManualSyncMemoryStream(false))
-            {
-                var compressor = CreateStream(writeStream, CompressionMode.Compress, leaveOpen: true);
-                compressor.Write(buffer, 0, buffer.Length);
-                int writesBeingFlushed = 2;
-                Task task = null;
-                try
-                {
-                    // Write needs to be big enough to trigger a write to the underlying base stream so the WriteAsync call doesn't immediately complete.
-                    task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                    while (task.IsCompleted)
-                    {
-                        rand.NextBytes(buffer);
-                        task = compressor.WriteAsync(buffer, 0, buffer.Length);
-                        writesBeingFlushed++;
-                    }
-
-                    // WriteAsync will be blocked on writing the output to the underlying stream. Calling Dispose will trigger a Finish call with unwritten output
-                    // still available.
-                    Assert.InRange(writeStream.Length, 0, buffer.Length);
-                    compressor.Dispose();
-                    Assert.InRange(writeStream.Length, 0, buffer.Length * writesBeingFlushed);
-                    Assert.False(task.IsCompleted);
-                }
-                finally
-                {
-                    // Unblock Async operations
-                    writeStream.manualResetEvent.Set();
-                    // WriteAsync call will return to the compression stream's WriteAsync which will attempt to 
-                    // access members of the now disposed stream. 
-                    Assert.Throws<AggregateException>(() => task.Wait(1000));
-                }
-            }
-        }
-
-        [Fact]
         public virtual async Task Dispose_WithUnfinishedReadAsync()
         {
             string compressedPath = CompressedTestFile(UncompressedTestFile());

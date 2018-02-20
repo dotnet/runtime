@@ -34,10 +34,6 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        [OuterLoop("Test takes ~12 seconds to run")]
-        public override void Dispose_WithUnfinishedWriteAsync() { base.Dispose_WithUnfinishedWriteAsync(); }
-
-        [Fact]
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
 
