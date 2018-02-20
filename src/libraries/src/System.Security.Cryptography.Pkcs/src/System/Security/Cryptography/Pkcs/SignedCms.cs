@@ -118,13 +118,17 @@ namespace System.Security.Cryptography.Pkcs
             if (encodedMessage == null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
-            // Windows (and thus NetFx) reads the leading data and ignores extra.
-            // The deserializer will complain if too much data is given, so use the reader
-            // to ask how much we want to deserialize.
-            AsnReader reader = new AsnReader(encodedMessage, AsnEncodingRules.BER);
-            ReadOnlyMemory<byte> cmsSegment = reader.GetEncodedValue();
+            Decode(new ReadOnlyMemory<byte>(encodedMessage));
+        }
 
-            ContentInfoAsn contentInfo = AsnSerializer.Deserialize<ContentInfoAsn>(cmsSegment, AsnEncodingRules.BER);
+        internal void Decode(ReadOnlyMemory<byte> encodedMessage)
+        { 
+            // Windows (and thus NetFx) reads the leading data and ignores extra.
+            // So use the Deserialize overload which doesn't throw on extra data.
+            ContentInfoAsn contentInfo = AsnSerializer.Deserialize<ContentInfoAsn>(
+                encodedMessage,
+                AsnEncodingRules.BER,
+                out int bytesRead);
 
             if (contentInfo.ContentType != Oids.Pkcs7Signed)
             {

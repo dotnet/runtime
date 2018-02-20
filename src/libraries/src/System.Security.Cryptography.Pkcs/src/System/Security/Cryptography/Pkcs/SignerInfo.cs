@@ -71,6 +71,8 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
+        internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
+
         public byte[] GetSignature() => _signature.ToArray();
 
         public X509Certificate2 Certificate

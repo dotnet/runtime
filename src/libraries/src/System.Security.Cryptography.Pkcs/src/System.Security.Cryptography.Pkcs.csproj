@@ -225,11 +225,19 @@
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\GeneralName.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PssParamsAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TstInfo.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\X509ExtensionAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />
@@ -242,6 +250,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.DSA.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161RequestResponseStatus.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampRequest.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampToken.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampTokenInfo.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
