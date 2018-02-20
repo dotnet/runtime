@@ -13,6 +13,7 @@ namespace System.ServiceProcess.Tests
         Continue = 1,
         Pause = 2,
         Stop = 3,
-        OnCustomCommand = 4
+        OnCustomCommand = 4,
+        ExceptionThrown = 5
     };
 }

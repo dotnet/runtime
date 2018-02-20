@@ -214,6 +214,16 @@ namespace System.ServiceProcess.Tests
                 }
             }
         }
+        
+        [ConditionalFact(nameof(IsProcessElevated))]
+        public void PropagateExceptionFromOnStart()
+        {
+            string serviceName = nameof(PropagateExceptionFromOnStart) + Guid.NewGuid().ToString();
+            TestServiceProvider _testService = new TestServiceProvider(serviceName);
+            _testService.Client.Connect(connectionTimeout);
+            Assert.Equal((int)PipeMessageByteCode.ExceptionThrown, _testService.GetByte());
+            _testService.DeleteTestServices();
+        }
 
         public void Dispose()
         {

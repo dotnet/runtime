@@ -143,6 +143,7 @@ internal partial class Interop
             internal const int STATE_START_PENDING = 0x00000002;
             internal const int STATE_STOPPED = 0x00000001;
             internal const int STATE_STOP_PENDING = 0x00000003;
+            internal const int ERROR_EXCEPTION_IN_SERVICE = 0x00000428;
         }
 
         internal partial class ServiceStartErrorModes
