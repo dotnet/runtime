@@ -310,16 +310,19 @@ namespace System.Net.Http
             }
 
             // Add headers to define content transfer, if not present
-            bool transferEncodingChunkedSet = request.HasHeaders && request.Headers.TransferEncodingChunked.GetValueOrDefault();
-            if (request.Content == null)
+            if (request.HasHeaders && request.Headers.TransferEncodingChunked.GetValueOrDefault())
             {
-                if (transferEncodingChunkedSet)
+                if (request.Content == null)
                 {
                     return new HttpRequestException(SR.net_http_client_execution_error,
                         new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
                 }
+
+                // Since the user explicitly set TransferEncodingChunked to true, we need to remove
+                // the Content-Length header if present, as sending both is invalid.
+                request.Content.Headers.ContentLength = null;
             }
-            else if (!transferEncodingChunkedSet && request.Content.Headers.ContentLength == null)
+            else if (request.Content != null && request.Content.Headers.ContentLength == null)
             {
                 // We have content, but neither Transfer-Encoding nor Content-Length is set.
                 request.Headers.TransferEncodingChunked = true;
