@@ -341,6 +341,29 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
+    {
+        protected override bool UseSocketsHttpHandler => true;
+
+        [Theory]
+        [MemberData(nameof(Authentication_SocketsHttpHandler_TestData))]
+        public async void SocketsHttpHandler_Authentication_Succeeds(string authenticateHeader, bool result)
+        {
+            await HttpClientHandler_Authentication_Succeeds(authenticateHeader, result);
+        }
+
+        public static IEnumerable<object[]> Authentication_SocketsHttpHandler_TestData()
+        {
+            // These test cases pass on SocketsHttpHandler, fail everywhere else.
+            // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
+            yield return new object[] { "Basic realm=\"testrealm1\" basic realm=\"testrealm1\"", true };
+            yield return new object[] { "Basic something digest something", true };
+            yield return new object[] { "Digest ", false };
+            yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
+            yield return new object[] { "Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=\"myown\"", false };
+        }
+    }
+
     public sealed class SocketsHttpHandler_HttpClientHandler_DuplexCommunication_Test : HttpClientTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
