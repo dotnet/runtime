@@ -6,23 +6,20 @@ namespace System.Net
 {
     internal sealed class DnsResolveAsyncResult : ContextAwareResult
     {
-        internal string HostName { get; }
-        internal bool IncludeIPv6 { get; }
+        internal string HostName { get; }        
         internal IPAddress IpAddress { get; }
 
         // Forward lookup
-        internal DnsResolveAsyncResult(string hostName, object myObject, bool includeIPv6, object myState, AsyncCallback myCallBack)
+        internal DnsResolveAsyncResult(string hostName, object myObject, object myState, AsyncCallback myCallBack)
             : base(myObject, myState, myCallBack)
         {
-            HostName = hostName;
-            IncludeIPv6 = includeIPv6;
+            HostName = hostName;            
         }
 
         // Reverse lookup
-        internal DnsResolveAsyncResult(IPAddress ipAddress, object myObject, bool includeIPv6, object myState, AsyncCallback myCallBack)
+        internal DnsResolveAsyncResult(IPAddress ipAddress, object myObject, object myState, AsyncCallback myCallBack)
             : base(myObject, myState, myCallBack)
         {
-            IncludeIPv6 = includeIPv6;
             IpAddress = ipAddress;
         }
     }

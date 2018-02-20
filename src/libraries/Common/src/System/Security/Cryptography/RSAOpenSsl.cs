@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
             return plainBytes;
         }
 
-        public override bool TryDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
             if (padding == null)
             {
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            int returnValue = Interop.Crypto.RsaPrivateDecrypt(source.Length, source, destination, key, rsaPadding);
+            int returnValue = Interop.Crypto.RsaPrivateDecrypt(data.Length, data, destination, key, rsaPadding);
             CheckReturn(returnValue);
 
             // If the padding mode is RSA_NO_PADDING then the size of the decrypted block
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography
             return buf;
         }
 
-        public override bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
             if (padding == null)
             {
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            int returnValue = Interop.Crypto.RsaPublicEncrypt(source.Length, source, destination, key, rsaPadding);
+            int returnValue = Interop.Crypto.RsaPublicEncrypt(data.Length, data, destination, key, rsaPadding);
             CheckReturn(returnValue);
 
             bytesWritten = returnValue;
@@ -389,8 +389,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
             AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
 
-        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+            AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
@@ -436,7 +436,7 @@ namespace System.Security.Cryptography
             return signature;
         }
 
-        public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+        public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
             {
@@ -462,7 +462,7 @@ namespace System.Security.Cryptography
             }
 
             int signatureSize;
-            if (!Interop.Crypto.RsaSign(algorithmNid, source, source.Length, destination, out signatureSize, rsa))
+            if (!Interop.Crypto.RsaSign(algorithmNid, hash, hash.Length, destination, out signatureSize, rsa))
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }

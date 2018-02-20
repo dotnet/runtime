@@ -50,8 +50,8 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
         public override byte[] CreateSignature(byte[] rgbHash) => _impl.CreateSignature(rgbHash);
 
-        public override bool TryCreateSignature(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
-            _impl.TryCreateSignature(source, destination, out bytesWritten);
+        public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten) =>
+            _impl.TryCreateSignature(hash, destination, out bytesWritten);
 
         public CspKeyContainerInfo CspKeyContainerInfo
         {
@@ -94,12 +94,12 @@ namespace System.Security.Cryptography
             return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
         }
 
-        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+            return AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
         }
 
         public void ImportCspBlob(byte[] keyBlob)
@@ -180,12 +180,12 @@ namespace System.Security.Cryptography
             return _impl.SignData(data, hashAlgorithm);
         }
 
-        public override bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        public override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             if (hashAlgorithm != HashAlgorithmName.SHA1)
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
 
-            return _impl.TrySignData(source, destination, hashAlgorithm, out bytesWritten);
+            return _impl.TrySignData(data, destination, hashAlgorithm, out bytesWritten);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
@@ -251,8 +251,8 @@ namespace System.Security.Cryptography
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) =>
             _impl.VerifySignature(rgbHash, rgbSignature);
 
-        public override bool VerifySignature(ReadOnlySpan<byte> rgbHash, ReadOnlySpan<byte> rgbSignature) =>
-            _impl.VerifySignature(rgbHash, rgbSignature);
+        public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+            _impl.VerifySignature(hash, signature);
 
         // UseMachineKeyStore has no effect in Unix
         public static bool UseMachineKeyStore { get; set; }
