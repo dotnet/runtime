@@ -25,7 +25,6 @@ namespace System.Net.Http
         private Version _version;
         private HttpContent _content;
         private bool _disposed;
-        private bool _isConnectMethod;
         private IDictionary<String, Object> _properties;
 
         public Version Version
@@ -113,8 +112,6 @@ namespace System.Net.Http
 
         internal bool HasHeaders => _headers != null;
 
-        internal bool IsConnectMethod => _isConnectMethod;
-
         public IDictionary<String, Object> Properties
         {
             get
@@ -194,7 +191,6 @@ namespace System.Net.Http
             }
 
             _method = method;
-            _isConnectMethod = (method == HttpMethod.Connect);
             _requestUri = requestUri;
             _version = HttpUtilities.DefaultRequestVersion;
         }

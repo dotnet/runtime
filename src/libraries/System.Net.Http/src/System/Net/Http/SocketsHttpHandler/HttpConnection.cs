@@ -229,6 +229,7 @@ namespace System.Net.Http
             TaskCompletionSource<bool> allowExpect100ToContinue = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             _currentRequest = request;
+            bool isConnectMethod = (request.Method == HttpMethod.Connect);
 
             Debug.Assert(!_canRetry);
             _canRetry = true;
@@ -242,11 +243,14 @@ namespace System.Net.Http
                 await WriteStringAsync(request.Method.Method).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ').ConfigureAwait(false);
 
-                if (request.IsConnectMethod)
+                if (isConnectMethod)
                 {
                     // RFC 7231 #section-4.3.6.
                     // Write only CONNECT foo.com:345 HTTP/1.1
-                    Debug.Assert(request.HasHeaders && request.Headers.Host != null);
+                    if (!request.HasHeaders || request.Headers.Host == null)
+                    {
+                        throw new HttpRequestException(SR.net_http_request_no_host);
+                    }
                     await WriteAsciiStringAsync(request.Headers.Host).ConfigureAwait(false);
                 }
                 else
@@ -287,7 +291,7 @@ namespace System.Net.Http
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
-                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head && !request.IsConnectMethod)
+                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head && !isConnectMethod)
                     {
                         await WriteBytesAsync(s_contentLength0NewlineAsciiBytes).ConfigureAwait(false);
                     }
@@ -478,12 +482,12 @@ namespace System.Net.Http
                     responseStream = EmptyReadStream.Instance;
                     ReturnConnectionToPool();
                 }
-                else if (request.IsConnectMethod && response.StatusCode == HttpStatusCode.OK)
+                else if (isConnectMethod && response.StatusCode == HttpStatusCode.OK)
                 {
                     // Successful response to CONNECT does not have body.
                     // What ever comes next should be opaque.
                     responseStream = new RawConnectionStream(this);
-                    // Put connection back to the pool if we upgraded to tunnel.
+                    // Don't put connection back to the pool if we upgraded to tunnel.
                     // We cannot use it for normal HTTP requests any more.
                     _connectionClose = true;
 

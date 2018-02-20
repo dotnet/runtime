@@ -399,4 +399,7 @@
   <data name="net_http_proxy_tunnel_failed" xml:space="preserve">
     <value>Unable to establish a tunnel though proxy '{0}'.  The proxy returned status code {1}.</value>
   </data>
+  <data name="net_http_request_no_host" xml:space="preserve">
+    <value>CONNECT request must contain Host header.</value>
+  </data>
 </root>
