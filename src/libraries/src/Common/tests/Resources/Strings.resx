@@ -156,4 +156,7 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>IO_PathTooLong_Path {0}</value>
   </data>
+  <data name="Arg_InvalidSearchPattern" xml:space="preserve">
+    <value>Arg_InvalidSearchPattern {0}</value>
+  </data>
 </root>
