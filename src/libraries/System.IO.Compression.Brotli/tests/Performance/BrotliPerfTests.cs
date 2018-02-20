@@ -12,67 +12,48 @@ namespace System.IO.Compression
     {
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("BrotliTestData", Path.GetFileName(uncompressedPath) + ".br");
 
-        public static IEnumerable<object[]> CanterburyCorpus_WithCompressionLevel()
+        public static IEnumerable<object[]> UncompressedTestFiles_WithCompressionLevel()
         {
             foreach (CompressionLevel compressionLevel in Enum.GetValues(typeof(CompressionLevel)))
             {
-                foreach (object[] canterburyWithoutLevel in CanterburyCorpus())
+                foreach (object[] testFile in UncompressedTestFiles())
                 {
-                    yield return new object[] { canterburyWithoutLevel[0], canterburyWithoutLevel[1], compressionLevel };
+                    yield return new object[] { testFile[0], compressionLevel };
                 }
             }
         }
 
-        public static IEnumerable<object[]> CanterburyCorpus()
-        {
-            foreach (int innerIterations in new int[] { 1, 10 })
-            {
-                foreach (var fileName in UncompressedTestFiles())
-                {
-                    yield return new object[] { innerIterations, fileName[0] };
-                }
-            }
-        }
-
-        [Benchmark]
-        [MemberData(nameof(CanterburyCorpus_WithCompressionLevel))]
-        public void Compress_Canterbury_WithState(int innerIterations, string uncompressedFileName, CompressionLevel compressLevel)
+        [Benchmark(InnerIterationCount=10)] // limits the max iterations to 100
+        [MemberData(nameof(UncompressedTestFiles_WithCompressionLevel))]
+        public void Compress_Canterbury_WithState(string uncompressedFileName, CompressionLevel compressLevel)
         {
             byte[] bytes = File.ReadAllBytes(uncompressedFileName);
             ReadOnlySpan<byte> uncompressedData = new ReadOnlySpan<byte>(bytes);
             int maxCompressedSize = BrotliEncoder.GetMaxCompressedLength(bytes.Length);
-            List<byte[]> compressedDataArrays = new List<byte[]>(innerIterations);
+            byte[] compressedDataArray = new byte[maxCompressedSize];
             foreach (var iteration in Benchmark.Iterations)
             {
-                for (int i = 0; i < innerIterations; i++)
-                {
-                    compressedDataArrays.Add(new byte[maxCompressedSize]);
-                }
                 using (iteration.StartMeasurement())
+                using (BrotliEncoder encoder = new BrotliEncoder())
                 {
-                    for (int i = 0; i < innerIterations; i++)
+                    Span<byte> output = new Span<byte>(compressedDataArray);
+                    ReadOnlySpan<byte> input = uncompressedData;
+                    while (!input.IsEmpty && !output.IsEmpty)
                     {
-                        using (BrotliEncoder encoder = new BrotliEncoder())
-                        {
-                            Span<byte> output = new Span<byte>(compressedDataArrays[i]);
-                            ReadOnlySpan<byte> input = uncompressedData;
-                            while (!input.IsEmpty && !output.IsEmpty)
-                            {
-                                encoder.Compress(input, output, out int bytesConsumed, out int written, isFinalBlock:false);
-                                input = input.Slice(bytesConsumed);
-                                output = output.Slice(written);
-                            }
-                            encoder.Compress(input, output, out int bytesConsumed2, out int written2, isFinalBlock: true);
-                        }
+                        encoder.Compress(input, output, out int bytesConsumed, out int written, isFinalBlock:false);
+                        input = input.Slice(bytesConsumed);
+                        output = output.Slice(written);
                     }
+                    encoder.Compress(input, output, out int bytesConsumed2, out int written2, isFinalBlock: true);
                 }
             }
         }
 
-        [Benchmark]
-        [MemberData(nameof(CanterburyCorpus))]
-        public void Decompress_Canterbury_WithState(int innerIterations, string uncompressedFileName)
+        [Benchmark(InnerIterationCount=100)]
+        [MemberData(nameof(UncompressedTestFiles))]
+        public void Decompress_Canterbury_WithState(string uncompressedFileName)
         {
+            int innerIterations = (int)Benchmark.InnerIterationCount;
             byte[] compressedBytes = File.ReadAllBytes(CompressedTestFile(uncompressedFileName));
             ReadOnlySpan<byte> compressedData = new ReadOnlySpan<byte>(compressedBytes);
             List<byte[]> uncompressedDataArrays = new List<byte[]>(innerIterations);
@@ -102,27 +83,20 @@ namespace System.IO.Compression
             }
         }
 
-        [Benchmark]
-        [MemberData(nameof(CanterburyCorpus_WithCompressionLevel))]
-        public void Compress_Canterbury_WithoutState(int innerIterations, string uncompressedFileName, CompressionLevel compressLevel)
+        [Benchmark(InnerIterationCount=10)] // limits the max iterations to 100
+        [MemberData(nameof(UncompressedTestFiles_WithCompressionLevel))]
+        public void Compress_Canterbury_WithoutState(string uncompressedFileName, CompressionLevel compressLevel)
         {
             byte[] bytes = File.ReadAllBytes(uncompressedFileName);
             ReadOnlySpan<byte> uncompressedData = new ReadOnlySpan<byte>(bytes);
             int maxCompressedSize = BrotliEncoder.GetMaxCompressedLength(bytes.Length);
-            List<byte[]> compressedDataArrays = new List<byte[]>(innerIterations);
+            byte[] compressedDataArray = new byte[maxCompressedSize];
             int compressLevelBrotli = compressLevel == CompressionLevel.Optimal ? 11 : compressLevel == CompressionLevel.Fastest ? 1 : 0;
             foreach (var iteration in Benchmark.Iterations)
             {
-                for (int i = 0; i < innerIterations; i++)
-                {
-                    compressedDataArrays.Add(new byte[maxCompressedSize]);
-                }
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < innerIterations; i++)
-                    {
-                        Assert.True(BrotliEncoder.TryCompress(uncompressedData, compressedDataArrays[i], out int bytesWritten, compressLevelBrotli, 22));
-                    }
+                    Assert.True(BrotliEncoder.TryCompress(uncompressedData, compressedDataArray, out int bytesWritten, compressLevelBrotli, 22));
                 }
             }
         }
@@ -131,10 +105,11 @@ namespace System.IO.Compression
         /// The perf tests for the instant decompression aren't exactly indicative of real-world scenarios since they require you to know 
         /// either the exact figure or the upper bound of the uncompressed size of your given compressed data.
         /// </summary>
-        [Benchmark]
-        [MemberData(nameof(CanterburyCorpus))]
-        public void Decompress_Canterbury_WithoutState(int innerIterations, string uncompressedFileName)
+        [Benchmark(InnerIterationCount=100)]
+        [MemberData(nameof(UncompressedTestFiles))]
+        public void Decompress_Canterbury_WithoutState(string uncompressedFileName)
         {
+            int innerIterations = (int)Benchmark.InnerIterationCount;
             byte[] compressedBytes = File.ReadAllBytes(CompressedTestFile(uncompressedFileName));
             ReadOnlySpan<byte> compressedData = new ReadOnlySpan<byte>(compressedBytes);
             int uncompressedSize = (int)new FileInfo(uncompressedFileName).Length;
@@ -153,6 +128,6 @@ namespace System.IO.Compression
                     }
                 }
             }
-        }
+        }           
     }
 }
