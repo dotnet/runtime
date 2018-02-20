@@ -57,5 +57,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public const string Sha256 = "2.16.840.1.101.3.4.2.1";
         public const string Sha384 = "2.16.840.1.101.3.4.2.2";
         public const string Sha512 = "2.16.840.1.101.3.4.2.3";
+
+        // RFC3161 Timestamping
+        public const string TstInfo = "1.2.840.113549.1.9.16.1.4";
+        public const string TimeStampingPurpose = "1.3.6.1.5.5.7.3.8";
     }
 }

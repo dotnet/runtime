@@ -32,6 +32,12 @@
     <Compile Include="SignedCms\SignedDocuments.cs" />
     <Compile Include="SignedCms\SignerInfoTests.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="Rfc3161\TimestampRequestTests.cs" />
+    <Compile Include="Rfc3161\TimestampTokenInfoTests.cs" />
+    <Compile Include="Rfc3161\TimestampTokenTestData.cs" />
+    <Compile Include="Rfc3161\TimestampTokenTests.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="RecipientInfoCollectionTests.cs" />
     <Compile Include="EnvelopedCms\CertificateTests.cs" />

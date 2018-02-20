@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Diagnostics;
-
 namespace Internal.Cryptography
 {
     internal static class Oids
@@ -24,6 +20,8 @@ namespace Internal.Cryptography
         public const string DocumentDescription = "1.3.6.1.4.1.311.88.2.2";
         public const string MessageDigest = "1.2.840.113549.1.9.4";
         public const string CounterSigner = "1.2.840.113549.1.9.6";
+        public const string SigningCertificate = "1.2.840.113549.1.9.16.2.12";
+        public const string SigningCertificateV2 = "1.2.840.113549.1.9.16.2.47";
         public const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
 
         // Key wrap algorithms
@@ -64,5 +62,9 @@ namespace Internal.Cryptography
         // Cert Extensions
         public const string SubjectKeyIdentifier = "2.5.29.14";
         public const string KeyUsage = "2.5.29.15";
+
+        // RFC3161 Timestamping
+        public const string TstInfo = "1.2.840.113549.1.9.16.1.4";
+        public const string TimeStampingPurpose = "1.3.6.1.5.5.7.3.8";
     }
 }
