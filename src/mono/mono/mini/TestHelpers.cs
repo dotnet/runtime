@@ -13,10 +13,21 @@ namespace MonoTests.Helpers {
 			int* values = stackalloc int [20];
 			aptr = new IntPtr (values);
 
-			if (depth <= 0)
+			if (depth <= 0) {
+				//
+				// When the action is called, this new thread might have not allocated
+				// anything yet in the nursery. This means that the address of the first
+				// object that would be allocated would be at the start of the tlab and
+				// implicitly the end of the previous tlab (address which can be in use
+				// when allocating on another thread, at checking if an object fits in
+				// this other tlab). We allocate a new dummy object to avoid this type
+				// of false pinning for most common cases.
+				//
+				new object ();
 				act ();
-			else
+			} else {
 				NoPinActionHelper (depth - 1, act);
+			}
 		}
 
 		public static void PerformNoPinAction (Action act)
