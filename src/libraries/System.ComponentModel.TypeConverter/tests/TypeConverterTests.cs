@@ -110,7 +110,7 @@ namespace System.ComponentModel.Tests
                 Assert.NotNull(s);
                 Assert.Equal(FormattableClass.Token, s);
                 return SuccessExitCode;
-            });
+            }).Dispose();
         }
 
         [Fact]

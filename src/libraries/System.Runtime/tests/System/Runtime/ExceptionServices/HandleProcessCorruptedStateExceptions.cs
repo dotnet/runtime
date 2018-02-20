@@ -40,14 +40,15 @@ namespace System.Runtime.ExceptionServices.Tests
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21123", TargetFrameworkMonikers.Uap)]
         public static void ProcessExit_Called()
         {
-            using (Process p = RemoteInvoke(() => { CauseAVInNative(); return SuccessExitCode; }).Process)
+            using (RemoteInvokeHandle handle = RemoteInvoke(() => { CauseAVInNative(); return SuccessExitCode; }))
             {
+                Process p = handle.Process;
                 p.WaitForExit();
                 if (PlatformDetection.IsFullFramework)
                     Assert.Equal(SuccessExitCode, p.ExitCode);
                 else
                     Assert.NotEqual(SuccessExitCode, p.ExitCode);
-            }            
+            }
         }
     }
 }

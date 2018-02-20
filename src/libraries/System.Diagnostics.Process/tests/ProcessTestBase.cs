@@ -51,14 +51,20 @@ namespace System.Diagnostics.Tests
 
         protected Process CreateProcess(Func<int> method = null)
         {
-            Process p = RemoteInvoke(method ?? (() => SuccessExitCode), new RemoteInvokeOptions { Start = false }).Process;
+            RemoteInvokeHandle handle = RemoteInvoke(method ?? (() => SuccessExitCode), new RemoteInvokeOptions { Start = false });
+            Process p = handle.Process;
+            handle.Process = null;
+            handle.Dispose();
             AddProcessForDispose(p);
             return p;
         }
 
         protected Process CreateProcess(Func<string, int> method, string arg)
         {
-            Process p = RemoteInvoke(method, arg, new RemoteInvokeOptions { Start = false }).Process;
+            RemoteInvokeHandle handle = RemoteInvoke(method, arg, new RemoteInvokeOptions { Start = false });
+            Process p = handle.Process;
+            handle.Process = null;
+            handle.Dispose();
             AddProcessForDispose(p);
             return p;
         }
