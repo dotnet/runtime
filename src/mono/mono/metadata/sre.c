@@ -2723,7 +2723,7 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 {
 	error_init (error);
 	
-	MonoReflectionMarshalAsAttributeHandle minfo = MONO_HANDLE_NEW (MonoReflectionMarshalAsAttribute, mono_object_new_checked (domain, mono_class_get_marshal_as_attribute_class (), error));
+	MonoReflectionMarshalAsAttributeHandle minfo = (MonoReflectionMarshalAsAttributeHandle)mono_object_new_handle (domain, mono_class_get_marshal_as_attribute_class (), error);
 	goto_if_nok (error, fail);
 	guint32 utype = spec->native;
 	MONO_HANDLE_SETVAL (minfo, utype, guint32, utype);

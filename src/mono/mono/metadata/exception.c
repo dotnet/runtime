@@ -95,7 +95,7 @@ mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
 
 	MonoClass * const klass = mono_class_load_from_name (image, name_space, name);
 
-	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, klass, error));
+	MonoObjectHandle o = mono_object_new_handle (domain, klass, error);
 	goto_if_nok (error, return_null);
 
 	if (domain != caller_domain)

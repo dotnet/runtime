@@ -2082,7 +2082,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionFieldHandle field, MonoObjec
 				 * This is complicated by the fact that Nullables have
 				 * a variable structure.
 				 */
-				MonoObjectHandle nullable = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (mono_domain_get (), nklass, error));
+				MonoObjectHandle nullable = mono_object_new_handle (mono_domain_get (), nklass, error);
 				return_if_nok (error);
 
 				uint32_t nullable_gchandle = 0;
@@ -6307,7 +6307,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 		}
 	}
 
-	MonoObjectHandle delegate = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (MONO_HANDLE_DOMAIN (ref_type), delegate_class, error));
+	MonoObjectHandle delegate = mono_object_new_handle (MONO_HANDLE_DOMAIN (ref_type), delegate_class, error);
 	return_val_if_nok (error, NULL_HANDLE);
 
 	if (method_is_dynamic (method)) {
@@ -6337,7 +6337,7 @@ ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegateHandle delegat
 	MonoClass *klass = mono_handle_class (delegate);
 	g_assert (mono_class_has_parent (klass, mono_defaults.multicastdelegate_class));
 
-	MonoMulticastDelegateHandle ret = MONO_HANDLE_NEW (MonoMulticastDelegate,  mono_object_new_checked (MONO_HANDLE_DOMAIN (delegate), klass, error));
+	MonoMulticastDelegateHandle ret = (MonoMulticastDelegateHandle)mono_object_new_handle (MONO_HANDLE_DOMAIN (delegate), klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoMulticastDelegate, NULL_HANDLE));
 
 	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, ret), invoke_impl, gpointer, mono_runtime_create_delegate_trampoline (klass));
@@ -6457,7 +6457,7 @@ ves_icall_Remoting_RealProxy_GetTransparentProxy (MonoObjectHandle this_obj, Mon
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (this_obj);
 	MonoRealProxyHandle rp = MONO_HANDLE_CAST (MonoRealProxy, this_obj);
 
-	MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, mono_defaults.transparent_proxy_class, error));
+	MonoObjectHandle res = mono_object_new_handle (domain, mono_defaults.transparent_proxy_class, error);
 	if (!is_ok (error))
 		return NULL_HANDLE;
 
@@ -7365,7 +7365,7 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionTypeHandle ref_
 		/* No arguments -> null */
 		return NULL_HANDLE;
 
-	return MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, klass, error));
+	return mono_object_new_handle (domain, klass, error);
 }
 
 ICALL_EXPORT MonoReflectionMethodHandle

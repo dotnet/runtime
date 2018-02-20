@@ -902,7 +902,7 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 	/* Build a System.Net.SocketAddress object instance */
 	if (!domain->sockaddr_class)
 		domain->sockaddr_class = mono_class_load_from_name (get_socket_assembly (), "System.Net", "SocketAddress");
-	MonoObjectHandle sockaddr_obj = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, domain->sockaddr_class, error));
+	MonoObjectHandle sockaddr_obj = mono_object_new_handle (domain, domain->sockaddr_class, error);
 	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 	
 	/* Locate the SocketAddress data buffer in the object */
@@ -1957,7 +1957,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (gsize sock, gi
 		obj_class = mono_class_load_from_name (get_socket_assembly (),
 											   "System.Net.Sockets",
 											   "LingerOption");
-		MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (domain, obj_class, error));
+		MonoObjectHandle obj = mono_object_new_handle (domain, obj_class, error);
 		return_if_nok (error);
 
 		/* Locate and set the fields "bool enabled" and "int
@@ -2013,7 +2013,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (gsize sock, gi
 		obj_class = mono_class_load_from_name (mono_posix_image,
 						 "Mono.Posix",
 						 "PeerCredData");
-		MonoPeerCredDataHandle cred_data = MONO_HANDLE_NEW (MonoPeerCredData, mono_object_new_checked (domain, obj_class, error));
+		MonoPeerCredDataHandle cred_data = (MonoPeerCredDataHandle)mono_object_new_handle (domain, obj_class, error);
 		return_if_nok (error);
 
 		MONO_HANDLE_SETVAL (cred_data, pid, gint, cred.pid);
