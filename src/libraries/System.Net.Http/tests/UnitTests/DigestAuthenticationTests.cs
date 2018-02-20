@@ -12,6 +12,7 @@ namespace System.Net.Http.Tests
     {
         private static readonly List<string> s_keyListWithCountTwo = new List<string> { "key1", "key2" };
         private static readonly List<string> s_valueListWithCountTwo = new List<string> { "value1", "value2" };
+        private static readonly List<string> s_listWithCountOne = new List<string> { "item1" };
         private static readonly List<string> s_emptyStringList = new List<string>();
 
         [Theory]
@@ -30,8 +31,8 @@ namespace System.Net.Http.Tests
             yield return new object[] { "key1=value1,key2=value2", s_keyListWithCountTwo, s_valueListWithCountTwo };
             yield return new object[] { "\tkey1===value1,key2 \t===\tvalue2", s_keyListWithCountTwo, s_valueListWithCountTwo };
             yield return new object[] { "    key1 = value1, key2 =    value2,", s_keyListWithCountTwo, s_valueListWithCountTwo };
-            yield return new object[] { "key1 === value1,key2=, value2", s_keyListWithCountTwo, new List<string> { "value1", string.Empty } };
-            yield return new object[] { "key1,==value1,,,    key2=\"value2\", key3 m", new List<string> { "key1,", "key2" }, s_valueListWithCountTwo };
+            yield return new object[] { "item1 === item1,key2=, value2", s_listWithCountOne, s_listWithCountOne };
+            yield return new object[] { "item1,==item1,,,    key2=\"value2\", key3 m", new List<string> { "item1," }, s_listWithCountOne };
             yield return new object[] { "key1= \"value1   \",key2  =  \"v alu#e2\"   ,", s_keyListWithCountTwo, new List<string> { "value1   ", "v alu#e2"} };
             yield return new object[] { "key1   ", s_emptyStringList, s_emptyStringList };
             yield return new object[] { "=====", s_emptyStringList, s_emptyStringList };
