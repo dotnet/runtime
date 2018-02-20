@@ -15,8 +15,32 @@ namespace System.ServiceProcess.Tests
         {
             if (args.Length == 1 || args.Length == 2)
             {
-                TestService testService = new TestService(args[0]);
-                ServiceBase.Run(testService);
+                TestService testService;
+                if (args[0].StartsWith("PropagateExceptionFromOnStart"))
+                {
+                    var expectedException = new InvalidOperationException("Fail on startup.");
+                    testService = new TestService(args[0], expectedException);
+                    try
+                    {
+                        ServiceBase.Run(testService);
+                    }
+                    catch (Exception actualException)
+                    {
+                        if (object.ReferenceEquals(expectedException, actualException))
+                        {
+                            testService.WriteStreamAsync(PipeMessageByteCode.ExceptionThrown).Wait();
+                        }
+                        else
+                        {
+                            throw actualException;
+                        }
+                    }
+                }
+                else
+                {
+                    testService = new TestService(args[0]);
+                    ServiceBase.Run(testService);
+                }
                 return 0;
             }
             else if (args.Length == 3)
