@@ -2793,7 +2793,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Point handler at out loopback proxy
                 handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, null);
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
                 using (HttpClient client = new HttpClient(handler))
                 {
