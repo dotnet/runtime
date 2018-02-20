@@ -9,6 +9,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <HarvestStablePackage>false</HarvestStablePackage>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
   </PropertyGroup>
 
