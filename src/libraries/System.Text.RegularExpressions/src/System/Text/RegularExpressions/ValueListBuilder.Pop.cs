@@ -11,8 +11,6 @@ namespace System.Collections.Generic
     /// </summary>
     internal ref partial struct ValueListBuilder<T>
     {
-        public ref T this[int index] => ref _span[index];
-        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Pop()
         {

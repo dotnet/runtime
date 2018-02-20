@@ -46,8 +46,7 @@ namespace System.IO.Enumeration
                         modified = true;
                         if (i > 1 && i == length - 1 && expression[i - 1] == '*')
                         {
-                            sb.Length--;
-                            sb.Append('<'); // DOS_STAR (ends in *.)
+                            sb[sb.Length - 1] = '<'; // DOS_STAR (ends in *.)
                         }
                         else if (i < length - 1 && (expression[i + 1] == '?' || expression[i + 1] == '*'))
                         {
