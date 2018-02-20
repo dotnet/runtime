@@ -56,9 +56,9 @@ namespace System.Security.Cryptography
         protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) => throw DerivedClassMustOverride();
         protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) => throw DerivedClassMustOverride();
 
-        public virtual bool TryDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public virtual bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            byte[] result = Decrypt(source.ToArray(), padding);
+            byte[] result = Decrypt(data.ToArray(), padding);
 
             if (destination.Length >= result.Length)
             {
@@ -71,9 +71,9 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        public virtual bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public virtual bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            byte[] result = Encrypt(source.ToArray(), padding);
+            byte[] result = Encrypt(data.ToArray(), padding);
 
             if (destination.Length >= result.Length)
             {
@@ -86,18 +86,18 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             byte[] result;
-            byte[] array = ArrayPool<byte>.Shared.Rent(source.Length);
+            byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {
-                source.CopyTo(array);
-                result = HashData(array, 0, source.Length, hashAlgorithm);
+                data.CopyTo(array);
+                result = HashData(array, 0, data.Length, hashAlgorithm);
             }
             finally
             {
-                Array.Clear(array, 0, source.Length);
+                Array.Clear(array, 0, data.Length);
                 ArrayPool<byte>.Shared.Return(array);
             }
 
@@ -112,9 +112,9 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        public virtual bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+        public virtual bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
-            byte[] result = SignHash(source.ToArray(), hashAlgorithm, padding);
+            byte[] result = SignHash(hash.ToArray(), hashAlgorithm, padding);
 
             if (destination.Length >= result.Length)
             {
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
             return SignHash(hash, hashAlgorithm, padding);
         }
 
-        public virtual bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
+        public virtual bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
             {
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
-            if (TryHashData(source, destination, hashAlgorithm, out int hashLength) &&
+            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
                 TrySignHash(destination.Slice(0, hashLength), destination, hashAlgorithm, padding, out bytesWritten))
             {
                 return true;

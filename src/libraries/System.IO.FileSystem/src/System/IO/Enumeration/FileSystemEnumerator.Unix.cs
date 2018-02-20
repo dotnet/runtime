@@ -41,7 +41,7 @@ namespace System.IO.Enumeration
         public FileSystemEnumerator(string directory, EnumerationOptions options = null)
         {
             _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _rootDirectory = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar);
+            _rootDirectory = PathHelpers.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
             _options = options ?? EnumerationOptions.Default;
 
             // We need to initialize the directory handle up front to ensure
@@ -66,14 +66,20 @@ namespace System.IO.Enumeration
             }
         }
 
+        private bool InternalContinueOnError(int error)
+            => (_options.IgnoreInaccessible && IsAccessError(error)) || ContinueOnError(error);
+
+        private static bool IsAccessError(int error)
+            => error == (int)Interop.Error.EACCES || error == (int)Interop.Error.EBADF
+                || error == (int)Interop.Error.EPERM;
+
         private IntPtr CreateDirectoryHandle(string path)
         {
             IntPtr handle = Interop.Sys.OpenDir(path);
             if (handle == IntPtr.Zero)
             {
                 Interop.ErrorInfo info = Interop.Sys.GetLastErrorInfo();
-                if ((_options.IgnoreInaccessible && IsAccessError(info.RawErrno))
-                    || ContinueOnError(info.RawErrno))
+                if (InternalContinueOnError(info.RawErrno))
                 {
                     return IntPtr.Zero;
                 }
@@ -107,7 +113,8 @@ namespace System.IO.Enumeration
                     if (_lastEntryFound)
                         return false;
 
-                    FileAttributes attributes = FileSystemEntry.Initialize(ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
+                    FileAttributes attributes = FileSystemEntry.Initialize(
+                        ref entry, _entry, _currentPath, _rootDirectory, _originalRootDirectory, new Span<char>(_pathBuffer));
                     bool isDirectory = (attributes & FileAttributes.Directory) != 0;
 
                     bool isSpecialDirectory = false;
@@ -131,7 +138,7 @@ namespace System.IO.Enumeration
                             attributes = entry.Attributes;
                         }
 
-                        if (attributes != (FileAttributes)(-1) && (_options.AttributesToSkip & attributes) != 0)
+                        if ((_options.AttributesToSkip & attributes) != 0)
                         {
                             continue;
                         }
@@ -172,8 +179,7 @@ namespace System.IO.Enumeration
                     break;
                 default:
                     // Error
-                    if ((_options.IgnoreInaccessible && IsAccessError(result))
-                        || ContinueOnError(result))
+                    if (InternalContinueOnError(result))
                     {
                         DirectoryFinished();
                         break;
@@ -190,10 +196,6 @@ namespace System.IO.Enumeration
             _currentPath = _pending.Dequeue();
             _directoryHandle = CreateDirectoryHandle(_currentPath);
         }
-
-        private static bool IsAccessError(int error)
-            => error == (int)Interop.Error.EACCES || error == (int)Interop.Error.EBADF
-                || error == (int)Interop.Error.EPERM;
 
         private void InternalDispose(bool disposing)
         {

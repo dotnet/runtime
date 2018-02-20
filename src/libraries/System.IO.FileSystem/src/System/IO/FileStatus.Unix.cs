@@ -35,17 +35,9 @@ namespace System.IO
 
         internal void Invalidate() => _fileStatusInitialized = -1;
 
-        public FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
+        internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            // IMPORTANT: Attribute logic must match the logic in FileSystemEntry
-
-            EnsureStatInitialized(path);
-
-            if (!_exists)
-                return (FileAttributes)(-1);
-
-            FileAttributes attrs = default;
-
+            EnsureStatInitialized(path, continueOnError);
             Interop.Sys.Permissions readBit, writeBit;
             if (_fileStatus.Uid == Interop.Sys.GetEUid())
             {
@@ -66,23 +58,35 @@ namespace System.IO
                 writeBit = Interop.Sys.Permissions.S_IWOTH;
             }
 
-            if ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
-                (_fileStatus.Mode & (int)writeBit) == 0)  // but not write permission
-            {
-                attrs |= FileAttributes.ReadOnly;
-            }
+            return ((_fileStatus.Mode & (int)readBit) != 0 && // has read permission
+                (_fileStatus.Mode & (int)writeBit) == 0);     // but not write permission
+        }
+
+        public FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
+        {
+            // IMPORTANT: Attribute logic must match the logic in FileSystemEntry
+
+            EnsureStatInitialized(path);
+
+            if (!_exists)
+                return (FileAttributes)(-1);
+
+            FileAttributes attributes = default;
+
+            if (IsReadOnly(path))
+                attributes |= FileAttributes.ReadOnly;
 
             if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK)
-                attrs |= FileAttributes.ReparsePoint;
+                attributes |= FileAttributes.ReparsePoint;
 
             if (_isDirectory)
-                attrs |= FileAttributes.Directory;
+                attributes |= FileAttributes.Directory;
 
             // If the filename starts with a period, it's hidden.
             if (fileName.Length > 0 && fileName[0] == '.')
-                attrs |= FileAttributes.Hidden;
+                attributes |= FileAttributes.Hidden;
 
-            return attrs != default ? attrs : FileAttributes.Normal;
+            return attributes != default ? attributes : FileAttributes.Normal;
         }
 
         public void SetAttributes(string path, FileAttributes attributes)
@@ -138,9 +142,9 @@ namespace System.IO
             return _exists && InitiallyDirectory == _isDirectory;
         }
 
-        internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path)
+        internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path);
+            EnsureStatInitialized(path, continueOnError);
             if (!_exists)
                 return DateTimeOffset.FromFileTime(0);
 
@@ -163,9 +167,9 @@ namespace System.IO
             SetLastAccessTime(path, time);
         }
 
-        internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path)
+        internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path);
+            EnsureStatInitialized(path, continueOnError);
             if (!_exists)
                 return DateTimeOffset.FromFileTime(0);
             return UnixTimeToDateTimeOffset(_fileStatus.ATime, _fileStatus.ATimeNsec);
@@ -174,9 +178,9 @@ namespace System.IO
         internal void SetLastAccessTime(string path, DateTimeOffset time)
             => SetAccessWriteTimes(path, time.ToUnixTimeSeconds(), null);
 
-        internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path)
+        internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path);
+            EnsureStatInitialized(path, continueOnError);
             if (!_exists)
                 return DateTimeOffset.FromFileTime(0);
             return UnixTimeToDateTimeOffset(_fileStatus.MTime, _fileStatus.MTimeNsec);
@@ -203,9 +207,9 @@ namespace System.IO
             _fileStatusInitialized = -1;
         }
 
-        internal long GetLength(ReadOnlySpan<char> path)
+        internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            EnsureStatInitialized(path);
+            EnsureStatInitialized(path, continueOnError);
             return _fileStatus.Size;
         }
 
@@ -256,14 +260,14 @@ namespace System.IO
             _fileStatusInitialized = 0;
         }
 
-        internal void EnsureStatInitialized(ReadOnlySpan<char> path)
+        internal void EnsureStatInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (_fileStatusInitialized == -1)
             {
                 Refresh(path);
             }
 
-            if (_fileStatusInitialized != 0)
+            if (_fileStatusInitialized != 0 && !continueOnError)
             {
                 int errno = _fileStatusInitialized;
                 _fileStatusInitialized = -1;

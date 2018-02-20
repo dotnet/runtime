@@ -191,9 +191,17 @@ namespace System.Net.Http.Functional.Tests
         {
             using (HttpClient client = CreateHttpClient())
             {
-                if (!useContentLengthUpload && requestContent != null)
+                if (requestContent != null)
                 {
-                    requestContent.Headers.ContentLength = null;
+                    if (useContentLengthUpload)
+                    {
+                        // Ensure that Content-Length is populated (see issue #27245)
+                        requestContent.Headers.ContentLength = requestContent.Headers.ContentLength;
+                    }
+                    else
+                    {
+                        requestContent.Headers.ContentLength = null;
+                    }
                 }
                 
                 if (useChunkedEncodingUpload)

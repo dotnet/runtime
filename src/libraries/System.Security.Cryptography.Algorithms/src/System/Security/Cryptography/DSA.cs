@@ -129,9 +129,9 @@ namespace System.Security.Cryptography
             return VerifySignature(hash, signature);
         }
 
-        public virtual bool TryCreateSignature(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        public virtual bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
         {
-            byte[] sig = CreateSignature(source.ToArray());
+            byte[] sig = CreateSignature(hash.ToArray());
             if (sig.Length <= destination.Length)
             {
                 new ReadOnlySpan<byte>(sig).CopyTo(destination);
@@ -145,13 +145,13 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
-            byte[] array = ArrayPool<byte>.Shared.Rent(source.Length);
+            byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {
-                source.CopyTo(array);
-                byte[] hash = HashData(array, 0, source.Length, hashAlgorithm);
+                data.CopyTo(array);
+                byte[] hash = HashData(array, 0, data.Length, hashAlgorithm);
                 if (destination.Length >= hash.Length)
                 {
                     new ReadOnlySpan<byte>(hash).CopyTo(destination);
@@ -166,19 +166,19 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                Array.Clear(array, 0, source.Length);
+                Array.Clear(array, 0, data.Length);
                 ArrayPool<byte>.Shared.Return(array);
             }
         }
 
-        public virtual bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        public virtual bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
             {
                 throw HashAlgorithmNameNullOrEmpty();
             }
 
-            if (TryHashData(source, destination, hashAlgorithm, out int hashLength) &&
+            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
                 TryCreateSignature(destination.Slice(0, hashLength), destination, out bytesWritten))
             {
                 return true;
@@ -214,8 +214,8 @@ namespace System.Security.Cryptography
             }
         }
 
-        public virtual bool VerifySignature(ReadOnlySpan<byte> rgbHash, ReadOnlySpan<byte> rgbSignature) =>
-            VerifySignature(rgbHash.ToArray(), rgbSignature.ToArray());
+        public virtual bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+            VerifySignature(hash.ToArray(), signature.ToArray());
 
         private static Exception DerivedClassMustOverride() =>
             new NotImplementedException(SR.NotSupported_SubclassOverride);

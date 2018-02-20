@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
                 return converted;
             }
 
-            public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+            public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             {
                 SafeEcKeyHandle key = _key.Value;
 
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
                 byte[] signature = ArrayPool<byte>.Shared.Rent(signatureLength);
                 try
                 {
-                    if (!Interop.Crypto.EcDsaSign(source, source.Length, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
+                    if (!Interop.Crypto.EcDsaSign(hash, hash.Length, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
@@ -159,8 +159,8 @@ namespace System.Security.Cryptography
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
                 AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
 
-            protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
             protected override void Dispose(bool disposing)
             {

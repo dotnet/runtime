@@ -83,14 +83,14 @@ namespace System.Security.Cryptography
             return SignHash(hash);
         }
 
-        public virtual bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        public virtual bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
             {
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
             }
 
-            if (TryHashData(source, destination, hashAlgorithm, out int hashLength) &&
+            if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
                 TrySignHash(destination.Slice(0, hashLength), destination, out bytesWritten))
             {
                 return true;
@@ -191,13 +191,13 @@ namespace System.Security.Cryptography
             throw new NotSupportedException(SR.NotSupported_SubclassOverride);
         }
 
-        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
+        protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
-            byte[] array = ArrayPool<byte>.Shared.Rent(source.Length);
+            byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {
-                source.CopyTo(array);
-                byte[] hash = HashData(array, 0, source.Length, hashAlgorithm);
+                data.CopyTo(array);
+                byte[] hash = HashData(array, 0, data.Length, hashAlgorithm);
                 if (hash.Length <= destination.Length)
                 {
                     new ReadOnlySpan<byte>(hash).CopyTo(destination);
@@ -212,14 +212,14 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                Array.Clear(array, 0, source.Length);
+                Array.Clear(array, 0, data.Length);
                 ArrayPool<byte>.Shared.Return(array);
             }
         }
 
-        public virtual bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        public virtual bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
         {
-            byte[] result = SignHash(source.ToArray());
+            byte[] result = SignHash(hash.ToArray());
             if (result.Length <= destination.Length)
             {
                 new ReadOnlySpan<byte>(result).CopyTo(destination);

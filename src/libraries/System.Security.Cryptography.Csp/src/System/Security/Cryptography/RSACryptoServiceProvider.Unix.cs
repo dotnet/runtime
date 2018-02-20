@@ -61,16 +61,16 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
         }
 
-        public override bool TryDecrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
-            if (source.Length > (KeySize / 8))
+            if (data.Length > (KeySize / 8))
                 throw new CryptographicException(SR.Format(SR.Cryptography_Padding_DecDataTooBig, Convert.ToString(KeySize / 8)));
             if (padding != RSAEncryptionPadding.Pkcs1 && padding != RSAEncryptionPadding.OaepSHA1)
                 throw PaddingModeNotSupported();
 
-            return _impl.TryDecrypt(source, destination, padding, out bytesWritten);
+            return _impl.TryDecrypt(data, destination, padding, out bytesWritten);
         }
 
         protected override void Dispose(bool disposing)
@@ -103,14 +103,14 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
         }
 
-        public override bool TryEncrypt(ReadOnlySpan<byte> source, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
+        public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
             if (padding != RSAEncryptionPadding.Pkcs1 && padding != RSAEncryptionPadding.OaepSHA1)
                 throw PaddingModeNotSupported();
 
-            return _impl.TryEncrypt(source, destination, padding, out bytesWritten);
+            return _impl.TryEncrypt(data, destination, padding, out bytesWritten);
         }
 
         public byte[] ExportCspBlob(bool includePrivateParameters)
@@ -125,8 +125,8 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
             AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
 
-        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
+        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+            AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
             AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
@@ -175,8 +175,8 @@ namespace System.Security.Cryptography
         public override byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             _impl.SignData(data, offset, count, hashAlgorithm, padding);
 
-        public override bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
-            _impl.TrySignData(source, destination, hashAlgorithm, padding, out bytesWritten);
+        public override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
+            _impl.TrySignData(data, destination, hashAlgorithm, padding, out bytesWritten);
 
         public byte[] SignData(byte[] buffer, int offset, int count, object halg) =>
             _impl.SignData(buffer, offset, count, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
@@ -190,8 +190,8 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             _impl.SignHash(hash, hashAlgorithm, padding);
 
-        public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
-            _impl.TrySignHash(source, destination, hashAlgorithm, padding, out bytesWritten);
+        public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
+            _impl.TrySignHash(hash, destination, hashAlgorithm, padding, out bytesWritten);
 
         public byte[] SignHash(byte[] rgbHash, string str)
         {
