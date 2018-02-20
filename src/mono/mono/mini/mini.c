@@ -4340,15 +4340,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	return code;
 }
 
-gboolean
-mini_class_is_system_array (MonoClass *klass)
-{
-	if (klass->parent == mono_defaults.array_class)
-		return TRUE;
-	else
-		return FALSE;
-}
-
 /*
  * mini_get_underlying_type:
  *
@@ -4431,3 +4422,12 @@ mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpoin
 }
 
 #endif /* DISABLE_JIT */
+
+gboolean
+mini_class_is_system_array (MonoClass *klass)
+{
+	if (klass->parent == mono_defaults.array_class)
+		return TRUE;
+	else
+		return FALSE;
+}
