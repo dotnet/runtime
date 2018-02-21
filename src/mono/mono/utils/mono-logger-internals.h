@@ -28,6 +28,7 @@ typedef enum {
 	MONO_TRACE_IO_LAYER_SEMAPHORE = 1 << 13,
 	MONO_TRACE_IO_LAYER_MUTEX     = 1 << 14,
 	MONO_TRACE_IO_LAYER_HANDLE    = 1 << 15,
+	MONO_TRACE_EXEC               = 1 << 16,
 } MonoTraceMask;
 
 MONO_API extern GLogLevelFlags mono_internal_current_level;

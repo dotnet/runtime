@@ -624,4 +624,11 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 GPtrArray*
 mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly);
 
+void
+mono_domain_set_state (MonoDomain *domain, int state);
+
+void
+mono_domain_foreach_safe (MonoDomainFunc func, gpointer user_data);
+
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

@@ -955,6 +955,8 @@ mono_domain_set_internal (MonoDomain *domain)
  * domains in the current runtime.   The provided \p func is invoked with a
  * pointer to the \c MonoDomain and is given the value of the \p user_data
  * parameter which can be used to pass state to your called routine.
+ *
+ * This function is only safe if you can externally ensure that none of the domains will be unloaded during its execution.
  */
 void
 mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
@@ -979,6 +981,61 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	}
 
 	gc_free_fixed_non_heap_list (copy);
+}
+
+/**
+ * mono_domain_foreach_safe:
+ * \param func function to invoke with the domain data
+ * \param user_data user-defined pointer that is passed to the supplied \p func fo reach domain
+ *
+ * This is a variant of mono_domain_foreach that ensures that the callback is only executed for live domains while coordinating
+ * with the unload process to ensure it.
+ *
+ * This function is not a direct replacement to mono_domain_foreach as it will invoke the callback after safely transitioning the current
+ * thread to the target domain.
+ *
+ * In the face of concurrent domain unload, the callback must assume that the current thread might have a pending abort scheduled due to
+ * the previous domain unloading code trying to abort it.
+ * It's currently a limitation of this function that the callback must deal with.
+ */
+
+void
+mono_domain_foreach_safe (MonoDomainFunc func, gpointer user_data)
+{
+	int i;
+	int size = appdomain_list_size;
+
+	MonoDomain *current_domain = mono_domain_get ();
+	for (i = 0; i < size; ++i) {
+		mono_appdomains_lock ();
+		if (i >= appdomain_list_size) {
+			mono_appdomains_unlock ();
+			break;
+		}
+
+		MonoDomain *domain = appdomains_list [i];
+		//ignore missing domains or those that started to unload
+		if (!domain || domain->state >= MONO_APPDOMAIN_UNLOADING) {
+			mono_appdomains_unlock ();
+			continue;
+		}
+
+		if (domain == current_domain) {
+			mono_appdomains_unlock ();
+			func (domain, user_data);
+			continue;
+		}
+
+		mono_thread_push_appdomain_ref (domain);
+		if (mono_domain_set (domain, FALSE)) {
+			mono_appdomains_unlock ();
+			func (domain, user_data);
+
+			mono_domain_set (current_domain, TRUE);
+		}
+
+		mono_thread_pop_appdomain_ref ();
+	}
 }
 
 /* FIXME: maybe we should integrate this with mono_assembly_open? */
@@ -1973,4 +2030,18 @@ mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
 	}
 	mono_domain_assemblies_unlock (domain);
 	return assemblies;
+}
+
+/*
+
+Change a domain state while holding the appdomains lock.
+Use this function if you need to coordinate domain state change with foreign threads that are trying to join @domain.
+*/
+
+void
+mono_domain_set_state (MonoDomain *domain, int state)
+{
+	mono_appdomains_lock ();
+	domain->state = MONO_APPDOMAIN_UNLOADING;
+	mono_appdomains_unlock ();
 }
