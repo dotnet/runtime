@@ -178,13 +178,10 @@ namespace System.IO
             // it doesn't root extended paths correctly. We don't currently resolve extended paths, so we'll just assert here.
             Debug.Assert(PathInternal.IsPartiallyQualified(path) || !PathInternal.IsExtended(path));
 
-            // Historically we would skip leading spaces *only* if the path started with a drive " C:" or a UNC " \\"
-            int startIndex = PathInternal.PathStartSkip(path);
-
             fixed (char* pathStart = path)
             {
                 uint result = 0;
-                while ((result = Interop.Kernel32.GetFullPathNameW(pathStart + startIndex, (uint)fullPath.Capacity, fullPath.UnderlyingArray, IntPtr.Zero)) > fullPath.Capacity)
+                while ((result = Interop.Kernel32.GetFullPathNameW(pathStart, (uint)fullPath.Capacity, fullPath.UnderlyingArray, IntPtr.Zero)) > fullPath.Capacity)
                 {
                     // Reported size is greater than the buffer size. Increase the capacity.
                     fullPath.EnsureCapacity(checked((int)result));

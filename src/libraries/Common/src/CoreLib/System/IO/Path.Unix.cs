@@ -116,15 +116,14 @@ namespace System.IO
             return path.Length > 0 && path[0] == PathInternal.DirectorySeparatorChar;
         }
 
-        // The resulting string is null if path is null. If the path is empty or
-        // only contains whitespace characters an ArgumentException gets thrown.
+        /// <summary>
+        /// Returns the path root or null if path is empty or null.
+        /// </summary>
         public static string GetPathRoot(string path)
         {
-            if (path == null) return null;
-            if (PathInternal.IsEffectivelyEmpty(path))
-                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
+            if (PathInternal.IsEffectivelyEmpty(path)) return null;
 
-            return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : String.Empty;
+            return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : string.Empty;
         }
 
         public static ReadOnlySpan<char> GetPathRoot(ReadOnlySpan<char> path)
