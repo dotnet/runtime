@@ -58,14 +58,14 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        // Maximum request drain size, 16K.
-        private const int s_maxDrainBytes = 16 * 1024;
+        // Maximum request drain size, 1MB.
+        private const int MaxDrainBytes = 1024 * 1024;
 
         private async void DrainOnDispose()
         {
             try
             {
-                await DrainAsync(s_maxDrainBytes);
+                await DrainAsync(MaxDrainBytes).ConfigureAwait(false);
             }
             catch (Exception)
             {
