@@ -145,6 +145,18 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Negative case for "physicalMemoryLimitPercentage" on non Windows
+        public void PhysicalMemoryLimitNotSupported()
+        {
+            var config = new NameValueCollection();
+            config.Add("PhysicalMemoryLimitPercentage", "99");
+            Assert.Throws<PlatformNotSupportedException>(() =>
+            {
+                new MemoryCache("MyCache", config);
+            });
+        }
+
+        [Fact]
         public void Defaults()
         {
             var mc = new MemoryCache("MyCache");
@@ -177,6 +189,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
         public void ConstructorValues()
         {
             var config = new NameValueCollection();
@@ -992,6 +1005,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
         public void TestExpiredGetValues()
         {
             var config = new NameValueCollection();
@@ -1025,6 +1039,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
         [OuterLoop] // makes long wait
         public void TestCacheSliding()
         {
@@ -1332,6 +1347,7 @@ namespace MonoTests.System.Runtime.Caching
     public class MemoryCacheTestExpires4
     {
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
         public async Task TestCacheShrink()
         {
             const int HEAP_RESIZE_THRESHOLD = 8192 + 2;
@@ -1389,6 +1405,7 @@ namespace MonoTests.System.Runtime.Caching
     public class MemoryCacheTestExpires5
     {
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses "physicalMemoryLimitPercentage" not supported on other platforms
         public async Task TestCacheExpiryOrdering()
         {
             var config = new NameValueCollection();
