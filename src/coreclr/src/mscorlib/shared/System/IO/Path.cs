@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -52,7 +51,7 @@ namespace System.IO
                         s = path.Substring(0, i);
                         break;
                     }
-                    if (PathInternal.IsDirectoryOrVolumeSeparator(ch)) break;
+                    if (PathInternal.IsDirectorySeparator(ch)) break;
                 }
 
                 if (extension != null && path.Length != 0)
@@ -67,29 +66,30 @@ namespace System.IO
             return null;
         }
 
-        // Returns the directory path of a file path. This method effectively
-        // removes the last element of the given file path, i.e. it returns a
-        // string consisting of all characters up to but not including the last
-        // backslash ("\") in the file path. The returned value is null if the file
-        // path is null or if the file path denotes a root (such as "\", "C:", or
-        // "\\server\share").
+        /// <summary>
+        /// Returns the directory portion of a file path. This method effectively
+        /// removes the last segment of the given file path, i.e. it returns a
+        /// string consisting of all characters up to but not including the last
+        /// backslash ("\") in the file path. The returned value is null if the
+        /// specified path is null, empty, or a root (such as "\", "C:", or
+        /// "\\server\share").
+        /// </summary>
+        /// <remarks>
+        /// Directory separators are normalized in the returned string.
+        /// </remarks>
         public static string GetDirectoryName(string path)
         {
-            if (path == null)
+            if (PathInternal.IsEffectivelyEmpty(path))
                 return null;
 
-            if (PathInternal.IsEffectivelyEmpty(path))
-                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
-
-            path = PathInternal.NormalizeDirectorySeparators(path);
-            int end = PathInternal.GetDirectoryNameOffset(path);
-            return end >= 0 ? path.Substring(0, end) : null;
+            int end = GetDirectoryNameOffset(path);
+            return end >= 0 ? PathInternal.NormalizeDirectorySeparators(path.Substring(0, end)) : null;
         }
 
         /// <summary>
-        /// Returns the directory path of a file path.
-        /// The returned value the an empty ReadOnlySpan if path is empty or 
-        /// if the file path denotes as root  (such as "\", "C:", or "\\server\share"). 
+        /// Returns the directory portion of a file path. The returned value is empty
+        /// if the specified path is null, empty, or a root (such as "\", "C:", or
+        /// "\\server\share").
         /// </summary>
         /// <remarks>
         /// Unlike the string overload, this method will not normalize directory separators.
@@ -99,8 +99,24 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path))
                 return ReadOnlySpan<char>.Empty;
 
-            int end = PathInternal.GetDirectoryNameOffset(path);
+            int end = GetDirectoryNameOffset(path);
             return end >= 0 ? path.Slice(0, end) : ReadOnlySpan<char>.Empty;
+        }
+
+        private static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
+        {
+            int rootLength = PathInternal.GetRootLength(path);
+            int end = path.Length;
+            if (end <= rootLength)
+                return -1;
+
+            while (end > rootLength && !PathInternal.IsDirectorySeparator(path[--end]));
+
+            // Trim off any remaining separators (to deal with C:\foo\\bar)
+            while (end > rootLength && PathInternal.IsDirectorySeparator(path[end - 1]))
+                end--;
+
+            return end;
         }
 
         // Returns the extension of the given path. The returned value includes the
@@ -119,7 +135,7 @@ namespace System.IO
         /// Returns the extension of the given path.
         /// </summary>
         /// <remarks> 
-        /// The returned value is an empty ReadOnlySpan if the given path doesnot include an extension.
+        /// The returned value is an empty ReadOnlySpan if the given path does not include an extension.
         /// </remarks>
         public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
         {
@@ -135,7 +151,7 @@ namespace System.IO
                     else
                         return ReadOnlySpan<char>.Empty;
                 }
-                if (PathInternal.IsDirectoryOrVolumeSeparator(ch))
+                if (PathInternal.IsDirectorySeparator(ch))
                     break;
             }
             return ReadOnlySpan<char>.Empty;
@@ -156,14 +172,23 @@ namespace System.IO
             return new string(result);
         }
 
-        /// <summary> 
+        /// <summary>
         /// The returned ReadOnlySpan contains the characters of the path that follows the last separator in path.
         /// </summary>
         public static ReadOnlySpan<char> GetFileName(ReadOnlySpan<char> path)
         {
-            int offset = PathInternal.FindFileNameIndex(path);
-            int count = path.Length - offset;
-            return path.Slice(offset, count);
+            int root = GetPathRoot(path).Length;
+
+            // We don't want to cut off "C:\file.txt:stream" (i.e. should be "file.txt:stream")
+            // but we *do* want "C:Foo" => "Foo". This necessitates checking for the root.
+
+            for (int i = path.Length; --i >= 0;)
+            {
+                if (i < root || PathInternal.IsDirectorySeparator(path[i]))
+                    return path.Slice(i + 1, path.Length - i - 1);
+            }
+
+            return path;
         }
 
         public static string GetFileNameWithoutExtension(string path)
@@ -183,13 +208,11 @@ namespace System.IO
         /// </summary>
         public static ReadOnlySpan<char> GetFileNameWithoutExtension(ReadOnlySpan<char> path)
         {
-            int length = path.Length;
-            int offset = PathInternal.FindFileNameIndex(path);
-
-            int end = path.Slice(offset, length - offset).LastIndexOf('.');
-            return end == -1 ?
-                path.Slice(offset) : // No extension was found
-                path.Slice(offset, end);
+            ReadOnlySpan<char> fileName = GetFileName(path);
+            int lastPeriod = fileName.LastIndexOf('.');
+            return lastPeriod == -1 ?
+                fileName : // No extension was found
+                fileName.Slice(0, lastPeriod);
         }
 
         // Returns a cryptographically strong random 8.3 string that can be 
@@ -223,9 +246,8 @@ namespace System.IO
         public static bool IsPathFullyQualified(string path)
         {
             if (path == null)
-            {
                 throw new ArgumentNullException(nameof(path));
-            }
+
             return IsPathFullyQualified(path.AsReadOnlySpan());
         }
 
@@ -256,7 +278,7 @@ namespace System.IO
                 {
                     return i != path.Length - 1;
                 }
-                if (PathInternal.IsDirectoryOrVolumeSeparator(ch))
+                if (PathInternal.IsDirectorySeparator(ch))
                     break;
             }
             return false;
@@ -322,7 +344,7 @@ namespace System.IO
                 }
 
                 char ch = paths[i][paths[i].Length - 1];
-                if (!PathInternal.IsDirectoryOrVolumeSeparator(ch))
+                if (!PathInternal.IsDirectorySeparator(ch))
                     finalSize++;
             }
 
@@ -342,7 +364,7 @@ namespace System.IO
                 else
                 {
                     char ch = finalPath[finalPath.Length - 1];
-                    if (!PathInternal.IsDirectoryOrVolumeSeparator(ch))
+                    if (!PathInternal.IsDirectorySeparator(ch))
                     {
                         finalPath.Append(PathInternal.DirectorySeparatorChar);
                     }
@@ -376,8 +398,8 @@ namespace System.IO
 
         private static string CombineNoChecks(string first, string second)
         {
-			if (string.IsNullOrEmpty(first))
-				return second;
+            if (string.IsNullOrEmpty(first))
+                return second;
 
             if (string.IsNullOrEmpty(second))
                 return first;
@@ -402,7 +424,7 @@ namespace System.IO
             if (IsPathRooted(second))
                 return CombineNoChecks(second, third);
 
-            return CombineNoChecksInternal(first, second, third);            
+            return CombineNoChecksInternal(first, second, third);
         }
 
         private static string CombineNoChecks(string first, string second, string third)
@@ -449,9 +471,9 @@ namespace System.IO
                 return CombineNoChecks(second, third, fourth);
             if (string.IsNullOrEmpty(second))
                 return CombineNoChecks(first, third, fourth);
-			if (string.IsNullOrEmpty(third))
+            if (string.IsNullOrEmpty(third))
                 return CombineNoChecks(first, second, fourth);
-			if (string.IsNullOrEmpty(fourth))
+            if (string.IsNullOrEmpty(fourth))
                 return CombineNoChecks(first, second, third);
 
             if (IsPathRooted(fourth.AsReadOnlySpan()))
@@ -617,7 +639,7 @@ namespace System.IO
             // Remove "//", "/./", and "/../" from the path by copying each character to the output, 
             // except the ones we're removing, such that the builder contains the normalized path 
             // at the end.
-            var sb = StringBuilderCache.Acquire(path.Length);
+            StringBuilder sb = StringBuilderCache.Acquire(path.Length);
             if (skip > 0)
             {
                 sb.Append(path, 0, skip);

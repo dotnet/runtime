@@ -77,19 +77,6 @@ namespace System.IO
             return builder.ToString();
         }
 
-        /// <summary>
-        /// Returns true if the character is a directory or volume separator.
-        /// </summary>
-        /// <param name="ch">The character to test.</param>
-        internal static bool IsDirectoryOrVolumeSeparator(char ch)
-        {
-            // The directory separator, volume separator, and the alternate directory
-            // separator should be the same on Unix, so we only need to check one.
-            Debug.Assert(DirectorySeparatorChar == AltDirectorySeparatorChar);
-            Debug.Assert(DirectorySeparatorChar == VolumeSeparatorChar);
-            return ch == DirectorySeparatorChar;
-        }
-
         internal static bool IsPartiallyQualified(ReadOnlySpan<char> path)
         {
             // This is much simpler than Windows where paths can be rooted, but not fully qualified (such as Drive Relative)

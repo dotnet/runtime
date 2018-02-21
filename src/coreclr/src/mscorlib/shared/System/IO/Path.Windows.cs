@@ -182,7 +182,8 @@ namespace System.IO
         public static bool IsPathRooted(ReadOnlySpan<char> path)
         {
             int length = path.Length;
-            return (length >= 1 && PathInternal.IsDirectorySeparator(path[0])) || (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == PathInternal.VolumeSeparatorChar);
+            return (length >= 1 && PathInternal.IsDirectorySeparator(path[0]))
+                || (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == PathInternal.VolumeSeparatorChar);
         }
 
         // Returns the root portion of the given path. The resulting string
@@ -196,11 +197,8 @@ namespace System.IO
         // only contains whitespace characters an ArgumentException gets thrown.
         public static string GetPathRoot(string path)
         {
-            if (path == null)
-                return null;
-
             if (PathInternal.IsEffectivelyEmpty(path))
-                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
+                return null;
 
             ReadOnlySpan<char> result = GetPathRoot(path.AsReadOnlySpan());
             if (path.Length == result.Length)
@@ -223,7 +221,6 @@ namespace System.IO
 
         /// <summary>Gets whether the system is case-sensitive.</summary>
         internal static bool IsCaseSensitive { get { return false; } }
-
 
         /// <summary>
         /// Returns the volume name for dos, UNC and device paths.

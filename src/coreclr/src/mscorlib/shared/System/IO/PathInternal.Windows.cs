@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO
@@ -212,7 +210,9 @@ namespace System.IO
                         i++;
                 }
             }
-            else if (pathLength >= volumeSeparatorLength && path[volumeSeparatorLength - 1] == VolumeSeparatorChar)
+            else if (pathLength >= volumeSeparatorLength
+                && path[volumeSeparatorLength - 1] == VolumeSeparatorChar
+                && IsValidDriveChar(path[volumeSeparatorLength - 2]))
             {
                 // Path is at least longer than where we expect a colon, and has a colon (\\?\A:, A:)
                 // If the colon is followed by a directory separator, move past it
@@ -344,32 +344,29 @@ namespace System.IO
                 return path;
 
             char current;
-            int start = PathStartSkip(path);
 
-            if (start == 0)
+            // Make a pass to see if we need to normalize so we can potentially skip allocating
+            bool normalized = true;
+
+            for (int i = 0; i < path.Length; i++)
             {
-                // Make a pass to see if we need to normalize so we can potentially skip allocating
-                bool normalized = true;
-
-                for (int i = 0; i < path.Length; i++)
+                current = path[i];
+                if (IsDirectorySeparator(current)
+                    && (current != DirectorySeparatorChar
+                        // Check for sequential separators past the first position (we need to keep initial two for UNC/extended)
+                        || (i > 0 && i + 1 < path.Length && IsDirectorySeparator(path[i + 1]))))
                 {
-                    current = path[i];
-                    if (IsDirectorySeparator(current)
-                        && (current != DirectorySeparatorChar
-                            // Check for sequential separators past the first position (we need to keep initial two for UNC/extended)
-                            || (i > 0 && i + 1 < path.Length && IsDirectorySeparator(path[i + 1]))))
-                    {
-                        normalized = false;
-                        break;
-                    }
+                    normalized = false;
+                    break;
                 }
-
-                if (normalized)
-                    return path;
             }
+
+            if (normalized)
+                return path;
 
             StringBuilder builder = new StringBuilder(path.Length);
 
+            int start = 0;
             if (IsDirectorySeparator(path[start]))
             {
                 start++;
@@ -397,15 +394,6 @@ namespace System.IO
             }
 
             return builder.ToString();
-        }
-
-        /// <summary>
-        /// Returns true if the character is a directory or volume separator.
-        /// </summary>
-        /// <param name="ch">The character to test.</param>
-        internal static bool IsDirectoryOrVolumeSeparator(char ch)
-        {
-            return IsDirectorySeparator(ch) || VolumeSeparatorChar == ch;
         }
 
         /// <summary>
