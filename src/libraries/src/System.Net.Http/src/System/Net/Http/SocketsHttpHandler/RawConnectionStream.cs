@@ -66,38 +66,55 @@ namespace System.Net.Http
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 ValidateCopyToArgs(this, destination, bufferSize);
-                return
-                    cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                    _connection != null ? CopyToAsyncCore(destination, bufferSize, cancellationToken) :
-                    Task.CompletedTask; // null if response body fully consumed
-            }
 
-            private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            {
-                Task copyTask = _connection.CopyToAsync(destination);
-                if (!copyTask.IsCompletedSuccessfully)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
-                    try
-                    {
-                        await copyTask.ConfigureAwait(false);
-                    }
-                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
-                    {
-                        throw CreateOperationCanceledException(exc, cancellationToken);
-                    }
-                    finally
-                    {
-                        ctr.Dispose();
-                    }
-
-                    // If cancellation is requested and tears down the connection, it could cause the copy
-                    // to end early but think it ended successfully. So we prioritize cancellation in this
-                    // race condition, and if we find after the copy has completed that cancellation has
-                    // been requested, we assume the copy completed due to cancellation and throw.
-                    cancellationToken.ThrowIfCancellationRequested();
+                    return Task.FromCanceled(cancellationToken);
                 }
 
+                if (_connection == null)
+                {
+                    // null if response body fully consumed
+                    return Task.CompletedTask;
+                }
+
+                Task copyTask = _connection.CopyToUntilEofAsync(destination, bufferSize, cancellationToken);
+                if (copyTask.IsCompletedSuccessfully)
+                {
+                    Finish();
+                    return Task.CompletedTask;
+                }
+
+                return CompleteCopyToAsync(copyTask, cancellationToken);
+            }
+
+            private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
+            {
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                try
+                {
+                    await copyTask.ConfigureAwait(false);
+                }
+                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                {
+                    throw CreateOperationCanceledException(exc, cancellationToken);
+                }
+                finally
+                {
+                    ctr.Dispose();
+                }
+
+                // If cancellation is requested and tears down the connection, it could cause the copy
+                // to end early but think it ended successfully. So we prioritize cancellation in this
+                // race condition, and if we find after the copy has completed that cancellation has
+                // been requested, we assume the copy completed due to cancellation and throw.
+                cancellationToken.ThrowIfCancellationRequested();
+
+                Finish();
+            }
+
+            private void Finish()
+            {
                 // We cannot reuse this connection, so close it.
                 _connection.Dispose();
                 _connection = null;
