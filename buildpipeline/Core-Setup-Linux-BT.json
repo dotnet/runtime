@@ -409,6 +409,86 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - LinuxMint 7",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1846",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=linuxmint.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - LinuxMint 7",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1957",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=linuxmint.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - LinuxMint 8",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1847",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=linuxmint.8-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - LinuxMint 8",
+      "timeoutInMinutes": 0,
+      "refName": "ClonedClonedTask1958",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=linuxmint.8-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Package Runtime Dep - Debian 8",
       "timeoutInMinutes": 0,
       "refName": "Task28",
