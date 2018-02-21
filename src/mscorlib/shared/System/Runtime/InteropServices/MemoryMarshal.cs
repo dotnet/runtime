@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Gets a <see cref="OwnedMemory{T}"/> from the underlying readOnlyMemory.
+        /// Gets an <see cref="OwnedMemory{T}"/> from the underlying readOnlyMemory.
         /// If unable to get the <typeparamref name="TOwner"/> type, returns false.
         /// </summary>
         /// <typeparam name="T">The element type of the <paramref name="readOnlyMemory" />.</typeparam>
@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Gets a <see cref="OwnedMemory{T}"/> and <paramref name="index" />, <paramref name="length" /> from the underlying memory.
+        /// Gets an <see cref="OwnedMemory{T}"/> and <paramref name="index" />, <paramref name="length" /> from the underlying memory.
         /// If unable to get the <typeparamref name="TOwner"/> type, returns false.
         /// </summary>
         /// <typeparam name="T">The element type of the <paramref name="readOnlyMemory" />.</typeparam>
@@ -72,6 +72,7 @@ namespace System.Runtime.InteropServices
         {
             TOwner owner; // Use register for null comparison rather than byref
             ownedMemory = owner = readOnlyMemory.GetObjectStartLength(out index, out length) as TOwner;
+            index &= ReadOnlyMemory<T>.RemoveOwnedFlagBitMask;
             return !ReferenceEquals(owner, null);
         }
 
