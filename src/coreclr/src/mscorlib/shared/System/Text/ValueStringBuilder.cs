@@ -106,7 +106,7 @@ namespace System.Text
                 Grow(s.Length);
             }
 
-            s.AsReadOnlySpan().CopyTo(_chars.Slice(pos));
+            s.AsSpan().CopyTo(_chars.Slice(pos));
             _pos += s.Length;
         }
 
