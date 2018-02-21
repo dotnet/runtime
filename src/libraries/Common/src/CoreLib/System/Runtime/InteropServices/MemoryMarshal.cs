@@ -40,9 +40,14 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Get a <see cref="OwnedMemory{T}"/> from the underlying memory.
-        /// If unable to get the <typeparamref name="TOwner"/>, return false with a default <typeparamref name="TOwner"/>.
+        /// Gets a <see cref="OwnedMemory{T}"/> from the underlying readOnlyMemory.
+        /// If unable to get the <typeparamref name="TOwner"/> type, returns false.
         /// </summary>
+        /// <typeparam name="T">The element type of the <paramref name="readOnlyMemory" />.</typeparam>
+        /// <typeparam name="TOwner">The type of <see cref="OwnedMemory{T}"/> to try and retrive.</typeparam>
+        /// <param name="readOnlyMemory">The memory to get the owner for.</param>
+        /// <param name="ownedMemory">The returned owner of the <see cref="ReadOnlyMemory{T}"/>.</param>
+        /// <returns>A <see cref="bool"/> indicating if it was successful.</returns>
         public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> readOnlyMemory, out TOwner ownedMemory)
             where TOwner : OwnedMemory<T>
         {
@@ -52,9 +57,16 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Get a <see cref="OwnedMemory{T}"/> and <param name="index">, <param name="length"> on the <see cref="OwnedMemory{T}"/> from the underlying memory.
-        /// If unable to get the <typeparamref name="TOwner"/>, return false with a default <typeparamref name="TOwner"/>.
+        /// Gets a <see cref="OwnedMemory{T}"/> and <paramref name="index" />, <paramref name="length" /> from the underlying memory.
+        /// If unable to get the <typeparamref name="TOwner"/> type, returns false.
         /// </summary>
+        /// <typeparam name="T">The element type of the <paramref name="readOnlyMemory" />.</typeparam>
+        /// <typeparam name="TOwner">The type of <see cref="OwnedMemory{T}"/> to try and retrive.</typeparam>
+        /// <param name="readOnlyMemory">The memory to get the owner for.</param>
+        /// <param name="ownedMemory">The returned owner of the <see cref="ReadOnlyMemory{T}"/>.</param>
+        /// <param name="index">The offset from the start of the <paramref name="ownedMemory" /> that the <paramref name="readOnlyMemory" /> represents.</param>
+        /// <param name="length">The length of the <paramref name="ownedMemory" /> that the <paramref name="readOnlyMemory" /> represents.</param>
+        /// <returns>A <see cref="bool"/> indicating if it was successful.</returns>
         public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> readOnlyMemory, out TOwner ownedMemory, out int index, out int length)
            where TOwner : OwnedMemory<T>
         {
