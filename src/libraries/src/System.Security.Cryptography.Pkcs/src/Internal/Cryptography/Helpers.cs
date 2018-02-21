@@ -6,6 +6,7 @@ using System;
 using System.Buffers;
 using System.Text;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -135,6 +136,26 @@ namespace Internal.Cryptography
             return set.SetData;
         }
 
+        internal static byte[] EncodeContentInfo<T>(
+            T value,
+            string contentType,
+            AsnEncodingRules ruleSet = AsnEncodingRules.DER)
+        {
+            using (AsnWriter innerWriter = AsnSerializer.Serialize(value, ruleSet))
+            {
+                ContentInfoAsn content = new ContentInfoAsn
+                {
+                    ContentType = contentType,
+                    Content = innerWriter.Encode(),
+                };
+
+                using (AsnWriter outerWriter = AsnSerializer.Serialize(content, ruleSet))
+                {
+                    return outerWriter.Encode();
+                }
+            }
+        }
+
         public static CmsRecipientCollection DeepCopy(this CmsRecipientCollection recipients)
         {
             CmsRecipientCollection recipientsCopy = new CmsRecipientCollection();
@@ -167,7 +188,7 @@ namespace Internal.Cryptography
 
         public static X509Certificate2Collection GetStoreCertificates(StoreName storeName, StoreLocation storeLocation, bool openExistingOnly)
         {
-            using (X509Store store = new X509Store())
+            using (X509Store store = new X509Store(storeName, storeLocation))
             {
                 OpenFlags flags = OpenFlags.ReadOnly | OpenFlags.IncludeArchived;
                 if (openExistingOnly)
@@ -250,14 +271,14 @@ namespace Internal.Cryptography
             return skiString.UpperHexStringToByteArray();
         }
 
-        public static string ToSkiString(this ReadOnlySpan<byte> skiBytes)
+        public static string ToSkiString(this byte[] skiBytes)
         {
             return ToUpperHexString(skiBytes);
         }
 
-        public static string ToSkiString(this byte[] skiBytes)
+        public static string ToBigEndianHex(this ReadOnlySpan<byte> bytes)
         {
-            return ToUpperHexString(skiBytes);
+            return ToUpperHexString(bytes);
         }
 
         /// <summary>
@@ -412,6 +433,29 @@ namespace Internal.Cryptography
 #else
             hasher.AppendData(writer.Encode());
 #endif
+        }
+
+        internal static byte[] OneShot(this ICryptoTransform transform, byte[] data)
+        {
+            return OneShot(transform, data, 0, data.Length);
+        }
+
+        internal static byte[] OneShot(this ICryptoTransform transform, byte[] data, int offset, int length)
+        {
+            if (transform.CanTransformMultipleBlocks)
+            {
+                return transform.TransformFinalBlock(data, offset, length);
+            }
+
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                using (var cryptoStream = new CryptoStream(memoryStream, transform, CryptoStreamMode.Write))
+                {
+                    cryptoStream.Write(data, offset, length);
+                }
+
+                return memoryStream.ToArray();
+            }
         }
 
         private static ReadOnlyMemory<byte> GetSubjectPublicKeyInfo(X509Certificate2 certificate)

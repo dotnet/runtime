@@ -199,6 +199,12 @@
   <data name="Cryptography_Cms_NoSignerAtIndex" xml:space="preserve">
     <value>The signed cryptographic message does not have a signer for the specified signer index.</value>
   </data>
+  <data name="Cryptography_Cms_RecipientNotFound" xml:space="preserve">
+    <value>The enveloped-data message does not contain the specified recipient.</value>
+  </data>
+  <data name="Cryptography_Cms_RecipientType_NotSupported" xml:space="preserve">
+    <value>The recipient type '{0}' is not supported for encryption or decryption on this platform.</value>
+  </data>
   <data name="Cryptography_Cms_Sign_Empty_Content" xml:space="preserve">
     <value>Cannot create CMS signature for empty content.</value>
   </data>
