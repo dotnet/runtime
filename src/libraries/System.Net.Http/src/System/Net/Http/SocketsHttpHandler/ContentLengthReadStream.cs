@@ -87,32 +87,48 @@ namespace System.Net.Http
             {
                 ValidateCopyToArgs(this, destination, bufferSize);
 
-                return
-                    cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                    _connection != null ? CopyToAsyncCore(destination, bufferSize, cancellationToken) :
-                    Task.CompletedTask; // null if response body fully consumed
-            }
-
-            private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            {
-                Task copyTask = _connection.CopyToAsync(destination, _contentBytesRemaining);
-                if (!copyTask.IsCompletedSuccessfully)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
-                    try
-                    {
-                        await copyTask.ConfigureAwait(false);
-                    }
-                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
-                    {
-                        throw CreateOperationCanceledException(exc, cancellationToken);
-                    }
-                    finally
-                    {
-                        ctr.Dispose();
-                    }
+                    return Task.FromCanceled(cancellationToken);
                 }
 
+                if (_connection == null)
+                {
+                    // null if response body fully consumed
+                    return Task.CompletedTask;
+                }
+
+                Task copyTask = _connection.CopyToExactLengthAsync(destination, _contentBytesRemaining, cancellationToken);
+                if (copyTask.IsCompletedSuccessfully)
+                {
+                    Finish();
+                    return Task.CompletedTask;
+                }
+
+                return CompleteCopyToAsync(copyTask, cancellationToken);
+            }
+
+            private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
+            {
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                try
+                {
+                    await copyTask.ConfigureAwait(false);
+                }
+                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                {
+                    throw CreateOperationCanceledException(exc, cancellationToken);
+                }
+                finally
+                {
+                    ctr.Dispose();
+                }
+
+                Finish();
+            }
+
+            private void Finish()
+            {
                 _contentBytesRemaining = 0;
                 _connection.ReturnConnectionToPool();
                 _connection = null;

@@ -36,7 +36,6 @@ namespace System.Net.Http
         private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
         private static readonly byte[] s_spaceHttp10NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.0\r\n");
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
-        private static readonly byte[] s_hostKeyAndSeparator = Encoding.ASCII.GetBytes(HttpKnownHeaderNames.Host + ": ");
         private static readonly byte[] s_httpSchemeAndDelimiter = Encoding.ASCII.GetBytes(Uri.UriSchemeHttp + Uri.SchemeDelimiter);
         private static readonly byte[] s_http1DotBytes = Encoding.ASCII.GetBytes("HTTP/1.");
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
@@ -154,20 +153,36 @@ namespace System.Net.Http
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
 
+        private int ReadBufferSize => _readBuffer.Length;
+
+        private ReadOnlyMemory<byte> RemainingBuffer => new ReadOnlyMemory<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+
+        private void ConsumeFromRemainingBuffer(int bytesToConsume)
+        {
+            Debug.Assert(bytesToConsume <= _readLength - _readOffset, $"{bytesToConsume} > {_readLength} - {_readOffset}");
+            _readOffset += bytesToConsume;
+        }
+
         private async Task WriteHeadersAsync(HttpHeaders headers, string cookiesFromContainer)
         {
-            foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
+            foreach (KeyValuePair<HeaderDescriptor, string[]> header in headers.GetHeaderDescriptorsAndValues())
             {
-                await WriteAsciiStringAsync(header.Key).ConfigureAwait(false);
-                await WriteTwoBytesAsync((byte)':', (byte)' ').ConfigureAwait(false);
-
-                var values = (string[])header.Value; // typed as IEnumerable<string>, but always a string[]
-                Debug.Assert(values.Length > 0, "No values for header??");
-                if (values.Length > 0)
+                if (header.Key.KnownHeader != null)
                 {
-                    await WriteStringAsync(values[0]).ConfigureAwait(false);
+                    await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace).ConfigureAwait(false);
+                }
+                else
+                {
+                    await WriteAsciiStringAsync(header.Key.Name).ConfigureAwait(false);
+                    await WriteTwoBytesAsync((byte)':', (byte)' ').ConfigureAwait(false);
+                }
 
-                    if (cookiesFromContainer != null && header.Key == HttpKnownHeaderNames.Cookie)
+                Debug.Assert(header.Value.Length > 0, "No values for header??");
+                if (header.Value.Length > 0)
+                {
+                    await WriteStringAsync(header.Value[0]).ConfigureAwait(false);
+
+                    if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
                     {
                         await WriteTwoBytesAsync((byte)';', (byte)' ').ConfigureAwait(false);
                         await WriteStringAsync(cookiesFromContainer).ConfigureAwait(false);
@@ -175,10 +190,10 @@ namespace System.Net.Http
                         cookiesFromContainer = null;
                     }
 
-                    for (int i = 1; i < values.Length; i++)
+                    for (int i = 1; i < header.Value.Length; i++)
                     {
                         await WriteTwoBytesAsync((byte)',', (byte)' ').ConfigureAwait(false);
-                        await WriteStringAsync(values[i]).ConfigureAwait(false);
+                        await WriteStringAsync(header.Value[i]).ConfigureAwait(false);
                     }
                 }
 
@@ -196,7 +211,7 @@ namespace System.Net.Http
 
         private async Task WriteHostHeaderAsync(Uri uri)
         {
-            await WriteBytesAsync(s_hostKeyAndSeparator).ConfigureAwait(false);
+            await WriteBytesAsync(KnownHeaders.Host.AsciiBytesWithColonSpace).ConfigureAwait(false);
 
             await (_idnHostAsciiBytes != null ?
                 WriteBytesAsync(_idnHostAsciiBytes) :
@@ -205,13 +220,13 @@ namespace System.Net.Http
             if (!uri.IsDefaultPort)
             {
                 await WriteByteAsync((byte)':').ConfigureAwait(false);
-                await WriteFormattedInt32Async(uri.Port).ConfigureAwait(false);
+                await WriteDecimalInt32Async(uri.Port).ConfigureAwait(false);
             }
 
             await WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
         }
 
-        private Task WriteFormattedInt32Async(int value)
+        private Task WriteDecimalInt32Async(int value)
         {
             // Try to format into our output buffer directly.
             if (Utf8Formatter.TryFormat(value, new Span<byte>(_writeBuffer, _writeOffset, _writeBuffer.Length - _writeOffset), out int bytesWritten))
@@ -221,7 +236,20 @@ namespace System.Net.Http
             }
 
             // If we don't have enough room, do it the slow way.
-            return WriteAsciiStringAsync(value.ToString(CultureInfo.InvariantCulture));
+            return WriteAsciiStringAsync(value.ToString());
+        }
+
+        private Task WriteHexInt32Async(int value)
+        {
+            // Try to format into our output buffer directly.
+            if (Utf8Formatter.TryFormat(value, new Span<byte>(_writeBuffer, _writeOffset, _writeBuffer.Length - _writeOffset), out int bytesWritten, 'X'))
+            {
+                _writeOffset += bytesWritten;
+                return Task.CompletedTask;
+            }
+
+            // If we don't have enough room, do it the slow way.
+            return WriteAsciiStringAsync(value.ToString("X", CultureInfo.InvariantCulture));
         }
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -464,7 +492,7 @@ namespace System.Net.Http
 
                 // Create the response stream.
                 HttpContentStream responseStream;
-                if (request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304)
+                if (request.Method == HttpMethod.Head || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
                     ReturnConnectionToPool();
@@ -630,9 +658,8 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: Remove this overload once https://github.com/dotnet/roslyn/issues/17287 is addressed
-        // and the compiler doesn't lift the span temporary from the call site into the async state
-        // machine in debug builds.
+        // TODO: Remove this overload once https://github.com/dotnet/csharplang/issues/1331 is addressed
+        // and the compiler doesn't prevent using spans in async methods.
         private static void ParseStatusLine(ArraySegment<byte> line, HttpResponseMessage response) =>
             ParseStatusLine((Span<byte>)line, response);
 
@@ -710,9 +737,8 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: Remove this overload once https://github.com/dotnet/roslyn/issues/17287 is addressed
-        // and the compiler doesn't lift the span temporary from the call site into the async state
-        // machine in debug builds.
+        // TODO: Remove this overload once https://github.com/dotnet/csharplang/issues/1331 is addressed
+        // and the compiler doesn't prevent using spans in async methods.
         private static void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response) =>
             ParseHeaderNameValue((Span<byte>)line, response);
 
@@ -1000,6 +1026,33 @@ namespace System.Net.Http
             return _stream.WriteAsync(source);
         }
 
+        private bool TryReadNextLine(out ReadOnlySpan<byte> line)
+        {
+            var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
+            int length = buffer.IndexOf((byte)'\n');
+            if (length < 0)
+            {
+                if (_allowedReadLineBytes < buffer.Length)
+                {
+                    ThrowInvalidHttpResponse();
+                }
+
+                line = default;
+                return false;
+            }
+
+            int bytesConsumed = length + 1;
+            _readOffset += bytesConsumed;
+            _allowedReadLineBytes -= bytesConsumed;
+            if (_allowedReadLineBytes < 0)
+            {
+                ThrowInvalidHttpResponse();
+            }
+
+            line = buffer.Slice(0, length > 0 && buffer[length - 1] == '\r' ? length - 1 : length);
+            return true;
+        }
+
         private async ValueTask<ArraySegment<byte>> ReadNextLineAsync()
         {
             int previouslyScannedBytes = 0;
@@ -1096,7 +1149,7 @@ namespace System.Net.Http
 
         private async ValueTask<int> ReadAsync(Memory<byte> destination)
         {
-            // This is called when reading the response body
+            // This is called when reading the response body.
 
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
@@ -1122,44 +1175,38 @@ namespace System.Net.Http
             return count;
         }
 
-        private async Task CopyFromBufferAsync(Stream destination, int count)
+        private async Task CopyFromBufferAsync(Stream destination, int count, CancellationToken cancellationToken)
         {
             Debug.Assert(count <= _readLength - _readOffset);
 
             if (NetEventSource.IsEnabled) Trace($"Copying {count} bytes to stream.");
-            await destination.WriteAsync(_readBuffer, _readOffset, count).ConfigureAwait(false);
+            await destination.WriteAsync(_readBuffer, _readOffset, count, cancellationToken).ConfigureAwait(false);
             _readOffset += count;
         }
 
-        private async Task CopyToAsync(Stream destination)
+        private Task CopyToUntilEofAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             Debug.Assert(destination != null);
 
             int remaining = _readLength - _readOffset;
-            if (remaining > 0)
-            {
-                await CopyFromBufferAsync(destination, remaining).ConfigureAwait(false);
-            }
+            return remaining > 0 ?
+                CopyToUntilEofWithExistingBufferedDataAsync(destination, cancellationToken) :
+                _stream.CopyToAsync(destination, bufferSize, cancellationToken);
+        }
 
-            while (true)
-            {
-                _readOffset = 0;
+        private async Task CopyToUntilEofWithExistingBufferedDataAsync(Stream destination, CancellationToken cancellationToken)
+        {
+            int remaining = _readLength - _readOffset;
+            Debug.Assert(remaining > 0);
 
-                // Don't use FillAsync here as it will throw on EOF.
-                Debug.Assert(_readAheadTask == null);
-                _readLength = await _stream.ReadAsync(_readBuffer).ConfigureAwait(false);
-                if (_readLength == 0)
-                {
-                    // End of stream
-                    break;
-                }
+            await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
+            _readLength = _readOffset = 0;
 
-                await CopyFromBufferAsync(destination, _readLength).ConfigureAwait(false);
-            }
+            await _stream.CopyToAsync(destination).ConfigureAwait(false);
         }
 
         // Copy *exactly* [length] bytes into destination; throws on end of stream.
-        private async Task CopyToAsync(Stream destination, ulong length)
+        private async Task CopyToExactLengthAsync(Stream destination, ulong length, CancellationToken cancellationToken)
         {
             Debug.Assert(destination != null);
             Debug.Assert(length > 0);
@@ -1171,7 +1218,7 @@ namespace System.Net.Http
                 {
                     remaining = (int)length;
                 }
-                await CopyFromBufferAsync(destination, remaining).ConfigureAwait(false);
+                await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
 
                 length -= (ulong)remaining;
                 if (length == 0)
@@ -1185,7 +1232,7 @@ namespace System.Net.Http
                 await FillAsync().ConfigureAwait(false);
 
                 remaining = (ulong)_readLength < length ? _readLength : (int)length;
-                await CopyFromBufferAsync(destination, remaining).ConfigureAwait(false);
+                await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
 
                 length -= (ulong)remaining;
                 if (length == 0)
