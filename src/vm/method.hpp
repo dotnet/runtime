@@ -1252,6 +1252,7 @@ public:
             !IsUnboxingStub() &&
             !IsInstantiatingStub() &&
             !IsDynamicMethod() &&
+            !GetLoaderAllocator()->IsCollectible() &&
             !CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits()) &&
             !CORProfilerDisableTieredCompilation();
     }
