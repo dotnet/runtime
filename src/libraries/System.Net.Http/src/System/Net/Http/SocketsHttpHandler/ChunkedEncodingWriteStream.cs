@@ -42,24 +42,11 @@ namespace System.Net.Http
 
             private async Task WriteChunkAsync(ReadOnlyMemory<byte> source)
             {
-                // Write chunk length -- hex representation of count
-                bool digitWritten = false;
-                for (int i = 7; i >= 0; i--)
-                {
-                    int shift = i * 4;
-                    int mask = 0xF << shift;
-                    int digit = (source.Length & mask) >> shift;
-                    if (digitWritten || digit != 0)
-                    {
-                        await _connection.WriteByteAsync((byte)(digit < 10 ? '0' + digit : 'A' + digit - 10)).ConfigureAwait(false);
-                        digitWritten = true;
-                    }
-                }
-
-                // End chunk length
+                // Write chunk length in hex followed by \r\n
+                await _connection.WriteHexInt32Async(source.Length).ConfigureAwait(false);
                 await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
 
-                // Write chunk contents
+                // Write chunk contents followed by \r\n
                 await _connection.WriteAsync(source).ConfigureAwait(false);
                 await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
 

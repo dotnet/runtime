@@ -57,7 +57,7 @@ namespace System.Net.Http
                                 break;
                             case SocketError.OperationAborted:
                             case SocketError.ConnectionAborted:
-                                if (cancellationToken.IsCancellationRequested)
+                                if (csaea.CancellationToken.IsCancellationRequested)
                                 {
                                     csaea.Builder.SetException(new OperationCanceledException(csaea.CancellationToken));
                                     break;
@@ -116,7 +116,7 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
+        public static ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, Stream stream, CancellationToken cancellationToken)
         {
             // If there's a cert validation callback, and if it came from HttpClientHandler,
             // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
@@ -131,17 +131,21 @@ namespace System.Net.Http
             }
 
             // Create the SslStream, authenticate, and return it.
-            var sslStream = new SslStream(stream);
+            return EstablishSslConnectionAsyncCore(new SslStream(stream), sslOptions, cancellationToken);
+        }
+
+        private static async ValueTask<SslStream> EstablishSslConnectionAsyncCore(SslStream sslStream, SslClientAuthenticationOptions sslOptions, CancellationToken cancellationToken)
+        {
             try
             {
                 await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
+                return sslStream;
             }
             catch (Exception e)
             {
                 sslStream.Dispose();
                 throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
             }
-            return sslStream;
         }
     }
 }
