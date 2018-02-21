@@ -168,19 +168,36 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [OuterLoop]
+        [Theory]
+        [InlineData(100000, 1, ContentMode.ContentLength)]
+        [InlineData(100000, 1, ContentMode.SingleChunk)]
+        [InlineData(100000, 1, ContentMode.BytePerChunk)]
+        [InlineData(800000, 1, ContentMode.ContentLength)]
+        [InlineData(800000, 1, ContentMode.SingleChunk)]
+        [InlineData(1024 * 1024, 1, ContentMode.ContentLength)]
+        public async Task GetAsyncLargeRequestWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(int totalSize, int readSize, ContentMode mode)
+        {
+            // SocketsHttpHandler will reliably drain up to 1MB; other handlers don't.
+            if (!UseSocketsHttpHandler)
+            {
+                return;
+            }
+
+            await GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(totalSize, readSize, mode);
+            return;
+        }
+
         // Similar to above, these are semi-extreme cases where the response should never drain for any handler.
 
         [OuterLoop]
         [Theory]
-        [InlineData(20000, 0, ContentMode.ContentLength)]
-        [InlineData(20000, 0, ContentMode.SingleChunk)]
-        [InlineData(20000, 0, ContentMode.BytePerChunk)]
-        [InlineData(40000, 10000, ContentMode.ContentLength)]
-        [InlineData(40000, 10000, ContentMode.SingleChunk)]
-        [InlineData(40000, 10000, ContentMode.BytePerChunk)]
-        [InlineData(100000, 50000, ContentMode.ContentLength)]
-        [InlineData(100000, 50000, ContentMode.SingleChunk)]
-        [InlineData(100000, 50000, ContentMode.BytePerChunk)]
+        [InlineData(2000000, 0, ContentMode.ContentLength)]
+        [InlineData(2000000, 0, ContentMode.SingleChunk)]
+        [InlineData(2000000, 0, ContentMode.BytePerChunk)]
+        [InlineData(4000000, 1000000, ContentMode.ContentLength)]
+        [InlineData(4000000, 1000000, ContentMode.SingleChunk)]
+        [InlineData(4000000, 1000000, ContentMode.BytePerChunk)]
         public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_KillsConnection(int totalSize, int readSize, ContentMode mode)
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -220,8 +237,9 @@ namespace System.Net.Http.Functional.Tests
                             await connection.Writer.WriteAsync(response);
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
+
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
                     });
-                    await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
                 });
         }
 
