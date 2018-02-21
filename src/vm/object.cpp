@@ -1970,55 +1970,6 @@ void StackTraceArray::Append(StackTraceElement const * begin, StackTraceElement 
 #endif
 }
 
-void StackTraceArray::AppendSkipLast(StackTraceElement const * begin, StackTraceElement const * end)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)this));
-    }
-    CONTRACTL_END;
-
-    // to skip the last element, we need to replace it with the first element
-    // from m_pStackTrace and do it atomically if possible,
-    // otherwise we'll create a copy of the entire array, which is bad for performance,
-    // and so should not be on the main path
-    //
-
-    // ensure that only one thread can write to the array
-    EnsureThreadAffinity();
-
-    assert(Size() > 0);
-
-    StackTraceElement & last = GetData()[Size() - 1];
-    if (last.PartiallyEqual(*begin))
-    {
-        // fast path: atomic update
-        last.PartialAtomicUpdate(*begin);
-
-        // append the rest
-        if (end - begin > 1)
-            Append(begin + 1, end);
-    }
-    else
-    {
-        // slow path: create a copy and append
-        StackTraceArray copy;
-        GCPROTECT_BEGIN(copy);
-            copy.CopyFrom(*this);
-            copy.SetSize(copy.Size() - 1);
-            copy.Append(begin, end);
-            this->Swap(copy);
-        GCPROTECT_END();
-    }
-
-#if defined(_DEBUG)
-    CheckState();
-#endif
-}
-
 void StackTraceArray::CheckState() const
 {
     CONTRACTL
