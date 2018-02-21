@@ -26,7 +26,7 @@
 #ifndef __llvm__
 EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else // !__llvm__
-EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo __attribute__ ((tls_model("initial-exec")));
+EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif // !__llvm__
 
 EXTERN_C inline Thread* STDCALL GetThread()
