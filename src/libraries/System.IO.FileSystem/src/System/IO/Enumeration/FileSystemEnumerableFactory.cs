@@ -26,7 +26,7 @@ namespace System.IO.Enumeration
             //
             // We also allowed for expression to be "foo\" which would translate to "foo\*".
 
-            ReadOnlySpan<char> directoryName = PathHelpers.GetDirectoryNameNoChecks(expression.AsReadOnlySpan());
+            ReadOnlySpan<char> directoryName = PathHelpers.GetDirectoryNameNoChecks(expression.AsSpan());
 
             if (directoryName.Length != 0)
             {

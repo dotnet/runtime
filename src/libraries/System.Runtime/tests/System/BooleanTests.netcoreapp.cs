@@ -12,9 +12,9 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse_Span_Valid(string value, bool expected)
         {
-            Assert.Equal(expected, bool.Parse(value.AsReadOnlySpan()));
+            Assert.Equal(expected, bool.Parse(value.AsSpan()));
 
-            Assert.True(bool.TryParse(value.AsReadOnlySpan(), out bool result));
+            Assert.True(bool.TryParse(value.AsSpan(), out bool result));
             Assert.Equal(expected, result);
         }
 
@@ -24,9 +24,9 @@ namespace System.Tests
         {
             if (value != null)
             {
-                Assert.Throws(exceptionType, () => bool.Parse(value.AsReadOnlySpan()));
+                Assert.Throws(exceptionType, () => bool.Parse(value.AsSpan()));
 
-                Assert.False(bool.TryParse(value.AsReadOnlySpan(), out bool result));
+                Assert.False(bool.TryParse(value.AsSpan(), out bool result));
                 Assert.Equal(false, result);
             }
         }
