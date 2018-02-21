@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Linq;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
@@ -21,6 +12,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class ContentEncryptionAlgorithmTests
     {
+        public static bool SupportsRc4 => PlatformDetection.IsWindows;
+
         [Fact]
         public static void DecodeAlgorithmRc2_128_RoundTrip()
         {
@@ -134,7 +127,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(192, algorithm.KeyLength);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsRc4))]
         public static void DecodeAlgorithmRc4_RoundTrip()
         {
             AlgorithmIdentifier algorithm = new AlgorithmIdentifier(new Oid(Oids.Rc4));

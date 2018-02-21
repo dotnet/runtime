@@ -98,19 +98,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotSigned);
             }
 
-            // Write as DER, so everyone can read it.
-            AsnWriter writer = AsnSerializer.Serialize(_signedData, AsnEncodingRules.DER);
-            byte[] signedData = writer.Encode();
-
-            ContentInfoAsn contentInfo = new ContentInfoAsn
-            {
-                Content = signedData,
-                ContentType = Oids.Pkcs7Signed,
-            };
-
-            // Write as DER, so everyone can read it.
-            writer = AsnSerializer.Serialize(contentInfo, AsnEncodingRules.DER);
-            return writer.Encode();
+            return Helpers.EncodeContentInfo(_signedData, Oids.Pkcs7Signed);
         }
 
         public void Decode(byte[] encodedMessage)

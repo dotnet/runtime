@@ -80,6 +80,11 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [OuterLoop("Leaks key on disk if interrupted")]
         public static void Decrypt_Capi_Perphemeral(string algOid)
         {
+            if (algOid == Oids.Rc4 && !ContentEncryptionAlgorithmTests.SupportsRc4)
+            {
+                return;
+            }
+
             byte[] content = { 1, 1, 2, 3, 5, 8, 13, 21 };
             ContentInfo contentInfo = new ContentInfo(content);
             TestSimpleDecrypt_RoundTrip(
