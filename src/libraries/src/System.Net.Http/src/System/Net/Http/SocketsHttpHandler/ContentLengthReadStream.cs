@@ -156,7 +156,7 @@ namespace System.Net.Http
                     _contentBytesRemaining -= (ulong)_connection.RemainingBuffer.Length;
                     _connection.ConsumeFromRemainingBuffer(_connection.RemainingBuffer.Length);
 
-                    await _connection.FillAsync();
+                    await _connection.FillAsync().ConfigureAwait(false);
                 }
             }
         }

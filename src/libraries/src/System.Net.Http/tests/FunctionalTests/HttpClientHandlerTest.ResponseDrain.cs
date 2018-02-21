@@ -125,10 +125,9 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (IsCurlHandler && (mode != ContentMode.ContentLength || readSize == 0))
+            if (IsCurlHandler)
             {
-                // CurlHandler behaves inconsistently when TE is used -- seems to be timing dependent.
-                // Also, it doesn't try to drain when no body is read.
+                // CurlHandler drain behavior is very inconsistent, so just skip these tests.
                 return;
             }
 
