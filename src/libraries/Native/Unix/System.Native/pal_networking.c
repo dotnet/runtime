@@ -7,6 +7,7 @@
 #include "pal_io.h"
 #include "pal_safecrt.h"
 #include "pal_utilities.h"
+#include <fcntl.h>
 
 #include <stdlib.h>
 #include <limits.h>
@@ -1255,6 +1256,29 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
     while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_CLOEXEC)) < 0 && errno == EINTR);
 #else
     while ((accepted = accept(fd, (struct sockaddr*)socketAddress, &addrLen)) < 0 && errno == EINTR);
+#if defined(FD_CLOEXEC)
+    // macOS does not have accept4 but it can set _CLOEXEC on descriptor.
+    // Unlike accept4 it is not atomic and the fd can leak child process.
+    if ((accepted != -1) && fcntl(accepted, F_SETFD, FD_CLOEXEC) != 0)
+    {
+        // Preserve and return errno from fcntl. close() may reset errno to OK.
+        int oldErrno = errno;
+        close(accepted);
+        accepted = -1;
+        errno = oldErrno;
+    }
+#endif
+#endif
+#if !defined(__linux__)
+    // On macOS and FreeBSD new socket inherits flags from accepting fd.
+    // Our socket code expects new socket to be in blocking mode by default.
+    if ((accepted != -1) && SystemNative_FcntlSetIsNonBlocking(accepted, 0) != 0)
+    {
+        int oldErrno = errno;
+        close(accepted);
+        accepted = -1;
+        errno = oldErrno;
+    }
 #endif
     if (accepted == -1)
     {
