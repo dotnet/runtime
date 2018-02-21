@@ -2,38 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
-using System.Text;
-
 namespace System.IO
 {
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
-        /// <summary>
-        /// Returns the start index of the filename
-        /// in the given path, or 0 if no directory
-        /// or volume separator is found.
-        /// </summary>
-        /// <param name="path">The path in which to find the index of the filename.</param>
-        /// <remarks>
-        /// This method returns path.Length for
-        /// inputs like "/usr/foo/" on Unix. As such,
-        /// it is not safe for being used to index
-        /// the string without additional verification.
-        /// </remarks>
-        internal static int FindFileNameIndex(ReadOnlySpan<char> path)
-        {
-            for (int i = path.Length - 1; i >= 0; i--)
-            {
-                char ch = path[i];
-                if (IsDirectoryOrVolumeSeparator(ch))
-                    return i + 1;
-            }
-
-            return 0; // the whole path is the filename
-        }
-
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
@@ -111,38 +84,6 @@ namespace System.IO
                     indexB: 0,
                     length: firstRootLength,
                     comparisonType: comparisonType) == 0;
-        }
-
-        /// <summary>
-        /// Returns false for ".." unless it is specified as a part of a valid File/Directory name.
-        /// (Used to avoid moving up directories.)
-        ///
-        ///       Valid: a..b   abc..d
-        ///     Invalid: ..ab   ab..   ..   abc..d\abc..
-        /// </summary>
-        internal static void CheckSearchPattern(string searchPattern)
-        {
-            int index;
-            while ((index = searchPattern.IndexOf("..", StringComparison.Ordinal)) != -1)
-            {
-                // Terminal ".." . Files names cannot end in ".."
-                if (index + 2 == searchPattern.Length
-                    || IsDirectorySeparator(searchPattern[index + 2]))
-                    throw new ArgumentException(SR.Format(SR.Arg_InvalidSearchPattern, searchPattern));
-
-                searchPattern = searchPattern.Substring(index + 2);
-            }
-        }
-
-        internal static int GetDirectoryNameOffset(ReadOnlySpan<char> path)
-        {
-            int root = GetRootLength(path);
-            int i = path.Length;
-            if (i <= root)
-                return -1;
-
-            while (i > root && !IsDirectorySeparator(path[--i]));
-            return i;
         }
     }
 }
