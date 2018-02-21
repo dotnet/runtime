@@ -622,7 +622,7 @@ namespace System.Security.Cryptography.Pkcs
             return Helpers.GetDigestAlgorithm(DigestAlgorithm.Value);
         }
 
-        private static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)
+        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)
         {
             var coll = new CryptographicAttributeObjectCollection();
 

@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Linq;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
@@ -21,6 +13,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class EdgeCasesTests
     {
+        public static bool SupportsRc4 { get; } = ContentEncryptionAlgorithmTests.SupportsRc4;
+
         public static bool SupportsCngCertificates { get; } = (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer);
 
         [ConditionalFact(nameof(SupportsCngCertificates))]
@@ -122,7 +116,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ValidateZeroLengthContent(encodedMessage);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsRc4))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RC4 isn't available via CNG, and CNG is the only library available to UWP")]
         public static void Rc4AndCngWrappersDontMixTest()

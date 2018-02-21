@@ -441,7 +441,7 @@ namespace System.Security.Cryptography.Pkcs
                 return false;
             }
 
-            return serialNumber == issuerSerial.SerialNumber.Span.ToSkiString();
+            return serialNumber == issuerSerial.SerialNumber.Span.ToBigEndianHex();
         }
 
         private static bool IssuerAndSerialMatch(

@@ -351,11 +351,11 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        private static object DeserializeCustomType(AsnReader reader, Type typeT)
+        private static object DeserializeCustomType(AsnReader reader, Type typeT, Asn1Tag expectedTag)
         {
             object target = Activator.CreateInstance(typeT);
 
-            AsnReader sequence = reader.ReadSequence();
+            AsnReader sequence = reader.ReadSequence(expectedTag);
 
             foreach (FieldInfo fieldInfo in typeT.GetFields(FieldFlags))
             {
@@ -1023,7 +1023,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (fieldData.TagType == UniversalTagNumber.Sequence)
                 {
-                    return reader => DeserializeCustomType(reader, typeT);
+                    return reader => DeserializeCustomType(reader, typeT, expectedTag);
                 }
             }
 

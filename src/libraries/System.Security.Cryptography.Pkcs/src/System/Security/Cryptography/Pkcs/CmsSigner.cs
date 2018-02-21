@@ -269,7 +269,7 @@ namespace System.Security.Cryptography.Pkcs
             return newSignerInfo;
         }
 
-        private static List<AttributeAsn> BuildAttributes(CryptographicAttributeObjectCollection attributes)
+        internal static List<AttributeAsn> BuildAttributes(CryptographicAttributeObjectCollection attributes)
         {
             List<AttributeAsn> signedAttrs = new List<AttributeAsn>();
 

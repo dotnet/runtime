@@ -7,10 +7,17 @@ namespace Internal.Cryptography
     internal static class Oids
     {
         // Symmetric encryption algorithms
+        public const string Rc2Cbc = "1.2.840.113549.3.2";
+        public const string Rc4 = "1.2.840.113549.3.4";
         public const string TripleDesCbc = "1.2.840.113549.3.7";
+        public const string DesCbc = "1.3.14.3.2.7";
+        public const string Aes128Cbc = "2.16.840.1.101.3.4.1.2";
+        public const string Aes192Cbc = "2.16.840.1.101.3.4.1.22";
+        public const string Aes256Cbc = "2.16.840.1.101.3.4.1.42";
 
         // Asymmetric encryption algorithms
         public const string Rsa = "1.2.840.113549.1.1.1";
+        public const string RsaOaep = "1.2.840.113549.1.1.7";
         public const string RsaPss = "1.2.840.113549.1.1.10";
         public const string Esdh = "1.2.840.113549.1.9.16.3.5";
 
