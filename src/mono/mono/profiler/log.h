@@ -78,6 +78,7 @@
                TYPE_HEAP_ROOT now has a different, saner format
                added TYPE_VTABLE metadata load event
                changed TYPE_ALLOC and TYPE_HEAP_OBJECT to include a vtable pointer instead of a class pointer
+               added MONO_ROOT_SOURCE_EPHEMERON
  * version 16: removed TYPE_COVERAGE
  */
 

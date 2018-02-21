@@ -2390,198 +2390,17 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 
 /* ELF code crashes on some systems. */
 //#if defined(ELFMAG0)
-#if 0
-
-#if SIZEOF_VOID_P == 4
-#define ELF_WSIZE 32
-#else
-#define ELF_WSIZE 64
-#endif
-#ifndef ElfW
-#define ElfW(type)      _ElfW (Elf, ELF_WSIZE, type)
-#define _ElfW(e,w,t)    _ElfW_1 (e, w, _##t)
-#define _ElfW_1(e,w,t)  e##w##t
-#endif
-
-static void
-dump_elf_symbols (ElfW(Sym) *symbols, int num_symbols, const char *strtab, void *load_addr)
-{
-	int i;
-	for (i = 0; i < num_symbols; ++i) {
-		const char* sym;
-		sym =  strtab + symbols [i].st_name;
-		if (!symbols [i].st_name || !symbols [i].st_size || (symbols [i].st_info & 0xf) != STT_FUNC)
-			continue;
-		dump_usym (sym, (uintptr_t)load_addr + symbols [i].st_value, symbols [i].st_size);
-	}
-}
-
-static int
-read_elf_symbols (MonoProfiler *prof, const char *filename, void *load_addr)
-{
-	int fd, i;
-	void *data;
-	struct stat statb;
-	uint64_t file_size;
-	ElfW(Ehdr) *header;
-	ElfW(Shdr) *sheader;
-	ElfW(Shdr) *shstrtabh;
-	ElfW(Shdr) *symtabh = NULL;
-	ElfW(Shdr) *strtabh = NULL;
-	ElfW(Sym) *symbols = NULL;
-	const char *strtab;
-	int num_symbols;
-
-	fd = open (filename, O_RDONLY);
-	if (fd < 0)
-		return 0;
-	if (fstat (fd, &statb) != 0) {
-		close (fd);
-		return 0;
-	}
-	file_size = statb.st_size;
-	data = mmap (NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
-	close (fd);
-	if (data == MAP_FAILED)
-		return 0;
-	header = data;
-	if (header->e_ident [EI_MAG0] != ELFMAG0 ||
-			header->e_ident [EI_MAG1] != ELFMAG1 ||
-			header->e_ident [EI_MAG2] != ELFMAG2 ||
-			header->e_ident [EI_MAG3] != ELFMAG3 ) {
-		munmap (data, file_size);
-		return 0;
-	}
-	sheader = (void*)((char*)data + header->e_shoff);
-	shstrtabh = (void*)((char*)sheader + (header->e_shentsize * header->e_shstrndx));
-	strtab = (const char*)data + shstrtabh->sh_offset;
-	for (i = 0; i < header->e_shnum; ++i) {
-		if (sheader->sh_type == SHT_SYMTAB) {
-			symtabh = sheader;
-			strtabh = (void*)((char*)data + header->e_shoff + sheader->sh_link * header->e_shentsize);
-			break;
-		}
-		sheader = (void*)((char*)sheader + header->e_shentsize);
-	}
-	if (!symtabh || !strtabh) {
-		munmap (data, file_size);
-		return 0;
-	}
-	strtab = (const char*)data + strtabh->sh_offset;
-	num_symbols = symtabh->sh_size / symtabh->sh_entsize;
-	symbols = (void*)((char*)data + symtabh->sh_offset);
-	dump_elf_symbols (symbols, num_symbols, strtab, load_addr);
-	munmap (data, file_size);
-	return 1;
-}
-#endif
-
-/* ELF code crashes on some systems. */
-//#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
-#if 0
-static int
-elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
-{
-	char buf [256];
-	const char *filename;
-	BinaryObject *obj;
-	char *a = (void*)info->dlpi_addr;
-	int i, num_sym;
-	ElfW(Dyn) *dyn = NULL;
-	ElfW(Sym) *symtab = NULL;
-	ElfW(Word) *hash_table = NULL;
-	ElfW(Ehdr) *header = NULL;
-	const char* strtab = NULL;
-	for (obj = log_profiler.binary_objects; obj; obj = obj->next) {
-		if (obj->addr == a)
-			return 0;
-	}
-	filename = info->dlpi_name;
-	if (!filename)
-		return 0;
-	if (!info->dlpi_addr && !filename [0]) {
-		int l = readlink ("/proc/self/exe", buf, sizeof (buf) - 1);
-		if (l > 0) {
-			buf [l] = 0;
-			filename = buf;
-		}
-	}
-	obj = g_calloc (sizeof (BinaryObject), 1);
-	obj->addr = (void*)info->dlpi_addr;
-	obj->name = pstrdup (filename);
-	obj->next = log_profiler.binary_objects;
-	log_profiler.binary_objects = obj;
-	a = NULL;
-	for (i = 0; i < info->dlpi_phnum; ++i) {
-		if (info->dlpi_phdr[i].p_type == PT_LOAD && !header) {
-			header = (ElfW(Ehdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
-			if (header->e_ident [EI_MAG0] != ELFMAG0 ||
-					header->e_ident [EI_MAG1] != ELFMAG1 ||
-					header->e_ident [EI_MAG2] != ELFMAG2 ||
-					header->e_ident [EI_MAG3] != ELFMAG3 ) {
-				header = NULL;
-			}
-			dump_ubin (filename, info->dlpi_addr + info->dlpi_phdr[i].p_vaddr, info->dlpi_phdr[i].p_offset, info->dlpi_phdr[i].p_memsz);
-		} else if (info->dlpi_phdr[i].p_type == PT_DYNAMIC) {
-			dyn = (ElfW(Dyn) *)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
-		}
-	}
-	if (read_elf_symbols (filename, (void*)info->dlpi_addr))
-		return 0;
-	if (!info->dlpi_name || !info->dlpi_name[0])
-		return 0;
-	if (!dyn)
-		return 0;
-	for (i = 0; dyn [i].d_tag != DT_NULL; ++i) {
-		if (dyn [i].d_tag == DT_SYMTAB) {
-			symtab = (ElfW(Sym) *)(a + dyn [i].d_un.d_ptr);
-		} else if (dyn [i].d_tag == DT_HASH) {
-			hash_table = (ElfW(Word) *)(a + dyn [i].d_un.d_ptr);
-		} else if (dyn [i].d_tag == DT_STRTAB) {
-			strtab = (const char*)(a + dyn [i].d_un.d_ptr);
-		}
-	}
-	if (!hash_table)
-		return 0;
-	num_sym = hash_table [1];
-	dump_elf_symbols (symtab, num_sym, strtab, (void*)info->dlpi_addr);
-	return 0;
-}
-
-static int
-load_binaries (void)
-{
-	dl_iterate_phdr (elf_dl_callback, NULL);
-	return 1;
-}
-#else
-static int
-load_binaries (void)
-{
-	return 0;
-}
-#endif
-
 static const char*
 symbol_for (uintptr_t code)
 {
 #ifdef HAVE_DLADDR
-	void *ip = (void*)code;
 	Dl_info di;
-	if (dladdr (ip, &di)) {
+
+	if (dladdr ((void *) code, &di))
 		if (di.dli_sname)
 			return di.dli_sname;
-	} else {
-	/*	char **names;
-		names = backtrace_symbols (&ip, 1);
-		if (names) {
-			const char* p = names [0];
-			g_free (names);
-			return p;
-		}
-		*/
-	}
 #endif
+
 	return NULL;
 }
 
@@ -2592,8 +2411,6 @@ dump_unmanaged_coderefs (void)
 	const char* last_symbol;
 	uintptr_t addr, page_end;
 
-	if (load_binaries ())
-		return;
 	for (i = 0; i < size_code_pages; ++i) {
 		const char* sym;
 		if (!code_pages [i] || code_pages [i] & 1)
