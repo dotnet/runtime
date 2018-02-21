@@ -2517,7 +2517,7 @@ bool Compiler::optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree** wbKeepList)
     Compiler::fgWalkResult result;
     assert(optValnumCSE_phase);
 
-    // First check for the rare case where we have a nested CSE def that has 
+    // First check for the rare case where we have a nested CSE def that has
     // side-effects and return false whenever we have this case
     //
     result = fgWalkTreePre(&deadTree, optHasCSEdefWithSideeffect, (void*)wbKeepList);
