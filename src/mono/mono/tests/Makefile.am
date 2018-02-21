@@ -533,7 +533,8 @@ TESTS_CS_SRC=		\
 	weak-fields.cs \
 	threads-leak.cs	\
 	threads-init.cs \
-	bug-60848.cs
+	bug-60848.cs \
+	bug-59400.cs
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
