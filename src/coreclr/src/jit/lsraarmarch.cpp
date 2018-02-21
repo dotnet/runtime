@@ -685,7 +685,8 @@ void LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             assert(source->isContained());
             srcAddrOrFill = source->gtGetOp1();
-            sourceInfo    = getLocationInfo(srcAddrOrFill);
+            assert(!srcAddrOrFill->isContained());
+            sourceInfo = getLocationInfo(srcAddrOrFill);
             info->srcCount++;
         }
         if (blkNode->OperGet() == GT_STORE_OBJ)

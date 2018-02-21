@@ -382,6 +382,11 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (source->gtOper == GT_IND)
         {
             MakeSrcContained(blkNode, source);
+            GenTree* addr = source->AsIndir()->Addr();
+            if (!addr->OperIsLocalAddr())
+            {
+                addr->ClearContained();
+            }
         }
         else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
         {
