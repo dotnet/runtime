@@ -1873,6 +1873,30 @@ ncells ) {
 
 	  return t == -122 ? 0 : 1;
 	}
+
+	public interface IFoo
+	{
+	  int MyInt { get; }
+	}
+
+	public class IFooImpl : IFoo
+	{
+	  public int MyInt => 0;
+	}
+
+	//gh 6266
+    public static int test_0_store_to_magic_iface_array ()
+    {
+      ICollection<IFoo> arr1 = new IFooImpl[1] { new IFooImpl() };
+      ICollection<IFoo> arr2 = new IFooImpl[1] { new IFooImpl() };
+
+      ICollection<IFoo>[] a2d = new ICollection<IFoo>[2] {
+        arr1,
+        arr2,
+      };
+
+	  return 0;
+    }
 }
 
 #if __MOBILE__
