@@ -42,16 +42,6 @@ struct StackTraceElement
     {
         return !(*this == rhs);
     }
-
-    bool PartiallyEqual(StackTraceElement const & rhs) const
-    {
-        return pFunc == rhs.pFunc;
-    }
-
-    void PartialAtomicUpdate(StackTraceElement const & rhs)
-    {
-        ip = rhs.ip;
-    }
 };
 
 class StackTraceInfo

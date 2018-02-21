@@ -2910,7 +2910,6 @@ public:
     StackTraceElement & operator[](size_t index);
 
     void Append(StackTraceElement const * begin, StackTraceElement const * end);
-    void AppendSkipLast(StackTraceElement const * begin, StackTraceElement const * end);
 
     I1ARRAYREF Get() const
     {

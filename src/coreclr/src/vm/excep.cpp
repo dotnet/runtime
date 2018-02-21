@@ -2428,9 +2428,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                         }
                     }
 
-                    if (bSkipLastElement && gc.stackTrace.Size() != 0)
-                        gc.stackTrace.AppendSkipLast(m_pStackTrace, m_pStackTrace + m_dFrameCount);
-                    else
+                    if (!bSkipLastElement)
                         gc.stackTrace.Append(m_pStackTrace, m_pStackTrace + m_dFrameCount);
 
                     //////////////////////////////
