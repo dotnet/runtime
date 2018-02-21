@@ -2228,7 +2228,6 @@ public:
                 //
                 if (result == false)
                 {
-                    assert(sideEffList);
 #ifdef DEBUG
                     if (m_pCompiler->verbose)
                     {
@@ -2515,18 +2514,16 @@ void Compiler::optValnumCSE_Heuristic()
 
 bool Compiler::optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree** wbKeepList)
 {
+    Compiler::fgWalkResult result;
     assert(optValnumCSE_phase);
 
-    // If we have a non-empty *wbKeepList, then we first check for the rare case where we
-    // have a nested CSE def that has side-effects and return false if have this case
+    // First check for the rare case where we have a nested CSE def that has 
+    // side-effects and return false whenever we have this case
     //
-    if (*wbKeepList != nullptr)
+    result = fgWalkTreePre(&deadTree, optHasCSEdefWithSideeffect, (void*)wbKeepList);
+    if (result == WALK_ABORT)
     {
-        Compiler::fgWalkResult result = fgWalkTreePre(&deadTree, optHasCSEdefWithSideeffect, (void*)wbKeepList);
-        if (result == WALK_ABORT)
-        {
-            return false;
-        }
+        return false;
     }
 
     // We need to communicate the 'keepList' to optUnmarkCSEs
@@ -2535,7 +2532,7 @@ bool Compiler::optValnumCSE_UnmarkCSEs(GenTree* deadTree, GenTree** wbKeepList)
     // We communicate this value using the walkData.pCallbackData field
     //
 
-    Compiler::fgWalkResult result = fgWalkTreePre(&deadTree, optUnmarkCSEs, (void*)wbKeepList);
+    result = fgWalkTreePre(&deadTree, optUnmarkCSEs, (void*)wbKeepList);
     assert(result != WALK_ABORT);
 
     return true;
