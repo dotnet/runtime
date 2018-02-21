@@ -44,3 +44,10 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 	g_error ("mono_arch_get_static_rgctx_trampoline");
 	return NULL;
 }
+
+gpointer
+mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
+{
+	g_error ("mono_arch_get_interp_to_native_trampoline");
+	return NULL;
+}
