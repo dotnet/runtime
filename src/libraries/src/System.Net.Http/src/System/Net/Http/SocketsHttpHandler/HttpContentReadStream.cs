@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,13 +40,19 @@ namespace System.Net.Http
         public sealed override void CopyTo(Stream destination, int bufferSize) =>
             CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
 
-        public virtual Task DrainAsync(int maxDrainBytes) => Task.CompletedTask;
+        public virtual bool NeedsDrain => false;
+
+        public virtual Task<bool> DrainAsync(int maxDrainBytes)
+        {
+            Debug.Assert(false, "DrainAsync should not be called for this response stream");
+            return Task.FromResult(false);
+        }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if (_connection != null)
+                if (NeedsDrain)
                 {
                     // Start the asynchronous drain.
                     // It may complete synchronously, in which case the connection will be put back in the pool synchronously.
@@ -63,12 +70,24 @@ namespace System.Net.Http
 
         private async void DrainOnDispose()
         {
+            HttpConnection connection = _connection;        // Will be null after drain succeeds
+
             try
             {
-                await DrainAsync(MaxDrainBytes).ConfigureAwait(false);
+                bool drained = await DrainAsync(MaxDrainBytes).ConfigureAwait(false);
+
+                if (NetEventSource.IsEnabled)
+                {
+                    connection.Trace(drained ? "Connection drain succeeded" : "Connection drain failed because MaxDrainSize was exceeded");
+                }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                if (NetEventSource.IsEnabled)
+                {
+                    connection.Trace($"Connection drain failed due to exception: {e}");
+                }
+
                 // Eat any exceptions and just Dispose.
             }
 

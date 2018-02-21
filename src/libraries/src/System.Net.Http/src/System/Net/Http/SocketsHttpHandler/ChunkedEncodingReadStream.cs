@@ -338,7 +338,9 @@ namespace System.Net.Http
                 Done
             }
 
-            public override async Task DrainAsync(int maxDrainBytes)
+            public override bool NeedsDrain => (_connection != null);
+
+            public override async Task<bool> DrainAsync(int maxDrainBytes)
             {
                 Debug.Assert(_connection != null);
 
@@ -355,15 +357,16 @@ namespace System.Net.Http
                         }
                     }
 
+                    // When ReadChunkFromConnectionBuffer reads the final chunk, it will clear out _connection
+                    // and return the connection to the pool.
                     if (_connection == null)
                     {
-                        // Fully consumed the response, and the connection has been released back to the pool.
-                        return;
+                        return true;
                     }
 
                     if (drainedBytes >= maxDrainBytes)
                     {
-                        break;
+                        return false;
                     }
 
                     await _connection.FillAsync().ConfigureAwait(false);

@@ -155,7 +155,9 @@ namespace System.Net.Http
                 return connectionBuffer.Slice(0, bytesToConsume);
             }
 
-            public override async Task DrainAsync(int maxDrainBytes)
+            public override bool NeedsDrain => (_connection != null);
+
+            public override async Task<bool> DrainAsync(int maxDrainBytes)
             {
                 Debug.Assert(_connection != null);
                 Debug.Assert(_contentBytesRemaining > 0);
@@ -164,12 +166,12 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     Finish();
-                    return;
+                    return true;
                 }
 
                 if (_contentBytesRemaining > (ulong)maxDrainBytes)
                 {
-                    return;
+                    return false;
                 }
 
                 while (true)
@@ -179,7 +181,7 @@ namespace System.Net.Http
                     if (_contentBytesRemaining == 0)
                     {
                         Finish();
-                        return;
+                        return true;
                     }
                 }
             }
