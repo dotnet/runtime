@@ -18,6 +18,7 @@ description = 'Tool to run coreclr perf tests'
 parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument('-testBinLoc', dest='coreclrPerf', default=None, required=True)
+parser.add_argument('-assemblyName', dest='assemblyName', default=None)
 parser.add_argument('-arch', dest='arch', default='x64', choices=['x64', 'x86'])
 parser.add_argument('-os', dest='operatingSystem', default=sys.platform, choices=['Windows_NT', 'Ubuntu16.04', 'Ubuntu14.04', 'OSX', sys.platform])
 parser.add_argument('-configuration', dest='configuration', default='Release', choices=['Release', 'Checked', 'Debug'])
@@ -72,6 +73,8 @@ def validate_args(args):
 
     coreclrPerf = os.path.join(os.getcwd(), args.coreclrPerf)
     validate_arg(coreclrPerf, lambda item: os.path.isdir(item))
+    if(args.assemblyName != None):
+        validate_arg(args.assemblyName, lambda item: os.path.isfile(os.path.join(coreclrPerf, item)))
 
     if args.benchviewPath is not None:
         validate_arg(args.benchviewPath, lambda item: os.path.isdir(item))
@@ -84,6 +87,7 @@ def validate_args(args):
     log('jitName: %s' % args.jitName)
     log('optLevel: %s' % args.optLevel)
     log('coreclrPerf: %s' % coreclrPerf)
+    log('assemblyName: %s' % args.assemblyName)
     log('better: %s' % args.better)
     log('runType: %s' % args.runType)
     log('configuration: %s' % args.configuration)
@@ -104,7 +108,7 @@ def validate_args(args):
     log('collectionFlags: %s' % args.collectionFlags)
     log('uploadToBenchview: %s' % args.uploadToBenchview)
 
-    return (coreclrPerf, args.arch, args.operatingSystem, args.configuration, args.jitName, args.optLevel, args.runType, args.outputDir, args.stabilityPrefix, args.isScenarioTest, args.benchviewPath, args.isPgoOptimized, args.benchviewGroup, args.hasWarmupRun, args.collectionFlags, args.library, args.uploadToBenchview, args.better, args.sliceNumber, args.sliceConfigFile)
+    return (coreclrPerf, args.assemblyName, args.arch, args.operatingSystem, args.configuration, args.jitName, args.optLevel, args.runType, args.outputDir, args.stabilityPrefix, args.isScenarioTest, args.benchviewPath, args.isPgoOptimized, args.benchviewGroup, args.hasWarmupRun, args.collectionFlags, args.library, args.uploadToBenchview, args.better, args.sliceNumber, args.sliceConfigFile)
 
 def log(message):
     """ Print logging information
@@ -411,7 +415,7 @@ def main(args):
         log("Python 3.5 or newer is required")
         return 1
 
-    coreclrPerf, arch, operatingSystem, configuration, jitName, optLevel, runType, outputDir, stabilityPrefix, isScenarioTest, benchviewPath, isPgoOptimized, benchviewGroup, hasWarmupRun, collectionFlags, isLibrary, uploadToBenchview, better, sliceNumber, sliceConfigFile = validate_args(args)
+    coreclrPerf, assemblyName, arch, operatingSystem, configuration, jitName, optLevel, runType, outputDir, stabilityPrefix, isScenarioTest, benchviewPath, isPgoOptimized, benchviewGroup, hasWarmupRun, collectionFlags, isLibrary, uploadToBenchview, better, sliceNumber, sliceConfigFile = validate_args(args)
 
     platform = sys.platform
     python = 'py'
@@ -474,8 +478,13 @@ def main(args):
             for benchmark in data["slices"][sliceNumber]["folders"]:
                 benchmarks += [benchmark]
 
+    # If slice was not specified, either:
+    #  - run a specific indicated benchmark assembly in coreclrPerf directory if assemblyName is set
+    #  - otherwise run everything in the coreclrPerf directory.
+    elif assemblyName != None:
+        name,ext = os.path.splitext(assemblyName)
+        benchmarks = [{'directory' : '', 'extraFlags': '-library' if ext == '.dll' else '', 'benchname': name}]
     else:
-    # If slice was not specified, run everything in the coreclrPerf directory. Set benchmarks to an empty string
         benchmarks = [{ 'directory' : '', 'extraFlags': '-library' if isLibrary else ''}]
 
     testFileExt = 'dll' if isLibrary else 'exe'
@@ -493,10 +502,9 @@ def main(args):
 
         for root, dirs, files in os.walk(testPath):
             for f in files:
-                if f.endswith(testFileExt):
+                benchname, ext = os.path.splitext(f)
+                if f.endswith(testFileExt) and ((not 'benchname' in benchmark) or benchmark['benchname'] == benchname):
                     totalBenchmarks += 1
-                    benchname, ext = os.path.splitext(f)
-
                     benchmarkOutputDir = os.path.join(sandboxOutputDir, 'Scenarios') if isScenarioTest else os.path.join(sandboxOutputDir, 'Microbenchmarks')
                     benchmarkOutputDir = os.path.join(benchmarkOutputDir, etwCollection, benchname)
 

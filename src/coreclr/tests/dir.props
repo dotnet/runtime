@@ -14,17 +14,27 @@
     <RoslynPackageName>Microsoft.Net.ToolsetCompilers</RoslynPackageName>
   </PropertyGroup>
 
-  <!--   
-    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer   
-    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.6 version of the tasks.   
-   -->   
+    <!--
+     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
+     as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
+     
+     It also breaks building any C# project with dotnet.exe on Windows. The windows version of BuildTools doesn't appear to download the .Net Core
+     Roslyn NuGet package which has a Csc task supporting OverrideToolHost, but the default BuildTools CSharpCore targets file does specify 
+     OverrideToolHost. The result is that building anything in C# when RunningOnCore=true on Windows fails in Csc task with a parameter not supported error.
+     
+     Given that the Windows Core scenario is pretty broken on BuildTools it is currently configured not to use BuildTools at all. This allows ad-hoc usage
+     of the dotnet tool to work in the test tree as a developer convenience. Its not clear that we should invest in improving BuildTools Core support and
+     instead we could just move to using dotnet officially.
+     -->  
   <PropertyGroup>  
     <RunningOnCore>false</RunningOnCore>
     <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'Core'">true</RunningOnCore>
     <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
     <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
     <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
-    <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core')">true</RunningOnUnix>
+    <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core') And ('$(OS)'!='Windows_NT')">true</RunningOnUnix>
+    <UseBuildTools>true</UseBuildTools>
+    <UseBuildTools Condition="'$(OS)'=='Windows_NT' And '$(RunningOnCore)' == 'true'">false</UseBuildTools>
   </PropertyGroup>  
 
   <!-- Common repo directories -->
@@ -37,7 +47,7 @@
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli\</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46\</BuildToolsTaskDir>
     <OverrideToolHost Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</OverrideToolHost>
-    <CSharpCoreTargetsPath Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(ToolsDir)\Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
+    <CSharpCoreTargetsPath Condition="('$(BuildToolsTargetsDesktop)' != 'true') And ('$(UseBuildTools)'=='true')">$(ToolsDir)\Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
@@ -77,7 +87,7 @@
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
+  <Import Condition="Exists('$(ToolsDir)Build.Common.props') And '$(UseBuildTools)'=='true'" Project="$(ToolsDir)Build.Common.props" />
 
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
   <Import Project="$(ProjectDir)..\dependencies.props" />
