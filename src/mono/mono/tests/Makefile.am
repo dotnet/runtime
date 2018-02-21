@@ -1048,7 +1048,6 @@ INTERP_DISABLED_TESTS = \
 	safehandle.2.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
-	thread6.exe \
 	threadpool-exceptions2.exe \
 	threadpool-exceptions4.exe \
 	threadpool-exceptions5.exe \

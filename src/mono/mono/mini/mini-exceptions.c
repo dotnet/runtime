@@ -131,7 +131,7 @@ first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
 		return TRUE;
 	}
 
-	*data = MONO_CONTEXT_GET_SP (ctx);
+	*data = frame->frame_addr;
 	g_assert (*data);
 	return TRUE;
 }
@@ -152,9 +152,9 @@ mini_clear_abort_threshold (void)
 }
 
 static inline void
-mini_set_abort_threshold (MonoContext *ctx)
+mini_set_abort_threshold (StackFrameInfo *frame)
 {
-	gpointer sp = MONO_CONTEXT_GET_SP (ctx);
+	gpointer sp = frame->frame_addr;
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	// Only move it up, to avoid thrown/caught
 	// exceptions lower in the stack from triggering
@@ -726,8 +726,6 @@ unwinder_unwind_frame (Unwinder *unwinder,
 		if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED) {
 			unwinder->in_interp = TRUE;
 			mini_get_interp_callbacks ()->frame_iter_init (&unwinder->interp_iter, frame->interp_exit_data);
-			parent = mini_get_interp_callbacks ()->frame_get_parent (frame->interp_exit_data);
-			MONO_CONTEXT_SET_SP (new_ctx, parent);
 		}
 		unwinder->last_frame_addr = frame->frame_addr;
 		return TRUE;
@@ -1811,7 +1809,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 						setup_stack_trace (mono_ex, dynamic_methods, &trace_ips);
 						g_slist_free (dynamic_methods);
 						/* mono_debugger_agent_handle_exception () needs this */
-						mini_set_abort_threshold (ctx);
+						mini_set_abort_threshold (&frame);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						frame.native_offset = (char*)ei->handler_start - (char*)ji->code_start;
 						*catch_frame = frame;
@@ -2015,7 +2013,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 			// FIXME: This runs managed code so it might cause another stack overflow when
 			// we are handling a stack overflow
-			mini_set_abort_threshold (ctx);
+			mini_set_abort_threshold (&catch_frame);
 			mono_unhandled_exception (obj);
 		} else {
 			gboolean unhandled = FALSE;
@@ -2198,7 +2196,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					jit_tls->orig_ex_ctx_set = TRUE;
 					MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
 					jit_tls->orig_ex_ctx_set = FALSE;
-					mini_set_abort_threshold (ctx);
+					mini_set_abort_threshold (&frame);
 
 					if (in_interp) {
 						/*
@@ -2262,11 +2260,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.lmf = lmf;
 						jit_tls->resume_state.first_filter_idx = first_filter_idx;
 						jit_tls->resume_state.filter_idx = filter_idx;
-						mini_set_abort_threshold (ctx);
+						mini_set_abort_threshold (&frame);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						return 0;
 					} else {
-						mini_set_abort_threshold (ctx);
+						mini_set_abort_threshold (&frame);
 						if (in_interp) {
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start);
 							if (has_ex)
