@@ -13,9 +13,9 @@ namespace System.Tests
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, ushort expected)
         {
-            Assert.Equal(expected, ushort.Parse(value.AsReadOnlySpan(), style, provider));
+            Assert.Equal(expected, ushort.Parse(value.AsSpan(), style, provider));
 
-            Assert.True(ushort.TryParse(value.AsReadOnlySpan(), style, provider, out ushort result));
+            Assert.True(ushort.TryParse(value.AsSpan(), style, provider, out ushort result));
             Assert.Equal(expected, result);
         }
 
@@ -25,9 +25,9 @@ namespace System.Tests
         {
             if (value != null)
             {
-                Assert.Throws(exceptionType, () => ushort.Parse(value.AsReadOnlySpan(), style, provider));
+                Assert.Throws(exceptionType, () => ushort.Parse(value.AsSpan(), style, provider));
 
-                Assert.False(ushort.TryParse(value.AsReadOnlySpan(), style, provider, out ushort result));
+                Assert.False(ushort.TryParse(value.AsSpan(), style, provider, out ushort result));
                 Assert.Equal(0, (short)result);
             }
         }

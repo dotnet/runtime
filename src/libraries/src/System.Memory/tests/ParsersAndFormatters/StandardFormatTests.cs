@@ -39,7 +39,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("", default(char), default(byte))]
         public static void StandardFormatParseSpan(string formatString, char expectedSymbol, byte expectedPrecision)
         {
-            ReadOnlySpan<char> span = formatString.AsReadOnlySpan();
+            ReadOnlySpan<char> span = formatString.AsSpan();
             StandardFormat format = StandardFormat.Parse(span);
             Assert.Equal(expectedSymbol, format.Symbol);
             Assert.Equal(expectedPrecision, format.Precision);

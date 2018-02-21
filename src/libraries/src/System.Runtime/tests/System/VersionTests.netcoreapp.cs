@@ -17,9 +17,9 @@ namespace System.Tests
                 return;
             }
 
-            Assert.Equal(expected, Version.Parse(input.AsReadOnlySpan()));
+            Assert.Equal(expected, Version.Parse(input.AsSpan()));
 
-            Assert.True(Version.TryParse(input.AsReadOnlySpan(), out Version version));
+            Assert.True(Version.TryParse(input.AsSpan(), out Version version));
             Assert.Equal(expected, version);
         }
 
@@ -32,9 +32,9 @@ namespace System.Tests
                 return;
             }
 
-            Assert.Throws(exceptionType, () => Version.Parse(input.AsReadOnlySpan()));
+            Assert.Throws(exceptionType, () => Version.Parse(input.AsSpan()));
 
-            Assert.False(Version.TryParse(input.AsReadOnlySpan(), out Version version));
+            Assert.False(Version.TryParse(input.AsSpan(), out Version version));
             Assert.Null(version);
         }
 

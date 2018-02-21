@@ -34,7 +34,7 @@ namespace System.MemoryTests
             yield return new object[] { ReadOnlyMemory<char>.Empty };
             yield return new object[] { new ReadOnlyMemory<char>(new char[10], 1, 3) };
             yield return new object[] { (ReadOnlyMemory<char>)new CustomMemoryForTest<char>(new char[10]).Memory };
-            yield return new object[] { "12345".AsReadOnlyMemory() };
+            yield return new object[] { "12345".AsMemory() };
         }
 
         [Theory]

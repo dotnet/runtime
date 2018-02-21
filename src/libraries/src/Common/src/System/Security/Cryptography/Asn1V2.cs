@@ -395,7 +395,7 @@ namespace System.Security.Cryptography.Asn1
 
         public override int GetByteCount(string s)
         {
-            return GetByteCount(s.AsReadOnlySpan());
+            return GetByteCount(s.AsSpan());
         }
 
         public

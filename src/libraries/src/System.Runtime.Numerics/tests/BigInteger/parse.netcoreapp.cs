@@ -13,26 +13,26 @@ namespace System.Numerics.Tests
         {
             if (failureNotExpected)
             {
-                Eval(BigInteger.Parse(num1.AsReadOnlySpan(), ns), expected);
+                Eval(BigInteger.Parse(num1.AsSpan(), ns), expected);
 
-                Assert.True(BigInteger.TryParse(num1.AsReadOnlySpan(), ns, provider: null, out BigInteger test));
+                Assert.True(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out BigInteger test));
                 Eval(test, expected);
 
                 if (ns == NumberStyles.Integer)
                 {
-                    Assert.True(BigInteger.TryParse(num1.AsReadOnlySpan(), out test));
+                    Assert.True(BigInteger.TryParse(num1.AsSpan(), out test));
                     Eval(test, expected);
                 }
             }
             else
             {
-                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsReadOnlySpan(), ns); });
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns); });
 
-                Assert.False(BigInteger.TryParse(num1.AsReadOnlySpan(), ns, provider: null, out BigInteger test));
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out BigInteger test));
 
                 if (ns == NumberStyles.Integer)
                 {
-                    Assert.False(BigInteger.TryParse(num1.AsReadOnlySpan(), out test));
+                    Assert.False(BigInteger.TryParse(num1.AsSpan(), out test));
                 }
             }
         }
@@ -41,14 +41,14 @@ namespace System.Numerics.Tests
         {
             if (!failureExpected)
             {
-                Assert.Equal(expected, BigInteger.Parse(num1.AsReadOnlySpan(), provider: nfi));
-                Assert.True(BigInteger.TryParse(num1.AsReadOnlySpan(), NumberStyles.Any, nfi, out BigInteger test));
+                Assert.Equal(expected, BigInteger.Parse(num1.AsSpan(), provider: nfi));
+                Assert.True(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test));
                 Assert.Equal(expected, test);
             }
             else
             {
-                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsReadOnlySpan(), provider: nfi); });
-                Assert.False(BigInteger.TryParse(num1.AsReadOnlySpan(), NumberStyles.Any, nfi, out BigInteger test), String.Format("Expected TryParse to fail on {0}", num1));
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), provider: nfi); });
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test), String.Format("Expected TryParse to fail on {0}", num1));
             }
         }
 
@@ -56,14 +56,14 @@ namespace System.Numerics.Tests
         {
             if (!failureExpected)
             {
-                Assert.Equal(expected, BigInteger.Parse(num1.AsReadOnlySpan(), ns, nfi));
-                Assert.True(BigInteger.TryParse(num1.AsReadOnlySpan(), NumberStyles.Any, nfi, out BigInteger test));
+                Assert.Equal(expected, BigInteger.Parse(num1.AsSpan(), ns, nfi));
+                Assert.True(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test));
                 Assert.Equal(expected, test);
             }
             else
             {
-                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsReadOnlySpan(), ns, nfi); });
-                Assert.False(BigInteger.TryParse(num1.AsReadOnlySpan(), ns, nfi, out BigInteger test), String.Format("Expected TryParse to fail on {0}", num1));
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns, nfi); });
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, nfi, out BigInteger test), String.Format("Expected TryParse to fail on {0}", num1));
             }
         }
     }

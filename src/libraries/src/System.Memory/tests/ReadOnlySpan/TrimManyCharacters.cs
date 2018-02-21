@@ -23,8 +23,8 @@ namespace System.SpanTests
             Assert.True(span.SequenceEqual(span.TrimStart(trimChars)));
             Assert.True(span.SequenceEqual(span.TrimEnd(trimChars)));
 
-            ReadOnlySpan<char> stringSpan = "".AsReadOnlySpan();
-            ReadOnlySpan<char> trimCharsFromString = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "".AsSpan();
+            ReadOnlySpan<char> trimCharsFromString = "abcde".AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimCharsFromString)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimCharsFromString)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimCharsFromString)));
@@ -61,8 +61,8 @@ namespace System.SpanTests
                 Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
             }
 
-            ReadOnlySpan<char> stringSpan = "ffghifhig".AsReadOnlySpan();
-            ReadOnlySpan<char> trimCharsFromString = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "ffghifhig".AsSpan();
+            ReadOnlySpan<char> trimCharsFromString = "abcde".AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimCharsFromString)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimCharsFromString)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimCharsFromString)));
@@ -85,8 +85,8 @@ namespace System.SpanTests
                 Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.TrimEnd(chars)), "I: " + length);
             }
 
-            ReadOnlySpan<char> stringSpan = "babedebcabba".AsReadOnlySpan();
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "babedebcabba".AsSpan();
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(stringSpan.Trim(trimChars)), "J");
             Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(stringSpan.TrimStart(trimChars)), "K");
             Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(stringSpan.TrimEnd(trimChars)), "L");
@@ -110,8 +110,8 @@ namespace System.SpanTests
                 Assert.True(span.SequenceEqual(span.TrimEnd(chars)), "C: " + length);
             }
 
-            ReadOnlySpan<char> stringSpan = "babffffff".AsReadOnlySpan();
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "babffffff".AsSpan();
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(stringSpan.Slice(3).SequenceEqual(stringSpan.Trim(trimChars)), "D");
             Assert.True(stringSpan.Slice(3).SequenceEqual(stringSpan.TrimStart(trimChars)), "E");
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)), "F");
@@ -135,8 +135,8 @@ namespace System.SpanTests
                 Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd(chars)));
             }
 
-            ReadOnlySpan<char> stringSpan = "fffffcced".AsReadOnlySpan();
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "fffffcced".AsSpan();
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(stringSpan.Slice(0, 5).SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.Slice(0, 5).SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -161,8 +161,8 @@ namespace System.SpanTests
                 Assert.True(span.Slice(0, length - 1).SequenceEqual(span.TrimEnd(chars)));
             }
 
-            ReadOnlySpan<char> stringSpan = "ccedafffffbdaa".AsReadOnlySpan();
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "ccedafffffbdaa".AsSpan();
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(stringSpan.Slice(5, 5).SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.Slice(5).SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.Slice(0, 10).SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -186,8 +186,8 @@ namespace System.SpanTests
                 Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
             }
 
-            ReadOnlySpan<char> stringSpan = "fabbacddeeddef".AsReadOnlySpan();
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "fabbacddeeddef".AsSpan();
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -220,8 +220,8 @@ namespace System.SpanTests
                 Assert.True(trimEndResult.SequenceEqual(trimEndResult.TrimEnd(chars)));
             }
 
-            ReadOnlySpan<char> stringSpan = "ccedafffffbdaa".AsReadOnlySpan();
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = "ccedafffffbdaa".AsSpan();
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
 
             ReadOnlySpan<char> trimStringResult = stringSpan.Trim(trimChars);
             ReadOnlySpan<char> trimStartStringResult = stringSpan.TrimStart(trimChars);
@@ -253,8 +253,8 @@ namespace System.SpanTests
             }
 
             string testString = "afghijklmnopqrstfe";
-            ReadOnlySpan<char> stringSpan = testString.AsReadOnlySpan().Slice(1, testString.Length - 2);
-            ReadOnlySpan<char> trimChars = "abcde".AsReadOnlySpan();
+            ReadOnlySpan<char> stringSpan = testString.AsSpan().Slice(1, testString.Length - 2);
+            ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));

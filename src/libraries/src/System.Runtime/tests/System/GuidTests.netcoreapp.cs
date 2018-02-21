@@ -77,19 +77,19 @@ namespace System.Tests
         [MemberData(nameof(GuidStrings_Valid_TestData))]
         public static void Parse_Span_ValidInput_Success(string input, string format, Guid expected)
         {
-            Assert.Equal(expected, Guid.Parse(input.AsReadOnlySpan()));
-            Assert.Equal(expected, Guid.ParseExact(input.AsReadOnlySpan(), format.ToUpperInvariant()));
-            Assert.Equal(expected, Guid.ParseExact(input.AsReadOnlySpan(), format.ToLowerInvariant())); // Format should be case insensitive
+            Assert.Equal(expected, Guid.Parse(input.AsSpan()));
+            Assert.Equal(expected, Guid.ParseExact(input.AsSpan(), format.ToUpperInvariant()));
+            Assert.Equal(expected, Guid.ParseExact(input.AsSpan(), format.ToLowerInvariant())); // Format should be case insensitive
 
             Guid result;
 
-            Assert.True(Guid.TryParse(input.AsReadOnlySpan(), out result));
+            Assert.True(Guid.TryParse(input.AsSpan(), out result));
             Assert.Equal(expected, result);
 
-            Assert.True(Guid.TryParseExact(input.AsReadOnlySpan(), format.ToUpperInvariant(), out result));
+            Assert.True(Guid.TryParseExact(input.AsSpan(), format.ToUpperInvariant(), out result));
             Assert.Equal(expected, result);
 
-            Assert.True(Guid.TryParseExact(input.AsReadOnlySpan(), format.ToLowerInvariant(), out result)); // Format should be case insensitive
+            Assert.True(Guid.TryParseExact(input.AsSpan(), format.ToLowerInvariant(), out result)); // Format should be case insensitive
             Assert.Equal(expected, result);
         }
 
@@ -107,16 +107,16 @@ namespace System.Tests
             {
                 exceptionType = typeof(FormatException);
             }
-            Assert.Throws(exceptionType, () => Guid.Parse(input.AsReadOnlySpan()));
+            Assert.Throws(exceptionType, () => Guid.Parse(input.AsSpan()));
 
-            Assert.False(Guid.TryParse(input.AsReadOnlySpan(), out Guid result));
+            Assert.False(Guid.TryParse(input.AsSpan(), out Guid result));
             Assert.Equal(Guid.Empty, result);
 
             foreach (string format in new[] { "N", "D", "B", "P", "X" })
             {
-                Assert.Throws(exceptionType, () => Guid.ParseExact(input.AsReadOnlySpan(), format));
+                Assert.Throws(exceptionType, () => Guid.ParseExact(input.AsSpan(), format));
 
-                Assert.False(Guid.TryParseExact(input.AsReadOnlySpan(), format, out result));
+                Assert.False(Guid.TryParseExact(input.AsSpan(), format, out result));
                 Assert.Equal(Guid.Empty, result);
             }
         }

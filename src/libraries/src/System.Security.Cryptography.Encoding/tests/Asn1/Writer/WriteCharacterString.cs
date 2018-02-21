@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
-                WriteSpan(writer, input.AsReadOnlySpan());
+                WriteSpan(writer, input.AsSpan());
 
                 Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
             }
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
                 Asn1Tag tag = new Asn1Tag(TagClass.Private, int.MaxValue >> 1);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(tag) + expectedPayloadHex);
             }
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
-                WriteSpan(writer, input.AsReadOnlySpan());
+                WriteSpan(writer, input.AsSpan());
 
                 Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
             }
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
                 Asn1Tag tag = new Asn1Tag(TagClass.Application, 30);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(tag) + expectedPayloadHex);
             }
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
-                WriteSpan(writer, input.AsReadOnlySpan());
+                WriteSpan(writer, input.AsSpan());
 
                 Verify(writer, Stringify(StandardTag) + expectedPayloadHex);
             }
@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
                 Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 31);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(tag) + expectedPayloadHex);
             }
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Asn1Tag standard = StandardTag;
                 Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(standard) + expectedPayloadHex);
             }
@@ -208,7 +208,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Asn1Tag tag = new Asn1Tag(TagClass.Private, 24601, isConstructed: true);
                 Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(expected) + expectedPayloadHex);
             }
@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Asn1Tag standard = StandardTag;
                 Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(standard) + expectedPayloadHex);
             }
@@ -256,7 +256,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Asn1Tag tag = new Asn1Tag(TagClass.Application, 11, isConstructed: true);
                 Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(expected) + expectedPayloadHex);
             }
@@ -292,7 +292,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Asn1Tag standard = StandardTag;
                 Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, isConstructed: true);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(standard) + expectedPayloadHex);
             }
@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 Asn1Tag tag = new Asn1Tag(TagClass.Private, 24601, isConstructed: true);
                 Asn1Tag expected = new Asn1Tag(tag.TagClass, tag.TagValue);
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
 
                 Verify(writer, Stringify(expected) + expectedPayloadHex);
             }
@@ -346,7 +346,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 AssertExtensions.Throws<ArgumentException>(
                     "tag",
-                    () => WriteSpan(writer, Asn1Tag.EndOfContents, "hi".AsReadOnlySpan()));
+                    () => WriteSpan(writer, Asn1Tag.EndOfContents, "hi".AsSpan()));
             }
         }
 
@@ -436,7 +436,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
                 string tagHex = Stringify(tag);
 
-                WriteSpan(writer, input.AsReadOnlySpan());
+                WriteSpan(writer, input.AsSpan());
                 VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
             }
         }
@@ -448,7 +448,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Asn1Tag tag = new Asn1Tag(TagClass.Private, 7, true);
                 string tagHex = Stringify(tag);
 
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
                 VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
             }
         }
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Asn1Tag tag = new Asn1Tag(standard.TagClass, standard.TagValue, true);
                 string tagHex = Stringify(tag);
 
-                WriteSpan(writer, tag, input.AsReadOnlySpan());
+                WriteSpan(writer, tag, input.AsSpan());
                 VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
             }
         }
@@ -474,7 +474,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Asn1Tag constr = new Asn1Tag(prim.TagClass, prim.TagValue, true);
                 string tagHex = Stringify(constr);
 
-                WriteSpan(writer, prim, input.AsReadOnlySpan());
+                WriteSpan(writer, prim, input.AsSpan());
                 VerifyWrite_CERSegmented(writer, tagHex, contentByteCount);
             }
         }
@@ -491,7 +491,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.BER))
             {
-                Assert.Throws<EncoderFallbackException>(() => WriteSpan(writer, input.AsReadOnlySpan()));
+                Assert.Throws<EncoderFallbackException>(() => WriteSpan(writer, input.AsSpan()));
             }
         }
     }

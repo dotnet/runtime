@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteObjectIdentifier(oidValue.AsReadOnlySpan());
+                writer.WriteObjectIdentifier(oidValue.AsSpan());
 
                 Verify(writer, expectedHex);
             }
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
                 Assert.Throws<CryptographicException>(
-                    () => writer.WriteObjectIdentifier(nonOidValue.AsReadOnlySpan()));
+                    () => writer.WriteObjectIdentifier(nonOidValue.AsSpan()));
             }
         }
 
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             using (AsnWriter writer = new AsnWriter((AsnEncodingRules)ruleSet))
             {
-                writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Application, 2), "1.3.14.3.2.26".AsReadOnlySpan());
+                writer.WriteObjectIdentifier(new Asn1Tag(TagClass.Application, 2), "1.3.14.3.2.26".AsSpan());
 
                 Verify(writer, "42052B0E03021A");
             }
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
                 AssertExtensions.Throws<ArgumentException>(
                     "tag",
-                    () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, "1.1".AsReadOnlySpan()));
+                    () => writer.WriteObjectIdentifier(Asn1Tag.EndOfContents, "1.1".AsSpan()));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "tag",
@@ -228,8 +228,8 @@ namespace System.Security.Cryptography.Tests.Asn1
 
                 writer.WriteObjectIdentifier(constructedOid, OidValue);
                 writer.WriteObjectIdentifier(constructedContext0, OidValue);
-                writer.WriteObjectIdentifier(constructedOid, OidValue.AsReadOnlySpan());
-                writer.WriteObjectIdentifier(constructedContext0, OidValue.AsReadOnlySpan());
+                writer.WriteObjectIdentifier(constructedOid, OidValue.AsSpan());
+                writer.WriteObjectIdentifier(constructedContext0, OidValue.AsSpan());
                 writer.WriteObjectIdentifier(constructedOid, new Oid(OidValue, OidValue));
                 writer.WriteObjectIdentifier(constructedContext0, new Oid(OidValue, OidValue));
 

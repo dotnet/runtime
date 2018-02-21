@@ -330,7 +330,7 @@ namespace System.Numerics
                 return false;
             }
 
-            return TryParseBigInteger(value.AsReadOnlySpan(), style, info, out result);
+            return TryParseBigInteger(value.AsSpan(), style, info, out result);
         }
 
         internal static bool TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
@@ -371,7 +371,7 @@ namespace System.Numerics
                 throw new ArgumentNullException(nameof(value));
             }
 
-            return ParseBigInteger(value.AsReadOnlySpan(), style, info);
+            return ParseBigInteger(value.AsSpan(), style, info);
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)

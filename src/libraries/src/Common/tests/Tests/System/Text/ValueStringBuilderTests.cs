@@ -127,7 +127,7 @@ namespace System.Text.Tests
                 Span<char> span = vsb.AppendSpan(s.Length);
                 Assert.Equal(sb.Length, vsb.Length);
 
-                s.AsReadOnlySpan().CopyTo(span);
+                s.AsSpan().CopyTo(span);
             }
 
             Assert.Equal(sb.Length, vsb.Length);

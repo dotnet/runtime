@@ -31,7 +31,7 @@ namespace System.SpanTests
             Assert.Equal("abc", span.ToString());
 
             string testString = "abcdefg";
-            ReadOnlySpan<char> readOnlySpan = testString.AsReadOnlySpan();
+            ReadOnlySpan<char> readOnlySpan = testString.AsSpan();
             Assert.Equal(testString, readOnlySpan.ToString());
         }
 

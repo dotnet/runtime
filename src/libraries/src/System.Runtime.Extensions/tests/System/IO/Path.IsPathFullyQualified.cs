@@ -67,7 +67,7 @@ namespace System.IO.Tests
         public static void IsPathFullyQualified_Unix_Invalid(string path)
         {
             Assert.False(Path.IsPathFullyQualified(path));
-            Assert.False(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
+            Assert.False(Path.IsPathFullyQualified(path.AsSpan()));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
@@ -81,7 +81,7 @@ namespace System.IO.Tests
         public static void IsPathFullyQualified_Unix_Valid(string path)
         {
             Assert.True(Path.IsPathFullyQualified(path));
-            Assert.True(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
+            Assert.True(Path.IsPathFullyQualified(path.AsSpan()));
         }
     }
 }

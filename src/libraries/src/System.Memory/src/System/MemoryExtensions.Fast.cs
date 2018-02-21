@@ -44,7 +44,7 @@ namespace System
         /// </summary>
         /// <param name="text">The target string.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text) => Span.AsReadOnlySpan(text);
+        public static ReadOnlySpan<char> AsSpan(this string text) => Span.AsReadOnlySpan(text);
 
         /// <summary>
         /// Creates a new readonly span over the portion of the target string.
@@ -55,7 +55,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, int start) => Span.AsReadOnlySpan(text, start);
+        public static ReadOnlySpan<char> AsSpan(this string text, int start) => Span.AsReadOnlySpan(text, start);
 
         /// <summary>
         /// Creates a new readonly span over the portion of the target string.
@@ -67,12 +67,12 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, int start, int length) => Span.AsReadOnlySpan(text, start, length);
+        public static ReadOnlySpan<char> AsSpan(this string text, int start, int length) => Span.AsReadOnlySpan(text, start, length);
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
         /// <param name="text">The target string.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text) => Span.AsReadOnlyMemory(text);
+        public static ReadOnlyMemory<char> AsMemory(this string text) => Span.AsReadOnlyMemory(text);
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
         /// <param name="text">The target string.</param>
@@ -81,7 +81,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
-        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text, int start) => Span.AsReadOnlyMemory(text, start);
+        public static ReadOnlyMemory<char> AsMemory(this string text, int start) => Span.AsReadOnlyMemory(text, start);
 
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target string.</summary>
         /// <param name="text">The target string.</param>
@@ -91,7 +91,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
-        public static ReadOnlyMemory<char> AsReadOnlyMemory(this string text, int start, int length) => Span.AsReadOnlyMemory(text, start, length);
+        public static ReadOnlyMemory<char> AsMemory(this string text, int start, int length) => Span.AsReadOnlyMemory(text, start, length);
 
         /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
         /// <param name="readOnlyMemory">The memory that may be wrapping a <see cref="string"/> object.</param>

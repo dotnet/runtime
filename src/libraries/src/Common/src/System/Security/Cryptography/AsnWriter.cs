@@ -759,7 +759,7 @@ namespace System.Security.Cryptography.Asn1
             if (oidValue == null)
                 throw new ArgumentNullException(nameof(oidValue));
 
-            WriteObjectIdentifier(oidValue.AsReadOnlySpan());
+            WriteObjectIdentifier(oidValue.AsSpan());
         }
 
         public void WriteObjectIdentifier(ReadOnlySpan<char> oidValue)
@@ -780,7 +780,7 @@ namespace System.Security.Cryptography.Asn1
             if (oidValue == null)
                 throw new ArgumentNullException(nameof(oidValue));
 
-            WriteObjectIdentifier(tag, oidValue.AsReadOnlySpan());
+            WriteObjectIdentifier(tag, oidValue.AsSpan());
         }
 
         public void WriteObjectIdentifier(Asn1Tag tag, ReadOnlySpan<char> oidValue)
@@ -1408,7 +1408,7 @@ namespace System.Security.Cryptography.Asn1
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
 
-            WriteCharacterString(encodingType, str.AsReadOnlySpan());
+            WriteCharacterString(encodingType, str.AsSpan());
         }
 
         public void WriteCharacterString(UniversalTagNumber encodingType, ReadOnlySpan<char> str)
@@ -1423,7 +1423,7 @@ namespace System.Security.Cryptography.Asn1
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
 
-            WriteCharacterString(tag, encodingType, str.AsReadOnlySpan());
+            WriteCharacterString(tag, encodingType, str.AsSpan());
         }
 
         public void WriteCharacterString(Asn1Tag tag, UniversalTagNumber encodingType, ReadOnlySpan<char> str)

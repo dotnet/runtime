@@ -15,13 +15,13 @@ namespace System.Tests
             DateTimeOffset expected = DateTimeOffset.MaxValue;
             string expectedString = expected.ToString();
 
-            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedString.AsReadOnlySpan()).ToString());
-            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedString.AsReadOnlySpan(), null).ToString());
-            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedString.AsReadOnlySpan(), null, DateTimeStyles.None).ToString());
+            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedString.AsSpan()).ToString());
+            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedString.AsSpan(), null).ToString());
+            Assert.Equal(expectedString, DateTimeOffset.Parse(expectedString.AsSpan(), null, DateTimeStyles.None).ToString());
 
-            Assert.True(DateTimeOffset.TryParse(expectedString.AsReadOnlySpan(), out DateTimeOffset actual));
+            Assert.True(DateTimeOffset.TryParse(expectedString.AsSpan(), out DateTimeOffset actual));
             Assert.Equal(expectedString, actual.ToString());
-            Assert.True(DateTimeOffset.TryParse(expectedString.AsReadOnlySpan(), null, DateTimeStyles.None, out actual));
+            Assert.True(DateTimeOffset.TryParse(expectedString.AsSpan(), null, DateTimeStyles.None, out actual));
             Assert.Equal(expectedString, actual.ToString());
         }
 
