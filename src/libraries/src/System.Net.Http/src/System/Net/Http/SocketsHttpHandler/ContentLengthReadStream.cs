@@ -134,10 +134,38 @@ namespace System.Net.Http
                 _connection = null;
             }
 
+            // Based on ReadChunkFromConnectionBuffer; perhaps we should refactor into a common routine.
+            private ReadOnlyMemory<byte> ReadFromConnectionBuffer(int maxBytesToRead)
+            {
+                Debug.Assert(maxBytesToRead > 0);
+                Debug.Assert(_contentBytesRemaining > 0);
+
+                ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
+                if (connectionBuffer.Length == 0)
+                {
+                    return default;
+                }
+
+                int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _contentBytesRemaining));
+                Debug.Assert(bytesToConsume > 0);
+
+                _connection.ConsumeFromRemainingBuffer(bytesToConsume);
+                _contentBytesRemaining -= (ulong)bytesToConsume;
+
+                return connectionBuffer.Slice(0, bytesToConsume);
+            }
+
             public override async Task DrainAsync(int maxDrainBytes)
             {
                 Debug.Assert(_connection != null);
                 Debug.Assert(_contentBytesRemaining > 0);
+
+                ReadFromConnectionBuffer(int.MaxValue);
+                if (_contentBytesRemaining == 0)
+                {
+                    Finish();
+                    return;
+                }
 
                 if (_contentBytesRemaining > (ulong)maxDrainBytes)
                 {
@@ -146,17 +174,13 @@ namespace System.Net.Http
 
                 while (true)
                 {
-                    if (_contentBytesRemaining <= (ulong)_connection.RemainingBuffer.Length)
-                    {
-                        _connection.ConsumeFromRemainingBuffer((int)_contentBytesRemaining);
-                        Finish();
-                        break;
-                    }
-
-                    _contentBytesRemaining -= (ulong)_connection.RemainingBuffer.Length;
-                    _connection.ConsumeFromRemainingBuffer(_connection.RemainingBuffer.Length);
-
                     await _connection.FillAsync().ConfigureAwait(false);
+                    ReadFromConnectionBuffer(int.MaxValue);
+                    if (_contentBytesRemaining == 0)
+                    {
+                        Finish();
+                        return;
+                    }
                 }
             }
         }
