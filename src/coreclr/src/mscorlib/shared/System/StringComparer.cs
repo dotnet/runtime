@@ -179,15 +179,17 @@ namespace System
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
         private CompareOptions _options;
 
-        internal CultureAwareComparer(CultureInfo culture, CompareOptions compareOptions)
-        {
-            _compareInfo = culture.CompareInfo;
+        internal CultureAwareComparer(CultureInfo culture, CompareOptions options) : this(culture.CompareInfo, options) { }
 
-            if ((compareOptions & CultureAwareComparer.ValidCompareMaskOffFlags) != 0)
+        internal CultureAwareComparer(CompareInfo compareInfo, CompareOptions options)
+        {
+            _compareInfo = compareInfo;
+
+            if ((options & ValidCompareMaskOffFlags) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(compareOptions));
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
-            _options = compareOptions;
+            _options = options;
         }
 
         private CultureAwareComparer(SerializationInfo info, StreamingContext context)
