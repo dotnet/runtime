@@ -280,7 +280,7 @@ namespace System.Net.Test.Common
             "Transfer-Encoding: chunked\r\n" +
             additionalHeaders +
             "\r\n" +
-            (string.IsNullOrEmpty(content) ? "" : string.Join("", content.Select(c => $"1\r\n{c}\r\n"))) + 
+            (string.IsNullOrEmpty(content) ? "" : string.Concat(content.Select(c => $"1\r\n{c}\r\n"))) + 
             $"0\r\n" +
             $"\r\n";
 
