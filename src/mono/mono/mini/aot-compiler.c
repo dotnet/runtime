@@ -7915,7 +7915,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	 * encountered.
 	 */
 	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
-	if (!acfg->aot_opts.no_instances && depth < 32 && mono_aot_mode_is_full (&acfg->aot_opts)) {
+	if (!acfg->aot_opts.no_instances && depth < 32 && (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))) {
 		for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 			switch (patch_info->type) {
 			case MONO_PATCH_INFO_RGCTX_FETCH:
@@ -7935,7 +7935,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 				if (!m)
 					break;
-				if (m->is_inflated && mono_aot_mode_is_full (&acfg->aot_opts)) {
+				if (m->is_inflated && (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))) {
 					if (!(mono_class_generic_sharing_enabled (m->klass) &&
 						  mono_method_is_generic_sharable_full (m, FALSE, FALSE, FALSE)) &&
 						(!method_has_type_vars (m) || mono_method_is_generic_sharable_full (m, TRUE, TRUE, FALSE))) {
@@ -10982,7 +10982,7 @@ collect_methods (MonoAotCompile *acfg)
 		}
 	}
 
-	if (mono_aot_mode_is_full (&acfg->aot_opts))
+	if (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))
 		add_generic_instances (acfg);
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
