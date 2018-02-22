@@ -193,6 +193,17 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
+                // If this wraps a string and represents the full length of the string, just return the wrapped string.
+                if (_byteOffset == MemoryExtensions.StringAdjustment)
+                {
+                    object obj = Unsafe.As<object>(_pinnable); // minimize chances the compilers will optimize away the 'is' check
+                    if (obj is string str && _length == str.Length)
+                    {
+                        return str;
+                    }
+                }
+
+                // Otherwise, copy the data to a new string.
                 unsafe
                 {
                     fixed (char* src = &Unsafe.As<T, char>(ref DangerousGetPinnableReference()))
