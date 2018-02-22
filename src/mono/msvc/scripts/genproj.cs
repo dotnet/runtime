@@ -27,27 +27,43 @@ public enum Target {
 
 class SlnGenerator {
 	public static readonly string NewLine = "\r\n"; //Environment.NewLine; // "\n"; 
-	public SlnGenerator (string formatVersion = "2012")
+	public SlnGenerator (string slnVersion)
 	{
-		switch (formatVersion) {
-		case "2008":
-			this.header = MakeHeader ("10.00", "2008");
-			break;
-		default:
-			this.header = MakeHeader ("12.00", "2012");
-			break;
-		}
+		Console.WriteLine("Requested sln version is {0}", slnVersion);
+		this.header = MakeHeader ("12.00", "15", "15.0.0.0");
 	}
 
-	const string project_start = "Project(\"{{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}}\") = \"{0}\", \"{1}\", \"{2}\""; // Note: No need to double up on {} around {2}
+	const string project_start = "Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\""; // Note: No need to double up on {} around {2}
 	const string project_end = "EndProject";
+
+	public List<string> profiles = new List<string> {
+		"net_4_x",
+		"monodroid",
+		"monotouch",
+		"monotouch_tv",
+		"monotouch_watch",
+		"orbis",
+		"unreal",
+		"wasm",
+		"winaot",
+		"xammac",
+	};
+
+	const string jay_vcxproj_guid = "{5D485D32-3B9F-4287-AB24-C8DA5B89F537}";
+	const string jay_sln_guid = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}";
 
 	public List<MsbuildGenerator.VsCsproj> libraries = new List<MsbuildGenerator.VsCsproj> ();
 	string header;
 
-	string MakeHeader (string formatVersion, string yearTag)
+	string MakeHeader (string formatVersion, string yearTag, string minimumVersion)
 	{
-		return string.Format ("Microsoft Visual Studio Solution File, Format Version {0}" + NewLine + "# Visual Studio {1}", formatVersion, yearTag);
+		return string.Format (
+			"Microsoft Visual Studio Solution File, Format Version {0}" + NewLine + 
+			"# Visual Studio {1}" + NewLine + 
+			"MinimumVisualStudioVersion = {2}", 
+			formatVersion, yearTag,
+			minimumVersion
+		);
 	}
 
 	public void Add (MsbuildGenerator.VsCsproj vsproj)
@@ -59,6 +75,40 @@ class SlnGenerator {
 		}
 	}
 
+	private void WriteProjectReference (StreamWriter sln, string prefixGuid, string library, string relativePath, string projectGuid, params string[] dependencyGuids)
+	{
+		sln.WriteLine (project_start, prefixGuid, library, relativePath, projectGuid);
+
+		foreach (var guid in dependencyGuids) {
+    		sln.WriteLine ("    ProjectSection(ProjectDependencies) = postProject");
+    		sln.WriteLine ("        {0} = {0}", guid);
+    		sln.WriteLine ("    EndProjectSection");
+		}
+
+		sln.WriteLine (project_end);
+	}
+
+	private void WriteProjectReference (StreamWriter sln, string slnFullPath, MsbuildGenerator.VsCsproj proj)
+	{
+		var unixProjFile = proj.csProjFilename.Replace ("\\", "/");
+		var fullProjPath = Path.GetFullPath (unixProjFile);
+		var relativePath = MsbuildGenerator.GetRelativePath (slnFullPath, fullProjPath);
+		var dependencyGuids = new string[0];
+		if (proj.preBuildEvent.Contains ("jay"))
+			dependencyGuids = new [] { jay_vcxproj_guid };
+		WriteProjectReference(sln, "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}", proj.library, relativePath, proj.projectGuid, dependencyGuids);
+	}
+
+	private void WriteProjectConfigurationPlatforms (StreamWriter sln, string guid, string platformToBuild)
+	{
+		foreach (var profile in profiles) {
+			sln.WriteLine ("\t\t{0}.Debug|{1}.ActiveCfg = Debug|{2}", guid, profile, platformToBuild);
+			sln.WriteLine ("\t\t{0}.Debug|{1}.Build.0 = Debug|{2}", guid, profile, platformToBuild);
+			sln.WriteLine ("\t\t{0}.Release|{1}.ActiveCfg = Release|{2}", guid, profile, platformToBuild);
+			sln.WriteLine ("\t\t{0}.Release|{1}.Build.0 = Release|{2}", guid, profile, platformToBuild);
+		}
+	}
+
 	public void Write (string filename)
 	{
 		var fullPath = Path.GetDirectoryName (filename) + "/";
@@ -66,27 +116,32 @@ class SlnGenerator {
 		using (var sln = new StreamWriter (filename)) {
 			sln.WriteLine ();
 			sln.WriteLine (header);
+
+			// Manually insert jay's vcxproj. We depend on jay.exe to perform build steps later.
+			WriteProjectReference (sln, jay_sln_guid, "jay", "mcs\\jay\\jay.vcxproj", jay_vcxproj_guid);
+
 			foreach (var proj in libraries) {
-				var unixProjFile = proj.csProjFilename.Replace ("\\", "/");
-				var fullProjPath = Path.GetFullPath (unixProjFile);
-				sln.WriteLine (project_start, proj.library, MsbuildGenerator.GetRelativePath (fullPath, fullProjPath), proj.projectGuid);
-				sln.WriteLine (project_end);
+				WriteProjectReference (sln, fullPath, proj);
 			}
+
 			sln.WriteLine ("Global");
 
 			sln.WriteLine ("\tGlobalSection(SolutionConfigurationPlatforms) = preSolution");
-			sln.WriteLine ("\t\tDebug|Any CPU = Debug|Any CPU");
-			sln.WriteLine ("\t\tRelease|Any CPU = Release|Any CPU");
+			foreach (var profile in profiles) {
+				sln.WriteLine ("\t\tDebug|{0} = Debug|{0}", profile);
+				sln.WriteLine ("\t\tRelease|{0} = Release|{0}", profile);
+			}
 			sln.WriteLine ("\tEndGlobalSection");
 
 			sln.WriteLine ("\tGlobalSection(ProjectConfigurationPlatforms) = postSolution");
+
+			// Manually insert jay's configurations because they are different
+			WriteProjectConfigurationPlatforms (sln, jay_vcxproj_guid, "Win32");
+
 			foreach (var proj in libraries) {
-				var guid = proj.projectGuid;
-				sln.WriteLine ("\t\t{0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU", guid);
-				sln.WriteLine ("\t\t{0}.Debug|Any CPU.Build.0 = Debug|Any CPU", guid);
-				sln.WriteLine ("\t\t{0}.Release|Any CPU.ActiveCfg = Release|Any CPU", guid);
-				sln.WriteLine ("\t\t{0}.Release|Any CPU.Build.0 = Release|Any CPU", guid);
+				WriteProjectConfigurationPlatforms (sln, proj.projectGuid, "Any CPU");
 			}
+
 			sln.WriteLine ("\tEndGlobalSection");
 
 			sln.WriteLine ("\tGlobalSection(SolutionProperties) = preSolution");
@@ -634,6 +689,7 @@ class MsbuildGenerator {
 		public List<VsCsproj> projReferences = new List<VsCsproj> ();
 		public string library;
 		public MsbuildGenerator MsbuildGenerator;
+		public string preBuildEvent, postBuildEvent;
 	}
 
 	public VsCsproj Csproj;
@@ -682,7 +738,7 @@ class MsbuildGenerator {
 				fx_version = "4.0";
 				profile = "net_4_0";
 			} else if (response.Contains (profile_4_x)) {
-				fx_version = "4.5";
+				fx_version = "4.6.2";
 				profile = "net_4_x";
 			}
 		}
@@ -887,6 +943,26 @@ class MsbuildGenerator {
 
 		bool basic_or_build = (library.Contains ("-basic") || library.Contains ("-build"));
 
+		// If an EXE is built with nostdlib, it won't work unless run with mono.exe. This stops our build steps
+		//  from working in visual studio (because we already replace @MONO@ with '' on Windows.)
+
+		if (Target != Target.Library)
+			StdLib = true;
+
+		// We have our target framework set to 4.5 in many places because broken scripts check for files with 4.5
+		//  in the path, even though we compile code that uses 4.6 features. So we need to manually fix that here.
+
+		if (fx_version == "4.5")
+			fx_version = "4.6.2";
+
+		// The VS2017 signing system fails to sign using this key for some reason, so for now,
+		//  just disable code signing for the nunit assemblies. It's not important.
+		// I'd rather fix this by updating the makefiles but it seems to be impossible to disable
+		//  code signing in our make system...
+
+		if (StrongNameKeyFile?.Contains("nunit.snk") ?? false)
+			StrongNameKeyFile = null;
+
 		//
 		// Replace the template values
 		//
@@ -899,6 +975,9 @@ class MsbuildGenerator {
 				"    <AssemblyOriginatorKeyFile>{0}</AssemblyOriginatorKeyFile>",
 				StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>" + NewLine : "");
 		}
+
+		string assemblyName = Path.GetFileNameWithoutExtension (output_name);
+
 		Csproj.output = template.
 			Replace ("@OUTPUTTYPE@", Target == Target.Library ? "Library" : "Exe").
 			Replace ("@SIGNATURE@", strongNameSection).
@@ -911,7 +990,7 @@ class MsbuildGenerator {
 			Replace ("@NOCONFIG@", "<NoConfig>" + (!load_default_config).ToString () + "</NoConfig>").
 			Replace ("@ALLOWUNSAFE@", Unsafe ? "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>" : "").
 			Replace ("@FX_VERSION", fx_version).
-			Replace ("@ASSEMBLYNAME@", Path.GetFileNameWithoutExtension (output_name)).
+			Replace ("@ASSEMBLYNAME@", assemblyName).
 			Replace ("@OUTPUTDIR@", build_output_dir).
 			Replace ("@OUTPUTSUFFIX@", Path.GetFileName (build_output_dir)).
 			Replace ("@DEFINECONSTANTS@", defines.ToString ()).
@@ -925,7 +1004,11 @@ class MsbuildGenerator {
 			Replace ("@ADDITIONALLIBPATHS@", String.Empty).
 			Replace ("@RESOURCES@", resources.ToString ()).
 			Replace ("@OPTIMIZE@", Optimize ? "true" : "false").
-			Replace ("@SOURCES@", sources.ToString ());
+			Replace ("@SOURCES@", sources.ToString ()).
+			Replace ("@METADATAVERSION@", assemblyName == "mscorlib" ? "<RuntimeMetadataVersion>Mono</RuntimeMetadataVersion>" : "");
+
+		Csproj.preBuildEvent = prebuild;
+		Csproj.postBuildEvent = postbuild;
 
 		//Console.WriteLine ("Generated {0}", ofile.Replace ("\\", "/"));
 		using (var o = new StreamWriter (generatedProjFile)) {
@@ -944,15 +1027,13 @@ class MsbuildGenerator {
 		if (q != -1)
 			target = target + Load (library.Substring (0, q) + suffix);
 
-		if (target.IndexOf ("@MONO@") != -1){
-			target_unix = target.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
-			target_windows = target.Replace ("@MONO@", "").Replace ("@CAT@", "type");
-		} else {
-			target_unix = target.Replace ("jay.exe", "jay");
-			target_windows = target;
-		}
+		target_unix = target.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
+		target_windows = target.Replace ("@MONO@", "").Replace ("@CAT@", "type");
+
+		target_unix = target_unix.Replace ("\\jay\\jay.exe", "\\jay\\jay\\jay");
+
 		target_unix = target_unix.Replace ("@COPY@", "cp");
-		target_windows = target_unix.Replace ("@COPY@", "copy");
+		target_windows = target_windows.Replace ("@COPY@", "copy");
 
 		target_unix = target_unix.Replace ("\r", "");
 		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
