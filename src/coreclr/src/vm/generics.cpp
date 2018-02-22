@@ -365,6 +365,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     pMT->ClearFlag(MethodTable::enum_flag_IsPreRestored);
 
     pMT->ClearFlag(MethodTable::enum_flag_HasIndirectParent);
+    pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
 
     // Non non-virtual slots
     pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);
