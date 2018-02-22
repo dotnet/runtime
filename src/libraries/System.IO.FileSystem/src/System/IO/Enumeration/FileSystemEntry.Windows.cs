@@ -67,6 +67,11 @@ namespace System.IO.Enumeration
         /// </summary>
         public bool IsDirectory => (Attributes & FileAttributes.Directory) != 0;
 
+        /// <summary>
+        /// Returns true if the file has the hidden attribute.
+        /// </summary>
+        public bool IsHidden => (Attributes & FileAttributes.Hidden) != 0;
+
         public FileSystemInfo ToFileSystemInfo()
             => FileSystemInfo.Create(PathHelpers.CombineNoChecks(Directory, FileName), ref this);
 
