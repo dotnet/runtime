@@ -346,7 +346,10 @@ long_bne_un: len:8
 
 # Linear IR opcodes
 dummy_use: src1:i len:0
-dummy_store: len:0
+dummy_iconst: dest:i len:0
+dummy_i8const: dest:i len:0
+dummy_r8const: dest:f len:0
+dummy_r4const: dest:f len:0
 not_reached: len:0
 not_null: src1:i len:0
 
@@ -400,6 +403,8 @@ s390_long_add_ovf_un: dest:i src1:i src2:i len:32
 s390_long_sub_ovf: dest:i src1:i src2:i len:32
 s390_long_sub_ovf_un: dest:i src1:i src2:i len:32
 
+liverange_start: len:0
+liverange_end: len:0
 gc_liveness_def: len:0
 gc_liveness_use: len:0
 gc_spill_slot_liveness_def: len:0

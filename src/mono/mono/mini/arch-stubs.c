@@ -83,3 +83,12 @@ mono_arch_undo_ip_adjustment (MonoContext *context)
 }
 
 #endif
+
+#ifndef MONO_ARCH_HAVE_EXCEPTIONS_INIT
+
+void
+mono_arch_exceptions_init (void)
+{
+}
+
+#endif

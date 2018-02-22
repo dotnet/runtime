@@ -172,7 +172,10 @@ shr_un_imm: dest:i src1:i len:8
 
 # Linear IR opcodes
 dummy_use: src1:i len:0
-dummy_store: len:0
+dummy_iconst: dest:i len:0
+dummy_i8const: dest:i len:0
+dummy_r8const: dest:f len:0
+dummy_r4const: dest:f len:0
 not_reached: len:0
 not_null: src1:i len:0
 
@@ -455,4 +458,6 @@ mips_cond_exc_ino: src1:i src2:i len:44
 mips_cond_exc_ic: src1:i src2:i len:44
 mips_cond_exc_inc: src1:i src2:i len:44
 
+liverange_start: len:0
+liverange_end: len:0
 gc_safe_point: len:0

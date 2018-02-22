@@ -166,7 +166,6 @@ typedef gdouble		mips_freg;
 #define mips_ftemp mips_f18
 
 #define MONO_ARCH_USE_FPSTACK FALSE
-#define MONO_ARCH_FPSTACK_SIZE 0
 
 /* Parameters used by the register allocator */
 

@@ -3021,9 +3021,6 @@ init_backend (MonoBackend *backend)
 #endif
 	if (MONO_ARCH_USE_FPSTACK)
 		backend->use_fpstack = 1;
-#ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
-	backend->have_liverange_ops = 1;
-#endif
 #ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
 	backend->have_op_tail_call = 1;
 #endif
@@ -3034,9 +3031,6 @@ init_backend (MonoBackend *backend)
 #endif
 #if defined(__mono_ilp32__)
 	backend->ilp32 = 1;
-#endif
-#ifdef MONO_ARCH_HAVE_DUMMY_INIT
-	backend->have_dummy_init = 1;
 #endif
 #ifdef MONO_ARCH_NEED_DIV_CHECK
 	backend->need_div_check = 1;
@@ -3845,13 +3839,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	MONO_TIME_TRACK (mono_jit_stats.jit_create_jit_info, cfg->jit_info = create_jit_info (cfg, method_to_compile));
 
-#ifdef MONO_ARCH_HAVE_LIVERANGE_OPS
 	if (cfg->extend_live_ranges) {
 		/* Extend live ranges to cover the whole method */
 		for (i = 0; i < cfg->num_varinfo; ++i)
 			MONO_VARINFO (cfg, i)->live_range_end = cfg->code_len;
 	}
-#endif
 
 	MONO_TIME_TRACK (mono_jit_stats.jit_gc_create_gc_map, mini_gc_create_gc_map (cfg));
 	MONO_TIME_TRACK (mono_jit_stats.jit_save_seq_point_info, mono_save_seq_point_info (cfg));

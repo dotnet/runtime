@@ -216,9 +216,8 @@ mono_exceptions_init (void)
 		mono_tramp_info_register (info, NULL);
 	}
 
-#ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
-#endif
+
 	if (mono_use_interpreter)
 		cbs.mono_walk_stack_with_ctx = mini_get_interp_callbacks ()->walk_stack_with_ctx;
 	else
