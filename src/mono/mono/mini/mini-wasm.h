@@ -49,5 +49,8 @@ typedef struct {
 #define MONO_ARCH_FRAME_ALIGNMENT 16
 
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
+#define MONO_ARCH_HAS_REGISTER_ICALL 1
+
+
 
 #endif /* __MONO_MINI_WASM_H__ */  

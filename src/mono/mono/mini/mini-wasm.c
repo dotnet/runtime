@@ -1,5 +1,7 @@
 #include "mini.h"
 
+#include <emscripten.h>
+
 
 gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
@@ -153,6 +155,49 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
+
+EMSCRIPTEN_KEEPALIVE void
+mono_set_timeout_exec (int id)
+{
+	ERROR_DECL (error);
+	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "WasmRuntime");
+	g_assert (klass);
+
+	MonoMethod *method = mono_class_get_method_from_name (klass, "TimeoutCallback", -1);
+	g_assert (method);
+
+	gpointer params[1] = { &id };
+	MonoObject *exc = NULL;
+
+	mono_runtime_try_invoke (method, NULL, params, &exc, error);
+
+	//YES we swallow exceptions cuz there's nothing much we can do from here.
+	//FIXME Maybe call the unhandled exception function?
+	if (!is_ok (error)) {
+		printf ("timeout callback failed due to %s\n", mono_error_get_message (error));
+		mono_error_cleanup (error);
+	}
+
+	if (exc) {
+		char *type_name = mono_type_get_full_name (mono_object_get_class (exc));
+		printf ("timeout callback threw a %s\n", type_name);
+		g_free (type_name);
+	}
+}
+
+extern void mono_set_timeout (int t, int d);
+
+void
+mono_wasm_set_timeout (int timeout, int id)
+{
+	mono_set_timeout (timeout, id);
+}
+
+void
+mono_arch_register_icall (void)
+{
+	mono_add_internal_call ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
+}
 
 /*
 The following functions don't belong here, but are due to laziness.
