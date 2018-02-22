@@ -9,6 +9,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime.CompilerServices;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     public partial class String
@@ -647,19 +655,36 @@ namespace System
         // TODO https://github.com/dotnet/corefx/issues/21395: Expose this publicly?
         internal static int CompareOrdinal(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB)
         {
-            // TODO: This needs to be optimized / unrolled.  It can't just use CompareOrdinalHelper(str, str)
-            // (changed to accept spans) because its implementation is based on a string layout,
-            // in a way that doesn't work when there isn't guaranteed to be a null terminator.
+            // TODO: Add a vectorized code path, similar to SequenceEqual
+            // https://github.com/dotnet/corefx/blob/master/src/System.Memory/src/System/SpanHelpers.byte.cs#L900
 
             int minLength = Math.Min(strA.Length, strB.Length);
-            for (int i = 0; i < minLength; i++)
+            ref char first = ref MemoryMarshal.GetReference(strA);
+            ref char second = ref MemoryMarshal.GetReference(strB);
+
+            int i = 0;
+            if (minLength >= sizeof(nuint) / sizeof(char))
             {
-                if (strA[i] != strB[i])
+                while (i < minLength - sizeof(nuint) / sizeof(char))
                 {
-                    return strA[i] - strB[i];
+                    if (Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
+                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
+                    {
+                        break;
+                    }
+                    i += sizeof(nuint) / sizeof(char);
                 }
             }
-
+            while (i < minLength)
+            {
+                char a = Unsafe.Add(ref first, i);
+                char b = Unsafe.Add(ref second, i);
+                if (a != b)
+                {
+                    return a - b;
+                }
+                i++;
+            }
             return strA.Length - strB.Length;
         }
 

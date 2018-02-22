@@ -23,6 +23,157 @@ namespace System
     /// </summary>
     public static class Span
     {
+        public static bool Contains(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            return (IndexOf(span, value, comparisonType) >= 0);
+        }
+
+        public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            StringSpanHelpers.CheckStringComparison(comparisonType);
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return (CultureInfo.CurrentCulture.CompareInfo.Compare(span, value, CompareOptions.None) == 0);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return (CultureInfo.CurrentCulture.CompareInfo.Compare(span, value, CompareOptions.IgnoreCase) == 0);
+
+                case StringComparison.InvariantCulture:
+                    return (CompareInfo.Invariant.Compare(span, value, CompareOptions.None) == 0);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return (CompareInfo.Invariant.Compare(span, value, CompareOptions.IgnoreCase) == 0);
+
+                case StringComparison.Ordinal:
+                    if (span.Length != value.Length)
+                        return false;
+                    if (value.Length == 0)  // span.Length == value.Length == 0
+                        return true;
+                    return OrdinalHelper(span, value, value.Length);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    if (span.Length != value.Length)
+                        return false;
+                    if (value.Length == 0)  // span.Length == value.Length == 0
+                        return true;
+                    return (CompareInfo.CompareOrdinalIgnoreCase(span, value) == 0);
+            }
+
+            Debug.Fail("StringComparison outside range");
+            return false;
+        }
+
+        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            StringSpanHelpers.CheckStringComparison(comparisonType);
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return CultureInfo.CurrentCulture.CompareInfo.Compare(span, value, CompareOptions.None);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return CultureInfo.CurrentCulture.CompareInfo.Compare(span, value, CompareOptions.IgnoreCase);
+
+                case StringComparison.InvariantCulture:
+                    return CompareInfo.Invariant.Compare(span, value, CompareOptions.None);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CompareInfo.Invariant.Compare(span, value, CompareOptions.IgnoreCase);
+
+                case StringComparison.Ordinal:
+                    if (span.Length == 0 || value.Length == 0)
+                        return span.Length - value.Length;
+                    return string.CompareOrdinal(span, value);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return CompareInfo.CompareOrdinalIgnoreCase(span, value);
+            }
+
+            Debug.Fail("StringComparison outside range");
+            return 0;
+        }
+
+        public static int IndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            StringSpanHelpers.CheckStringComparison(comparisonType);
+
+            if (value.Length == 0)
+            {
+                return 0;
+            }
+
+            if (span.Length == 0)
+            {
+                return -1;
+            }
+
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                    return IndexOfCultureHelper(span, value, CultureInfo.CurrentCulture.CompareInfo);
+
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return IndexOfCultureIgnoreCaseHelper(span, value, CultureInfo.CurrentCulture.CompareInfo);
+
+                case StringComparison.InvariantCulture:
+                    return IndexOfCultureHelper(span, value, CompareInfo.Invariant);
+
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return IndexOfCultureIgnoreCaseHelper(span, value, CompareInfo.Invariant);
+
+                case StringComparison.Ordinal:
+                    return IndexOfOrdinalHelper(span, value, ignoreCase: false);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return IndexOfOrdinalHelper(span, value, ignoreCase: true);
+            }
+
+            Debug.Fail("StringComparison outside range");
+            return -1;
+        }
+
+        internal static int IndexOfCultureHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, CompareInfo compareInfo)
+        {
+            Debug.Assert(span.Length != 0);
+            Debug.Assert(value.Length != 0);
+
+            if (GlobalizationMode.Invariant)
+            {
+                return CompareInfo.InvariantIndexOf(span, value, ignoreCase: false);
+            }
+
+            return compareInfo.IndexOf(span, value, CompareOptions.None);
+        }
+
+        internal static int IndexOfCultureIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, CompareInfo compareInfo)
+        {
+            Debug.Assert(span.Length != 0);
+            Debug.Assert(value.Length != 0);
+
+            if (GlobalizationMode.Invariant)
+            {
+                return CompareInfo.InvariantIndexOf(span, value, ignoreCase: true);
+            }
+
+            return compareInfo.IndexOf(span, value, CompareOptions.IgnoreCase);
+        }
+
+        internal static int IndexOfOrdinalHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, bool ignoreCase)
+        {
+            Debug.Assert(span.Length != 0);
+            Debug.Assert(value.Length != 0);
+
+            if (GlobalizationMode.Invariant)
+            {
+                return CompareInfo.InvariantIndexOf(span, value, ignoreCase);
+            }
+
+            return CompareInfo.Invariant.IndexOfOrdinal(span, value, ignoreCase);
+        }
+
         /// <summary>
         /// Copies the characters from the source span into the destination, converting each character to lowercase.
         /// </summary>
@@ -109,16 +260,16 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return StartsWithCultureHelper(span, value);
+                    return StartsWithCultureHelper(span, value, CultureInfo.CurrentCulture.CompareInfo);
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return StartsWithCultureIgnoreCaseHelper(span, value);
+                    return StartsWithCultureIgnoreCaseHelper(span, value, CultureInfo.CurrentCulture.CompareInfo);
 
                 case StringComparison.InvariantCulture:
-                    return StartsWithCultureHelper(span, value, invariantCulture: true);
+                    return StartsWithCultureHelper(span, value, CompareInfo.Invariant);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return StartsWithCultureIgnoreCaseHelper(span, value, invariantCulture: true);
+                    return StartsWithCultureIgnoreCaseHelper(span, value, CompareInfo.Invariant);
 
                 case StringComparison.Ordinal:
                     return StartsWithOrdinalHelper(span, value);
@@ -131,7 +282,7 @@ namespace System
             }
         }
 
-        internal static bool StartsWithCultureHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, bool invariantCulture = false)
+        internal static bool StartsWithCultureHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, CompareInfo compareInfo)
         {
             Debug.Assert(value.Length != 0);
 
@@ -143,12 +294,10 @@ namespace System
             {
                 return false;
             }
-            return invariantCulture ?
-                CompareInfo.Invariant.IsPrefix(span, value, CompareOptions.None) :
-                CultureInfo.CurrentCulture.CompareInfo.IsPrefix(span, value, CompareOptions.None);
+            return compareInfo.IsPrefix(span, value, CompareOptions.None);
         }
 
-        internal static bool StartsWithCultureIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, bool invariantCulture = false)
+        internal static bool StartsWithCultureIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, CompareInfo compareInfo)
         {
             Debug.Assert(value.Length != 0);
 
@@ -160,9 +309,7 @@ namespace System
             {
                 return false;
             }
-            return invariantCulture ?
-                CompareInfo.Invariant.IsPrefix(span, value, CompareOptions.IgnoreCase) :
-                CultureInfo.CurrentCulture.CompareInfo.IsPrefix(span, value, CompareOptions.IgnoreCase);
+            return compareInfo.IsPrefix(span, value, CompareOptions.IgnoreCase);
         }
 
         internal static bool StartsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
@@ -176,7 +323,7 @@ namespace System
             return CompareInfo.CompareOrdinalIgnoreCase(span.Slice(0, value.Length), value) == 0;
         }
 
-        internal static unsafe bool StartsWithOrdinalHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
+        internal static bool StartsWithOrdinalHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
         {
             Debug.Assert(value.Length != 0);
 
@@ -263,16 +410,16 @@ namespace System
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return EndsWithCultureHelper(span, value);
+                    return EndsWithCultureHelper(span, value, CultureInfo.CurrentCulture.CompareInfo);
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return EndsWithCultureIgnoreCaseHelper(span, value);
+                    return EndsWithCultureIgnoreCaseHelper(span, value, CultureInfo.CurrentCulture.CompareInfo);
 
                 case StringComparison.InvariantCulture:
-                    return EndsWithCultureHelper(span, value, invariantCulture: true);
+                    return EndsWithCultureHelper(span, value, CompareInfo.Invariant);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return EndsWithCultureIgnoreCaseHelper(span, value, invariantCulture: true);
+                    return EndsWithCultureIgnoreCaseHelper(span, value, CompareInfo.Invariant);
 
                 case StringComparison.Ordinal:
                     return EndsWithOrdinalHelper(span, value);
@@ -285,7 +432,7 @@ namespace System
             }
         }
 
-        internal static bool EndsWithCultureHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, bool invariantCulture = false)
+        internal static bool EndsWithCultureHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, CompareInfo compareInfo)
         {
             Debug.Assert(value.Length != 0);
 
@@ -297,12 +444,10 @@ namespace System
             {
                 return false;
             }
-            return invariantCulture ?
-                CompareInfo.Invariant.IsSuffix(span, value, CompareOptions.None) :
-                CultureInfo.CurrentCulture.CompareInfo.IsSuffix(span, value, CompareOptions.None);
+            return compareInfo.IsSuffix(span, value, CompareOptions.None);
         }
 
-        internal static bool EndsWithCultureIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, bool invariantCulture = false)
+        internal static bool EndsWithCultureIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value, CompareInfo compareInfo)
         {
             Debug.Assert(value.Length != 0);
 
@@ -314,9 +459,7 @@ namespace System
             {
                 return false;
             }
-            return invariantCulture ?
-                CompareInfo.Invariant.IsSuffix(span, value, CompareOptions.IgnoreCase) :
-                CultureInfo.CurrentCulture.CompareInfo.IsSuffix(span, value, CompareOptions.IgnoreCase);
+            return compareInfo.IsSuffix(span, value, CompareOptions.IgnoreCase);
         }
 
         internal static bool EndsWithOrdinalIgnoreCaseHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
@@ -330,7 +473,7 @@ namespace System
             return (CompareInfo.CompareOrdinalIgnoreCase(span.Slice(span.Length - value.Length), value) == 0);
         }
 
-        internal static unsafe bool EndsWithOrdinalHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
+        internal static bool EndsWithOrdinalHelper(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
         {
             Debug.Assert(value.Length != 0);
 

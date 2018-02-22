@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -23,6 +24,18 @@ namespace System.Globalization
                     return index + startIndex;
                 }
                 return -1;
+            }
+        }
+
+        internal static unsafe int InvariantIndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase)
+        {
+            Debug.Assert(source.Length != 0);
+            Debug.Assert(value.Length != 0);
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
+            fixed (char* pValue = &MemoryMarshal.GetReference(value))
+            {
+                return InvariantFindString(pSource, source.Length, pValue, value.Length, ignoreCase, start: true);
             }
         }
 
