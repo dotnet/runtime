@@ -12,6 +12,7 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <CLRTestPriority>0</CLRTestPriority>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>
