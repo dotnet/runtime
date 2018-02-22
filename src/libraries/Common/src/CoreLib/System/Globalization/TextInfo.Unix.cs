@@ -81,24 +81,26 @@ namespace System.Globalization
                 {
                     if (IsAsciiCasingSameAsInvariant)
                     {
-                        int length = source.Length;
+                        int length = 0;
                         char* a = pSource, b = pResult;
                         if (toUpper)
                         {
-                            while (length-- != 0 && *a < 0x80)
+                            while (length < source.Length && *a < 0x80)
                             {
                                 *b++ = ToUpperAsciiInvariant(*a++);
+                                length++;
                             }
                         }
                         else
                         {
-                            while (length-- != 0 && *a < 0x80)
+                            while (length < source.Length && *a < 0x80)
                             {
                                 *b++ = ToLowerAsciiInvariant(*a++);
+                                length++;
                             }
                         }
 
-                        if (length != 0)
+                        if (length != source.Length)
                         {
                             ChangeCase(a, source.Length - length, b, destination.Length - length, toUpper);
                         }
