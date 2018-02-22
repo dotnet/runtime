@@ -1699,7 +1699,7 @@ void
 mono_runtime_unhandled_exception_policy_set (MonoRuntimeUnhandledExceptionPolicy policy);
 
 void
-mono_unhandled_exception_checked (MonoObjectHandle exc, gboolean fatal, MonoError *error);
+mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error);
 
 MonoVTable *
 mono_class_try_get_vtable (MonoDomain *domain, MonoClass *klass);

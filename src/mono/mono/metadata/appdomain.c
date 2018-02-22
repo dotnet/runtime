@@ -2345,15 +2345,7 @@ void
 ves_icall_System_AppDomain_DoUnhandledException (MonoExceptionHandle exc, MonoError *error)
 {
 	error_init (error);
-	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), TRUE, error);
-	mono_error_assert_ok (error);
-}
-
-void
-ves_icall_System_AppDomain_NonFatalUnhandledException (MonoExceptionHandle exc, MonoError *error)
-{
-	error_init (error);
-	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), FALSE, error);
+	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), error);
 	mono_error_assert_ok (error);
 }
 
@@ -2795,7 +2787,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	thread_data->refcount = 2; /*Must be 2: unload thread + initiator */
 
 	/*The managed callback finished successfully, now we start tearing down the appdomain*/
-	mono_domain_set_state (domain, MONO_APPDOMAIN_UNLOADING);
+	domain->state = MONO_APPDOMAIN_UNLOADING;
 	/* 
 	 * First we create a separate thread for unloading, since
 	 * we might have to abort some threads, including the current one.
