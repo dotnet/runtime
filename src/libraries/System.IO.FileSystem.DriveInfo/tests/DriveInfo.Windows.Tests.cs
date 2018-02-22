@@ -16,6 +16,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 {
     public class DriveInfoWindowsTests
     {
+        [ActiveIssue(27357)]
         [Theory]
         [InlineData(":", null)]
         [InlineData("://", null)]
