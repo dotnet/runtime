@@ -1013,11 +1013,11 @@ namespace Span
         }
         #endregion
 
-        #region TestSpanAsReadOnlySpanStringChar<T>
+        #region TestSpanAsSpanStringChar<T>
 
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(100)]
-        public static void TestSpanAsReadOnlySpanStringCharWrapper(int length)
+        public static void TestSpanAsSpanStringCharWrapper(int length)
         {
             StringBuilder sb = new StringBuilder();
             Random rand = new Random(42);
@@ -1029,22 +1029,22 @@ namespace Span
             }
             string s = sb.ToString();
 
-            Invoke((int innerIterationCount) => TestSpanAsReadOnlySpanStringChar(s, innerIterationCount, false),
-                "TestSpanAsReadOnlySpanStringChar({0})", length);
+            Invoke((int innerIterationCount) => TestSpanAsSpanStringChar(s, innerIterationCount, false),
+                "TestSpanAsSpanStringChar({0})", length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestSpanAsReadOnlySpanStringChar(string s, int iterationCount, bool untrue)
+        static void TestSpanAsSpanStringChar(string s, int iterationCount, bool untrue)
         {
             var sink = Sink<char>.Instance;
 
             for (int i = 0; i < iterationCount; i++)
             {
-                var charSpan = s.AsReadOnlySpan();
+                var charSpan = s.AsSpan();
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'charSpan' to make sure it's not dead, and an assignment
                 // to 's' so the AsBytes call won't get hoisted.
-                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to AsReadOnlySpan()"; }
+                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to AsSpan()"; }
             }
         }
 
