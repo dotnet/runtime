@@ -871,7 +871,7 @@ namespace Microsoft.Win32
         }
 
         /// <devdoc>
-        ///     Executes the given delegate on the thread that listens for system events.  Similar to Control.Invoke().
+        ///     Executes the given delegate asynchronously on the thread that listens for system events.  Similar to Control.BeginInvoke().
         /// </devdoc>
         public static void InvokeOnEventsThread(Delegate method)
         {
