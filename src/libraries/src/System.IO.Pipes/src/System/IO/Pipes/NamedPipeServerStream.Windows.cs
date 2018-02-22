@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using System.Security;
-using System.Security.Permissions;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
 {
@@ -39,6 +39,25 @@ namespace System.IO.Pipes
                 throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
             }
 
+            PipeSecurity pipeSecurity = null;
+
+            if (IsCurrentUserOnly)
+            {
+                using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
+                {
+                    SecurityIdentifier identifier = currentIdentity.Owner;
+                    PipeAccessRule rule = new PipeAccessRule(identifier, PipeAccessRights.ReadWrite, AccessControlType.Allow);
+                    pipeSecurity = new PipeSecurity();
+
+                    pipeSecurity.AddAccessRule(rule);
+                    pipeSecurity.SetOwner(identifier);
+                }
+
+                // PipeOptions.CurrentUserOnly is special since it doesn't match directly to a corresponding Win32 valid flag.
+                // Remove it, while keeping others untouched since historically this has been used as a way to pass flags to CreateNamedPipe
+                // that were not defined in the enumeration.
+                options &= ~PipeOptions.CurrentUserOnly;
+            }
 
             int openMode = ((int)direction) |
                            (maxNumberOfServerInstances == 1 ? Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE : 0) |
@@ -53,16 +72,27 @@ namespace System.IO.Pipes
                 maxNumberOfServerInstances = 255;
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability);
-            SafePipeHandle handle = Interop.Kernel32.CreateNamedPipe(fullPipeName, openMode, pipeModes,
-                maxNumberOfServerInstances, outBufferSize, inBufferSize, 0, ref secAttrs);
-
-            if (handle.IsInvalid)
+            var pinningHandle = new GCHandle();
+            try
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
-            }
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
+                SafePipeHandle handle = Interop.Kernel32.CreateNamedPipe(fullPipeName, openMode, pipeModes,
+                    maxNumberOfServerInstances, outBufferSize, inBufferSize, 0, ref secAttrs);
 
-            InitializeHandle(handle, false, (options & PipeOptions.Asynchronous) != 0);
+                if (handle.IsInvalid)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                }
+
+                InitializeHandle(handle, false, (options & PipeOptions.Asynchronous) != 0);
+            }
+            finally
+            {
+                if (pinningHandle.IsAllocated)
+                {
+                    pinningHandle.Free();
+                }
+            }
         }
 
         // This will wait until the client calls Connect().  If we return from this method, we guarantee that

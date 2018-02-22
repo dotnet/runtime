@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +29,7 @@ namespace System.IO.Pipes
         /// <summary>Prefix to prepend to all pipe names.</summary>
         private static readonly string s_pipePrefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
 
-        internal static string GetPipePath(string serverName, string pipeName)
+        internal static string GetPipePath(string serverName, string pipeName, bool isCurrentUserOnly)
         {
             if (serverName != "." && serverName != Interop.Sys.GetHostName())
             {
@@ -58,6 +59,18 @@ namespace System.IO.Pipes
             // naming scheme used as that breaks the ability for code running on an older
             // runtime to connect to code running on the newer runtime.  That means we're stuck
             // with a tmp file for the lifetime of the server stream.
+            if (isCurrentUserOnly)
+            {
+                string directory = Path.Combine(Path.GetTempPath(), ".NET" + Interop.Sys.GetEUid());
+                Directory.CreateDirectory(directory);
+                if (Interop.Sys.ChMod(directory, (int)Interop.Sys.Permissions.S_IRWXU) == -1)
+                {
+                    throw CreateExceptionForLastError();
+                }
+
+                return Path.Combine(directory, s_pipePrefix + pipeName);
+            }
+
             return s_pipePrefix + pipeName;
         }
 
@@ -472,6 +485,14 @@ namespace System.IO.Pipes
                     s.Shutdown(SocketShutdown.Receive);
                     break;
             }
+        }
+
+        internal static Exception CreateExceptionForLastError(string pipeName = null)
+        {
+            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+            return error.Error == Interop.Error.ENOTSUP ?
+                new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_OperatingSystemError, nameof(Interop.Error.ENOTSUP))) :
+                Interop.GetExceptionForIoErrno(error, pipeName);
         }
     }
 }

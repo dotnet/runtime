@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.IO.Pipes.AccessControl.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Pipes.AccessControl.csproj" />
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
@@ -11,6 +11,10 @@
       <SupportedFramework>netcore50</SupportedFramework>
     </HarvestIncludePaths>
     <HarvestIncludePaths Include="runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
+    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <File Include="$(PlaceHolderFile)">  
+      <TargetPath>runtimes/win/lib/$(UAPvNextTFM)</TargetPath>  
+    </File>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
