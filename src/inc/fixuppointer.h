@@ -319,6 +319,14 @@ public:
         return FALSE;
     }
 
+    // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
+    // Ignores isIndirect and offset values.
+    FORCEINLINE BOOL IsTaggedIndirect(TADDR base, bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsTagged(base);
+    }
+
 #ifndef DACCESS_COMPILE
     // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
     // Does not need explicit base and thus can be used in non-DAC builds only.
@@ -358,6 +366,14 @@ public:
         return dac_cast<DPTR(RelativeFixupPointer<PTR_TYPE>)>(base)->GetValue(base);
     }
 
+    // Static version of GetValue. It is meant to simplify access to arrays of pointers.
+    // Ignores isIndirect and offset values.
+    FORCEINLINE static PTR_TYPE GetValueAtPtrIndirect(TADDR base, bool isIndirect, intptr_t offset)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetValueAtPtr(base);
+    }
+
     // Returns value of the encoded pointer. The pointer can be NULL.
     PTR_TYPE GetValueMaybeNull(TADDR base) const
     {
@@ -391,6 +407,14 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return dac_cast<DPTR(RelativeFixupPointer<PTR_TYPE>)>(base)->GetValueMaybeNull(base);
+    }
+
+    // Static version of GetValueMaybeNull. It is meant to simplify access to arrays of pointers.
+    // Ignores isIndirect and offset values.
+    FORCEINLINE static PTR_TYPE GetValueMaybeNullAtPtrIndirect(TADDR base, bool isIndirect, intptr_t offset)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetValueMaybeNullAtPtr(base);
     }
 
 #ifndef DACCESS_COMPILE
@@ -429,6 +453,14 @@ public:
         _ASSERTE((addr & FIXUP_POINTER_INDIRECTION) != 0);
         return (PTR_TYPE *)(addr - FIXUP_POINTER_INDIRECTION);
     }
+
+    // Returns the pointer to the indirection cell.
+    // Ignores isIndirect and offset values.
+    PTR_TYPE * GetValuePtrIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetValuePtr();
+    }
 #endif // !DACCESS_COMPILE
 
     // Returns value of the encoded pointer. Assumes that the pointer is not NULL. 
@@ -462,6 +494,14 @@ public:
         LIMITED_METHOD_CONTRACT;
         return IsIndirectPtr((TADDR)this);
     }
+
+    // Returns whether pointer is indirect. Assumes that the value is not NULL.
+    // Ignores isIndirect and offset values.
+    bool IsIndirectPtrIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsIndirectPtr();
+    }
 #endif
 
     // Returns whether pointer is indirect. The value can be NULL.
@@ -482,6 +522,14 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return IsIndirectPtrMaybeNull((TADDR)this);
+    }
+
+    // Returns whether pointer is indirect. The value can be NULL.
+    // Ignores isIndirect and offset values.
+    bool IsIndirectPtrMaybeNullIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsIndirectPtrMaybeNull();
     }
 #endif
 
@@ -765,6 +813,130 @@ private:
     INT32 m_delta;
 };
 
+//----------------------------------------------------------------------------
+// IndirectPointer is pointer with optional indirection, similar to FixupPointer and RelativeFixupPointer.
+//
+// In comparison to FixupPointer, IndirectPointer's indirection is handled from outside by isIndirect flag.
+// In comparison to RelativeFixupPointer, IndirectPointer's offset is a constant,
+// while RelativeFixupPointer's offset is an address.
+//
+// IndirectPointer can contain NULL only if it is not indirect.
+//
+template<typename PTR_TYPE>
+class IndirectPointer
+{
+public:
+
+    static constexpr bool isRelative = false;
+    typedef PTR_TYPE type;
+
+    // Returns whether the encoded pointer is NULL.
+    BOOL IsNull() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_addr == (TADDR)NULL;
+    }
+
+    // Returns whether the indirection cell contain fixup that has not been converted to real pointer yet.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    FORCEINLINE BOOL IsTaggedIndirect(TADDR base, bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        TADDR addr = m_addr;
+        if (isIndirect)
+        {
+            _ASSERTE(!IsNull());
+            return (*PTR_TADDR(addr + offset) & 1) != 0;
+        }
+        return FALSE;
+    }
+
+    // Returns value of the encoded pointer.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    FORCEINLINE PTR_TYPE GetValueIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        TADDR addr = m_addr;
+        if (isIndirect)
+        {
+            _ASSERTE(!IsNull());
+            addr = *PTR_TADDR(addr + offset);
+        }
+        return dac_cast<PTR_TYPE>(addr);
+    }
+
+#ifndef DACCESS_COMPILE
+    // Returns the pointer to the indirection cell.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    PTR_TYPE * GetValuePtrIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        TADDR addr = m_addr;
+        if (isIndirect)
+        {
+            _ASSERTE(!IsNull());
+            return (PTR_TYPE *)(addr + offset);
+        }
+        return (PTR_TYPE *)&m_addr;
+    }
+#endif // !DACCESS_COMPILE
+
+    // Static version of GetValue. It is meant to simplify access to arrays of pointers.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    FORCEINLINE static PTR_TYPE GetValueAtPtrIndirect(TADDR base, bool isIndirect, intptr_t offset)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<DPTR(IndirectPointer<PTR_TYPE>)>(base)->GetValueIndirect(isIndirect, offset);
+    }
+
+    // Static version of GetValueMaybeNull. It is meant to simplify access to arrays of pointers.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    FORCEINLINE static PTR_TYPE GetValueMaybeNullAtPtrIndirect(TADDR base, bool isIndirect, intptr_t offset)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetValueAtPtrIndirect(base, isIndirect, offset);
+    }
+
+#ifndef DACCESS_COMPILE
+    // Returns whether pointer is indirect. Assumes that the value is not NULL.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    bool IsIndirectPtrIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (isIndirect)
+            _ASSERTE(!IsNull());
+        return isIndirect;
+    }
+
+    // Returns whether pointer is indirect. The value can be NULL.
+    // Uses isIndirect to identify, whether pointer is indirect or not. If it is, uses offset.
+    bool IsIndirectPtrMaybeNullIndirect(bool isIndirect, intptr_t offset) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return IsIndirectPtrIndirect(isIndirect, offset);
+    }
+#endif // !DACCESS_COMPILE
+
+#ifndef DACCESS_COMPILE
+    // Set encoded value of the pointer. Assumes that the value is not NULL.
+    void SetValue(PTR_TYPE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_addr = dac_cast<TADDR>(addr);
+    }
+
+    // Set encoded value of the pointer. The value can be NULL.
+    void SetValueMaybeNull(PTR_TYPE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetValue(addr);
+    }
+#endif // !DACCESS_COMPILE
+
+private:
+    TADDR m_addr;
+};
+
 template<bool isMaybeNull, typename T, typename PT>
 typename PT::type
 ReadPointer(const T *base, const PT T::* pPointerFieldMember)
@@ -783,6 +955,24 @@ ReadPointer(const T *base, const PT T::* pPointerFieldMember)
     }
 }
 
+template<bool isMaybeNull, typename T, typename PT>
+typename PT::type
+ReadPointer(const T *base, const PT T::* pPointerFieldMember, bool isIndirect)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    uintptr_t offset = (uintptr_t) &(base->*pPointerFieldMember) - (uintptr_t) base;
+
+    if (isMaybeNull)
+    {
+        return PT::GetValueMaybeNullAtPtrIndirect(dac_cast<TADDR>(base) + offset, isIndirect, offset);
+    }
+    else
+    {
+        return PT::GetValueAtPtrIndirect(dac_cast<TADDR>(base) + offset, isIndirect, offset);
+    }
+}
+
 template<typename T, typename PT>
 typename PT::type
 ReadPointerMaybeNull(const T *base, const PT T::* pPointerFieldMember)
@@ -794,11 +984,29 @@ ReadPointerMaybeNull(const T *base, const PT T::* pPointerFieldMember)
 
 template<typename T, typename PT>
 typename PT::type
+ReadPointerMaybeNull(const T *base, const PT T::* pPointerFieldMember, bool isIndirect)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<true>(base, pPointerFieldMember, isIndirect);
+}
+
+template<typename T, typename PT>
+typename PT::type
 ReadPointer(const T *base, const PT T::* pPointerFieldMember)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return ReadPointer<false>(base, pPointerFieldMember);
+}
+
+template<typename T, typename PT>
+typename PT::type
+ReadPointer(const T *base, const PT T::* pPointerFieldMember, bool isIndirect)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<false>(base, pPointerFieldMember, isIndirect);
 }
 
 template<bool isMaybeNull, typename T, typename C, typename PT>
