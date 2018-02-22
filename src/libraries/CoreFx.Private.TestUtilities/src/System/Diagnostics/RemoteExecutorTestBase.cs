@@ -209,7 +209,8 @@ namespace System.Diagnostics
 
             private void Dispose(bool disposing)
             {
-                Assert.True(disposing, $"A test {AssemblyName}!{ClassName}.{MethodName} forgot to Dispose() the result of RemoteInvoke()");
+                // https://github.com/dotnet/corefx/issues/27366
+                // Assert.True(disposing, $"A test {AssemblyName}!{ClassName}.{MethodName} forgot to Dispose() the result of RemoteInvoke()");
 
                 if (Process != null)
                 {
