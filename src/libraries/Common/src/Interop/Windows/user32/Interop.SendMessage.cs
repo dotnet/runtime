@@ -9,10 +9,10 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, EntryPoint = "PostMessageW")]
-        public static extern int PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        [DllImport(Libraries.User32, CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
-        [DllImport(Libraries.User32, EntryPoint = "PostMessageW")]
-        public static extern int PostMessage(HandleRef hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        [DllImport(Libraries.User32, CharSet = CharSet.Auto)]
+        public static extern IntPtr SendMessage(HandleRef hWnd, int msg, IntPtr wParam, IntPtr lParam);
     }
 }

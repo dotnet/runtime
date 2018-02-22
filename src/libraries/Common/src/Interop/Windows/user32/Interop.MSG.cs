@@ -9,10 +9,15 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, EntryPoint = "PostMessageW")]
-        public static extern int PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
-
-        [DllImport(Libraries.User32, EntryPoint = "PostMessageW")]
-        public static extern int PostMessage(HandleRef hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MSG {
+            public IntPtr   hwnd;
+            public int      message;
+            public IntPtr   wParam;
+            public IntPtr   lParam;
+            public int      time;
+            public int      pt_x;
+            public int      pt_y;
+        }
     }
 }
