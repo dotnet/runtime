@@ -43,6 +43,12 @@ static bool genIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsi
     return tableDrivenCategory && tableDrivenFlag;
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsic: Generates the code for a given hardware intrinsic node.
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic      intrinsicID = node->gtHWIntrinsicId;
@@ -290,6 +296,14 @@ void CodeGen::genHWIntrinsic_FullRangeImm8(GenTreeHWIntrinsic* node, instruction
     }
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_R_RM: Generates the code for a hardware intrinsic node that takes a register operand, a
+//                        register/memory operand, and that returns a value in register
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//    ins  - The instruction being generated
+//
 void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
 {
     var_types targetType = node->TypeGet();
@@ -405,6 +419,14 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_R_RM_I: Generates the code for a hardware intrinsic node that takes a register operand, a
+//                        register/memory operand, an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//    ins  - The instruction being generated
+//
 void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
 {
     var_types targetType = node->TypeGet();
@@ -522,6 +544,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// genSSEIntrinsic: Generates the code for an SSE hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -745,6 +773,12 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genSSE2Intrinsic: Generates the code for an SSE2 hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -994,11 +1028,23 @@ void CodeGen::genSSSE3Intrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genSSE41Intrinsic: Generates the code for an SSE4.1 hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
 {
     NYI("Implement SSE41 intrinsic code generation");
 }
 
+//------------------------------------------------------------------------
+// genSSE42Intrinsic: Generates the code for an SSE4.2 hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -1041,6 +1087,12 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genAVXIntrinsic: Generates the code for an AVX hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -1059,6 +1111,12 @@ void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genAVX2Intrinsic: Generates the code for an AVX2 hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -1077,26 +1135,56 @@ void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genAESIntrinsic: Generates the code for an AES hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genAESIntrinsic(GenTreeHWIntrinsic* node)
 {
     NYI("Implement AES intrinsic code generation");
 }
 
+//------------------------------------------------------------------------
+// genBMI1Intrinsic: Generates the code for a BMI1 hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
 {
     NYI("Implement BMI1 intrinsic code generation");
 }
 
+//------------------------------------------------------------------------
+// genBMI2Intrinsic: Generates the code for a BMI2 hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genBMI2Intrinsic(GenTreeHWIntrinsic* node)
 {
     NYI("Implement BMI2 intrinsic code generation");
 }
 
+//------------------------------------------------------------------------
+// genFMAIntrinsic: Generates the code for an FMA hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 {
     NYI("Implement FMA intrinsic code generation");
 }
 
+//------------------------------------------------------------------------
+// genLZCNTIntrinsic: Generates the code for a LZCNT hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
@@ -1114,11 +1202,23 @@ void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
+//------------------------------------------------------------------------
+// genPCLMULQDQIntrinsic: Generates the code for a PCLMULQDQ hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node)
 {
     NYI("Implement PCLMULQDQ intrinsic code generation");
 }
 
+//------------------------------------------------------------------------
+// genPOPCNTIntrinsic: Generates the code for a POPCNT hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
 void CodeGen::genPOPCNTIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
