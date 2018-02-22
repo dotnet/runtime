@@ -13,7 +13,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public static TheoryData WindowsInvalidUnixValid = new TheoryData<string> { "         ", " ", "\n", ">", "<", "\t" };
+        public static TheoryData WindowsInvalidUnixValid = new TheoryData<string> { "         ",  };
         public virtual void Copy(string source, string dest)
         {
             File.Copy(source, dest);
@@ -160,10 +160,11 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Theory, 
-            MemberData(nameof(WindowsInvalidUnixValid))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace path throws ArgumentException
-        public void WindowsWhitespacePath(string invalid)
+        [Theory,
+            InlineData("         "),
+            InlineData(" ")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsAllSpacePath(string invalid)
         {
             string testFile = GetTestFilePath();
             File.Create(testFile).Dispose();
@@ -173,10 +174,49 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace path allowed
-        public void UnixWhitespacePath(string valid)
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void WindowsInvalidCharsPath_Desktop(string invalid)
         {
+            string testFile = GetTestFilePath();
+            File.Create(testFile).Dispose();
+
+            Assert.Throws<ArgumentException>(() => Copy(testFile, invalid));
+            Assert.Throws<ArgumentException>(() => Copy(invalid, testFile));
+        }
+
+        [ActiveIssue(27269)]
+        [Theory,
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsInvalidCharsPath_Core(string invalid)
+        {
+            string testFile = GetTestFilePath();
+            File.Create(testFile).Dispose();
+
+            Assert.Throws<IOException>(() => Copy(testFile, invalid));
+            Assert.Throws<IOException>(() => Copy(invalid, testFile));
+        }
+
+        [Theory,
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixInvalidWindowsPaths(string valid)
+        {
+            // Unix allows whitespaces paths that aren't valid on Windows
             string testFile = GetTestFilePath();
             File.Create(testFile).Dispose();
 

@@ -242,13 +242,26 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Wild characters in path, wild chars are normal chars on Unix
-        public void WindowsWildCharacterPath()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void WindowsWildCharacterPath_Desktop()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
             Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*"));
             Assert.Throws<ArgumentException>(() => Move(TestDirectory, "Test*t"));
             Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*Test"));
+        }
+
+        [ActiveIssue(27269)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsWildCharacterPath_Core()
+        {
+            Assert.ThrowsAny<IOException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
+            Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*")));
+            Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "Test*t")));
+            Assert.ThrowsAny<IOException>(() => Move(TestDirectory, Path.Combine(TestDirectory, "*Test")));
         }
 
         [Fact]
@@ -278,17 +291,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace path causes ArgumentException
-        public void WindowsWhitespacePath()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsEmptyPath()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "         "));
-            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\n"));
             Assert.Throws<ArgumentException>(() => Move(testDir.FullName, ""));
-            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, ">"));
-            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "<"));
             Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\0"));
-            Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\t"));
         }
 
         [Fact]
