@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,17 +18,12 @@ namespace System.Net.Http
 
             public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken ignored) // token ignored as it comes from SendAsync
             {
-                if (_connection._currentRequest == null)
-                {
-                    // Avoid sending anything if the response has already completed, in which case there's no point
-                    // sending further data (this might happen, for example, on a redirect.)
-                    return Task.CompletedTask;
-                }
+                Debug.Assert(_connection._currentRequest != null);
 
                 // Have the connection write the data, skipping the buffer. Importantly, this will
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
-                return _connection.WriteWithoutBufferingAsync(source);
+                return _connection.WriteAsync(source);
             }
 
             public override Task FinishAsync()

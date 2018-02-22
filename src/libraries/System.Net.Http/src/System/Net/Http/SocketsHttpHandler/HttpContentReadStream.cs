@@ -19,6 +19,11 @@ namespace System.Net.Http
         public sealed override bool CanWrite => false;
 
         public sealed override void Flush() { }
+        public sealed override Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
+
         public sealed override void WriteByte(byte value) => throw new NotSupportedException();
         public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         public sealed override void Write(ReadOnlySpan<byte> source) => throw new NotSupportedException();
