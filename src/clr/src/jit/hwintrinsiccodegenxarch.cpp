@@ -244,7 +244,7 @@ void CodeGen::genHWIntrinsic_FullRangeImm8(GenTreeHWIntrinsic* node, instruction
     else
     {
         // We emit a fallback case for the scenario when op3 is not a constant. This should normally
-        // happen when the intrinsic is called indirectly, such as via Reflection. However, it can
+        // only happen when the intrinsic is called indirectly, such as via Reflection. However, it can
         // also occur if the consumer calls it directly and just doesn't pass a constant value.
 
         const unsigned jmpCount = 256;

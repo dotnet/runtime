@@ -2406,6 +2406,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             default:
+                // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
+                // handled.
+                //                https://github.com/dotnet/coreclr/issues/16497
                 break;
         }
     }
@@ -2426,6 +2429,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             default:
+                // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
+                // handled.
+                //                https://github.com/dotnet/coreclr/issues/16497
                 break;
         }
     }
