@@ -194,110 +194,120 @@ namespace System.Net.Http
             {
                 Debug.Assert(maxBytesToRead > 0);
 
-                ReadOnlySpan<byte> currentLine;
-                switch (_state)
+                try
                 {
-                    case ParsingState.ExpectChunkHeader:
-                        Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
+                    ReadOnlySpan<byte> currentLine;
+                    switch (_state)
+                    {
+                        case ParsingState.ExpectChunkHeader:
+                            Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                        // Read the chunk header line.
-                        _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                        if (!_connection.TryReadNextLine(out currentLine))
-                        {
-                            // Could not get a whole line, so we can't parse the chunk header.
-                            return default;
-                        }
-
-                        // Parse the hex value from it.
-                        if (!Utf8Parser.TryParse(currentLine, out ulong chunkSize, out int bytesConsumed, 'X'))
-                        {
-                            throw new IOException(SR.net_http_invalid_response);
-                        }
-                        _chunkBytesRemaining = chunkSize;
-
-                        // If there's a chunk extension after the chunk size, validate it.
-                        if (bytesConsumed != currentLine.Length)
-                        {
-                            ValidateChunkExtension(currentLine.Slice(bytesConsumed));
-                        }
-
-                        // Proceed to handle the chunk.  If there's data in it, go read it.
-                        // Otherwise, finish handling the response.
-                        if (chunkSize > 0)
-                        {
-                            _state = ParsingState.ExpectChunkData;
-                            goto case ParsingState.ExpectChunkData;
-                        }
-                        else
-                        {
-                            _state = ParsingState.ConsumeTrailers;
-                            goto case ParsingState.ConsumeTrailers;
-                        }
-
-                    case ParsingState.ExpectChunkData:
-                        Debug.Assert(_chunkBytesRemaining > 0);
-
-                        ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
-                        if (connectionBuffer.Length == 0)
-                        {
-                            return default;
-                        }
-
-                        int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _chunkBytesRemaining));
-                        Debug.Assert(bytesToConsume > 0);
-
-                        _connection.ConsumeFromRemainingBuffer(bytesToConsume);
-                        _chunkBytesRemaining -= (ulong)bytesToConsume;
-                        if (_chunkBytesRemaining == 0)
-                        {
-                            _state = ParsingState.ExpectChunkTerminator;
-                        }
-
-                        return connectionBuffer.Slice(0, bytesToConsume);
-
-                    case ParsingState.ExpectChunkTerminator:
-                        Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
-
-                        _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                        if (!_connection.TryReadNextLine(out currentLine))
-                        {
-                            return default;
-                        }
-
-                        if (currentLine.Length != 0)
-                        {
-                            ThrowInvalidHttpResponse();
-                        }
-
-                        _state = ParsingState.ExpectChunkHeader;
-                        goto case ParsingState.ExpectChunkHeader;
-
-                    case ParsingState.ConsumeTrailers:
-                        Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
-
-                        while (true)
-                        {
-                            _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
+                            // Read the chunk header line.
+                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
                             if (!_connection.TryReadNextLine(out currentLine))
                             {
-                                break;
+                                // Could not get a whole line, so we can't parse the chunk header.
+                                return default;
                             }
 
-                            if (currentLine.IsEmpty)
+                            // Parse the hex value from it.
+                            if (!Utf8Parser.TryParse(currentLine, out ulong chunkSize, out int bytesConsumed, 'X'))
                             {
-                                _state = ParsingState.Done;
-                                _connection.ReturnConnectionToPool();
-                                _connection = null;
-                                break;
+                                throw new IOException(SR.net_http_invalid_response);
                             }
-                        }
+                            _chunkBytesRemaining = chunkSize;
 
-                        return default;
+                            // If there's a chunk extension after the chunk size, validate it.
+                            if (bytesConsumed != currentLine.Length)
+                            {
+                                ValidateChunkExtension(currentLine.Slice(bytesConsumed));
+                            }
 
-                    default:
-                    case ParsingState.Done: // shouldn't be called once we're done
-                        Debug.Fail($"Unexpected state: {_state}");
-                        return default;
+                            // Proceed to handle the chunk.  If there's data in it, go read it.
+                            // Otherwise, finish handling the response.
+                            if (chunkSize > 0)
+                            {
+                                _state = ParsingState.ExpectChunkData;
+                                goto case ParsingState.ExpectChunkData;
+                            }
+                            else
+                            {
+                                _state = ParsingState.ConsumeTrailers;
+                                goto case ParsingState.ConsumeTrailers;
+                            }
+
+                        case ParsingState.ExpectChunkData:
+                            Debug.Assert(_chunkBytesRemaining > 0);
+
+                            ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
+                            if (connectionBuffer.Length == 0)
+                            {
+                                return default;
+                            }
+
+                            int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _chunkBytesRemaining));
+                            Debug.Assert(bytesToConsume > 0);
+
+                            _connection.ConsumeFromRemainingBuffer(bytesToConsume);
+                            _chunkBytesRemaining -= (ulong)bytesToConsume;
+                            if (_chunkBytesRemaining == 0)
+                            {
+                                _state = ParsingState.ExpectChunkTerminator;
+                            }
+
+                            return connectionBuffer.Slice(0, bytesToConsume);
+
+                        case ParsingState.ExpectChunkTerminator:
+                            Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
+
+                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
+                            if (!_connection.TryReadNextLine(out currentLine))
+                            {
+                                return default;
+                            }
+
+                            if (currentLine.Length != 0)
+                            {
+                                ThrowInvalidHttpResponse();
+                            }
+
+                            _state = ParsingState.ExpectChunkHeader;
+                            goto case ParsingState.ExpectChunkHeader;
+
+                        case ParsingState.ConsumeTrailers:
+                            Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
+
+                            while (true)
+                            {
+                                _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
+                                if (!_connection.TryReadNextLine(out currentLine))
+                                {
+                                    break;
+                                }
+
+                                if (currentLine.IsEmpty)
+                                {
+                                    _state = ParsingState.Done;
+                                    _connection.ReturnConnectionToPool();
+                                    _connection = null;
+                                    break;
+                                }
+                            }
+
+                            return default;
+
+                        default:
+                        case ParsingState.Done: // shouldn't be called once we're done
+                            Debug.Fail($"Unexpected state: {_state}");
+                            return default;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ensure we don't try to read from the connection again (in particular, for draining)
+                    _connection.Dispose();
+                    _connection = null;
+                    throw;
                 }
             }
 
@@ -326,6 +336,41 @@ namespace System.Net.Http
                 ExpectChunkTerminator,
                 ConsumeTrailers,
                 Done
+            }
+
+            public override bool NeedsDrain => (_connection != null);
+
+            public override async Task<bool> DrainAsync(int maxDrainBytes)
+            {
+                Debug.Assert(_connection != null);
+
+                int drainedBytes = 0;
+                while (true)
+                {
+                    drainedBytes += _connection.RemainingBuffer.Length;
+                    while (true)
+                    {
+                        ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue);
+                        if (bytesRead.Length == 0)
+                        {
+                            break;
+                        }
+                    }
+
+                    // When ReadChunkFromConnectionBuffer reads the final chunk, it will clear out _connection
+                    // and return the connection to the pool.
+                    if (_connection == null)
+                    {
+                        return true;
+                    }
+
+                    if (drainedBytes >= maxDrainBytes)
+                    {
+                        return false;
+                    }
+
+                    await _connection.FillAsync().ConfigureAwait(false);
+                }
             }
         }
     }

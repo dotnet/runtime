@@ -133,6 +133,58 @@ namespace System.Net.Http
                 _connection.ReturnConnectionToPool();
                 _connection = null;
             }
+
+            // Based on ReadChunkFromConnectionBuffer; perhaps we should refactor into a common routine.
+            private ReadOnlyMemory<byte> ReadFromConnectionBuffer(int maxBytesToRead)
+            {
+                Debug.Assert(maxBytesToRead > 0);
+                Debug.Assert(_contentBytesRemaining > 0);
+
+                ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
+                if (connectionBuffer.Length == 0)
+                {
+                    return default;
+                }
+
+                int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _contentBytesRemaining));
+                Debug.Assert(bytesToConsume > 0);
+
+                _connection.ConsumeFromRemainingBuffer(bytesToConsume);
+                _contentBytesRemaining -= (ulong)bytesToConsume;
+
+                return connectionBuffer.Slice(0, bytesToConsume);
+            }
+
+            public override bool NeedsDrain => (_connection != null);
+
+            public override async Task<bool> DrainAsync(int maxDrainBytes)
+            {
+                Debug.Assert(_connection != null);
+                Debug.Assert(_contentBytesRemaining > 0);
+
+                ReadFromConnectionBuffer(int.MaxValue);
+                if (_contentBytesRemaining == 0)
+                {
+                    Finish();
+                    return true;
+                }
+
+                if (_contentBytesRemaining > (ulong)maxDrainBytes)
+                {
+                    return false;
+                }
+
+                while (true)
+                {
+                    await _connection.FillAsync().ConfigureAwait(false);
+                    ReadFromConnectionBuffer(int.MaxValue);
+                    if (_contentBytesRemaining == 0)
+                    {
+                        Finish();
+                        return true;
+                    }
+                }
+            }
         }
     }
 }
