@@ -46,7 +46,7 @@
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
-  
+
   <Import Project="dependencies.props" />
 
   <PropertyGroup Condition="'$(DotNetBuildOffline)' != 'true'">
@@ -55,7 +55,6 @@
       $(OverridePackageSource);
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
       https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
-      https://dotnet.myget.org/F/cli-deps/api/v3/index.json;
       https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
       https://www.myget.org/F/nugetbuild/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
@@ -416,11 +415,11 @@
     <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
-    <!-- Runtime Deb and Rpm packages are distro version agnostic --> 
+    <!-- Runtime Deb and Rpm packages are distro version agnostic -->
     <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
-    
+
     <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
   </PropertyGroup>
 
