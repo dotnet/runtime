@@ -11,8 +11,6 @@ using System.Diagnostics.Contracts;
 using System.Threading;
 using Microsoft.Internal;
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(destination: typeof(System.Lazy<,>))]
-
 namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CompositionContainer : ExportProvider, ICompositionService, IDisposable
