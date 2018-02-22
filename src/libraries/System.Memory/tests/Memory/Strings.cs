@@ -22,7 +22,7 @@ namespace System.MemoryTests
         [MemberData(nameof(StringInputs))]
         public static void Memory_ToArray_Roundtrips(string input)
         {
-            ReadOnlyMemory<char> readonlyMemory = input.AsReadOnlyMemory();
+            ReadOnlyMemory<char> readonlyMemory = input.AsMemory();
             Memory<char> m = MemoryMarshal.AsMemory(readonlyMemory);
             Assert.Equal(input, new string(m.ToArray()));
         }
@@ -31,7 +31,7 @@ namespace System.MemoryTests
         [MemberData(nameof(StringInputs))]
         public static void Memory_Span_Roundtrips(string input)
         {
-            ReadOnlyMemory<char> readonlyMemory = input.AsReadOnlyMemory();
+            ReadOnlyMemory<char> readonlyMemory = input.AsMemory();
             Memory<char> m = MemoryMarshal.AsMemory(readonlyMemory);
             ReadOnlySpan<char> s = m.Span;
             Assert.Equal(input, new string(s.ToArray()));
@@ -49,7 +49,7 @@ namespace System.MemoryTests
         [InlineData("0123456789", 5, 3)]
         public static void Memory_Slice_MatchesSubstring(string input, int offset, int count)
         {
-            ReadOnlyMemory<char> readonlyMemory = input.AsReadOnlyMemory();
+            ReadOnlyMemory<char> readonlyMemory = input.AsMemory();
             Memory<char> m = MemoryMarshal.AsMemory(readonlyMemory);
             Assert.Equal(input.Substring(offset, count), new string(m.Slice(offset, count).ToArray()));
             Assert.Equal(input.Substring(offset, count), new string(m.Slice(offset, count).Span.ToArray()));
@@ -60,7 +60,7 @@ namespace System.MemoryTests
         public static unsafe void Memory_Retain_ExpectedPointerValue()
         {
             string input = "0123456789";
-            ReadOnlyMemory<char> readonlyMemory = input.AsReadOnlyMemory();
+            ReadOnlyMemory<char> readonlyMemory = input.AsMemory();
             Memory<char> m = MemoryMarshal.AsMemory(readonlyMemory);
 
             using (MemoryHandle h = m.Retain(pin: false))
@@ -81,8 +81,8 @@ namespace System.MemoryTests
         [Fact]
         public static void Memory_EqualsAndGetHashCode_ExpectedResults()
         {
-            ReadOnlyMemory<char> readonlyMemory1 = new string('a', 4).AsReadOnlyMemory();
-            ReadOnlyMemory<char> readonlyMemory2 = new string('a', 4).AsReadOnlyMemory();
+            ReadOnlyMemory<char> readonlyMemory1 = new string('a', 4).AsMemory();
+            ReadOnlyMemory<char> readonlyMemory2 = new string('a', 4).AsMemory();
 
             Memory<char> m1 = MemoryMarshal.AsMemory(readonlyMemory1);
             Memory<char> m2 = MemoryMarshal.AsMemory(readonlyMemory2);

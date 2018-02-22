@@ -186,17 +186,32 @@ namespace System.Diagnostics
         /// <summary>A cleanup handle to the Process created for the remote invocation.</summary>
         public sealed class RemoteInvokeHandle : IDisposable
         {
-            public RemoteInvokeHandle(Process process, RemoteInvokeOptions options)
+            public RemoteInvokeHandle(Process process, RemoteInvokeOptions options, string assemblyName = null, string className = null, string methodName = null)
             {
                 Process = process;
                 Options = options;
+                AssemblyName = assemblyName;
+                ClassName = className;
+                MethodName = methodName;
             }
 
-            public Process Process { get; private set; }
+            public Process Process { get; set; }
             public RemoteInvokeOptions Options { get; private set; }
+            public string AssemblyName { get; private set; }
+            public string ClassName { get; private set; }
+            public string MethodName { get; private set; }
 
             public void Dispose()
             {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
+
+            private void Dispose(bool disposing)
+            {
+                // https://github.com/dotnet/corefx/issues/27366
+                // Assert.True(disposing, $"A test {AssemblyName}!{ClassName}.{MethodName} forgot to Dispose() the result of RemoteInvoke()");
+
                 if (Process != null)
                 {
                     // A bit unorthodox to do throwing operations in a Dispose, but by doing it here we avoid
@@ -234,6 +249,13 @@ namespace System.Diagnostics
                         Process = null;
                     }
                 }
+            }
+
+            ~RemoteInvokeHandle()
+            {
+                // Finalizer flags tests that omitted the explicit Dispose() call; they must have it, or they aren't
+                // waiting on the remote execution
+                Dispose(disposing: false);
             }
 
             private sealed class RemoteExecutionException : XunitException

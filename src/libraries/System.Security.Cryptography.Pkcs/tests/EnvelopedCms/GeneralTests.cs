@@ -21,6 +21,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class GeneralTests
     {
+        public static bool SupportsDiffieHellman { get; } = KeyAgreeRecipientInfoTests.SupportsDiffieHellman;
+
         [Fact]
         public static void DecodeVersion0_RoundTrip()
         {
@@ -58,7 +60,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(0, version);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsDiffieHellman))]
         public static void DecodeRecipients3_RoundTrip()
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });

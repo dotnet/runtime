@@ -28,7 +28,7 @@ namespace System.IO.Enumeration
         /// Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior. For compatibility, Windows
         /// changes some wildcards to provide a closer match to historical DOS 8.3 filename matching.
         /// </summary>
-        public static string TranslateDosExpression(string expression)
+        public static string TranslateWin32Expression(string expression)
         {
             if (string.IsNullOrEmpty(expression) || expression == "*" || expression == "*.*")
                 return "*";
@@ -46,8 +46,7 @@ namespace System.IO.Enumeration
                         modified = true;
                         if (i > 1 && i == length - 1 && expression[i - 1] == '*')
                         {
-                            sb.Length--;
-                            sb.Append('<'); // DOS_STAR (ends in *.)
+                            sb[sb.Length - 1] = '<'; // DOS_STAR (ends in *.)
                         }
                         else if (i < length - 1 && (expression[i + 1] == '?' || expression[i + 1] == '*'))
                         {
@@ -83,9 +82,9 @@ namespace System.IO.Enumeration
         /// of RtlIsNameInExpression, which defines the rules for matching DOS wildcards ('*', '?', '&lt;', '&gt;', '"').
         /// 
         /// Like PatternMatcher, matching will not line up with Win32 behavior unless you transform the expression
-        /// using <see cref="TranslateDosExpression(string)"/>
+        /// using <see cref="TranslateWin32Expression(string)"/>
         /// </remarks>
-        public static bool MatchesDosExpression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true)
+        public static bool MatchesWin32Expression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true)
         {
             return MatchPattern(expression, name, ignoreCase, useExtendedWildcards: true);
         }
@@ -142,7 +141,7 @@ namespace System.IO.Enumeration
             Span<int> temp = stackalloc int[0];
             Span<int> currentMatches = stackalloc int[16];
             Span<int> priorMatches = stackalloc int[16];
-            priorMatches.Clear();
+            priorMatches[0] = 0;
 
             int maxState = expression.Length * 2;
             int currentState;

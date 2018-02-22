@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO.Enumeration;
 
 namespace System.IO
@@ -26,6 +27,8 @@ namespace System.IO
             FileSystemInfo info = findData.IsDirectory
                 ? (FileSystemInfo) new DirectoryInfo(fullPath, fileName: new string(findData.FileName), isNormalized: true)
                 : new FileInfo(fullPath, fileName: new string(findData.FileName), isNormalized: true);
+
+            Debug.Assert(!PathInternal.IsPartiallyQualified(fullPath), $"'{fullPath}' should be fully qualified when constructed from directory enumeration");
 
             info.Init(findData._info);
             return info;

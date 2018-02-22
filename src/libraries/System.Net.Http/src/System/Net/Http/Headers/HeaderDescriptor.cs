@@ -31,6 +31,7 @@ namespace System.Net.Http.Headers
         public string Name => _headerName;
         public HttpHeaderParser Parser => _knownHeader?.Parser;
         public HttpHeaderType HeaderType => _knownHeader == null ? HttpHeaderType.Custom : _knownHeader.HeaderType;
+        public KnownHeader KnownHeader => _knownHeader;
 
         public bool Equals(HeaderDescriptor other) =>
             _knownHeader == null ?

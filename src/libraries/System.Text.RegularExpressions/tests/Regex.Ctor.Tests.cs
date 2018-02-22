@@ -85,7 +85,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
 
                 return SuccessExitCode;
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
 
                 return SuccessExitCode;
-            });
+            }).Dispose();
         }
 
         [Fact]

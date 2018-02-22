@@ -231,7 +231,7 @@ namespace System.Net
                 return false;
             }
 
-            address = IPAddressParser.Parse(ipString.AsReadOnlySpan(), tryParse: true);
+            address = IPAddressParser.Parse(ipString.AsSpan(), tryParse: true);
             return (address != null);
         }
 
@@ -248,7 +248,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(ipString));
             }
 
-            return IPAddressParser.Parse(ipString.AsReadOnlySpan(), tryParse: false);
+            return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false);
         }
 
         public static IPAddress Parse(ReadOnlySpan<char> ipSpan)

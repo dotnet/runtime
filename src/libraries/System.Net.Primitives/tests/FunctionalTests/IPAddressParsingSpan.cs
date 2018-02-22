@@ -9,8 +9,8 @@ namespace System.Net.Primitives.Functional.Tests
 {
     public sealed class IPAddressParsing_Span : IPAddressParsing
     {
-        public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString.AsReadOnlySpan());
-        public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString.AsReadOnlySpan(), out address);
+        public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString.AsSpan());
+        public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString.AsSpan(), out address);
 
 
         [Theory]

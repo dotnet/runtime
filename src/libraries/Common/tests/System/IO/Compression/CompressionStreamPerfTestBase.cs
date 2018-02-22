@@ -10,52 +10,34 @@ namespace System.IO.Compression
 {
     public abstract class CompressionStreamPerfTestBase : CompressionStreamTestBase
     {
-        public static IEnumerable<object[]> CanterburyCorpus_WithCompressionLevel()
+        public static IEnumerable<object[]> UncompressedTestFiles_WithCompressionLevel()
         {
             foreach (CompressionLevel compressionLevel in Enum.GetValues(typeof(CompressionLevel)))
             {
-                foreach (object[] canterburyWithoutLevel in CanterburyCorpus())
+                foreach (object[] testFile in UncompressedTestFiles())
                 {
-                    yield return new object[] { canterburyWithoutLevel[0], canterburyWithoutLevel[1], compressionLevel };
+                    yield return new object[] { testFile[0], compressionLevel };
                 }
             }
         }
-
-        public static IEnumerable<object[]> CanterburyCorpus()
-        {
-            foreach (int innerIterations in new int[] { 1, 10 })
-            {
-                foreach (var fileName in UncompressedTestFiles())
-                {
-                    yield return new object[] { innerIterations, fileName[0] };
-                }
-            }
-        }
-
 
         /// <summary>
         /// Benchmark tests to measure the performance of individually compressing each file in the
         /// Canterbury Corpus
         /// </summary>
-        [Benchmark]
-        [MemberData(nameof(CanterburyCorpus_WithCompressionLevel))]
-        public void Compress_Canterbury(int innerIterations, string uncompressedFileName, CompressionLevel compressLevel)
+        [Benchmark(InnerIterationCount=10)] // limits the max iterations to 100
+        [MemberData(nameof(UncompressedTestFiles_WithCompressionLevel))]
+        public void Compress_Canterbury(string uncompressedFileName, CompressionLevel compressLevel)
         {
             byte[] bytes = File.ReadAllBytes(uncompressedFileName);
-            MemoryStream[] compressedDataStreams = new MemoryStream[innerIterations];
             foreach (var iteration in Benchmark.Iterations)
             {
                 // resizing a memory stream during compression will throw off our results, so pre-size it to the
                 // size of our input
-                for (int i = 0; i < innerIterations; i++)
-                    compressedDataStreams[i] = new MemoryStream(bytes.Length);
+                using (MemoryStream compressedDataStream = new MemoryStream(bytes.Length))
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < innerIterations; i++)
-                        using (Stream compressor = CreateStream(compressedDataStreams[i], compressLevel))
-                            compressor.Write(bytes, 0, bytes.Length);
-
-                for (int i = 0; i < innerIterations; i++)
-                    compressedDataStreams[i].Dispose();
+                using (Stream compressor = CreateStream(compressedDataStream, compressLevel))
+                    compressor.Write(bytes, 0, bytes.Length);
             }
         }
 
@@ -63,10 +45,11 @@ namespace System.IO.Compression
         /// Benchmark tests to measure the performance of individually compressing each file in the
         /// Canterbury Corpus
         /// </summary>
-        [Benchmark]
-        [MemberData(nameof(CanterburyCorpus))]
-        public void Decompress_Canterbury(int innerIterations, string uncompressedFilePath)
+        [Benchmark(InnerIterationCount=100)]
+        [MemberData(nameof(UncompressedTestFiles))]
+        public void Decompress_Canterbury(string uncompressedFilePath)
         {
+            int innerIterations = (int)Benchmark.InnerIterationCount;
             string compressedFilePath = CompressedTestFile(uncompressedFilePath);
             byte[] outputRead = new byte[new FileInfo(uncompressedFilePath).Length];
             MemoryStream[] memories = new MemoryStream[innerIterations];

@@ -14,12 +14,14 @@
     <Compile Include="BaseProviderAsyncTest\MockCommand.cs" />
     <Compile Include="BaseProviderAsyncTest\MockConnection.cs" />
     <Compile Include="BaseProviderAsyncTest\MockDataReader.cs" />
+    <Compile Include="SqlCredentialTest.cs" />
     <Compile Include="DiagnosticTest.cs" />
     <Compile Include="AmbientTransactionFailureTest.cs" />
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="FakeDiagnosticListenerObserver.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
     <Compile Include="SqlDataRecordTest.cs" />
+    <Compile Include="SqlMetaDataTest.cs" />
     <Compile Include="SqlParameterTest.cs" />
     <Compile Include="SqlClientFactoryTest.cs" />
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
@@ -30,6 +32,10 @@
     <Compile Include="..\ManualTests\DataCommon\DataTestUtility.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ManualTests\SQL\UdtTest\UDTs\Address\Address.csproj">
+      <Project>{d1392b54-998a-4f27-bc17-4ce149117bcc}</Project>
+      <Name>Address</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Tools\TDS\TDS.Servers\TDS.Servers.csproj">
       <Name>TDS.Servers</Name>
     </ProjectReference>

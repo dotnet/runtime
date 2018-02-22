@@ -16,6 +16,7 @@ namespace System.IO.FileSystem.DriveInfoTests
 {
     public class DriveInfoWindowsTests
     {
+        [ActiveIssue(27357)]
         [Theory]
         [InlineData(":", null)]
         [InlineData("://", null)]
@@ -28,7 +29,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         [InlineData(@"\\share", null)]
         [InlineData(@"\\", null)]
         [InlineData("c ", null)]
-        [InlineData("", "path")]
+        // [InlineData("", "path")] // https://github.com/dotnet/corefx/issues/27269
         [InlineData(" c", null)]
         public void Ctor_InvalidPath_ThrowsArgumentException(string driveName, string paramName)
         {

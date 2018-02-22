@@ -527,6 +527,75 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
+
+        public static IEnumerable<object> GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData()
+        {
+            foreach (int maxChunkSize in new[] { 1, 10_000 })
+                foreach (string lineEnding in new[] { "\n", "\r\n" })
+                    foreach (bool useCopyToAsync in new[] { false, true })
+                        yield return new object[] { maxChunkSize, lineEnding, useCopyToAsync };
+        }
+
+        [OuterLoop]
+        [Theory]
+        [MemberData(nameof(GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData))]
+        public async Task GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly(int maxChunkSize, string lineEnding, bool useCopyToAsync)
+        {
+            if (!UseSocketsHttpHandler && lineEnding != "\r\n")
+            {
+                // Some handlers don't deal well with "\n" alone as the line ending
+                return;
+            }
+
+            var rand = new Random(42);
+            byte[] expectedData = new byte[100_000];
+            rand.NextBytes(expectedData);
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpMessageInvoker client = new HttpMessageInvoker(CreateHttpClientHandler()))
+                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri), CancellationToken.None))
+                using (Stream respStream = await resp.Content.ReadAsStreamAsync())
+                {
+                    var actualData = new MemoryStream();
+
+                    if (useCopyToAsync)
+                    {
+                        await respStream.CopyToAsync(actualData);
+                    }
+                    else
+                    {
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = await respStream.ReadAsync(buffer)) > 0)
+                        {
+                            actualData.Write(buffer, 0, bytesRead);
+                        }
+                    }
+
+                    Assert.Equal<byte>(expectedData, actualData.ToArray());
+                }
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAsync();
+
+                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK{lineEnding}Transfer-Encoding: chunked{lineEnding}{lineEnding}");
+                    for (int bytesSent = 0; bytesSent < expectedData.Length;)
+                    {
+                        int bytesRemaining = expectedData.Length - bytesSent;
+                        int bytesToSend = rand.Next(1, Math.Min(bytesRemaining, maxChunkSize + 1));
+                        await connection.Writer.WriteAsync(bytesToSend.ToString("X") + lineEnding);
+                        await connection.Stream.WriteAsync(new Memory<byte>(expectedData, bytesSent, bytesToSend));
+                        await connection.Writer.WriteAsync(lineEnding);
+                        bytesSent += bytesToSend;
+                    }
+                    await connection.Writer.WriteAsync($"0{lineEnding}");
+                    await connection.Writer.WriteAsync(lineEnding);
+                });
+            });
+        }
     }
 
     public class HttpProtocolTests_Dribble : HttpProtocolTests

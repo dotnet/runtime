@@ -32,6 +32,7 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
+        [ActiveIssue(27244)]
         [Fact]
         public void CanRecurseFromRoot()
         {

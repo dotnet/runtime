@@ -985,7 +985,12 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in file search patterns
         public void UnixSearchPatternFileValidChar(string valid)
         {
@@ -999,7 +1004,12 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in directory search patterns
         public void UnixSearchPatternDirectoryValidChar(string valid)
         {

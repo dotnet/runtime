@@ -77,6 +77,73 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSASha512KeyTransfer1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
+        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [OuterLoop("Leaks key on disk if interrupted")]
+        public static void Decrypt_512_FixedValue()
+        {
+            byte[] content = { 5, 77, 32, 33, 2, 34 };
+            byte[] message = (
+                "3082012506092A864886F70D010703A0820116308201120201003181CE3081CB" +
+                "02010030343020311E301C060355040313155253415368613531324B65795472" +
+                "616E736665723102102F5D9D58A5F41B844650AA233E68F105300D06092A8648" +
+                "86F70D01010105000481803163AA33F8F5E033DC03AE98CCEE158199589FC420" +
+                "19200DCC1D202309CCCAF79CC0278B9502B5709F1311E522DA325338136D3F1E" +
+                "A271FAEA978CC656A3CB94B1C6A8D7AFC836C3193DB693E8B8767472C2C23125" +
+                "BA11E7D0623E4C8B848826BBF99EB411CB88B4731740D1AD834F0E4076BAD0D4" +
+                "BA695CFE8CDB2DE3E77196303C06092A864886F70D010701301D060960864801" +
+                "650304012A0410280AC7A629BFC9FD6FB24F8A42F094B48010B78CDFECFF32A8" +
+                "E86D448989382A93E7"
+            ).HexToByteArray();
+
+            VerifySimpleDecrypt(message, Certificates.RSASha512KeyTransfer1, new ContentInfo(content));
+        }
+
+        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [OuterLoop("Leaks key on disk if interrupted")]
+        public static void Decrypt_512_NoData_FixedValue()
+        {
+            // This is the Decrypt_512_FixedData test re-encoded to remove the
+            // encryptedContentInfo.encryptedContent optional value.
+            byte[] content = Array.Empty<byte>();
+            byte[] message = (
+                "3082011306092A864886F70D010703A0820104308201000201003181CE3081CB" +
+                "02010030343020311E301C060355040313155253415368613531324B65795472" +
+                "616E736665723102102F5D9D58A5F41B844650AA233E68F105300D06092A8648" +
+                "86F70D01010105000481803163AA33F8F5E033DC03AE98CCEE158199589FC420" +
+                "19200DCC1D202309CCCAF79CC0278B9502B5709F1311E522DA325338136D3F1E" +
+                "A271FAEA978CC656A3CB94B1C6A8D7AFC836C3193DB693E8B8767472C2C23125" +
+                "BA11E7D0623E4C8B848826BBF99EB411CB88B4731740D1AD834F0E4076BAD0D4" +
+                "BA695CFE8CDB2DE3E77196302A06092A864886F70D010701301D060960864801" +
+                "650304012A0410280AC7A629BFC9FD6FB24F8A42F094B4"
+            ).HexToByteArray();
+
+            VerifySimpleDecrypt(message, Certificates.RSASha512KeyTransfer1, new ContentInfo(content));
+        }
+
+        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [OuterLoop("Leaks key on disk if interrupted")]
+        public static void Decrypt_512_CekDoesNotDecrypt_FixedValue()
+        {
+            // This is the Decrypt_512_NoData_FixedValue test except that the last
+            // byte of the recipient encrypted key has been changed from 0x96 to 0x95
+            // (the sequence 7195 identifies the changed byte)
+            byte[] content = Array.Empty<byte>();
+            byte[] message = (
+                "3082011306092A864886F70D010703A0820104308201000201003181CE3081CB" +
+                "02010030343020311E301C060355040313155253415368613531324B65795472" +
+                "616E736665723102102F5D9D58A5F41B844650AA233E68F105300D06092A8648" +
+                "86F70D01010105000481803163AA33F8F5E033DC03AE98CCEE158199589FC420" +
+                "19200DCC1D202309CCCAF79CC0278B9502B5709F1311E522DA325338136D3F1E" +
+                "A271FAEA978CC656A3CB94B1C6A8D7AFC836C3193DB693E8B8767472C2C23125" +
+                "BA11E7D0623E4C8B848826BBF99EB411CB88B4731740D1AD834F0E4076BAD0D4" +
+                "BA695CFE8CDB2DE3E77195302A06092A864886F70D010701301D060960864801" +
+                "650304012A0410280AC7A629BFC9FD6FB24F8A42F094B4"
+            ).HexToByteArray();
+
+            Assert.ThrowsAny<CryptographicException>(
+                () => VerifySimpleDecrypt(message, Certificates.RSASha512KeyTransfer1, new ContentInfo(content)));
+        }
+
         [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_SignedWithinEnveloped()

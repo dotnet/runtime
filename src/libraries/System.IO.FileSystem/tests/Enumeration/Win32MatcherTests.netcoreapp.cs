@@ -7,15 +7,15 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class DosMatcherTests
+    public class Win32MatcherTests
     {
-        [Theory, MemberData(nameof(DosMatchData)), MemberData(nameof(EscapedDosMatchData))]
-        public static void DosMatch(string expression, string name, bool ignoreCase, bool expected)
+        [Theory, MemberData(nameof(Win32MatchData)), MemberData(nameof(EscapedWin32MatchData))]
+        public static void Win32Match(string expression, string name, bool ignoreCase, bool expected)
         {
-            Assert.Equal(expected, FileSystemName.MatchesDosExpression(expression, name.AsReadOnlySpan(), ignoreCase));
+            Assert.Equal(expected, FileSystemName.MatchesWin32Expression(expression, name.AsSpan(), ignoreCase));
         }
 
-        public static TheoryData<string, string, bool, bool> EscapedDosMatchData => new TheoryData<string, string, bool, bool>
+        public static TheoryData<string, string, bool, bool> EscapedWin32MatchData => new TheoryData<string, string, bool, bool>
         {
             // Trailing escape matches as it is considered "invisible"
             { "\\", "\\", false, true },
@@ -43,7 +43,7 @@ namespace System.IO.Tests
             { "\\\"", "\"", true, true },
         };
 
-        public static TheoryData<string, string, bool, bool> DosMatchData => new TheoryData<string, string, bool, bool>
+        public static TheoryData<string, string, bool, bool> Win32MatchData => new TheoryData<string, string, bool, bool>
         {
             { null, "", false, false },
             { null, "", true, false },
