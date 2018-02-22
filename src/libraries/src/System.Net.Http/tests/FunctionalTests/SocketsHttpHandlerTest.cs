@@ -72,6 +72,11 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     public sealed class SocketsHttpHandler_PostScenarioTest : PostScenarioTest
     {
         public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
