@@ -278,7 +278,7 @@ namespace System.Net.Http
                     await WriteAsciiStringAsync(request.RequestUri.IdnHost).ConfigureAwait(false);
                 }
 
-                await WriteStringAsync(request.RequestUri.PathAndQuery).ConfigureAwait(false);
+                await WriteStringAsync(request.RequestUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped)).ConfigureAwait(false);
 
                 // Fall back to 1.1 for all versions other than 1.0
                 Debug.Assert(request.Version.Major >= 0 && request.Version.Minor >= 0); // guaranteed by Version class
