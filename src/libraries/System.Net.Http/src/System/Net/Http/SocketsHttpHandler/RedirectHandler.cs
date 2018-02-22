@@ -81,9 +81,22 @@ namespace System.Net.Http
                 return null;
             }
 
+            // Ensure the redirect location is an absolute URI.
             if (!location.IsAbsoluteUri)
             {
                 location = new Uri(requestUri, location);
+            }
+
+            // Per https://tools.ietf.org/html/rfc7231#section-7.1.2, a redirect location without a
+            // fragment should inherit the fragment from the original URI.
+            string requestFragment = requestUri.Fragment;
+            if (!string.IsNullOrEmpty(requestFragment))
+            {
+                string redirectFragment = location.Fragment;
+                if (string.IsNullOrEmpty(redirectFragment))
+                {
+                    location = new UriBuilder(location) { Fragment = requestFragment }.Uri;
+                }
             }
 
             // Disallow automatic redirection from secure to non-secure schemes
@@ -91,7 +104,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Info(this, $"Insecure https to http redirect from {requestUri} to {location} blocked.");
+                    NetEventSource.Info(this, $"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.");
                 }
 
                 return null;
