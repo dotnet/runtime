@@ -880,5 +880,16 @@ namespace System.Data.Common
             TraceExceptionAsReturnValue(e);
             return e;
         }
+
+        internal static ArgumentException InvalidArgumentLength(string argumentName, int limit)
+        {
+            return Argument(SR.GetString(SR.ADP_InvalidArgumentLength, argumentName, limit));
+        }
+
+        internal static ArgumentException MustBeReadOnly(string argumentName)
+        {
+            return Argument(SR.GetString(SR.ADP_MustBeReadOnly, argumentName));
+        }
+
     }
 }
