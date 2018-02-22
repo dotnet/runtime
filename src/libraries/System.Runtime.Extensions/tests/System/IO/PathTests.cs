@@ -712,10 +712,26 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData("http://www.microsoft.com")]
         [InlineData("file://www.microsoft.com")]
-        public static void GetFullPath_Windows_URIFormatNotSupported(string path)
+        public static void GetFullPath_Windows_URIFormatNotSupported_Desktop(string path)
+        {
+            // Throws via our invalid colon filtering
+            if (!PathFeatures.IsUsingLegacyPathNormalization())
+            {
+                Assert.Throws<NotSupportedException>(() => Path.GetFullPath(path));
+            }
+        }
+
+        [ActiveIssue(27269)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Theory]
+        [InlineData("http://www.microsoft.com")]
+        [InlineData("file://www.microsoft.com")]
+        public static void GetFullPath_Windows_URIFormatNotSupported_Core(string path)
         {
             // Throws via our invalid colon filtering
             if (!PathFeatures.IsUsingLegacyPathNormalization())
@@ -1015,12 +1031,25 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData('*')]
         [InlineData('?')]
-        public static void GetFullPath_Windows_Wildcards(char wildcard)
+        public static void GetFullPath_Windows_Wildcards_Desktop(char wildcard)
         {
             AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetFullPath("test" + wildcard + "ing"));
+        }
+
+        [ActiveIssue(27269)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Theory]
+        [InlineData('*')]
+        [InlineData('?')]
+        public static void GetFullPath_Windows_Wildcards_Core(char wildcard)
+        {
+            string path = "test" + wildcard + "ing";
+            Assert.Equal(path, Path.GetFullPath(path));
         }
 
         // Windows-only P/Invoke to create 8.3 short names from long names

@@ -29,7 +29,7 @@ namespace System.IO.FileSystem.DriveInfoTests
         [InlineData(@"\\share", null)]
         [InlineData(@"\\", null)]
         [InlineData("c ", null)]
-        [InlineData("", "path")]
+        // [InlineData("", "path")] // https://github.com/dotnet/corefx/issues/27269
         [InlineData(" c", null)]
         public void Ctor_InvalidPath_ThrowsArgumentException(string driveName, string paramName)
         {

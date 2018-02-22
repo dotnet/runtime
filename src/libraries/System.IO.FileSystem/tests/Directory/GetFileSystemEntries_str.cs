@@ -11,7 +11,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public static TheoryData WindowsInvalidUnixValid = new TheoryData<string> { "         ", " ", "\n", ">", "<", "\t" };
+
         protected virtual bool TestFiles { get { return true; } }       // True if the virtual GetEntries mmethod returns files
         protected virtual bool TestDirectories { get { return true; } } // True if the virtual GetEntries mmethod returns Directories
 
@@ -205,37 +205,97 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        public void InvalidPath()
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void InvalidPath_Desktop()
         {
             foreach (char invalid in Path.GetInvalidFileNameChars())
             {
-                if (invalid == '/' || invalid == '\\')
+                string badPath = string.Format($"{TestDirectory}{Path.DirectorySeparatorChar}te{invalid}st");
+                switch (invalid)
                 {
-                    Assert.Throws<DirectoryNotFoundException>(() => GetEntries(Path.Combine(TestDirectory, string.Format("te{0}st", invalid.ToString()))));
+                    case '/':
+                    case '\\':
+                        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
+                        break;
+                    case ':':
+                        Assert.Throws<NotSupportedException>(() => GetEntries(badPath));
+                        break;
+                    case '\0':
+                        Assert.Throws<ArgumentException>(() => GetEntries(badPath));
+                        break;
+                    default:
+                        Assert.Throws<ArgumentException>(() => GetEntries(badPath));
+                        break;
                 }
-                else if (invalid == ':')
+            }
+        }
+
+        [ActiveIssue(27269)]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void InvalidPath_Core()
+        {
+            foreach (char invalid in Path.GetInvalidFileNameChars())
+            {
+                string badPath = string.Format($"{TestDirectory}{Path.DirectorySeparatorChar}te{invalid}st");
+                switch (invalid)
                 {
-                    if (FileSystemDebugInfo.IsCurrentDriveNTFS())
-                        Assert.Throws<NotSupportedException>(() => GetEntries(Path.Combine(TestDirectory, string.Format("te{0}st", invalid.ToString()))));
-                }
-                else
-                {
-                    Assert.Throws<ArgumentException>(() => GetEntries(Path.Combine(TestDirectory, string.Format("te{0}st", invalid.ToString()))));
+                    case '/':
+                    case '\\':
+                    case ':':
+                        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
+                        break;
+                    case '\0':
+                        Assert.Throws<ArgumentException>(() => GetEntries(badPath));
+                        break;
+                    default:
+                        Assert.Throws<IOException>(() => GetEntries(badPath));
+                        break;
                 }
             }
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Windows-only Invalid chars in path
-        public void WindowsInvalidCharsPath(string invalid)
+            InlineData("         "),
+            InlineData(" ")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsWhitespaceOnlyPath(string invalid)
         {
-            
             Assert.Throws<ArgumentException>(() => GetEntries(invalid));
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void WindowsInvalidCharsPath_Desktop(string invalid)
+        {
+            Assert.Throws<ArgumentException>(() => GetEntries(invalid));
+        }
+
+        [ActiveIssue(27269)]
+        [Theory,
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsInvalidCharsPath_Core(string invalid)
+        {
+            Assert.Throws<IOException>(() => GetEntries(invalid));
+        }
+
+        [Theory,
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-only valid chars in file path
         public void UnixValidCharsFilePath(string valid)
         {
@@ -251,7 +311,12 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WindowsInvalidUnixValid))]
+            InlineData("         "),
+            InlineData(" "),
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows-only invalid chars in directory path
         public void UnixValidCharsDirectoryPath(string valid)
         {

@@ -1616,7 +1616,7 @@ namespace System.Xml.Tests
         {
             try
             {
-                LoadXSL("\\\\", XslInputType.URI, readerType, new XmlUrlResolver());
+                LoadXSL("    ", XslInputType.URI, readerType, new XmlUrlResolver());
             }
             catch (System.ArgumentException)
             {
@@ -2913,7 +2913,7 @@ namespace System.Xml.Tests
 
             if (LoadXSL("showParam.xsl", xslInputType, readerType) == 1)
             {
-                    Assert.Throws<System.ArgumentException>(() => xslt.Transform(szFullFilename, "\\\\"));
+                    Assert.Throws<System.ArgumentException>(() => xslt.Transform(szFullFilename, "    "));
                     return;
             }
 

@@ -76,6 +76,7 @@ namespace System.Xml.Tests
                 || e is FileNotFoundException
                 || e is FormatException
                 || e is UnauthorizedAccessException
+                || e is IOException
                 || e is XmlException);
         }
 

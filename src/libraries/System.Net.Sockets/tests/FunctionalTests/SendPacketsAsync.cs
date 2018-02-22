@@ -286,11 +286,12 @@ namespace System.Net.Sockets.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () =>
             {
                 // Existence is validated on send
-                SendPackets(type, new SendPacketsElement(" \t  "), 0);
+                SendPackets(type, new SendPacketsElement("   "), 0);
             });
         }
 
         [Theory]
+        [ActiveIssue(27269)]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
         [PlatformSpecific(TestPlatforms.Windows)] // valid filename chars on Unix

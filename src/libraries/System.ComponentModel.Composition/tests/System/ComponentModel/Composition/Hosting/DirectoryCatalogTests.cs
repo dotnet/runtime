@@ -229,16 +229,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // typeof(System.IO.DirectoryNotFoundException): Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/HTTP:/MICROSOFT.COM/MYASSEMBLY.DLL'.
-        public void AddAssembly1_NonExistentUriAsAssemblyFileNameArgument_ShouldNotSupportedException()
-        {
-            Assert.Throws<NotSupportedException>(() =>
-            {
-                var catalog = new DirectoryCatalog("http://microsoft.com/myassembly.dll");
-            });
-        }
-
-        [Fact]
         public void AddAssembly1_NullPathArgument_ShouldThrowArugmentNull()
         {
             Assert.Throws<ArgumentNullException>(() =>
@@ -250,16 +240,6 @@ namespace System.ComponentModel.Composition
         {
             Assert.Throws<ArgumentException>(() =>
                 new DirectoryCatalog(""));
-        }
-
-        [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // typeof(System.IO.DirectoryNotFoundException): Could not find a part of the path '/HOME/HELIXBOT/DOTNETBUILD/WORK/E77C2FB6-5244-4437-8E27-6DD709101152/WORK/D9EBA0EA-A511-4F42-AC8B-AC8054AAF606/UNZIP/*'.
-        public void AddAssembly1_InvalidPathName_ShouldThrowDirectoryNotFound()
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                var c1 = new DirectoryCatalog("*");
-            });
         }
 
         [Fact]

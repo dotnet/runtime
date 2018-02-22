@@ -29,7 +29,6 @@ namespace System.IO
             OriginalPath = originalPath ?? throw new ArgumentNullException("path");
 
             fullPath = fullPath ?? originalPath;
-            Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath), $"'{fullPath}' should be fully qualified if normalized");
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
 
             _name = fileName ?? (PathHelpers.IsRoot(fullPath) ?
