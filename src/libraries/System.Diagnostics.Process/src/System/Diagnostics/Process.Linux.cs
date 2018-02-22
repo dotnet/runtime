@@ -88,7 +88,7 @@ namespace System.Diagnostics
                 int length = text.IndexOf(' ');
                 if (length != -1)
                 {
-                    Double.TryParse(text.AsReadOnlySpan().Slice(0, length), NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out uptimeSeconds);
+                    Double.TryParse(text.AsSpan().Slice(0, length), NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out uptimeSeconds);
                 }
 
                 return TimeSpan.FromSeconds(uptimeSeconds);

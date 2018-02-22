@@ -68,7 +68,7 @@ namespace System.ComponentModel.Tests
                     DateTimeOffsetConverterTests.s_converter);
 
                 return SuccessExitCode;
-            });
+            }).Dispose();
         }
     }
 }

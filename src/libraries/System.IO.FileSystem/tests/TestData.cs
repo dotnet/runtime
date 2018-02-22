@@ -57,25 +57,12 @@ internal static class TestData
     {
         get
         {
-            TheoryData<string> data = new TheoryData<string>();
-
-            // NOTE: That I/O treats "file"/http" specially and throws ArgumentException.
-            // Otherwise, it treats all other urls as alternative data streams
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // alternate data streams, drive labels, etc.
+            TheoryData<string> data = new TheoryData<string>
             {
-                data.Add("\0");
-                data.Add("middle\0path");
-                data.Add("trailing\0");
-                data.Add(@"\\?\");
-                data.Add(@"\\?\UNC\");
-                data.Add(@"\\?\UNC\LOCALHOST");
-            }
-            else
-            {
-                data.Add("\0");
-                data.Add("middle\0path");
-                data.Add("trailing\0");
-            }
+                "\0",
+                "middle\0path",
+                "trailing\0"
+            };
 
             foreach (char c in s_invalidFileNameChars)
             {

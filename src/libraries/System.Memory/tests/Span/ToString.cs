@@ -32,7 +32,7 @@ namespace System.SpanTests
             Assert.Equal("abc", span.ToString());
 
             string testString = "abcdefg";
-            ReadOnlySpan<char> readOnlySpan = testString.AsReadOnlySpan();
+            ReadOnlySpan<char> readOnlySpan = testString.AsSpan();
 
             fixed (void* ptr = &MemoryMarshal.GetReference(readOnlySpan))
             {
@@ -49,11 +49,47 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static unsafe void ToStringForSpanOfString()
+        public static void ToStringForSpanOfString()
         {
             string[] a = { "a", "b", "c" };
             var span = new Span<string>(a);
             Assert.Equal("System.Span<String>[3]", span.ToString());
+        }
+
+        [Fact]
+        public static void ToStringSpanOverFullStringDoesNotReturnOriginal()
+        {
+            string original = TestHelpers.BuildString(10, 42);
+
+            ReadOnlyMemory<char> readOnlyMemory = original.AsMemory();
+            Memory<char> memory = MemoryMarshal.AsMemory(readOnlyMemory);
+
+            Span<char> span = memory.Span;
+
+            string returnedString = span.ToString();
+            string returnedStringUsingSlice = span.Slice(0, original.Length).ToString();
+
+            string subString1 = span.Slice(1).ToString();
+            string subString2 = span.Slice(0, 2).ToString();
+            string subString3 = span.Slice(1, 2).ToString();
+
+            Assert.Equal(original, returnedString);
+            Assert.Equal(original, returnedStringUsingSlice);
+
+            Assert.Equal(original.Substring(1), subString1);
+            Assert.Equal(original.Substring(0, 2), subString2);
+            Assert.Equal(original.Substring(1, 2), subString3);
+
+            Assert.NotSame(original, returnedString);
+            Assert.NotSame(original, returnedStringUsingSlice);
+
+            Assert.NotSame(original, subString1);
+            Assert.NotSame(original, subString2);
+            Assert.NotSame(original, subString3);
+
+            Assert.NotSame(subString1, subString2);
+            Assert.NotSame(subString1, subString3);
+            Assert.NotSame(subString2, subString3);
         }
     }
 }

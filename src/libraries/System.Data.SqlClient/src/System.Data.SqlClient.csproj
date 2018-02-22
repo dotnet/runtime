@@ -201,6 +201,7 @@
     <Compile Include="System\Data\SqlClient\SNI\SSRP.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectManaged.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Common.cs" />
+    <Compile Include="System\Data\SqlClient\SqlCredential.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">

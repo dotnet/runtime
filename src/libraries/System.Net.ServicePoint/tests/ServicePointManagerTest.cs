@@ -15,7 +15,7 @@ namespace System.Net.Tests
         [Fact]
         public static void RequireEncryption_ExpectedDefault()
         {
-            RemoteInvoke(() => Assert.Equal(EncryptionPolicy.RequireEncryption, ServicePointManager.EncryptionPolicy));
+            RemoteInvoke(() => Assert.Equal(EncryptionPolicy.RequireEncryption, ServicePointManager.EncryptionPolicy)).Dispose();
         }
 
         [Fact]
@@ -30,7 +30,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.CheckCertificateRevocationList = false;
                 Assert.False(ServicePointManager.CheckCertificateRevocationList);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.DefaultConnectionLimit = 2;
                 Assert.Equal(2, ServicePointManager.DefaultConnectionLimit);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -60,7 +60,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.DnsRefreshTimeout = 120000;
                 Assert.Equal(120000, ServicePointManager.DnsRefreshTimeout);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.EnableDnsRoundRobin = false;
                 Assert.False(ServicePointManager.EnableDnsRoundRobin);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -90,7 +90,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.Expect100Continue = true;
                 Assert.True(ServicePointManager.Expect100Continue);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -105,7 +105,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.MaxServicePointIdleTime = 100000;
                 Assert.Equal(100000, ServicePointManager.MaxServicePointIdleTime);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -120,7 +120,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.MaxServicePoints = 0;
                 Assert.Equal(0, ServicePointManager.MaxServicePoints);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -135,7 +135,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.ReusePort = false;
                 Assert.False(ServicePointManager.ReusePort);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -152,7 +152,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.SecurityProtocol = orig;
                 Assert.Equal(orig, ServicePointManager.SecurityProtocol);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -168,7 +168,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.ServerCertificateValidationCallback = null;
                 Assert.Null(ServicePointManager.ServerCertificateValidationCallback);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -183,7 +183,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.UseNagleAlgorithm = true;
                 Assert.True(ServicePointManager.UseNagleAlgorithm);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -214,7 +214,7 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => sp.ReceiveBufferSize = -2);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveTime", () => sp.SetTcpKeepAlive(true, -1, 1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () => sp.SetTcpKeepAlive(true, 1, -1));
-            });
+            }).Dispose();
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Ssl3 is supported by desktop but explicitly not by core")]
@@ -231,7 +231,7 @@ namespace System.Net.Tests
                 Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3);
                 Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
 #pragma warning restore
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -267,7 +267,7 @@ namespace System.Net.Tests
                 Assert.NotSame(
                     ServicePointManager.FindServicePoint(address1, new FixedWebProxy(address1)),
                     ServicePointManager.FindServicePoint(address1, new FixedWebProxy(address2)));
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -286,7 +286,7 @@ namespace System.Net.Tests
                 GC.Collect();
 
                 Assert.Equal(initial, GetExpect100Continue(address));
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -313,7 +313,7 @@ namespace System.Net.Tests
                 Assert.Equal(-1, sp.ReceiveBufferSize);
                 Assert.True(sp.SupportsPipelining, "SupportsPipelining");
                 Assert.True(sp.UseNagleAlgorithm, "UseNagleAlgorithm");
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -348,7 +348,7 @@ namespace System.Net.Tests
                 Assert.Equal(expectedMaxIdleTime, sp2.MaxIdleTime);
                 Assert.Equal(expectedReceiveBufferSize, sp2.ReceiveBufferSize);
                 Assert.Equal(expectedUseNagleAlgorithm, sp2.UseNagleAlgorithm);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -378,7 +378,7 @@ namespace System.Net.Tests
 
                 ServicePointManager.Expect100Continue = orig100Continue;
                 ServicePointManager.UseNagleAlgorithm = origNagle;
-            });
+            }).Dispose();
         }
 
         // Separated out to avoid the JIT in debug builds interfering with object lifetimes

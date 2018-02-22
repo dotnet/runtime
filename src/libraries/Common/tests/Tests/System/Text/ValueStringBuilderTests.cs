@@ -127,7 +127,7 @@ namespace System.Text.Tests
                 Span<char> span = vsb.AppendSpan(s.Length);
                 Assert.Equal(sb.Length, vsb.Length);
 
-                s.AsReadOnlySpan().CopyTo(span);
+                s.AsSpan().CopyTo(span);
             }
 
             Assert.Equal(sb.Length, vsb.Length);
@@ -214,31 +214,16 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        public unsafe void Length_Growing_SetsNulls()
+        public unsafe void Indexer()
         {
             const string Text1 = "foobar";
             var vsb = new ValueStringBuilder();
 
-            // Shrink then grow within capacity
             vsb.Append(Text1);
-            Assert.Equal(Text1.Length, vsb.Length);
-            vsb.Length = 3;
-            Assert.Equal(3, vsb.Length);
-            vsb.Length = 6;
-            Assert.Equal(6, vsb.Length);
-            Assert.Equal("foo\0\0\0", vsb.ToString());
 
-            // Grow over capacity
-            const string Text2 = "bar";
-            Span<char> stackSpace = stackalloc char[Text2.Length];
-            var vsb2 = new ValueStringBuilder(stackSpace);
-            Assert.Equal(0, vsb2.Length);
-            vsb2.Append(Text2);
-            Assert.True(Text2.AsReadOnlySpan().SequenceEqual(stackSpace), "existing stack buffer should have been used");
-            Assert.Equal(Text2.Length, vsb2.Length);
-            vsb2.Length = 6;
-            Assert.Equal(6, vsb2.Length);
-            Assert.Equal("bar\0\0\0", vsb2.ToString());
+            Assert.Equal(vsb[3], 'b');
+            vsb[3] = 'c';
+            Assert.Equal(vsb[3], 'c');
         }
     }
 }

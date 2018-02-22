@@ -12,7 +12,7 @@ namespace System.Runtime.Caching
     // PhysicalMemoryMonitor monitors the amound of physical memory used on the machine
     // and helps us determine when to drop entries to avoid paging and GC thrashing.
     // The limit is configurable (see ConfigUtil.cs).
-    internal sealed class PhysicalMemoryMonitor : MemoryMonitor
+    internal sealed partial class PhysicalMemoryMonitor : MemoryMonitor
     {
         private const int MIN_TOTAL_MEMORY_TRIM_PERCENT = 10;
         private static readonly long s_TARGET_TOTAL_MEMORY_TRIM_INTERVAL_TICKS = 5 * TimeSpan.TicksPerMinute;
@@ -48,7 +48,6 @@ namespace System.Runtime.Caching
             */
 
             long memory = TotalPhysical;
-            Dbg.Assert(memory != 0, "memory != 0");
             if (memory >= 0x100000000)
             {
                 _pressureHigh = 99;
@@ -74,19 +73,6 @@ namespace System.Runtime.Caching
 
             SetLimit(physicalMemoryLimitPercentage);
             InitHistory();
-        }
-
-        protected override int GetCurrentPressure()
-        {
-            Interop.Kernel32.MEMORYSTATUSEX memoryStatusEx = default;
-            memoryStatusEx.dwLength = (uint)Marshal.SizeOf(typeof(Interop.Kernel32.MEMORYSTATUSEX));
-            if (Interop.Kernel32.GlobalMemoryStatusEx(out memoryStatusEx) == 0)
-            {
-                return 0;
-            }
-
-            int memoryLoad = (int)memoryStatusEx.dwMemoryLoad;
-            return memoryLoad;
         }
 
         internal override int GetPercentToTrim(DateTime lastTrimTime, int lastTrimPercent)

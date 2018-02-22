@@ -442,12 +442,30 @@ namespace System.Security.Cryptography.Tests.Asn1
         }
 
         [Fact]
-        public static void TooMuchData()
+        public static void TooMuchDataInValue()
         {
             // This is { IA5String("IA5"), UTF8String("UTF8") }, which is the opposite
             // of the field order of OptionalValues.  SO it will see the UTF8String as null,
             // then the IA5String as present, but then data remains.
             byte[] inputData = "300B16034941350C0455544638".HexToByteArray();
+
+            Assert.Throws<CryptographicException>(
+                () => AsnSerializer.Deserialize<OptionalValues>(inputData, AsnEncodingRules.BER));
+        }
+
+        [Fact]
+        public static void TooMuchDataForValue()
+        {
+            // Two empty sequences, which is more data than one OptionalValues value.
+            byte[] inputData = "30003000".HexToByteArray();
+
+            OptionalValues parsed = AsnSerializer.Deserialize<OptionalValues>(
+                inputData,
+                AsnEncodingRules.BER,
+                out int bytesRead);
+
+            Assert.NotNull(parsed);
+            Assert.Equal(2, bytesRead);
 
             Assert.Throws<CryptographicException>(
                 () => AsnSerializer.Deserialize<OptionalValues>(inputData, AsnEncodingRules.BER));

@@ -2,19 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
-using System.Diagnostics;
-
 namespace Internal.Cryptography
 {
     internal static class Oids
     {
         // Symmetric encryption algorithms
+        public const string Rc2Cbc = "1.2.840.113549.3.2";
+        public const string Rc4 = "1.2.840.113549.3.4";
         public const string TripleDesCbc = "1.2.840.113549.3.7";
+        public const string DesCbc = "1.3.14.3.2.7";
+        public const string Aes128Cbc = "2.16.840.1.101.3.4.1.2";
+        public const string Aes192Cbc = "2.16.840.1.101.3.4.1.22";
+        public const string Aes256Cbc = "2.16.840.1.101.3.4.1.42";
 
         // Asymmetric encryption algorithms
         public const string Rsa = "1.2.840.113549.1.1.1";
+        public const string RsaOaep = "1.2.840.113549.1.1.7";
         public const string RsaPss = "1.2.840.113549.1.1.10";
         public const string Esdh = "1.2.840.113549.1.9.16.3.5";
 
@@ -24,6 +27,8 @@ namespace Internal.Cryptography
         public const string DocumentDescription = "1.3.6.1.4.1.311.88.2.2";
         public const string MessageDigest = "1.2.840.113549.1.9.4";
         public const string CounterSigner = "1.2.840.113549.1.9.6";
+        public const string SigningCertificate = "1.2.840.113549.1.9.16.2.12";
+        public const string SigningCertificateV2 = "1.2.840.113549.1.9.16.2.47";
         public const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
 
         // Key wrap algorithms
@@ -64,5 +69,9 @@ namespace Internal.Cryptography
         // Cert Extensions
         public const string SubjectKeyIdentifier = "2.5.29.14";
         public const string KeyUsage = "2.5.29.15";
+
+        // RFC3161 Timestamping
+        public const string TstInfo = "1.2.840.113549.1.9.16.1.4";
+        public const string TimeStampingPurpose = "1.3.6.1.5.5.7.3.8";
     }
 }

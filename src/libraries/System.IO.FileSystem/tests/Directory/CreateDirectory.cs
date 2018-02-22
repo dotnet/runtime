@@ -34,14 +34,21 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
-        public void PathWithInvalidCharactersAsPath_ThrowsArgumentException(string invalidPath)
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void PathWithInvalidCharactersAsPath_Desktop(string invalidPath)
         {
-            if (invalidPath.Equals(@"\\?\") && !PathFeatures.IsUsingLegacyPathNormalization())
-                AssertExtensions.ThrowsAny<IOException, UnauthorizedAccessException>(() => Create(invalidPath));
-            else if (invalidPath.Contains(@"\\?\") && !PathFeatures.IsUsingLegacyPathNormalization())
-                Assert.Throws<DirectoryNotFoundException>(() => Create(invalidPath));
+            Assert.Throws<ArgumentException>(() => Create(invalidPath));
+        }
+
+        [ActiveIssue(27269)]
+        [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void PathWithInvalidCharactersAsPath_Core(string invalidPath)
+        {
+            if (invalidPath.Contains('\0'))
+                Assert.Throws<ArgumentException>("path", () => Create(invalidPath));
             else
-                Assert.Throws<ArgumentException>(() => Create(invalidPath));
+                Assert.Throws<IOException>(() => Create(invalidPath));
         }
 
         [Fact]
@@ -203,11 +210,29 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // invalid colons throws ArgumentException
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Versions of netfx older than 4.6.2 throw an ArgumentException instead of NotSupportedException. Until all of our machines run netfx against the actual latest version, these will fail.")]
-        public void PathWithInvalidColons_ThrowsNotSupportedException(string invalidPath)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void PathWithInvalidColons_ThrowsNotSupportedException_Desktop(string invalidPath)
         {
-            Assert.Throws<NotSupportedException>(() => Create(invalidPath));
+            if (PathFeatures.IsUsingLegacyPathNormalization())
+            {
+                Assert.Throws<ArgumentException>(() => Create(invalidPath));
+            }
+            else
+            {
+                Assert.Throws<NotSupportedException>(() => Create(invalidPath));
+            }
+        }
+
+        [ActiveIssue(27269)]
+        [Theory, MemberData(nameof(PathsWithInvalidColons))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void PathsWithInvalidColons_ThrowIOException_Core(string invalidPath)
+        {
+            // You can't actually create a directory with a colon in it. It was a preemptive
+            // check, now we let the OS give us failures on usage.
+            Assert.ThrowsAny<IOException>(() => Create(invalidPath));
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
@@ -308,12 +333,32 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WhiteSpace))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // whitespace as path throws ArgumentException on Windows
-        public void WindowsWhiteSpaceAsPath_ThrowsArgumentException(string path)
+            MemberData(nameof(SimpleWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsSimpleWhiteSpaceAsPath_ThrowsArgumentException(string path)
         {
             Assert.Throws<ArgumentException>(() => Create(path));
         }
+
+        [Theory,
+            MemberData(nameof(ControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void WindowsControlWhiteSpaceAsPath_ThrowsArgumentException_Desktop(string path)
+        {
+            Assert.Throws<ArgumentException>(() => Create(path));
+        }
+
+        [ActiveIssue(27269)]
+        [Theory,
+            MemberData(nameof(ControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsWhiteSpaceAsPath_ThrowsIOException_Core(string path)
+        {
+            Assert.Throws<IOException>(() => Create(path));
+        }
+
 
         [Theory,
             MemberData(nameof(WhiteSpace))]
@@ -397,11 +442,22 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(PathsWithAlternativeDataStreams))]
+            MemberData(nameof(PathsWithColons))]
         [PlatformSpecific(TestPlatforms.Windows)] // alternate data streams
-        public void PathWithAlternateDataStreams_ThrowsNotSupportedException(string path)
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void PathWithColons_ThrowsNotSupportedException_Desktop(string path)
         {
             Assert.Throws<NotSupportedException>(() => Create(path));
+        }
+
+        [ActiveIssue(27269)]
+        [Theory,
+            MemberData(nameof(PathsWithColons))]
+        [PlatformSpecific(TestPlatforms.Windows)] // alternate data streams
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void PathWithColons_ThrowsIOException_Core(string path)
+        {
+            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(TestDirectory, path)));
         }
 
         [Theory,
@@ -424,17 +480,38 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
-        [PlatformSpecific(TestPlatforms.Windows)] // UNC shares
-        public void UncPathWithoutShareNameAsPath_ThrowsArgumentException(string path)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void UncPathWithoutShareNameAsPath_ThrowsArgumentException_Desktop(string path)
         {
             Assert.Throws<ArgumentException>(() => Create(path));
         }
 
+        [ActiveIssue(27269)]
+        [Theory,
+            MemberData(nameof(UncPathsWithoutShareName))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void UncPathWithoutShareNameAsPath_ThrowsIOException_Core(string path)
+        {
+            Assert.ThrowsAny<IOException>(() => Create(path));
+        }
+
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // UNC shares
-        public void UNCPathWithOnlySlashes()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void UNCPathWithOnlySlashes_Desktop()
         {
             Assert.Throws<ArgumentException>(() => Create("//"));
+        }
+
+        [ActiveIssue(27269)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void UNCPathWithOnlySlashes_Core()
+        {
+            Assert.ThrowsAny<IOException>(() => Create("//"));
         }
 
         [Fact]

@@ -16,7 +16,7 @@ namespace System
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [DebuggerDisplay("{ToString(),raw}")]
     public readonly ref partial struct ReadOnlySpan<T>
     {
         /// <summary>
@@ -108,9 +108,6 @@ namespace System
             _byteOffset = byteOffset;
         }
 
-        //Debugger Display = System.ReadOnlySpan<T>[length]
-        private string DebuggerDisplay => string.Format("System.ReadOnlySpan<{0}>[{1}]", typeof(T).Name, Length);
-
         /// <summary>
         /// Returns the specified element of the read-only span.
         /// </summary>
@@ -193,6 +190,17 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
+                // If this wraps a string and represents the full length of the string, just return the wrapped string.
+                if (_byteOffset == MemoryExtensions.StringAdjustment)
+                {
+                    object obj = Unsafe.As<object>(_pinnable); // minimize chances the compilers will optimize away the 'is' check
+                    if (obj is string str && _length == str.Length)
+                    {
+                        return str;
+                    }
+                }
+
+                // Otherwise, copy the data to a new string.
                 unsafe
                 {
                     fixed (char* src = &Unsafe.As<T, char>(ref DangerousGetPinnableReference()))

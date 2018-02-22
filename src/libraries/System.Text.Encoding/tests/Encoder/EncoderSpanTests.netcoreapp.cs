@@ -13,7 +13,7 @@ namespace System.Text.Encodings.Tests
         {
             const string TextString = "hello world";
             Encoding e = Encoding.UTF8;
-            Assert.Equal(e.GetByteCount(TextString), e.GetEncoder().GetByteCount(TextString.AsReadOnlySpan(), flush: true));
+            Assert.Equal(e.GetByteCount(TextString), e.GetEncoder().GetByteCount(TextString.AsSpan(), flush: true));
         }
 
         [Fact]
@@ -23,7 +23,7 @@ namespace System.Text.Encodings.Tests
             Encoding e = Encoding.UTF8;
 
             byte[] bytes = new byte[e.GetByteCount(TextString)];
-            Assert.Equal(bytes.Length, e.GetEncoder().GetBytes(TextString.AsReadOnlySpan(), bytes, flush: true));
+            Assert.Equal(bytes.Length, e.GetEncoder().GetBytes(TextString.AsSpan(), bytes, flush: true));
             Assert.Equal(e.GetBytes(TextString), bytes);
         }
 
@@ -36,14 +36,14 @@ namespace System.Text.Encodings.Tests
             byte[] bytes;
 
             bytes = new byte[encoding.GetByteCount(TextString)];
-            encoder.Convert(TextString.AsReadOnlySpan(), bytes.AsSpan().Slice(0, 2), true, out int charsUsed, out int bytesUsed, out bool completed);
+            encoder.Convert(TextString.AsSpan(), bytes.AsSpan().Slice(0, 2), true, out int charsUsed, out int bytesUsed, out bool completed);
             Assert.Equal(encoding.GetBytes(TextString).AsSpan().Slice(0, 2).ToArray(), bytes.AsSpan().Slice(0, 2).ToArray());
             Assert.Equal(2, charsUsed);
             Assert.Equal(2, bytesUsed);
             Assert.False(completed);
 
             bytes = new byte[encoding.GetByteCount(TextString)];
-            encoder.Convert(TextString.AsReadOnlySpan(), bytes, true, out charsUsed, out bytesUsed, out completed);
+            encoder.Convert(TextString.AsSpan(), bytes, true, out charsUsed, out bytesUsed, out completed);
             Assert.Equal(encoding.GetBytes(TextString), bytes);
             Assert.Equal(TextString.Length, charsUsed);
             Assert.Equal(bytes.Length, bytesUsed);

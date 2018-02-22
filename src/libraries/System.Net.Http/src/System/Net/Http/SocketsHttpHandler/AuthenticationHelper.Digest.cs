@@ -161,9 +161,8 @@ namespace System.Net.Http
 
             // Calculate response
             string a1 = credential.UserName + ":" + realm + ":" + credential.Password;
-            if (algorithm == Sha256Sess || algorithm == MD5Sess)
+            if (algorithm.IndexOf("sess") != -1)
             {
-                algorithm = algorithm == Sha256Sess ? Sha256 : Md5;
                 a1 = ComputeHash(a1, algorithm) + ":" + nonce + ":" + cnonce;
             }
 
@@ -233,7 +232,7 @@ namespace System.Net.Http
         {
             // Disable MD5 insecure warning.
 #pragma warning disable CA5351
-            using (HashAlgorithm hash = algorithm == Sha256 ? SHA256.Create() : (HashAlgorithm)MD5.Create())
+            using (HashAlgorithm hash = algorithm.Contains(Sha256) ? SHA256.Create() : (HashAlgorithm)MD5.Create())
 #pragma warning restore CA5351
             {
                 Span<byte> result = stackalloc byte[hash.HashSize / 8]; // HashSize is in bits
@@ -261,12 +260,20 @@ namespace System.Net.Http
 
             internal DigestResponse(string challenge)
             {
-                Parse(challenge);
+                if (!string.IsNullOrEmpty(challenge))
+                    Parse(challenge);
             }
 
             private static bool CharIsSpaceOrTab(char ch)
             {
                 return ch == ' ' || ch == '\t';
+            }
+
+            private static bool MustValueBeQuoted(string key)
+            {
+                // As per the RFC, these string must be quoted for historical reasons.
+                return key.Equals(Realm, StringComparison.OrdinalIgnoreCase) || key.Equals(Nonce, StringComparison.OrdinalIgnoreCase) ||
+                    key.Equals(Opaque, StringComparison.OrdinalIgnoreCase) || key.Equals(Qop, StringComparison.OrdinalIgnoreCase);
             }
 
             private string GetNextKey(string data, int currentIndex, out int parsedIndex)
@@ -324,7 +331,7 @@ namespace System.Net.Http
                 return data.Substring(start, length);
             }
 
-            private string GetNextValue(string data, int currentIndex, out int parsedIndex)
+            private string GetNextValue(string data, int currentIndex, bool expectQuotes, out int parsedIndex)
             {
                 Debug.Assert(currentIndex < data.Length && !CharIsSpaceOrTab(data[currentIndex]));
 
@@ -334,6 +341,12 @@ namespace System.Net.Http
                 {
                     quotedValue = true;
                     currentIndex++;
+                }
+
+                if (expectQuotes && !quotedValue)
+                {
+                    parsedIndex = currentIndex;
+                    return null;
                 }
 
                 StringBuilder sb = StringBuilderCache.Acquire();
@@ -356,6 +369,14 @@ namespace System.Net.Http
                     }
                 }
 
+                // Skip the quote.
+                if (quotedValue)
+                    currentIndex++;
+
+                // Skip any whitespace.
+                while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
+                    currentIndex++;
+
                 // Return if this is last value.
                 if (currentIndex == data.Length)
                 {
@@ -363,11 +384,15 @@ namespace System.Net.Http
                     return StringBuilderCache.GetStringAndRelease(sb);
                 }
 
-                // Skip the end quote or ',' or space or tab.
-                currentIndex++;
+                // A key-value pair should end with ','
+                if (data[currentIndex++] != ',')
+                {
+                    parsedIndex = currentIndex;
+                    return null;
+                }
 
-                // Skip space and tab and ,
-                while (currentIndex < data.Length && (CharIsSpaceOrTab(data[currentIndex]) || data[currentIndex] == ','))
+                // Skip space and tab
+                while (currentIndex < data.Length && CharIsSpaceOrTab(data[currentIndex]))
                 {
                     currentIndex++;
                 }
@@ -389,7 +414,11 @@ namespace System.Net.Http
                         break;
 
                     // Get the value.
-                    string value = GetNextValue(challenge, parsedIndex, out parsedIndex);
+                    string value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
+                    // Ensure value is valid.
+                    if (string.IsNullOrEmpty(value))
+                        break;
+
                     // Add the key-value pair to Parameters.
                     Parameters.Add(key, value);
                 }

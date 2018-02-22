@@ -199,6 +199,12 @@
   <data name="Cryptography_Cms_NoSignerAtIndex" xml:space="preserve">
     <value>The signed cryptographic message does not have a signer for the specified signer index.</value>
   </data>
+  <data name="Cryptography_Cms_RecipientNotFound" xml:space="preserve">
+    <value>The enveloped-data message does not contain the specified recipient.</value>
+  </data>
+  <data name="Cryptography_Cms_RecipientType_NotSupported" xml:space="preserve">
+    <value>The recipient type '{0}' is not supported for encryption or decryption on this platform.</value>
+  </data>
   <data name="Cryptography_Cms_Sign_Empty_Content" xml:space="preserve">
     <value>Cannot create CMS signature for empty content.</value>
   </data>
@@ -243,6 +249,21 @@
   </data>
   <data name="Cryptography_Pkcs_PssParametersSaltMismatch" xml:space="preserve">
     <value>PSS salt size {0} is not supported by this platform with hash algorithm {1}.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_BadNonce" xml:space="preserve">
+    <value>The response from the timestamping server did not match the request nonce.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_BadResponse" xml:space="preserve">
+    <value>The response from the timestamping server was not understood.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_Failure" xml:space="preserve">
+    <value>The timestamping server did not grant the request. The request status is '{0}' with failure info '{1}'.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_NoCertFound" xml:space="preserve">
+    <value>The timestamping request required the TSA certificate in the response, but it was not found.</value>
+  </data>
+  <data name="Cryptography_TimestampReq_UnexpectedCertFound" xml:space="preserve">
+    <value>The timestamping request required the TSA certificate not be included in the response, but certificates were present.</value>
   </data>
   <data name="InvalidOperation_DuplicateItemNotAllowed" xml:space="preserve">
     <value>Duplicate items are not allowed in the collection.</value>

@@ -23,7 +23,7 @@ namespace System.IO.Tests
         [InlineData("C:foo.txt")]
         public static void IsPathFullyQualified_Windows_Invalid(string path)
         {
-            Assert.False(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
+            Assert.False(Path.IsPathFullyQualified(path.AsSpan()));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -44,7 +44,7 @@ namespace System.IO.Tests
         [InlineData(@"C://foo2")]
         public static void IsPathFullyQualified_Windows_Valid(string path)
         {
-            Assert.True(Path.IsPathFullyQualified(path.AsReadOnlySpan()));
+            Assert.True(Path.IsPathFullyQualified(path.AsSpan()));
         }
     }
 }

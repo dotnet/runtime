@@ -33,7 +33,6 @@
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.SpecialFolder.cs" />
     <Compile Include="System\Environment.SpecialFolderOption.cs" />
-    <Compile Include="System\Globalization\Extensions.cs" />
     <Compile Include="System\LoaderOptimization.cs" />
     <Compile Include="System\LoaderOptimizationAttribute.cs" />
     <Compile Include="System\OperatingSystem.cs" />

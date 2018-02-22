@@ -231,7 +231,7 @@ namespace System.IO.Tests
 
 
         [Theory,
-            MemberData(nameof(PathsWithAlternativeDataStreams))]
+            MemberData(nameof(PathsWithColons))]
         [PlatformSpecific(TestPlatforms.Windows)] // alternate data stream
         public void PathWithAlternateDataStreams_ReturnsFalse(string component)
         {

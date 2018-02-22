@@ -25,121 +25,95 @@ namespace System.Net.Http
             private const int MaxTrailingHeaderLength = 16*1024;
             /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
+            /// <summary>The current state of the parsing state machine for the chunked response.</summary>
+            private ParsingState _state = ParsingState.ExpectChunkHeader;
 
-            public ChunkedEncodingReadStream(HttpConnection connection) : base(connection)
+            public ChunkedEncodingReadStream(HttpConnection connection) : base(connection) { }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
-            }
-
-            private async Task<bool> TryGetNextChunkAsync()
-            {
-                Debug.Assert(_chunkBytesRemaining == 0);
-
-                // Read the start of the chunk line.
-                _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                ArraySegment<byte> line = await _connection.ReadNextLineAsync().ConfigureAwait(false);
-
-                // Parse the hex value.
-                if (!Utf8Parser.TryParse(line.AsReadOnlySpan(), out ulong chunkSize, out int bytesConsumed, 'X'))
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    throw new IOException(SR.net_http_invalid_response);
+                    // Cancellation requested.
+                    return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
                 }
-                else if (bytesConsumed != line.Count)
-                {
-                    // There was data after the chunk size, presumably a "chunk extension".
-                    // Allow tabs and spaces and then stop validating once we get to an extension.
-                    int offset = line.Offset + bytesConsumed, end = line.Count - bytesConsumed + line.Offset;
-                    for (int i = offset; i < end; i++)
-                    {
-                        char c = (char)line.Array[i];
-                        if (c == ';')
-                        {
-                            break;
-                        }
-                        else if (c != ' ' && c != '\t') // not called out in the RFC, but WinHTTP allows it
-                        {
-                            throw new IOException(SR.net_http_invalid_response);
-                        }
-                    }
-                }
-
-                _chunkBytesRemaining = chunkSize;
-                if (chunkSize > 0)
-                {
-                    return true;
-                }
-
-                // We received a chunk size of 0, which indicates end of response body. 
-                // Read and discard any trailing headers, until we see an empty line.
-                while (true)
-                {
-                    _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
-                    if (LineIsEmpty(await _connection.ReadNextLineAsync().ConfigureAwait(false)))
-                    {
-                        break;
-                    }
-                }
-
-                _connection.ReturnConnectionToPool();
-                _connection = null;
-                return false;
-            }
-
-            private Task ConsumeChunkBytesAsync(ulong bytesConsumed)
-            {
-                Debug.Assert(bytesConsumed <= _chunkBytesRemaining);
-                _chunkBytesRemaining -= bytesConsumed;
-                return _chunkBytesRemaining != 0 ?
-                    Task.CompletedTask :
-                    ReadNextLineAndThrowIfNotEmptyAsync();
-            }
-
-            private async Task ReadNextLineAndThrowIfNotEmptyAsync()
-            {
-                _connection._allowedReadLineBytes = 2; // \r\n
-                if (!LineIsEmpty(await _connection.ReadNextLineAsync().ConfigureAwait(false)))
-                {
-                    ThrowInvalidHttpResponse();
-                }
-            }
-
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
 
                 if (_connection == null || destination.Length == 0)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
-                    return 0;
+                    // Response body fully consumed or the caller didn't ask for any data.
+                    return new ValueTask<int>(0);
                 }
+
+                // Try to consume from data we already have in the buffer.
+                int bytesRead = ReadChunksFromConnectionBuffer(destination.Span);
+                if (bytesRead > 0)
+                {
+                    return new ValueTask<int>(bytesRead);
+                }
+
+                // We may have just consumed the remainder of the response (with no actual data
+                // available), so check again.
+                if (_connection == null)
+                {
+                    Debug.Assert(_state == ParsingState.Done);
+                    return new ValueTask<int>(0);
+                }
+
+                // Nothing available to consume.  Fall back to I/O.
+                return ReadAsyncCore(destination, cancellationToken);
+            }
+
+            private async ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
+            {
+                // Should only be called if ReadChunksFromConnectionBuffer returned 0.
+
+                Debug.Assert(_connection != null);
+                Debug.Assert(destination.Length > 0);
 
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
                 {
-                    if (_chunkBytesRemaining == 0)
+                    while (true)
                     {
-                        if (!await TryGetNextChunkAsync().ConfigureAwait(false))
+                        if (_connection == null)
                         {
-                            // End of response body
+                            // Fully consumed the response in ReadChunksFromConnectionBuffer.
                             return 0;
                         }
+
+                        if (_state == ParsingState.ExpectChunkData &&
+                            destination.Length >= _connection.ReadBufferSize &&
+                            _chunkBytesRemaining >= (ulong)_connection.ReadBufferSize)
+                        {
+                            // As an optimization, we skip going through the connection's read buffer if both
+                            // the remaining chunk data and the destination buffer are both at least as large
+                            // as the connection buffer.  That avoids an unnecessary copy while still reading
+                            // the maximum amount we'd otherwise read at a time.
+                            Debug.Assert(_connection.RemainingBuffer.Length == 0);
+                            int bytesRead = await _connection.ReadAsync(destination.Slice(0, (int)Math.Min((ulong)destination.Length, _chunkBytesRemaining)));
+                            if (bytesRead == 0)
+                            {
+                                throw new IOException(SR.net_http_invalid_response);
+                            }
+                            _chunkBytesRemaining -= (ulong)bytesRead;
+                            if (_chunkBytesRemaining == 0)
+                            {
+                                _state = ParsingState.ExpectChunkTerminator;
+                            }
+                            return bytesRead;
+                        }
+
+                        // We're only here if we need more data to make forward progress.
+                        await _connection.FillAsync();
+
+                        // Now that we have more, see if we can get any response data, and if
+                        // we can we're done.
+                        int bytesCopied = ReadChunksFromConnectionBuffer(destination.Span);
+                        if (bytesCopied > 0)
+                        {
+                            return bytesCopied;
+                        }
                     }
-
-                    if (_chunkBytesRemaining < (ulong)destination.Length)
-                    {
-                        destination = destination.Slice(0, (int)_chunkBytesRemaining);
-                    }
-
-                    int bytesRead = await _connection.ReadAsync(destination).ConfigureAwait(false);
-
-                    if (bytesRead <= 0)
-                    {
-                        // Unexpected end of response stream
-                        throw new IOException(SR.net_http_invalid_response);
-                    }
-
-                    await ConsumeChunkBytesAsync((ulong)bytesRead).ConfigureAwait(false);
-
-                    return bytesRead;
                 }
                 catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
@@ -155,35 +129,247 @@ namespace System.Net.Http
             {
                 ValidateCopyToArgs(this, destination, bufferSize);
 
-                return cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                    _connection != null ? CopyToAsyncCore(destination, bufferSize, cancellationToken) :
-                    Task.CompletedTask;
+                return
+                    cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+                    _connection == null ? Task.CompletedTask :
+                    CopyToAsyncCore(destination, cancellationToken);
             }
 
-            private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
                 {
-                    if (_chunkBytesRemaining > 0)
+                    while (true)
                     {
-                        await _connection.CopyToAsync(destination, _chunkBytesRemaining).ConfigureAwait(false);
-                        await ConsumeChunkBytesAsync(_chunkBytesRemaining).ConfigureAwait(false);
-                    }
+                        while (true)
+                        {
+                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue);
+                            if (bytesRead.Length == 0)
+                            {
+                                break;
+                            }
+                            await destination.WriteAsync(bytesRead, cancellationToken).ConfigureAwait(false);
+                        }
 
-                    while (await TryGetNextChunkAsync().ConfigureAwait(false))
-                    {
-                        await _connection.CopyToAsync(destination, _chunkBytesRemaining).ConfigureAwait(false);
-                        await ConsumeChunkBytesAsync(_chunkBytesRemaining).ConfigureAwait(false);
+                        if (_connection == null)
+                        {
+                            // Fully consumed the response.
+                            return;
+                        }
+
+                        await _connection.FillAsync().ConfigureAwait(false);
                     }
                 }
                 catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    throw CreateOperationCanceledException(exc, cancellationToken);
+                    throw new OperationCanceledException(s_cancellationMessage, exc, cancellationToken);
                 }
                 finally
                 {
                     ctr.Dispose();
+                }
+            }
+
+            private int ReadChunksFromConnectionBuffer(Span<byte> destination)
+            {
+                int totalBytesRead = 0;
+                while (destination.Length > 0)
+                {
+                    ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(destination.Length);
+                    Debug.Assert(bytesRead.Length <= destination.Length);
+                    if (bytesRead.Length == 0)
+                    {
+                        break;
+                    }
+
+                    totalBytesRead += bytesRead.Length;
+                    bytesRead.Span.CopyTo(destination);
+                    destination = destination.Slice(bytesRead.Length);
+                }
+                return totalBytesRead;
+            }
+
+            private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead)
+            {
+                Debug.Assert(maxBytesToRead > 0);
+
+                try
+                {
+                    ReadOnlySpan<byte> currentLine;
+                    switch (_state)
+                    {
+                        case ParsingState.ExpectChunkHeader:
+                            Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
+
+                            // Read the chunk header line.
+                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
+                            if (!_connection.TryReadNextLine(out currentLine))
+                            {
+                                // Could not get a whole line, so we can't parse the chunk header.
+                                return default;
+                            }
+
+                            // Parse the hex value from it.
+                            if (!Utf8Parser.TryParse(currentLine, out ulong chunkSize, out int bytesConsumed, 'X'))
+                            {
+                                throw new IOException(SR.net_http_invalid_response);
+                            }
+                            _chunkBytesRemaining = chunkSize;
+
+                            // If there's a chunk extension after the chunk size, validate it.
+                            if (bytesConsumed != currentLine.Length)
+                            {
+                                ValidateChunkExtension(currentLine.Slice(bytesConsumed));
+                            }
+
+                            // Proceed to handle the chunk.  If there's data in it, go read it.
+                            // Otherwise, finish handling the response.
+                            if (chunkSize > 0)
+                            {
+                                _state = ParsingState.ExpectChunkData;
+                                goto case ParsingState.ExpectChunkData;
+                            }
+                            else
+                            {
+                                _state = ParsingState.ConsumeTrailers;
+                                goto case ParsingState.ConsumeTrailers;
+                            }
+
+                        case ParsingState.ExpectChunkData:
+                            Debug.Assert(_chunkBytesRemaining > 0);
+
+                            ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
+                            if (connectionBuffer.Length == 0)
+                            {
+                                return default;
+                            }
+
+                            int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _chunkBytesRemaining));
+                            Debug.Assert(bytesToConsume > 0);
+
+                            _connection.ConsumeFromRemainingBuffer(bytesToConsume);
+                            _chunkBytesRemaining -= (ulong)bytesToConsume;
+                            if (_chunkBytesRemaining == 0)
+                            {
+                                _state = ParsingState.ExpectChunkTerminator;
+                            }
+
+                            return connectionBuffer.Slice(0, bytesToConsume);
+
+                        case ParsingState.ExpectChunkTerminator:
+                            Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
+
+                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
+                            if (!_connection.TryReadNextLine(out currentLine))
+                            {
+                                return default;
+                            }
+
+                            if (currentLine.Length != 0)
+                            {
+                                ThrowInvalidHttpResponse();
+                            }
+
+                            _state = ParsingState.ExpectChunkHeader;
+                            goto case ParsingState.ExpectChunkHeader;
+
+                        case ParsingState.ConsumeTrailers:
+                            Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
+
+                            while (true)
+                            {
+                                _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
+                                if (!_connection.TryReadNextLine(out currentLine))
+                                {
+                                    break;
+                                }
+
+                                if (currentLine.IsEmpty)
+                                {
+                                    _state = ParsingState.Done;
+                                    _connection.ReturnConnectionToPool();
+                                    _connection = null;
+                                    break;
+                                }
+                            }
+
+                            return default;
+
+                        default:
+                        case ParsingState.Done: // shouldn't be called once we're done
+                            Debug.Fail($"Unexpected state: {_state}");
+                            return default;
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ensure we don't try to read from the connection again (in particular, for draining)
+                    _connection.Dispose();
+                    _connection = null;
+                    throw;
+                }
+            }
+
+            private static void ValidateChunkExtension(ReadOnlySpan<byte> lineAfterChunkSize)
+            {
+                // Until we see the ';' denoting the extension, the line after the chunk size
+                // must contain only tabs and spaces.  After the ';', anything goes.
+                for (int i = 0; i < lineAfterChunkSize.Length; i++)
+                {
+                    byte c = lineAfterChunkSize[i];
+                    if (c == ';')
+                    {
+                        break;
+                    }
+                    else if (c != ' ' && c != '\t') // not called out in the RFC, but WinHTTP allows it
+                    {
+                        throw new IOException(SR.net_http_invalid_response);
+                    }
+                }
+            }
+
+            private enum ParsingState : byte
+            {
+                ExpectChunkHeader,
+                ExpectChunkData,
+                ExpectChunkTerminator,
+                ConsumeTrailers,
+                Done
+            }
+
+            public override bool NeedsDrain => (_connection != null);
+
+            public override async Task<bool> DrainAsync(int maxDrainBytes)
+            {
+                Debug.Assert(_connection != null);
+
+                int drainedBytes = 0;
+                while (true)
+                {
+                    drainedBytes += _connection.RemainingBuffer.Length;
+                    while (true)
+                    {
+                        ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue);
+                        if (bytesRead.Length == 0)
+                        {
+                            break;
+                        }
+                    }
+
+                    // When ReadChunkFromConnectionBuffer reads the final chunk, it will clear out _connection
+                    // and return the connection to the pool.
+                    if (_connection == null)
+                    {
+                        return true;
+                    }
+
+                    if (drainedBytes >= maxDrainBytes)
+                    {
+                        return false;
+                    }
+
+                    await _connection.FillAsync().ConfigureAwait(false);
                 }
             }
         }

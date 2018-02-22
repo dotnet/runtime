@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO.Enumeration;
 using Xunit;
 
@@ -110,6 +111,31 @@ namespace System.IO.Tests.Enumeration
                 Assert.Equal(subDirectory.Name, enumerator.Current);
                 Assert.False(enumerator.MoveNext());
             }
+        }
+
+        [Fact]
+        public void IsHiddenAttribute()
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+
+            // Put a period in front to make it hidden on Unix
+            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, "." + GetTestFileName()));
+
+            fileOne.Create().Dispose();
+            fileTwo.Create().Dispose();
+            if (PlatformDetection.IsWindows)
+                fileTwo.Attributes = fileTwo.Attributes | FileAttributes.Hidden;
+
+            IEnumerable<string> enumerable = new FileSystemEnumerable<string>(
+                testDirectory.FullName,
+                (ref FileSystemEntry entry) => entry.ToFullPath(),
+                new EnumerationOptions() { AttributesToSkip = 0 })
+            {
+                ShouldIncludePredicate = (ref FileSystemEntry entry) => entry.IsHidden
+            };
+
+            Assert.Equal(new string[] { fileTwo.FullName }, enumerable);
         }
     }
 }

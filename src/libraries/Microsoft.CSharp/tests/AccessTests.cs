@@ -25,7 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         {
         }
 
-        private static class Container
+        private class Container
         {
             private abstract class ReferenceTypeIntermediary : PublicReferenceType
             {
@@ -37,6 +37,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
 
             private struct PrivateValueType
+            {
+            }
+
+            private protected struct PrivateProtectedValueType
+            {
+            }
+
+            internal struct InternalValueType
+            {
+            }
+
+            protected internal struct ProtectedInternalValueType
             {
             }
 
@@ -55,6 +67,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
             public static dynamic ValueTypeArray() => new PrivateValueType[2];
 
+            public static dynamic PrivateProtectedValueTypeArray() => new PrivateProtectedValueType[2];
+
+            public static dynamic InternalValueTypeArray() => new InternalValueType[2];
+
+            public static dynamic ProtectedInternalValueTypeArray() => new ProtectedInternalValueType[2];
+
             private delegate int PrivateFunc<T>(T arg);
 
             public static dynamic PrivateDelegateType() => (PrivateFunc<ReferenceType>)(r => r.IntValueProperty);
@@ -66,6 +84,49 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             public static dynamic PrivateInterfaceDelegate() => (Func<IPrivateInterface>)(() => null);
 
             public static dynamic PrivateConstraintInterfaceDelegate() => (Func<ITestIFaceCons<ReferenceType>>)(() => null);
+
+            public static dynamic PrivateProtectedInstance() => PrivateProtectedValueTypeArray()[1];
+        }
+
+        private class TypeWithFields
+        {
+            public int Public;
+            protected int Protected;
+            internal int Internal;
+            protected internal int ProtectedInternal;
+            private protected int PrivateProtected;
+#pragma warning disable 414
+            private int Private;
+#pragma warning restore 414
+
+            public TypeWithFields()
+            {
+                Public = 1;
+                Protected = 2;
+                Internal = 3;
+                ProtectedInternal = 4;
+                PrivateProtected = 5;
+                Private = 6;
+            }
+        }
+
+        private class TypeWithFieldsDerived : TypeWithFields
+        {
+            public void AccessibleFields()
+            {
+                dynamic d = this;
+                Assert.Equal(1, d.Public);
+                Assert.Equal(2, d.Protected);
+                Assert.Equal(3, d.Internal);
+                Assert.Equal(4, d.ProtectedInternal);
+                Assert.Equal(5, d.PrivateProtected);
+            }
+
+            public void InAccessibleFields()
+            {
+                dynamic d = this;
+                Assert.Throws<RuntimeBinderException>(() => d.Private);
+            }
         }
 
         [Fact]
@@ -183,6 +244,51 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                     }));
             target = site.Target;
             Assert.Throws<RuntimeBinderException>(() => target(site, new SomeValueType()));
+        }
+
+        [Fact]
+        public void AccessNestedInternalOnlySameAssembly()
+        {
+            Assert.NotNull(Container.InternalValueTypeArray()[1]);
+            Assert.NotNull(Container.ProtectedInternalValueTypeArray()[1]);
+        }
+
+        [Fact]
+        public void AccessNestedPrivateProtectedAssembly()
+        {
+            dynamic d = Container.PrivateProtectedValueTypeArray();
+            Assert.Throws<RuntimeBinderException>(() => d[1]);
+            Assert.NotNull(Container.PrivateProtectedInstance());
+        }
+
+        [Fact]
+        public void AccessibleFields()
+        {
+            dynamic d = new TypeWithFields();
+            Assert.Equal(1, d.Public);
+            Assert.Equal(3, d.Internal);
+            Assert.Equal(4, d.ProtectedInternal);
+        }
+
+        [Fact]
+        public void InaccessibleFields()
+        {
+            dynamic d = new TypeWithFields();
+            Assert.Throws<RuntimeBinderException>(() => d.Protected);
+            Assert.Throws<RuntimeBinderException>(() => d.PrivateProtected);
+            Assert.Throws<RuntimeBinderException>(() => d.Private);
+        }
+
+        [Fact]
+        public void AccessibleToDerivedFields()
+        {
+            new TypeWithFieldsDerived().AccessibleFields();
+        }
+
+        [Fact]
+        public void InaccessibleToDerivedFields()
+        {
+            new TypeWithFieldsDerived().AccessibleFields();
         }
     }
 }

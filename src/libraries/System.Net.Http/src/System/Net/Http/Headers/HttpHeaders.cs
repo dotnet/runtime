@@ -380,9 +380,61 @@ namespace System.Net.Http.Headers
             }
         }
 
-#endregion
+        // The following is the same general code as the above GetEnumerator, but returning the
+        // HeaderDescriptor and values string[], rather than the key name and a values enumerable.
 
-#region IEnumerable Members
+        internal IEnumerable<KeyValuePair<HeaderDescriptor, string[]>> GetHeaderDescriptorsAndValues()
+        {
+            return _headerStore != null && _headerStore.Count > 0 ?
+                GetHeaderDescriptorsAndValuesCore() :
+                Array.Empty<KeyValuePair<HeaderDescriptor, string[]>>();
+        }
+
+        private IEnumerable<KeyValuePair<HeaderDescriptor, string[]>> GetHeaderDescriptorsAndValuesCore()
+        {
+            List<HeaderDescriptor> invalidHeaders = null;
+
+            foreach (var header in _headerStore)
+            {
+                HeaderDescriptor descriptor = header.Key;
+                HeaderStoreItemInfo info = header.Value;
+
+                // Make sure we parse all raw values before returning the result. Note that this has to be
+                // done before we calculate the array length (next line): A raw value may contain a list of
+                // values.
+                if (!ParseRawHeaderValues(descriptor, info, false))
+                {
+                    // We have an invalid header value (contains invalid newline chars). Mark it as "to-be-deleted"
+                    // and skip this header.
+                    if (invalidHeaders == null)
+                    {
+                        invalidHeaders = new List<HeaderDescriptor>();
+                    }
+                    invalidHeaders.Add(descriptor);
+                }
+                else
+                {
+                    string[] values = GetValuesAsStrings(descriptor, info);
+                    yield return new KeyValuePair<HeaderDescriptor, string[]>(descriptor, values);
+                }
+            }
+
+            // While we were enumerating headers, we also parsed header values. If during parsing it turned out that
+            // the header value was invalid (contains invalid newline chars), remove the header from the store after
+            // completing the enumeration.
+            if (invalidHeaders != null)
+            {
+                Debug.Assert(_headerStore != null);
+                foreach (HeaderDescriptor invalidheaderInfo in invalidHeaders)
+                {
+                    _headerStore.Remove(invalidheaderInfo);
+                }
+            }
+        }
+
+        #endregion
+
+        #region IEnumerable Members
 
         Collections.IEnumerator Collections.IEnumerable.GetEnumerator()
         {
@@ -968,13 +1020,13 @@ namespace System.Net.Http.Headers
             {
                 case StoreLocation.Raw:
                     currentStoreValue = info.RawValue;
-                    AddValueToStoreValue<string>(info, value, ref currentStoreValue);
+                    AddValueToStoreValue<string>(value, ref currentStoreValue);
                     info.RawValue = currentStoreValue;
                     break;
 
                 case StoreLocation.Invalid:
                     currentStoreValue = info.InvalidValue;
-                    AddValueToStoreValue<string>(info, value, ref currentStoreValue);
+                    AddValueToStoreValue<string>(value, ref currentStoreValue);
                     info.InvalidValue = currentStoreValue;
                     break;
 
@@ -983,7 +1035,7 @@ namespace System.Net.Http.Headers
                         "Header value types must not derive from List<object> since this type is used internally to store " +
                         "lists of values. So we would not be able to distinguish between a single value and a list of values.");
                     currentStoreValue = info.ParsedValue;
-                    AddValueToStoreValue<object>(info, value, ref currentStoreValue);
+                    AddValueToStoreValue<object>(value, ref currentStoreValue);
                     info.ParsedValue = currentStoreValue;
                     break;
 
@@ -993,8 +1045,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private static void AddValueToStoreValue<T>(HeaderStoreItemInfo info, object value,
-            ref object currentStoreValue) where T : class
+        private static void AddValueToStoreValue<T>(object value, ref object currentStoreValue) where T : class
         {
             // If there is no value set yet, then add current item as value (we don't create a list
             // if not required). If 'info.Value' is already assigned then make sure 'info.Value' is a
@@ -1010,7 +1061,7 @@ namespace System.Net.Http.Headers
                 if (storeValues == null)
                 {
                     storeValues = new List<T>(2);
-                    Debug.Assert(value is T);
+                    Debug.Assert(currentStoreValue is T);
                     storeValues.Add(currentStoreValue as T);
                     currentStoreValue = storeValues;
                 }

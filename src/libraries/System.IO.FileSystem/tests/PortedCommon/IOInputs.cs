@@ -152,7 +152,7 @@ internal static class IOInputs
         }
     }
 
-    public static IEnumerable<string> GetPathsWithAlternativeDataStreams()
+    public static IEnumerable<string> GetPathsWithColons()
     {
         yield return @"AA:";
         yield return @"AAA:";

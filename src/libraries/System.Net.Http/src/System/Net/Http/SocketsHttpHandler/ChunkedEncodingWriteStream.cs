@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,6 +20,8 @@ namespace System.Net.Http
 
             public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken ignored)
             {
+                Debug.Assert(_connection._currentRequest != null);
+
                 // The token is ignored because it's coming from SendAsync and the only operations
                 // here are those that are already covered by the token having been registered with
                 // to close the connection.
@@ -30,46 +33,18 @@ namespace System.Net.Http
                     return _connection.FlushAsync();
                 }
 
-                if (_connection._currentRequest == null)
-                {
-                    // Avoid sending anything if the response has already completed, in which case there's no point
-                    // sending further data (this might happen, for example, on a redirect.)
-                    return Task.CompletedTask;
-                }
-
                 return WriteChunkAsync(source);
             }
 
             private async Task WriteChunkAsync(ReadOnlyMemory<byte> source)
             {
-                // Write chunk length -- hex representation of count
-                bool digitWritten = false;
-                for (int i = 7; i >= 0; i--)
-                {
-                    int shift = i * 4;
-                    int mask = 0xF << shift;
-                    int digit = (source.Length & mask) >> shift;
-                    if (digitWritten || digit != 0)
-                    {
-                        await _connection.WriteByteAsync((byte)(digit < 10 ? '0' + digit : 'A' + digit - 10)).ConfigureAwait(false);
-                        digitWritten = true;
-                    }
-                }
-
-                // End chunk length
+                // Write chunk length in hex followed by \r\n
+                await _connection.WriteHexInt32Async(source.Length).ConfigureAwait(false);
                 await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
 
-                // Write chunk contents
+                // Write chunk contents followed by \r\n
                 await _connection.WriteAsync(source).ConfigureAwait(false);
                 await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
-
-                // Flush the chunk.  This is reasonable from the standpoint of having just written a standalone piece
-                // of data, but is also necessary to support duplex communication, where a CopyToAsync is taking the
-                // data from content and writing it here; if there was no flush, we might not send the data until the
-                // source was empty, and it might be kept open to enable subsequent communication.  And it's necessary
-                // in general for at least the first write, as we need to ensure if it's the entirety of the content
-                // and if all of the headers and content fit in the write buffer that we've actually sent the request.
-                await _connection.FlushAsync().ConfigureAwait(false);
             }
             
             public override async Task FinishAsync()
