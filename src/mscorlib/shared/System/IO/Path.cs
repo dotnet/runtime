@@ -119,10 +119,12 @@ namespace System.IO
             return end;
         }
 
-        // Returns the extension of the given path. The returned value includes the
-        // period (".") character of the extension except when you have a terminal period when you get string.Empty, such as ".exe" or
-        // ".cpp". The returned value is null if the given path is
-        // null or if the given path does not include an extension.
+        /// <summary>
+        /// Returns the extension of the given path. The returned value includes the period (".") character of the
+        /// extension except when you have a terminal period when you get string.Empty, such as ".exe" or ".cpp".
+        /// The returned value is null if the given path is null or empty if the given path does not include an
+        /// extension.
+        /// </summary>
         public static string GetExtension(string path)
         {
             if (path == null)
@@ -157,9 +159,11 @@ namespace System.IO
             return ReadOnlySpan<char>.Empty;
         }
 
-        // Returns the name and extension parts of the given path. The resulting
-        // string contains the characters of path that follow the last
-        // separator in path. The resulting string is null if path is null.
+        /// <summary>
+        /// Returns the name and extension parts of the given path. The resulting string contains
+        /// the characters of path that follow the last separator in path. The resulting string is
+        /// null if path is null.
+        /// </summary>
         public static string GetFileName(string path)
         {
             if (path == null)
@@ -215,8 +219,10 @@ namespace System.IO
                 fileName.Slice(0, lastPeriod);
         }
 
-        // Returns a cryptographically strong random 8.3 string that can be 
-        // used as either a folder name or a file name.
+        /// <summary>
+        /// Returns a cryptographically strong random 8.3 string that can be
+        /// used as either a folder name or a file name.
+        /// </summary>
         public static unsafe string GetRandomFileName()
         {
             byte* pKey = stackalloc byte[KeyLength];
@@ -256,10 +262,11 @@ namespace System.IO
             return !PathInternal.IsPartiallyQualified(path);
         }
 
-        // Tests if a path includes a file extension. The result is
-        // true if the characters that follow the last directory
-        // separator ('\\' or '/') or volume separator (':') in the path include 
-        // a period (".") other than a terminal period. The result is false otherwise.
+
+        /// <summary>
+        /// Tests if a path's file name includes a file extension. A trailing period
+        /// is not considered an extension.
+        /// </summary>
         public static bool HasExtension(string path)
         {
             if (path != null)
@@ -800,9 +807,6 @@ namespace System.IO
             sb.Append(path, commonLength, count);
             return StringBuilderCache.GetStringAndRelease(sb);
         }
-
-        // StringComparison and IsCaseSensitive are also available in PathInternal.CaseSensitivity but we are
-        // too low in System.Runtime.Extensions to use it (no FileStream, etc.)
 
         /// <summary>Returns a comparison that can be used to compare file and directory names for equality.</summary>
         internal static StringComparison StringComparison
