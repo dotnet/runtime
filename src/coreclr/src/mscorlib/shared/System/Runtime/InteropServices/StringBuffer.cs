@@ -297,5 +297,8 @@ namespace System.Runtime.InteropServices
             _buffer = null;
             _length = 0;
         }
+
+        public ReadOnlySpan<char> AsSpan()
+            => new ReadOnlySpan<char>(UnderlyingArray, 0, Length);
     }
 }
