@@ -41,7 +41,7 @@ namespace System.IO.Pipes
             // We don't have a good way to enforce maxNumberOfServerInstances across processes; we only factor it in
             // for streams created in this process.  Between processes, we behave similarly to maxNumberOfServerInstances == 1,
             // in that the second process to come along and create a stream will find the pipe already in existence and will fail.
-            _instance = SharedServer.Get(GetPipePath(".", pipeName), maxNumberOfServerInstances);
+            _instance = SharedServer.Get(GetPipePath(".", pipeName, IsCurrentUserOnly), maxNumberOfServerInstances);
 
             _direction = direction;
             _options = options;
@@ -128,7 +128,7 @@ namespace System.IO.Pipes
                 return name;
             }
 
-            throw CreateExceptionForLastError();
+            throw CreateExceptionForLastError(_instance?.PipeName);
         }
 
         public override int InBufferSize
@@ -171,13 +171,13 @@ namespace System.IO.Pipes
             uint peerID;
             if (Interop.Sys.GetPeerID(handle, out peerID) == -1)
             {
-                throw CreateExceptionForLastError();
+                throw CreateExceptionForLastError(_instance?.PipeName);
             }
 
             // set the effective userid of the current (server) process to the clientid
             if (Interop.Sys.SetEUid(peerID) == -1)
             {
-                throw CreateExceptionForLastError();
+                throw CreateExceptionForLastError(_instance?.PipeName);
             }
 
             try
@@ -189,14 +189,6 @@ namespace System.IO.Pipes
                 // set the userid of the current (server) process back to its original value
                 Interop.Sys.SetEUid(currentEUID);
             }
-        }
-
-        private Exception CreateExceptionForLastError()
-        {
-            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-            return error.Error == Interop.Error.ENOTSUP ?
-                new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_OperatingSystemError, nameof(Interop.Error.ENOTSUP))) :
-                Interop.GetExceptionForIoErrno(error, _instance?.PipeName);
         }
 
         /// <summary>Shared resources for NamedPipeServerStreams in the same process created for the same path.</summary>
