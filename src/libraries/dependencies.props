@@ -10,14 +10,14 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</CoreFxCurrentRef>
-    <CoreClrCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</CoreClrCurrentRef>
+    <CoreClrCurrentRef>bd49c8985dc365d502ae636cace03708e57b0667</CoreClrCurrentRef>
     <CoreSetupCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
-    <BuildToolsCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>bd49c8985dc365d502ae636cace03708e57b0667</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -33,7 +33,7 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview2-26222-04</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview2-26222-04</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26222-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26222-07</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-26222-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-26222-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26222-00</ProjectNTfsTestILCPackageVersion>
@@ -48,13 +48,13 @@
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0015</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.3-alpha-experimental</TraceEventPackageVersion>
-    <XunitNetcoreExtensionsVersion>2.1.0-preview2-02521-06</XunitNetcoreExtensionsVersion>
+    <XunitNetcoreExtensionsVersion>2.1.0-preview2-02522-02</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-preview2-02521-06</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-preview2-02522-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
