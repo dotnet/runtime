@@ -53,9 +53,18 @@ namespace System.Net.NetworkInformation.Tests
             p.BeginOutputReadLine();
             p.BeginErrorReadLine();
 
+            // There are multiple issues with ping6 in macOS 10.12 (Sierra), see https://github.com/dotnet/corefx/issues/26358.
+            bool isPing6OnMacSierra = utilityPath.Equals(UnixCommandLinePing.Ping6UtilityPath) &&
+                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
+                    !PlatformDetection.IsMacOsHighSierraOrHigher;
+
             string pingOutput;
             if (!p.WaitForExit(TestSettings.PingTimeout))
             {
+                // Workaround known issues with ping6 in macOS 10.12
+                if (isPing6OnMacSierra)
+                    return;
+
                 pingOutput = string.Join("\n", stdOutLines);
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
@@ -69,6 +78,10 @@ namespace System.Net.NetworkInformation.Tests
             var exitCode = p.ExitCode;
             if (exitCode != 0)
             {
+                // Workaround known issues with ping6 in macOS 10.12
+                if (isPing6OnMacSierra)
+                    return;
+
                 string stdErr = string.Join("\n", stdErrLines);
                 throw new Exception(
                     $"[{utilityPath} {arguments}] process exit code is {exitCode}.\nStdOut:[{pingOutput}]\nStdErr:[{stdErr}]");

@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Linq;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
@@ -44,11 +42,19 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         internal SubjectIdentifier(SignerIdentifierAsn signerIdentifierAsn)
+            : this(signerIdentifierAsn.IssuerAndSerialNumber, signerIdentifierAsn.SubjectKeyIdentifier)
         {
-            if (signerIdentifierAsn.IssuerAndSerialNumber.HasValue)
+            
+        }
+
+        internal SubjectIdentifier(
+            IssuerAndSerialNumberAsn? issuerAndSerialNumber,
+            ReadOnlyMemory<byte>? subjectKeyIdentifier)
+        {
+            if (issuerAndSerialNumber.HasValue)
             {
-                ReadOnlySpan<byte> issuerNameSpan = signerIdentifierAsn.IssuerAndSerialNumber.Value.Issuer.Span;
-                ReadOnlySpan<byte> serial = signerIdentifierAsn.IssuerAndSerialNumber.Value.SerialNumber.Span;
+                ReadOnlySpan<byte> issuerNameSpan = issuerAndSerialNumber.Value.Issuer.Span;
+                ReadOnlySpan<byte> serial = issuerAndSerialNumber.Value.SerialNumber.Span;
 
                 bool nonZero = false;
 
@@ -74,13 +80,13 @@ namespace System.Security.Cryptography.Pkcs
                     Type = SubjectIdentifierType.IssuerAndSerialNumber;
 
                     var name = new X500DistinguishedName(issuerNameSpan.ToArray());
-                    Value = new X509IssuerSerial(name.Name, serial.ToSkiString());
+                    Value = new X509IssuerSerial(name.Name, serial.ToBigEndianHex());
                 }
             }
-            else if (signerIdentifierAsn.SubjectKeyIdentifier != null)
+            else if (subjectKeyIdentifier != null)
             {
                 Type = SubjectIdentifierType.SubjectKeyIdentifier;
-                Value = signerIdentifierAsn.SubjectKeyIdentifier.Value.Span.ToSkiString();
+                Value = subjectKeyIdentifier.Value.Span.ToBigEndianHex();
             }
             else
             {

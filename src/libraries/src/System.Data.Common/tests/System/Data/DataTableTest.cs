@@ -32,6 +32,7 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Xml;
 using Xunit;
@@ -386,6 +387,25 @@ namespace System.Data.Tests
             // result is always 25 :-P
             //Assert.Equal (25, T.Select ("id < 10").Length);
 
+        }
+
+        [Fact]
+        public void DataColumnTypeSerialization()
+        {
+            DataTable dt = new DataTable("MyTable");
+            DataColumn dc = new DataColumn("dc", typeof(int));
+            dt.Columns.Add(dc);
+            dt.RemotingFormat = SerializationFormat.Binary;
+
+            DataTable dtDeserialized;
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, dt);
+                ms.Seek(0, SeekOrigin.Begin);
+                dtDeserialized = (DataTable)bf.Deserialize(ms);
+            }
+            Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
         }
 
         [Fact]

@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -17,7 +17,8 @@ namespace System.IO.Pipes
         internal const bool CheckOperationsRequiresSetHandle = true;
         internal ThreadPoolBoundHandle _threadPoolBinding;
 
-        internal static string GetPipePath(string serverName, string pipeName)
+        // In Windows we don't use isCurrentUserOnly flag for the path because we set an ACL to the pipe.
+        internal static string GetPipePath(string serverName, string pipeName, bool isCurrentUserOnly)
         {
             string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
             if (String.Equals(normalizedPipePath, @"\\.\pipe\" + AnonymousPipeName, StringComparison.OrdinalIgnoreCase))
@@ -411,6 +412,31 @@ namespace System.IO.Pipes
             }
             return secAttrs;
         }
+
+        internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity pipeSecurity, ref GCHandle pinningHandle)
+        {
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
+
+            if ((inheritability & HandleInheritability.Inheritable) != 0)
+            {
+                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
+            }
+
+            if (pipeSecurity != null)
+            {
+                byte[] securityDescriptor = pipeSecurity.GetSecurityDescriptorBinaryForm();
+                pinningHandle = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
+                fixed (byte* pSecurityDescriptor = securityDescriptor)
+                {
+                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                }
+            }
+
+            return secAttrs;
+        }
+
+
 
         /// <summary>
         /// Determine pipe read mode from Win32 

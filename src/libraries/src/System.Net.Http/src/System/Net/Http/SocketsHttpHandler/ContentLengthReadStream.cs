@@ -87,35 +87,103 @@ namespace System.Net.Http
             {
                 ValidateCopyToArgs(this, destination, bufferSize);
 
-                return
-                    cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                    _connection != null ? CopyToAsyncCore(destination, bufferSize, cancellationToken) :
-                    Task.CompletedTask; // null if response body fully consumed
-            }
-
-            private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
-            {
-                Task copyTask = _connection.CopyToAsync(destination, _contentBytesRemaining);
-                if (!copyTask.IsCompletedSuccessfully)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
-                    try
-                    {
-                        await copyTask.ConfigureAwait(false);
-                    }
-                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
-                    {
-                        throw CreateOperationCanceledException(exc, cancellationToken);
-                    }
-                    finally
-                    {
-                        ctr.Dispose();
-                    }
+                    return Task.FromCanceled(cancellationToken);
                 }
 
+                if (_connection == null)
+                {
+                    // null if response body fully consumed
+                    return Task.CompletedTask;
+                }
+
+                Task copyTask = _connection.CopyToExactLengthAsync(destination, _contentBytesRemaining, cancellationToken);
+                if (copyTask.IsCompletedSuccessfully)
+                {
+                    Finish();
+                    return Task.CompletedTask;
+                }
+
+                return CompleteCopyToAsync(copyTask, cancellationToken);
+            }
+
+            private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
+            {
+                CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
+                try
+                {
+                    await copyTask.ConfigureAwait(false);
+                }
+                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                {
+                    throw CreateOperationCanceledException(exc, cancellationToken);
+                }
+                finally
+                {
+                    ctr.Dispose();
+                }
+
+                Finish();
+            }
+
+            private void Finish()
+            {
                 _contentBytesRemaining = 0;
                 _connection.ReturnConnectionToPool();
                 _connection = null;
+            }
+
+            // Based on ReadChunkFromConnectionBuffer; perhaps we should refactor into a common routine.
+            private ReadOnlyMemory<byte> ReadFromConnectionBuffer(int maxBytesToRead)
+            {
+                Debug.Assert(maxBytesToRead > 0);
+                Debug.Assert(_contentBytesRemaining > 0);
+
+                ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
+                if (connectionBuffer.Length == 0)
+                {
+                    return default;
+                }
+
+                int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _contentBytesRemaining));
+                Debug.Assert(bytesToConsume > 0);
+
+                _connection.ConsumeFromRemainingBuffer(bytesToConsume);
+                _contentBytesRemaining -= (ulong)bytesToConsume;
+
+                return connectionBuffer.Slice(0, bytesToConsume);
+            }
+
+            public override bool NeedsDrain => (_connection != null);
+
+            public override async Task<bool> DrainAsync(int maxDrainBytes)
+            {
+                Debug.Assert(_connection != null);
+                Debug.Assert(_contentBytesRemaining > 0);
+
+                ReadFromConnectionBuffer(int.MaxValue);
+                if (_contentBytesRemaining == 0)
+                {
+                    Finish();
+                    return true;
+                }
+
+                if (_contentBytesRemaining > (ulong)maxDrainBytes)
+                {
+                    return false;
+                }
+
+                while (true)
+                {
+                    await _connection.FillAsync().ConfigureAwait(false);
+                    ReadFromConnectionBuffer(int.MaxValue);
+                    if (_contentBytesRemaining == 0)
+                    {
+                        Finish();
+                        return true;
+                    }
+                }
             }
         }
     }

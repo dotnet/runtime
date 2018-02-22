@@ -20,6 +20,7 @@ namespace System.IO.Pipes
         private bool _canRead;
         private bool _canWrite;
         private bool _isAsync;
+        private bool _isCurrentUserOnly;
         private bool _isMessageComplete;
         private bool _isFromExistingHandle;
         private bool _isHandleExposed;
@@ -628,6 +629,18 @@ namespace System.IO.Pipes
             set
             {
                 _state = value;
+            }
+        }
+
+        internal bool IsCurrentUserOnly
+        {
+            get
+            {
+                return _isCurrentUserOnly;
+            }
+            set
+            {
+                _isCurrentUserOnly = value;
             }
         }
     }

@@ -485,7 +485,7 @@ namespace System.Data.Tests
                 Assert.Contains(@"AutoIncrementStep=""-2""", rawSchemaXML);
                 Assert.DoesNotContain("()1", rawSchemaXML);
                 Assert.DoesNotContain("()2", rawSchemaXML);
-            });
+            }).Dispose();
         }
 
         [Fact]
@@ -600,7 +600,7 @@ namespace System.Data.Tests
                 DataColumn rowIDColumn = table.Columns["RowID"];
                 Assert.Equal(-1, rowIDColumn.AutoIncrementSeed);
                 Assert.Equal(-2, rowIDColumn.AutoIncrementStep);
-            });
+            }).Dispose();
         }
 
         [Fact]

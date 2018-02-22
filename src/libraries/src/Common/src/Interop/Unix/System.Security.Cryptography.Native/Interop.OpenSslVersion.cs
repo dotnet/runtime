@@ -23,7 +23,7 @@ internal static partial class Interop
                     const string OpenSSL = "OpenSSL ";
 
                     // Skip OpenSSL part, and get the version string of format x.y.z
-                    if (!Version.TryParse(OpenSslVersionDescription().AsReadOnlySpan().Slice(OpenSSL.Length, 5), out s_opensslVersion))
+                    if (!Version.TryParse(OpenSslVersionDescription().AsSpan().Slice(OpenSSL.Length, 5), out s_opensslVersion))
                     {
                         s_opensslVersion = new Version(0, 0, 0);
                     }

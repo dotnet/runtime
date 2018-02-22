@@ -71,6 +71,8 @@ namespace System.Security.Cryptography.Pkcs
             }
         }
 
+        internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
+
         public byte[] GetSignature() => _signature.ToArray();
 
         public X509Certificate2 Certificate
@@ -620,7 +622,7 @@ namespace System.Security.Cryptography.Pkcs
             return Helpers.GetDigestAlgorithm(DigestAlgorithm.Value);
         }
 
-        private static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)
+        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)
         {
             var coll = new CryptographicAttributeObjectCollection();
 

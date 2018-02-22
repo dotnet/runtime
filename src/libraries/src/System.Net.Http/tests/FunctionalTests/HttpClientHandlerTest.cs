@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandlerTest : HttpClientTestBase
     {
         readonly ITestOutputHelper _output;
-        private const string ExpectedContent = "Test contest";
+        private const string ExpectedContent = "Test content";
         private const string Username = "testuser";
         private const string Password = "password";
 
@@ -66,26 +66,31 @@ namespace System.Net.Http.Functional.Tests
             new object[] { 307 }
         };
 
-        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethods = {
-            new object[] { 300, "GET", "GET" },
-            new object[] { 300, "POST", "GET" },
-            new object[] { 300, "HEAD", "HEAD" },
+        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethodsUseTE = {
+            new object[] { 300, "GET", "GET", false },
+            new object[] { 300, "POST", "GET", false },
+            new object[] { 300, "POST", "GET", true },
+            new object[] { 300, "HEAD", "HEAD", false },
 
-            new object[] { 301, "GET", "GET" },
-            new object[] { 301, "POST", "GET" },
-            new object[] { 301, "HEAD", "HEAD" },
+            new object[] { 301, "GET", "GET", false },
+            new object[] { 301, "POST", "GET", false },
+            new object[] { 301, "POST", "GET", true },
+            new object[] { 301, "HEAD", "HEAD", false },
 
-            new object[] { 302, "GET", "GET" },
-            new object[] { 302, "POST", "GET" },
-            new object[] { 302, "HEAD", "HEAD" },
+            new object[] { 302, "GET", "GET", false },
+            new object[] { 302, "POST", "GET", false },
+            new object[] { 302, "POST", "GET", true },
+            new object[] { 302, "HEAD", "HEAD", false },
 
-            new object[] { 303, "GET", "GET" },
-            new object[] { 303, "POST", "GET" },
-            new object[] { 303, "HEAD", "HEAD" },
+            new object[] { 303, "GET", "GET", false },
+            new object[] { 303, "POST", "GET", false },
+            new object[] { 303, "POST", "GET", true },
+            new object[] { 303, "HEAD", "HEAD", false },
 
-            new object[] { 307, "GET", "GET" },
-            new object[] { 307, "POST", "POST" },
-            new object[] { 307, "HEAD", "HEAD" },
+            new object[] { 307, "GET", "GET", false },
+            new object[] { 307, "POST", "POST", false },
+            new object[] { 307, "POST", "POST", true },
+            new object[] { 307, "HEAD", "HEAD", false },
         };
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
@@ -590,11 +595,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
+        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethodsUseTE))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
-            int statusCode, string oldMethod, string newMethod)
+            int statusCode, string oldMethod, string newMethod, bool useTE)
         {
-            if (!PlatformDetection.IsWindows && !UseSocketsHttpHandler && statusCode == 300 && oldMethod == "POST")
+            if (IsCurlHandler && statusCode == 300 && oldMethod == "POST")
             {
                 // Known behavior: curl does not change method to "GET"
                 // https://github.com/dotnet/corefx/issues/26434
@@ -607,28 +612,76 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl);
+                    if (oldMethod == "POST")
+                    {
+                        request.Content = new StringContent(ExpectedContent);
+
+                        if (useTE)
+                        {
+                            request.Content.Headers.ContentLength = 0;
+                            request.Headers.TransferEncodingChunked = true;
+                        }
+                    }
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
 
                     await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
                     {
                         // Original URL will redirect to a different URL
-                        Task<List<string>> serverTask = origServer.AcceptConnectionSendResponseAndCloseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\n");
+                        Task serverTask = origServer.AcceptConnectionAsync(async connection =>
+                        {
+                            // Send Connection: close so the client will close connection after request is sent,
+                            // meaning we can just read to the end to get the content
+                            await connection.ReadRequestHeaderAndSendResponseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\nConnection: close\r\n");
+                            await connection.Reader.ReadToEndAsync();
+                        });
+
                         await Task.WhenAny(getResponseTask, serverTask);
                         Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
                         await serverTask;
 
                         // Redirected URL answers with success
-                        serverTask = redirServer.AcceptConnectionSendResponseAndCloseAsync();
-                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+                        List<string> receivedRequest = null;
+                        string receivedContent = null;
+                        Task serverTask2 = redirServer.AcceptConnectionAsync(async connection =>
+                        {
+                            // Send Connection: close so the client will close connection after request is sent,
+                            // meaning we can just read to the end to get the content
+                            receivedRequest = await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
+                            receivedContent = await connection.Reader.ReadToEndAsync();
+                        });
 
-                        List<string> receivedRequest = await serverTask;
+                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask2);
+
                         string[] statusLineParts = receivedRequest[0].Split(' ');
 
                         using (HttpResponseMessage response = await getResponseTask)
                         {
                             Assert.Equal(200, (int)response.StatusCode);
                             Assert.Equal(newMethod, statusLineParts[0]);
+                        }
+
+                        if (newMethod == "POST")
+                        {
+                            if (useTE)
+                            {
+                                Assert.Contains("Transfer-Encoding: chunked", receivedRequest);
+                            }
+                            else
+                            {
+                                Assert.Contains($"Content-Length: {ExpectedContent.Length}", receivedRequest);
+                                Assert.Equal(ExpectedContent, receivedContent);
+                            }
+                        }
+                        else
+                        {
+                            // ISSUE #27301:
+                            // CurlHandler incorrectly sends Transfer-Encoding when the method changes from POST to GET.
+                            if (!IsCurlHandler)
+                            {
+                                Assert.DoesNotContain(receivedRequest, line => line.StartsWith("Transfer-Encoding"));
+                            }
+                            Assert.DoesNotContain(receivedRequest, line => line.StartsWith("Content-Length"));
                         }
                     });
                 });
@@ -859,40 +912,77 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(IsNotWindows7))] // Skip test on Win7 since WinHTTP has bugs w/ fragments.
+        [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
         [InlineData("", "#redirFragment", "#redirFragment", false)]
         [InlineData("", "#redirFragment", "#redirFragment", true)]
         [InlineData("#origFragment", "#redirFragment", "#redirFragment", false)]
         [InlineData("#origFragment", "#redirFragment", "#redirFragment", true)]
-        [ActiveIssue(27217)]
         public async Task GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate(
             string origFragment, string redirFragment, string expectedFragment, bool useRelativeRedirect)
         {
+            if (IsCurlHandler)
+            {
+                // Starting with libcurl 7.20, "fragment part of URLs are no longer sent to the server".
+                // So CurlHandler doesn't send fragments.
+                return;
+            }
+
+            if (IsNetfxHandler)
+            {
+                // Similarly, netfx doesn't send fragments at all.
+                return;
+            }
+
+            if (IsWinHttpHandler)
+            {
+                // According to https://tools.ietf.org/html/rfc7231#section-7.1.2,
+                // "If the Location value provided in a 3xx (Redirection) response does
+                //  not have a fragment component, a user agent MUST process the
+                //  redirection as if the value inherits the fragment component of the
+                //  URI reference used to generate the request target(i.e., the
+                //  redirection inherits the original reference's fragment, if any)."
+                // WINHTTP is not doing this, and thus neither is WinHttpHandler.
+                // It also sometimes doesn't include the fragments for redirects
+                // even in other cases.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (var client = new HttpClient(handler))
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
-                    origUrl = new Uri(origUrl.ToString() + origFragment);
-                    Uri redirectUrl = useRelativeRedirect ?
-                        new Uri(origUrl.PathAndQuery + redirFragment, UriKind.Relative) :
-                        new Uri(origUrl.ToString() + redirFragment);
-                    Uri expectedUrl = new Uri(origUrl.ToString() + expectedFragment);
+                    origUrl = new UriBuilder(origUrl) { Fragment = origFragment }.Uri;
+                    Uri redirectUrl = new UriBuilder(origUrl) { Fragment = redirFragment }.Uri;
+                    if (useRelativeRedirect)
+                    {
+                        redirectUrl = new Uri(redirectUrl.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.SafeUnescaped), UriKind.Relative);
+                    }
+                    Uri expectedUrl = new UriBuilder(origUrl) { Fragment = expectedFragment }.Uri;
 
+                    // Make and receive the first request that'll be redirected.
                     Task<HttpResponseMessage> getResponse = client.GetAsync(origUrl);
                     Task firstRequest = origServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectUrl}\r\n");
                     Assert.Equal(firstRequest, await Task.WhenAny(firstRequest, getResponse));
 
-                    Task secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync();
+                    // Receive the second request.
+                    Task<List<string>> secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(secondRequest, getResponse);
 
+                    // Make sure the server received the second request for the right Uri.
+                    Assert.NotEmpty(secondRequest.Result);
+                    string[] statusLineParts = secondRequest.Result[0].Split(' ');
+                    Assert.Equal(3, statusLineParts.Length);
+                    Assert.Equal(expectedUrl.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.SafeUnescaped), statusLineParts[1]);
+
+                    // Make sure the request message was updated with the correct redirected location.
                     using (HttpResponseMessage response = await getResponse)
                     {
                         Assert.Equal(200, (int)response.StatusCode);
-                        Assert.Equal(expectedUrl, response.RequestMessage.RequestUri);
+                        Assert.Equal(expectedUrl.ToString(), response.RequestMessage.RequestUri.ToString());
                     }
                 });
             }
@@ -2216,7 +2306,7 @@ namespace System.Net.Http.Functional.Tests
                         canReadFunc: () => true,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
 
-                    if (UseSocketsHttpHandler || PlatformDetection.IsUap)
+                    if (PlatformDetection.IsUap)
                     {
                         HttpRequestException requestException = await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
                         Assert.Same(error, requestException.InnerException);

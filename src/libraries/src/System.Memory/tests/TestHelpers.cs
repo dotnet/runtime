@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using static System.Buffers.Binary.BinaryPrimitives;
+using System.Text;
 
 namespace System
 {
@@ -236,6 +237,17 @@ namespace System
 
             Assert.Equal(56, spanLE.Length);
             return spanLE;
+        }
+
+        public static string BuildString(int length, int seed)
+        {
+            Random rnd = new Random(seed);
+            var builder = new StringBuilder();
+            for (int i = 0; i < length; i++)
+            {
+                builder.Append((char)rnd.Next(65, 91));
+            }
+            return builder.ToString();
         }
 
         [StructLayout(LayoutKind.Explicit)]

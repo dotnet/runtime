@@ -226,7 +226,7 @@ namespace System.IO
     public enum MatchType
     {
         Simple,
-        Dos
+        Win32
     }
     public enum MatchCasing
     {
@@ -260,6 +260,7 @@ namespace System.IO.Enumeration
         public DateTimeOffset LastAccessTimeUtc { get { throw null; } }
         public DateTimeOffset LastWriteTimeUtc { get { throw null; } }
         public bool IsDirectory { get { throw null; } }
+        public bool IsHidden { get { throw null; } }
         public FileSystemInfo ToFileSystemInfo() { throw null; }
         public string ToSpecifiedFullPath() { throw null; }
         public string ToFullPath() { throw null; }
@@ -297,8 +298,8 @@ namespace System.IO.Enumeration
     }
     public static class FileSystemName
     {
-        public static string TranslateDosExpression(string expression) { throw null; }
-        public static bool MatchesDosExpression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
+        public static string TranslateWin32Expression(string expression) { throw null; }
+        public static bool MatchesWin32Expression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
         public static bool MatchesSimpleExpression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true) { throw null; }
     }
 }

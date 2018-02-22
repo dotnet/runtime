@@ -32,7 +32,7 @@ namespace System.IO.Tests.Enumeration
             string[] results = GetFiles(testDirectory.FullName, pattern);
             FSAssert.EqualWhenOrdered(new string[] { fileOne.FullName, fileTwo.FullName }, results);
 
-            results = GetFiles(testDirectory.FullName, pattern, new EnumerationOptions { MatchType = MatchType.Dos });
+            results = GetFiles(testDirectory.FullName, pattern, new EnumerationOptions { MatchType = MatchType.Win32 });
             FSAssert.EqualWhenOrdered(new string[] { fileOne.FullName, fileTwo.FullName }, results);
         }
 

@@ -3,16 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-    public sealed class LoopbackServer : IDisposable
+    public sealed partial class LoopbackServer : IDisposable
     {
         private Socket _listenSocket;
         private Options _options;
@@ -91,7 +94,8 @@ namespace System.Net.Test.Common
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (_options.UseSsl)
                 {
-                    var sslStream = new SslStream(stream, false, delegate { return true; });
+                    var sslStream = new SslStream(stream, false, delegate
+                    { return true; });
                     using (var cert = Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
@@ -148,57 +152,104 @@ namespace System.Net.Test.Common
         {
             switch ((int)code)
             {
-                case 100: return "Continue";
-                case 101: return "Switching Protocols";
-                case 102: return "Processing";
+                case 100:
+                    return "Continue";
+                case 101:
+                    return "Switching Protocols";
+                case 102:
+                    return "Processing";
 
-                case 200: return "OK";
-                case 201: return "Created";
-                case 202: return "Accepted";
-                case 203: return "Non-Authoritative Information";
-                case 204: return "No Content";
-                case 205: return "Reset Content";
-                case 206: return "Partial Content";
-                case 207: return "Multi-Status";
+                case 200:
+                    return "OK";
+                case 201:
+                    return "Created";
+                case 202:
+                    return "Accepted";
+                case 203:
+                    return "Non-Authoritative Information";
+                case 204:
+                    return "No Content";
+                case 205:
+                    return "Reset Content";
+                case 206:
+                    return "Partial Content";
+                case 207:
+                    return "Multi-Status";
 
-                case 300: return "Multiple Choices";
-                case 301: return "Moved Permanently";
-                case 302: return "Found";
-                case 303: return "See Other";
-                case 304: return "Not Modified";
-                case 305: return "Use Proxy";
-                case 307: return "Temporary Redirect";
+                case 300:
+                    return "Multiple Choices";
+                case 301:
+                    return "Moved Permanently";
+                case 302:
+                    return "Found";
+                case 303:
+                    return "See Other";
+                case 304:
+                    return "Not Modified";
+                case 305:
+                    return "Use Proxy";
+                case 307:
+                    return "Temporary Redirect";
 
-                case 400: return "Bad Request";
-                case 401: return "Unauthorized";
-                case 402: return "Payment Required";
-                case 403: return "Forbidden";
-                case 404: return "Not Found";
-                case 405: return "Method Not Allowed";
-                case 406: return "Not Acceptable";
-                case 407: return "Proxy Authentication Required";
-                case 408: return "Request Timeout";
-                case 409: return "Conflict";
-                case 410: return "Gone";
-                case 411: return "Length Required";
-                case 412: return "Precondition Failed";
-                case 413: return "Request Entity Too Large";
-                case 414: return "Request-Uri Too Long";
-                case 415: return "Unsupported Media Type";
-                case 416: return "Requested Range Not Satisfiable";
-                case 417: return "Expectation Failed";
-                case 422: return "Unprocessable Entity";
-                case 423: return "Locked";
-                case 424: return "Failed Dependency";
-                case 426: return "Upgrade Required"; // RFC 2817
+                case 400:
+                    return "Bad Request";
+                case 401:
+                    return "Unauthorized";
+                case 402:
+                    return "Payment Required";
+                case 403:
+                    return "Forbidden";
+                case 404:
+                    return "Not Found";
+                case 405:
+                    return "Method Not Allowed";
+                case 406:
+                    return "Not Acceptable";
+                case 407:
+                    return "Proxy Authentication Required";
+                case 408:
+                    return "Request Timeout";
+                case 409:
+                    return "Conflict";
+                case 410:
+                    return "Gone";
+                case 411:
+                    return "Length Required";
+                case 412:
+                    return "Precondition Failed";
+                case 413:
+                    return "Request Entity Too Large";
+                case 414:
+                    return "Request-Uri Too Long";
+                case 415:
+                    return "Unsupported Media Type";
+                case 416:
+                    return "Requested Range Not Satisfiable";
+                case 417:
+                    return "Expectation Failed";
+                case 422:
+                    return "Unprocessable Entity";
+                case 423:
+                    return "Locked";
+                case 424:
+                    return "Failed Dependency";
+                case 426:
+                    return "Upgrade Required"; // RFC 2817
 
-                case 500: return "Internal Server Error";
-                case 501: return "Not Implemented";
-                case 502: return "Bad Gateway";
-                case 503: return "Service Unavailable";
-                case 504: return "Gateway Timeout";
-                case 505: return "Http Version Not Supported";
-                case 507: return "Insufficient Storage";
+                case 500:
+                    return "Internal Server Error";
+                case 501:
+                    return "Not Implemented";
+                case 502:
+                    return "Bad Gateway";
+                case 503:
+                    return "Service Unavailable";
+                case 504:
+                    return "Gateway Timeout";
+                case 505:
+                    return "Http Version Not Supported";
+                case 507:
+                    return "Insufficient Storage";
             }
             return null;
         }
@@ -206,10 +257,32 @@ namespace System.Net.Test.Common
         public static string GetHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-            $"Content-Length: {(content == null ? 0 : content.Length)}\r\n" + 
+            $"Content-Length: {(content == null ? 0 : content.Length)}\r\n" +
             additionalHeaders +
-            "\r\n" + 
+            "\r\n" +
             content;
+
+        public static string GetSingleChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
+            $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            additionalHeaders +
+            "\r\n" +
+            (string.IsNullOrEmpty(content) ? "" :
+                $"{content.Length:X}\r\n" +
+                $"{content}\r\n") +
+            $"0\r\n" +
+            $"\r\n";
+
+        public static string GetBytePerChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null) =>
+            $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
+            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            additionalHeaders +
+            "\r\n" +
+            (string.IsNullOrEmpty(content) ? "" : string.Concat(content.Select(c => $"1\r\n{c}\r\n"))) + 
+            $"0\r\n" +
+            $"\r\n";
 
         public class Options
         {
@@ -219,6 +292,9 @@ namespace System.Net.Test.Common
             public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
+            public string Username { get; set; }
+            public string Domain { get; set; }
+            public string Password { get; set; }
         }
 
         public sealed class Connection : IDisposable
@@ -267,6 +343,11 @@ namespace System.Net.Test.Common
                 while (!string.IsNullOrEmpty(line = await _reader.ReadLineAsync().ConfigureAwait(false)))
                 {
                     lines.Add(line);
+                }
+
+                if (line == null)
+                {
+                    throw new Exception("Unexpected EOF trying to read request header");
                 }
 
                 return lines;

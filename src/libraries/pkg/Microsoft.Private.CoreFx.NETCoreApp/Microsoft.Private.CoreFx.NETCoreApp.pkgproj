@@ -39,6 +39,7 @@
         Microsoft.VisualBasic;
         Microsoft.Win32.Registry;
         System.IO.FileSystem.AccessControl;
+        System.IO.Pipes.AccessControl;
         System.Private.DataContractSerialization;
         System.Private.Uri;
         System.Private.Xml;

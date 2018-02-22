@@ -234,7 +234,7 @@ namespace System.Xml
 
         private static int ComputeHash32(string key)
         {
-            ReadOnlySpan<byte> bytes = key.AsReadOnlySpan().AsBytes();
+            ReadOnlySpan<byte> bytes = key.AsSpan().AsBytes();
             return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
         }
 

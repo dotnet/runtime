@@ -21,27 +21,21 @@ namespace System.Text
             _pos = 0;
         }
 
-        public int Length
+        public int Length => _pos;
+
+        public ref char this[int index]
         {
-            get => _pos;
-            set
+            get
             {
-                int delta = value - _pos;
-                if (delta > 0)
-                {
-                    Append('\0', delta);
-                }
-                else
-                {
-                    _pos = value;
-                }
+                Debug.Assert(index < _pos);
+                return ref _chars[index];
             }
         }
 
         public override string ToString()
         {
             var s = new string(_chars.Slice(0, _pos));
-            Clear();
+            Dispose();
             return s;
         }
 
@@ -50,13 +44,13 @@ namespace System.Text
             if (_chars.Slice(0, _pos).TryCopyTo(destination))
             {
                 charsWritten = _pos;
-                Clear();
+                Dispose();
                 return true;
             }
             else
             {
                 charsWritten = 0;
-                Clear();
+                Dispose();
                 return false;
             }
         }
@@ -112,7 +106,7 @@ namespace System.Text
                 Grow(s.Length);
             }
 
-            s.AsReadOnlySpan().CopyTo(_chars.Slice(pos));
+            s.AsSpan().CopyTo(_chars.Slice(pos));
             _pos += s.Length;
         }
 
@@ -185,7 +179,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Clear()
+        public void Dispose()
         {
             char[] toReturn = _arrayToReturnToPool;
             this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again

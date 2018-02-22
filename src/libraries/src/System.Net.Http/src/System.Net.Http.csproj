@@ -124,7 +124,7 @@
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticateAndRedirectHandler.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Basic.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
@@ -149,6 +149,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpProxyConnectionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler platform parts -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">

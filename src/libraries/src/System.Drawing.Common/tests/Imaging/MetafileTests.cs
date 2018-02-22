@@ -90,7 +90,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [InlineData(@"fileNo*-//\\#@(found")]
+        [InlineData("bad\0name")]
         [InlineData("")]
         public void Ctor_InvalidPath_ThrowsArgumentException(string path)
         {
@@ -464,7 +464,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [InlineData(@"fileNo*-//\\#@(found")]
+        [InlineData("bad\0path")]
         [InlineData("")]
         public void Ctor_InvalidPathI_ThrowsArgumentException(string fileName)
         {
@@ -749,7 +749,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [InlineData(@"fileNo*-//\\#@(found")]
+        [InlineData("bad\0path")]
         [InlineData("")]
         public void Ctor_InvalidPathII_ThrowsArgumentException(string fileName)
         {
@@ -940,7 +940,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [InlineData(@"fileNo*-//\\#@(found")]
+        [InlineData("bad\0path")]
         [InlineData("")]
         public void Static_GetMetafileHeader_InvalidPath_ThrowsArgumentException(string fileName)
         {

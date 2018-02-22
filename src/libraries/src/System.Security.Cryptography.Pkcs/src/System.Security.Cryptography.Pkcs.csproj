@@ -175,7 +175,30 @@
   </ItemGroup>
   <!-- Internal types (platform: AnyOS) -->
   <ItemGroup Condition="'$(TargetsWindows)' != 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\AsnHelpers.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Asn.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Decode.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Decrypt.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Encrypt.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.Exceptions.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.KeyAgree.cs" />
+    <Compile Include="Internal\Cryptography\Pal\AnyOS\ManagedPal.KeyTrans.cs" />
     <Compile Include="Internal\Cryptography\Pal\AnyOS\PkcsPal.AnyOS.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncryptedContentInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EnvelopedDataAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientIdentifierAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyAgreeRecipientInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\KeyTransRecipientInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorIdentifierOrKeyAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OriginatorPublicKeyAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherKeyAttributeAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rc2CbcParameters.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientEncryptedKeyAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientIdentifierAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\RecipientKeyIdentifier.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />
@@ -225,11 +248,19 @@
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\CertificateChoiceAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\ContentInfoAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\EncapsulatedContentInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\GeneralName.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\IssuerAndSerialNumberAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PssParamsAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161Accuracy.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampReq.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TimeStampResp.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\Rfc3161TstInfo.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignedDataAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerIdentifierAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SignerInfoAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\SigningCertificateAsn.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\X509ExtensionAsn.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.ECDsa.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.RSA.cs" />
@@ -242,6 +273,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Security\Cryptography\Pkcs\CmsSignature.DSA.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161RequestResponseStatus.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampRequest.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampToken.cs" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Rfc3161TimestampTokenInfo.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

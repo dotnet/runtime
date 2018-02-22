@@ -69,6 +69,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs">
+      <Link>Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
@@ -79,10 +82,12 @@
     <Compile Include="DelegatingHandlerTest.cs" />
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
+    <Compile Include="HttpClientHandlerTest.Authentication.cs" />
     <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
+    <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />

@@ -140,7 +140,12 @@
     <Compile Include="System\IO\Pipes\ConnectionCompletionSource.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
+    <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
+    <Compile Include="System\IO\Pipes\PipeAccessRule.cs" />
+    <Compile Include="System\IO\Pipes\PipeAuditRule.cs" />
+    <Compile Include="System\IO\Pipes\PipesAclExtensions.cs" />
     <Compile Include="System\IO\Pipes\PipeCompletionSource.cs" />
+    <Compile Include="System\IO\Pipes\PipeSecurity.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\ReadWriteCompletionSource.cs" />
   </ItemGroup>
@@ -177,6 +182,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.IOErrors.cs">
       <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ChMod.cs">
+      <Link>Common\Interop\Unix\Interop.ChMod.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
@@ -204,7 +212,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Permissions.cs">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.Permissions.cs">
       <Link>Common\Interop\Unix\Interop.Permissions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Pipe.cs">
@@ -255,8 +263,15 @@
     <Reference Include="System.Threading.Overlapped" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Security.AccessControl" />
+    <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Security.Claims" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
   </ItemGroup>

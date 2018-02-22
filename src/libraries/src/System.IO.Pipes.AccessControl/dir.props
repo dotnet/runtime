@@ -4,5 +4,8 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.3.0</AssemblyVersion>
     <AssemblyKey>MSFT</AssemblyKey>
+    <IsNETCoreApp>true</IsNETCoreApp>
+    <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IsUAP>true</IsUAP>
   </PropertyGroup>
 </Project>
