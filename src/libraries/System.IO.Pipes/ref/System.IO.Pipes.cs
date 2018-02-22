@@ -90,6 +90,7 @@ namespace System.IO.Pipes
     public enum PipeOptions
     {
         Asynchronous = 1073741824,
+        CurrentUserOnly = 536870912,
         None = 0,
         WriteThrough = -2147483648,
     }

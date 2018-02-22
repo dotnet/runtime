@@ -2154,7 +2154,9 @@
         "4.4.0"
       ],
       "BaselineVersion": "4.4.0",
-      "InboxOn": {},
+      "InboxOn": {
+        "uap10.0.16300": "4.0.3.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.1.0": "4.3.0",
         "4.0.2.0": "4.4.0",
