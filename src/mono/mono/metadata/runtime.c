@@ -23,7 +23,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
-#include <mono/utils/mono-logger-internals.h>
 
 static gboolean shutting_down_inited = FALSE;
 static gboolean shutting_down = FALSE;
@@ -56,32 +55,28 @@ static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 {
 	ERROR_DECL (error);
-	MonoObject *exc = NULL;
-	MonoMethod *method = mono_class_get_method_from_name (mono_defaults.appdomain_class, "RunProcessExit", -1);
-	if (!method)
+	MonoClassField *field;
+	gpointer pa [2];
+	MonoObject *delegate, *exc;
+
+	field = mono_class_get_field_from_name (mono_defaults.appdomain_class, "ProcessExit");
+	g_assert (field);
+
+	delegate = *(MonoObject **)(((char *)domain->domain) + field->offset);
+	if (delegate == NULL)
 		return;
 
-	//Possible leftover from other domains
-	mono_thread_internal_reset_abort (mono_thread_internal_current ());
-
-	MonoObject *res_obj = mono_runtime_try_invoke (method, domain->domain, NULL, &exc, error);
-	if (!is_ok (error)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s due to %s", domain->friendly_name, mono_error_get_message (error));
-		mono_error_cleanup (error);
-	} else if (exc) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Failed to fire process exit on domain %s threw exception: %s", domain->friendly_name, exc->vtable->klass->name);
-	} else {
-		gboolean res = *(int*)mono_object_unbox (res_obj);
-		if (!res)
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_EXEC, "Fire process exit on domain %s timedout", domain->friendly_name);
-	}
+	pa [0] = domain;
+	pa [1] = NULL;
+	mono_runtime_delegate_try_invoke (delegate, pa, &exc, error);
+	mono_error_cleanup (error);
 }
 
 static void
 mono_runtime_fire_process_exit_event (void)
 {
 #ifndef MONO_CROSS_COMPILE
-	mono_domain_foreach_safe (fire_process_exit_event, NULL);
+	mono_domain_foreach (fire_process_exit_event, NULL);
 #endif
 }
 
