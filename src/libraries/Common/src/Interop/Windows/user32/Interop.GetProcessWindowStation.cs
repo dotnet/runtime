@@ -9,10 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, EntryPoint = "PostMessageW")]
-        public static extern int PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
-
-        [DllImport(Libraries.User32, EntryPoint = "PostMessageW")]
-        public static extern int PostMessage(HandleRef hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        [DllImport(Libraries.User32, ExactSpelling=true)]
+        internal static extern IntPtr GetProcessWindowStation();
     }
 }

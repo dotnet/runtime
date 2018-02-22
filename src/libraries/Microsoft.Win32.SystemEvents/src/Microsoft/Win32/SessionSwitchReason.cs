@@ -15,47 +15,47 @@ namespace Microsoft.Win32
         /// <devdoc>
         ///      A session was connected to the console session.
         /// </devdoc>
-        ConsoleConnect = Interop.User32.WTS_CONSOLE_CONNECT,
+        ConsoleConnect = Interop.Wtsapi32.WTS_CONSOLE_CONNECT,
 
         /// <devdoc>
         ///      A session was disconnected from the console session.
         /// </devdoc>
-        ConsoleDisconnect = Interop.User32.WTS_CONSOLE_DISCONNECT,
+        ConsoleDisconnect = Interop.Wtsapi32.WTS_CONSOLE_DISCONNECT,
 
         /// <devdoc>
         ///      A session was connected to the remote session.
         /// </devdoc>
-        RemoteConnect = Interop.User32.WTS_REMOTE_CONNECT,
+        RemoteConnect = Interop.Wtsapi32.WTS_REMOTE_CONNECT,
 
         /// <devdoc>
         ///      A session was disconnected from the remote session.
         /// </devdoc>
-        RemoteDisconnect = Interop.User32.WTS_REMOTE_DISCONNECT,
+        RemoteDisconnect = Interop.Wtsapi32.WTS_REMOTE_DISCONNECT,
 
         /// <devdoc>
         ///      A user has logged on to the session.
         /// </devdoc>
-        SessionLogon = Interop.User32.WTS_SESSION_LOGON,
+        SessionLogon = Interop.Wtsapi32.WTS_SESSION_LOGON,
 
         /// <devdoc>
         ///      A user has logged off the session.
         /// </devdoc>
-        SessionLogoff = Interop.User32.WTS_SESSION_LOGOFF,
+        SessionLogoff = Interop.Wtsapi32.WTS_SESSION_LOGOFF,
 
         /// <devdoc>
         ///      A session has been locked.
         /// </devdoc>
-        SessionLock = Interop.User32.WTS_SESSION_LOCK,
+        SessionLock = Interop.Wtsapi32.WTS_SESSION_LOCK,
 
         /// <devdoc>
         ///      A session has been unlocked.
         /// </devdoc>
-        SessionUnlock = Interop.User32.WTS_SESSION_UNLOCK,
+        SessionUnlock = Interop.Wtsapi32.WTS_SESSION_UNLOCK,
 
         /// <devdoc>
         ///      A session has changed its remote controlled status.
         /// </devdoc>
-        SessionRemoteControl = Interop.User32.WTS_SESSION_REMOTE_CONTROL
+        SessionRemoteControl = Interop.Wtsapi32.WTS_SESSION_REMOTE_CONTROL
     }
 }
 
