@@ -845,6 +845,13 @@ namespace System.Data.SqlClient
         public void Rollback(string transactionName) { }
         public void Save(string savePointName) { }
     }
+
+    public sealed class SqlCredential
+    {
+        public SqlCredential(string userId, System.Security.SecureString password) { }
+        public string UserId { get { throw null; } }
+        public System.Security.SecureString Password { get { throw null; } }
+    }
 }
 namespace System.Data
 {
