@@ -57,7 +57,7 @@ namespace System.Xml.Tests
 
         public String szDefaultNS = "urn:my-object";
         public String szEmpty = "";
-        public String szInvalid = "*?%(){}[]&!@#$";
+        public String szInvalid = "*?%()\0{}[]&!@#$";
         public String szLongString = "ThisIsAVeryLongStringToBeStoredAsAVariableToDetermineHowLargeThisBufferForAVariableNameCanBeAndStillFunctionAsExpected";
         public String szLongNS = "http://www.miocrosoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/";
         public String[] szWhiteSpace = { "  ", "\n", "\t", "\r", "\t\n  \r\t" };

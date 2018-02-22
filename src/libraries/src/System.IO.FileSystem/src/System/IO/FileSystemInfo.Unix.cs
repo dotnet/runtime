@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.IO
 {
     partial class FileSystemInfo
@@ -18,6 +20,8 @@ namespace System.IO
             FileSystemInfo info = fileStatus.InitiallyDirectory
                 ? (FileSystemInfo)new DirectoryInfo(fullPath, fileName: fileName, isNormalized: true)
                 : new FileInfo(fullPath, fileName: fileName, isNormalized: true);
+
+            Debug.Assert(!PathInternal.IsPartiallyQualified(fullPath), $"'{fullPath}' should be fully qualified when constructed from directory enumeration");
 
             info.Init(ref fileStatus);
             return info;

@@ -243,6 +243,7 @@ namespace System.IO.Compression.Tests
         /// when an attempt is made to extract them.
         /// </summary>
         [Theory]
+        [ActiveIssue(27269)]
         [InlineData("WindowsInvalid_FromUnix", null)]
         [InlineData("WindowsInvalid_FromWindows", null)]
         [InlineData("NullCharFileName_FromWindows", "path")]

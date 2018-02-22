@@ -201,8 +201,9 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Invalid file name with wildcard characters on Windows
-        public void WindowsWildCharacterPath()
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void WindowsWildCharacterPath_Desktop()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "dls;d", "442349-0", "v443094(*)(+*$#$*", new string(Path.DirectorySeparatorChar, 3))));
@@ -211,18 +212,53 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "*Tes*t")));
         }
 
+        [ActiveIssue(27269)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsWildCharacterPath_Core()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "dls;d", "442349-0", "v443094(*)(+*$#$*", new string(Path.DirectorySeparatorChar, 3))));
+            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "*")));
+            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "Test*t")));
+            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(testDir.FullName, "*Tes*t")));
+        }
+
         [Theory,
             InlineData("         "),
-            InlineData(" "),
+            InlineData(""),
+            InlineData("\0"),
+            InlineData(" ")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsEmptyPath(string path)
+        {
+            Assert.Throws<ArgumentException>(() => Create(path));
+        }
+
+        [Theory,
             InlineData("\n"),
             InlineData(">"),
             InlineData("<"),
-            InlineData("\0"),
             InlineData("\t")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Invalid file name with whitespace on Windows
-        public void WindowsWhitespacePath(string path)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void WindowsInvalidPath_Desktop(string path)
         {
             Assert.Throws<ArgumentException>(() => Create(path));
+        }
+
+        [ActiveIssue(27269)]
+        [Theory,
+            InlineData("\n"),
+            InlineData(">"),
+            InlineData("<"),
+            InlineData("\t")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsInvalidPath_Core(string path)
+        {
+            Assert.ThrowsAny<IOException>(() => Create(Path.Combine(TestDirectory, path)));
         }
 
         [Fact]
