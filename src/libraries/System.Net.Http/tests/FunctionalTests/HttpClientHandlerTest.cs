@@ -618,7 +618,6 @@ namespace System.Net.Http.Functional.Tests
 
                         if (useTE)
                         {
-                            request.Content.Headers.ContentLength = 0;
                             request.Headers.TransferEncodingChunked = true;
                         }
                     }
@@ -633,6 +632,7 @@ namespace System.Net.Http.Functional.Tests
                             // Send Connection: close so the client will close connection after request is sent,
                             // meaning we can just read to the end to get the content
                             await connection.ReadRequestHeaderAndSendResponseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\nConnection: close\r\n");
+                            connection.Socket.Shutdown(SocketShutdown.Send);
                             await connection.Reader.ReadToEndAsync();
                         });
 
@@ -648,6 +648,7 @@ namespace System.Net.Http.Functional.Tests
                             // Send Connection: close so the client will close connection after request is sent,
                             // meaning we can just read to the end to get the content
                             receivedRequest = await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
+                            connection.Socket.Shutdown(SocketShutdown.Send);
                             receivedContent = await connection.Reader.ReadToEndAsync();
                         });
 
