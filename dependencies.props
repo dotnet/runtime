@@ -10,10 +10,10 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</CoreFxCurrentRef>
-    <CoreClrCurrentRef>62497e6385d202dd98582c29ca990645d106cc4b</CoreClrCurrentRef>
+    <CoreClrCurrentRef>bd49c8985dc365d502ae636cace03708e57b0667</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
     <WCFCurrentRef>62497e6385d202dd98582c29ca990645d106cc4b</WCFCurrentRef>
-    <BuildToolsCurrentRef>62497e6385d202dd98582c29ca990645d106cc4b</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>bd49c8985dc365d502ae636cace03708e57b0667</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -21,7 +21,7 @@
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview2-26222-04</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftPrivateCoreFxUAPPackageVersion>4.6.0-preview2-26202-05</MicrosoftPrivateCoreFxUAPPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26222-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26222-07</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
@@ -51,7 +51,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-preview2-02521-06</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-preview2-02522-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
