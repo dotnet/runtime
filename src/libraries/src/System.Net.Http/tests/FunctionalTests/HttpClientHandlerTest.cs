@@ -912,40 +912,77 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(IsNotWindows7))] // Skip test on Win7 since WinHTTP has bugs w/ fragments.
+        [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
         [InlineData("", "#redirFragment", "#redirFragment", false)]
         [InlineData("", "#redirFragment", "#redirFragment", true)]
         [InlineData("#origFragment", "#redirFragment", "#redirFragment", false)]
         [InlineData("#origFragment", "#redirFragment", "#redirFragment", true)]
-        [ActiveIssue(27217)]
         public async Task GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate(
             string origFragment, string redirFragment, string expectedFragment, bool useRelativeRedirect)
         {
+            if (IsCurlHandler)
+            {
+                // Starting with libcurl 7.20, "fragment part of URLs are no longer sent to the server".
+                // So CurlHandler doesn't send fragments.
+                return;
+            }
+
+            if (IsNetfxHandler)
+            {
+                // Similarly, netfx doesn't send fragments at all.
+                return;
+            }
+
+            if (IsWinHttpHandler)
+            {
+                // According to https://tools.ietf.org/html/rfc7231#section-7.1.2,
+                // "If the Location value provided in a 3xx (Redirection) response does
+                //  not have a fragment component, a user agent MUST process the
+                //  redirection as if the value inherits the fragment component of the
+                //  URI reference used to generate the request target(i.e., the
+                //  redirection inherits the original reference's fragment, if any)."
+                // WINHTTP is not doing this, and thus neither is WinHttpHandler.
+                // It also sometimes doesn't include the fragments for redirects
+                // even in other cases.
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (var client = new HttpClient(handler))
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
-                    origUrl = new Uri(origUrl.ToString() + origFragment);
-                    Uri redirectUrl = useRelativeRedirect ?
-                        new Uri(origUrl.PathAndQuery + redirFragment, UriKind.Relative) :
-                        new Uri(origUrl.ToString() + redirFragment);
-                    Uri expectedUrl = new Uri(origUrl.ToString() + expectedFragment);
+                    origUrl = new UriBuilder(origUrl) { Fragment = origFragment }.Uri;
+                    Uri redirectUrl = new UriBuilder(origUrl) { Fragment = redirFragment }.Uri;
+                    if (useRelativeRedirect)
+                    {
+                        redirectUrl = new Uri(redirectUrl.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.SafeUnescaped), UriKind.Relative);
+                    }
+                    Uri expectedUrl = new UriBuilder(origUrl) { Fragment = expectedFragment }.Uri;
 
+                    // Make and receive the first request that'll be redirected.
                     Task<HttpResponseMessage> getResponse = client.GetAsync(origUrl);
                     Task firstRequest = origServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectUrl}\r\n");
                     Assert.Equal(firstRequest, await Task.WhenAny(firstRequest, getResponse));
 
-                    Task secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync();
+                    // Receive the second request.
+                    Task<List<string>> secondRequest = origServer.AcceptConnectionSendResponseAndCloseAsync();
                     await TestHelper.WhenAllCompletedOrAnyFailed(secondRequest, getResponse);
 
+                    // Make sure the server received the second request for the right Uri.
+                    Assert.NotEmpty(secondRequest.Result);
+                    string[] statusLineParts = secondRequest.Result[0].Split(' ');
+                    Assert.Equal(3, statusLineParts.Length);
+                    Assert.Equal(expectedUrl.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.SafeUnescaped), statusLineParts[1]);
+
+                    // Make sure the request message was updated with the correct redirected location.
                     using (HttpResponseMessage response = await getResponse)
                     {
                         Assert.Equal(200, (int)response.StatusCode);
-                        Assert.Equal(expectedUrl, response.RequestMessage.RequestUri);
+                        Assert.Equal(expectedUrl.ToString(), response.RequestMessage.RequestUri.ToString());
                     }
                 });
             }
