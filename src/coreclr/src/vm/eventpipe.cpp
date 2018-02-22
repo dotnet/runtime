@@ -708,6 +708,10 @@ bool EventPipe::WalkManagedStackForThread(Thread *pThread, StackContents &stackC
     }
     CONTRACTL_END;
 
+    // Calling into StackWalkFrames in preemptive mode violates the host contract,
+    // but this contract is not used on CoreCLR.
+    CONTRACT_VIOLATION( HostViolation );
+
     stackContents.Reset();
 
     StackWalkAction swaRet = pThread->StackWalkFrames(
