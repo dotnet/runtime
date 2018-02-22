@@ -2514,7 +2514,6 @@ void Compiler::optValnumCSE_Heuristic()
 
 bool Compiler::optValnumCSE_UnmarkCSEs(GenTree* candidateTree, GenTree** wbKeepList)
 {
-    Compiler::fgWalkResult result;
     assert(optValnumCSE_phase);
 
     // We need to communicate the 'keepList' to both optHasCSEdefWithSideeffect
@@ -2527,7 +2526,8 @@ bool Compiler::optValnumCSE_UnmarkCSEs(GenTree* candidateTree, GenTree** wbKeepL
     // First check for the rare case where we have a nested CSE def that has
     // side-effects and return false whenever we have this case
     //
-    Compiler::fgWalkResult defWithSideEffectResult = fgWalkTreePre(&candidateTree, optHasCSEdefWithSideeffect, (void*)wbKeepList);
+    Compiler::fgWalkResult defWithSideEffectResult =
+        fgWalkTreePre(&candidateTree, optHasCSEdefWithSideeffect, (void*)wbKeepList);
     bool hasPersistentSideEffect = (defWithSideEffectResult == WALK_ABORT);
     if (hasPersistentSideEffect)
     {
