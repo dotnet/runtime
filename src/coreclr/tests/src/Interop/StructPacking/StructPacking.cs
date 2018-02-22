@@ -287,7 +287,7 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.OSArchitecture != Architecture.X86))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
         {
             succeeded &= Test<DefaultLayoutDefaultPacking<double>>(
                 expectedSize: 16,
@@ -313,7 +313,7 @@ unsafe class Program
                 expectedOffsetValue: 8
             );
 
-            if (Environment.Is64BitProcess)
+            if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
             {
                 succeeded &= Test<AutoLayoutDefaultPacking<double>>(
                     expectedSize: 16,
@@ -506,7 +506,7 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.OSArchitecture != Architecture.X86))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
         {
             succeeded &= Test<DefaultLayoutDefaultPacking<long>>(
                 expectedSize: 16,
@@ -532,7 +532,7 @@ unsafe class Program
                 expectedOffsetValue: 8
             );
 
-            if (Environment.Is64BitProcess)
+            if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
             {
                 succeeded &= Test<AutoLayoutDefaultPacking<long>>(
                     expectedSize: 16,
@@ -919,47 +919,47 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.OSArchitecture != Architecture.X86))
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
         {
-            succeeded &= Test<DefaultLayoutDefaultPacking<double>>(
+            succeeded &= Test<DefaultLayoutDefaultPacking<ulong>>(
                 expectedSize: 16,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 8
             );
 
-            succeeded &= Test<SequentialLayoutDefaultPacking<double>>(
+            succeeded &= Test<SequentialLayoutDefaultPacking<ulong>>(
                 expectedSize: 16,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 8
             );
 
-            succeeded &= Test<SequentialLayoutMinPacking<double>>(
+            succeeded &= Test<SequentialLayoutMinPacking<ulong>>(
                 expectedSize: 9,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 1
             );
 
-            succeeded &= Test<SequentialLayoutMaxPacking<double>>(
+            succeeded &= Test<SequentialLayoutMaxPacking<ulong>>(
                 expectedSize: 16,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 8
             );
 
-            if (Environment.Is64BitProcess)
+            if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
             {
-                succeeded &= Test<AutoLayoutDefaultPacking<double>>(
+                succeeded &= Test<AutoLayoutDefaultPacking<ulong>>(
                     expectedSize: 16,
                     expectedOffsetByte: 8,
                     expectedOffsetValue: 0
                 );
 
-                succeeded &= Test<AutoLayoutMinPacking<double>>(
+                succeeded &= Test<AutoLayoutMinPacking<ulong>>(
                     expectedSize: 16,
                     expectedOffsetByte: 8,
                     expectedOffsetValue: 0
                 );
 
-                succeeded &= Test<AutoLayoutMaxPacking<double>>(
+                succeeded &= Test<AutoLayoutMaxPacking<ulong>>(
                     expectedSize: 16,
                     expectedOffsetByte: 8,
                     expectedOffsetValue: 0
@@ -967,19 +967,19 @@ unsafe class Program
             }
             else
             {
-                succeeded &= Test<AutoLayoutDefaultPacking<double>>(
+                succeeded &= Test<AutoLayoutDefaultPacking<ulong>>(
                     expectedSize: 12,
                     expectedOffsetByte: 8,
                     expectedOffsetValue: 0
                 );
 
-                succeeded &= Test<AutoLayoutMinPacking<double>>(
+                succeeded &= Test<AutoLayoutMinPacking<ulong>>(
                     expectedSize: 12,
                     expectedOffsetByte: 8,
                     expectedOffsetValue: 0
                 );
 
-                succeeded &= Test<AutoLayoutMaxPacking<double>>(
+                succeeded &= Test<AutoLayoutMaxPacking<ulong>>(
                     expectedSize: 12,
                     expectedOffsetByte: 8,
                     expectedOffsetValue: 0
@@ -990,43 +990,43 @@ unsafe class Program
         {
             // The System V ABI for i386 defines this type as having 4-byte alignment
 
-            succeeded &= Test<DefaultLayoutDefaultPacking<double>>(
+            succeeded &= Test<DefaultLayoutDefaultPacking<ulong>>(
                 expectedSize: 12,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 4
             );
 
-            succeeded &= Test<SequentialLayoutDefaultPacking<double>>(
+            succeeded &= Test<SequentialLayoutDefaultPacking<ulong>>(
                 expectedSize: 12,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 4
             );
 
-            succeeded &= Test<SequentialLayoutMinPacking<double>>(
+            succeeded &= Test<SequentialLayoutMinPacking<ulong>>(
                 expectedSize: 9,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 1
             );
 
-            succeeded &= Test<SequentialLayoutMaxPacking<double>>(
+            succeeded &= Test<SequentialLayoutMaxPacking<ulong>>(
                 expectedSize: 12,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 4
             );
 
-            succeeded &= Test<AutoLayoutDefaultPacking<double>>(
+            succeeded &= Test<AutoLayoutDefaultPacking<ulong>>(
                 expectedSize: 12,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 4
             );
 
-            succeeded &= Test<AutoLayoutMinPacking<double>>(
+            succeeded &= Test<AutoLayoutMinPacking<ulong>>(
                 expectedSize: 12,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 4
             );
 
-            succeeded &= Test<AutoLayoutMaxPacking<double>>(
+            succeeded &= Test<AutoLayoutMaxPacking<ulong>>(
                 expectedSize: 12,
                 expectedOffsetByte: 0,
                 expectedOffsetValue: 4
@@ -1160,7 +1160,7 @@ unsafe class Program
             expectedOffsetValue: 8
         );
         
-        if (Environment.Is64BitProcess)
+        if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
         {
             succeeded &= Test<AutoLayoutDefaultPacking<Vector64<byte>>>(
                 expectedSize: 16,
@@ -1208,7 +1208,7 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        if (RuntimeInformation.OSArchitecture == Architecture.Arm)
+        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
         {
             // The Procedure Call Standard for ARM defines this type as having 8-byte alignment
 
@@ -1257,7 +1257,7 @@ unsafe class Program
             expectedOffsetValue: 1
         );
 
-        if (Environment.Is64BitProcess)
+        if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
         {
             succeeded &= Test<AutoLayoutDefaultPacking<Vector128<byte>>>(
                 expectedSize: 24,
@@ -1305,7 +1305,7 @@ unsafe class Program
     {
         bool succeeded = true;
 
-        if (RuntimeInformation.OSArchitecture == Architecture.Arm)
+        if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
         {
             // The Procedure Call Standard for ARM defines this type as having 8-byte alignment
 
@@ -1327,7 +1327,7 @@ unsafe class Program
                 expectedOffsetValue: 8
             );
         }
-        else if (RuntimeInformation.OSArchitecture == Architecture.Arm64)
+        else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
         {
             // The Procedure Call Standard for ARM64 defines this type as having 16-byte alignment
 
@@ -1376,7 +1376,7 @@ unsafe class Program
             expectedOffsetValue: 1
         );
 
-        if (Environment.Is64BitProcess)
+        if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
         {
             succeeded &= Test<AutoLayoutDefaultPacking<Vector256<byte>>>(
                 expectedSize: 40,

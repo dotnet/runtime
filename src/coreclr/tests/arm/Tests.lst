@@ -90819,3 +90819,11 @@ Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
+
+[StructPacking.cmd_11402]
+RelativePath=Interop\StructPacking\StructPacking\StructPacking.cmd
+WorkingDir=Interop\StructPacking\StructPacking
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
