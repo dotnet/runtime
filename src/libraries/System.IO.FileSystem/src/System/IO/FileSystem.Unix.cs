@@ -101,7 +101,8 @@ namespace System.IO
                 if (errorInfo.Error == Interop.Error.EXDEV ||      // rename fails across devices / mount points
                     errorInfo.Error == Interop.Error.EPERM ||      // permissions might not allow creating hard links even if a copy would work
                     errorInfo.Error == Interop.Error.EOPNOTSUPP || // links aren't supported by the source file system
-                    errorInfo.Error == Interop.Error.EMLINK)       // too many hard links to the source file
+                    errorInfo.Error == Interop.Error.EMLINK ||     // too many hard links to the source file
+                    errorInfo.Error == Interop.Error.ENOSYS)       // the file system doesn't support link
                 {
                     CopyFile(sourceFullPath, destFullPath, overwrite: false);
                 }
