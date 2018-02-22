@@ -74,6 +74,11 @@ mono_class_setup_parent    (MonoClass *klass, MonoClass *parent);
 void
 mono_class_setup_mono_type (MonoClass *klass);
 
+void
+mono_class_setup_has_finalizer (MonoClass *klass);
+
+void
+mono_class_setup_nested_types (MonoClass *klass);
 
 MONO_END_DECLS
 

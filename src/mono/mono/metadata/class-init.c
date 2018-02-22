@@ -23,7 +23,15 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/unlocked.h>
+#ifdef MONO_CLASS_DEF_PRIVATE
+/* Class initialization gets to see the fields of MonoClass */
+#define REALLY_INCLUDE_CLASS_DEF 1
+#include <mono/metadata/class-private-definition.h>
+#undef REALLY_INCLUDE_CLASS_DEF
+#endif
+
 
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
@@ -5257,6 +5265,179 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		mono_memory_barrier ();
 
 		klass->interfaces_inited = TRUE;
+	}
+	mono_loader_unlock ();
+}
+
+
+/*
+ * mono_class_setup_has_finalizer:
+ *
+ *   Initialize klass->has_finalizer if it isn't already initialized.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_setup_has_finalizer (MonoClass *klass)
+{
+	gboolean has_finalize = FALSE;
+
+	if (m_class_is_has_finalize_inited (klass))
+		return;
+
+	/* Interfaces and valuetypes are not supposed to have finalizers */
+	if (!(MONO_CLASS_IS_INTERFACE (klass) || m_class_is_valuetype (klass))) {
+		MonoMethod *cmethod = NULL;
+
+		if (m_class_get_rank (klass) == 1 && m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY) {
+		} else if (mono_class_is_ginst (klass)) {
+			MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+
+			has_finalize = mono_class_has_finalizer (gklass);
+		} else if (m_class_get_parent (klass) && m_class_has_finalize (m_class_get_parent (klass))) {
+			has_finalize = TRUE;
+		} else {
+			if (m_class_get_parent (klass)) {
+				/*
+				 * Can't search in metadata for a method named Finalize, because that
+				 * ignores overrides.
+				 */
+				mono_class_setup_vtable (klass);
+				if (mono_class_has_failure (klass))
+					cmethod = NULL;
+				else
+					cmethod = m_class_get_vtable (klass) [mono_class_get_object_finalize_slot ()];
+			}
+
+			if (cmethod) {
+				g_assert (m_class_get_vtable_size (klass) > mono_class_get_object_finalize_slot ());
+
+				if (m_class_get_parent (klass)) {
+					if (cmethod->is_inflated)
+						cmethod = ((MonoMethodInflated*)cmethod)->declaring;
+					if (cmethod != mono_class_get_default_finalize_method ())
+						has_finalize = TRUE;
+				}
+			}
+		}
+	}
+
+	mono_loader_lock ();
+	if (!m_class_is_has_finalize_inited (klass)) {
+		klass->has_finalize = has_finalize ? 1 : 0;
+
+		mono_memory_barrier ();
+		klass->has_finalize_inited = TRUE;
+	}
+	mono_loader_unlock ();
+}
+
+/*
+ * mono_class_setup_supertypes:
+ * @class: a class
+ *
+ * Build the data structure needed to make fast type checks work.
+ * This currently sets two fields in @class:
+ *  - idepth: distance between @class and System.Object in the type
+ *    hierarchy + 1
+ *  - supertypes: array of classes: each element has a class in the hierarchy
+ *    starting from @class up to System.Object
+ * 
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_setup_supertypes (MonoClass *klass)
+{
+	int ms, idepth;
+	MonoClass **supertypes;
+
+	mono_atomic_load_acquire (supertypes, MonoClass **, &klass->supertypes);
+	if (supertypes)
+		return;
+
+	if (klass->parent && !klass->parent->supertypes)
+		mono_class_setup_supertypes (klass->parent);
+	if (klass->parent)
+		idepth = klass->parent->idepth + 1;
+	else
+		idepth = 1;
+
+	ms = MAX (MONO_DEFAULT_SUPERTABLE_SIZE, idepth);
+	supertypes = (MonoClass **)mono_class_alloc0 (klass, sizeof (MonoClass *) * ms);
+
+	if (klass->parent) {
+		CHECKED_METADATA_WRITE_PTR ( supertypes [idepth - 1] , klass );
+
+		int supertype_idx;
+		for (supertype_idx = 0; supertype_idx < klass->parent->idepth; supertype_idx++)
+			CHECKED_METADATA_WRITE_PTR ( supertypes [supertype_idx] , klass->parent->supertypes [supertype_idx] );
+	} else {
+		CHECKED_METADATA_WRITE_PTR ( supertypes [0] , klass );
+	}
+
+	mono_memory_barrier ();
+
+	mono_loader_lock ();
+	klass->idepth = idepth;
+	/* Needed so idepth is visible before supertypes is set */
+	mono_memory_barrier ();
+	klass->supertypes = supertypes;
+	mono_loader_unlock ();
+}
+
+/* mono_class_setup_nested_types:
+ *
+ * Initialize the nested_classes property for the given MonoClass if it hasn't already been initialized.
+ *
+ * LOCKING: Acquires the loader lock.
+ */
+void
+mono_class_setup_nested_types (MonoClass *klass)
+{
+	ERROR_DECL (error);
+	GList *classes, *nested_classes, *l;
+	int i;
+
+	if (klass->nested_classes_inited)
+		return;
+
+	if (!klass->type_token) {
+		mono_loader_lock ();
+		klass->nested_classes_inited = TRUE;
+		mono_loader_unlock ();
+		return;
+	}
+
+	i = mono_metadata_nesting_typedef (klass->image, klass->type_token, 1);
+	classes = NULL;
+	while (i) {
+		MonoClass* nclass;
+		guint32 cols [MONO_NESTED_CLASS_SIZE];
+		mono_metadata_decode_row (&klass->image->tables [MONO_TABLE_NESTEDCLASS], i - 1, cols, MONO_NESTED_CLASS_SIZE);
+		nclass = mono_class_create_from_typedef (klass->image, MONO_TOKEN_TYPE_DEF | cols [MONO_NESTED_CLASS_NESTED], error);
+		if (!mono_error_ok (error)) {
+			/*FIXME don't swallow the error message*/
+			mono_error_cleanup (error);
+
+			i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
+			continue;
+		}
+
+		classes = g_list_prepend (classes, nclass);
+
+		i = mono_metadata_nesting_typedef (klass->image, klass->type_token, i + 1);
+	}
+
+	nested_classes = NULL;
+	for (l = classes; l; l = l->next)
+		nested_classes = g_list_prepend_image (klass->image, nested_classes, l->data);
+	g_list_free (classes);
+
+	mono_loader_lock ();
+	if (!klass->nested_classes_inited) {
+		mono_class_set_nested_classes_property (klass, nested_classes);
+		mono_memory_barrier ();
+		klass->nested_classes_inited = TRUE;
 	}
 	mono_loader_unlock ();
 }
