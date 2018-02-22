@@ -117,7 +117,7 @@ mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 static gboolean
 begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
-	if (mono_threads_is_coop_enabled ()) {
+	if (mono_threads_are_safepoints_enabled ()) {
 		/* There's nothing else to do after we async request the thread to suspend */
 		mono_threads_add_to_pending_operation_set (info);
 		return TRUE;
@@ -129,7 +129,7 @@ begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 static gboolean
 check_async_suspend (MonoThreadInfo *info)
 {
-	if (mono_threads_is_coop_enabled ()) {
+	if (mono_threads_are_safepoints_enabled ()) {
 		/* Async suspend can't async fail on coop */
 		return TRUE;
 	}
@@ -140,7 +140,7 @@ check_async_suspend (MonoThreadInfo *info)
 static void
 resume_async_suspended (MonoThreadInfo *info)
 {
-	if (mono_threads_is_coop_enabled ())
+	if (mono_threads_are_safepoints_enabled ())
 		g_assert_not_reached ();
 
 	g_assert (mono_threads_suspend_begin_async_resume (info));
@@ -1042,7 +1042,7 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 		mono_threads_wait_pending_operations ();
 		break;
 	case KeepSuspended:
-		g_assert (!mono_threads_is_coop_enabled ());
+		g_assert (!mono_threads_are_safepoints_enabled ());
 		break;
 	default:
 		g_error ("Invalid suspend_and_run callback return value %d", result);
@@ -1064,7 +1064,7 @@ currently used only to deliver exceptions.
 void
 mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data)
 {
-	if (!mono_threads_is_coop_enabled ()) {
+	if (!mono_threads_are_safepoints_enabled ()) {
 		/* In non-coop mode, an async call can only be setup on an async suspended thread, but in coop mode, a thread
 		 * may be in blocking state, and will execute the async call when leaving the safepoint, leaving a gc safe
 		 * region or entering a gc unsafe region */

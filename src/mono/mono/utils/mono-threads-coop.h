@@ -26,7 +26,7 @@ extern volatile size_t mono_polling_required;
 /* Runtime consumable API */
 
 gboolean
-mono_threads_is_coop_enabled (void);
+mono_threads_are_safepoints_enabled (void);
 
 gboolean
 mono_threads_is_blocking_transition_enabled (void);
