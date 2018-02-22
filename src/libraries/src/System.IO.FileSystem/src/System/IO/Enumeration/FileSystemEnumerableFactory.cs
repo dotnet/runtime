@@ -37,7 +37,7 @@ namespace System.IO.Enumeration
 
             switch (options.MatchType)
             {
-                case MatchType.Dos:
+                case MatchType.Win32:
                     if (string.IsNullOrEmpty(expression) || expression == "." || expression == "*.*")
                     {
                         // Historically we always treated "." as "*"
@@ -57,7 +57,7 @@ namespace System.IO.Enumeration
                         }
 
                         // Need to convert the expression to match Win32 behavior
-                        expression = FileSystemName.TranslateDosExpression(expression);
+                        expression = FileSystemName.TranslateWin32Expression(expression);
                     }
                     break;
                 case MatchType.Simple:
@@ -76,8 +76,8 @@ namespace System.IO.Enumeration
             {
                 case MatchType.Simple:
                     return FileSystemName.MatchesSimpleExpression(expression, name, ignoreCase);
-                case MatchType.Dos:
-                    return FileSystemName.MatchesDosExpression(expression, name, ignoreCase);
+                case MatchType.Win32:
+                    return FileSystemName.MatchesWin32Expression(expression, name, ignoreCase);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(options));
             }
