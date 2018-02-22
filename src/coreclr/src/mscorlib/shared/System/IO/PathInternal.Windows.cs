@@ -275,29 +275,6 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Returns the characters to skip at the start of the path if it starts with space(s) and a drive or directory separator.
-        /// (examples are " C:", " \")
-        /// This is a legacy behavior of Path.GetFullPath().
-        /// </summary>
-        /// <remarks>
-        /// Note that this conflicts with IsPathRooted() which doesn't (and never did) such a skip.
-        /// </remarks>
-        internal static int PathStartSkip(ReadOnlySpan<char> path)
-        {
-            int startIndex = 0;
-            while (startIndex < path.Length && path[startIndex] == ' ') startIndex++;
-
-            if (startIndex > 0 && (startIndex < path.Length && IsDirectorySeparator(path[startIndex]))
-                || (startIndex + 1 < path.Length && path[startIndex + 1] == ':' && IsValidDriveChar(path[startIndex])))
-            {
-                // Go ahead and skip spaces as we're either " C:" or " \"
-                return startIndex;
-            }
-
-            return 0;
-        }
-
-        /// <summary>
         /// True if the given character is a directory separator.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

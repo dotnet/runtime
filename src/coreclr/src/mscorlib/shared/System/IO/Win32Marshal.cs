@@ -69,7 +69,7 @@ namespace System.IO
                         return new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
 
                 case Interop.Errors.ERROR_INVALID_DRIVE:
-                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, path));                    
+                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, path));
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                     return new IOException(Interop.Kernel32.GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
