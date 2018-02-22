@@ -9,7 +9,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{2B96AA10-84C0-4927-8611-8D2474B990E8}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <OmitResources Condition="'$(TargetGroup)' != 'netfx'">true</OmitResources>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -17,21 +16,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Compile Include="System\Globalization\Extensions.cs" />
-    <Compile Include="System\StringNormalizationExtensions.netfx.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Resources.ResourceManager" />
+  <ItemGroup>
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
