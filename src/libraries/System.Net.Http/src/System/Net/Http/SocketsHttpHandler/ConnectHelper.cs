@@ -86,7 +86,6 @@ namespace System.Net.Http
 
                     Debug.Assert(saea.SocketError == SocketError.Success, $"Expected Success, got {saea.SocketError}.");
                     Debug.Assert(saea.ConnectSocket != null, "Expected non-null socket");
-                    Debug.Assert(saea.ConnectSocket.Connected, "Expected socket to be connected");
 
                     // Configure the socket and return a stream for it.
                     Socket socket = saea.ConnectSocket;
@@ -94,9 +93,11 @@ namespace System.Net.Http
                     return new NetworkStream(socket, ownsSocket: true);
                 }
             }
-            catch (SocketException se)
+            catch (Exception error)
             {
-                throw new HttpRequestException(se.Message, se);
+                throw HttpConnection.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
+                    HttpConnection.CreateOperationCanceledException(error, cancellationToken) :
+                    new HttpRequestException(error.Message, error);
             }
         }
 

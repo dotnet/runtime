@@ -16,54 +16,45 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandler_Cancellation_Test : HttpClientTestBase
     {
         [Theory]
-        [MemberData(nameof(TwoBoolsAndCancellationMode))]
-        public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
+        [InlineData(false, CancellationMode.Token)]
+        [InlineData(true, CancellationMode.Token)]
+        public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
-            if (IsWinHttpHandler || IsNetfxHandler)
+            if (!UseSocketsHttpHandler)
             {
                 // Issue #27063: hangs / doesn't cancel
                 return;
             }
 
-            using (HttpClient client = CreateHttpClient())
+            var serverRelease = new TaskCompletionSource<bool>();
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                client.Timeout = Timeout.InfiniteTimeSpan;
-                var cts = new CancellationTokenSource();
-
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                try
                 {
-                    Task serverTask = server.AcceptConnectionAsync(async connection =>
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        // Since we won't receive all of the request, just read everything we do get
-                        byte[] ignored = new byte[100];
-                        while (await connection.Stream.ReadAsync(ignored, 0, ignored.Length) > 0);
-                    });
+                        client.Timeout = Timeout.InfiniteTimeSpan;
+                        var cts = new CancellationTokenSource();
 
-                    var preContentSent = new TaskCompletionSource<bool>();
-                    var sendPostContent = new TaskCompletionSource<bool>();
-
-                    await ValidateClientCancellationAsync(async () =>
-                    {
-                        var req = new HttpRequestMessage(HttpMethod.Post, url);
-                        req.Content = new DelayedByteContent(2000, 3000, preContentSent, sendPostContent.Task);
+                        var waitToSend = new TaskCompletionSource<bool>();
+                        var contentSending = new TaskCompletionSource<bool>();
+                        var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending) };
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
-                        req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> postResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                        await preContentSent.Task;
+                        Task<HttpResponseMessage> resp = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                        waitToSend.SetResult(true);
+                        await contentSending.Task;
                         Cancel(mode, client, cts);
-                        await postResponse;
-                    });
-
-                    try
-                    {
-                        sendPostContent.SetResult(true);
-                        await serverTask;
-                    } catch { }
-                });
-            }
+                        await ValidateClientCancellationAsync(() => resp);
+                    }
+                }
+                finally
+                {
+                    serverRelease.SetResult(true);
+                }
+            }, server => server.AcceptConnectionAsync(connection => serverRelease.Task));
         }
-        
+
         [Theory]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
@@ -421,34 +412,36 @@ namespace System.Net.Http.Functional.Tests
             from third in s_bools
             select new object[] { first, second, third };
 
-        private sealed class DelayedByteContent : HttpContent
+        private sealed class ByteAtATimeContent : HttpContent
         {
-            private readonly TaskCompletionSource<bool> _preContentSent;
-            private readonly Task _waitToSendPostContent;
+            private readonly Task _waitToSend;
+            private readonly TaskCompletionSource<bool> _startedSend;
+            private readonly int _length;
 
-            public DelayedByteContent(int preTriggerLength, int postTriggerLength, TaskCompletionSource<bool> preContentSent, Task waitToSendPostContent)
+            public ByteAtATimeContent(int length, Task waitToSend, TaskCompletionSource<bool> startedSend)
             {
-                PreTriggerLength = preTriggerLength;
-                _preContentSent = preContentSent;
-                _waitToSendPostContent = waitToSendPostContent;
-                Content = new byte[preTriggerLength + postTriggerLength];
-                new Random().NextBytes(Content);
+                _length = length;
+                _waitToSend = waitToSend;
+                _startedSend = startedSend;
             }
-
-            public byte[] Content { get; }
-            public int PreTriggerLength { get; }
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                await stream.WriteAsync(Content, 0, PreTriggerLength);
-                _preContentSent.TrySetResult(true);
-                await _waitToSendPostContent;
-                await stream.WriteAsync(Content, PreTriggerLength, Content.Length - PreTriggerLength);
+                await _waitToSend;
+                _startedSend.SetResult(true);
+
+                var buffer = new byte[1] { 42 };
+                for (int i = 0; i < _length; i++)
+                {
+                    await stream.WriteAsync(buffer);
+                    await stream.FlushAsync();
+                    await Task.Delay(1);
+                }
             }
 
             protected override bool TryComputeLength(out long length)
             {
-                length = Content.Length;
+                length = _length;
                 return true;
             }
         }

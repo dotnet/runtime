@@ -2306,7 +2306,7 @@ namespace System.Net.Http.Functional.Tests
                         canReadFunc: () => true,
                         readAsyncFunc: (buffer, offset, count, cancellationToken) => syncFailure ? throw error : Task.Delay(1).ContinueWith<int>(_ => throw error)));
 
-                    if (UseSocketsHttpHandler || PlatformDetection.IsUap)
+                    if (PlatformDetection.IsUap)
                     {
                         HttpRequestException requestException = await Assert.ThrowsAsync<HttpRequestException>(() => client.PostAsync(uri, content));
                         Assert.Same(error, requestException.InnerException);
