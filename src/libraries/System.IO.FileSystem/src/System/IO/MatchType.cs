@@ -12,9 +12,9 @@ namespace System.IO
         Simple,
 
         /// <summary>
-        /// Match using DOS style matching semantics. '*', '?', '&lt;', '&gt;', and '"'
+        /// Match using Win32 DOS style matching semantics. '*', '?', '&lt;', '&gt;', and '"'
         /// are all considered wildcards.
         /// </summary>
-        Dos
+        Win32
     }
 }
