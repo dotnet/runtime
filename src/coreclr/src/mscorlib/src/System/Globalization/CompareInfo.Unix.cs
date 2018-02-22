@@ -87,6 +87,47 @@ namespace System.Globalization
             return -1;
         }
 
+        internal static unsafe int IndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
+            Debug.Assert(source.Length != 0);
+            Debug.Assert(value.Length != 0);
+
+            if (source.Length < value.Length)
+            {
+                return -1;
+            }
+
+            if (ignoreCase)
+            {
+                fixed (char* pSource = &MemoryMarshal.GetReference(source))
+                fixed (char* pValue = &MemoryMarshal.GetReference(value))
+                {
+                    int index = Interop.Globalization.IndexOfOrdinalIgnoreCase(pValue, value.Length, pSource, source.Length, findLast: false);
+                    return index;
+                }
+            }
+
+            int endIndex = source.Length - value.Length;
+            for (int i = 0; i <= endIndex; i++)
+            {
+                int valueIndex, sourceIndex;
+
+                for (valueIndex = 0, sourceIndex = i;
+                     valueIndex < value.Length && source[sourceIndex] == value[valueIndex];
+                     valueIndex++, sourceIndex++)
+                    ;
+
+                if (valueIndex == value.Length)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         internal static unsafe int LastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -215,6 +256,159 @@ namespace System.Globalization
                 index = Interop.Globalization.IndexOf(_sortHandle, target, target.Length, pSource + startIndex, count, options, matchLengthPtr);
 
                 return index != -1 ? index + startIndex : -1;
+            }
+        }
+
+        // For now, this method is only called from Span APIs with either options == CompareOptions.None or CompareOptions.IgnoreCase
+        internal unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr)
+        {
+            Debug.Assert(!_invariantMode);
+            Debug.Assert(source.Length != 0);
+            Debug.Assert(target.Length != 0);
+
+            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
+            {
+                if ((options & CompareOptions.IgnoreCase) == CompareOptions.IgnoreCase)
+                {
+                    return IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr);
+                }
+                else
+                {
+                    return IndexOfOrdinalHelper(source, target, options, matchLengthPtr);
+                }
+            }
+            else
+            {
+                fixed (char* pSource = &MemoryMarshal.GetReference(source))
+                fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+                {
+                    return Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource, source.Length, options, matchLengthPtr);
+                }
+            }
+        }
+
+        private unsafe int IndexOfOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!target.IsEmpty);
+            Debug.Assert(_isAsciiEqualityOrdinal);
+
+            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* bp = &MemoryMarshal.GetReference(target))
+            {
+                char* a = ap;
+                char* b = bp;
+                int endIndex = source.Length - target.Length;
+
+                if (endIndex < 0)
+                    goto InteropCall;
+
+                for (int j = 0; j < target.Length; j++)
+                {
+                    char targetChar = *(b + j);
+                    if (targetChar >= 0x80 || s_highCharTable[targetChar])
+                        goto InteropCall;
+                }
+
+                int i = 0;
+                for (; i <= endIndex; i++)
+                {
+                    int targetIndex = 0;
+                    int sourceIndex = i;
+
+                    for (; targetIndex < target.Length; targetIndex++)
+                    {
+                        char valueChar = *(a + sourceIndex);
+                        char targetChar = *(b + targetIndex);
+
+                        if (valueChar == targetChar && valueChar < 0x80 && !s_highCharTable[valueChar])
+                        {
+                            sourceIndex++;
+                            continue;
+                        }
+
+                        // uppercase both chars - notice that we need just one compare per char
+                        if ((uint)(valueChar - 'a') <= ('z' - 'a'))
+                            valueChar = (char)(valueChar - 0x20);
+                        if ((uint)(targetChar - 'a') <= ('z' - 'a'))
+                            targetChar = (char)(targetChar - 0x20);
+
+                        if (valueChar >= 0x80 || s_highCharTable[valueChar])
+                            goto InteropCall;
+                        else if (valueChar != targetChar)
+                            break;
+                        sourceIndex++;
+                    }
+
+                    if (targetIndex == target.Length)
+                    {
+                        if (matchLengthPtr != null)
+                            *matchLengthPtr = target.Length;
+                        return i;
+                    }
+                }
+                if (i > endIndex)
+                    return -1;
+            InteropCall:
+                return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
+            }
+        }
+
+        private unsafe int IndexOfOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr)
+        {
+            Debug.Assert(!_invariantMode);
+
+            Debug.Assert(!source.IsEmpty);
+            Debug.Assert(!target.IsEmpty);
+            Debug.Assert(_isAsciiEqualityOrdinal);
+
+            fixed (char* ap = &MemoryMarshal.GetReference(source))
+            fixed (char* bp = &MemoryMarshal.GetReference(target))
+            {
+                char* a = ap;
+                char* b = bp;
+                int endIndex = source.Length - target.Length;
+
+                if (endIndex < 0)
+                    goto InteropCall;
+
+                for (int j = 0; j < target.Length; j++)
+                {
+                    char targetChar = *(b + j);
+                    if (targetChar >= 0x80 || s_highCharTable[targetChar])
+                        goto InteropCall;
+                }
+
+                int i = 0;
+                for (; i <= endIndex; i++)
+                {
+                    int targetIndex = 0;
+                    int sourceIndex = i;
+
+                    for (; targetIndex < target.Length; targetIndex++)
+                    {
+                        char valueChar = *(a + sourceIndex);
+                        char targetChar = *(b + targetIndex);
+                        if (valueChar >= 0x80 || s_highCharTable[valueChar])
+                            goto InteropCall;
+                        else if (valueChar != targetChar)
+                            break;
+                        sourceIndex++;
+                    }
+
+                    if (targetIndex == target.Length)
+                    {
+                        if (matchLengthPtr != null)
+                            *matchLengthPtr = target.Length;
+                        return i;
+                    }
+                }
+                if (i > endIndex)
+                    return -1;
+            InteropCall:
+                return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
             }
         }
 
