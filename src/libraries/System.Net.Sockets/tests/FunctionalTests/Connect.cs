@@ -44,9 +44,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [ActiveIssue(22765, TestPlatforms.AnyUnix)]
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;

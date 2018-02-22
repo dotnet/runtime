@@ -789,6 +789,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             ValidateBlockingMode();
 
             if (NetEventSource.IsEnabled)
@@ -840,6 +845,11 @@ namespace System.Net.Sockets
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
@@ -915,6 +925,11 @@ namespace System.Net.Sockets
             if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
             {
                 throw new NotSupportedException(SR.net_invalidversion);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
@@ -2074,6 +2089,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
 
             DnsEndPoint dnsEP = remoteEP as DnsEndPoint;
             if (dnsEP != null)
@@ -2154,6 +2174,11 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             IPAddress parsedAddress;
             if (IPAddress.TryParse(host, out parsedAddress))
             {
@@ -2201,6 +2226,11 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
+
             ValidateForMultiConnect(isMultiEndpoint: false); // needs to be called before CanTryAddressFamily
 
             if (!CanTryAddressFamily(address.AddressFamily))
@@ -2241,6 +2271,11 @@ namespace System.Net.Sockets
             if (_isListening)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             ValidateForMultiConnect(isMultiEndpoint: true);
@@ -3802,6 +3837,11 @@ namespace System.Net.Sockets
             if (_isListening)
             {
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
+            }
+
+            if (_isConnected)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
             }
 
             // Prepare SocketAddress.
