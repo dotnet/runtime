@@ -16,7 +16,7 @@ namespace System
     /// or native memory, or to memory allocated on the stack. It is type- and memory-safe.
     /// </summary>
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
+    [DebuggerDisplay("{ToString(),raw}")]
     public readonly ref partial struct ReadOnlySpan<T>
     {
         /// <summary>
@@ -107,9 +107,6 @@ namespace System
             _pinnable = pinnable;
             _byteOffset = byteOffset;
         }
-
-        //Debugger Display = System.ReadOnlySpan<T>[length]
-        private string DebuggerDisplay => string.Format("System.ReadOnlySpan<{0}>[{1}]", typeof(T).Name, Length);
 
         /// <summary>
         /// Returns the specified element of the read-only span.
