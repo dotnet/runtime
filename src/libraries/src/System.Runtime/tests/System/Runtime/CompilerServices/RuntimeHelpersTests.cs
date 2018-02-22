@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -109,6 +112,72 @@ namespace System.Runtime.CompilerServices.Tests
         internal class HasCctorReceiver
         {
             public static string S;
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void PrepareMethod()
+        {
+            foreach (MethodInfo m in typeof(RuntimeHelpersTests).GetMethods())
+                RuntimeHelpers.PrepareMethod(m.MethodHandle);
+
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(default(RuntimeMethodHandle)));
+            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+        }
+
+        [Fact]
+        public static void PrepareGenericMethod()
+        {
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(default(RuntimeMethodHandle), null));
+
+            //
+            // Type instantiations
+            //
+
+            // Generic definition with instantiation is valid
+            RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle, 
+                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle });
+
+            // Instantiated method without instantiation is valid
+            RuntimeHelpers.PrepareMethod(typeof(List<int>).GetMethod("Add").MethodHandle,
+                null);
+
+            // Generic definition without instantiation is invalid
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
+                null));
+
+            // Wrong instantiation
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
+                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+
+            //
+            // Method instantiations
+            //
+
+            // Generic definition with instantiation is valid
+            RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle });
+
+            // Instantiated method without instantiation is valid
+            RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize")
+                    .MakeGenericMethod(new Type[] { typeof(TestStruct) }).MethodHandle,
+                null);
+
+            // Generic definition without instantiation is invalid
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                null));
+
+            // Wrong instantiation
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+        }
+
+        [Fact]
+        public static void PrepareDelegate()
+        {
+            RuntimeHelpers.PrepareDelegate((Action)(() => { }));
+            RuntimeHelpers.PrepareDelegate((Func<int>)(() => 1) + (Func<int>)(() => 2));
+            RuntimeHelpers.PrepareDelegate(null);
         }
     }
 
