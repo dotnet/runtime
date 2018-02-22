@@ -82,7 +82,10 @@ namespace Internal.Cryptography.Pal.AnyOS
                     }
                     finally
                     {
-                        Array.Clear(cek, 0, cek.Length);
+                        if (cek != null)
+                        {
+                            Array.Clear(cek, 0, cek.Length);
+                        }
                     }
                 }
 
