@@ -65,7 +65,7 @@ namespace System.Drawing
             SetNativePen(pen);
 
 #if FEATURE_SYSTEM_EVENTS
-            if (this.color.IsSystemColor)
+            if (ColorUtil.IsSystemColor(_color))
             {
                 SystemColorTracker.Add(this);
             }
@@ -584,7 +584,7 @@ namespace System.Drawing
 #if FEATURE_SYSTEM_EVENTS
                     // NOTE: We never remove pens from the active list, so if someone is
                     // changing their pen colors a lot, this could be a problem.
-                    if (value.IsSystemColor && !oldColor.IsSystemColor)
+                    if (ColorUtil.IsSystemColor(value) && !ColorUtil.IsSystemColor(oldColor))
                     {
                         SystemColorTracker.Add(this);
                     }

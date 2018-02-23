@@ -7,6 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
+#if FEATURE_SYSTEM_EVENTS
+    using System.Drawing.Internal;
+#endif
+
     public sealed class SolidBrush : Brush
 #if FEATURE_SYSTEM_EVENTS
         , ISystemColorTracker
@@ -27,7 +31,7 @@ namespace System.Drawing
             SetNativeBrushInternal(nativeBrush);
 
 #if FEATURE_SYSTEM_EVENTS
-            if (color.IsSystemColor)
+            if (ColorUtil.IsSystemColor(_color))
             {
                 SystemColorTracker.Add(this);
             }
@@ -101,7 +105,7 @@ namespace System.Drawing
 #if FEATURE_SYSTEM_EVENTS
                     // NOTE: We never remove brushes from the active list, so if someone is
                     // changing their brush colors a lot, this could be a problem.
-                    if (value.IsSystemColor && !oldColor.IsSystemColor)
+                    if (ColorUtil.IsSystemColor(value) && !ColorUtil.IsSystemColor(oldColor))
                     {
                         SystemColorTracker.Add(this);
                     }
