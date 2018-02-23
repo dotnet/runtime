@@ -22,6 +22,8 @@
 #include "sgen/sgen-qsort.h"
 #include "utils/mono-logger-internals.h"
 
+#ifndef DISABLE_SGEN_GC_BRIDGE
+
 typedef enum {
 	BRIDGE_PROCESSOR_INVALID,
 	BRIDGE_PROCESSOR_OLD,
@@ -723,5 +725,88 @@ sgen_bridge_print_gc_debug_usage (void)
 	fprintf (stderr, "  bridge-dump=<filename-prefix>\n");
 	fprintf (stderr, "  bridge-compare-to=<implementation>\n");
 }
+
+#else
+
+//UG
+volatile gboolean bridge_processing_in_progress = FALSE;
+
+void
+mono_gc_wait_for_bridge_processing (void)
+{
+}
+
+MonoGCBridgeObjectKind
+sgen_bridge_class_kind (MonoClass *klass)
+{
+	return GC_BRIDGE_TRANSPARENT_CLASS;
+}
+
+void
+sgen_bridge_describe_pointer (GCObject *obj)
+{
+}
+
+gboolean
+sgen_bridge_handle_gc_debug (const char *opt)
+{
+	return FALSE;
+}
+
+gboolean
+sgen_bridge_handle_gc_param (const char *opt)
+{
+	return FALSE;
+}
+
+void
+sgen_bridge_print_gc_debug_usage (void)
+{
+}
+
+void
+sgen_bridge_processing_finish (int generation)
+{
+}
+
+void
+sgen_bridge_processing_stw_step (void)
+{
+}
+
+void
+sgen_bridge_register_finalized_object (GCObject *obj)
+{
+}
+
+void
+sgen_bridge_reset_data (void)
+{
+}
+
+void
+sgen_init_bridge (void)
+{
+}
+
+gboolean
+sgen_is_bridge_object (GCObject *obj)
+{
+	return FALSE;
+}
+
+gboolean
+sgen_need_bridge_processing (void)
+{
+	return FALSE;
+}
+
+void
+sgen_set_bridge_implementation (const char *name)
+{
+	g_error ("Sgen bridge disabled");
+}
+
+#endif
 
 #endif

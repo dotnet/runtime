@@ -3207,10 +3207,18 @@ init_sgen_minor (SgenMinor minor)
 		sgen_simple_nursery_init (&sgen_minor_collector, FALSE);
 		break;
 	case SGEN_MINOR_SIMPLE_PARALLEL:
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 		sgen_simple_nursery_init (&sgen_minor_collector, TRUE);
+#else
+		g_error ("Sgen was build with concurrent collector disabled");
+#endif
 		break;
 	case SGEN_MINOR_SPLIT:
+#ifndef DISABLE_SGEN_SPLIT_NURSERY
 		sgen_split_nursery_init (&sgen_minor_collector);
+#else
+		g_error ("Sgenw as build with split nursery disabled");
+#endif
 		break;
 	default:
 		g_assert_not_reached ();
@@ -3227,12 +3235,18 @@ init_sgen_major (SgenMajor major)
 	case SGEN_MAJOR_SERIAL:
 		sgen_marksweep_init (&major_collector);
 		break;
+#ifdef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
+	case SGEN_MAJOR_CONCURRENT:
+	case SGEN_MAJOR_CONCURRENT_PARALLEL:
+		g_error ("Sgen was build with the concurent collector disabled");
+#else
 	case SGEN_MAJOR_CONCURRENT:
 		sgen_marksweep_conc_init (&major_collector);
 		break;
 	case SGEN_MAJOR_CONCURRENT_PARALLEL:
 		sgen_marksweep_conc_par_init (&major_collector);
 		break;
+#endif
 	default:
 		g_assert_not_reached ();
 	}

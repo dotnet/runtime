@@ -2811,6 +2811,11 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 {
 	int i;
 
+#ifdef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
+	g_assert (is_concurrent == FALSE);
+	g_assert (is_parallel == FALSE);
+#endif
+
 	ms_block_size = mono_pagesize ();
 
 	if (ms_block_size < MS_BLOCK_SIZE_MIN)
@@ -2885,10 +2890,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->scan_card_table = major_scan_card_table;
 	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
 	collector->iterate_block_ranges = major_iterate_block_ranges;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (is_concurrent) {
 		collector->update_cardtable_mod_union = update_cardtable_mod_union;
 		collector->get_cardtable_mod_union_for_reference = major_get_cardtable_mod_union_for_reference;
 	}
+#endif
 	collector->init_to_space = major_init_to_space;
 	collector->sweep = major_sweep;
 	collector->have_swept = major_have_swept;
@@ -2918,6 +2925,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
 	collector->major_ops_serial.scan_ptr_field = major_scan_ptr_field_with_evacuation;
 	collector->major_ops_serial.drain_gray_stack = drain_gray_stack;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (is_concurrent) {
 		collector->major_ops_concurrent_start.copy_or_mark_object = major_copy_or_mark_object_concurrent_canonical;
 		collector->major_ops_concurrent_start.scan_object = major_scan_object_concurrent_with_evacuation;
@@ -2945,6 +2953,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 			collector->major_ops_conc_par_finish.drain_gray_stack = drain_gray_stack_par;
 		}
 	}
+#endif
 
 #ifdef HEAVY_STATISTICS
 	mono_counters_register ("Optimized copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_optimized_copy);
@@ -2973,6 +2982,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	/*cardtable requires major pages to be 8 cards aligned*/
 	g_assert ((ms_block_size % (8 * CARD_SIZE_IN_BYTES)) == 0);
 
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	if (is_concurrent && is_parallel)
 		sgen_workers_create_context (GENERATION_OLD, mono_cpu_count ());
 	else if (is_concurrent)
@@ -2980,6 +2990,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 
 	if (concurrent_sweep)
 		sweep_pool_context = sgen_thread_pool_create_context (1, NULL, NULL, NULL, NULL, NULL);
+#endif
 }
 
 void
@@ -2988,6 +2999,7 @@ sgen_marksweep_init (SgenMajorCollector *collector)
 	sgen_marksweep_init_internal (collector, FALSE, FALSE);
 }
 
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 void
 sgen_marksweep_conc_init (SgenMajorCollector *collector)
 {
@@ -2999,5 +3011,7 @@ sgen_marksweep_conc_par_init (SgenMajorCollector *collector)
 {
 	sgen_marksweep_init_internal (collector, TRUE, TRUE);
 }
+#endif
+
 
 #endif

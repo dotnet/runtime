@@ -16,6 +16,8 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+#ifndef DISABLE_SGEN_SPLIT_NURSERY
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -469,5 +471,6 @@ sgen_split_nursery_init (SgenMinorCollector *collector)
 	fill_serial_with_concurrent_major_ops (&collector->serial_ops_with_concurrent_major);
 }
 
+#endif //#ifndef DISABLE_SGEN_SPLIT_NURSERY
 
 #endif

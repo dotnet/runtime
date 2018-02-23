@@ -104,6 +104,8 @@ fill_serial_ops (SgenObjectOperations *ops)
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
 }
 
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
+
 #define SGEN_SIMPLE_PAR_NURSERY
 
 #include "sgen-minor-copy-object.h"
@@ -141,12 +143,18 @@ fill_parallel_with_concurrent_major_ops (SgenObjectOperations *ops)
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
 }
 
+#endif
+
 void
 sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 {
 	if (mono_cpu_count () <= 1)
 		parallel = FALSE;
 
+#ifdef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
+	g_assert (parallel == FALSE);
+#endif
+	
 	collector->is_split = FALSE;
 	collector->is_parallel = parallel;
 
@@ -161,7 +169,9 @@ sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 	collector->init_nursery = init_nursery;
 
 	fill_serial_ops (&collector->serial_ops);
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	fill_serial_with_concurrent_major_ops (&collector->serial_ops_with_concurrent_major);
+
 	fill_parallel_ops (&collector->parallel_ops);
 	fill_parallel_with_concurrent_major_ops (&collector->parallel_ops_with_concurrent_major);
 
@@ -171,6 +181,8 @@ sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 	 */
 	if (parallel)
 		sgen_workers_create_context (GENERATION_NURSERY, mono_cpu_count ());
+#endif
+
 }
 
 

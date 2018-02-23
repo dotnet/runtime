@@ -12,6 +12,7 @@
 #include "config.h"
 #ifdef HAVE_SGEN_GC
 
+
 #include <string.h>
 
 #include "mono/sgen/sgen-gc.h"
@@ -19,6 +20,8 @@
 #include "mono/sgen/sgen-thread-pool.h"
 #include "mono/utils/mono-membar.h"
 #include "mono/sgen/sgen-client.h"
+
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 
 static WorkerContext worker_contexts [GENERATION_MAX];
 
@@ -605,4 +608,84 @@ sgen_workers_is_worker_thread (MonoNativeThreadId id)
 	return sgen_thread_pool_is_thread_pool_thread (id);
 }
 
-#endif
+#else
+// Single theaded sgen-workers impl
+
+void
+sgen_workers_enqueue_job (int generation, SgenThreadPoolJob *job, gboolean enqueue)
+{
+	if (!enqueue) {
+		job->func (NULL, job);
+		sgen_thread_pool_job_free (job);
+		return;
+	}
+}
+
+gboolean
+sgen_workers_all_done (void)
+{
+	return TRUE;
+}
+
+void
+sgen_workers_assert_gray_queue_is_empty (int generation)
+{
+}
+
+void
+sgen_workers_foreach (int generation, SgenWorkerCallback callback)
+{
+}
+
+SgenObjectOperations*
+sgen_workers_get_idle_func_object_ops (WorkerData *worker)
+{
+	g_assert (worker->context->idle_func_object_ops);
+	return worker->context->idle_func_object_ops;
+}
+
+int
+sgen_workers_get_job_split_count (int generation)
+{
+	return 1;
+}
+
+gboolean
+sgen_workers_have_idle_work (int generation)
+{
+	return FALSE;
+}
+
+gboolean
+sgen_workers_is_worker_thread (MonoNativeThreadId id)
+{
+	return FALSE;
+}
+
+void
+sgen_workers_join (int generation)
+{
+}
+
+void
+sgen_workers_set_num_active_workers (int generation, int num_workers)
+{
+}
+
+void
+sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback callback)
+{
+}
+
+void
+sgen_workers_stop_all_workers (int generation)
+{
+}
+
+void
+sgen_workers_take_from_queue (int generation, SgenGrayQueue *queue)
+{
+}
+
+#endif //#ifdef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
+#endif // #ifdef HAVE_SGEN_GC
