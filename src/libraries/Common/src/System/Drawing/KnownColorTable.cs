@@ -7,6 +7,7 @@ using System.Diagnostics;
 namespace System.Drawing
 {
 #if FEATURE_SYSTEM_EVENTS
+    using Microsoft.Win32;
     using System.Drawing.Internal;
 #endif
 
@@ -440,9 +441,9 @@ namespace System.Drawing
 #if FEATURE_SYSTEM_EVENTS
         private static void OnUserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
         {
-            if (e.Category == UserPreferenceCategory.Color && colorTable != null)
+            if (e.Category == UserPreferenceCategory.Color && s_colorTable != null)
             {
-                UpdateSystemColors(colorTable);
+                UpdateSystemColors(s_colorTable);
             }
         }
 #endif
