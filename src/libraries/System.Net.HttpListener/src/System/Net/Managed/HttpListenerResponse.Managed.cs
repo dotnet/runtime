@@ -315,7 +315,15 @@ namespace System.Net
                     {
                         if (anyValues)
                         {
-                            sb.Append(", ");
+                            if (key.Equals(HttpKnownHeaderNames.SetCookie, StringComparison.OrdinalIgnoreCase) ||
+                                key.Equals(HttpKnownHeaderNames.SetCookie2, StringComparison.OrdinalIgnoreCase))
+                            {
+                                sb.Append("\r\n").Append(key).Append(": ");
+                            }
+                            else
+                            {
+                                sb.Append(", ");
+                            }
                         }
                         sb.Append(value);
                         anyValues = true;
