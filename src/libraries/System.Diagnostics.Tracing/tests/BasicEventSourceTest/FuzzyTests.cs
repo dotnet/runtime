@@ -2748,9 +2748,12 @@ namespace BasicEventSourceTests
                 }));
 
 #if USE_ETW
-                using (var listener = new EtwListener())
+                if(TestUtilities.IsProcessElevated)
                 {
-                    EventTestHarness.RunTests(tests, listener, logger);
+                    using (var listener = new EtwListener())
+                    {
+                        EventTestHarness.RunTests(tests, listener, logger);
+                    }
                 }
 #endif // USE_ETW
                 using (var listener = new EventListenerListener())

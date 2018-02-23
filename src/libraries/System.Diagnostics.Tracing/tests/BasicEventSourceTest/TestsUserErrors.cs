@@ -76,33 +76,37 @@ namespace BasicEventSourceTests
         {
 #if USE_ETW
             // We expect only one session to be on when running the test but if a ETW session was left
-            // hanging, it will confuse the EventListener tests.   
-            EtwListener.EnsureStopped();
+            // hanging, it will confuse the EventListener tests.
+            if(TestUtilities.IsProcessElevated)
+            {
+                EtwListener.EnsureStopped();
+            }
 #endif // USE_ETW
 
             TestUtilities.CheckNoEventSourcesRunning("Start");
             var onStartups = new bool[] { false, true };
-            
-                    var listenerGenerators = new Func<Listener>[]
-                    {
-                        () => new EventListenerListener(),
+
+            var listenerGenerators = new List<Func<Listener>>();
+            listenerGenerators.Add(() => new EventListenerListener());
 #if USE_ETW
-                        () => new EtwListener()
+            if(TestUtilities.IsProcessElevated)
+            {
+                listenerGenerators.Add(() => new EtwListener());
+            }
 #endif // USE_ETW
-                    };
 
-                    var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
+            var settings = new EventSourceSettings[] { EventSourceSettings.Default, EventSourceSettings.EtwSelfDescribingEventFormat };
 
-                    // For every interesting combination, run the test and see that we get a nice failure message.  
-                    foreach (bool onStartup in onStartups)
+            // For every interesting combination, run the test and see that we get a nice failure message.  
+            foreach (bool onStartup in onStartups)
+            {
+                foreach (Func<Listener> listenerGenerator in listenerGenerators)
+                {
+                    foreach (EventSourceSettings setting in settings)
                     {
-                        foreach (Func<Listener> listenerGenerator in listenerGenerators)
-                        {
-                            foreach (EventSourceSettings setting in settings)
-                            {
-                                Test_Bad_EventSource_Startup(onStartup, listenerGenerator(), setting);
-                            }
-                        }
+                        Test_Bad_EventSource_Startup(onStartup, listenerGenerator(), setting);
+                    }
+                }
             }
 
             TestUtilities.CheckNoEventSourcesRunning("Stop");

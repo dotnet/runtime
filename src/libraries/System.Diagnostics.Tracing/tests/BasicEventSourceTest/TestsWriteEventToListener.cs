@@ -19,6 +19,12 @@ namespace BasicEventSourceTests
 {
     public class TestsWriteEventToListener
     {
+#if USE_ETW
+        // Specifies whether the process is elevated or not.
+        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
+        private static bool IsProcessElevated => s_isElevated.Value;
+#endif // USE_ETW
+
         [Fact]
         [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ArgsBasicTypes()
@@ -38,7 +44,7 @@ namespace BasicEventSourceTests
                     Assert.Equal(1, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(0, LoudListener.t_lastEvent.Payload.Count);
 
-                    #region Validate "int" arguments
+#region Validate "int" arguments
                     log.EventI(10);
                     Assert.Equal(2, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -56,9 +62,9 @@ namespace BasicEventSourceTests
                     Assert.Equal(10, (int)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal(11, (int)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal(12, (int)LoudListener.t_lastEvent.Payload[2]);
-                    #endregion
+#endregion
 
-                    #region Validate "long" arguments
+#region Validate "long" arguments
                     log.EventL(10);
                     Assert.Equal(5, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -77,9 +83,9 @@ namespace BasicEventSourceTests
                     Assert.Equal(11, (long)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal(12, (long)LoudListener.t_lastEvent.Payload[2]);
 
-                    #endregion
+#endregion
 
-                    #region Validate "string" arguments
+#region Validate "string" arguments
                     log.EventS("10");
                     Assert.Equal(8, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -97,17 +103,17 @@ namespace BasicEventSourceTests
                     Assert.Equal("10", (string)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal("11", (string)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal("12", (string)LoudListener.t_lastEvent.Payload[2]);
-                    #endregion
+#endregion
 
-                    #region Validate byte array arguments
+#region Validate byte array arguments
                     byte[] arr = new byte[20];
                     log.EventWithByteArray(arr);
                     Assert.Equal(52, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(arr.Length, ((byte[])LoudListener.t_lastEvent.Payload[0]).Length);
-                    #endregion
+#endregion
 
-                    #region Validate mixed type arguments
+#region Validate mixed type arguments
                     log.EventSI("10", 11);
                     Assert.Equal(11, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
@@ -126,9 +132,9 @@ namespace BasicEventSourceTests
                     Assert.Equal("10", (string)LoudListener.t_lastEvent.Payload[0]);
                     Assert.Equal(11, (int)LoudListener.t_lastEvent.Payload[1]);
                     Assert.Equal(12, (int)LoudListener.t_lastEvent.Payload[2]);
-                    #endregion
+#endregion
 
-                    #region Validate enums/flags
+#region Validate enums/flags
                     log.EventEnum(MyColor.Blue);
                     Assert.Equal(19, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
@@ -148,16 +154,16 @@ namespace BasicEventSourceTests
                     Assert.Equal(22, LoudListener.t_lastEvent.EventId);
                     Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
                     Assert.Equal(MyFlags.Flag1, (MyFlags)LoudListener.t_lastEvent.Payload[0]);
-                    #endregion
+#endregion
 
 #if USE_ETW
-                    #region Validate DateTime
+#region Validate DateTime
                     DateTime now = DateTime.Now;
                     log.EventDateTime(now);
                     Assert.Equal(24, LoudListener.LastEvent.EventId);
                     Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
                     Assert.Equal((DateTime)LoudListener.LastEvent.Payload[0], now);
-                    #endregion
+#endregion
 #endif // USE_ETW
                 }
             }
@@ -256,7 +262,7 @@ namespace BasicEventSourceTests
         }
 
 #if USE_ETW
-        [Fact]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void Test_WriteEvent_TransferEvents()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -352,7 +358,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-#if FEATURE_ETLEVENTS 
+#if FEATURE_ETLEVENTS
         [Fact]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
