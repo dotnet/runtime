@@ -201,6 +201,13 @@
     ]
   },
   {
+    "Name": "Microsoft.Win32.SystemEvents",
+    "Description": "Provides access to Windows system event notifications.",
+    "CommonTypes": [
+      "Microsoft.Win32.SystemEvents"
+    ]
+  },
+  {
     "Name": "Microsoft.Win32.Registry.AccessControl",
     "Description": "Provides support for managing access and audit control lists for Microsoft.Win32.RegistryKey.",
     "CommonTypes": [
