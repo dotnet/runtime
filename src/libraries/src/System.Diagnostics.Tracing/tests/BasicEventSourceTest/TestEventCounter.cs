@@ -25,6 +25,12 @@ namespace BasicEventSourceTests
 {
     public class TestEventCounter
     {
+#if USE_ETW
+        // Specifies whether the process is elevated or not.
+        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
+        private static bool IsProcessElevated => s_isElevated.Value;
+#endif // USE_ETW
+
         private sealed class MyEventSource : EventSource
         {
             private EventCounter _requestCounter;
@@ -62,7 +68,7 @@ namespace BasicEventSourceTests
         }
 
 #if USE_ETW
-        [Fact]
+        [ConditionalFact(nameof(IsProcessElevated))]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
         public void Test_Write_Metric_ETW()
         {
