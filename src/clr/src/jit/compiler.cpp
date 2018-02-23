@@ -2194,6 +2194,44 @@ void Compiler::compDoComponentUnitTestsOnce()
         BitSetSupport::TestSuite(getAllocatorDebugOnly());
     }
 }
+
+//------------------------------------------------------------------------
+// compGetJitDefaultFill:
+//
+// Return Value:
+//    An unsigned char value used to initizalize memory allocated by the JIT.
+//    The default value is taken from COMPLUS_JitDefaultFill,  if is not set
+//    the value will be 0xdd.  When JitStress is active a random value based
+//    on the method hash is used.
+//
+// Notes:
+//    Note that we can't use small values like zero, because we have some
+//    asserts that can fire for such values.
+//
+unsigned char Compiler::compGetJitDefaultFill()
+{
+    unsigned char defaultFill = (unsigned char)JitConfig.JitDefaultFill();
+
+    if ((this != nullptr) && (compStressCompile(STRESS_GENERIC_VARN, 50)))
+    {
+        unsigned temp;
+        temp = info.compMethodHash();
+        temp = (temp >> 16) ^ temp;
+        temp = (temp >> 8) ^ temp;
+        temp = temp & 0xff;
+        // asserts like this: assert(!IsUninitialized(stkLvl));
+        // mean that small values for defaultFill are problematic
+        // so we make the value larger in that case.
+        if (temp < 0x20)
+        {
+            temp |= 0x80;
+        }
+        defaultFill = (unsigned char)temp;
+    }
+
+    return defaultFill;
+}
+
 #endif // DEBUG
 
 /*****************************************************************************

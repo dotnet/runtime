@@ -1715,12 +1715,9 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
             new (&newLvaTable[i], jitstd::placement_t()) LclVarDsc(this); // call the constructor.
         }
 
-#if 0
-        // TODO-Cleanup: Enable this and test.
 #ifdef DEBUG
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, fDefaultFill2.val_DontUse_(CLRConfig::INTERNAL_JitDefaultFill, 0xFF), lvaCount * sizeof(*lvaTable));
-#endif
+        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;
@@ -1792,12 +1789,9 @@ inline unsigned Compiler::lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason)
             new (&newLvaTable[i], jitstd::placement_t()) LclVarDsc(this); // call the constructor.
         }
 
-#if 0
 #ifdef DEBUG
-        // TODO-Cleanup: Enable this and test.
         // Fill the old table with junks. So to detect the un-intended use.
-        memset(lvaTable, fDefaultFill2.val_DontUse_(CLRConfig::INTERNAL_JitDefaultFill, 0xFF), lvaCount * sizeof(*lvaTable));
-#endif
+        memset(lvaTable, JitConfig.JitDefaultFill(), lvaCount * sizeof(*lvaTable));
 #endif
 
         lvaTableCnt = newLvaTableCnt;

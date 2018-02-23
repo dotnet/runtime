@@ -152,7 +152,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     genTrnslLocalVarCount = 0;
 
     // Shouldn't be used before it is set in genFnProlog()
-    compiler->compCalleeRegsPushed = UninitializedWord<unsigned>();
+    compiler->compCalleeRegsPushed = UninitializedWord<unsigned>(compiler);
 
 #if defined(_TARGET_XARCH_) && !FEATURE_STACK_FP_X87
     // Shouldn't be used before it is set in genFnProlog()
