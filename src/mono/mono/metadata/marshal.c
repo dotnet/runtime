@@ -11161,6 +11161,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 	MonoClass *klass;
 	MonoType *type;
 	guint32 layout;
+	gint32 align, result;
 
 	error_init (error);
 
@@ -11185,7 +11186,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 		return 0;
 	}
 
-	return mono_class_native_size (klass, NULL);
+	result = mono_marshal_type_size (type, NULL, &align, FALSE, klass->unicode);
+	return (guint32)result;
 }
 
 void
@@ -11884,6 +11886,7 @@ gint32
 mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			gboolean as_field, gboolean unicode)
 {
+	gint32 padded_size;
 	MonoMarshalNative native_type = mono_type_to_unmanaged (type, mspec, as_field, unicode, NULL);
 	MonoClass *klass;
 
@@ -11941,7 +11944,10 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		*align = 16;
 		return 16;
 		}
-		return mono_class_native_size (klass, align);
+		padded_size = mono_class_native_size (klass, align);
+		if (padded_size == 0)
+			padded_size = 1;
+		return padded_size;
 	case MONO_NATIVE_BYVALTSTR: {
 		int esize = unicode ? 2: 1;
 		g_assert (mspec);
