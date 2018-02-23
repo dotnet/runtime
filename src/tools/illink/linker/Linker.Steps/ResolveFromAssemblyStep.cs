@@ -117,12 +117,7 @@ namespace Mono.Linker.Steps
 
 					if (!isForwarder)
 						continue;
-					TypeDefinition resolvedExportedType = null;
-					try {
-						resolvedExportedType = exported.Resolve ();
-					} catch (AssemblyResolutionException) {
-						continue;
-					}
+					TypeDefinition resolvedExportedType = exported.Resolve ();
 
 					if (resolvedExportedType == null) {
 						//

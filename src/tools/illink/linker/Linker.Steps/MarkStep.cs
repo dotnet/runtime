@@ -150,13 +150,9 @@ namespace Mono.Linker.Steps {
 
 					if (!isForwarder)
 						continue;
-					TypeDefinition type = null;
-					try {
-						type = exported.Resolve ();
-					}
-					catch (AssemblyResolutionException) {
+					TypeDefinition type = exported.Resolve ();
+					if (type == null)
 						continue;
-					}
 					if (!Annotations.IsMarked (type))
 						continue;
 					Tracer.Push (type);

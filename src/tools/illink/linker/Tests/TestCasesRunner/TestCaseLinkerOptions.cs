@@ -11,6 +11,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public bool IncludeBlacklistStep;
 		public string KeepTypeForwarderOnlyAssemblies;
 		public string LinkSymbols;
+		public bool SkipUnresolved;
 
 		public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>> ();
 	}
