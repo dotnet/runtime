@@ -1198,9 +1198,9 @@ namespace System
                     int secondDotIndex = dateRule.IndexOf('.', firstDotIndex + 1);
                     if (secondDotIndex > 0)
                     {
-                        if (int.TryParse(dateRule.AsReadOnlySpan().Slice(1, firstDotIndex - 1), out month) &&
-                            int.TryParse(dateRule.AsReadOnlySpan().Slice(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1), out week) &&
-                            int.TryParse(dateRule.AsReadOnlySpan().Slice(secondDotIndex + 1), out int day))
+                        if (int.TryParse(dateRule.AsSpan().Slice(1, firstDotIndex - 1), out month) &&
+                            int.TryParse(dateRule.AsSpan().Slice(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1), out week) &&
+                            int.TryParse(dateRule.AsSpan().Slice(secondDotIndex + 1), out int day))
                         {
                             dayOfWeek = (DayOfWeek)day;
                             return true;

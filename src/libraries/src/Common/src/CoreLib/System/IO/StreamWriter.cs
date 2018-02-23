@@ -432,7 +432,7 @@ namespace System.IO
         {
             if (value != null)
             {
-                WriteCore(value.AsReadOnlySpan(), _autoFlush);
+                WriteCore(value.AsSpan(), _autoFlush);
             }
         }
 
@@ -445,7 +445,7 @@ namespace System.IO
             CheckAsyncTaskInProgress();
             if (value != null)
             {
-                WriteCore(value.AsReadOnlySpan(), autoFlush: false);
+                WriteCore(value.AsSpan(), autoFlush: false);
             }
             WriteCore(new ReadOnlySpan<char>(CoreNewLine), autoFlush: true);
         }
