@@ -632,7 +632,7 @@ namespace System
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         /// reference (Nothing in Visual Basic).</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text)
+        public static ReadOnlySpan<char> AsSpan(this string text)
         {
             if (text == null)
                 return default;
@@ -649,7 +649,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, int start)
+        public static ReadOnlySpan<char> AsSpan(this string text, int start)
         {
             if (text == null)
             {
@@ -673,7 +673,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, int start, int length)
+        public static ReadOnlySpan<char> AsSpan(this string text, int start, int length)
         {
             if (text == null)
             {
@@ -687,6 +687,11 @@ namespace System
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), start), length);
         }
+
+        // TODO: Delete once the AsReadOnlySpan -> AsSpan rename propages through the system
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text) => AsSpan(text);
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, int start) => AsSpan(text, start);
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, int start, int length) => AsSpan(text, start, length);
 
         internal static unsafe void ClearWithoutReferences(ref byte b, nuint byteLength)
         {

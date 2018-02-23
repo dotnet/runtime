@@ -43,7 +43,7 @@ namespace System.Collections.Generic
             _pos = pos + 1;
         }
 
-        public ReadOnlySpan<T> AsReadOnlySpan()
+        public ReadOnlySpan<T> AsSpan()
         {
             return _span.Slice(0, _pos);
         }
