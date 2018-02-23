@@ -361,7 +361,7 @@ sgen_workers_create_context (int generation, int num_workers)
 {
 	static gboolean stat_inited = FALSE;
 	int i;
-	WorkerData **workers_data_ptrs = (WorkerData**)sgen_alloc_internal_dynamic (num_workers * sizeof(WorkerData*), INTERNAL_MEM_WORKER_DATA, TRUE);
+	WorkerData **workers_data_ptrs;
 	WorkerContext *context = &worker_contexts [generation];
 
 	SGEN_ASSERT (0, !context->workers_num, "We can't init the worker context for a generation twice");
@@ -369,20 +369,21 @@ sgen_workers_create_context (int generation, int num_workers)
 	mono_os_mutex_init (&context->finished_lock);
 
 	context->generation = generation;
-	context->workers_num = num_workers;
-	context->active_workers_num = num_workers;
+	context->workers_num = (num_workers > SGEN_THREADPOOL_MAX_NUM_THREADS) ? SGEN_THREADPOOL_MAX_NUM_THREADS : num_workers;
+	context->active_workers_num = context->workers_num;
 
-	context->workers_data = (WorkerData *)sgen_alloc_internal_dynamic (sizeof (WorkerData) * num_workers, INTERNAL_MEM_WORKER_DATA, TRUE);
-	memset (context->workers_data, 0, sizeof (WorkerData) * num_workers);
+	context->workers_data = (WorkerData *)sgen_alloc_internal_dynamic (sizeof (WorkerData) * context->workers_num, INTERNAL_MEM_WORKER_DATA, TRUE);
+	memset (context->workers_data, 0, sizeof (WorkerData) * context->workers_num);
 
 	init_distribute_gray_queue (context);
 
-	for (i = 0; i < num_workers; ++i) {
+	workers_data_ptrs = (WorkerData**)sgen_alloc_internal_dynamic (context->workers_num * sizeof (WorkerData*), INTERNAL_MEM_WORKER_DATA, TRUE);
+	for (i = 0; i < context->workers_num; ++i) {
 		workers_data_ptrs [i] = &context->workers_data [i];
 		context->workers_data [i].context = context;
 	}
 
-	context->thread_pool_context = sgen_thread_pool_create_context (num_workers, thread_pool_init_func, marker_idle_func, continue_idle_func, should_work_func, (void**)workers_data_ptrs);
+	context->thread_pool_context = sgen_thread_pool_create_context (context->workers_num, thread_pool_init_func, marker_idle_func, continue_idle_func, should_work_func, (void**)workers_data_ptrs);
 
 	if (!stat_inited) {
 		mono_counters_register ("# workers finished", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_workers_num_finished);
