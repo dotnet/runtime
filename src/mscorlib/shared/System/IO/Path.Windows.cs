@@ -80,19 +80,19 @@ namespace System.IO
                 // Path is current drive rooted i.e. starts with \:
                 // "\Foo" and "C:\Bar" => "C:\Foo"
                 // "\Foo" and "\\?\C:\Bar" => "\\?\C:\Foo"
-                combinedPath = CombineNoChecks(GetPathRoot(basePath), path.AsReadOnlySpan().Slice(1));
+                combinedPath = CombineNoChecks(GetPathRoot(basePath), path.AsSpan().Slice(1));
             }
             else if (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == PathInternal.VolumeSeparatorChar)
             {
                 // Drive relative paths
                 Debug.Assert(length == 2 || !PathInternal.IsDirectorySeparator(path[2]));
 
-                if (StringSpanHelpers.Equals(GetVolumeName(path.AsReadOnlySpan()), GetVolumeName(basePath.AsReadOnlySpan())))
+                if (StringSpanHelpers.Equals(GetVolumeName(path.AsSpan()), GetVolumeName(basePath.AsSpan())))
                 {
                     // Matching root
                     // "C:Foo" and "C:\Bar" => "C:\Bar\Foo"
                     // "C:Foo" and "\\?\C:\Bar" => "\\?\C:\Bar\Foo"
-                    combinedPath = CombineNoChecks(basePath, path.AsReadOnlySpan().Slice(2));
+                    combinedPath = CombineNoChecks(basePath, path.AsSpan().Slice(2));
                 }
                 else
                 {
@@ -144,7 +144,7 @@ namespace System.IO
         // if it starts with a backslash ("\") or a valid drive letter and a colon (":").
         public static bool IsPathRooted(string path)
         {
-            return path != null && IsPathRooted(path.AsReadOnlySpan());
+            return path != null && IsPathRooted(path.AsSpan());
         }
 
         public static bool IsPathRooted(ReadOnlySpan<char> path)
@@ -168,7 +168,7 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path))
                 return null;
 
-            ReadOnlySpan<char> result = GetPathRoot(path.AsReadOnlySpan());
+            ReadOnlySpan<char> result = GetPathRoot(path.AsSpan());
             if (path.Length == result.Length)
                 return PathInternal.NormalizeDirectorySeparators(path);
 

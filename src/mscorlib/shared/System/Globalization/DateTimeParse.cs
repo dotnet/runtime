@@ -5045,7 +5045,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             return false;
                         }
-                        if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsReadOnlySpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
+                        if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
                         {
                             return false;
                         }
@@ -5071,7 +5071,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         return false;
                     }
-                    if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsReadOnlySpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
+                    if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
                     {
                         return false;
                     }
