@@ -1552,7 +1552,7 @@ namespace System.Text
                         if (startPos != pos)
                         {
                             // There was no brace escaping, extract the item format as a single string
-                            itemFormatSpan = format.AsReadOnlySpan().Slice(startPos, pos - startPos);
+                            itemFormatSpan = format.AsSpan().Slice(startPos, pos - startPos);
                         }
                     }
                     else
