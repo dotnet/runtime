@@ -39,7 +39,6 @@ namespace Microsoft.Win32
         private static volatile Thread s_windowThread;
         private static volatile ManualResetEvent s_eventWindowReady;
         private static Random s_randomTimerId = new Random();
-        private static volatile bool s_startupRecreates;
         private static volatile bool s_registeredSessionNotification = false;
         private static volatile int s_domainQualifier;
         private static volatile Interop.User32.WNDCLASS s_staticwndclass;
@@ -366,7 +365,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity")]
         private static void AddEventHandler(object key, Delegate value)
         {
             lock (s_eventLockObject)
@@ -643,8 +641,6 @@ namespace Microsoft.Win32
                             // subsequent (and more important) CreateWindowEx calls also fail.
                             throw new ExternalException(SR.ErrorCreateSystemEvents);
                         }
-
-                        s_startupRecreates = false;
                     }
                 }
             }
@@ -665,7 +661,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1801:AvoidUnusedParameters")]
         private UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
@@ -1183,7 +1178,6 @@ namespace Microsoft.Win32
             }
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity")]
         private static void RemoveEventHandler(object key, Delegate value)
         {
             lock (s_eventLockObject)
@@ -1197,46 +1191,6 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///     This method is invoked via reflection from windows forms.  Why?  Because when the runtime is hosted in IE,
-        ///     IE doesn't tell it when to shut down.  The first notification the runtime gets is 
-        ///     DLL_PROCESS_DETACH, at which point it is too late for us to run any managed code.  But,
-        ///     if we don't destroy our system events window the HWND will fault if it
-        ///     receives a message after the runtime shuts down.  So it is imparative that
-        ///     we destroy the window, but it is also necessary to recreate the window on demand.
-        ///     That's hard to do, because we originally created it in response to an event
-        ///     wire-up, but that event is still bound so technically we should still have the
-        ///     window around.  To work around this crashing fiasco, we have special code
-        ///     in the ActiveXImpl class within Control.  This code checks to see if it is running
-        ///     inside of IE, and if so, it will invoke these methods via private reflection.
-        ///     It will invoke Shutdown when the last active X control is destroyed, and then
-        ///     call Startup with the first activeX control is recreated.  
-        /// </devdoc>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        private static void Startup()
-        {
-            if (s_startupRecreates)
-            {
-                EnsureSystemEvents(false, false);
-            }
-        }
-
-        /// <devdoc>
-        ///     This method is invoked via reflection from windows forms.  Why?  Because when the runtime is hosted in IE,
-        ///     IE doesn't tell it when to shut down.  The first notification the runtime gets is 
-        ///     DLL_PROCESS_DETACH, at which point it is too late for us to run any managed code.  But,
-        ///     if we don't destroy our system events window the HWND will fault if it
-        ///     receives a message after the runtime shuts down.  So it is imparative that
-        ///     we destroy the window, but it is also necessary to recreate the window on demand.
-        ///     That's hard to do, because we originally created it in response to an event
-        ///     wire-up, but that event is still bound so technically we should still have the
-        ///     window around.  To work around this crashing fiasco, we have special code
-        ///     in the ActiveXImpl class within Control.  This code checks to see if it is running
-        ///     inside of IE, and if so, it will invoke these methods via private reflection.
-        ///     It will invoke Shutdown when the last active X control is destroyed, and then
-        ///     call Startup with the first activeX control is recreated.  
-        /// </devdoc>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         private static void Shutdown()
         {
             if (s_systemEvents != null && s_systemEvents._windowHandle != IntPtr.Zero)
@@ -1245,8 +1199,6 @@ namespace Microsoft.Win32
                 {
                     if (s_systemEvents != null)
                     {
-                        s_startupRecreates = true;
-
                         // If we are using system events from another thread, request that it terminate
                         //
                         if (s_windowThread != null)
