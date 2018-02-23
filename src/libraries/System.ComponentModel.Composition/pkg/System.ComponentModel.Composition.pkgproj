@@ -10,9 +10,6 @@
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
-    <File Include="$(PlaceHolderFile)">
-      <TargetPath>runtimes/win/lib/net45</TargetPath>
-    </File>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
