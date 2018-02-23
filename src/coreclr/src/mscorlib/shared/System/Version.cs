@@ -300,7 +300,7 @@ namespace System
                 throw new ArgumentNullException(nameof(input));
             }
 
-            return ParseVersion(input.AsReadOnlySpan(), throwOnFailure: true);
+            return ParseVersion(input.AsSpan(), throwOnFailure: true);
         }
 
         public static Version Parse(ReadOnlySpan<char> input) =>
@@ -314,7 +314,7 @@ namespace System
                 return false;
             }
 
-            return (result = ParseVersion(input.AsReadOnlySpan(), throwOnFailure: false)) != null;
+            return (result = ParseVersion(input.AsSpan(), throwOnFailure: false)) != null;
         }
 
         public static bool TryParse(ReadOnlySpan<char> input, out Version result) =>
