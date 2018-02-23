@@ -133,6 +133,7 @@
     <Compile Include="System\Drawing\Internal\GPPOINTF.cs" />
     <Compile Include="System\Drawing\Internal\GPRECT.cs" />
     <Compile Include="System\Drawing\Internal\GPRECTF.cs" />
+    <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
     <Compile Include="System\Drawing\Brush.cs" />
     <Compile Include="System\Drawing\FontFamily.cs" />
     <Compile Include="System\Drawing\SolidBrush.cs" />
@@ -227,6 +228,7 @@
     <Compile Include="System\Drawing\Imaging\MetafileHeader.Windows.cs" />
     <Compile Include="System\Drawing\Imaging\MetaHeader.Windows.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
+    <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\Pen.Windows.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
