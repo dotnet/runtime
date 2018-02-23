@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include "pal.h"
+#include "utils.h"
 #include "fx_ver.h"
 
 fx_ver_t::fx_ver_t(int major, int minor, int patch, const pal::string_t& pre, const pal::string_t& build)
@@ -118,20 +119,6 @@ int fx_ver_t::compare(const fx_ver_t&a, const fx_ver_t& b)
     return a.m_build.compare(b.m_build);
 }
 
-bool try_stou(const pal::string_t& str, unsigned* num)
-{
-    if (str.empty())
-    {
-        return false;
-    }
-    if (str.find_first_not_of(_X("0123456789")) != pal::string_t::npos)
-    {
-        return false;
-    }
-    *num = (unsigned) std::stoul(str);
-    return true;
-}
-
 bool parse_internal(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production)
 {
     size_t maj_start = 0;
@@ -161,7 +148,7 @@ bool parse_internal(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_
 
     unsigned patch = 0;
     size_t pat_start = min_sep + 1;
-    size_t pat_sep = ver.find_first_not_of(_X("0123456789"), pat_start);
+    size_t pat_sep = index_of_non_numeric(ver, pat_start);
     if (pat_sep == pal::string_t::npos)
     {
         if (!try_stou(ver.substr(pat_start), &patch))

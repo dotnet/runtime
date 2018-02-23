@@ -24,6 +24,18 @@ struct probe_paths_t
     pal::string_t clrjit;
 };
 
+struct deps_resolved_asset_t
+{
+    deps_resolved_asset_t(const deps_asset_t& asset, const pal::string_t& resolved_path)
+        : asset(asset)
+        , resolved_path(resolved_path) { }
+
+    deps_asset_t asset;
+    pal::string_t resolved_path;
+};
+
+typedef std::unordered_map<pal::string_t, deps_resolved_asset_t> name_to_resolved_asset_map_t;
+
 class deps_resolver_t
 {
 public:
@@ -156,25 +168,22 @@ private:
     void get_dir_assemblies(
         const pal::string_t& dir,
         const pal::string_t& dir_name,
-        std::unordered_map<pal::string_t, pal::string_t>* dir_assemblies);
+        name_to_resolved_asset_map_t* items);
 
     // Probe entry in probe configurations and deps dir.
     bool probe_deps_entry(
         const deps_entry_t& entry,
         const pal::string_t& deps_dir,
+        int fx_level,
         pal::string_t* candidate);
 
     fx_definition_vector_t& m_fx_definitions;
 
     pal::string_t m_app_dir;
 
-    // Map of simple name -> full path of local/fx assemblies
-    typedef std::unordered_map<pal::string_t, pal::string_t> dir_assemblies_t;
-
     void add_tpa_asset(
-        const pal::string_t& asset_name,
-        const pal::string_t& asset_path,
-        dir_assemblies_t* items);
+        const deps_resolved_asset_t& asset,
+        name_to_resolved_asset_map_t* items);
 
     // The managed application the dependencies are being resolved for.
     pal::string_t m_managed_app;

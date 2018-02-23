@@ -167,6 +167,23 @@ void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
     }
 }
 
+pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl)
+{
+    int pos = path.find(match);
+    if (pos == pal::string_t::npos)
+    {
+        return path;
+    }
+
+    pal::string_t out = path;
+    do
+    {
+        out[pos] = repl;
+    } while ((pos = out.find(match, pos)) != pal::string_t::npos);
+
+    return out;
+}
+
 const pal::char_t* get_arch()
 {
 #if _TARGET_AMD64_
@@ -333,4 +350,23 @@ bool get_path_from_argv(pal::string_t *path)
     }
 
     return false;
+}
+
+size_t index_of_non_numeric(const pal::string_t& str, unsigned i)
+{
+    return str.find_first_not_of(_X("0123456789"), i);
+}
+
+bool try_stou(const pal::string_t& str, unsigned* num)
+{
+    if (str.empty())
+    {
+        return false;
+    }
+    if (index_of_non_numeric(str, 0) != pal::string_t::npos)
+    {
+        return false;
+    }
+    *num = (unsigned)std::stoul(str);
+    return true;
 }

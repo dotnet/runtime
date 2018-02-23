@@ -16,8 +16,8 @@ class deps_json_t
 {
     typedef web::json::value json_value;
     typedef web::json::object json_object;
-    struct vec_t { std::vector<pal::string_t> vec; };
-    struct assets_t { std::array<vec_t, deps_entry_t::asset_types::count> by_type; };
+    typedef std::vector<deps_asset_t> vec_asset_t;
+    typedef std::array<vec_asset_t, deps_entry_t::asset_types::count> assets_t;
     struct deps_assets_t { std::unordered_map<pal::string_t, assets_t> libs; };
     struct rid_assets_t { std::unordered_map<pal::string_t, assets_t> rid_assets; };
     struct rid_specific_assets_t { std::unordered_map<pal::string_t, rid_assets_t> libs; };
@@ -90,8 +90,9 @@ private:
         const pal::string_t& deps_path,
         const json_value& json,
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
-        const std::function<const std::vector<pal::string_t>&(const pal::string_t&, int, bool*)>& get_rel_paths_by_asset_type_fn);
+        const std::function<const vec_asset_t&(const pal::string_t&, int, bool*)>& get_assets_fn);
 
+    pal::string_t get_optional_property(const json_object& properties, const pal::string_t& key) const;
     pal::string_t get_optional_path(const json_object& properties, const pal::string_t& key) const;
 
     pal::string_t get_current_rid(const rid_fallback_graph_t& rid_fallback_graph);
@@ -102,7 +103,7 @@ private:
     deps_assets_t m_assets;
     rid_specific_assets_t m_rid_assets;
 
-	std::unordered_map<pal::string_t, int> m_ni_entries;
+    std::unordered_map<pal::string_t, int> m_ni_entries;
     rid_fallback_graph_t m_rid_fallback_graph;
     bool m_file_exists;
     bool m_valid;

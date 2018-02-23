@@ -37,6 +37,7 @@ set(SOURCES
     ../json/casablanca/src/json/json_serialization.cpp
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
     ../fx_definition.cpp
+    ../version.cpp
     ./hostfxr.cpp
     ./fx_ver.cpp
     ./fx_muxer.cpp
