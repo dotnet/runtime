@@ -120,6 +120,7 @@ namespace Tests.System.IO
             InlineData(@"    \\", @"\\"),
             InlineData(@"    //", @"\\")
             ]
+        [ActiveIssue(27401)]
         public void NormalizeDirectorySeparatorTests(string path, string expected)
         {
             string result = PathInternal.NormalizeDirectorySeparators(path);
