@@ -228,28 +228,9 @@ namespace System.Net.Http
                 TransportContext transportContext = null;
                 if (_sslOptions != null)
                 {
-                    // TODO #25206 and #24430: Register/IsCancellationRequested should be removable once SslStream auth and sockets respect cancellation.
-                    CancellationTokenRegistration ctr = cancellationToken.Register(s => ((Stream)s).Dispose(), stream);
-                    try
-                    {
-                        SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
-                        stream = sslStream;
-                        transportContext = sslStream.TransportContext;
-                        cancellationToken.ThrowIfCancellationRequested(); // to handle race condition where stream is dispose of by cancellation after auth
-                    }
-                    catch (Exception exc)
-                    {
-                        stream.Dispose(); // in case cancellation occurs after successful SSL auth
-                        if (HttpConnection.ShouldWrapInOperationCanceledException(exc, cancellationToken))
-                        {
-                            throw HttpConnection.CreateOperationCanceledException(exc, cancellationToken);
-                        }
-                        throw;
-                    }
-                    finally
-                    {
-                        ctr.Dispose();
-                    }
+                    SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptions, request, stream, cancellationToken).ConfigureAwait(false);
+                    stream = sslStream;
+                    transportContext = sslStream.TransportContext;
                 }
 
                 return _maxConnections == int.MaxValue ?
