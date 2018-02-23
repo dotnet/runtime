@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text
 {
@@ -21,7 +22,25 @@ namespace System.Text
             _pos = 0;
         }
 
-        public int Length => _pos;
+        public int Length
+        {
+            get => _pos;
+            set
+            {
+                Debug.Assert(value <= _chars.Length);
+                _pos = value;
+            }
+        }
+
+        public int Capacity => _chars.Length;
+
+        public void EnsureCapacity(int capacity)
+        {
+            if (capacity > _chars.Length)
+                Grow(capacity - _chars.Length);
+        }
+
+        public ref char GetPinnableReference() => ref MemoryMarshal.GetReference(_chars);
 
         public ref char this[int index]
         {
@@ -38,6 +57,8 @@ namespace System.Text
             Dispose();
             return s;
         }
+
+        public ReadOnlySpan<char> AsSpan() => _chars.Slice(0, _pos);
 
         public bool TryCopyTo(Span<char> destination, out int charsWritten)
         {
@@ -141,6 +162,18 @@ namespace System.Text
             _pos += length;
         }
 
+        public unsafe void Append(ReadOnlySpan<char> value)
+        {
+            int pos = _pos;
+            if (pos > _chars.Length - value.Length)
+            {
+                Grow(value.Length);
+            }
+
+            value.CopyTo(_chars.Slice(_pos));
+            _pos += value.Length;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<char> AppendSpan(int length)
         {
@@ -164,7 +197,7 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Grow(int requiredAdditionalCapacity)
         {
-            Debug.Assert(requiredAdditionalCapacity > _chars.Length - _pos);
+            Debug.Assert(requiredAdditionalCapacity > 0);
 
             char[] poolArray = ArrayPool<char>.Shared.Rent(Math.Max(_pos + requiredAdditionalCapacity, _chars.Length * 2));
 
