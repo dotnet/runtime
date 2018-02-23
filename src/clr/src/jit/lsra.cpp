@@ -4957,6 +4957,12 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 }
 
 #ifdef _TARGET_ARM_
+                // unassignPhysReg, above, may have restored a 'previousInterval', in which case we need to
+                // get the value of 'physRegRecord->assignedInterval' rather than using 'assignedInterval'.
+                if (physRegRecord->assignedInterval != nullptr)
+                {
+                    assignedInterval = physRegRecord->assignedInterval;
+                }
                 if (assignedInterval->registerType == TYP_DOUBLE)
                 {
                     // Skip next float register, because we already addressed a double register
