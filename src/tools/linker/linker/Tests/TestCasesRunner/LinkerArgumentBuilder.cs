@@ -66,6 +66,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (assembly);
 		}
 
+		public virtual void AddSkipUnresolved (bool skipUnresolved)
+		{
+			if (skipUnresolved) {
+				Append ("--skip-unresolved");
+				Append ("true");
+			}
+		}
+
 		public string [] ToArgs ()
 		{
 			return _arguments.ToArray ();
@@ -107,6 +115,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);
+
+			AddSkipUnresolved (options.SkipUnresolved);
 
 			// Unity uses different argument format and needs to be able to translate to their format.  In order to make that easier
 			// we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string

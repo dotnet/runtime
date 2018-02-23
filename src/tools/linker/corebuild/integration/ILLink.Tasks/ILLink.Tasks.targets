@@ -222,7 +222,7 @@
          the future we will want to generate these depending on the
          scenario in which the linker is invoked. -->
     <PropertyGroup>
-      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true</ExtraLinkerArgs>
+      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true --skip-unresolved true</ExtraLinkerArgs>
     </PropertyGroup>
     <ILLink AssemblyPaths="@(_ManagedAssembliesToLink)"
             RootAssemblyNames="@(LinkerRootAssemblies)"

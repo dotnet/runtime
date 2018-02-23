@@ -106,7 +106,9 @@ namespace Mono.Linker {
 							Usage ("Option is too short");
 
 						if (token == "--skip-unresolved") {
-							context.IgnoreUnresolved = bool.Parse (GetParam ());
+							bool ignoreUnresolved = bool.Parse (GetParam ());
+							context.IgnoreUnresolved = ignoreUnresolved;
+							context.Resolver.IgnoreUnresolved = ignoreUnresolved;
 							continue;
 						}
 
@@ -343,7 +345,7 @@ namespace Mono.Linker {
 
 			Console.WriteLine ("   --about             About the {0}", _linker);
 			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
-			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types and methods (true or false)");
+			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types, methods, and assemblies (true or false)");
 			Console.WriteLine ("   --dependencies-file Specify the dependencies file path, if unset the default path is used: <output directory>/linker-dependencies.xml.gz");
 			Console.WriteLine ("   --dump-dependencies Dump dependencies for the linker analyzer tool");
 			Console.WriteLine ("   --reduced-tracing   Reduces dependency output related to assemblies that will not be modified");
