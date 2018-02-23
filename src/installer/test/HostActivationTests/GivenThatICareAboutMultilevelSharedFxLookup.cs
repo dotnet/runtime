@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // The uber framework is a copy of the base framework, minus a few files
             _builtSharedUberFxDir = Path.Combine(_builtDotnet, "shared", "Microsoft.UberFramework", _sharedFxVersion);
-            CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir);
+            CreateUberFrameworkArtifacts(_builtSharedFxDir, _builtSharedUberFxDir, "1.0.1.2", "1.2.3.4");
 
             _hostPolicyDllName = Path.GetFileName(fixture.TestProject.HostPolicyDll);
 
@@ -823,6 +823,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
             // The System.Collections.dll is only located in NetCoreApp
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            // Exe: NetCoreApp 9999.0.0
+            //      UberFramework 7777.0.0
+            // Expected: 9999.0.0
+            //           7777.0.0
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -834,9 +840,95 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))
                 .And
-                .HaveStdErrContaining(Path.Combine("9999.0.0", "System.Collections.dll"));
+                .HaveStdErrContaining(Path.Combine("9999.0.0", "System.Collections.dll"))
+                .And
+                .NotHaveStdErrContaining(Path.Combine("9999.0.0", "System.Collections.Immutable.dll"));
 
             DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
+        }
+
+        /* This test will be added once the SDK write the assemblyVersion and fileVersion properties. Verified manually.
+        [Fact]
+        public void Multiple_SharedFxLookup_NetCoreApp_MinorRollForward_Wins_Over_UberFx()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+
+            // Add versions in the exe folders
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
+
+            string uberFile = Path.Combine(_exeSharedUberFxBaseDir, "7777.0.0", "System.Collections.Immutable.dll");
+            string netCoreAppFile = Path.Combine(_exeSharedFxBaseDir, "9999.1.0", "System.Collections.Immutable.dll");
+            // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            //          'Roll forward on no candidate fx' enabled through config
+            // Exe: NetCoreApp 9999.1.0
+            //      UberFramework 7777.0.0
+            // Expected: 9999.1.0
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining($"Replacing deps entry [{uberFile}, AssemblyVersion:1.0.1.2, FileVersion:1.2.3.4] with [{netCoreAppFile}");
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
+            DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
+        }
+        */
+
+        [Fact]
+        public void Multiple_SharedFxLookup_Uber_Wins_Over_NetCoreApp_On_PatchRollForward()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "7777.0.0", null, useUberFramework: true);
+
+            // Add versions in the exe folders
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
+            AddAvailableSharedUberFxVersions(_exeSharedUberFxBaseDir, "9999.0.0", null, "7777.0.0");
+
+            // The System.Collections.Immutable.dll is located in the UberFramework and NetCoreApp
+            // Version: NetCoreApp 9999.0.0
+            //          UberFramework 7777.0.0
+            //          'Roll forward on no candidate fx' enabled through config
+            // Exe: NetCoreApp 9999.0.1
+            //      UberFramework 7777.0.0
+            // Expected: 9999.0.1
+            //           7777.0.0
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine("7777.0.0", "System.Collections.Immutable.dll"))
+                .And
+                .NotHaveStdErrContaining(Path.Combine("9999.1.0", "System.Collections.Immutable.dll"));
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
             DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
@@ -1018,7 +1110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             File.WriteAllText(destFile, json.ToString());
         }
 
-        static private void CreateUberFrameworkArtifacts(string builtSharedFxDir, string builtSharedUberFxDir)
+        static private void CreateUberFrameworkArtifacts(string builtSharedFxDir, string builtSharedUberFxDir, string assemblyVersion = null, string fileVersion = null)
         {
             DirectoryInfo dir = new DirectoryInfo(builtSharedUberFxDir);
             if (dir.Exists)
@@ -1029,6 +1121,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             dir.Create();
 
             string fxName = "UberFx";
+            string testPackage = "System.Collections.Immutable/1.0.0";
             string testAssembly = "System.Collections.Immutable";
 
             // Create the deps.json. Generated file:
@@ -1039,7 +1132,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                   },
                   "targets": {
                     "UberFx": {
-                      "System.Collections.Immutable": {
+                      "System.Collections.Immutable/1.0.0": {
                         "runtime": {
                           "System.Collections.Immutable.dll": {}
                         }
@@ -1047,7 +1140,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                     }
                   },
                   "libraries": {
-                    "System.Collections.Immutable": {
+                    "System.Collections.Immutable/1.0.0": {
                       "type": "assemblyreference",
                       "serviceable": false,
                       "sha512": ""
@@ -1055,6 +1148,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                   }
                 }
              */
+            JObject versionInfo = new JObject();
+            if (assemblyVersion != null)
+            {
+                versionInfo.Add(new JProperty("assemblyVersion", assemblyVersion));
+            }
+
+            if (fileVersion != null)
+            {
+                versionInfo.Add(new JProperty("fileVersion", fileVersion));
+            }
+
             JObject depsjson = new JObject(
                 new JProperty("runtimeTarget",
                     new JObject(
@@ -1065,12 +1169,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                     new JObject(
                       new JProperty(fxName,
                           new JObject(
-                              new JProperty(testAssembly,
+                              new JProperty(testPackage,
                                   new JObject(
                                       new JProperty("runtime",
                                           new JObject(
                                               new JProperty(testAssembly + ".dll",
-                                                  new JObject()
+                                                  versionInfo
                                               )
                                           )
                                       )
@@ -1082,7 +1186,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
               ),
                   new JProperty("libraries",
                       new JObject(
-                          new JProperty(testAssembly,
+                          new JProperty(testPackage,
                             new JObject(
                                 new JProperty("type", "assemblyreference"),
                                 new JProperty("serviceable", false),

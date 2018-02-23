@@ -304,8 +304,8 @@ namespace Microsoft.Extensions.DependencyModel
         private TargetLibrary ReadTargetLibrary(JsonTextReader reader, string targetLibraryName)
         {
             IEnumerable<Dependency> dependencies = null;
-            List<string> runtimes = null;
-            List<string> natives = null;
+            List<RuntimeFile> runtimes = null;
+            List<RuntimeFile> natives = null;
             List<string> compilations = null;
             List<RuntimeTargetEntryStub> runtimeTargets = null;
             List<ResourceAssembly> resources = null;
@@ -321,10 +321,10 @@ namespace Microsoft.Extensions.DependencyModel
                         dependencies = ReadTargetLibraryDependencies(reader);
                         break;
                     case DependencyContextStrings.RuntimeAssembliesKey:
-                        runtimes = ReadPropertyNames(reader);
+                        runtimes = ReadRuntimeFiles(reader);
                         break;
                     case DependencyContextStrings.NativeLibrariesKey:
-                        natives = ReadPropertyNames(reader);
+                        natives = ReadRuntimeFiles(reader);
                         break;
                     case DependencyContextStrings.CompileTimeAssembliesKey:
                         compilations = ReadPropertyNames(reader);
@@ -398,6 +398,46 @@ namespace Microsoft.Extensions.DependencyModel
             return runtimes;
         }
 
+        private List<RuntimeFile> ReadRuntimeFiles(JsonTextReader reader)
+        {
+            var runtimeFiles = new List<RuntimeFile>();
+
+            reader.ReadStartObject();
+
+            while (reader.Read() && reader.TokenType == JsonToken.PropertyName)
+            {
+                string assemblyVersion = null;
+                string fileVersion = null;
+
+                var path = (string)reader.Value;
+
+                reader.ReadStartObject();
+
+                string propertyName;
+                string propertyValue;
+                while (reader.TryReadStringProperty(out propertyName, out propertyValue))
+                {
+                    switch (propertyName)
+                    {
+                        case DependencyContextStrings.AssemblyVersionPropertyName:
+                            assemblyVersion = propertyValue;
+                            break;
+                        case DependencyContextStrings.FileVersionPropertyName:
+                            fileVersion = propertyValue;
+                            break;
+                    }
+                }
+
+                reader.CheckEndObject();
+
+                runtimeFiles.Add(new RuntimeFile(path, assemblyVersion, fileVersion));
+            }
+
+            reader.CheckEndObject();
+
+            return runtimeFiles;
+        }
+
         private List<RuntimeTargetEntryStub> ReadTargetLibraryRuntimeTargets(JsonTextReader reader)
         {
             var runtimeTargets = new List<RuntimeTargetEntryStub>();
@@ -422,6 +462,12 @@ namespace Microsoft.Extensions.DependencyModel
                             break;
                         case DependencyContextStrings.AssetTypePropertyName:
                             runtimeTarget.Type = Pool(propertyValue);
+                            break;
+                        case DependencyContextStrings.AssemblyVersionPropertyName:
+                            runtimeTarget.AssemblyVersion = propertyValue;
+                            break;
+                        case DependencyContextStrings.FileVersionPropertyName:
+                            runtimeTarget.FileVersion = propertyValue;
                             break;
                     }
                 }
@@ -605,26 +651,26 @@ namespace Microsoft.Extensions.DependencyModel
                     {
                         var groupRuntimeAssemblies = ridGroup
                             .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
-                            .Select(e => e.Path)
+                            .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
                             .ToArray();
 
                         if (groupRuntimeAssemblies.Any())
                         {
                             runtimeAssemblyGroups.Add(new RuntimeAssetGroup(
                                 ridGroup.Key,
-                                groupRuntimeAssemblies.Where(a => Path.GetFileName(a) != "_._")));
+                                groupRuntimeAssemblies.Where(a => Path.GetFileName(a.Path) != "_._")));
                         }
 
                         var groupNativeLibraries = ridGroup
                             .Where(e => e.Type == DependencyContextStrings.NativeAssetType)
-                            .Select(e => e.Path)
+                            .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
                             .ToArray();
 
                         if (groupNativeLibraries.Any())
                         {
                             nativeLibraryGroups.Add(new RuntimeAssetGroup(
                                 ridGroup.Key,
-                                groupNativeLibraries.Where(a => Path.GetFileName(a) != "_._")));
+                                groupNativeLibraries.Where(a => Path.GetFileName(a.Path) != "_._")));
                         }
                     }
                 }
@@ -698,9 +744,9 @@ namespace Microsoft.Extensions.DependencyModel
 
             public IEnumerable<Dependency> Dependencies;
 
-            public List<string> Runtimes;
+            public List<RuntimeFile> Runtimes;
 
-            public List<string> Natives;
+            public List<RuntimeFile> Natives;
 
             public List<string> Compilations;
 
@@ -718,6 +764,10 @@ namespace Microsoft.Extensions.DependencyModel
             public string Path;
 
             public string Rid;
+
+            public string AssemblyVersion;
+
+            public string FileVersion;
         }
 
         private struct LibraryStub
