@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions
                 bmPrefix = null;
 
             int anchors = RegexFCD.Anchors(tree);
-            int[] emitted = _emitted.AsReadOnlySpan().ToArray();
+            int[] emitted = _emitted.AsSpan().ToArray();
 
             // Cleaning up and returning the borrowed arrays
             _emitted.Dispose();
