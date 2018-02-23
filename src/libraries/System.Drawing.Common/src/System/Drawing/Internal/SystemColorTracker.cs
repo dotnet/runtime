@@ -25,6 +25,7 @@ namespace System.Drawing.Internal
         private static WeakReference[] list = new WeakReference[INITIAL_SIZE];
         private static int count = 0;
         private static bool addedTracker;
+        private static object lockObject = new object();
 
         // There's no such thing as a delegate to a static method,
         // so we need to create an instance of something.
@@ -34,7 +35,7 @@ namespace System.Drawing.Internal
 
         internal static void Add(ISystemColorTracker obj)
         {
-            lock (typeof(SystemColorTracker))
+            lock (lockObject)
             {
                 Debug.Assert(list != null, "List is null");
                 Debug.Assert(list.Length > 0, "INITIAL_SIZE was initialized after list");
