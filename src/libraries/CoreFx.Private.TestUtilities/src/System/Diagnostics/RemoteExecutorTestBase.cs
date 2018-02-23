@@ -209,8 +209,7 @@ namespace System.Diagnostics
 
             private void Dispose(bool disposing)
             {
-                // https://github.com/dotnet/corefx/issues/27366
-                // Assert.True(disposing, $"A test {AssemblyName}!{ClassName}.{MethodName} forgot to Dispose() the result of RemoteInvoke()");
+                Assert.True(disposing, $"A test {AssemblyName}!{ClassName}.{MethodName} forgot to Dispose() the result of RemoteInvoke()");
 
                 if (Process != null)
                 {
@@ -251,12 +250,13 @@ namespace System.Diagnostics
                 }
             }
 
-            ~RemoteInvokeHandle()
-            {
+            // https://github.com/dotnet/corefx/issues/27366
+            //~RemoteInvokeHandle()
+            //{
                 // Finalizer flags tests that omitted the explicit Dispose() call; they must have it, or they aren't
                 // waiting on the remote execution
-                Dispose(disposing: false);
-            }
+                // Dispose(disposing: false);
+            //}
 
             private sealed class RemoteExecutionException : XunitException
             {
