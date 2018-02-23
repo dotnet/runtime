@@ -32,6 +32,12 @@ namespace BasicEventSourceTests
 
     public class TestsWrite
     {
+#if USE_ETW
+        // Specifies whether the process is elevated or not.
+        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
+        private static bool IsProcessElevated => s_isElevated.Value;
+#endif // USE_ETW
+
         [EventData]
         private struct PartB_UserInfo
         {
@@ -68,7 +74,7 @@ namespace BasicEventSourceTests
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).  
         /// Tests the ETW code path
         /// </summary>
-        [Fact]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void Test_Write_T_ETW()
         {
             using (var listener = new EtwListener())
@@ -420,16 +426,19 @@ namespace BasicEventSourceTests
             using (var eventListener = new EventListenerListener())
             {
 #if USE_ETW
-                using (var etwListener = new EtwListener())
+                EtwListener etwListener = null;
 #endif
+                try
                 {
-                    var listenerGenerators = new Func<Listener>[]
-                    {
-                        () => eventListener,
+                    var listenerGenerators = new List<Func<Listener>>();
+                    listenerGenerators.Add(() => eventListener);
 #if USE_ETW
-                        () => etwListener
+                    if(IsProcessElevated)
+                    {
+                        etwListener = new EtwListener();
+                        listenerGenerators.Add(() => etwListener);
+                    }
 #endif // USE_ETW
-                    };
 
                     foreach (Func<Listener> listenerGenerator in listenerGenerators)
                     {
@@ -453,6 +462,15 @@ namespace BasicEventSourceTests
                         Assert.Equal(3, (int)_event.PayloadValue(0, "arg1"));
                         Assert.Equal("hi", (string)_event.PayloadValue(1, "arg2"));
                     }
+                }
+                finally
+                {
+#if USE_ETW
+                    if(etwListener != null)
+                    {
+                        etwListener.Dispose();
+                    }
+#endif // USE_ETW
                 }
             }
         }
