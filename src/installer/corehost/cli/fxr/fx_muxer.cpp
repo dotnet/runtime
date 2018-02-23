@@ -199,10 +199,10 @@ void handle_missing_framework_error(
 
     trace::error(_X("  - Check application dependencies and target a framework version installed at:"));
     trace::error(_X("      %s"), fx_ver_dirs.c_str());
-    trace::error(_X("  - The .NET framework can be installed from:"));
-    trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_RUNTIME_URL);
-    trace::error(_X("  - The .NET framework and SDK can be installed from:"));
-    trace::error(_X("      %s"), DOTNET_CORE_URL);
+    trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem:"));
+    trace::error(_X("      %s"), DOTNET_CORE_GETTING_STARTED_URL);
+    trace::error(_X("  - The .NET Core framework and SDK can be installed from:"));
+    trace::error(_X("      %s"), DOTNET_CORE_DOWNLOAD_URL);
 
     // Gather the list of versions installed at the shared FX location.
     bool is_print_header = true;
@@ -1010,19 +1010,65 @@ bool is_sdk_dir_present(const pal::string_t& own_dir)
     return pal::directory_exists(sdk_path);
 }
 
-int muxer_info()
+bool versions_sdk_info(pal::string_t own_dir, pal::string_t leading_whitespace)
 {
-    trace::println();
-    trace::println(_X("Microsoft .NET Core Shared Framework Host"));
-    trace::println();
-    trace::println(_X("  Version  : %s"), _STRINGIFY(HOST_FXR_PKG_VER));
-    trace::println(_X("  Build    : %s"), _STRINGIFY(REPO_COMMIT_HASH));
-    trace::println();
+    std::vector<pal::string_t> sdk_versions;
+    std::vector<pal::string_t> sdk_locations;
+    get_all_sdk_versions(own_dir, &sdk_versions, &sdk_locations);
+    assert(sdk_versions.size() == sdk_locations.size());
+    for (int i = 0; i < sdk_versions.size(); i++)
+    {
+        trace::println(_X("%s%s [%s]"), leading_whitespace.c_str(), sdk_versions[i].c_str(), sdk_locations[i].c_str());
+    }
 
-    return StatusCode::Success;
+    return sdk_versions.size() > 0;
 }
 
-int muxer_usage(bool is_sdk_present)
+bool versions_runtime_info(pal::string_t own_dir, pal::string_t leading_whitespace)
+{
+    std::vector<pal::string_t> fx_framework_names;
+    std::vector<pal::string_t> fx_versions;
+    std::vector<pal::string_t> fx_locations;
+    get_all_fx_versions(host_mode_t::muxer, own_dir, _X(""), &fx_framework_names, &fx_versions, &fx_locations);
+    assert(fx_framework_names.size() == fx_versions.size());
+    assert(fx_framework_names.size() == fx_locations.size());
+    for (int i = 0; i < fx_versions.size(); i++)
+    {
+        trace::println(_X("%s%s %s [%s]"), leading_whitespace.c_str(), fx_framework_names[i].c_str(), fx_versions[i].c_str(), fx_locations[i].c_str());
+    }
+
+    return fx_versions.size() > 0;
+}
+
+void muxer_info(pal::string_t own_dir)
+{
+    trace::println();
+    trace::println(_X("Host (useful for support):"));
+    trace::println(_X("  Version: %s"), _STRINGIFY(HOST_FXR_PKG_VER));
+
+    pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
+    trace::println(_X("  Commit:  %s"), commit.substr(0, 10).c_str());
+
+    trace::println();
+    trace::println(_X(".NET Core SDKs installed:"));
+    if (!versions_sdk_info(own_dir, _X("  ")))
+    {
+        trace::println(_X("  No SDKs were found."));
+    }
+
+    trace::println();
+    trace::println(_X("The.NET Core runtimes installed:"));
+    if (!versions_runtime_info(own_dir, _X("  ")))
+    {
+        trace::println(_X("  No runtimes were found."));
+    }
+
+    trace::println();
+    trace::println(_X("To install additional .NET Core runtimes or SDKs:"));
+    trace::println(_X("  %s"), DOTNET_CORE_DOWNLOAD_URL);
+}
+
+void muxer_usage(bool is_sdk_present)
 {
     std::vector<host_option> known_opts = fx_muxer_t::get_known_opts(true, host_mode_t::invalid, true);
 
@@ -1043,49 +1089,15 @@ int muxer_usage(bool is_sdk_present)
     }
     trace::println(_X("  --list-runtimes                     Display the installed runtimes"));
     trace::println(_X("  --list-sdks                         Display the installed SDKs"));
-
     trace::println();
 
-    trace::println();
     if (!is_sdk_present)
     {
         trace::println(_X("Common Options:"));
         trace::println(_X("  -h|--help                           Displays this help."));
-        trace::println(_X("  --info                              Displays the host information"));
+        trace::println(_X("  --info                              Display .NET Core information."));
         trace::println();
     }
-
-    return StatusCode::InvalidArgFailure;
-}
-
-int versions_runtime_info(pal::string_t own_dir)
-{
-    std::vector<pal::string_t> fx_framework_names;
-    std::vector<pal::string_t> fx_versions;
-    std::vector<pal::string_t> fx_locations;
-    get_all_fx_versions(host_mode_t::muxer, own_dir, _X(""), &fx_framework_names, &fx_versions, &fx_locations);
-    assert(fx_framework_names.size() == fx_versions.size());
-    assert(fx_framework_names.size() == fx_locations.size());
-    for (int i = 0; i < fx_versions.size(); i++)
-    {
-        trace::println(_X("%s %s [%s]"), fx_framework_names[i].c_str(), fx_versions[i].c_str(), fx_locations[i].c_str());
-    }
-
-    return StatusCode::Success;
-}
-
-int versions_sdk_info(pal::string_t own_dir)
-{
-    std::vector<pal::string_t> sdk_versions;
-    std::vector<pal::string_t> sdk_locations;
-    get_all_sdk_versions(own_dir, &sdk_versions, &sdk_locations);
-    assert(sdk_versions.size() == sdk_locations.size());
-    for (int i = 0; i < sdk_versions.size(); i++)
-    {
-        trace::println(_X("%s [%s]"), sdk_versions[i].c_str(), sdk_locations[i].c_str());
-    }
-
-    return StatusCode::Success;
 }
 
 // Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
@@ -1190,7 +1202,8 @@ int fx_muxer_t::parse_args(
         trace::verbose(_X("Detected a non-standalone application, expecting app.dll to execute."));
         if (*new_argoff >= argc)
         {
-            return muxer_usage(!is_sdk_dir_present(own_dir));
+            muxer_usage(!is_sdk_dir_present(own_dir));
+            return StatusCode::InvalidArgFailure;
         }
 
         app_candidate = argv[*new_argoff];
@@ -1502,7 +1515,8 @@ int fx_muxer_t::execute(
 
         if (argc <= 1)
         {
-            return muxer_usage(!is_sdk_dir_present(own_dir));
+            muxer_usage(!is_sdk_dir_present(own_dir));
+            return StatusCode::InvalidArgFailure;
         }
 
         if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
@@ -1580,11 +1594,13 @@ int fx_muxer_t::handle_cli(
     // Check for commands that don't depend on the CLI SDK to be loaded
     if (pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0)
     {
-        return versions_sdk_info(own_dir);
+        versions_sdk_info(own_dir, _X(""));
+        return StatusCode::Success;
     }
     else if (pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0)
     {
-        return versions_runtime_info(own_dir);
+        versions_runtime_info(own_dir, _X(""));
+        return StatusCode::Success;
     }
 
     //
@@ -1598,14 +1614,17 @@ int fx_muxer_t::handle_cli(
         if (pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
             pal::strcasecmp(_X("--help"), argv[1]) == 0)
         {
-            return muxer_usage(false);
+            muxer_usage(false);
+            return StatusCode::InvalidArgFailure;
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            return muxer_info();
+            muxer_info(own_dir);
+            return StatusCode::Success;
         }
+
         trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from:"));
-        trace::error(_X("  %s"), DOTNET_CORE_URL);
+        trace::error(_X("  %s"), DOTNET_CORE_GETTING_STARTED_URL);
         return StatusCode::LibHostSdkFindFailure;
     }
 
@@ -1640,7 +1659,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        muxer_info();
+        muxer_info(own_dir);
     }
 
     return result;
