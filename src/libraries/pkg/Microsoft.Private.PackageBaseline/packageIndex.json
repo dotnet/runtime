@@ -275,6 +275,12 @@
         "4.0.3.0": "4.5.0"
       }
     },
+    "Microsoft.Win32.SystemEvents": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
+      }
+    },
     "Microsoft.Windows.Compatibility": {
       "InboxOn": {}
     },
