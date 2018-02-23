@@ -305,6 +305,7 @@
     <TargetsLinux>false</TargetsLinux>
     <TargetsUnix>false</TargetsUnix>
     <TargetsUbuntu>false</TargetsUbuntu>
+    <TargetsLinuxMint>false</TargetsLinuxMint>
     <TargetsDebian>false</TargetsDebian>
     <TargetsRhel>false</TargetsRhel>
     <TargetsOpensuse>false</TargetsOpensuse>
@@ -335,6 +336,13 @@
     <When Condition="$(OutputRid.StartsWith('ubuntu'))">
       <PropertyGroup>
         <TargetsUbuntu>true</TargetsUbuntu>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('linuxmint'))">
+      <PropertyGroup>
+        <TargetsLinuxMint>true</TargetsLinuxMint>
         <TargetsLinux>true</TargetsLinux>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
@@ -394,7 +402,7 @@
     <CompressedFileExtension Condition="'$(OSGroup)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
     <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
     <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
-    <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true'">.deb</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true' or '$(TargetsLinuxMint)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true' or '$(TargetsOpensuse)' == 'true' or '$(TargetsFedora)' == 'true' or '$(TargetsOracle)' == 'true' or '$(TargetsSles)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
