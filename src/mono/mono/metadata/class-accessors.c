@@ -141,7 +141,7 @@ mono_class_get_first_field_idx (MonoClass *klass)
 	if (mono_class_is_ginst (klass))
 		return mono_class_get_first_field_idx (mono_class_get_generic_class (klass)->container_class);
 
-	g_assert (mono_class_has_static_metadata (klass));
+	g_assert (klass->type_token && !mono_class_is_ginst (klass));
 
 	return m_classdef_get_first_field_idx ((MonoClassDef*)klass);
 }
@@ -149,7 +149,7 @@ mono_class_get_first_field_idx (MonoClass *klass)
 void
 mono_class_set_first_field_idx (MonoClass *klass, guint32 idx)
 {
-	g_assert (mono_class_has_static_metadata (klass));
+	g_assert (klass->type_token && !mono_class_is_ginst (klass));
 
 	((MonoClassDef*)klass)->first_field_idx = idx;
 }

@@ -721,9 +721,9 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 	if (fb->attrs & FIELD_ATTRIBUTE_LITERAL)
 		fb->attrs |= FIELD_ATTRIBUTE_HAS_DEFAULT;
 	table = &assembly->tables [MONO_TABLE_FIELD];
-	fb->table_idx = table->next_idx ++;
-	g_hash_table_insert (assembly->field_to_table_idx, fb->handle, GUINT_TO_POINTER (fb->table_idx));
-	values = table->values + fb->table_idx * MONO_FIELD_SIZE;
+	guint32 fb_table_idx = table->next_idx ++;
+	g_hash_table_insert (assembly->field_to_table_idx, fb->handle, GUINT_TO_POINTER (fb_table_idx));
+	values = table->values + fb_table_idx * MONO_FIELD_SIZE;
 	values [MONO_FIELD_NAME] = string_heap_insert_mstring (&assembly->sheap, fb->name, error);
 	return_if_nok (error);
 	values [MONO_FIELD_FLAGS] = fb->attrs;
@@ -735,7 +735,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_FIELD_LAYOUT_SIZE;
-		values [MONO_FIELD_LAYOUT_FIELD] = fb->table_idx;
+		values [MONO_FIELD_LAYOUT_FIELD] = fb_table_idx;
 		values [MONO_FIELD_LAYOUT_OFFSET] = fb->offset;
 	}
 	if (fb->attrs & FIELD_ATTRIBUTE_LITERAL) {
@@ -744,7 +744,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_CONSTANT_SIZE;
-		values [MONO_CONSTANT_PARENT] = MONO_HASCONSTANT_FIEDDEF | (fb->table_idx << MONO_HASCONSTANT_BITS);
+		values [MONO_CONSTANT_PARENT] = MONO_HASCONSTANT_FIEDDEF | (fb_table_idx << MONO_HASCONSTANT_BITS);
 		values [MONO_CONSTANT_VALUE] = mono_dynimage_encode_constant (assembly, fb->def_value, &field_type);
 		values [MONO_CONSTANT_TYPE] = field_type;
 		values [MONO_CONSTANT_PADDING] = 0;
@@ -755,7 +755,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_FIELD_RVA_SIZE;
-		values [MONO_FIELD_RVA_FIELD] = fb->table_idx;
+		values [MONO_FIELD_RVA_FIELD] = fb_table_idx;
 		/*
 		 * We store it in the code section because it's simpler for now.
 		 */
@@ -772,7 +772,7 @@ mono_image_get_field_info (MonoReflectionFieldBuilder *fb, MonoDynamicImage *ass
 		table->rows ++;
 		alloc_table (table, table->rows);
 		values = table->values + table->rows * MONO_FIELD_MARSHAL_SIZE;
-		values [MONO_FIELD_MARSHAL_PARENT] = (fb->table_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_FIELDSREF;
+		values [MONO_FIELD_MARSHAL_PARENT] = (fb_table_idx << MONO_HAS_FIELD_MARSHAL_BITS) | MONO_HAS_FIELD_MARSHAL_FIELDSREF;
 		values [MONO_FIELD_MARSHAL_NATIVE_TYPE] = mono_dynimage_save_encode_marshal_blob (assembly, fb->marshal_info, error);
 		return_if_nok (error);
 	}
@@ -1054,6 +1054,12 @@ params_add_cattrs (MonoDynamicImage *assembly, MonoArray *pinfo, MonoError *erro
 	return TRUE;
 }
 
+static guint32
+field_builder_table_index (MonoDynamicImage* assembly, MonoReflectionFieldBuilder *fb)
+{
+	return GPOINTER_TO_UINT (g_hash_table_lookup (assembly->field_to_table_idx, fb->handle));
+}
+
 static gboolean
 type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, MonoError *error) {
 	int i;
@@ -1066,7 +1072,7 @@ type_add_cattrs (MonoDynamicImage *assembly, MonoReflectionTypeBuilder *tb, Mono
 		for (i = 0; i < tb->num_fields; ++i) {
 			MonoReflectionFieldBuilder* fb;
 			fb = mono_array_get (tb->fields, MonoReflectionFieldBuilder*, i);
-			if (!mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs, error))
+			if (!mono_image_add_cattrs (assembly, field_builder_table_index (assembly, fb), MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs, error))
 				return FALSE;
 		}
 	}
@@ -1138,7 +1144,7 @@ module_add_cattrs (MonoDynamicImage *assembly, MonoReflectionModuleBuilder *modu
 	if (moduleb->global_fields) {
 		for (i = 0; i < mono_array_length (moduleb->global_fields); ++i) {
 			MonoReflectionFieldBuilder *fb = mono_array_get (moduleb->global_fields, MonoReflectionFieldBuilder*, i);
-			if (!mono_image_add_cattrs (assembly, fb->table_idx, MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs, error))
+			if (!mono_image_add_cattrs (assembly, field_builder_table_index (assembly, fb), MONO_CUSTOM_ATTR_FIELDDEF, fb->cattrs, error))
 				return FALSE;
 		}
 	}

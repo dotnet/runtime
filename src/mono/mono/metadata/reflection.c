@@ -2285,9 +2285,7 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 
 		token = MONO_HANDLE_GETVAL (mb, table_idx) | MONO_TOKEN_METHOD_DEF;
 	} else if (strcmp (klass->name, "FieldBuilder") == 0) {
-		MonoReflectionFieldBuilderHandle fb = MONO_HANDLE_CAST (MonoReflectionFieldBuilder, obj);
-
-		token = MONO_HANDLE_GETVAL (fb, table_idx) | MONO_TOKEN_FIELD_DEF;
+		g_assert_not_reached ();
 	} else if (strcmp (klass->name, "TypeBuilder") == 0) {
 		MonoReflectionTypeBuilderHandle tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, obj);
 		token = MONO_HANDLE_GETVAL (tb, table_idx) | MONO_TOKEN_TYPE_DEF;
