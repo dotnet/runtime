@@ -15,6 +15,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="TypeForwards.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="Microsoft\Internal\AdaptationHelpers.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
