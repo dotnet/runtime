@@ -2866,7 +2866,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
-        [PlatformSpecific(~TestPlatforms.OSX)] // TestHelper.AllowAllCertificates does not work on OSX
+        [ActiveIssue(23136, TestPlatforms.Windows)]
         [Fact]
         public async Task Proxy_UseSecureProxyTunnel_Success()
         {
