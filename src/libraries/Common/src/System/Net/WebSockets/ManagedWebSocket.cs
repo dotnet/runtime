@@ -415,8 +415,9 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return Task.FromException(_state == WebSocketState.Aborted ?
-                    CreateOperationCanceledException(exc) :
+                return Task.FromException(
+                    exc is OperationCanceledException ? exc :
+                    _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
                     new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
             }
             finally
@@ -437,7 +438,7 @@ namespace System.Net.WebSockets
                 thisRef.ReleaseSendBuffer();
 
                 try { t.GetAwaiter().GetResult(); }
-                catch (Exception exc)
+                catch (Exception exc) when (!(exc is OperationCanceledException))
                 {
                     throw thisRef._state == WebSocketState.Aborted ?
                         CreateOperationCanceledException(exc) :
@@ -457,7 +458,7 @@ namespace System.Net.WebSockets
                     await _stream.WriteAsync(_sendBuffer, 0, sendBytes, cancellationToken).ConfigureAwait(false);
                 }
             }
-            catch (Exception exc)
+            catch (Exception exc) when (!(exc is OperationCanceledException))
             {
                 throw _state == WebSocketState.Aborted ?
                     CreateOperationCanceledException(exc, cancellationToken) :
@@ -739,7 +740,7 @@ namespace System.Net.WebSockets
                         null, null);
                 }
             }
-            catch (Exception exc)
+            catch (Exception exc) when (!(exc is OperationCanceledException))
             {
                 if (_state == WebSocketState.Aborted)
                 {
