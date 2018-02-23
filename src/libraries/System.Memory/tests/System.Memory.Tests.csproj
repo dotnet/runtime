@@ -148,6 +148,7 @@
     <Compile Include="MemoryMarshal\CastSpan.cs" />
     <Compile Include="MemoryMarshal\GetReference.cs" />
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
+    <Compile Include="MemoryMarshal\TryGetOwnedMemory.cs" />
     <Compile Include="MemoryMarshal\ToEnumerable.cs" />
   </ItemGroup>
   <ItemGroup>

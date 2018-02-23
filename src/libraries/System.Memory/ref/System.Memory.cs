@@ -507,5 +507,9 @@ namespace System.Runtime.InteropServices
         public static ref T GetReference<T>(System.Span<T> span) { throw null; }
         public static System.Collections.Generic.IEnumerable<T> ToEnumerable<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static bool TryGetArray<T>(System.ReadOnlyMemory<T> readOnlyMemory, out System.ArraySegment<T> arraySegment) { throw null; }
+        public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> readOnlyMemory, out TOwner ownedMemory)
+            where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
+        public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> readOnlyMemory, out TOwner ownedMemory, out int index, out int length)
+            where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
     }
 }
