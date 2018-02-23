@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetGroup)' == 'netfx'">true</OmitResources>
-    <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <ILLinkClearInitLocals Condition="'$(OS)' == 'Windows_NT'">true</ILLinkClearInitLocals>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
