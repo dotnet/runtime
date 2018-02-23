@@ -55,8 +55,16 @@
     <PropertyGroup>
       <_NETStandardRefFolder>$(PackagesDir)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\$(_NETStandardTFMFolder)\ref</_NETStandardRefFolder>
     </PropertyGroup>
+
     <ItemGroup>
-      <Reference Include="$(_NETStandardRefFolder)\*.dll">
+      <ExcludeNetStandardRefs Include="System.ComponentModel.Composition" />
+      <NetStandardRefs
+        Include="$(_NETStandardRefFolder)\*.dll"
+        Exclude="@(ExcludeNetStandardRefs -> '$(_NETStandardRefFolder)\%(Identity).dll')" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="@(NetStandardRefs)">
         <Private>False</Private>
         <NuGetPackageId>$(NETStandardLibraryPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(NETStandardLibraryPackageVersion)</NuGetPackageVersion>

@@ -21,6 +21,8 @@
     <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>
     </BinPlaceConfiguration>
+
+    <FileToExclude Include="System.ComponentModel.Composition" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
