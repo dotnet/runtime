@@ -845,7 +845,6 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 {
     sigset_t signal_set;
     CONTEXT signalContextRecord;
-    CONTEXT contextRecord;
     EXCEPTION_RECORD exceptionRecord;
     native_context_t *ucontext;
 
@@ -868,7 +867,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     // Pre-populate context with data from current frame, because ucontext doesn't have some data (e.g. SS register)
     // which is required for restoring context
-    RtlCaptureContext(&contextRecord);
+    RtlCaptureContext(&signalContextRecord);
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
@@ -879,7 +878,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     // Fill context record with required information. from pal.h:
     // On non-Win32 platforms, the CONTEXT pointer in the
     // PEXCEPTION_POINTERS will contain at least the CONTEXT_CONTROL registers.
-    CONTEXTFromNativeContext(ucontext, &contextRecord, contextFlags);
+    CONTEXTFromNativeContext(ucontext, &signalContextRecord, contextFlags);
 
     /* Unmask signal so we can receive it again */
     sigemptyset(&signal_set);
@@ -890,17 +889,15 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
         ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
     }
 
-    contextRecord.ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-
-    memcpy_s(&signalContextRecord, sizeof(CONTEXT), &contextRecord, sizeof(CONTEXT));
+    signalContextRecord.ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 
     // The exception object takes ownership of the exceptionRecord and contextRecord
-    PAL_SEHException exception(&exceptionRecord, &contextRecord, true);
+    PAL_SEHException exception(&exceptionRecord, &signalContextRecord, true);
 
     if (SEHProcessException(&exception))
     {
         // Exception handling may have modified the context, so update it.
-        CONTEXTToNativeContext(&contextRecord, ucontext);
+        CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
         return true;
     }
 
