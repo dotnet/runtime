@@ -36,5 +36,22 @@ namespace System.Collections.Generic
                 .Where(a => string.Equals(a.Runtime, runtime, StringComparison.Ordinal))
                 .SelectMany(a => a.AssetPaths);
         }
+
+        public static IEnumerable<RuntimeFile> GetDefaultRuntimeFileAssets(this IEnumerable<RuntimeAssetGroup> self) => GetRuntimeFiles(self, string.Empty);
+        public static IEnumerable<RuntimeFile> GetRuntimeFileAssets(this IEnumerable<RuntimeAssetGroup> self, string runtime)
+        {
+            if (string.IsNullOrEmpty(runtime))
+            {
+                throw new ArgumentNullException(nameof(runtime));
+            }
+            return GetRuntimeFiles(self, runtime);
+        }
+
+        private static IEnumerable<RuntimeFile> GetRuntimeFiles(IEnumerable<RuntimeAssetGroup> groups, string runtime)
+        {
+            return groups
+                .Where(a => string.Equals(a.Runtime, runtime, StringComparison.Ordinal))
+                .SelectMany(a => a.RuntimeFiles);
+        }
     }
 }

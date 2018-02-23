@@ -59,7 +59,6 @@ void add_unique_path(
         non_serviced->push_back(PATH_SEPARATOR);
     }
 
-
     existing->insert(real);
 }
 
@@ -87,15 +86,18 @@ pal::string_t get_deps_filename(const pal::string_t& path)
   // "asset_name" be part of the "items" paths.
   //
 void deps_resolver_t::add_tpa_asset(
-    const pal::string_t& asset_name,
-    const pal::string_t& asset_path,
-    dir_assemblies_t* items)
+    const deps_resolved_asset_t& resolved_asset,
+    name_to_resolved_asset_map_t* items)
 {
-    std::unordered_map<pal::string_t, pal::string_t>::iterator existing = items->find(asset_name);
+    name_to_resolved_asset_map_t::iterator existing = items->find(resolved_asset.asset.name);
     if (existing == items->end())
     {
-        trace::verbose(_X("Adding tpa entry: %s"), asset_path.c_str());
-        items->emplace(asset_name, asset_path);
+        trace::verbose(_X("Adding tpa entry: %s, AssemblyVersion: %s, FileVersion: %s"),
+            resolved_asset.resolved_path.c_str(),
+            resolved_asset.asset.assembly_version.as_str().c_str(),
+            resolved_asset.asset.file_version.as_str().c_str());
+
+        items->emplace(resolved_asset.asset.name, resolved_asset);
     }
 }
 
@@ -106,8 +108,9 @@ void deps_resolver_t::add_tpa_asset(
 void deps_resolver_t::get_dir_assemblies(
     const pal::string_t& dir,
     const pal::string_t& dir_name,
-    dir_assemblies_t* dir_assemblies)
+    name_to_resolved_asset_map_t* items)
 {
+    version_t empty;
     trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
 
     // Managed extensions in priority order, pick DLL over EXE and NI over IL.
@@ -137,9 +140,13 @@ void deps_resolver_t::get_dir_assemblies(
             }
 
             // Already added entry for this asset, by priority order skip this ext
-            if (dir_assemblies->count(file_name))
+            if (items->count(file_name))
             {
-                trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"), file.c_str(), dir_assemblies->find(file_name)->second.c_str(), dir_name.c_str());
+                trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
+                    file.c_str(),
+                    items->find(file_name)->second.asset.relative_path.c_str(),
+                    dir_name.c_str());
+
                 continue;
             }
 
@@ -151,8 +158,14 @@ void deps_resolver_t::get_dir_assemblies(
             }
             file_path.append(file);
 
-            trace::verbose(_X("Adding %s to %s assembly set from %s"), file_name.c_str(), dir_name.c_str(), file_path.c_str());
-            dir_assemblies->emplace(file_name, file_path);
+            trace::verbose(_X("Adding %s to %s assembly set from %s"),
+                file_name.c_str(),
+                dir_name.c_str(),
+                file_path.c_str());
+
+            deps_asset_t asset(file_name, empty, empty);
+            deps_resolved_asset_t resolved_asset(asset, file_path);
+            add_tpa_asset(resolved_asset, items);
         }
     }
 }
@@ -221,17 +234,18 @@ void deps_resolver_t::setup_probe_config(
         m_probes.push_back(probe_config_t::svc(ext_pkgs));
     }
 
+    // The published deps directory to be probed: either app or FX directory.
+    // The probe directory will be available at probe time.
+    m_probes.push_back(probe_config_t::published_deps_dir());
+
+    // The framework locations, starting with highest level framework.
     for (int i = 1; i < init.fx_definitions.size(); ++i)
     {
         if (pal::directory_exists(init.fx_definitions[i]->get_dir()))
         {
-            m_probes.push_back(probe_config_t::fx(init.fx_definitions[i]->get_dir(), &init.fx_definitions[i]->get_deps()));
+            m_probes.push_back(probe_config_t::fx(init.fx_definitions[i]->get_dir(), &init.fx_definitions[i]->get_deps(), i));
         }
     }
-
-    // The published deps directory to be probed: either app or FX directory.
-    // The probe directory will be available at probe time.
-    m_probes.push_back(probe_config_t::published_deps_dir());
 
     setup_shared_store_probes(init, args);
 
@@ -263,13 +277,14 @@ void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& 
  *   -- When a deps json based probe is performed, the deps entry's package name and version must match.
  *   -- When looking into a published dir, for rid specific assets lookup rid split folders; for non-rid assets lookup the layout dir.
  */
-bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, pal::string_t* candidate)
+bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level, pal::string_t* candidate)
 {
     candidate->clear();
 
     for (const auto& config : m_probes)
     {
-        trace::verbose(_X("  Considering entry [%s/%s/%s] and probe dir [%s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str(), config.probe_dir.c_str());
+        trace::verbose(_X("  Considering entry [%s/%s/%s], probe dir [%s], probe fx level:%d, entry fx level:%d"),
+            entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str(), config.probe_dir.c_str(), config.fx_level, fx_level);
 
         if (config.only_serviceable_assets && !entry.is_serviceable)
         {
@@ -283,33 +298,55 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         }
         pal::string_t probe_dir = config.probe_dir;
 
-        if (config.probe_deps_json)
+        if (config.is_fx())
         {
-            // If the deps json has the package name and version, then someone has already done rid selection and
-            // put the right asset in the dir. So checking just package name and version would suffice.
-            // No need to check further for the exact asset relative sub path.
-            if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate))
+            assert(config.fx_level > 0);
+
+            // Only probe frameworks that are the same level or lower than the current entry because
+            // a lower-level fx should not have a dependency on a higher-level fx and because starting
+            // with fx_level allows it to override a higher-level fx location if the entry is newer.
+            // Note that fx_level 0 is the highest level (the app)
+            if (fx_level <= config.fx_level)
             {
-                trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
-                return true;
+                // If the deps json has the package name and version, then someone has already done rid selection and
+                // put the right asset in the dir. So checking just package name and version would suffice.
+                // No need to check further for the exact asset relative sub path.
+                if (config.probe_deps_json->has_package(entry.library_name, entry.library_version) && entry.to_dir_path(probe_dir, candidate))
+                {
+                    trace::verbose(_X("    Probed deps json and matched '%s'"), candidate->c_str());
+                    return true;
+                }
             }
-            trace::verbose(_X("    Skipping... probe in deps json failed"));
+
+            trace::verbose(_X("    Skipping... not found in deps json."));
         }
-        else if (config.probe_publish_dir)
+        else if (config.is_app())
         {
             // This is a published dir probe, so look up rid specific assets in the rid folders.
-            if (entry.is_rid_specific && entry.to_rel_path(deps_dir, candidate))
+            assert(config.fx_level == 0);
+
+            if (fx_level <= config.fx_level)
             {
-                trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                return true;
+                if (entry.is_rid_specific)
+                {
+                    if (entry.to_rel_path(deps_dir, candidate))
+                    {
+                        trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                        return true;
+                    }
+                }
+                else
+                {
+                    // Non-rid assets, lookup in the published dir.
+                    if (entry.to_dir_path(deps_dir, candidate))
+                    {
+                        trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
+                        return true;
+                    }
+                }
             }
-            // Non-rid assets, lookup in the published dir.
-            if (!entry.is_rid_specific && entry.to_dir_path(deps_dir, candidate))
-            {
-                trace::verbose(_X("    Probed deps dir and matched '%s'"), candidate->c_str());
-                return true;
-            }
-            trace::verbose(_X("    Skipping... probe in deps dir '%s' failed"), deps_dir.c_str());
+
+            trace::verbose(_X("    Skipping... not found in deps dir '%s'"), deps_dir.c_str());
         }
         else if (entry.to_full_path(probe_dir, candidate))
         {
@@ -333,7 +370,7 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
         continueResolving = true;
 
         trace::info(MissingAssemblyMessage.c_str(), _X("Info"),
-            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
@@ -343,7 +380,7 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
     else if (continueResolving)
     {
         trace::warning(MissingAssemblyMessage.c_str(), _X("Warning"),
-            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
@@ -353,7 +390,7 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
     else
     {
         trace::error(MissingAssemblyMessage.c_str(), _X("Error"),
-            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
         if (showManifestListMessage)
         {
@@ -372,9 +409,9 @@ bool deps_resolver_t::resolve_tpa_list(
         std::unordered_set<pal::string_t>* breadcrumb)
 {
     const std::vector<deps_entry_t> empty(0);
-    dir_assemblies_t items;
+    name_to_resolved_asset_map_t items;
 
-    auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry) -> bool
+    auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level, bool compare_versions_on_duplicate) -> bool
     {
         if (breadcrumb != nullptr && entry.is_serviceable)
         {
@@ -383,23 +420,22 @@ bool deps_resolver_t::resolve_tpa_list(
         }
 
         // Ignore placeholders
-        if (ends_with(entry.relative_path, _X("/_._"), false))
+        if (ends_with(entry.asset.relative_path, _X("/_._"), false))
         {
             return true;
         }
 
-        pal::string_t candidate;
+        trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
-        trace::info(_X("Processing TPA for deps entry [%s, %s, %s]"), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+        pal::string_t resolved_path;
 
-        pal::string_t asset_path;
-
-        dir_assemblies_t::iterator existing = items.find(entry.asset_name);
+        name_to_resolved_asset_map_t::iterator existing = items.find(entry.asset.name);
         if (existing == items.end())
         {
-            if (probe_deps_entry(entry, deps_dir, &asset_path))
+            if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
             {
-                add_tpa_asset(entry.asset_name, asset_path, &items);
+                deps_resolved_asset_t resolved_asset(entry.asset, resolved_path);
+                add_tpa_asset(resolved_asset, &items);
                 return true;
             }
 
@@ -407,21 +443,57 @@ bool deps_resolver_t::resolve_tpa_list(
         }
         else
         {
-            // Verify the extension is the same as the previous verfied entry
-            if (get_deps_filename(entry.relative_path) == get_filename(existing->second))
+            // Verify the extension is the same as the previous verified entry
+            if (get_deps_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
             {
-                return true;
+                trace::error(_X(
+                    "Error:\n"
+                    "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
+                    "    package: '%s', version: '%s'\n"
+                    "    path: '%s'\n"
+                    "    previously found assembly: '%s'"),
+                    entry.deps_file.c_str(),
+                    entry.library_name.c_str(),
+                    entry.library_version.c_str(),
+                    entry.asset.relative_path.c_str(),
+                    existing->second.resolved_path.c_str());
+
+                return false;
             }
 
-            trace::error(_X(
-                "Error:\n"
-                "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
-                "    package: '%s', version: '%s'\n"
-                "    path: '%s'\n"
-                "    previously found assembly: '%s'"),
-                entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str(), existing->second.c_str());
+            if (compare_versions_on_duplicate)
+            {
+                deps_resolved_asset_t* existing_entry = &existing->second;
 
-            return false;
+                // If deps entry is newer than existing, then see if it should be replaced
+                if (entry.asset.assembly_version > existing_entry->asset.assembly_version ||
+                    (entry.asset.assembly_version == existing_entry->asset.assembly_version && entry.asset.file_version > existing_entry->asset.file_version))
+                {
+                    if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path))
+                    {
+                        // If the path is the same, then no need to replace
+                        if (resolved_path != existing_entry->resolved_path)
+                        {
+                            trace::verbose(_X("Replacing deps entry [%s, AssemblyVersion:%s, FileVersion:%s] with [%s, AssemblyVersion:%s, FileVersion:%s]"),
+                                existing_entry->resolved_path.c_str(), existing_entry->asset.assembly_version.as_str().c_str(), existing_entry->asset.file_version.as_str().c_str(),
+                                resolved_path.c_str(), entry.asset.assembly_version.as_str().c_str(), entry.asset.file_version.as_str().c_str());
+
+                            existing_entry = nullptr;
+                            items.erase(existing);
+
+                            deps_asset_t asset(entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
+                            deps_resolved_asset_t resolved_asset(asset, resolved_path);
+                            add_tpa_asset(resolved_asset, &items);
+                        }
+                    }
+                    else
+                    {
+                        return report_missing_assembly_in_manifest(entry);
+                    }
+                }
+            }
+
+            return true;
         }
     };
 
@@ -429,12 +501,15 @@ bool deps_resolver_t::resolve_tpa_list(
     // TODO: Remove: the deps should contain the managed DLL.
     // Workaround for: csc.deps.json doesn't have the csc.dll
     pal::string_t managed_app_asset = get_filename_without_ext(m_managed_app);
-    add_tpa_asset(managed_app_asset, m_managed_app, &items);
+    deps_asset_t asset(managed_app_asset, version_t(), version_t());
+    deps_resolved_asset_t resolved_asset(asset, m_managed_app);
+    add_tpa_asset(resolved_asset, &items);
 
+    // Add the app's entries
     const auto& deps_entries = get_deps().get_entries(deps_entry_t::asset_types::runtime);
     for (const auto& entry : deps_entries)
     {
-        if (!process_entry(m_app_dir, entry))
+        if (!process_entry(m_app_dir, entry, 0, false))
         {
             return false;
         }
@@ -444,14 +519,8 @@ bool deps_resolver_t::resolve_tpa_list(
     // add the app local assemblies to the TPA.
     if (!get_deps().exists())
     {
-        dir_assemblies_t local_assemblies;
-
         // Obtain the local assemblies in the app dir.
-        get_dir_assemblies(m_app_dir, _X("local"), &local_assemblies);
-        for (const auto& kv : local_assemblies)
-        {
-            add_tpa_asset(kv.first, kv.second, &items);
-        }
+        get_dir_assemblies(m_app_dir, _X("local"), &items);
     }
 
     // If additional deps files were specified that need to be treated as part of the
@@ -461,7 +530,7 @@ bool deps_resolver_t::resolve_tpa_list(
         auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
         for (auto entry : additional_deps_entries)
         {
-            if (!process_entry(m_app_dir, entry))
+            if (!process_entry(m_app_dir, entry, 0, false))
             {
                 return false;
             }
@@ -471,10 +540,13 @@ bool deps_resolver_t::resolve_tpa_list(
     // Probe FX deps entries after app assemblies are added.
     for (int i = 1; i < m_fx_definitions.size(); ++i)
     {
-        const auto& fx_entries = m_portable ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
-        for (const auto& entry : fx_entries)
+        // A minor\major roll-forward affects which layer wins
+        bool is_minor_or_major_roll_forward = m_fx_definitions[i]->did_minor_or_major_roll_forward_occur();
+
+        const auto& deps_entries = m_portable ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
+        for (const auto& entry : deps_entries)
         {
-            if (!process_entry(m_fx_definitions[i]->get_dir(), entry))
+            if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i, is_minor_or_major_roll_forward))
             {
                 return false;
             }
@@ -485,7 +557,7 @@ bool deps_resolver_t::resolve_tpa_list(
     for (const auto& item : items)
     {
         // Workaround for CoreFX not being able to resolve sym links.
-        pal::string_t real_asset_path = item.second;
+        pal::string_t real_asset_path = item.second.resolved_path;
         pal::realpath(&real_asset_path);
         output->append(real_asset_path);
         output->push_back(PATH_SEPARATOR);
@@ -503,12 +575,12 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     {
         return;
     }
-    if (m_coreclr_path.empty() && ends_with(entry.relative_path, _X("/") + pal::string_t(LIBCORECLR_NAME), false))
+    if (m_coreclr_path.empty() && ends_with(entry.asset.relative_path, _X("/") + pal::string_t(LIBCORECLR_NAME), false))
     {
         m_coreclr_path = path;
         return;
     }
-    if (m_clrjit_path.empty() && ends_with(entry.relative_path, _X("/") + pal::string_t(LIBCLRJIT_NAME), false))
+    if (m_clrjit_path.empty() && ends_with(entry.asset.relative_path, _X("/") + pal::string_t(LIBCLRJIT_NAME), false))
     {
         m_clrjit_path = path;
         return;
@@ -627,27 +699,29 @@ bool deps_resolver_t::resolve_probe_dirs(
 
     pal::string_t candidate;
 
-    auto add_package_cache_entry = [&](const deps_entry_t& entry, const pal::string_t& deps_dir) -> bool
+    auto add_package_cache_entry = [&](const deps_entry_t& entry, const pal::string_t& deps_dir, int fx_level) -> bool
     {
         if (breadcrumb != nullptr && entry.is_serviceable)
         {
             breadcrumb->insert(entry.library_name + _X(",") + entry.library_version);
             breadcrumb->insert(entry.library_name);
         }
-        if (items.count(entry.asset_name))
+
+        if (items.count(entry.asset.name))
         {
             return true;
         }
+
         // Ignore placeholders
-        if (ends_with(entry.relative_path, _X("/_._"), false))
+        if (ends_with(entry.asset.relative_path, _X("/_._"), false))
         {
             return true;
         }
 
         trace::verbose(_X("Processing native/culture for deps entry [%s, %s, %s]"), 
-            entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+            entry.library_name.c_str(), entry.library_version.c_str(), entry.asset.relative_path.c_str());
 
-        if (probe_deps_entry(entry, deps_dir, &candidate))
+        if (probe_deps_entry(entry, deps_dir, fx_level, &candidate))
         {
             init_known_entry_path(entry, candidate);
             add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
@@ -656,7 +730,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         {
             // For standalone apps, apphost.exe will be renamed. Do not use the full package name
             // because of rid-fallback could happen (ex: CentOS falling back to RHEL)
-            if ((entry.asset_name == _X("apphost")) && ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetAppHost"), false))
+            if ((entry.asset.name == _X("apphost")) && ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetAppHost"), false))
             {
                 return report_missing_assembly_in_manifest(entry, true);
             }
@@ -671,7 +745,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     const auto& entries = get_deps().get_entries(asset_type);
     for (const auto& entry : entries)
     {
-        if (!add_package_cache_entry(entry, m_app_dir))
+        if (!add_package_cache_entry(entry, m_app_dir, 0))
         {
             return false;
         }
@@ -684,7 +758,6 @@ bool deps_resolver_t::resolve_probe_dirs(
         add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
 
         (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
-
         (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
     }
 
@@ -694,20 +767,21 @@ bool deps_resolver_t::resolve_probe_dirs(
         const auto additional_deps_entries = additional_deps->get_entries(asset_type);
         for (const auto entry : additional_deps_entries)
         {
-            if (!add_package_cache_entry(entry, m_app_dir))
+            if (!add_package_cache_entry(entry, m_app_dir, 0))
             {
                 return false;
             }
         }
     }
-    
+
     // Add fx package locations to fx_dir
     for (int i = 1; i < m_fx_definitions.size(); ++i)
     {
         const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
+
         for (const auto& entry : fx_entries)
         {
-            if (!add_package_cache_entry(entry, m_fx_definitions[i]->get_dir()))
+            if (!add_package_cache_entry(entry, m_fx_definitions[i]->get_dir(), i))
             {
                 return false;
             }

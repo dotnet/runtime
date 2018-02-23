@@ -43,6 +43,7 @@ set(SOURCES
     ../deps_format.cpp
     ../deps_entry.cpp
     ../fx_definition.cpp
+    ../version.cpp
 )
 
 
