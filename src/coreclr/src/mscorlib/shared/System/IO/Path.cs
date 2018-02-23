@@ -130,7 +130,7 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            return new string(GetExtension(path.AsReadOnlySpan()));
+            return new string(GetExtension(path.AsSpan()));
         }
 
         /// <summary>
@@ -169,7 +169,7 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            ReadOnlySpan<char> result = GetFileName(path.AsReadOnlySpan());
+            ReadOnlySpan<char> result = GetFileName(path.AsSpan());
             if (path.Length == result.Length)
                 return path;
 
@@ -200,7 +200,7 @@ namespace System.IO
             if (path == null)
                 return null;
 
-            ReadOnlySpan<char> result = GetFileNameWithoutExtension(path.AsReadOnlySpan());
+            ReadOnlySpan<char> result = GetFileNameWithoutExtension(path.AsSpan());
             if (path.Length == result.Length)
                 return path;
 
@@ -254,7 +254,7 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            return IsPathFullyQualified(path.AsReadOnlySpan());
+            return IsPathFullyQualified(path.AsSpan());
         }
 
         public static bool IsPathFullyQualified(ReadOnlySpan<char> path)
@@ -271,7 +271,7 @@ namespace System.IO
         {
             if (path != null)
             {
-                return HasExtension(path.AsReadOnlySpan());
+                return HasExtension(path.AsSpan());
             }
             return false;
         }
@@ -411,7 +411,7 @@ namespace System.IO
             if (string.IsNullOrEmpty(second))
                 return first;
 
-            if (IsPathRooted(second.AsReadOnlySpan()))
+            if (IsPathRooted(second.AsSpan()))
                 return second;
 
             return CombineNoChecksInternal(first, second);
@@ -443,9 +443,9 @@ namespace System.IO
             if (string.IsNullOrEmpty(third))
                 return CombineNoChecks(first, second);
 
-            if (IsPathRooted(third.AsReadOnlySpan()))
+            if (IsPathRooted(third.AsSpan()))
                 return third;
-            if (IsPathRooted(second.AsReadOnlySpan()))
+            if (IsPathRooted(second.AsSpan()))
                 return CombineNoChecks(second, third);
 
             return CombineNoChecksInternal(first, second, third);
@@ -483,11 +483,11 @@ namespace System.IO
             if (string.IsNullOrEmpty(fourth))
                 return CombineNoChecks(first, second, third);
 
-            if (IsPathRooted(fourth.AsReadOnlySpan()))
+            if (IsPathRooted(fourth.AsSpan()))
                 return fourth;
-            if (IsPathRooted(third.AsReadOnlySpan()))
+            if (IsPathRooted(third.AsSpan()))
                 return CombineNoChecks(third, fourth);
-            if (IsPathRooted(second.AsReadOnlySpan()))
+            if (IsPathRooted(second.AsSpan()))
                 return CombineNoChecks(second, third, fourth);
 
             return CombineNoChecksInternal(first, second, third, fourth);

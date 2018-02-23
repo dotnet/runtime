@@ -17,7 +17,7 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(comparisonType));
 
         public static bool Equals(this ReadOnlySpan<char> left, string right) =>
-            Equals(left, right.AsReadOnlySpan());
+            Equals(left, right.AsSpan());
 
         public static bool Equals(this ReadOnlySpan<char> left, ReadOnlySpan<char> right)
         {

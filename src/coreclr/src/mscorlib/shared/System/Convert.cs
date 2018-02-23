@@ -2198,7 +2198,7 @@ namespace System
                 return 0;
             }
 
-            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
+            int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
             if (r < Byte.MinValue || r > Byte.MaxValue)
                 ThrowByteOverflowException();
             return (byte)r;
@@ -2221,7 +2221,7 @@ namespace System
                 return 0;
             }
 
-            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI1);
+            int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI1);
             if (fromBase != 10 && r <= Byte.MaxValue)
                 return (sbyte)r;
 
@@ -2246,7 +2246,7 @@ namespace System
                 return 0;
             }
 
-            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI2);
+            int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI2);
             if (fromBase != 10 && r <= UInt16.MaxValue)
                 return (short)r;
 
@@ -2272,7 +2272,7 @@ namespace System
                 return 0;
             }
 
-            int r = ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
+            int r = ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
             if (r < UInt16.MinValue || r > UInt16.MaxValue)
                 ThrowUInt16OverflowException();
             return (ushort)r;
@@ -2289,7 +2289,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             return value != null ?
-                ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight) :
+                ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.IsTight) :
                 0;
         }
 
@@ -2305,7 +2305,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             return value != null ?
-                (uint)ParseNumbers.StringToInt(value.AsReadOnlySpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
+                (uint)ParseNumbers.StringToInt(value.AsSpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
                 0;
         }
 
@@ -2320,7 +2320,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             return value != null ?
-                ParseNumbers.StringToLong(value.AsReadOnlySpan(), fromBase, ParseNumbers.IsTight) :
+                ParseNumbers.StringToLong(value.AsSpan(), fromBase, ParseNumbers.IsTight) :
                 0;
         }
 
@@ -2336,7 +2336,7 @@ namespace System
                 throw new ArgumentException(SR.Arg_InvalidBase);
             }
             return value != null ?
-                (ulong)ParseNumbers.StringToLong(value.AsReadOnlySpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
+                (ulong)ParseNumbers.StringToLong(value.AsSpan(), fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight) :
                 0;
         }
 
@@ -2653,7 +2653,7 @@ namespace System
                 throw new ArgumentNullException(nameof(s));
             }
 
-            return TryFromBase64Chars(s.AsReadOnlySpan(), bytes, out bytesWritten);
+            return TryFromBase64Chars(s.AsSpan(), bytes, out bytesWritten);
         }
 
         public static unsafe bool TryFromBase64Chars(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
