@@ -618,22 +618,6 @@ mono_arch_ip_from_context (void *sigctx)
 #endif
 }
 
-void
-mono_ppc_set_func_into_sigctx (void *sigctx, void *func)
-{
-#ifdef MONO_CROSS_COMPILE
-	g_assert_not_reached ();
-#elif defined(PPC_USES_FUNCTION_DESCRIPTOR)
-	/* Have to set both the ip and the TOC reg */
-	os_ucontext *uc = sigctx;
-
-	UCONTEXT_REG_NIP(uc) = ((gsize*)func) [0];
-	UCONTEXT_REG_Rn (uc, 2) = ((gsize*)func)[1];
-#else
-	g_assert_not_reached ();
-#endif
-}
-
 static void
 altstack_handle_and_restore (void *sigctx, gpointer obj)
 {
@@ -808,9 +792,21 @@ void
 mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
 {
 	uintptr_t sp = (uintptr_t) MONO_CONTEXT_GET_SP(ctx);
+	ctx->regs [PPC_FIRST_ARG_REG] = user_data;
 	sp -= PPC_MINIMAL_STACK_SIZE;
 	*(unsigned long *)sp = MONO_CONTEXT_GET_SP(ctx);
 	MONO_CONTEXT_SET_BP(ctx, sp);
-	MONO_CONTEXT_SET_IP(ctx, (unsigned long) async_cb);
+	mono_arch_setup_resume_sighandler_ctx(ctx, (unsigned long) async_cb);
 }
 
+void
+mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
+{
+#ifdef PPC_USES_FUNCTION_DESCRIPTOR
+	MonoPPCFunctionDescriptor *handler_ftnptr = (MonoPPCFunctionDescriptor*)func;
+	MONO_CONTEXT_SET_IP(ctx, (gulong)handler_ftnptr->code);
+	ctx->regs[2] = (gulong)handler_ftnptr->toc;
+#else
+	MONO_CONTEXT_SET_IP(ctx, (unsigned long) func);
+#endif
+}

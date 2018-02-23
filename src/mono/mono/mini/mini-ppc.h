@@ -161,12 +161,11 @@ typedef struct MonoCompileArch {
 #define PPC_PASS_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
 #define PPC_RETURN_SMALL_FLOAT_STRUCTS_IN_FR_REGS 0
 #define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
-//#define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
+#define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define PPC_MINIMAL_PARAM_AREA_SIZE 64
 #define PPC_LAST_FPARG_REG ppc_f13
 #define PPC_PASS_STRUCTS_BY_VALUE 1
 #define PPC_THREAD_PTR_REG ppc_r13
-#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1
@@ -217,7 +216,6 @@ typedef struct MonoCompileArch {
 #define PPC_RETURN_SMALL_STRUCTS_IN_REGS 0
 #define PPC_THREAD_PTR_REG ppc_r2
 #endif
-#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define PPC_FIRST_ARG_REG ppc_r3
 #define PPC_LAST_ARG_REG ppc_r10
 #define PPC_FIRST_FPARG_REG ppc_f1
@@ -234,6 +232,9 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_VTABLE_REG	ppc_r11
 #define MONO_ARCH_RGCTX_REG	MONO_ARCH_IMT_REG
+
+#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
+#define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 
 #define MONO_ARCH_NO_IOV_CHECK 1
 #define MONO_ARCH_HAVE_DECOMPOSE_OPTS 1
@@ -378,8 +379,6 @@ extern void mono_ppc_emitted (guint8 *code, gint64 length, const char *format, .
 gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
 
 void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr);
-
-void mono_ppc_set_func_into_sigctx (void *sigctx, void *func);
 
 
 // Debugging macros for ELF ABI v2
