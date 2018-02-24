@@ -654,6 +654,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (IsWinHttpHandler)
             {
+                // ISSUE #27440:
                 // This test occasionally fails on WinHttpHandler.
                 // Likely this is due to the way the loopback server is sending the response before reading the entire request.
                 // We should change the server behavior here.
