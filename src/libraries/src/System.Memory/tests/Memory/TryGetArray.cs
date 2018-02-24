@@ -24,6 +24,7 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        [ActiveIssue(27412)]
         public static void TryGetArrayFromDefaultMemory()
         {
             Memory<int> memory = default;
