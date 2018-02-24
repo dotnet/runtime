@@ -3180,6 +3180,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	gboolean is_virtual, calli, preserveall;
 	LLVMBuilderRef builder = *builder_ref;
 
+	/* If both imt and rgctx arg are required, only pass the imt arg, the rgctx trampoline will pass the rgctx */
+	if (call->imt_arg_reg)
+		call->rgctx_arg_reg = 0;
+
 	if ((call->signature->call_convention != MONO_CALL_DEFAULT) && !((call->signature->call_convention == MONO_CALL_C) && ctx->llvm_only)) {
 		set_failure (ctx, "non-default callconv");
 		return;
