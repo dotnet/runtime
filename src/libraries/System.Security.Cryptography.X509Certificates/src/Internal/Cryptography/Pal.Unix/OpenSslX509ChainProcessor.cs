@@ -380,16 +380,19 @@ namespace Internal.Cryptography.Pal
             using (var systemIntermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine))
             using (var userRootStore = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
             using (var userIntermediateStore = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
+            using (var userMyStore = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
                 systemRootStore.Open(OpenFlags.ReadOnly);
                 systemIntermediateStore.Open(OpenFlags.ReadOnly);
                 userRootStore.Open(OpenFlags.ReadOnly);
                 userIntermediateStore.Open(OpenFlags.ReadOnly);
+                userMyStore.Open(OpenFlags.ReadOnly);
 
                 X509Certificate2Collection systemRootCerts = systemRootStore.Certificates;
                 X509Certificate2Collection systemIntermediateCerts = systemIntermediateStore.Certificates;
                 X509Certificate2Collection userRootCerts = userRootStore.Certificates;
                 X509Certificate2Collection userIntermediateCerts = userIntermediateStore.Certificates;
+                X509Certificate2Collection userMyCerts = userMyStore.Certificates;
 
                 // fill the system trusted collection
                 foreach (X509Certificate2 userRootCert in userRootCerts)
@@ -416,6 +419,7 @@ namespace Internal.Cryptography.Pal
                 X509Certificate2Collection[] storesToCheck =
                 {
                     extraStore,
+                    userMyCerts,
                     userIntermediateCerts,
                     systemIntermediateCerts,
                     userRootCerts,
@@ -452,7 +456,7 @@ namespace Internal.Cryptography.Pal
                     candidates,
                     ReferenceEqualityComparer<X509Certificate2>.Instance);
 
-                // Certificates come from 5 sources:
+                // Certificates come from 6 sources:
                 //  1) extraStore.
                 //     These are cert objects that are provided by the user, we shouldn't dispose them.
                 //  2) the machine root store
@@ -463,8 +467,11 @@ namespace Internal.Cryptography.Pal
                 //     These certs were either path candidates, or not. If they were, don't dispose them. Otherwise do.
                 //  5) the user intermediate store
                 //     These certs were either path candidates, or not. If they were, don't dispose them. Otherwise do.
+                //  6) the user my store
+                //     These certs were either path candidates, or not. If they were, don't dispose them. Otherwise do.
                 DisposeUnreferenced(candidatesByReference, systemIntermediateCerts);
                 DisposeUnreferenced(candidatesByReference, userIntermediateCerts);
+                DisposeUnreferenced(candidatesByReference, userMyCerts);
             }
 
             return candidates;
