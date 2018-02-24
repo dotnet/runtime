@@ -17,7 +17,7 @@
     <ProjectNTfsTestILCCurrentRef>665e5b2c0cdb298e3fb600daff79a126fbaa9607</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
-    <BuildToolsCurrentRef>bd49c8985dc365d502ae636cace03708e57b0667</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>4c8b64e5a75c84378f6203d4a40421bd8d5f575b</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -48,13 +48,13 @@
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0018</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <XunitNetcoreExtensionsVersion>2.1.0-preview2-02522-02</XunitNetcoreExtensionsVersion>
+    <XunitNetcoreExtensionsVersion>2.1.0-preview2-02522-03</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-preview2-02522-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-preview2-02522-03</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
