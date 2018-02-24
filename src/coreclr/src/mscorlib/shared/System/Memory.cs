@@ -329,6 +329,16 @@ namespace System
                 return true;
             }
 
+            if (_length == 0)
+            {
+#if FEATURE_PORTABLE_SPAN
+                arraySegment = new ArraySegment<T>(SpanHelpers.PerTypeValues<T>.EmptyArray);
+#else
+                arraySegment = ArraySegment<T>.Empty;
+#endif // FEATURE_PORTABLE_SPAN
+                return true;
+            }
+
             arraySegment = default(ArraySegment<T>);
             return false;
         }
