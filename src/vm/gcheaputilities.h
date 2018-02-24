@@ -163,8 +163,10 @@ public:
         // The table byte index that we calculate for the address should be the same as the one
         // calculated for a pointer to the end of the written region. If this were not the case,
         // this write crossed a boundary and would dirty two pages.
+#ifdef _DEBUG
         uint8_t* end_of_write_ptr = reinterpret_cast<uint8_t*>(address) + (write_size - 1);
         assert(table_byte_index == reinterpret_cast<size_t>(end_of_write_ptr) >> SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift);
+#endif
         uint8_t* table_address = &g_sw_ww_table[table_byte_index];
         if (*table_address == 0)
         {
