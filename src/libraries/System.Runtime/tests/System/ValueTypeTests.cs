@@ -28,6 +28,7 @@ namespace System.Tests
             obj2.value2 = -0.0;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -43,6 +44,7 @@ namespace System.Tests
             obj2.value2 = -0.0;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -57,6 +59,7 @@ namespace System.Tests
             obj2.value2 = -double.NaN;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -72,6 +75,7 @@ namespace System.Tests
             obj2.value2 = -double.NaN;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -86,6 +90,7 @@ namespace System.Tests
             obj2.value2.value2 = -0.0;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -101,6 +106,7 @@ namespace System.Tests
             obj2.value2.value2 = -0.0;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -115,6 +121,7 @@ namespace System.Tests
             obj2.value2.value2 = -double.NaN;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -130,6 +137,7 @@ namespace System.Tests
             obj2.value2.value2 = -double.NaN;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -144,6 +152,7 @@ namespace System.Tests
             obj2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -159,6 +168,7 @@ namespace System.Tests
             obj2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -173,6 +183,7 @@ namespace System.Tests
             obj2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -188,6 +199,7 @@ namespace System.Tests
             obj2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -202,6 +214,7 @@ namespace System.Tests
             obj2.value2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -217,6 +230,7 @@ namespace System.Tests
             obj2.value2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -231,6 +245,7 @@ namespace System.Tests
             obj2.value2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -246,6 +261,7 @@ namespace System.Tests
             obj2.value2.value2 = 1;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -260,6 +276,7 @@ namespace System.Tests
             obj2.value2.value = 2;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -275,6 +292,7 @@ namespace System.Tests
             obj2.value2.value = 2;
 
             Assert.False(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         [Fact]
@@ -289,6 +307,7 @@ namespace System.Tests
             obj2.value2 = -0.0;
 
             Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         public struct S
