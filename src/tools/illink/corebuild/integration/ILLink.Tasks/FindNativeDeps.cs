@@ -17,13 +17,13 @@ namespace ILLink.Tasks
 		///   dependencies.
 		/// </summary>
 		[Required]
-		public ITaskItem[] ManagedAssemblyPaths { get; set; }
+		public ITaskItem [] ManagedAssemblyPaths { get; set; }
 
 		/// <summary>
 		///   The set of native dependencies to keep even if they
-		///   aren't found to be referenced by a managed assembly..
+		///   aren't found to be referenced by a managed assembly.
 		/// </summary>
-		public ITaskItem[] NativeDepsToKeep { get; set; }
+		public ITaskItem [] NativeDepsToKeep { get; set; }
 
 		/// <summary>
 		///   The paths to the available native dependencies. We
@@ -31,7 +31,7 @@ namespace ILLink.Tasks
 		///   native files.
 		/// </summary>
 		[Required]
-		public ITaskItem[] NativeDepsPaths { get; set; }
+		public ITaskItem [] NativeDepsPaths { get; set; }
 
 		/// <summary>
 		///   The set of native dependencies to keep, including those
@@ -40,67 +40,51 @@ namespace ILLink.Tasks
 		///   input NativeDepsToKeep.
 		/// </summary>
 		[Output]
-		public ITaskItem[] KeptNativeDepsPaths { get; set; }
+		public ITaskItem [] KeptNativeDepsPaths { get; set; }
 
-		public override bool Execute()
+		public override bool Execute ()
 		{
-			var allNative = new Dictionary<string, ITaskItem> ();
-			foreach (var n in NativeDepsPaths)
-			{
-				var fileName = Path.GetFileName(n.ItemSpec);
-				if (!allNative.ContainsKey(fileName))
-				{
-					allNative.Add(fileName, n);
-				}
-			}
-			var keptNative = new List<ITaskItem> ();
-			var managedAssemblies = ManagedAssemblyPaths.Select (i => i.ItemSpec).ToArray();
-			foreach (string managedAssembly in managedAssemblies)
-			{
-				using (var peReader = new PEReader(new FileStream(managedAssembly, FileMode.Open, FileAccess.Read, FileShare.Read)))
-				{
-					if (peReader.HasMetadata)
-					{
-						var reader = peReader.GetMetadataReader();
-						for (int i = 1, count = reader.GetTableRowCount(TableIndex.ModuleRef); i <= count; i++)
-						{
-							var moduleRef = reader.GetModuleReference(MetadataTokens.ModuleReferenceHandle(i));
-							var moduleName = reader.GetString(moduleRef.Name);
+			var allNativeNames = new HashSet<string> ();
+			foreach (var nativeDep in NativeDepsPaths)
+				allNativeNames.Add (Path.GetFileName (nativeDep.ItemSpec));
+			var keptNativeNames = new HashSet<string> ();
+			foreach (var nativeDep in NativeDepsToKeep)
+				keptNativeNames.Add (Path.GetFileName (nativeDep.ItemSpec));
 
-							var moduleRefCandidates = new[] { moduleName, moduleName + ".dll", moduleName + ".so", moduleName + ".dylib" };
+			var managedAssemblies = ManagedAssemblyPaths.Select (i => i.ItemSpec).ToArray ();
+			foreach (string managedAssembly in managedAssemblies) {
+				using (var peReader = new PEReader(new FileStream (managedAssembly, FileMode.Open, FileAccess.Read, FileShare.Read))) {
+					if (peReader.HasMetadata) {
+						var reader = peReader.GetMetadataReader ();
+						for (int i = 1, count = reader.GetTableRowCount (TableIndex.ModuleRef); i <= count; i++) {
+							var moduleRef = reader.GetModuleReference (MetadataTokens.ModuleReferenceHandle (i));
+							var moduleName = reader.GetString (moduleRef.Name);
 
-							ITaskItem referencedNativeFile = null;
-							foreach (string moduleRefCandidate in moduleRefCandidates)
-							{
-								if (allNative.TryGetValue (moduleRefCandidate, out referencedNativeFile))
-								{
-									break;
+							var moduleRefCandidates = new [] { moduleName, moduleName + ".dll", moduleName + ".so", moduleName + ".dylib" };
+
+							bool foundModuleRef = false;
+							foreach (string moduleRefCandidate in moduleRefCandidates) {
+								if (allNativeNames.Contains (moduleRefCandidate)) {
+									keptNativeNames.Add (moduleRefCandidate);
+									foundModuleRef = true;
 								}
 							}
 
-							if (referencedNativeFile != null)
-							{
-								keptNative.Add(referencedNativeFile);
-							}
-							else
-							{
-								// DLLImport that wasn't satisfied
-								Log.LogMessage(MessageImportance.High, "unsatisfied DLLImport: " + managedAssembly + " -> " + moduleName);
-							}
+							if (!foundModuleRef)
+								Log.LogMessage("unsatisfied DLLImport: " + managedAssembly + " -> " + moduleName);
 						}
 					}
 				}
 			}
 
-			foreach (var n in NativeDepsToKeep)
-			{
-				ITaskItem nativeFile = null;
-				if (allNative.TryGetValue (n.ItemSpec, out nativeFile))
-				{
-					keptNative.Add(nativeFile);
-				}
+			var keptNativeDeps = new List<ITaskItem> ();
+			foreach (var nativeDep in NativeDepsPaths) {
+				var fileName = Path.GetFileName (nativeDep.ItemSpec);
+				if (keptNativeNames.Contains (fileName))
+					keptNativeDeps.Add (nativeDep);
 			}
-			KeptNativeDepsPaths = keptNative.ToArray();
+
+			KeptNativeDepsPaths = keptNativeDeps.ToArray ();
 			return true;
 		}
 	}
