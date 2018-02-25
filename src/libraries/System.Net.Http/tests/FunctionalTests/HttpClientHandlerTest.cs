@@ -66,31 +66,26 @@ namespace System.Net.Http.Functional.Tests
             new object[] { 307 }
         };
 
-        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethodsUseTE = {
-            new object[] { 300, "GET", "GET", false },
-            new object[] { 300, "POST", "GET", false },
-            new object[] { 300, "POST", "GET", true },
-            new object[] { 300, "HEAD", "HEAD", false },
+        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethods = {
+            new object[] { 300, "GET", "GET" },
+            new object[] { 300, "POST", "GET" },
+            new object[] { 300, "HEAD", "HEAD" },
 
-            new object[] { 301, "GET", "GET", false },
-            new object[] { 301, "POST", "GET", false },
-            new object[] { 301, "POST", "GET", true },
-            new object[] { 301, "HEAD", "HEAD", false },
+            new object[] { 301, "GET", "GET" },
+            new object[] { 301, "POST", "GET" },
+            new object[] { 301, "HEAD", "HEAD" },
 
-            new object[] { 302, "GET", "GET", false },
-            new object[] { 302, "POST", "GET", false },
-            new object[] { 302, "POST", "GET", true },
-            new object[] { 302, "HEAD", "HEAD", false },
+            new object[] { 302, "GET", "GET" },
+            new object[] { 302, "POST", "GET" },
+            new object[] { 302, "HEAD", "HEAD" },
 
-            new object[] { 303, "GET", "GET", false },
-            new object[] { 303, "POST", "GET", false },
-            new object[] { 303, "POST", "GET", true },
-            new object[] { 303, "HEAD", "HEAD", false },
+            new object[] { 303, "GET", "GET" },
+            new object[] { 303, "POST", "GET" },
+            new object[] { 303, "HEAD", "HEAD" },
 
-            new object[] { 307, "GET", "GET", false },
-            new object[] { 307, "POST", "POST", false },
-            new object[] { 307, "POST", "POST", true },
-            new object[] { 307, "HEAD", "HEAD", false },
+            new object[] { 307, "GET", "GET" },
+            new object[] { 307, "POST", "POST" },
+            new object[] { 307, "HEAD", "HEAD" },
         };
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
@@ -595,9 +590,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethodsUseTE))]
+        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
-            int statusCode, string oldMethod, string newMethod, bool useTE)
+            int statusCode, string oldMethod, string newMethod)
         {
             if (IsCurlHandler && statusCode == 300 && oldMethod == "POST")
             {
@@ -612,15 +607,68 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl);
-                    if (oldMethod == "POST")
-                    {
-                        request.Content = new StringContent(ExpectedContent);
 
-                        if (useTE)
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+
+                    await LoopbackServer.CreateServerAsync(async (redirServer, redirUrl) =>
+                    {
+                        // Original URL will redirect to a different URL
+                        Task<List<string>> serverTask = origServer.AcceptConnectionSendResponseAndCloseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\n");
+
+                        await Task.WhenAny(getResponseTask, serverTask);
+                        Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
+                        await serverTask;
+
+                        // Redirected URL answers with success
+                        serverTask = redirServer.AcceptConnectionSendResponseAndCloseAsync();
+                        await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                        List<string> receivedRequest = await serverTask;
+
+                        string[] statusLineParts = receivedRequest[0].Split(' ');
+
+                        using (HttpResponseMessage response = await getResponseTask)
                         {
-                            request.Headers.TransferEncodingChunked = true;
+                            Assert.Equal(200, (int)response.StatusCode);
+                            Assert.Equal(newMethod, statusLineParts[0]);
                         }
-                    }
+                    });
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(300)]
+        [InlineData(301)]
+        [InlineData(302)]
+        [InlineData(303)]
+        public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(int statusCode)
+        {
+            if (IsCurlHandler)
+            {
+                // ISSUE #27301:
+                // CurlHandler incorrectly sends Transfer-Encoding when the method changes from POST to GET.
+                // Also, note CurlHandler doesn't change POST to GET for 300 response, either (see above test)
+                return;
+            }
+
+            if (IsWinHttpHandler)
+            {
+                // ISSUE #27440:
+                // This test occasionally fails on WinHttpHandler.
+                // Likely this is due to the way the loopback server is sending the response before reading the entire request.
+                // We should change the server behavior here.
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            using (var client = new HttpClient(handler))
+            {
+                await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Post, origUrl);
+                    request.Content = new StringContent(ExpectedContent);
+                    request.Headers.TransferEncodingChunked = true;
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
 
@@ -655,34 +703,13 @@ namespace System.Net.Http.Functional.Tests
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask2);
 
                         string[] statusLineParts = receivedRequest[0].Split(' ');
+                        Assert.Equal("GET", statusLineParts[0]);
+                        Assert.DoesNotContain(receivedRequest, line => line.StartsWith("Transfer-Encoding"));
+                        Assert.DoesNotContain(receivedRequest, line => line.StartsWith("Content-Length"));
 
                         using (HttpResponseMessage response = await getResponseTask)
                         {
                             Assert.Equal(200, (int)response.StatusCode);
-                            Assert.Equal(newMethod, statusLineParts[0]);
-                        }
-
-                        if (newMethod == "POST")
-                        {
-                            if (useTE)
-                            {
-                                Assert.Contains("Transfer-Encoding: chunked", receivedRequest);
-                            }
-                            else
-                            {
-                                Assert.Contains($"Content-Length: {ExpectedContent.Length}", receivedRequest);
-                                Assert.Equal(ExpectedContent, receivedContent);
-                            }
-                        }
-                        else
-                        {
-                            // ISSUE #27301:
-                            // CurlHandler incorrectly sends Transfer-Encoding when the method changes from POST to GET.
-                            if (!IsCurlHandler)
-                            {
-                                Assert.DoesNotContain(receivedRequest, line => line.StartsWith("Transfer-Encoding"));
-                            }
-                            Assert.DoesNotContain(receivedRequest, line => line.StartsWith("Content-Length"));
                         }
                     });
                 });
