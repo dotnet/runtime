@@ -1943,27 +1943,6 @@ void PrintNotReachableInRange(TADDR rngStart, TADDR rngEnd, BOOL bExcludeReadyFo
 
 const char *EHTypeName(EHClauseType et);
 
-template<typename T>
-inline const LPCSTR GetTransparency(const T &t)
-{
-    if (!t.bHasCriticalTransparentInfo)
-    {
-        return "Not calculated";
-    }
-    else if (t.bIsCritical && !t.bIsTreatAsSafe)
-    {
-        return "Critical";
-    }
-    else if (t.bIsCritical)
-    {
-        return "Safe critical";
-    }
-    else
-    {
-        return "Transparent";
-    }
-}
-
 struct StringHolder
 {
     LPSTR data;
