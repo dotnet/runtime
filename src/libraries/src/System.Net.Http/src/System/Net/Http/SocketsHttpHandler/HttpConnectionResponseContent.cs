@@ -25,6 +25,8 @@ namespace System.Net.Http
                 _stream = stream;
             }
 
+            internal bool IsEmpty => (_stream == EmptyReadStream.Instance);
+
             private HttpContentStream ConsumeStream()
             {
                 if (_consumedStream || _stream == null)

@@ -76,7 +76,7 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    _connection.ReturnConnectionToPool();
+                    _connection.CompleteResponse();
                     _connection = null;
                 }
 
@@ -130,7 +130,7 @@ namespace System.Net.Http
             private void Finish()
             {
                 _contentBytesRemaining = 0;
-                _connection.ReturnConnectionToPool();
+                _connection.CompleteResponse();
                 _connection = null;
             }
 

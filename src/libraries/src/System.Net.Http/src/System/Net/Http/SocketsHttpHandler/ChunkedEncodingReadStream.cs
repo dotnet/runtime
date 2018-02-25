@@ -288,7 +288,7 @@ namespace System.Net.Http
                                 if (currentLine.IsEmpty)
                                 {
                                     _state = ParsingState.Done;
-                                    _connection.ReturnConnectionToPool();
+                                    _connection.CompleteResponse();
                                     _connection = null;
                                     break;
                                 }

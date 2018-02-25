@@ -15,8 +15,6 @@ namespace System.Net.Http
 {
     internal partial class AuthenticationHelper
     {
-        public const string Digest = "Digest";
-
         // Define digest constants
         private const string Qop = "qop";
         private const string Auth = "auth";
@@ -41,32 +39,6 @@ namespace System.Net.Http
         // Define alphanumeric characters for cnonce
         // 48='0', 65='A', 97='a'
         private static int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
-
-        public async static Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, ICredentials credentials, DigestResponse digestResponse, string authHeader)
-        {
-            NetworkCredential credential = credentials.GetCredential(request.RequestUri, Digest);
-            if (credential == null)
-            {
-                return false;
-            }
-
-            string parameter = await GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
-
-            // Any errors in obtaining parameter return false
-            if (string.IsNullOrEmpty(parameter))
-                return false;
-
-            if (authHeader == HttpKnownHeaderNames.Authorization)
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue(Digest, parameter);
-            }
-            else if (authHeader == HttpKnownHeaderNames.ProxyAuthorization)
-            {
-                request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(Digest, parameter);
-            }
-
-            return true;
-        }
 
         public static async Task<string> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {

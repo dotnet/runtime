@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Authentication_TestData))]
         public async Task HttpClientHandler_Authentication_Succeeds(string authenticateHeader, bool result)
         {
-            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest")))
+            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest", StringComparison.OrdinalIgnoreCase)))
             {
                 // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
                 return;
@@ -109,12 +109,17 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "Basic realm=\"testrealm\"", true };
             yield return new object[] { "Basic ", true };
             yield return new object[] { "Basic realm=withoutquotes", true };
+            yield return new object[] { "basic ", true };
+            yield return new object[] { "bAsiC ", true };
+            yield return new object[] { "basic", true };
 
             // Add digest tests fail on CurlHandler.
             // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
             yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
             yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"{Convert.ToBase64String(Encoding.UTF8.GetBytes($"{DateTimeOffset.UtcNow}:XMh;z+$5|`i6Hx}}\", qop=auth-int, algorithm=MD5"))}\"", true };
             yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
+                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
+            yield return new object[] { "dIgEsT realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
                     "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
             yield return new object[] { $"Basic realm=\"testrealm\", " +
                     $"Digest realm=\"testrealm\", nonce=\"{Convert.ToBase64String(Encoding.UTF8.GetBytes($"{DateTimeOffset.UtcNow}:XMh;z+$5|`i6Hx}}"))}\", algorithm=MD5", true };
