@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.X86
     {{
         private static void {2}{4}()
         {{
-            var test = new HorizontalBinaryOpTest__{2}{4}();
+            var test = new BooleanTwoComparisonOpTest__{2}{4}();
 
             if (test.IsSupported)
             {{
@@ -83,13 +83,12 @@ namespace JIT.HardwareIntrinsics.X86
         }}
     }}
 
-    public sealed unsafe class HorizontalBinaryOpTest__{2}{4}
+    public sealed unsafe class BooleanTwoComparisonOpTest__{2}{4}
     {{
         private const int VectorSize = {9};
 
         private const int Op1ElementCount = VectorSize / sizeof({6});
         private const int Op2ElementCount = VectorSize / sizeof({8});
-        private const int RetElementCount = VectorSize / sizeof({4});
 
         private static {6}[] _data1 = new {6}[Op1ElementCount];
         private static {8}[] _data2 = new {8}[Op2ElementCount];
@@ -100,9 +99,9 @@ namespace JIT.HardwareIntrinsics.X86
         private {5}<{6}> _fld1;
         private {7}<{8}> _fld2;
 
-        private HorizontalBinaryOpTest__DataTable<{4}, {6}, {8}> _dataTable;
+        private BooleanTwoComparisonOpTest__DataTable<{6}, {8}> _dataTable;
 
-        static HorizontalBinaryOpTest__{2}{4}()
+        static BooleanTwoComparisonOpTest__{2}{4}()
         {{
             var random = new Random();
 
@@ -112,7 +111,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{7}<{8}>, byte>(ref _clsVar2), ref Unsafe.As<{8}, byte>(ref _data2[0]), VectorSize);
         }}
 
-        public HorizontalBinaryOpTest__{2}{4}()
+        public BooleanTwoComparisonOpTest__{2}{4}()
         {{
             Succeeded = true;
 
@@ -125,7 +124,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < Op1ElementCount; i++) {{ _data1[i] = {10}; }}
             for (var i = 0; i < Op2ElementCount; i++) {{ _data2[i] = {11}; }}
-            _dataTable = new HorizontalBinaryOpTest__DataTable<{4}, {6}, {8}>(_data1, _data2, new {4}[RetElementCount], VectorSize);
+            _dataTable = new BooleanTwoComparisonOpTest__DataTable<{6}, {8}>(_data1, _data2, VectorSize);
         }}
 
         public bool IsSupported => {0}.IsSupported;
@@ -139,8 +138,7 @@ namespace JIT.HardwareIntrinsics.X86
                 Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr)
             );
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
         }}
 
         public void RunBasicScenario_Load()
@@ -150,8 +148,7 @@ namespace JIT.HardwareIntrinsics.X86
                 {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr))
             );
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
         }}
 
         public void RunBasicScenario_LoadAligned()
@@ -161,8 +158,7 @@ namespace JIT.HardwareIntrinsics.X86
                 {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr))
             );
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, result);
         }}
 
         public void RunReflectionScenario_UnsafeRead()
@@ -173,8 +169,7 @@ namespace JIT.HardwareIntrinsics.X86
                                         Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr)
                                      }});
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }}
 
         public void RunReflectionScenario_Load()
@@ -185,8 +180,7 @@ namespace JIT.HardwareIntrinsics.X86
                                         {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr))
                                      }});
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }}
 
         public void RunReflectionScenario_LoadAligned()
@@ -197,8 +191,7 @@ namespace JIT.HardwareIntrinsics.X86
                                         {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr))
                                      }});
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }}
 
         public void RunClsVarScenario()
@@ -208,8 +201,7 @@ namespace JIT.HardwareIntrinsics.X86
                 _clsVar2
             );
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
+            ValidateResult(_clsVar1, _clsVar2, result);
         }}
 
         public void RunLclVarScenario_UnsafeRead()
@@ -218,8 +210,7 @@ namespace JIT.HardwareIntrinsics.X86
             var right = Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr);
             var result = {0}.{2}(left, right);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
+            ValidateResult(left, right, result);
         }}
 
         public void RunLclVarScenario_Load()
@@ -228,8 +219,7 @@ namespace JIT.HardwareIntrinsics.X86
             var right = {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr));
             var result = {0}.{2}(left, right);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
+            ValidateResult(left, right, result);
         }}
 
         public void RunLclVarScenario_LoadAligned()
@@ -238,25 +228,22 @@ namespace JIT.HardwareIntrinsics.X86
             var right = {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr));
             var result = {0}.{2}(left, right);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
+            ValidateResult(left, right, result);
         }}
 
         public void RunLclFldScenario()
         {{
-            var test = new HorizontalBinaryOpTest__{2}{4}();
+            var test = new BooleanTwoComparisonOpTest__{2}{4}();
             var result = {0}.{2}(test._fld1, test._fld2);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, test._fld2, result);
         }}
 
         public void RunFldScenario()
         {{
             var result = {0}.{2}(_fld1, _fld2);
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
+            ValidateResult(_fld1, _fld2, result);
         }}
 
         public void RunUnsupportedScenario()
@@ -273,58 +260,48 @@ namespace JIT.HardwareIntrinsics.X86
             }}
         }}
 
-        private void ValidateResult({5}<{6}> left, {7}<{8}> right, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult({5}<{6}> left, {7}<{8}> right, bool result, [CallerMemberName] string method = "")
         {{
             {6}[] inArray1 = new {6}[Op1ElementCount];
             {8}[] inArray2 = new {8}[Op2ElementCount];
-            {4}[] outArray = new {4}[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
             Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
-            ValidateResult(inArray1, inArray2, outArray, method);
+            ValidateResult(inArray1, inArray2, result, method);
         }}
 
-        private void ValidateResult(void* left, void* right, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* left, void* right, bool result, [CallerMemberName] string method = "")
         {{
             {6}[] inArray1 = new {6}[Op1ElementCount];
             {8}[] inArray2 = new {8}[Op2ElementCount];
-            {4}[] outArray = new {4}[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{6}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{8}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
-            ValidateResult(inArray1, inArray2, outArray, method);
+            ValidateResult(inArray1, inArray2, result, method);
         }}
 
-        private void ValidateResult({6}[] left, {8}[] right, {4}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({6}[] left, {8}[] right, bool result, [CallerMemberName] string method = "")
         {{
-            for (var outer = 0; outer < (VectorSize / 16); outer++)
+            var expectedResult1 = true;
+
+            for (var i = 0; i < Op1ElementCount; i++)
             {{
-                for (var inner = 0; inner < (8 / sizeof({4})); inner++)
-                {{
-                    var i1 = (outer * (16 / sizeof({4}))) + inner;
-                    var i2 = i1 + (8 / sizeof({4}));
-                    var i3 = (outer * (16 / sizeof({4}))) + (inner * 2);
-
-                    if ({12})
-                    {{
-                        Succeeded = false;
-                        break;
-                    }}
-
-                    if ({13})
-                    {{
-                        Succeeded = false;
-                        break;
-                    }}
-                }}
+                expectedResult1 &= ({12});
             }}
 
-            if (!Succeeded)
+            var expectedResult2 = true;
+
+            for (var i = 0; i < Op1ElementCount; i++)
             {{
+                expectedResult2 &= ({13});
+            }}
+
+            if (((expectedResult1 == false) && (expectedResult2 == false)) != result)
+            {{
+                Succeeded = false;
+
                 Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{4}>({5}<{6}>, {7}<{8}>): {{method}} failed:");
                 Console.WriteLine($"    left: ({{string.Join(", ", left)}})");
                 Console.WriteLine($"   right: ({{string.Join(", ", right)}})");
