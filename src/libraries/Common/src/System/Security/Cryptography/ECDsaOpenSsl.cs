@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -15,11 +16,7 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class ECDsaOpenSsl : ECDsa
         {
-            internal const string ECDSA_P256_OID_VALUE = "1.2.840.10045.3.1.7"; // Also called nistP256 or secP256r1
-            internal const string ECDSA_P384_OID_VALUE = "1.3.132.0.34"; // Also called nistP384 or secP384r1
-            internal const string ECDSA_P521_OID_VALUE = "1.3.132.0.35"; // Also called nistP521or secP521r1
-
-            private Lazy<SafeEcKeyHandle> _key;
+            private ECOpenSsl _key;
 
             /// <summary>
             /// Create an ECDsaOpenSsl algorithm with a named curve.
@@ -28,7 +25,8 @@ namespace System.Security.Cryptography
             /// <exception cref="ArgumentNullException">if <paramref name="curve" /> is null.</exception>
             public ECDsaOpenSsl(ECCurve curve)
             {
-                GenerateKey(curve);
+                _key = new ECOpenSsl(curve);
+                ForceSetKeySize(_key.KeySize);
             }
 
             /// <summary>
@@ -46,6 +44,8 @@ namespace System.Security.Cryptography
             public ECDsaOpenSsl(int keySize)
             {
                 KeySize = keySize;
+                // Setting KeySize wakes up _key.
+                Debug.Assert(_key != null);
             }
 
             /// <summary>
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    FreeKey();
+                    _key.Dispose();
                 }
 
                 base.Dispose(disposing);
@@ -186,94 +186,34 @@ namespace System.Security.Cryptography
                     // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                     base.KeySize = value;
 
-                    FreeKey();
-                    _key = new Lazy<SafeEcKeyHandle>(GenerateKeyLazy);
+                    // This is the only place where _key can be null, because it's called by the constructor
+                    // which sets KeySize.
+                    _key?.Dispose();
+                    _key = new ECOpenSsl(this);
                 }
             }
 
             public override void GenerateKey(ECCurve curve)
             {
-                curve.Validate();
-                FreeKey();
+                _key.GenerateKey(curve);
 
-                if (curve.IsNamed)
-                {
-                    string oid = null;
-                    // Use oid Value first if present, otherwise FriendlyName because Oid maintains a hard-coded
-                    // cache that may have different casing for FriendlyNames than OpenSsl
-                    oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName;
-
-                    SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
-
-                    if (key == null || key.IsInvalid)
-                        throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
-
-                    if (!Interop.Crypto.EcKeyGenerateKey(key))
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-
-                    SetKey(key);
-                }
-                else if (curve.IsExplicit)
-                {
-                    SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitCurve(curve);
-
-                    if (!Interop.Crypto.EcKeyGenerateKey(key))
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-
-                    SetKey(key);
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
-                }
-            }
-
-            private SafeEcKeyHandle GenerateKeyLazy()
-            {
-                string oid = null;
-                switch (KeySize)
-                {
-                    case 256: oid = ECDSA_P256_OID_VALUE; break;
-                    case 384: oid = ECDSA_P384_OID_VALUE; break;
-                    case 521: oid = ECDSA_P521_OID_VALUE; break;
-                    default:
-                        // Only above three sizes supported for backwards compatibility; named curves should be used instead
-                        throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
-                }
-
-                SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
-
-                if (key == null || key.IsInvalid)
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
-
-                if (!Interop.Crypto.EcKeyGenerateKey(key))
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-
-                return key;
-            }
-
-            private void FreeKey()
-            {
-                if (_key != null)
-                {
-                    if (_key.IsValueCreated)
-                    {
-                        SafeEcKeyHandle handle = _key.Value;
-                        if (handle != null)
-                            handle.Dispose();
-                    }
-                    _key = null;
-                }
-            }
-
-            private void SetKey(SafeEcKeyHandle newKey)
-            {
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
-                ForceSetKeySize(Interop.Crypto.EcKeyGetSize(newKey));
-
-                _key = new Lazy<SafeEcKeyHandle>(newKey);
+                ForceSetKeySize(_key.KeySize);
             }
+
+            public override void ImportParameters(ECParameters parameters)
+            {
+                _key.ImportParameters(parameters);
+                ForceSetKeySize(_key.KeySize);
+            }
+
+            public override ECParameters ExportExplicitParameters(bool includePrivateParameters) =>
+                ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters);
+
+            public override ECParameters ExportParameters(bool includePrivateParameters) =>
+                ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters);
+
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

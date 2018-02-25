@@ -16,8 +16,9 @@ namespace System.Security.Cryptography
 {
     internal static class CngKeyLite
     {
-        private static class KeyPropertyName
+        internal static class KeyPropertyName
         {
+            internal const string AlgorithmGroup = "Algorithm Group";           // NCRYPT_ALGORITHM_GROUP_PROPERTY
             internal const string ECCCurveName = "ECCCurveName";                // NCRYPT_ECC_CURVE_NAME
             internal const string ECCParameters = "ECCParameters";              // BCRYPT_ECC_PARAMETERS
             internal const string ExportPolicy = "Export Policy";               // NCRYPT_EXPORT_POLICY_PROPERTY
@@ -327,7 +328,7 @@ namespace System.Security.Cryptography
         /// Retrieve a well-known CNG string property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.) 
         /// </summary>
-        private static string GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        internal static string GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             Debug.Assert(!ncryptHandle.IsInvalid);
             byte[] value = GetProperty(ncryptHandle, propertyName, options);
@@ -446,6 +447,10 @@ namespace Microsoft.Win32.SafeHandles
     }
 
     internal class SafeNCryptProviderHandle : SafeNCryptHandle
+    {
+    }
+
+    internal class SafeNCryptSecretHandle : SafeNCryptHandle
     {
     }
 

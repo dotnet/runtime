@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECCng
     {
-        internal static byte[] GetNamedCurveBlob(ref ECParameters parameters)
+        internal static byte[] GetNamedCurveBlob(ref ECParameters parameters, bool ecdh)
         {
             Debug.Assert(parameters.Curve.IsNamed);
 
@@ -46,7 +46,9 @@ namespace System.Security.Cryptography
                 {
                     // Build the header
                     BCRYPT_ECCKEY_BLOB* pBcryptBlob = (BCRYPT_ECCKEY_BLOB*)pBlob;
-                    pBcryptBlob->Magic = CurveNameToMagicNumber(parameters.Curve.Oid.FriendlyName, includePrivateParameters);
+                    pBcryptBlob->Magic = ecdh ? 
+                        EcdhCurveNameToMagicNumber(parameters.Curve.Oid.FriendlyName, includePrivateParameters) : 
+                        EcdsaCurveNameToMagicNumber(parameters.Curve.Oid.FriendlyName, includePrivateParameters);
                     pBcryptBlob->cbKey = parameters.Q.X.Length;
 
                     // Emit the blob
@@ -65,7 +67,7 @@ namespace System.Security.Cryptography
             return blob;
         }
 
-        internal static byte[] GetPrimeCurveBlob(ref ECParameters parameters)
+        internal static byte[] GetPrimeCurveBlob(ref ECParameters parameters, bool ecdh)
         {
             Debug.Assert(parameters.Curve.IsPrime);
 
@@ -113,8 +115,8 @@ namespace System.Security.Cryptography
                     BCRYPT_ECCFULLKEY_BLOB* pBcryptBlob = (BCRYPT_ECCFULLKEY_BLOB*)pBlob;
                     pBcryptBlob->Version = 1; // No constant for this found in bcrypt.h
                     pBcryptBlob->Magic = includePrivateParameters ?
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC :
-                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC;
+                        (ecdh ? KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_GENERIC_MAGIC : KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC) :
+                        (ecdh ? KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC : KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC);
                     pBcryptBlob->cbCofactor = curve.Cofactor.Length;
                     pBcryptBlob->cbFieldLength = parameters.Q.X.Length;
                     pBcryptBlob->cbSeed = curve.Seed == null ? 0 : curve.Seed.Length;
@@ -384,7 +386,7 @@ namespace System.Security.Cryptography
         /// to the pre-Win10 magic numbers to support import on pre-Win10 environments 
         /// that don't have the named curve functionality.
         /// </summary>
-        private static KeyBlobMagicNumber CurveNameToMagicNumber(string name, bool includePrivateParameters)
+        private static KeyBlobMagicNumber EcdsaCurveNameToMagicNumber(string name, bool includePrivateParameters)
         {
             switch (EcdsaCurveNameToAlgorithm(name))
             {
@@ -395,19 +397,51 @@ namespace System.Security.Cryptography
 
                 case AlgorithmName.ECDsaP384:
                     return includePrivateParameters ?
-                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P384_MAGIC :
-                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P384_MAGIC;
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P384_MAGIC :
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P384_MAGIC;
 
                 case AlgorithmName.ECDsaP521:
                     return includePrivateParameters ?
-                    KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P521_MAGIC :
-                    KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P521_MAGIC;
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_P521_MAGIC :
+                        KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_P521_MAGIC;
 
                 default:
                     // all other curves are new in Win10 so use named curves
                     return includePrivateParameters ?
                         KeyBlobMagicNumber.BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC :
                         KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC;
+            }
+        }
+
+        /// <summary>
+        /// Map a curve name to magic number. Maps the names of the curves that worked pre-Win10
+        /// to the pre-Win10 magic numbers to support import on pre-Win10 environments 
+        /// that don't have the named curve functionality.
+        /// </summary>
+        private static KeyBlobMagicNumber EcdhCurveNameToMagicNumber(string name, bool includePrivateParameters)
+        {
+            switch (EcdhCurveNameToAlgorithm(name))
+            {
+                case AlgorithmName.ECDHP256:
+                    return includePrivateParameters ?
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P256_MAGIC :
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P256_MAGIC;
+
+                case AlgorithmName.ECDHP384:
+                    return includePrivateParameters ?
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P384_MAGIC :
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P384_MAGIC;
+
+                case AlgorithmName.ECDHP521:
+                    return includePrivateParameters ?
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_P521_MAGIC :
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_P521_MAGIC;
+
+                default:
+                    // all other curves are new in Win10 so use named curves
+                    return includePrivateParameters ?
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PRIVATE_GENERIC_MAGIC :
+                        KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC;
             }
         }
 
@@ -507,6 +541,31 @@ namespace System.Security.Cryptography
 
             // All other curves are new in Win10 so use generic algorithm
             return AlgorithmName.ECDsa;
+        }
+
+        /// <summary>
+        /// Map a curve name to algorithm. This enables curves that worked pre-Win10
+        /// to work with newer APIs for import and export.
+        /// </summary>
+        internal static string EcdhCurveNameToAlgorithm(string algorithm)
+        {
+            switch (algorithm)
+            {
+                case "nistP256":
+                case "ECDH_P256":
+                    return AlgorithmName.ECDHP256;
+
+                case "nistP384":
+                case "ECDH_P384":
+                    return AlgorithmName.ECDHP384;
+
+                case "nistP521":
+                case "ECDH_P521":
+                    return AlgorithmName.ECDHP521;
+            }
+
+            // All other curves are new in Win10 so use generic algorithm
+            return AlgorithmName.ECDH;
         }
     }
 }

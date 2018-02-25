@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Security.Cryptography.EcDsa.Tests
+namespace System.Security.Cryptography.Tests
 {
     public class CurveDef
     {
@@ -21,8 +21,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
             {
                 // Assume curve is valid if required; tests will fail if not present
                 return RequiredOnPlatform ||
-                    (Curve.IsNamed && ECDsaFactory.IsCurveValid(Curve.Oid)) ||
-                    (Curve.IsExplicit && ECDsaFactory.ExplicitCurvesSupported);
+                    (Curve.IsNamed && (EcDsa.Tests.ECDsaFactory.IsCurveValid(Curve.Oid) || EcDiffieHellman.Tests.ECDiffieHellmanFactory.IsCurveValid(Curve.Oid))) ||
+                    (Curve.IsExplicit && (EcDsa.Tests.ECDsaFactory.ExplicitCurvesSupported || EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported));
             }
         }
 

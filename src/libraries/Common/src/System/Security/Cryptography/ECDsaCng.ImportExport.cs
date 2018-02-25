@@ -29,12 +29,12 @@ namespace System.Security.Cryptography
             {
                 parameters.Validate();
                 ECCurve curve = parameters.Curve;
-                bool includePrivateParamerters = (parameters.D != null);
+                bool includePrivateParameters = (parameters.D != null);
 
                 if (curve.IsPrime)
                 {
-                    byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters);
-                    ImportFullKeyBlob(ecExplicitBlob, includePrivateParamerters);
+                    byte[] ecExplicitBlob = ECCng.GetPrimeCurveBlob(ref parameters, ecdh: false);
+                    ImportFullKeyBlob(ecExplicitBlob, includePrivateParameters);
                 }
                 else if (curve.IsNamed)
                 {
@@ -42,8 +42,8 @@ namespace System.Security.Cryptography
                     if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
                         throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value.ToString()));
 
-                    byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters);
-                    ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParamerters);
+                    byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
+                    ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
                 }
                 else
                 {

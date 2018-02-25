@@ -7,7 +7,12 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
-    public sealed class SafeEvpPKeyHandle : SafeHandle
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+    internal
+#else
+    public
+#endif
+    sealed class SafeEvpPKeyHandle : SafeHandle
     {
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 

@@ -5,6 +5,7 @@
 using Internal.Cryptography;
 using System.Diagnostics;
 using BCRYPT_ECC_PARAMETER_HEADER = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER;
+using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
@@ -100,5 +101,107 @@ namespace System.Security.Cryptography
             // All other curves are new in Win10 so use generic algorithm
             return CngAlgorithm.ECDsa;
         }
+
+        /// <summary>
+        /// Map a curve name to algorithm. This enables curves that worked pre-Win10
+        /// to work with newer APIs for import and export.
+        /// </summary>
+        internal static CngAlgorithm EcdhCurveNameToAlgorithm(string name)
+        {
+            switch (name)
+            {
+                case "nistP256":
+                case "ECDH_P256":
+                    return CngAlgorithm.ECDiffieHellmanP256;
+
+                case "nistP384":
+                case "ECDH_P384":
+                    return CngAlgorithm.ECDiffieHellmanP384;
+
+                case "nistP521":
+                case "ECDH_P521":
+                    return CngAlgorithm.ECDiffieHellmanP521;
+            }
+
+            // All other curves are new in Win10 so use generic algorithm
+            return CngAlgorithm.ECDiffieHellman;
+        }
+
+        internal static CngKey Create(ECCurve curve, Func<string, CngAlgorithm> algorithmResolver)
+        {
+            System.Diagnostics.Debug.Assert(algorithmResolver != null);
+
+            curve.Validate();
+
+            CngKeyCreationParameters creationParameters = new CngKeyCreationParameters
+            {
+                ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+            };
+
+            CngAlgorithm alg;
+
+            if (curve.IsNamed)
+            {
+                if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
+
+                // Map curve name to algorithm to support pre-Win10 curves
+                alg = algorithmResolver(curve.Oid.FriendlyName);
+
+                if (CngKey.IsECNamedCurve(alg.Algorithm))
+                {
+                    creationParameters.Parameters.Add(GetPropertyFromNamedCurve(curve));
+                }
+                else
+                {
+                    if (alg == CngAlgorithm.ECDsaP256 || alg == CngAlgorithm.ECDiffieHellmanP256 ||
+                        alg == CngAlgorithm.ECDsaP384 || alg == CngAlgorithm.ECDiffieHellmanP384 ||
+                        alg == CngAlgorithm.ECDsaP521 || alg == CngAlgorithm.ECDiffieHellmanP521)
+                    {
+                        // No parameters required, the algorithm ID has everything built-in.
+                    }
+                    else
+                    {
+                        Debug.Fail(string.Format("Unknown algorithm {0}", alg.ToString()));
+                        throw new ArgumentException(SR.Cryptography_InvalidKeySize);
+                    }
+                }
+            }
+            else if (curve.IsPrime)
+            {
+                byte[] parametersBlob = ECCng.GetPrimeCurveParameterBlob(ref curve);
+
+                CngProperty prop = new CngProperty(
+                    KeyPropertyName.ECCParameters,
+                    parametersBlob,
+                    CngPropertyOptions.None);
+
+                creationParameters.Parameters.Add(prop);
+                alg = algorithmResolver(null);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+            }
+
+            try
+            {
+                return Create(alg, null, creationParameters);
+            }
+            catch (CryptographicException e)
+            {
+                Interop.NCrypt.ErrorCode errorCode = (Interop.NCrypt.ErrorCode)e.HResult;
+
+                if (errorCode == Interop.NCrypt.ErrorCode.NTE_INVALID_PARAMETER ||
+                    errorCode == Interop.NCrypt.ErrorCode.NTE_NOT_SUPPORTED)
+                {
+                    string target = curve.IsNamed ? curve.Oid.FriendlyName : curve.CurveType.ToString();
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, target), e);
+                }
+
+                throw;
+            }
+        }
+
     }
 }

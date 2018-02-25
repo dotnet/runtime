@@ -265,7 +265,7 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm { get { throw null; } }
         protected override void Dispose(bool disposing) { }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
-#if FEATURE_HASHDATA // uap and netcoreapp specific
+#if FEATURE_DSA_HASHDATA
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
 #endif

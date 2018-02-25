@@ -79,6 +79,18 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
+    <value>The keys from both parties must be the same size to generate a secret agreement.</value>
+  </data>
+  <data name="Cryptography_ArgECDHRequiresECDHKey" xml:space="preserve">
+    <value>Keys used with the ECDiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman.</value>
+  </data>
+  <data name="Cryptography_TlsRequiresLabelAndSeed" xml:space="preserve">
+    <value>The TLS key derivation function requires both the label and seed properties to be set.</value>
+  </data>
+  <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
+    <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
+  </data>
   <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
     <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
   </data>

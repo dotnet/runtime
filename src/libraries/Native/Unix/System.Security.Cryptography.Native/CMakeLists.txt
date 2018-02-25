@@ -29,6 +29,7 @@ set(NATIVECRYPTO_SOURCES
     pal_evp.cpp
     pal_evp_pkey.cpp
     pal_evp_pkey_dsa.cpp
+    pal_evp_pkey_ecdh.cpp
     pal_evp_pkey_eckey.cpp
     pal_evp_pkey_rsa.cpp
     pal_evp_cipher.cpp
