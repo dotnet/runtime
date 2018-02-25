@@ -17,6 +17,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     [Serializable]
@@ -221,16 +223,19 @@ namespace System
         //The hashcode for a double is the absolute value of the integer representation
         //of that double.
         //
-        public unsafe override int GetHashCode()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // 64-bit constants make the IL unusually large that makes the inliner to reject the method
+        public override int GetHashCode()
         {
-            double d = m_value;
-            if (d == 0)
+            var bits = Unsafe.As<double, long>(ref m_value);
+
+            // Optimized check for IsNan() || IsZero()
+            if (((bits - 1) & 0x7FFFFFFFFFFFFFFF) >= 0x7FF0000000000000)
             {
-                // Ensure that 0 and -0 have the same hash code
-                return 0;
+                // Ensure that all NaNs and both zeros have the same hash code
+                bits &= 0x7FF0000000000000;
             }
-            long value = *(long*)(&d);
-            return unchecked((int)value) ^ ((int)(value >> 32));
+
+            return unchecked((int)bits) ^ ((int)(bits >> 32));
         }
 
         public override String ToString()
