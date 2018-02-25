@@ -203,6 +203,9 @@ namespace System.IO
                 }
             }
 
+            // Need to trim out the trailing separator in the input builder
+            inputBuilder.Length = inputBuilder.Length - 1;
+
             // If we were able to expand the path, use it, otherwise use the original full path result
             ref ValueStringBuilder builderToUse = ref (success ? ref outputBuilder : ref inputBuilder);
 
