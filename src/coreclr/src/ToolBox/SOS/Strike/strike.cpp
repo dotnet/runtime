@@ -1245,12 +1245,6 @@ DECLARE_API(DumpClass)
     
     ExtOut("\n");        
 
-    DacpMethodTableTransparencyData transparency;
-    if (SUCCEEDED(transparency.Request(g_sos, methodTable)))
-    {
-        ExtOut("Transparency:        %s\n", GetTransparency(transparency));
-    }
-
     DacpMethodTableFieldData vMethodTableFields;
     if (SUCCEEDED(vMethodTableFields.Request(g_sos, methodTable)))
     {

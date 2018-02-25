@@ -3417,12 +3417,6 @@ void DumpMDInfoFromMethodDescData(DacpMethodDescData * pMethodDescData, DacpReJi
             DumpTieredNativeCodeAddressInfo(codeAddrs, cCodeAddrs);
         }
         
-        DacpMethodDescTransparencyData transparency;
-        if (SUCCEEDED(transparency.Request(g_sos, pMethodDescData->MethodDescPtr)))
-        {
-            ExtOut("Transparency: %s\n", GetTransparency(transparency));
-        }
-
         DumpAllRejitDataIfNecessary(pMethodDescData, pRevertedRejitData, cRevertedRejitData);
     }
     else
