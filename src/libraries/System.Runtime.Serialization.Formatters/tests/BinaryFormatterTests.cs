@@ -73,7 +73,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             SanityCheckBlob(obj, blobs);
 
-            // SqlException isn't deserializable from Desktop --> Core.
+            // SqlException, ReflectionTypeLoadException and LicenseException aren't deserializable from Desktop --> Core.
             // Therefore we remove the second blob which is the one from Desktop.
             if (!PlatformDetection.IsFullFramework && (obj is SqlException || obj is ReflectionTypeLoadException || obj is LicenseException))
             {
@@ -490,8 +490,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             // These types are unstable during serialization and produce different blobs.
             if (obj is WeakReference<Point> ||
-                obj is Collections.Specialized.HybridDictionary ||
-                obj is TimeZoneInfo.AdjustmentRule)
+                obj is Collections.Specialized.HybridDictionary)
             {
                 return;
             }
