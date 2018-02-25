@@ -1083,7 +1083,44 @@ GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic        intrinsic,
                                      CORINFO_SIG_INFO*     sig,
                                      bool                  mustExpand)
 {
-    return nullptr;
+    GenTree* retNode  = nullptr;
+    GenTree* op1      = nullptr;
+    GenTree* op2      = nullptr;
+    GenTree* op3      = nullptr;
+    GenTree* op4      = nullptr;
+    int      simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
+
+    assert(simdSize == 16);
+
+    switch (intrinsic)
+    {
+        case NI_SSE41_CeilingScalar:
+        case NI_SSE41_FloorScalar:
+        case NI_SSE41_RoundCurrentDirectionScalar:
+        case NI_SSE41_RoundToNearestIntegerScalar:
+        case NI_SSE41_RoundToNegativeInfinityScalar:
+        case NI_SSE41_RoundToPositiveInfinityScalar:
+        case NI_SSE41_RoundToZeroScalar:
+        {
+            assert((sig->numArgs == 1) || (sig->numArgs == 2));
+            var_types baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert((baseType == TYP_FLOAT) || (baseType == TYP_DOUBLE));
+
+            if (sig->numArgs == 2)
+            {
+                op2 = impSIMDPopStack(TYP_SIMD16);
+            }
+
+            op1     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
+            break;
+        }
+
+        default:
+            JITDUMP("Not implemented hardware intrinsic");
+            break;
+    }
+    return retNode;
 }
 
 GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic        intrinsic,
