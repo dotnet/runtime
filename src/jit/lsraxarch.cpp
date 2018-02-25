@@ -2344,6 +2344,13 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
             break;
 
+        case NI_SSE41_TestAllOnes:
+        {
+            info->internalFloatCount = 1;
+            info->setInternalCandidates(this, allSIMDRegs());
+            break;
+        }
+
 #ifdef _TARGET_X86_
         case NI_SSE42_Crc32:
         {
