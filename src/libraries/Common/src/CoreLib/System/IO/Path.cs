@@ -79,7 +79,7 @@ namespace System.IO
         /// </remarks>
         public static string GetDirectoryName(string path)
         {
-            if (PathInternal.IsEffectivelyEmpty(path))
+            if (path == null || PathInternal.IsEffectivelyEmpty(path))
                 return null;
 
             int end = GetDirectoryNameOffset(path);
