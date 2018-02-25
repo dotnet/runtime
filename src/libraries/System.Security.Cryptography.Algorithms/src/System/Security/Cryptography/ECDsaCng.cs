@@ -58,13 +58,8 @@ namespace System.Security.Cryptography
 
                 Debug.Assert(!keyHandle.IsInvalid);
 
-                _keyHandle = keyHandle;
-                _lastAlgorithm = AlgorithmName.ECDsa;
-
-                int newKeySize = CngKeyLite.GetKeyLength(keyHandle);
-
-                ForceSetKeySize(newKeySize);
-                _lastKeySize = newKeySize;
+                _key.SetHandle(keyHandle, AlgorithmName.ECDsa);
+                ForceSetKeySize(_key.KeySize);
             }
 
             private void ImportKeyBlob(byte[] ecKeyBlob, string curveName, bool includePrivateParameters)
@@ -77,13 +72,8 @@ namespace System.Security.Cryptography
 
                 Debug.Assert(!keyHandle.IsInvalid);
 
-                _keyHandle = keyHandle;
-                _lastAlgorithm = ECCng.EcdsaCurveNameToAlgorithm(curveName);
-
-                int newKeySize = CngKeyLite.GetKeyLength(keyHandle);
-
-                ForceSetKeySize(newKeySize);
-                _lastKeySize = newKeySize;
+                _key.SetHandle(keyHandle, ECCng.EcdsaCurveNameToAlgorithm(curveName));
+                ForceSetKeySize(_key.KeySize);
             }
 
             private byte[] ExportKeyBlob(bool includePrivateParameters)

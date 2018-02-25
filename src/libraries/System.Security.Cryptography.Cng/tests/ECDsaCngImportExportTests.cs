@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Security.Cryptography.EcDsa.Tests;
+using System.Security.Cryptography.Tests;
 
 namespace System.Security.Cryptography.Cng.Tests
 {

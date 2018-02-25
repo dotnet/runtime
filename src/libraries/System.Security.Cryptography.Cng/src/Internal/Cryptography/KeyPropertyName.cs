@@ -15,6 +15,7 @@ namespace Internal.Cryptography
         internal const string Algorithm = "Algorithm Name";                 // NCRYPT_ALGORITHM_PROPERTY
         internal const string AlgorithmGroup = "Algorithm Group";           // NCRYPT_ALGORITHM_GROUP_PROPERTY
         internal const string ECCCurveName = "ECCCurveName";                // NCRYPT_ECC_CURVE_NAME
+        internal const string ECCParameters = "ECCParameters";              // BCRYPT_ECC_PARAMETERS
         internal const string ExportPolicy = "Export Policy";               // NCRYPT_EXPORT_POLICY_PROPERTY
         internal const string KeyType = "Key Type";                         // NCRYPT_KEY_TYPE_PROPERTY
         internal const string KeyUsage = "Key Usage";                       // NCRYPT_KEY_USAGE_PROPERTY

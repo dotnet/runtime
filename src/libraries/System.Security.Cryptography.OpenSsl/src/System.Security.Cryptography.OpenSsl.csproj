@@ -27,9 +27,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Security\Cryptography\DSAOpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RSAOpenSsl.cs" />
-    <Compile Include="System\Security\Cryptography\SafeEvpPKeyHandle.Unix.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
     </Compile>
@@ -69,6 +69,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs</Link>
     </Compile>
@@ -99,6 +102,12 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpPkeyCtxHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpPkeyCtxHandle.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeEvpPKeyHandle.Unix.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeEvpPKeyHandle.Unix.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
       <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
     </Compile>
@@ -108,11 +117,26 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\DSAOpenSsl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDiffieHellmanDerivation.cs">
+      <Link>Common\System\Security\Cryptography\ECDiffieHellmanDerivation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\ECDiffieHellmanOpenSsl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDiffieHellmanOpenSsl.Derive.cs">
+      <Link>Common\System\Security\Cryptography\ECDiffieHellmanOpenSsl.Derive.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs">
+      <Link>Common\System\Security\Cryptography\ECDiffieHellmanOpenSslPublicKey.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs">
-      <Link>Common\System\Security\Cryptography\ECDsaOpenSsl.ImportExport.cs</Link>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECOpenSsl.cs">
+      <Link>Common\System\Security\Cryptography\ECOpenSsl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECOpenSsl.ImportExport.cs">
+      <Link>Common\System\Security\Cryptography\ECOpenSsl.ImportExport.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSAOpenSsl.cs">
       <Link>Common\System\Security\Cryptography\RSAOpenSsl.cs</Link>

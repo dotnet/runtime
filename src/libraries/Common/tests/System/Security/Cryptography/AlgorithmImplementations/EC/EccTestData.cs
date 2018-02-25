@@ -5,7 +5,7 @@
 using System;
 using Test.Cryptography;
 
-namespace System.Security.Cryptography.EcDsa.Tests
+namespace System.Security.Cryptography.Tests
 {
     // Note to contributors:
     //   Keys contained in this file should be randomly generated for the purpose of inclusion here,
@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
     // Note to readers:
     //   The keys contained in this file should all be treated as compromised. That means that you
     //   absolutely SHOULD NOT use these keys on anything that you actually want to be protected.
-    internal static class ECDsaTestData
+    internal static class EccTestData
     {
         internal static readonly byte[] s_hashSha512 =
             ("a232cec7be26319e53db0d48470232d37793b06b99e8ed82fac1996b3d1596449087769927d64af657cce62d853c4cf7ff4c"
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         internal static ECParameters GetNistP256ExplicitTestData()
         {
-            // explicit values for s_ECDsa256Key (nistP256)
+            // explicit values for s_Ecc256Key (nistP256)
             ECParameters p = new ECParameters();
             p.Q = new ECPoint
             {
