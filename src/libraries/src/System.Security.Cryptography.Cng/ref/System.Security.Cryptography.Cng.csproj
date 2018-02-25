@@ -4,7 +4,10 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetGroup)' != 'netfx' AND '$(TargetGroup)' != 'net462'">$(DefineConstants);FEATURE_ECPARAMETERS</DefineConstants>
     <ProjectGuid>{9FD12550-3A7C-49D3-9A1E-C4B7410989DD}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargeGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_HASHDATA</DefineConstants>
+    <!-- FEATURE_DSA_HASHDATA is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_DSA_HASHDATA</DefineConstants>
+    <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap' Or '$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</IsPartialFacadeAssembly>
     <!-- We must pin the netstandard2.0 version to match what was shipped in netcoreapp2.0
          If we decided to add more Apis to that version of the library we need to also start
@@ -26,6 +29,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cng.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard' AND '$(TargetGroup)' != 'netstandard1.3' AND '$(TargetGroup)' != 'netstandard1.4'">
+    <Compile Include="System.Security.Cryptography.Cng.ECDiffieHellman.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />

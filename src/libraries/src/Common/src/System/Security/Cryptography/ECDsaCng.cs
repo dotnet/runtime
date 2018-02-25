@@ -89,42 +89,6 @@ namespace System.Security.Cryptography
                     };
                 }
             }
-
-            /// <summary>
-            /// Is the curve named, or once of the special nist curves
-            /// </summary>
-            internal static bool IsECNamedCurve(string algorithm)
-            {
-                return (algorithm == AlgorithmName.ECDH ||
-                    algorithm == AlgorithmName.ECDsa);
-            }
-
-            /// <summary>
-            /// Maps algorithm to curve name accounting for the special nist curves
-            /// </summary>
-            internal static string SpecialNistAlgorithmToCurveName(string algorithm)
-            {
-                if (algorithm == AlgorithmName.ECDHP256 ||
-                    algorithm == AlgorithmName.ECDsaP256)
-                {
-                    return "nistP256";
-                }
-
-                if (algorithm == AlgorithmName.ECDHP384 ||
-                    algorithm == AlgorithmName.ECDsaP384)
-                {
-                    return "nistP384";
-                }
-
-                if (algorithm == AlgorithmName.ECDHP521 ||
-                    algorithm == AlgorithmName.ECDsaP521)
-                {
-                    return "nistP521";
-                }
-
-                Debug.Fail(string.Format("Unknown curve {0}", algorithm));
-                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, algorithm));
-            }
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

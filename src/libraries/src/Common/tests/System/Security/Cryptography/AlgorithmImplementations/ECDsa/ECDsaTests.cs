@@ -35,8 +35,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[0], 0, 0, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new byte[10], 0, 10, new HashAlgorithmName("")));
 
-            Assert.Throws<CryptographicException>(() => ecdsa.SignData(new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
-            Assert.Throws<CryptographicException>(() => ecdsa.SignData(new byte[0], 0, 0, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new byte[0], 0, 0, new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }
 
         [Theory, MemberData(nameof(RealImplementations))]
@@ -59,8 +59,8 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], new byte[0], new HashAlgorithmName("")));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new byte[10], 0, 10, new byte[0], new HashAlgorithmName("")));
 
-            Assert.Throws<CryptographicException>(() => ecdsa.VerifyData(new byte[0], new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
-            Assert.Throws<CryptographicException>(() => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new byte[0], new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new byte[0], 0, 0, new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }
 
         [Theory, MemberData(nameof(RealImplementations))]
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((Stream)null, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(), default(HashAlgorithmName)));
-            Assert.Throws<CryptographicException>(() => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.SignData(new MemoryStream(), new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }
 
         [Theory, MemberData(nameof(RealImplementations))]
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             AssertExtensions.Throws<ArgumentNullException>("signature", () => ecdsa.VerifyData(new MemoryStream(), null, default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], default(HashAlgorithmName)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName("")));
-            Assert.Throws<CryptographicException>(() => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsa.VerifyData(new MemoryStream(), new byte[0], new HashAlgorithmName(Guid.NewGuid().ToString("N"))));
         }
     }
 

@@ -4,7 +4,7 @@
 
 using Xunit;
 
-namespace System.Security.Cryptography.ECDiffieHellman.Tests
+namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     public class ECDiffieHellmanPublicKeyTests
     {

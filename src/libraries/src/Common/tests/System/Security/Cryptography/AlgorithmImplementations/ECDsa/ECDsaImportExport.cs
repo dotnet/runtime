@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
@@ -13,7 +14,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         [Fact]
         public static void DiminishedCoordsRoundtrip()
         {
-            ECParameters toImport = ECDsaTestData.GetNistP521DiminishedCoordsParameters();
+            ECParameters toImport = EccTestData.GetNistP521DiminishedCoordsParameters();
             ECParameters privateParams;
             ECParameters publicParams;
 
@@ -28,6 +29,30 @@ namespace System.Security.Cryptography.EcDsa.Tests
             ComparePrivateKey(toImport, privateParams);
             ComparePublicKey(toImport.Q, publicParams.Q);
             Assert.Null(publicParams.D);
+        }
+        
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows/* "parameters.Curve.Hash doesn't round trip on Unix." */)]
+        public static void ImportExplicitWithHashButNoSeed()
+        {
+            if (!ECDsaFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
+
+            using (ECDsa ec = ECDsaFactory.Create())
+            {
+                ECCurve curve = EccTestData.GetNistP256ExplicitCurve();
+                Assert.NotNull(curve.Hash);
+                ec.GenerateKey(curve);
+
+                ECParameters parameters = ec.ExportExplicitParameters(true);
+                Assert.NotNull(parameters.Curve.Hash);
+                parameters.Curve.Seed = null;
+
+                ec.ImportParameters(parameters);
+                ec.Exercise();
+            }
         }
 
         [Theory]
@@ -166,7 +191,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             {
                 using (ECDsa ec = ECDsaFactory.Create())
                 {
-                    ECParameters p = ECDsaTestData.GetNistP256ExplicitTestData();
+                    ECParameters p = EccTestData.GetNistP256ExplicitTestData();
                     Assert.True(p.Curve.IsPrime);
                     ec.ImportParameters(p);
 
@@ -214,7 +239,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             {
                 using(ECDsa ec = ECDsaFactory.Create())
                 {
-                    ECParameters p = ECDsaTestData.GetNistP224KeyTestData();
+                    ECParameters p = EccTestData.GetNistP224KeyTestData();
                     Assert.True(p.Curve.IsNamed);
                     var q = p.Q;
                     var c = p.Curve;
@@ -242,7 +267,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             using (ECDsa ecdsa = ECDsaFactory.Create())
             {
-                ECParameters param = ECDsaTestData.GetNistP256ExplicitTestData();
+                ECParameters param = EccTestData.GetNistP256ExplicitTestData();
                 param.Validate();
                 ecdsa.ImportParameters(param);
                 Assert.True(param.Curve.IsExplicit);
@@ -260,13 +285,13 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             using (ECDsa ec = ECDsaFactory.Create())
             {
-                ECParameters parameters = ECDsaTestData.GetNistP224KeyTestData();
+                ECParameters parameters = EccTestData.GetNistP224KeyTestData();
                 ec.ImportParameters(parameters);
                 VerifyNamedCurve(parameters, ec, 224, true);
             }
         }
 
-        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [Fact]
         public static void ExportIncludingPrivateOnPublicOnlyKey()
         {
             ECParameters iutParameters = new ECParameters
@@ -286,9 +311,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 iut.ImportParameters(iutParameters);
                 cavs.ImportParameters(iut.ExportParameters(false));
 
-                // Linux throws an Interop.Crypto.OpenSslCryptographicException : CryptographicException
-                Assert.ThrowsAny<CryptographicException>(() => cavs.ExportExplicitParameters(true));
                 Assert.ThrowsAny<CryptographicException>(() => cavs.ExportParameters(true));
+
+                if (ECExplicitCurvesSupported)
+                {
+                    Assert.ThrowsAny<CryptographicException>(() => cavs.ExportExplicitParameters(true));
+                }
             }
         }
 

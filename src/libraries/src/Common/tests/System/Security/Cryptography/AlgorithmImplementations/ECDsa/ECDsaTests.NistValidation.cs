@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using Xunit;
-
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
+using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
@@ -49,7 +45,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Validate(
                 parameters,
-                ECDsaTestData.GetNistP256ExplicitCurve(),
+                EccTestData.GetNistP256ExplicitCurve(),
                 msg,
                 signature,
                 HashAlgorithmName.SHA256);
@@ -85,7 +81,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Validate(
                 parameters,
-                ECDsaTestData.GetNistP256ExplicitCurve(),
+                EccTestData.GetNistP256ExplicitCurve(),
                 msg,
                 signature,
                 HashAlgorithmName.SHA384);
@@ -124,7 +120,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Validate(
                 parameters,
-                ECDsaTestData.GetNistP384ExplicitCurve(),
+                EccTestData.GetNistP384ExplicitCurve(),
                 msg,
                 signature,
                 HashAlgorithmName.SHA256);
@@ -163,7 +159,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Validate(
                 parameters,
-                ECDsaTestData.GetNistP384ExplicitCurve(),
+                EccTestData.GetNistP384ExplicitCurve(),
                 msg,
                 signature,
                 HashAlgorithmName.SHA512);
@@ -204,7 +200,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Validate(
                 parameters,
-                ECDsaTestData.GetNistP521ExplicitCurve(),
+                EccTestData.GetNistP521ExplicitCurve(),
                 msg,
                 signature,
                 HashAlgorithmName.SHA384);
@@ -245,7 +241,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             Validate(
                 parameters,
-                ECDsaTestData.GetNistP521ExplicitCurve(),
+                EccTestData.GetNistP521ExplicitCurve(),
                 msg,
                 signature,
                 HashAlgorithmName.SHA512);

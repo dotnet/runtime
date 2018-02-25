@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -31,7 +32,8 @@ namespace System.Security.Cryptography
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
-            SetKey(key);
+            _key = new ECOpenSsl(key);
+            KeySizeValue = _key.KeySize;
         }
 
         /// <summary>
@@ -50,7 +52,8 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
             SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
-            SetKey(ecKeyHandle);
+            _key = new ECOpenSsl(ecKeyHandle);
+            KeySizeValue = _key.KeySize;
         }
 
         /// <summary>
