@@ -658,7 +658,6 @@ associated with it. For example, this output from K:
         Module:       00007ffff7f6b938
         IsJitted:     yes
         CodeAddr:     00007ffff04976c0
-        Transparency: Critical
 
 We have taken a return address into Mainy.Main, and discovered information 
 about that method. You could run U, DumpMT, DumpClass, DumpMD, or 
@@ -770,7 +769,6 @@ Sample output:
 	Module: 001e2fd8
 	IsJitted: yes
 	CodeAddr: 033bbca0
-	Transparency: Critical
 
 	EHHandler 0: TYPED catch(System.IO.FileNotFoundException) 
 	Clause: [033bbd2b, 033bbd3c] [8b, 9c]

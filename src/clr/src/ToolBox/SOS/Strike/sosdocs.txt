@@ -917,7 +917,6 @@ associated with it. For example, this output from K:
 	Module:       001caa38
 	IsJitted:     yes
 	CodeAddr:     03ef00b8
-	Transparency: Critical
 	Source file:  c:\Code\prj.mini\exc.cs @ 39
 
 We have taken a return address into Mainy.Main, and discovered information 
@@ -1031,7 +1030,6 @@ Sample output:
 	Module: 001e2fd8
 	IsJitted: yes
 	CodeAddr: 033bbca0
-	Transparency: Critical
 
 	EHHandler 0: TYPED catch(System.IO.FileNotFoundException) 
 	Clause: [033bbd2b, 033bbd3c] [8b, 9c]
