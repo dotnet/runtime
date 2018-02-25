@@ -130,6 +130,19 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Returns true if the path is a device UNC (\\?\UNC\, \\.\UNC\)
+        /// </summary>
+        internal static bool IsDeviceUNC(ReadOnlySpan<char> path)
+        {
+            return path.Length >= UncExtendedPrefixLength
+                && IsDevice(path)
+                && IsDirectorySeparator(path[7])
+                && path[4] == 'U'
+                && path[5] == 'N'
+                && path[6] == 'C';
+        }
+
+        /// <summary>
         /// Returns true if the path uses the canonical form of extended syntax ("\\?\" or "\??\"). If the
         /// path matches exactly (cannot use alternate directory separators) Windows will skip normalization
         /// and path length checks.
@@ -178,12 +191,12 @@ namespace System.IO
             int volumeSeparatorLength = 2;  // Length to the colon "C:"
             int uncRootLength = 2;          // Length to the start of the server name "\\"
 
-            bool extendedSyntax = StartsWithOrdinal(path, ExtendedPathPrefix);
-            bool extendedUncSyntax = StartsWithOrdinal(path, UncExtendedPathPrefix);
-            if (extendedSyntax)
+            bool deviceSyntax = IsDevice(path);
+            bool deviceUnc = deviceSyntax && IsDeviceUNC(path);
+            if (deviceSyntax)
             {
                 // Shift the position we look for the root from to account for the extended prefix
-                if (extendedUncSyntax)
+                if (deviceUnc)
                 {
                     // "\\" -> "\\?\UNC\"
                     uncRootLength = UncExtendedPathPrefix.Length;
@@ -195,12 +208,12 @@ namespace System.IO
                 }
             }
 
-            if ((!extendedSyntax || extendedUncSyntax) && pathLength > 0 && IsDirectorySeparator(path[0]))
+            if ((!deviceSyntax || deviceUnc) && pathLength > 0 && IsDirectorySeparator(path[0]))
             {
                 // UNC or simple rooted path (e.g. "\foo", NOT "\\?\C:\foo")
 
                 i = 1; //  Drive rooted (\foo) is one character
-                if (extendedUncSyntax || (pathLength > 1 && IsDirectorySeparator(path[1])))
+                if (deviceUnc || (pathLength > 1 && IsDirectorySeparator(path[1])))
                 {
                     // UNC (\\?\UNC\ or \\), scan past the next two directory separators at most
                     // (e.g. to \\?\UNC\Server\Share or \\Server\Share\)
