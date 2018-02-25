@@ -1878,38 +1878,35 @@ namespace System.Reflection
         // the only method that adds values to the Dictionary. For more details on 
         // Dictionary versus Hashtable thread safety:
         // See code:Dictionary#DictionaryVersusHashtableThreadSafety
-        private static Dictionary<RuntimeType, RuntimeType> s_pca;
-        private static int s_pcasCount;
+        private static readonly Dictionary<RuntimeType, RuntimeType> s_pca = CreatePseudoCustomAttributeDictionary();
         #endregion
 
         #region Static Constructor
-        static PseudoCustomAttribute()
+        static Dictionary<RuntimeType, RuntimeType> CreatePseudoCustomAttributeDictionary()
         {
-            RuntimeType[] pcas = new RuntimeType[]
+            Type[] pcas = new Type[]
             {
-                // See //depot/DevDiv/private/Main/ndp/clr/src/MD/Compiler/CustAttr.cpp
-                typeof(FieldOffsetAttribute) as RuntimeType, // field
-                typeof(SerializableAttribute) as RuntimeType, // class, struct, enum, delegate
-                typeof(MarshalAsAttribute) as RuntimeType, // parameter, field, return-value
-                typeof(ComImportAttribute) as RuntimeType, // class, interface 
-                typeof(NonSerializedAttribute) as RuntimeType, // field, inherited
-                typeof(InAttribute) as RuntimeType, // parameter
-                typeof(OutAttribute) as RuntimeType, // parameter
-                typeof(OptionalAttribute) as RuntimeType, // parameter
-                typeof(DllImportAttribute) as RuntimeType, // method
-                typeof(PreserveSigAttribute) as RuntimeType, // method
-                typeof(TypeForwardedToAttribute) as RuntimeType, // assembly
+                // See https://github.com/dotnet/coreclr/blob/master/src/md/compiler/custattr_emit.cpp
+                typeof(FieldOffsetAttribute), // field
+                typeof(SerializableAttribute), // class, struct, enum, delegate
+                typeof(MarshalAsAttribute), // parameter, field, return-value
+                typeof(ComImportAttribute), // class, interface 
+                typeof(NonSerializedAttribute), // field, inherited
+                typeof(InAttribute), // parameter
+                typeof(OutAttribute), // parameter
+                typeof(OptionalAttribute), // parameter
+                typeof(DllImportAttribute), // method
+                typeof(PreserveSigAttribute), // method
+                typeof(TypeForwardedToAttribute), // assembly
             };
 
-            s_pcasCount = pcas.Length;
-            Dictionary<RuntimeType, RuntimeType> temp_pca = new Dictionary<RuntimeType, RuntimeType>(s_pcasCount);
-
-            for (int i = 0; i < s_pcasCount; i++)
+            Dictionary<RuntimeType, RuntimeType> dict = new Dictionary<RuntimeType, RuntimeType>(pcas.Length);
+            foreach (RuntimeType runtimeType in pcas)
             {
-                VerifyPseudoCustomAttribute(pcas[i]);
-                temp_pca[pcas[i]] = pcas[i];
+                VerifyPseudoCustomAttribute(runtimeType);
+                dict[runtimeType] = runtimeType;
             }
-            s_pca = temp_pca;
+            return dict;
         }
 
         [Conditional("DEBUG")]
@@ -1935,23 +1932,22 @@ namespace System.Reflection
 
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))
-                return Array.Empty<Attribute>();
+                return null;
 
-            List<Attribute> pcas = new List<Attribute>();
+            Attribute[] pcas = new Attribute[all ? 2 : 1];
 
             if (all || caType == (RuntimeType)typeof(SerializableAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Serializable) != 0)
-                    pcas.Add(new SerializableAttribute());
+                    pcas[count++] = new SerializableAttribute();
             }
             if (all || caType == (RuntimeType)typeof(ComImportAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Import) != 0)
-                    pcas.Add(new ComImportAttribute());
+                    pcas[count++] = new ComImportAttribute();
             }
 
-            count = pcas.Count;
-            return pcas.ToArray();
+            return pcas;
         }
         internal static bool IsDefined(RuntimeType type, RuntimeType caType)
         {
@@ -1982,9 +1978,9 @@ namespace System.Reflection
 
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))
-                return Array.Empty<Attribute>();
+                return null;
 
-            List<Attribute> pcas = new List<Attribute>();
+            Attribute[] pcas = new Attribute[all ? 2 : 1];
             Attribute pca;
 
             if (all || caType == (RuntimeType)typeof(DllImportAttribute))
@@ -1995,11 +1991,10 @@ namespace System.Reflection
             if (all || caType == (RuntimeType)typeof(PreserveSigAttribute))
             {
                 if ((method.GetMethodImplementationFlags() & MethodImplAttributes.PreserveSig) != 0)
-                    pcas.Add(new PreserveSigAttribute());
+                    pcas[count++] = new PreserveSigAttribute();
             }
 
-            count = pcas.Count;
-            return pcas.ToArray();
+            return pcas;
         }
         internal static bool IsDefined(RuntimeMethodInfo method, RuntimeType caType)
         {
@@ -2032,7 +2027,7 @@ namespace System.Reflection
             if (!all && !s_pca.ContainsKey(caType))
                 return null;
 
-            Attribute[] pcas = new Attribute[s_pcasCount];
+            Attribute[] pcas = new Attribute[all ? 4 : 1];
             Attribute pca;
 
             if (all || caType == (RuntimeType)typeof(InAttribute))
@@ -2062,7 +2057,6 @@ namespace System.Reflection
             bool all = caType == (RuntimeType)typeof(object) || caType == (RuntimeType)typeof(Attribute);
             if (!all && !s_pca.ContainsKey(caType))
                 return false;
-
 
             if (all || caType == (RuntimeType)typeof(InAttribute))
             {
@@ -2115,7 +2109,7 @@ namespace System.Reflection
             if (!all && !s_pca.ContainsKey(caType))
                 return null;
 
-            Attribute[] pcas = new Attribute[s_pcasCount];
+            Attribute[] pcas = new Attribute[all ? 3 : 1];
             Attribute pca;
 
             if (all || caType == (RuntimeType)typeof(MarshalAsAttribute))
