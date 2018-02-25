@@ -275,7 +275,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 45
+#define MINOR_VERSION 46
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -291,7 +291,8 @@ typedef enum {
 	CMD_SET_TYPE = 23,
 	CMD_SET_MODULE = 24,
 	CMD_SET_FIELD = 25,
-	CMD_SET_EVENT = 64
+	CMD_SET_EVENT = 64,
+	CMD_SET_POINTER = 65
 } CommandSet;
 
 typedef enum {
@@ -496,7 +497,8 @@ typedef enum {
 	CMD_TYPE_GET_INTERFACES = 16,
 	CMD_TYPE_GET_INTERFACE_MAP = 17,
 	CMD_TYPE_IS_INITIALIZED = 18,
-	CMD_TYPE_CREATE_INSTANCE = 19
+	CMD_TYPE_CREATE_INSTANCE = 19,
+	CMD_TYPE_GET_VALUE_SIZE = 20
 } CmdType;
 
 typedef enum {
@@ -518,6 +520,10 @@ typedef enum {
 	CMD_STRING_REF_GET_LENGTH = 2,
 	CMD_STRING_REF_GET_CHARS = 3
 } CmdString;
+
+typedef enum {
+	CMD_POINTER_GET_VALUE = 1
+} CmdPointer;
 
 typedef enum {
 	CMD_OBJECT_REF_GET_TYPE = 1,
@@ -6333,6 +6339,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		
 		buffer_add_byte (buf, t->type);
 		buffer_add_long (buf, val);
+		if (CHECK_PROTOCOL_VERSION(2, 46))
+			buffer_add_typeid (buf, domain, mono_class_from_mono_type (t));
 		break;
 	}
 	handle_ref:
@@ -9003,6 +9011,13 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 		buffer_add_objid (buf, obj);
 		break;
 	}
+	case CMD_TYPE_GET_VALUE_SIZE: {
+		int32_t value_size;
+
+		value_size = mono_class_value_size (klass, NULL);
+		buffer_add_int (buf, value_size);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -9999,6 +10014,34 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 }
 
 static ErrorCode
+pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
+{
+	ErrorCode err;
+	gint64 addr;
+	MonoClass* klass;
+	MonoDomain* domain = NULL;
+
+	switch (command) {
+	case CMD_POINTER_GET_VALUE:
+		addr = decode_long (p, &p, end);
+		klass = decode_typeid (p, &p, end, &domain, &err);
+		if (err != ERR_NONE)
+			return err;
+
+		if (klass->byval_arg.type != MONO_TYPE_PTR)
+			return ERR_INVALID_ARGUMENT;
+
+		buffer_add_value (buf, &klass->element_class->byval_arg, (gpointer)addr, domain);
+
+		break;
+	default:
+		return ERR_NOT_IMPLEMENTED;
+	}
+
+	return ERR_NONE;
+}
+
+static ErrorCode
 object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
 	ERROR_DECL (error);
@@ -10199,6 +10242,8 @@ command_set_to_string (CommandSet command_set)
 		return "FIELD";
 	case CMD_SET_EVENT:
 		return "EVENT";
+	case CMD_SET_POINTER:
+		return "POINTER";
 	default:
 		return "";
 	}
@@ -10295,7 +10340,9 @@ static const char* type_cmds_str[] = {
 	"GET_METHODS_BY_NAME_FLAGS",
 	"GET_INTERFACES",
 	"GET_INTERFACE_MAP",
-	"IS_INITIALIZED"
+	"IS_INITIALIZED",
+	"CREATE_INSTANCE",
+	"GET_VALUE_SIZE"
 };
 
 static const char* stack_frame_cmds_str[] = {
@@ -10316,6 +10363,10 @@ static const char* string_cmds_str[] = {
 	"GET_VALUE",
 	"GET_LENGTH",
 	"GET_CHARS"
+};
+
+static const char* pointer_cmds_str[] = {
+	"GET_VALUE"
 };
 
 static const char* object_cmds_str[] = {
@@ -10390,6 +10441,10 @@ cmd_to_string (CommandSet set, int command)
 	case CMD_SET_EVENT:
 		cmds = event_cmds_str;
 		cmds_len = G_N_ELEMENTS (event_cmds_str);
+		break;
+	case CMD_SET_POINTER:
+		cmds = pointer_cmds_str;
+		cmds_len = G_N_ELEMENTS (pointer_cmds_str);
 		break;
 	default:
 		return NULL;
@@ -10567,6 +10622,9 @@ debugger_thread (void *arg)
 			break;
 		case CMD_SET_STRING_REF:
 			err = string_commands (command, p, end, &buf);
+			break;
+		case CMD_SET_POINTER:
+			err = pointer_commands (command, p, end, &buf);
 			break;
 		case CMD_SET_OBJECT_REF:
 			err = object_commands (command, p, end, &buf);
