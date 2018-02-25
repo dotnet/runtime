@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -446,6 +447,95 @@ namespace System.Net.Http.Functional.Tests
                             await lotsOfDataSent;
                             Assert.Equal("ghijklmnopqrstuvwxyz" + bigString, Encoding.ASCII.GetString(ms.ToArray()));
                         }
+                    });
+                }
+            });
+        }
+    }
+
+    public sealed class SocketsHttpHandler_Connect_Test : HttpClientTestBase
+    {
+        protected override bool UseSocketsHttpHandler => true;
+
+        [Fact]
+        public async Task ConnectMethod_Success()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url);
+                    request.Headers.Host = "foo.com:345";
+
+                    // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        // Verify that Host header exist and has same value and URI authority.
+                        List<string> lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                        string authority = lines[0].Split()[1];
+                        foreach (string line in lines)
+                        {
+                            if (line.StartsWith("Host:",StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                Assert.Equal(line, "Host: foo.com:345");
+                                break;
+                            }
+                        }
+
+                        Task serverTask = connection.SendResponseAsync(HttpStatusCode.OK);
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask).ConfigureAwait(false);
+
+                        using (Stream clientStream = await (await responseTask).Content.ReadAsStreamAsync())
+                        {
+                            Assert.True(clientStream.CanWrite);
+                            Assert.True(clientStream.CanRead);
+                            Assert.False(clientStream.CanSeek);
+
+                            TextReader clientReader = new StreamReader(clientStream);
+                            TextWriter clientWriter = new StreamWriter(clientStream) { AutoFlush = true };
+                            TextReader serverReader = connection.Reader;
+                            TextWriter serverWriter = connection.Writer;
+
+                            const string helloServer = "hello server";
+                            const string helloClient = "hello client";
+                            const string goodbyeServer = "goodbye server";
+                            const string goodbyeClient = "goodbye client";
+
+                            clientWriter.WriteLine(helloServer);
+                            Assert.Equal(helloServer, serverReader.ReadLine());
+                            serverWriter.WriteLine(helloClient);
+                            Assert.Equal(helloClient, clientReader.ReadLine());
+                            clientWriter.WriteLine(goodbyeServer);
+                            Assert.Equal(goodbyeServer, serverReader.ReadLine());
+                            serverWriter.WriteLine(goodbyeClient);
+                            Assert.Equal(goodbyeClient, clientReader.ReadLine());
+                        }
+                    });
+                }
+            });
+        }
+
+        [Fact]
+        public async Task ConnectMethod_Fails()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpRequestMessage request = new HttpRequestMessage(new HttpMethod("CONNECT"), url);
+                    request.Headers.Host = "foo.com:345";
+                    // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
+                    Task<HttpResponseMessage> responseTask = client.SendAsync(request,  HttpCompletionOption.ResponseHeadersRead);
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.Forbidden, content: "error");
+
+                        await TestHelper.WhenAllCompletedOrAnyFailed(responseTask, serverTask);
+                        HttpResponseMessage response = await responseTask;
+
+                        Assert.True(response.StatusCode ==  HttpStatusCode.Forbidden);
                     });
                 }
             });

@@ -243,9 +243,6 @@ namespace System.Net.Http
             }
         }
 
-        // TODO (#23136):
-        // CONNECT is not yet supported, so this code will not succeed currently.
-
         private async ValueTask<Stream> EstablishProxyTunnel(CancellationToken cancellationToken)
         {
             // Send a CONNECT request to the proxy server to establish a tunnel.
