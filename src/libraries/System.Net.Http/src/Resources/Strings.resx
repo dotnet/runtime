@@ -399,10 +399,34 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
-  <data name="net_http_proxy_tunnel_failed" xml:space="preserve">
-    <value>Unable to establish a tunnel though proxy '{0}'.  The proxy returned status code {1}.</value>
-  </data>
   <data name="net_http_request_no_host" xml:space="preserve">
     <value>CONNECT request must contain Host header.</value>
+  </data>
+  <data name="net_MethodNotImplementedException" xml:space="preserve">
+    <value>This method is not implemented by this class.</value>
+  </data>
+  <data name="event_OperationReturnedSomething" xml:space="preserve">
+    <value>{0} returned {1}.</value>
+  </data>
+  <data name="net_log_operation_failed_with_error" xml:space="preserve">
+    <value>{0} failed with error {1}.</value>
+  </data>
+  <data name="net_completed_result" xml:space="preserve">
+    <value>This operation cannot be performed on a completed asynchronous result object.</value>
+  </data>
+  <data name="net_invalid_enum" xml:space="preserve">
+    <value>The specified value is not valid in the '{0}' enumeration.</value>
+  </data>
+  <data name="net_auth_message_not_encrypted" xml:space="preserve">
+    <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
+  </data>
+  <data name="net_securitypackagesupport" xml:space="preserve">
+    <value>The requested security package is not supported.</value>
+  </data>
+  <data name="SSPIInvalidHandleType" xml:space="preserve">
+    <value>'{0}' is not a supported handle type.</value>
+  </data>
+  <data name="net_http_authconnectionfailure" xml:space="preserve">
+    <value>Authentication failed because the connection could not be reused.</value>
   </data>
 </root>

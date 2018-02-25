@@ -28,6 +28,8 @@ namespace System.Net.Http
         private readonly int _maxConnectionsPerServer;
         // Temporary
         private readonly HttpConnectionSettings _settings;
+        private readonly IWebProxy _proxy;
+        private readonly ICredentials _proxyCredentials;
 
         /// <summary>
         /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
@@ -46,6 +48,16 @@ namespace System.Net.Http
             _maxConnectionsPerServer = settings._maxConnectionsPerServer;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
             // Start out with the timer not running, since we have no pools.
+
+            // Figure out proxy stuff.
+            if (settings._useProxy)
+            {
+                _proxy = settings._proxy ?? SystemProxyInfo.ConstructSystemProxy();
+                if (_proxy != null)
+                {
+                    _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
+                }
+            }
 
             // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
             bool restoreFlow = false;
@@ -68,6 +80,7 @@ namespace System.Net.Http
         }
 
         public HttpConnectionSettings Settings => _settings;
+        public ICredentials ProxyCredentials => _proxyCredentials;
 
         private static string ParseHostNameFromHeader(string hostHeader)
         {
@@ -98,9 +111,15 @@ namespace System.Net.Http
             return hostHeader;
         }
 
-        private static HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri)
+        private static HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri proxyUri, bool isProxyConnect)
         {
             Uri uri = request.RequestUri;
+
+            if (isProxyConnect)
+            {
+                Debug.Assert(uri == proxyUri);
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri);
+            }
 
             string sslHostName = null;
             if (HttpUtilities.IsSupportedSecureScheme(uri.Scheme))
@@ -125,28 +144,32 @@ namespace System.Net.Http
                     // Standard HTTP proxy usage for non-secure requests
                     // The destination host and port are ignored here, since these connections
                     // will be shared across any requests that use the proxy.
-                    return new HttpConnectionKey(null, 0, null, proxyUri);
+                    return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri);
                 }
                 else
                 {
                     // Tunnel SSL connection through proxy to the destination.
-                    return new HttpConnectionKey(uri.IdnHost, uri.Port, sslHostName, proxyUri);
+                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri);
                 }
+            }
+            else if (sslHostName != null)
+            {
+                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null);
             }
             else
             {
-                return new HttpConnectionKey(uri.IdnHost, uri.Port, sslHostName, null);
+                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null);
             }
         }
 
-        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri proxyUri, bool doNtConnectionAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
-            HttpConnectionKey key = GetConnectionKey(request, proxyUri);
+            HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
             HttpConnectionPool pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
                 if (_pools.TryAdd(key, pool))
                 {
                     // We need to ensure the cleanup timer is running if it isn't
@@ -163,7 +186,42 @@ namespace System.Net.Http
                 }
             }
 
-            return pool.SendAsync(request, cancellationToken);
+            return pool.SendAsync(request, doNtConnectionAuth, cancellationToken);
+        }
+
+        public Task<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)
+        {
+            return SendAsyncCore(request, proxyUri, false, true, cancellationToken);
+        }
+
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            if (_proxy == null)
+            {
+                return SendAsyncCore(request, null, doRequestAuth, false, cancellationToken);
+            }
+
+            // Do proxy lookup.
+            Uri proxyUri = null;
+            try
+            {
+                if (!_proxy.IsBypassed(request.RequestUri))
+                {
+                    proxyUri = _proxy.GetProxy(request.RequestUri);
+                }
+            }
+            catch (Exception)
+            {
+                // Eat any exception from the IWebProxy and just treat it as no proxy.
+                // This matches the behavior of other handlers.
+            }
+
+            if (proxyUri != null && proxyUri.Scheme != UriScheme.Http)
+            {
+                throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
+            }
+
+            return SendAsyncCore(request, proxyUri, doRequestAuth, false, cancellationToken);
         }
 
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
@@ -173,6 +231,11 @@ namespace System.Net.Http
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();
+            }
+
+            if (_proxy is IDisposable obj)
+            {
+                obj.Dispose();
             }
         }
 
@@ -215,13 +278,15 @@ namespace System.Net.Http
 
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
         {
+            public readonly HttpConnectionKind Kind;
             public readonly string Host;
             public readonly int Port;
             public readonly string SslHostName;     // null if not SSL
             public readonly Uri ProxyUri;
 
-            public HttpConnectionKey(string host, int port, string sslHostName, Uri proxyUri)
+            public HttpConnectionKey(HttpConnectionKind kind, string host, int port, string sslHostName, Uri proxyUri)
             {
+                Kind = kind;
                 Host = host;
                 Port = port;
                 SslHostName = sslHostName;
@@ -231,8 +296,8 @@ namespace System.Net.Http
             // In the common case, SslHostName (when present) is equal to Host.  If so, don't include in hash.
             public override int GetHashCode() =>
                 (SslHostName == Host ?
-                    HashCode.Combine(Host, Port, ProxyUri) :
-                    HashCode.Combine(Host, Port, SslHostName, ProxyUri));
+                    HashCode.Combine(Kind, Host, Port, ProxyUri) :
+                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri));
 
             public override bool Equals(object obj) =>
                 obj != null &&
@@ -240,6 +305,7 @@ namespace System.Net.Http
                 Equals((HttpConnectionKey)obj);
 
             public bool Equals(HttpConnectionKey other) =>
+                Kind == other.Kind &&
                 Host == other.Host &&
                 Port == other.Port &&
                 ProxyUri == other.ProxyUri &&
