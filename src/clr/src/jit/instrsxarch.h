@@ -416,16 +416,28 @@ INST3( pmaxsd,       "pmaxsd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( pmaxuw,       "pmaxuw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3E))   // packed maximum 16-bit unsigned integers
 INST3( pmaxud,       "pmaxud"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x3F))   // packed maximum 32-bit unsigned integers
 INST3( pmovsxbw,     "pmovsxbw"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x20))   // Packed sign extend byte to short
+INST3( pmovsxbd,     "pmovsxbd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x21))   // Packed sign extend byte to int
+INST3( pmovsxbq,     "pmovsxbq"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x22))   // Packed sign extend byte to long
 INST3( pmovsxwd,     "pmovsxwd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x23))   // Packed sign extend short to int
+INST3( pmovsxwq,     "pmovsxwq"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x24))   // Packed sign extend short to long
 INST3( pmovsxdq,     "pmovsxdq"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x25))   // Packed sign extend int to long
+INST3( pmovzxbw,     "pmovzxbw"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x30))   // Packed zero extend byte to short
+INST3( pmovzxbd,     "pmovzxbd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x31))   // Packed zero extend byte to intg
+INST3( pmovzxbq,     "pmovzxbq"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x32))   // Packed zero extend byte to lon
+INST3( pmovzxwd,     "pmovzxwd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x33))   // Packed zero extend short to int
+INST3( pmovzxwq,     "pmovzxwq"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x34))   // Packed zero extend short to long
+INST3( pmovzxdq,     "pmovzxdq"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x35))   // Packed zero extend int to long
 INST3( packusdw,     "packusdw"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2B))   // Pack (narrow) int to unsigned short with saturation
 INST3( roundps,      "roundps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x08))   // Round packed single precision floating-point values
 INST3( roundss,      "roundss"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0A))   // Round scalar single precision floating-point values
 INST3( roundpd,      "roundpd"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x09))   // Round packed double precision floating-point values
 INST3( roundsd,      "roundsd"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0B))   // Round scalar double precision floating-point values
 INST3( pmuldq,       "pmuldq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x28))   // packed multiply 32-bit signed integers and store 64-bit result
+INST3( blendps,      "blendps"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0C))   // Blend Packed Single Precision Floating-Point Values
 INST3( blendvps,     "blendvps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x14))   // Variable Blend Packed Singles
+INST3( blendpd,      "blendpd"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0D))   // Blend Packed Double Precision Floating-Point Values
 INST3( blendvpd,     "blendvpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x15))   // Variable Blend Packed Doubles
+INST3( pblendw,      "pblendw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x0E))   // Blend Packed Words
 INST3( pblendvb,     "pblendvb"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x10))   // Variable Blend Packed Bytes
 INST3( phaddw,       "phaddw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x01))   // Packed horizontal add of 16-bit integers
 INST3( phsubw,       "phsubw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x05))   // Packed horizontal subtract of 16-bit integers
@@ -434,9 +446,11 @@ INST3( phaddsw,      "phaddsw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( phsubsw,      "phsubsw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x07))   // Packed horizontal subtract of 16-bit integers with saturation
 INST3( lddqu,        "lddqu"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0xF0))  // Load Unaligned integer
 INST3( movntdqa,     "movntdqa"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2A))   // Load Double Quadword Non-Temporal Aligned Hint
-INST3( movddup,      "movddup"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0x12))   // Replicate Double FP Values
+INST3( movddup,      "movddup"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0x12))  // Replicate Double FP Values
 INST3( movsldup,     "movsldup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x12))  // Replicate even-indexed Single FP Values  
 INST3( movshdup,     "movshdup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x16))  // Replicate odd-indexed Single FP Values
+INST3( phminposuw,   "phminposuw"  , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x41))   // Packed Horizontal Word Minimum
+INST3( mpsadbw,      "mpsadbw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x42))   // Compute Multiple Packed Sums of Absolute Difference
 
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
