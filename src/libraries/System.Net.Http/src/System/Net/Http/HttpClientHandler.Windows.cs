@@ -188,10 +188,13 @@ namespace System.Net.Http
         {
             // WinHttpHandler doesn't have a separate UseDefaultCredentials property.  There
             // is just a ServerCredentials property.  So, we need to map the behavior.
+            // Do the same for SocketsHttpHandler.Credentials.
             //
             // This property only affect .ServerCredentials and not .DefaultProxyCredentials.
 
-            get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials : false;
+            get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials :
+                    _socketsHttpHandler != null ? _socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials :
+                    false;
             set
             {
                 if (_winHttpHandler != null)
@@ -206,6 +209,21 @@ namespace System.Net.Http
                         {
                             // Only clear out the ServerCredentials property if it was a DefaultCredentials.
                             _winHttpHandler.ServerCredentials = null;
+                        }
+                    }
+                }
+                else
+                {
+                    if (value)
+                    {
+                        _socketsHttpHandler.Credentials = CredentialCache.DefaultCredentials;
+                    }
+                    else
+                    {
+                        if (_socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials)
+                        {
+                            // Only clear out the ServerCredentials property if it was a DefaultCredentials.
+                            _socketsHttpHandler.Credentials = null;
                         }
                     }
                 }

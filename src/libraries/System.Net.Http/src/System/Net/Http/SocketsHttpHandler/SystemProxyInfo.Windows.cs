@@ -4,9 +4,9 @@
 
 namespace System.Net.Http
 {
-    internal sealed partial class HttpProxyConnectionHandler : HttpMessageHandler
+    internal static class SystemProxyInfo
     {
-        private static IWebProxy ConstructSystemProxy()
+        public static IWebProxy ConstructSystemProxy()
         {
             return HttpSystemProxy.TryCreate(out IWebProxy proxy) ? proxy : null;
         }

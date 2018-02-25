@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class HttpConnectionHandler : HttpMessageHandler
+    internal sealed class HttpAuthenticatedConnectionHandler : HttpMessageHandler
     {
         private readonly HttpConnectionPoolManager _poolManager;
 
-        public HttpConnectionHandler(HttpConnectionPoolManager poolManager)
+        public HttpAuthenticatedConnectionHandler(HttpConnectionPoolManager poolManager)
         {
             _poolManager = poolManager;
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return _poolManager.SendAsync(request, false, cancellationToken);
+            return _poolManager.SendAsync(request, true, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)
@@ -31,4 +31,5 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
     }
+
 }
