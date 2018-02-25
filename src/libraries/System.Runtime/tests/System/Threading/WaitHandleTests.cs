@@ -251,7 +251,6 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(SignalAndWait_MemberData))]
-        [PlatformSpecific(TestPlatforms.Windows)] // other platforms don't support SignalAndWait
         private static void SignalAndWait(
             WaitHandle toSignal,
             AutoResetEvent toWaitOn,
@@ -296,7 +295,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // other platforms don't support SignalAndWait
         public static void SignalAndWait_InvalidArgs()
         {
             var toSignal = new ManualResetEvent(false);
