@@ -136,6 +136,12 @@ namespace Mono.Linker {
 							context.KeepUsedAttributeTypesOnly = bool.Parse (GetParam ());
 							continue;
 						}
+						
+						if (token == "--strip-security") {
+							if (bool.Parse (GetParam ()))
+								p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
+							continue;
+						}
 
 						switch (token [2]) {
 						case 'v':
@@ -355,6 +361,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --dump-dependencies Dump dependencies for the linker analyzer tool");
 			Console.WriteLine ("   --reduced-tracing   Reduces dependency output related to assemblies that will not be modified");
 			Console.WriteLine ("   --used-attrs-only   Attributes on types, methods, etc will be removed if the attribute type is not used");
+			Console.WriteLine ("   --strip-security    In linked assemblies, attributes on assemblies, types, and methods related to security will be removed");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
 			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");

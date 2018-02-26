@@ -64,6 +64,7 @@
     <Compile Include="Linker.Steps\CleanStep.cs" />
     <Compile Include="Linker.Steps\RegenerateGuidStep.cs" />
     <Compile Include="Linker.Steps\LoadI18nAssemblies.cs" />
+    <Compile Include="Linker.Steps\RemoveSecurityStep.cs" />
     <Compile Include="Linker\IXApiVisitor.cs" />
     <Compile Include="Linker\I18nAssemblies.cs" />
     <Compile Include="Linker.Steps\IStep.cs" />

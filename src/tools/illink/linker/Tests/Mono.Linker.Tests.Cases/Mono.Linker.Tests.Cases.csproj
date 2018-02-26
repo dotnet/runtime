@@ -51,6 +51,9 @@
     <Compile Include="Attributes\AttributeOnUsedMethodIsKept.cs" />
     <Compile Include="Attributes\AttributeOnUsedPropertyIsKept.cs" />
     <None Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" />
+    <Compile Include="Attributes\NoSecurity\SecurityAttributesOnUsedMethodAreRemoved.cs" />
+    <Compile Include="Attributes\NoSecurity\SecurityAttributesOnUsedTypeAreRemoved.cs" />
+    <Compile Include="Attributes\NoSecurity\CoreLibrarySecurityAttributeTypesAreRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Lib.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeDefinedAndUsedInOtherAssemblyIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeUsedByAttributeIsKept.cs" />
@@ -94,6 +97,7 @@
     <Compile Include="Basic\UsedEventOnInterfaceIsRemovedWhenUsedFromClass.cs" />
     <Compile Include="Basic\UsedPropertyIsKept.cs" />
     <Compile Include="Basic\UsedStructIsKept.cs" />
+    <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
     <Compile Include="LinkXml\CanPreserveTypesUsingRegex.cs" />
     <Compile Include="LinkXml\CanPreserveAnExportedType.cs" />
     <None Include="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
