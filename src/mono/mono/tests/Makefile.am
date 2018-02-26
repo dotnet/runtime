@@ -554,6 +554,17 @@ endif
 endif
 
 TESTS_IL_SRC=			\
+	gptail1.il		\
+	itail1.il		\
+	itaili1.il		\
+	ivtail1.il		\
+	sirtail1.il		\
+	sitail1.il		\
+	srtail1.il		\
+	stail1.il		\
+	tail1.il		\
+	taili1.il		\
+	vtail1.il		\
 	field-access.il		\
 	method-access.il	\
 	ldftn-access.il		\
@@ -1011,7 +1022,16 @@ DISABLED_TESTS = \
 	$(if $(AOT),$(AOT_DISABLED_TESTS)) \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
-	$(if $(LLVM),$(LLVM_DISABLED_TESTS))
+	$(if $(LLVM),$(LLVM_DISABLED_TESTS)) \
+	gptail1.exe		\
+	itaili1.exe		\
+	ivtail1.exe		\
+	sirtail1.exe		\
+	srtail1.exe		\
+	stail1.exe		\
+	tail1.exe		\
+	taili1.exe		\
+	vtail1.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with
 #                exit code 0, but doesn't actually execute the test.
@@ -1057,7 +1077,18 @@ INTERP_DISABLED_TESTS = \
 	vararg.exe \
 	vararg2.exe \
 	vararg3.exe	\
-	dim-diamondshape.exe
+	dim-diamondshape.exe \
+	gptail1.exe		\
+	itaili1.exe		\
+	ivtail1.exe		\
+	sirtail1.exe		\
+	srtail1.exe		\
+	stail1.exe		\
+	tail1.exe		\
+	taili1.exe		\
+	vtail1.exe		\
+	itail1.exe 		\
+	sitail1.exe
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))
