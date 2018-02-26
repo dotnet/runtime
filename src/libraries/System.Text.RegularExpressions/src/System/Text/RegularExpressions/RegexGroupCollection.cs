@@ -55,8 +55,7 @@ namespace System.Text.RegularExpressions
         {
             if (_captureMap != null)
             {
-                int groupNumImpl;
-                if (_captureMap.TryGetValue(groupnum, out groupNumImpl))
+                if (_captureMap.TryGetValue(groupnum, out int groupNumImpl))
                 {
                     return GetGroupImpl(groupNumImpl);
                 }
