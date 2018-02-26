@@ -449,6 +449,9 @@ void LinearScan::BuildNode(GenTree* tree)
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
             // Consumes arrLen & index - has no result
             info->srcCount = 2;
             assert(info->dstCount == 0);
@@ -2253,6 +2256,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     TreeNodeInfo*  info        = currentNodeInfo;
     NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
     InstructionSet isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
+    int            numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
     if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
     {
         SetContainsAVXFlags(true, 32);
@@ -2281,6 +2285,24 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         info->srcCount += GetOperandInfo(op2);
     }
 
+    if (Compiler::categoryOfHWIntrinsic(intrinsicID) == HW_Category_IMM &&
+        (Compiler::flagsOfHWIntrinsic(intrinsicID) & HW_Flag_NoJmpTableIMM) == 0)
+    {
+        GenTree* lastOp = Compiler::lastOpOfHWIntrinsic(intrinsicTree, numArgs);
+        assert(lastOp != nullptr);
+        if (Compiler::isImmHWIntrinsic(intrinsicID, lastOp) && !lastOp->isContainedIntOrIImmed())
+        {
+            assert(!lastOp->IsCnsIntOrI());
+
+            // We need two extra reg when lastOp isn't a constant so
+            // the offset into the jump table for the fallback path
+            // can be computed.
+
+            info->internalIntCount = 2;
+            info->setInternalCandidates(this, allRegs(TYP_INT));
+        }
+    }
+
     switch (intrinsicID)
     {
         case NI_SSE_CompareEqualOrderedScalar:
@@ -2300,26 +2322,6 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             info->internalFloatCount = 1;
             info->setInternalCandidates(this, allSIMDRegs());
             break;
-
-        case NI_SSE_Shuffle:
-        case NI_SSSE3_AlignRight:
-        {
-            assert(op1->OperIsList());
-            GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
-
-            if (!op3->isContainedIntOrIImmed())
-            {
-                assert(!op3->IsCnsIntOrI());
-
-                // We need two extra reg when op3 isn't a constant so
-                // the offset into the jump table for the fallback path
-                // can be computed.
-
-                info->internalIntCount = 2;
-                info->setInternalCandidates(this, allRegs(TYP_INT));
-            }
-            break;
-        }
 
         case NI_SSE_ConvertToSingle:
         case NI_SSE_StaticCast:

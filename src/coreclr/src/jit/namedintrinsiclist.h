@@ -31,7 +31,7 @@ enum NamedIntrinsic : unsigned int
 #endif
 };
 
-#if FEATURE_HW_INTRINSICS && defined(_TARGET_XARCH_)
+#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
 enum HWIntrinsicFlag : unsigned int
 {
     HW_Flag_NoFlag = 0,
@@ -79,7 +79,15 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_BaseTypeFromArg = 0x400,
 
     // Indicates compFloatingPointUsed does not need to be set.
-    HW_Flag_NoFloatingPointUsed = 0x800
+    HW_Flag_NoFloatingPointUsed = 0x800,
+
+    // Maybe IMM
+    // the intrinsic has either imm or Vector overloads
+    HW_Flag_MaybeIMM = 0x1000,
+
+    // NoJmpTable IMM
+    // the imm intrinsic does not need jumptable fallback when it gets non-const argument
+    HW_Flag_NoJmpTableIMM = 0x2000,
 };
 
 inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)

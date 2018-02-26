@@ -9583,6 +9583,9 @@ void Compiler::fgSimpleLowering()
 #ifdef FEATURE_SIMD
                     case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+                    case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
                     {
                         // Add in a call to an error routine.
                         fgSetRngChkTarget(tree, false);
@@ -18796,6 +18799,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
             // Evaluate the trees left to right
             fgSetTreeSeqHelper(tree->gtBoundsChk.gtIndex, isLIR);
             fgSetTreeSeqHelper(tree->gtBoundsChk.gtArrLen, isLIR);
@@ -21426,6 +21432,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 #ifdef FEATURE_SIMD
             case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
 
                 GenTreeBoundsChk* bndsChk;
                 bndsChk = tree->AsBoundsChk();
