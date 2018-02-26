@@ -2412,27 +2412,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
         }
     }
-    else if (numArgs == 3)
+
+    if (Compiler::categoryOfHWIntrinsic(intrinsicID) == HW_Category_IMM)
     {
-        switch (category)
+        assert(numArgs >= 2);
+        GenTree* lastOp = Compiler::lastOpOfHWIntrinsic(node, numArgs);
+        assert(lastOp != nullptr);
+        if (Compiler::isImmHWIntrinsic(intrinsicID, lastOp))
         {
-            case HW_Category_IMM:
+            if (lastOp->IsCnsIntOrI())
             {
-                assert(op1->OperIsList());
-                GenTree* op3 = op1->AsArgList()->Rest()->Rest()->Current();
-
-                if (op3->IsCnsIntOrI())
-                {
-                    MakeSrcContained(node, op3);
-                }
-                break;
+                MakeSrcContained(node, lastOp);
             }
-
-            default:
-                // TODO-XArch-CQ: Assert that this is unreached after we have ensured the relevant node types are
-                // handled.
-                //                https://github.com/dotnet/coreclr/issues/16497
-                break;
         }
     }
 }
