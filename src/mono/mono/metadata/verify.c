@@ -1885,10 +1885,10 @@ dump_stack_value (ILStackDesc *value)
 				printf ("complex] (inst of %s )", value->type->data.generic_class->container_class->name);
 				return;
 			case MONO_TYPE_VAR:
-				printf ("complex] (type generic param !%d - %s) ", value->type->data.generic_param->num, mono_generic_param_info (value->type->data.generic_param)->name);
+				printf ("complex] (type generic param !%d - %s) ", value->type->data.generic_param->num, mono_generic_param_name (value->type->data.generic_param));
 				return;
 			case MONO_TYPE_MVAR:
-				printf ("complex] (method generic param !!%d - %s) ", value->type->data.generic_param->num, mono_generic_param_info (value->type->data.generic_param)->name);
+				printf ("complex] (method generic param !!%d - %s) ", value->type->data.generic_param->num, mono_generic_param_name (value->type->data.generic_param));
 				return;
 			default: {
 				//should be a boxed value 

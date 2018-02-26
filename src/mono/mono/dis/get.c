@@ -899,7 +899,7 @@ dis_stringify_method_signature_full (MonoImage *m, MonoMethodSignature *method, 
 			ERROR_DECL (error);
 			const char *sig = mono_metadata_blob_heap (m, cols [MONO_METHOD_SIGNATURE]);
 
-			container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container);
+			container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container, NULL);
 			if (container) {
 				mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | methoddef_row, container, error);
 				g_assert (mono_error_ok (error)); /*FIXME don't swallow the error message*/
@@ -1880,7 +1880,7 @@ get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *
 
 	switch (table){
 	case 0: /* TypeDef */
-		return mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | idx, NULL);
+		return mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | idx, NULL, NULL);
 		
 	case 1: /* TypeRef */
 		return NULL;

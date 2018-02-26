@@ -26,6 +26,10 @@
 #include "mono/sgen/sgen-pinning.h"
 #include "mono/sgen/sgen-client.h"
 
+
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
+
+
 #define LOAD_VTABLE	SGEN_LOAD_VTABLE
 
 #define object_is_forwarded	SGEN_OBJECT_IS_FORWARDED
@@ -1235,4 +1239,72 @@ sgen_find_object_for_ptr (char *ptr)
 	return found_obj;
 }
 
+#else
+
+void
+sgen_check_for_xdomain_refs (void)
+{
+}
+
+void
+sgen_check_heap_marked (gboolean nursery_must_be_pinned)
+{
+}
+
+void
+sgen_check_major_refs (void)
+{
+}
+
+void
+sgen_check_mod_union_consistency (void)
+{
+}
+
+void
+sgen_check_nursery_objects_pinned (gboolean pinned)
+{
+}
+
+void
+sgen_check_remset_consistency (void)
+{
+}
+
+void
+sgen_check_whole_heap (gboolean allow_missing_pinned)
+{
+}
+
+void
+sgen_debug_check_nursery_is_clean (void)
+{
+}
+
+void
+sgen_debug_dump_heap (const char *type, int num, const char *reason)
+{
+}
+
+void
+sgen_debug_enable_heap_dump (const char *filename)
+{
+}
+
+void
+sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
+{
+}
+
+void
+sgen_dump_occupied (char *start, char *end, char *section_start)
+{
+}
+
+void
+sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
+{
+}
+
+#endif /*DISABLE_SGEN_DEBUG_HELPERS */
 #endif /*HAVE_SGEN_GC*/

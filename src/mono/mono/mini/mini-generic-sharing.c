@@ -3460,7 +3460,7 @@ shared_gparam_hash (gconstpointer data)
 	guint hash;
 
 	hash = mono_metadata_generic_param_hash (p->parent);
-	hash = ((hash << 5) - hash) ^ mono_metadata_type_hash (p->param.param.gshared_constraint);
+	hash = ((hash << 5) - hash) ^ mono_metadata_type_hash (p->param.gshared_constraint);
 
 	return hash;
 }
@@ -3475,7 +3475,7 @@ shared_gparam_equal (gconstpointer ka, gconstpointer kb)
 		return TRUE;
 	if (p1->parent != p2->parent)
 		return FALSE;
-	if (!mono_metadata_type_equal (p1->param.param.gshared_constraint, p2->param.param.gshared_constraint))
+	if (!mono_metadata_type_equal (p1->param.gshared_constraint, p2->param.gshared_constraint))
 		return FALSE;
 	return TRUE;
 }
@@ -3496,7 +3496,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 
 	memset (&key, 0, sizeof (key));
 	key.parent = par;
-	key.param.param.gshared_constraint = constraint;
+	key.param.gshared_constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
 	image = get_image_for_generic_param(par);
@@ -3524,9 +3524,10 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	copy->param.info.name = mono_image_strdup (image, name);
 	g_free (name);
 
-	copy->param.param.owner = par->owner;
+	copy->param.owner = par->owner;
+	g_assert (!par->owner->is_anonymous);
 
-	copy->param.param.gshared_constraint = constraint;
+	copy->param.gshared_constraint = constraint;
 	copy->parent = par;
 	res = mono_metadata_type_dup (NULL, t);
 	res->data.generic_param = (MonoGenericParam*)copy;
