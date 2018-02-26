@@ -12,8 +12,8 @@ namespace Microsoft.Win32.SystemEventsTests
     {
         IntPtr s_hwnd = IntPtr.Zero;
 
-        public const int PostMessageWait = 100;
-        public const int ExpectedEventMultiplier = 100;
+        public const int PostMessageWait = 10000;
+        public const int ExpectedEventMultiplier = 1000;
         public const int UnexpectedEventMultiplier = 10;
 
         protected IntPtr SendMessage(int msg, IntPtr wParam, IntPtr lParam)
