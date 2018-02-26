@@ -39,14 +39,6 @@ namespace System.Text.RegularExpressions
             // We're doing this for your own protection. (Really, for speed.)
             Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string. This is bad for perf");
 
-            int beforefirst;
-            int last;
-            int bump;
-            int examine;
-            int scan;
-            int match;
-            char ch;
-
             // We do the ToLower character by character for consistency.  With surrogate chars, doing
             // a ToLower on the entire string could actually change the surrogate pair.  This is more correct
             // linguistically, but since Regex doesn't support surrogates, it's more important to be
@@ -63,6 +55,10 @@ namespace System.Text.RegularExpressions
             _rightToLeft = rightToLeft;
             _caseInsensitive = caseInsensitive;
             _culture = culture;
+
+            int beforefirst;
+            int last;
+            int bump;
 
             if (!rightToLeft)
             {
@@ -88,10 +84,12 @@ namespace System.Text.RegularExpressions
 
             _positive = new int[pattern.Length];
 
-            examine = last;
-            ch = pattern[examine];
+            int examine = last;
+            char ch = pattern[examine];
             _positive[examine] = bump;
             examine -= bump;
+            int scan;
+            int match;
 
             for (; ;)
             {
@@ -237,6 +235,7 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
                 }
+
                 return true;
             }
             else
@@ -276,17 +275,11 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal int Scan(string text, int index, int beglimit, int endlimit)
         {
+            int defadv;
             int test;
-            int test2;
-            int match;
             int startmatch;
             int endmatch;
-            int advance;
-            int defadv;
             int bump;
-            char chMatch;
-            char chTest;
-            int[] unicodeLookup;
 
             if (!_rightToLeft)
             {
@@ -305,7 +298,12 @@ namespace System.Text.RegularExpressions
                 bump = -1;
             }
 
-            chMatch = _pattern[startmatch];
+            char chMatch = _pattern[startmatch];
+            char chTest;
+            int test2;
+            int match;
+            int advance;
+            int[] unicodeLookup;
 
             for (; ;)
             {
@@ -373,10 +371,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Used when dumping for debugging.
         /// </summary>
-        public override string ToString()
-        {
-            return _pattern;
-        }
+        public override string ToString() => _pattern;
 
 #if DEBUG
         public string Dump(string indent)

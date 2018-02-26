@@ -11,6 +11,14 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexTree
     {
+        internal readonly RegexNode _root;
+        internal readonly Hashtable _caps;
+        internal readonly int[] _capnumlist;
+        internal readonly Hashtable _capnames;
+        internal readonly string[] _capslist;
+        internal readonly RegexOptions _options;
+        internal readonly int _captop;
+
         internal RegexTree(RegexNode root, Hashtable caps, int[] capnumlist, int captop, Hashtable capnames, string[] capslist, RegexOptions opts)
         {
             _root = root;
@@ -21,14 +29,6 @@ namespace System.Text.RegularExpressions
             _captop = captop;
             _options = opts;
         }
-
-        internal readonly RegexNode _root;
-        internal readonly Hashtable _caps;
-        internal readonly int[] _capnumlist;
-        internal readonly Hashtable _capnames;
-        internal readonly string[] _capslist;
-        internal readonly RegexOptions _options;
-        internal readonly int _captop;
 
 #if DEBUG
         internal void Dump()
