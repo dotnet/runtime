@@ -217,7 +217,7 @@ class Constants {
                'innerloop':                              [],
                'normal':                                 [],
                // 'ilrt'
-               'r2r':                                    ["R2R_FAIL"],
+               'r2r':                                    ["R2R_FAIL", "R2R_EXCLUDE"],
                // 'longgc'
                // 'formatting'
                // 'gcsimulator'
@@ -225,19 +225,19 @@ class Constants {
                // 'standalone_gc'
                // 'gc_reliability_framework'
                // 'illink'
-               'r2r_jitstress1':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstress2':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs1':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs2':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs3':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs4':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs8':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs0x10':                  ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs0x80':                  ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitstressregs0x1000':                ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitminopts':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_jitforcerelocs':                     ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
-               'r2r_gcstress15':                         ["R2R_FAIL", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstress1':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstress2':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs1':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs2':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs3':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs4':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs8':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs0x10':                  ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs0x80':                  ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitstressregs0x1000':                ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_jitminopts':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE", "MINOPTS_FAIL", "MINOPTS_EXCLUDE"],
+               'r2r_jitforcerelocs':                     ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE"],
+               'r2r_gcstress15':                         ["R2R_FAIL", "R2R_EXCLUDE", "JITSTRESS_FAIL", "JITSTRESS_EXCLUDE", "GCSTRESS_FAIL", "GCSTRESS_EXCLUDE"],
                'minopts':                                ["MINOPTS_FAIL", "MINOPTS_EXCLUDE"],
                'tieredcompilation':                      [],
                'forcerelocs':                            [],
@@ -3033,19 +3033,13 @@ Constants.allScenarios.each { scenario ->
                                         addExclude("LEGACYJIT_FAIL")
                                     }
 
-                                    if (isJitStressScenario(scenario) || isR2RStressScenario(scenario)) {
-                                        def failTag = "JITSTRESS_FAIL"
-                                        def excludeTag = "JITSTRESS_EXCLUDE"
-
-                                        if (scenario.contains('gc')) {
-                                            failTag = "GCSTRESS_FAIL"
-                                            excludeTag = "GCSTRESS_EXCLUDE"
-                                        }
-
-                                        addArchSpecificExclude(architecture, failTag)
+                                    // Exclude tests based on scenario.
+                                    Constants.validArmWindowsScenarios[scenario].each { excludeTag ->
                                         addArchSpecificExclude(architecture, excludeTag)
                                     }
-                                    else {
+
+                                    // Innerloop jobs run Pri-0 tests; everyone else runs Pri-1.
+                                    if (scenario == 'innerloop') {
                                         addExclude("pri1")
                                     }
 
