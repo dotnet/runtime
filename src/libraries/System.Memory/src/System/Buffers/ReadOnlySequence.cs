@@ -45,7 +45,7 @@ namespace System.Buffers
         /// <summary>
         /// Determines if the <see cref="ReadOnlySequence{T}"/> contains a single <see cref="ReadOnlyMemory{T}"/> segment.
         /// </summary>
-        public bool IsSingleSegment => _sequenceStart.Segment == _sequenceEnd.Segment;
+        public bool IsSingleSegment => _sequenceStart.GetObject() == _sequenceEnd.GetObject();
 
         /// <summary>
         /// Gets <see cref="ReadOnlyMemory{T}"/> from the first segment.
@@ -316,10 +316,10 @@ namespace System.Buffers
             // and apply type bits specific for current ReadOnlySequence type
 
             return new ReadOnlySequence<T>(
-                begin.Segment,
-                begin.Index & IndexBitMask | (Start.Index & ~IndexBitMask),
-                end.Segment,
-                end.Index & IndexBitMask | (End.Index & ~IndexBitMask)
+                begin.GetObject(),
+                begin.GetInteger() & IndexBitMask | (Start.GetInteger() & ~IndexBitMask),
+                end.GetObject(),
+                end.GetInteger() & IndexBitMask | (End.GetInteger() & ~IndexBitMask)
             );
         }
 
@@ -329,7 +329,7 @@ namespace System.Buffers
             // We take high order bits of two indexes index and move them
             // to a first and second position to convert to BufferType
             // Masking with 2 is required to only keep the second bit of Start.Index
-            return (SequenceType)((((uint)Start.Index >> 30) & 2) | (uint)End.Index >> 31);
+            return (SequenceType)((((uint)Start.GetInteger() >> 30) & 2) | (uint)End.GetInteger() >> 31);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -371,7 +371,7 @@ namespace System.Buffers
             /// <returns></returns>
             public bool MoveNext()
             {
-                if (_next.Segment == null)
+                if (_next.GetObject() == null)
                 {
                     return false;
                 }

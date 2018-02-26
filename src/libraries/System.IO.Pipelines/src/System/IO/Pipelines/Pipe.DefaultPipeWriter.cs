@@ -30,11 +30,9 @@ namespace System.IO.Pipelines
 
             public override void Advance(int bytes) => _pipe.Advance(bytes);
 
-            public override Memory<byte> GetMemory(int minimumLength = 0) => _pipe.GetMemory(minimumLength);
+            public override Memory<byte> GetMemory(int sizeHint = 0) => _pipe.GetMemory(sizeHint);
 
-            public override Span<byte> GetSpan(int minimumLength = 0) => _pipe.GetMemory(minimumLength).Span;
-
-            public override int MaxBufferSize => _pipe._pool.MaxBufferSize;
+            public override Span<byte> GetSpan(int sizeHint = 0) => _pipe.GetMemory(sizeHint).Span;
 
             public bool IsCompleted => _pipe.IsFlushAsyncCompleted;
 

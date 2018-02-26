@@ -197,5 +197,13 @@ namespace System.IO.Pipelines.Tests
             var exception = Assert.Throws<InvalidOperationException>(() => buffer.Advance(1));
             Assert.Equal("No writing operation. Make sure GetMemory() was called.", exception.Message);
         }
+
+        [Fact]
+        public void GetMemory_AdjustsToPoolMaxBufferSize()
+        {
+            PipeWriter buffer = Pipe.Writer;
+            var memory = buffer.GetMemory(int.MaxValue);
+            Assert.True(memory.Length >= 4096);
+        }
     }
 }
