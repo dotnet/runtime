@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static partial class PathTests
+    public class PathTests_Combine
     {
         private static readonly char s_separator = Path.DirectorySeparatorChar;
 
