@@ -99,18 +99,13 @@ namespace System.Text.RegularExpressions
         internal const int Testref = 33;                                //          (?(n) | )
         internal const int Testgroup = 34;                              //          (?(...) | )
 
-        // RegexNode data members
-
         internal int _type;
-
         internal List<RegexNode> _children;
-
         internal string _str;
         internal char _ch;
         internal int _m;
         internal int _n;
         internal readonly RegexOptions _options;
-
         internal RegexNode _next;
 
         internal RegexNode(int type, RegexOptions options)
@@ -166,7 +161,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Pass type as OneLazy or OneLoop
         /// </summary>
-        internal void MakeRep(int type, int min, int max)
+        private void MakeRep(int type, int min, int max)
         {
             _type += (type - One);
             _m = min;
@@ -176,7 +171,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns a reduced subtree.
         /// </summary>
-        internal RegexNode Reduce()
+        private RegexNode Reduce()
         {
             RegexNode n;
 
@@ -217,7 +212,7 @@ namespace System.Text.RegularExpressions
         /// one child strip out the intermediate node. If it has zero children,
         /// turn it into an empty.
         /// </summary>
-        internal RegexNode StripEnation(int emptyType)
+        private RegexNode StripEnation(int emptyType)
         {
             switch (ChildCount())
             {
@@ -234,7 +229,7 @@ namespace System.Text.RegularExpressions
         /// Simple optimization. Once parsed into a tree, non-capturing groups
         /// serve no function, so strip them out.
         /// </summary>
-        internal RegexNode ReduceGroup()
+        private RegexNode ReduceGroup()
         {
             RegexNode u;
 
@@ -248,18 +243,13 @@ namespace System.Text.RegularExpressions
         /// Nested repeaters just get multiplied with each other if they're not
         /// too lumpy
         /// </summary>
-        internal RegexNode ReduceRep()
+        private RegexNode ReduceRep()
         {
-            RegexNode u;
+            RegexNode u = this;
             RegexNode child;
-            int type;
-            int min;
-            int max;
-
-            u = this;
-            type = Type();
-            min = _m;
-            max = _n;
+            int type = Type();
+            int min = _m;
+            int max = _n;
 
             for (; ;)
             {
@@ -297,7 +287,7 @@ namespace System.Text.RegularExpressions
         /// Simple optimization. If a set is a singleton, an inverse singleton,
         /// or empty, it's transformed accordingly.
         /// </summary>
-        internal RegexNode ReduceSet()
+        private RegexNode ReduceSet()
         {
             // Extract empty-set, one and not-one case as special
 
@@ -323,6 +313,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// Combine adjacent sets/chars.
         /// Basic optimization. Single-letter alternations can be replaced
         /// by faster set specifications, and nested alternations with no
         /// intervening operators can be flattened:
@@ -330,25 +321,19 @@ namespace System.Text.RegularExpressions
         /// a|b|c|def|g|h -> [a-c]|def|[gh]
         /// apple|(?:orange|pear)|grape -> apple|orange|pear|grape
         /// </summary>
-        internal RegexNode ReduceAlternation()
+        private RegexNode ReduceAlternation()
         {
-            // Combine adjacent sets/chars
+            if (_children == null)
+                return new RegexNode(Nothing, _options);
 
-            bool wasLastSet;
-            bool lastNodeCannotMerge;
-            RegexOptions optionsLast;
+            bool wasLastSet = false;
+            bool lastNodeCannotMerge = false;
+            RegexOptions optionsLast = 0;
             RegexOptions optionsAt;
             int i;
             int j;
             RegexNode at;
             RegexNode prev;
-
-            if (_children == null)
-                return new RegexNode(Nothing, _options);
-
-            wasLastSet = false;
-            lastNodeCannotMerge = false;
-            optionsLast = 0;
 
             for (i = 0, j = 0; i < _children.Count; i++, j++)
             {
@@ -441,25 +426,21 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// Eliminate empties and concat adjacent strings/chars.
         /// Basic optimization. Adjacent strings can be concatenated.
         ///
         /// (?:abc)(?:def) -> abcdef
         /// </summary>
-        internal RegexNode ReduceConcatenation()
+        private RegexNode ReduceConcatenation()
         {
-            // Eliminate empties and concat adjacent strings/chars
-
-            bool wasLastString;
-            RegexOptions optionsLast;
-            RegexOptions optionsAt;
-            int i;
-            int j;
-
             if (_children == null)
                 return new RegexNode(Empty, _options);
 
-            wasLastString = false;
-            optionsLast = 0;
+            bool wasLastString = false;
+            RegexOptions optionsLast = 0;
+            RegexOptions optionsAt;
+            int i;
+            int j;
 
             for (i = 0, j = 0; i < _children.Count; i++, j++)
             {
@@ -534,8 +515,6 @@ namespace System.Text.RegularExpressions
 
         internal RegexNode MakeQuantifier(bool lazy, int min, int max)
         {
-            RegexNode result;
-
             if (min == 0 && max == 0)
                 return new RegexNode(Empty, _options);
 
@@ -547,12 +526,11 @@ namespace System.Text.RegularExpressions
                 case One:
                 case Notone:
                 case Set:
-
                     MakeRep(lazy ? Onelazy : Oneloop, min, max);
                     return this;
 
                 default:
-                    result = new RegexNode(lazy ? Lazyloop : Loop, _options, min, max);
+                    var result = new RegexNode(lazy ? Lazyloop : Loop, _options, min, max);
                     result.AddChild(this);
                     return result;
             }
@@ -560,16 +538,14 @@ namespace System.Text.RegularExpressions
 
         internal void AddChild(RegexNode newChild)
         {
-            RegexNode reducedChild;
-
             if (_children == null)
                 _children = new List<RegexNode>(4);
 
-            reducedChild = newChild.Reduce();
-
+            RegexNode reducedChild = newChild.Reduce();
             _children.Add(reducedChild);
             reducedChild._next = this;
         }
+
         internal RegexNode Child(int i)
         {
             return _children[i];
@@ -586,7 +562,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        internal static readonly string[] TypeStr = new string[] {
+        private static readonly string[] s_typeStr = new string[] {
             "Onerep", "Notonerep", "Setrep",
             "Oneloop", "Notoneloop", "Setloop",
             "Onelazy", "Notonelazy", "Setlazy",
@@ -601,11 +577,11 @@ namespace System.Text.RegularExpressions
             "Capture", "Group", "Require", "Prevent", "Greedy",
             "Testref", "Testgroup"};
 
-        internal string Description()
+        private string Description()
         {
             StringBuilder ArgSb = new StringBuilder();
 
-            ArgSb.Append(TypeStr[_type]);
+            ArgSb.Append(s_typeStr[_type]);
 
             if ((_options & RegexOptions.ExplicitCapture) != 0)
                 ArgSb.Append("-C");
@@ -666,7 +642,7 @@ namespace System.Text.RegularExpressions
             return ArgSb.ToString();
         }
 
-        internal const string Space = "                                ";
+        private const string Space = "                                ";
 
         internal void Dump()
         {

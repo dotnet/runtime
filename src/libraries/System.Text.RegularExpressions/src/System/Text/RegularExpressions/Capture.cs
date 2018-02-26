@@ -15,91 +15,48 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public class Capture
     {
-        internal string _text;
-        internal int _index;
-        internal int _length;
-
-        internal Capture(string text, int i, int l)
+        internal Capture(string text, int index, int length)
         {
-            _text = text;
-            _index = i;
-            _length = l;
+            Text = text;
+            Index = index;
+            Length = length;
         }
 
-        /*
-         * The index of the beginning of the matched capture
-         */
         /// <summary>
         /// Returns the position in the original string where the first character of
         /// captured substring was found.
         /// </summary>
-        public int Index
-        {
-            get
-            {
-                return _index;
-            }
-        }
+        public int Index { get; private protected set; }
 
-        /*
-         * The length of the matched capture
-         */
         /// <summary>
         /// Returns the length of the captured substring.
         /// </summary>
-        public int Length
-        {
-            get
-            {
-                return _length;
-            }
-        }
+        public int Length { get; private protected set; }
+
+        /// <summary>
+        /// The original string
+        /// </summary>
+        public string Text { get; private protected set; }
 
         /// <summary>
         /// Returns the value of this Regex Capture.
         /// </summary>
-        public string Value
-        {
-            get
-            {
-                return _text.Substring(_index, _length);
-            }
-        }
+        public string Value => Text.Substring(Index, Length);
 
-        /*
-         * The capture as a string
-         */
         /// <summary>
         /// Returns the substring that was matched.
         /// </summary>
-        override public string ToString()
-        {
-            return Value;
-        }
+        public override string ToString() => Value;
 
-        /*
-         * The original string
-         */
-        internal string GetOriginalString()
-        {
-            return _text;
-        }
+        /// <summary>
+        /// The substring to the left of the capture
+        /// </summary>
+        internal string GetLeftSubstring() => Text.Substring(0, Index);
 
-        /*
-         * The substring to the left of the capture
-         */
-        internal string GetLeftSubstring()
-        {
-            return _text.Substring(0, _index);
-        }
-
-        /*
-         * The substring to the right of the capture
-         */
-        internal string GetRightSubstring()
-        {
-            return _text.Substring(_index + _length, _text.Length - _index - _length);
-        }
+        /// <summary>
+        /// The substring to the right of the capture
+        /// </summary>
+        internal string GetRightSubstring() => Text.Substring(Index + Length, Text.Length - Index - Length);
 
     }
 }

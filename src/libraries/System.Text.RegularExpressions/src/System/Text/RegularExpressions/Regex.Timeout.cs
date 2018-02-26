@@ -37,6 +37,11 @@ namespace System.Text.RegularExpressions
             s_defaultMatchTimeout = InitDefaultMatchTimeout();
         }
 
+        /// <summary>
+        /// The match timeout used by this Regex instance.
+        /// </summary>
+        public TimeSpan MatchTimeout => internalMatchTimeout;
+
         // Note: "&lt;" is the XML entity for smaller ("<").
         /// <summary>
         /// Validates that the specified match timeout value is valid.

@@ -21,7 +21,6 @@ namespace System.Text.RegularExpressions
         internal const int LastGroup = -3;
         internal const int WholeString = -4;
 
-        private readonly string _rep;
         private readonly List<string> _strings; // table of string constants
         private readonly List<int> _rules;      // negative -> group #, positive -> string #
 
@@ -81,10 +80,15 @@ namespace System.Text.RegularExpressions
 
             StringBuilderCache.Release(sb);
 
-            _rep = rep;
+            Pattern = rep;
             _strings = strings;
             _rules = rules;
         }
+
+        /// <summary>
+        /// The original pattern string
+        /// </summary>
+        internal string Pattern { get; }
 
         /// <summary>
         /// Given a Match, emits into the StringBuilder the evaluated
@@ -113,7 +117,7 @@ namespace System.Text.RegularExpressions
                             sb.Append(match.LastGroupToStringImpl());
                             break;
                         case WholeString:
-                            sb.Append(match.GetOriginalString());
+                            sb.Append(match.Text);
                             break;
                     }
                 }
@@ -147,19 +151,11 @@ namespace System.Text.RegularExpressions
                             al.Add(match.LastGroupToStringImpl());
                             break;
                         case WholeString:
-                            al.Add(match.GetOriginalString());
+                            al.Add(match.Text);
                             break;
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// The original pattern string
-        /// </summary>
-        internal string Pattern
-        {
-            get { return _rep; }
         }
 
         /// <summary>

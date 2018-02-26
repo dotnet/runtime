@@ -534,8 +534,7 @@ namespace System.Text.RegularExpressions
 
         internal void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
         {
-            string category;
-            if (s_definedCategories.TryGetValue(categoryName, out category) && !categoryName.Equals(s_internalRegexIgnoreCase))
+            if (s_definedCategories.TryGetValue(categoryName, out string category) && !categoryName.Equals(s_internalRegexIgnoreCase))
             {
                 if (caseInsensitive)
                 {
@@ -1083,7 +1082,7 @@ namespace System.Text.RegularExpressions
             bool done;
 
             _canonical = true;
-            _rangelist.Sort(SingleRangeComparer.Instance);
+            _rangelist.Sort(SingleRangeComparer.s_instance);
 
             //
             // Find and eliminate overlapping or abutting ranges
@@ -1208,7 +1207,7 @@ namespace System.Text.RegularExpressions
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     string group = set.Substring(index, lastindex - index + 1);
 
-                    foreach (var kvp in s_definedCategories)
+                    foreach (KeyValuePair<string, string> kvp in s_definedCategories)
                     {
                         if (group.Equals(kvp.Value))
                         {
@@ -1256,8 +1255,8 @@ namespace System.Text.RegularExpressions
             return desc.ToString();
         }
 
-        internal static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-        internal static readonly string[] Categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", s_internalRegexIgnoreCase,
+        internal static readonly char[] s_hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+        internal static readonly string[] s_categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", s_internalRegexIgnoreCase,
                                                                      "Mn", "Mc", "Me",
                                                                      "Nd", "Nl", "No",
                                                                      "Zs", "Zl", "Zp",
@@ -1296,7 +1295,7 @@ namespace System.Text.RegularExpressions
             while (shift > 0)
             {
                 shift -= 4;
-                sb.Append(Hex[(ch >> shift) & 0xF]);
+                sb.Append(s_hex[(ch >> shift) & 0xF]);
             }
 
             return sb.ToString();
@@ -1310,11 +1309,11 @@ namespace System.Text.RegularExpressions
                 return "\\S";
             else if ((short)ch < 0)
             {
-                return "\\P{" + Categories[(-((short)ch) - 1)] + "}";
+                return "\\P{" + s_categories[(-((short)ch) - 1)] + "}";
             }
             else
             {
-                return "\\p{" + Categories[(ch - 1)] + "}";
+                return "\\p{" + s_categories[(ch - 1)] + "}";
             }
         }
 
@@ -1344,7 +1343,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private sealed class SingleRangeComparer : IComparer<SingleRange>
         {
-            public static readonly SingleRangeComparer Instance = new SingleRangeComparer();
+            public static readonly SingleRangeComparer s_instance = new SingleRangeComparer();
 
             private SingleRangeComparer()
             {
