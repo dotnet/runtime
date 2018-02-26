@@ -7,16 +7,13 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
-    internal sealed class RegexCollectionDebuggerProxy<T>
+    internal sealed class CollectionDebuggerProxy<T>
     {
         private readonly ICollection<T> _collection;
 
-        public RegexCollectionDebuggerProxy(ICollection<T> collection)
+        public CollectionDebuggerProxy(ICollection<T> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
-            _collection = collection;
+            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -24,7 +21,7 @@ namespace System.Text.RegularExpressions
         {
             get
             {
-                T[] items = new T[_collection.Count];
+                var items = new T[_collection.Count];
                 _collection.CopyTo(items, 0);
                 return items;
             }

@@ -16,7 +16,7 @@ namespace System.Text.RegularExpressions
     /// to return the set of captures done by a single capturing group.
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(RegexCollectionDebuggerProxy<Group>))]
+    [DebuggerTypeProxy(typeof(CollectionDebuggerProxy<Group>))]
     public class GroupCollection : IList<Group>, IReadOnlyList<Group>, IList
     {
         private readonly Match _match;
