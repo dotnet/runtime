@@ -154,7 +154,7 @@ namespace System.Data.SqlClient.SNI
                 packet = null;
                 try
                 {
-                    packet = new SNIPacket(null);
+                    packet = new SNIPacket();
                     packet.Allocate(_bufferSize);
                     packet.ReadFromStream(_stream);
 
@@ -181,7 +181,7 @@ namespace System.Data.SqlClient.SNI
         {
             lock (this)
             {
-                packet = new SNIPacket(null);
+                packet = new SNIPacket();
                 packet.Allocate(_bufferSize);
 
                 try
