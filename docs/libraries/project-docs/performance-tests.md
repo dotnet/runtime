@@ -1,47 +1,29 @@
-﻿Performance Tests
+Performance Tests
 ======================
 
 This document contains instructions for building, running, and adding Performance tests. 
 
-Requirements
---------------------
-### Windows
-To run performance tests on Windows, .NET portable v5.0 is required. This library is included in [the Visual Studio Community 2015 download](https://www.visualstudio.com/products/visual-studio-community-vs). To get the correct packages during installation, follow these steps after opening the installer:
-1. Select "Custom Installation" if no installation is present, or "Modify" otherwise
-2. Check the "Universal Windows App Development Tools" box under the "Windows and Web Development" menu
-3. Install
-### Linux
-Performance tests on Linux require all of the same steps as they do for regular xunit tests - see the linux instructions [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md). Once you can have a directory on your Linux machine with a working corerun and xunit.console.netcore.exe (as well as the test dll containing your perf tests!), you only need to run the following command:
-
-`dnu commands install Microsoft.DotNet.xunit.performance.runner.dnx 1.0.0-alpha-build0021 -f https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json`
-
-Be careful that your mscorlib, libcoreclr, and test dlls were compiled using the "/p:Configuration=Release" property. Otherwise you may get skewed results.
-
-Running the tests
+Building and Running Tests
 -----------
-### Windows
-Performance test files (if present) are stored within a library's ```tests/Performance``` directory and contain test methods that are all marked with a perf-specific *Benchmark* attribute. The performance tests will only be run if the ```performance``` property is set to ```true```.
+Performance test files (if present) are stored within a library's ```tests/Performance``` directory and contain test methods that are all marked with a perf-specific *Benchmark* attribute.
 
-Before running the performance tests you must run ```build -release``` from the root folder.
+**Step # 1:** Prior to running performance tests, a full build from the repo root must be completed: ```build -release```
 
-To build and run the tests using msbuild for a project, run ```msbuild /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Windows_NT``` from the Performance directory with Admin privileges. If the v5.0 assemblies aren't installed on your system, an error will be raised and no tests will be run.
+**Step # 2:** Change directory to the performance tests directory: ```cd path/to/library/tests/Performance```
 
-Note: Because build.cmd runs tests concurrently, it's not recommended that you execute the perf tests using it.
+**Step # 3:** Build and run the tests:
+ - Windows (using admin command shell): ```msbuild /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Windows_NT```
+ - Linux: ```<repo-root>/Tools/msbuild.sh /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Linux```
 
-results will be in: corefx/bin/tests/Windows_NT.AnyCPU.Release/TESTNAME/netcoreapp1.0
-### Linux
-From your tests directory, run:
-```
-xunit.performance System.Collections.Tests.dll -trait Benchmark=true -verbose -runner ./xunit.console.netcore.exe -runnerhost ./corerun -runid System.Collections.Tests.dll-Linux -outdir results
-```
+**Note: Because build-tests.cmd/sh runs tests concurrently, do not use it for executing performance tests.**
 
-This will run the perf tests for System.Collections.Tests.dll and output the results in results/System.Collections.Tests.dll-Linux.xml and results/System.Collections.Tests.dll-Linux.csv
+The results files will be dropped in corefx/bin/tests/FLAVOR/TESTLIBRARY/TARGETFRAMEWORK.  The console output will also specify the location of these files. 
 
-Adding new Performance tests
+Adding New Performance Tests
 -----------
-Performance tests for CoreFX are built on top of xunit and [the Microsoft xunit-performance runner](https://github.com/Microsoft/xunit-performance/). 
+Performance tests for CoreFX are built on top of xunit and [the Microsoft xunit-performance framework](https://github.com/Microsoft/xunit-performance/). 
 
-For the time being, perf tests should reside within their own "Performance" folder within the tests directory of a library (e.g. [corefx/src/System.IO.FileSystem/tests/Performance](https://github.com/dotnet/corefx/tree/master/src/System.IO.FileSystem/tests/Performance) contains perf tests for FileSystem).
+Performance tests should reside within their own "Performance" folder within the tests directory of a library (e.g. [corefx/src/System.IO.FileSystem/tests/Performance](https://github.com/dotnet/corefx/tree/master/src/System.IO.FileSystem/tests/Performance) contains perf tests for FileSystem).
 
 It's easiest to copy and modify an existing example like the one above. Notice that you'll need these lines in the tests csproj:
 ```
