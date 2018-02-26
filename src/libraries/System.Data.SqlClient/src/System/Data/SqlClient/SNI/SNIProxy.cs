@@ -189,11 +189,11 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Get packet data
+        /// Copies data packets in SNIPacket object to given byte array parameter
         /// </summary>
-        /// <param name="packet">SNI packet</param>
-        /// <param name="inBuff">Buffer</param>
-        /// <param name="dataSize">Data size</param>
+        /// <param name="packet">SNIPacket object containing data packets</param>
+        /// <param name="inBuff">Destination byte array where data packets are copied to</param>
+        /// <param name="dataSize">Length of data packets</param>
         /// <returns>SNI error status</returns>
         public uint PacketGetData(SNIPacket packet, byte[] inBuff, ref uint dataSize)
         {
@@ -240,11 +240,11 @@ namespace System.Data.SqlClient.SNI
         {
             if (sync)
             {
-                return handle.Send(packet.Clone());
+                return handle.Send(packet);
             }
             else
             {
-                return handle.SendAsync(packet.Clone());
+                return handle.SendAsync(packet);
             }
         }
 
@@ -426,8 +426,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error status</returns>
         public uint ReadAsync(SNIHandle handle, out SNIPacket packet, bool isMars = false)
         {
-            packet = new SNIPacket(null);
-
+            packet = null;
             return handle.ReceiveAsync(ref packet);
         }
 
