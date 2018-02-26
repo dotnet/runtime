@@ -14,6 +14,7 @@ namespace System.ServiceProcess.Tests
     [OuterLoop(/* Modifies machine state */)]
     public class ServiceControllerTests : IDisposable
     {
+        private const int connectionTimeout = 30000;
         private readonly TestServiceProvider _testService;
 
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
@@ -111,22 +112,24 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
             Assert.Equal(ServiceControllerStatus.Running, controller.Status);
 
-            using (var client = new NamedPipeClientStream(".", serviceName, PipeDirection.In))
+            _testService.Client.Connect(connectionTimeout);
+            for (int i = 0; i < 2; i++)
             {
-                client.Connect();
-                for (int i = 0; i < 2; i++)
-                {
-                    controller.Pause();
-                    client.ReadByte();
-                    controller.WaitForStatus(ServiceControllerStatus.Paused, _testService.ControlTimeout);
-                    Assert.Equal(ServiceControllerStatus.Paused, controller.Status);
+                controller.Pause();
+                Assert.Equal((int)PipeMessageByteCode.Pause, _testService.GetByte());
+                controller.WaitForStatus(ServiceControllerStatus.Paused, _testService.ControlTimeout);
+                Assert.Equal(ServiceControllerStatus.Paused, controller.Status);
 
-                    controller.Continue();
-                    client.ReadByte();
-                    controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
-                    Assert.Equal(ServiceControllerStatus.Running, controller.Status);
-                }
+                controller.Continue();
+                Assert.Equal((int)PipeMessageByteCode.Continue, _testService.GetByte());
+                controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
+                Assert.Equal(ServiceControllerStatus.Running, controller.Status);
             }
+
+            controller.Stop();
+            Assert.Equal((int)PipeMessageByteCode.Stop, _testService.GetByte());
+            controller.WaitForStatus(ServiceControllerStatus.Stopped, _testService.ControlTimeout);
+            Assert.Equal(ServiceControllerStatus.Stopped, controller.Status);
         }
 
         [ConditionalFact(nameof(IsProcessElevated))]
