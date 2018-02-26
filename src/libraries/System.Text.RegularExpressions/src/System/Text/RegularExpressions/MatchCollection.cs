@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions
     /// names in a regular expression.
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
-    [DebuggerTypeProxy(typeof(RegexCollectionDebuggerProxy<Match>))]
+    [DebuggerTypeProxy(typeof(CollectionDebuggerProxy<Match>))]
     public class MatchCollection : IList<Match>, IReadOnlyList<Match>, IList
     {
         private readonly Regex _regex;

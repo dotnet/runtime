@@ -14,29 +14,29 @@
   <ItemGroup>
     <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Collections\HashtableExtensions.cs" />
+    <Compile Include="System\Text\RegularExpressions\Capture.cs" />
+    <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
+    <Compile Include="System\Text\RegularExpressions\CollectionDebuggerProxy.cs" />
+    <Compile Include="System\Text\RegularExpressions\Group.cs" />
+    <Compile Include="System\Text\RegularExpressions\GroupCollection.cs" />
+    <Compile Include="System\Text\RegularExpressions\Match.cs" />
+    <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexBoyerMoore.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCapture.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCaptureCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexCollectionDebuggerProxy.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexFCD.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexGroup.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexGroupCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexMatch.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexMatchCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexOptions.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParser.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexReplacement.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
