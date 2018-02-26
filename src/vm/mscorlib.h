@@ -661,6 +661,12 @@ DEFINE_METHOD(OBJECT,               EQUALS,                 Equals,             
 DEFINE_METHOD(OBJECT,               FIELD_SETTER,           FieldSetter,                IM_Str_Str_Obj_RetVoid)
 DEFINE_METHOD(OBJECT,               FIELD_GETTER,           FieldGetter,                IM_Str_Str_RefObj_RetVoid)
 
+// DEFINE_CLASS(DOUBLE,                System,                 Double)
+DEFINE_METHOD(DOUBLE,               GET_HASH_CODE,          GetHashCode, IM_RetInt)
+
+// DEFINE_CLASS(SINGLE,                System,                 Single)
+DEFINE_METHOD(SINGLE,               GET_HASH_CODE,          GetHashCode, IM_RetInt)
+
 DEFINE_CLASS(__CANON,              System,                 __Canon)
 
 
