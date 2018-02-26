@@ -62,8 +62,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            int pcaCount = 0;
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeType)target, typeof(object) as RuntimeType, out pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeType)target, typeof(object) as RuntimeType, out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -84,8 +83,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            int pcaCount = 0;
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeFieldInfo)target, typeof(object) as RuntimeType, out pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeFieldInfo)target, typeof(object) as RuntimeType, out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -106,8 +104,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            int pcaCount = 0;
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeMethodInfo)target, typeof(object) as RuntimeType, out pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeMethodInfo)target, typeof(object) as RuntimeType, out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -159,8 +156,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target.GetNativeHandle()));
 
-            int pcaCount = 0;
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, typeof(object) as RuntimeType, out pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, typeof(object) as RuntimeType, out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -181,8 +177,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            int pcaCount = 0;
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, typeof(object) as RuntimeType, out pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, typeof(object) as RuntimeType, out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -1269,8 +1264,7 @@ namespace System.Reflection
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = type.GetGenericTypeDefinition() as RuntimeType;
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(type, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(type, caType, out int pcaCount);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...           
@@ -1313,8 +1307,7 @@ namespace System.Reflection
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
                 method = method.GetGenericMethodDefinition() as RuntimeMethodInfo;
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(method, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(method, caType, out int pcaCount);
 
             // if we are asked to go up the hierarchy chain we have to do it now and regardless of the
             // attribute usage for the specific attribute because a derived attribute may override the usage...           
@@ -1354,8 +1347,7 @@ namespace System.Reflection
             Debug.Assert(ctor != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(ctor, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(ctor, caType, out int pcaCount);
             object[] attributes = GetCustomAttributes(ctor.GetRuntimeModule(), ctor.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
@@ -1366,8 +1358,7 @@ namespace System.Reflection
             Debug.Assert(property != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(property, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(property, caType, out int pcaCount);
 
             object[] attributes = GetCustomAttributes(property.GetRuntimeModule(), property.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
@@ -1379,8 +1370,7 @@ namespace System.Reflection
             Debug.Assert(e != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(e, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(e, caType, out int pcaCount);
             object[] attributes = GetCustomAttributes(e.GetRuntimeModule(), e.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
@@ -1391,8 +1381,7 @@ namespace System.Reflection
             Debug.Assert(field != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(field, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(field, caType, out int pcaCount);
             object[] attributes = GetCustomAttributes(field.GetRuntimeModule(), field.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
@@ -1403,8 +1392,7 @@ namespace System.Reflection
             Debug.Assert(parameter != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(parameter, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(parameter, caType, out int pcaCount);
             object[] attributes = GetCustomAttributes(parameter.GetRuntimeModule(), parameter.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
@@ -1415,8 +1403,7 @@ namespace System.Reflection
             Debug.Assert(assembly != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(assembly, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(assembly, caType, out int pcaCount);
             int assemblyToken = RuntimeAssembly.GetToken(assembly.GetNativeHandle());
             object[] attributes = GetCustomAttributes(assembly.ManifestModule as RuntimeModule, assemblyToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
@@ -1428,8 +1415,7 @@ namespace System.Reflection
             Debug.Assert(module != null);
             Debug.Assert(caType != null);
 
-            int pcaCount = 0;
-            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(module, caType, out pcaCount);
+            Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(module, caType, out int pcaCount);
             object[] attributes = GetCustomAttributes(module, module.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
