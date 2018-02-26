@@ -7,58 +7,84 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public static partial class PathTests
+    public partial class PathTests : PathTestsBase
     {
-        [Theory, MemberData(nameof(GetDirectoryName_NonControl_Test_Data))]
-        public static void GetDirectoryName_NonControl_Span(string path)
-        {
-            Assert.Equal(string.Empty, new string(Path.GetDirectoryName(path.AsSpan())));
-        }
-
-        [Theory, MemberData(nameof(GetDirectoryName_NonControl_Test_Data))]
-        public static void GetDirectoryName_NonControlWithSeparator_Span(string path)
-        {
-            Assert.Equal(path, new string(Path.GetDirectoryName(Path.Combine(path, path).AsSpan())));
-        }
-
-        [Theory, MemberData(nameof(GetDirectoryName_Test_Data))]
-        public static void GetDirectoryName_Span(string path, string expected)
-        {
-            if (path != null)
-                Assert.Equal(expected, new string(Path.GetDirectoryName(path.AsSpan())));
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific paths
-        [Theory, MemberData(nameof(GetDirectoryName_Windows_Test_Data))]
-        public static void GetDirectoryName_Windows_Span(string path, string expected)
-        {
-            Assert.Equal(expected ?? string.Empty, new string(Path.GetDirectoryName(path.AsSpan())));
-        }
-
         [Fact]
-        public static void GetDirectoryName_CurrentDirectory_Span()
+        public void GetDirectoryName_EmptyReturnsNull()
         {
-            string curDir = Directory.GetCurrentDirectory();
-            Assert.Equal(curDir, new string(Path.GetDirectoryName(Path.Combine(curDir, "baz").AsSpan())));
-            Assert.Equal(string.Empty, new string(Path.GetDirectoryName(Path.GetPathRoot(curDir).AsSpan())));
+            // In NetFX this throws argument exception
+            Assert.Null(Path.GetDirectoryName(string.Empty));
         }
 
-
-
-
-        [Theory, MemberData(nameof(GetExtension_Test_Data))]
-        public static void GetExtension_Span(string path, string expected)
+        [Theory, MemberData(nameof(TestData_Spaces))]
+        public void GetDirectoryName_Spaces(string path)
         {
-            if (path != null)
+            if (PlatformDetection.IsWindows)
             {
-                path = path.Replace('/', Path.DirectorySeparatorChar);
-
-                Assert.Equal(expected, new string(Path.GetExtension(path.AsSpan())));
-                Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path.AsSpan()));
+                // In Windows spaces are eaten by Win32, making them effectively empty
+                Assert.Null(Path.GetDirectoryName(path));
+            }
+            else
+            {
+                Assert.Empty(Path.GetDirectoryName(path));
             }
         }
 
-        public static IEnumerable<object[]> GetFileName_VolumeTestData()
+        [Theory, MemberData(nameof(TestData_Spaces))]
+        public void GetDirectoryName_Span_Spaces(string path)
+        {
+            PathAssert.Empty(Path.GetDirectoryName(path.AsSpan()));
+        }
+
+        [Theory,
+            MemberData(nameof(TestData_EmbeddedNull)),
+            MemberData(nameof(TestData_ControlChars)),
+            MemberData(nameof(TestData_UnicodeWhiteSpace))]
+        public void GetDirectoryName_NetFxInvalid(string path)
+        {
+            Assert.Empty(Path.GetDirectoryName(path));
+            Assert.Equal(path, Path.GetDirectoryName(Path.Combine(path, path)));
+            PathAssert.Empty(Path.GetDirectoryName(path.AsSpan()));
+            PathAssert.Equal(path, new string(Path.GetDirectoryName(Path.Combine(path, path).AsSpan())));
+        }
+
+        [Theory, MemberData(nameof(TestData_GetDirectoryName))]
+        public void GetDirectoryName_Span(string path, string expected)
+        {
+            PathAssert.Equal(expected ?? ReadOnlySpan<char>.Empty, Path.GetDirectoryName(path.AsSpan()));
+        }
+
+        [Fact]
+        public void GetDirectoryName_Span_CurrentDirectory()
+        {
+            string curDir = Directory.GetCurrentDirectory();
+            PathAssert.Equal(curDir, Path.GetDirectoryName(Path.Combine(curDir, "baz").AsSpan()));
+            PathAssert.Empty(Path.GetDirectoryName(Path.GetPathRoot(curDir).AsSpan()));
+        }
+
+        [Theory,
+            InlineData(@" C:\dir/baz", @" C:\dir"),
+            InlineData(@" C:\dir/baz", @" C:\dir")]
+        public void GetDirectoryName_SkipSpaces(string path, string expected)
+        {
+            // We no longer trim leading spaces for any path
+            Assert.Equal(expected, Path.GetDirectoryName(path));
+        }
+
+        [Theory, MemberData(nameof(TestData_GetExtension))]
+        public void GetExtension_Span(string path, string expected)
+        {
+            PathAssert.Equal(expected, Path.GetExtension(path.AsSpan()));
+            Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path.AsSpan()));
+        }
+
+        [Theory, MemberData(nameof(TestData_GetFileName))]
+        public void GetFileName_Span(string path, string expected)
+        {
+            PathAssert.Equal(expected, Path.GetFileName(path.AsSpan()));
+        }
+
+        public static IEnumerable<object[]> TestData_GetFileName_Volume()
         {
             yield return new object[] { ":", ":" };
             yield return new object[] { ".:", ".:" };
@@ -70,107 +96,78 @@ namespace System.IO.Tests
             yield return new object[] { Path.Combine("bar", "baz", "file:exe"), "file:exe" };
         }
 
-        [ActiveIssue(27269)]
-        [Theory]
-        [MemberData(nameof(GetFileName_VolumeTestData))]
-        public static void GetFileName_Volume(string path, string expected)
+        [Theory, MemberData(nameof(TestData_GetFileName_Volume))]
+        public void GetFileName_Volume(string path, string expected)
         {
             // We used to break on ':' on Windows. This is a valid file name character for alternate data streams.
             // Additionally the character can show up on unix volumes mounted to Windows.
             Assert.Equal(expected, Path.GetFileName(path));
-            Assert.Equal(expected, new string(Path.GetFileName(path.AsSpan())));
+            PathAssert.Equal(expected, Path.GetFileName(path.AsSpan()));
         }
 
-        [ActiveIssue(27269)]
-        [Theory]
-        [InlineData("B:", "")]
-        [InlineData("A:.", ".")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void GetFileName_Volume_Windows(string path, string expected)
+        [ActiveIssue(27269, TestPlatforms.Windows)]
+        [Theory, MemberData(nameof(TestData_GetFileNameWithoutExtension))]
+        public void GetFileNameWithoutExtension_Span(string path, string expected)
         {
-            // With a valid drive letter followed by a colon, we have a root, but only on Windows.
-            Assert.Equal(expected, Path.GetFileName(path));
-            Assert.Equal(expected, new string(Path.GetFileName(path.AsSpan())));
-        }
-
-        [Theory]
-        [InlineData("B:", "B:")]
-        [InlineData("A:.", "A:.")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public static void GetFileName_Volume_Unix(string path, string expected)
-        {
-            // No such thing as a drive relative path on Unix.
-            Assert.Equal(expected, Path.GetFileName(path));
-            Assert.Equal(expected, new string(Path.GetFileName(path.AsSpan())));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetFileName_TestData))]
-        public static void GetFileName_Span(string path, string expected)
-        {
-            if (path != null)
-                Assert.Equal(expected, new string(Path.GetFileName(path.AsSpan())));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetFileNameWithoutExtension_TestData))]
-        public static void GetFileNameWithoutExtension_Span(string path, string expected)
-        {
-            if(path != null)
-                Assert.Equal(expected, new string(Path.GetFileNameWithoutExtension(path.AsSpan())));
+            PathAssert.Equal(expected, Path.GetFileNameWithoutExtension(path.AsSpan()));
         }
 
         [Fact]
-        public static void GetPathRoot_Empty_Span()
+        public void GetPathRoot_Empty()
         {
-            Assert.Equal(string.Empty, new string(Path.GetPathRoot(ReadOnlySpan<char>.Empty)));
+            Assert.Null(Path.GetPathRoot(string.Empty));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]  // Tests UNC
-        [Theory, MemberData(nameof(GetPathRoot_Windows_UncAndExtended_Test_Data))]
-        public static void GetPathRoot_Windows_UncAndExtended_Span(string value, string expected)
+        [Fact]
+        public void GetPathRoot_Empty_Span()
         {
-            Assert.True(Path.IsPathRooted(value.AsSpan()));
-            Assert.Equal(expected, new string(Path.GetPathRoot(value.AsSpan())));
+            PathAssert.Empty(Path.GetPathRoot(ReadOnlySpan<char>.Empty));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [Theory, MemberData(nameof(GetPathRoot_Windows_UncAndExtended_WithLegacySupport_Test_Data))]
-        public static void GetPathRoot_Windows_UncAndExtended_WithLegacySupport_Span(string normalExpected, string legacyExpected, string value)
+        [Theory,
+            InlineData(nameof(TestData_Spaces)),
+            InlineData(nameof(TestData_ControlChars)),
+            InlineData(nameof(TestData_EmbeddedNull)),
+            InlineData(nameof(TestData_InvalidDriveLetters)),
+            InlineData(nameof(TestData_UnicodeWhiteSpace)),
+            InlineData(nameof(TestData_EmptyString))]
+        public void IsPathRooted_NegativeCases(string path)
         {
-            Assert.True(Path.IsPathRooted(value.AsSpan()));
-
-            string expected = PathFeatures.IsUsingLegacyPathNormalization() ? legacyExpected : normalExpected;
-            Assert.Equal(expected, new string(Path.GetPathRoot(value.AsSpan())));
-        }
-
-        [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific path convention
-        [Theory, MemberData(nameof(GetPathRoot_Windows_Test_Data))]
-        public static void GetPathRoot_Windows_Span(string value, string expected)
-        {
-            Assert.True(Path.IsPathRooted(value.AsSpan()));
-            Assert.Equal(expected, new string(Path.GetPathRoot(value.AsSpan())));
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        public static void IsPathRooted_Span(string path)
-        {
+            Assert.False(Path.IsPathRooted(path));
             Assert.False(Path.IsPathRooted(path.AsSpan()));
         }
 
-        // Testing invalid drive letters !(a-zA-Z)
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [Theory, MemberData(nameof(IsPathRooted_Windows_Invalid_Test_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fixed on Core where it would return true if the first char is not a drive letter followed by a VolumeSeparatorChar coreclr/10297")]
-        public static void IsPathRooted_Windows_Invalid_Span(string value)
+        [ActiveIssue(27269, TestPlatforms.Windows)]
+        [Fact]
+        public void GetInvalidPathChars()
         {
-            Assert.False(Path.IsPathRooted(value.AsSpan()));
+            Assert.All(Path.GetInvalidPathChars(), c =>
+            {
+                string bad = c.ToString();
+                Assert.Equal(bad + ".ok", Path.ChangeExtension(bad, "ok"));
+                Assert.Equal(bad + Path.DirectorySeparatorChar + "ok", Path.Combine(bad, "ok"));
+                Assert.Equal("ok" + Path.DirectorySeparatorChar + "ok" + Path.DirectorySeparatorChar + bad, Path.Combine("ok", "ok", bad));
+                Assert.Equal("ok" + Path.DirectorySeparatorChar + "ok" + Path.DirectorySeparatorChar + bad + Path.DirectorySeparatorChar + "ok", Path.Combine("ok", "ok", bad, "ok"));
+                Assert.Equal(bad + Path.DirectorySeparatorChar + bad + Path.DirectorySeparatorChar + bad + Path.DirectorySeparatorChar + bad + Path.DirectorySeparatorChar + bad, Path.Combine(bad, bad, bad, bad, bad));
+                Assert.Equal("", Path.GetDirectoryName(bad));
+                Assert.Equal(string.Empty, Path.GetExtension(bad));
+                Assert.Equal(bad, Path.GetFileName(bad));
+                Assert.Equal(bad, Path.GetFileNameWithoutExtension(bad));
+                if (bad[0] == '\0')
+                {
+                    Assert.Throws<ArgumentException>("path", () => Path.GetFullPath(bad));
+                }
+                else
+                {
+                    Assert.True(Path.GetFullPath(bad).EndsWith(bad));
+                }
+                Assert.Equal(string.Empty, Path.GetPathRoot(bad));
+                Assert.False(Path.IsPathRooted(bad));
+            });
         }
 
         [Fact]
-        public static void GetInvalidPathChars_Span()
+        public void GetInvalidPathChars_Span()
         {
             Assert.All(Path.GetInvalidPathChars(), c =>
             {
@@ -184,39 +181,42 @@ namespace System.IO.Tests
             });
         }
 
-        [Theory, MemberData(nameof(GetDirectoryName_Unix_Test_Data))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific paths
-        public static void GetDirectoryName_Unix_Span(string path, string expected)
+        [ActiveIssue(27269, TestPlatforms.Windows)]
+        [Theory,
+            InlineData("http://www.microsoft.com"),
+            InlineData("file://somefile")]
+        public void GetFullPath_URIsAsFileNames(string uriAsFileName)
         {
-            Assert.Equal(expected ?? string.Empty, new string(Path.GetDirectoryName(path.AsSpan())));
+            // URIs are valid filenames, though the multiple slashes will be consolidated in GetFullPath
+            Assert.Equal(
+                Path.Combine(Directory.GetCurrentDirectory(), uriAsFileName.Replace("//", Path.DirectorySeparatorChar.ToString())),
+                Path.GetFullPath(uriAsFileName));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific special characters in directory path
-        [Theory, MemberData(nameof(GetDirectoryName_ControlCharacters_Unix_Test_Data))]
-        public static void GetDirectoryName_ControlCharacters_Unix_Span(char ch, int count, string file)
+        [ActiveIssue(27269, TestPlatforms.Windows)]
+        [Theory, MemberData(nameof(TestData_NonDriveColonPaths))]
+        public void GetFullPath_NowSupportedColons(string path)
         {
-            Assert.Equal(new string(ch, count), new string(Path.GetDirectoryName(Path.Combine(new string(ch, count), file).AsSpan())));
+            // Used to throw on Windows, now should never throw
+            Path.GetFullPath(path);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks file extension behavior on Unix
-        [Theory, MemberData(nameof(GetExtension_Unix_Test_Data))]
-        public static void GetExtension_Unix_Span(string path, string expected)
+        [ActiveIssue(27269, TestPlatforms.Windows)]
+        [Theory, MemberData(nameof(TestData_InvalidUnc))]
+        public static void GetFullPath_UNC_Invalid(string path)
         {
-            Assert.Equal(expected, new string(Path.GetExtension(path.AsSpan())));
-            Assert.Equal(!string.IsNullOrEmpty(expected), Path.HasExtension(path.AsSpan()));
+            // These UNCs used to throw on Windows
+            Path.GetFullPath(path);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests Unix-specific valid file names
-        [Theory, MemberData(nameof(GetFileName_Unix_Test_Data))]
-        public static void GetFileName_Unix_Span(string file)
+        [ActiveIssue(27269, TestPlatforms.Windows)]
+        [Theory,
+            MemberData(nameof(TestData_Wildcards)),
+            MemberData(nameof(TestData_ExtendedWildcards))]
+        public void GetFullPath_Wildcards(char wildcard)
         {
-            Assert.Equal(file, new string(Path.GetFileName(file).AsSpan()));
-        }
-
-        [Fact]
-        public static void GetFileNameWithSpaces_Unix_Span()
-        {
-            Assert.Equal("fi  le", new string(Path.GetFileName(Path.Combine("b \r\n ar", "fi  le").AsSpan())));
+            string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + wildcard + "ing");
+            Assert.Equal(path, Path.GetFullPath(path));
         }
     }
 }
