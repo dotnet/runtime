@@ -17,7 +17,7 @@
 /acceptance-tests @akoeplinger
 /acceptance-tests/profiler-stress* @alexrp
 
-/data @marek-safar @akoeplinger
+/data @marek-safar @akoeplinger @luhenry
 /data/gdb @vargaz
 /data/lldb @lewurm @vargaz
 
@@ -30,14 +30,14 @@
 /external/boringssl @baulig
 /external/nuget-buildtasks @radical @akoeplinger
 
-/libgc @BrzVlad @vargaz
+/libgc @BrzVlad @vargaz @luhenry
 
-/llvm @vargaz
+/llvm @vargaz @luhenry
 
-/man @marek-safar @miguel
+/man @marek-safar @miguel @luhenry
 /man/*prof* @alexrp
 
-/mcs @marek-safar
+/mcs @marek-safar @luhenry
 
 /mcs/build @marek-safar @akoeplinger
 
@@ -103,26 +103,26 @@
 /mono/utils/mono-threads* @luhenry @kumpera
 /mono/utils/*-win* @lateralusX @kumpera
 
-/msvc @lateralusX
+/msvc @lateralusX @luhenry
 /msvc/*profiler* @alexrp
 /msvc/scripts @akoeplinger
 
-/packaging/ @alexischr @akoeplinger
+/packaging/ @alexischr @akoeplinger @luhenry
 /packaging/MacSDK/msbuild.py @radical @akoeplinger
 
-/runtime @akoeplinger @marek-safar
+/runtime @akoeplinger @marek-safar @luhenry
 
 /samples @luhenry
 /samples/profiler @alexrp
 /samples/size @alexrp
 
-/scripts @akoeplinger
+/scripts @akoeplinger @luhenry
 /scripts/ci @akoeplinger
 /scripts/ci/run-test-profiler-stress-tests.sh @alexrp
 
 /support @luhenry @vargaz
 
-/tools @kumpera
+/tools @kumpera @luhenry
 /tools/checker @tritao
 /tools/crash-bisector @kumpera
 /tools/locale-builder @marek-safar
