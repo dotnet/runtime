@@ -112,7 +112,7 @@ namespace System.Text.RegularExpressions
 
                 _matches.Add(match);
 
-                _prevlen = match._length;
+                _prevlen = match.Length;
                 _startat = match._textpos;
             } while (_matches.Count <= i);
 

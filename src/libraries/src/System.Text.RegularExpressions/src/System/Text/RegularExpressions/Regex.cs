@@ -6,7 +6,6 @@
 // expression.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
@@ -15,7 +14,6 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 #endif
 using System.Runtime.Serialization;
-using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
@@ -26,63 +24,20 @@ namespace System.Text.RegularExpressions
     /// </summary>
     public partial class Regex : ISerializable
     {
+        internal const int MaxOptionShift = 10;
+
         protected internal string pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;            // the top-level options from the options string
         protected internal RegexRunnerFactory factory;
-
-        protected internal Hashtable caps;          // if captures are sparse, this is the hashtable capnum->index
-        protected internal Hashtable capnames;      // if named captures are used, this maps names->index
-
-        protected internal string[] capslist;              // if captures are sparse or named captures are used, this is the sorted list of names
-        protected internal int capsize;                    // the size of the capture array
-
-        [CLSCompliant(false)]
-        protected IDictionary Caps
-        {
-            get
-            {
-                return caps;
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                caps = value as Hashtable;
-                if (caps == null)
-                {
-                    caps = new Hashtable(value);
-                }
-            }
-        }
-
-        [CLSCompliant(false)]
-        protected IDictionary CapNames
-        {
-            get
-            {
-                return capnames;
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                capnames = value as Hashtable;
-                if (capnames == null)
-                {
-                    capnames = new Hashtable(value);
-                }
-            }
-        }
-
-
-        internal ExclusiveReference _runnerref;             // cached runner
-        internal SharedReference _replref;                  // cached parsed replacement pattern
-        internal RegexCode _code;                           // if interpreted, this is the code for RegexInterpreter
+        protected internal Hashtable caps;                   // if captures are sparse, this is the hashtable capnum->index
+        protected internal Hashtable capnames;               // if named captures are used, this maps names->index
+        protected internal string[] capslist;                // if captures are sparse or named captures are used, this is the sorted list of names
+        protected internal int capsize;                      // the size of the capture array
+        
+        internal ExclusiveReference _runnerref;              // cached runner
+        internal SharedReference _replref;                   // cached parsed replacement pattern
+        internal RegexCode _code;                            // if interpreted, this is the code for RegexInterpreter
         internal bool _refsInitialized = false;
-
-        internal const int MaxOptionShift = 10;
 
         protected Regex()
         {
@@ -151,19 +106,17 @@ namespace System.Text.RegularExpressions
 
             ValidateMatchTimeout(matchTimeout);
 
-            string cultureKey;
-            if ((options & RegexOptions.CultureInvariant) != 0)
-                cultureKey = CultureInfo.InvariantCulture.ToString();
-            else
-                cultureKey = CultureInfo.CurrentCulture.ToString();
-
-            // Try to look up this regex in the cache.
-            var key = new CachedCodeEntryKey(options, cultureKey, pattern);
-            CachedCodeEntry cached = LookupCachedAndUpdate(key);
-
+            // After parameter validation assign 
             this.pattern = pattern;
             roptions = options;
             internalMatchTimeout = matchTimeout;
+
+            // Cache handling. Try to look up this regex in the cache.
+            string cultureKey = (options & RegexOptions.CultureInvariant) != 0 ?
+                    CultureInfo.InvariantCulture.ToString() :
+                    CultureInfo.CurrentCulture.ToString();                        
+            var key = new CachedCodeEntryKey(options, cultureKey, pattern);
+            CachedCodeEntry cached = LookupCachedAndUpdate(key);
 
             if (cached == null)
             {
@@ -193,6 +146,8 @@ namespace System.Text.RegularExpressions
 #if FEATURE_COMPILED
                 factory = cached._factory;
 #endif
+
+                // Cache runner and replacement
                 _runnerref = cached._runnerref;
                 _replref = cached._replref;
                 _refsInitialized = true;
@@ -214,6 +169,38 @@ namespace System.Text.RegularExpressions
 #endif
         }
 
+        [CLSCompliant(false)]
+        protected IDictionary Caps
+        {
+            get
+            {
+                return caps;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                caps = value as Hashtable ?? new Hashtable(value);
+            }
+        }
+
+        [CLSCompliant(false)]
+        protected IDictionary CapNames
+        {
+            get
+            {
+                return capnames;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
+
+                capnames = value as Hashtable ?? new Hashtable(value);
+            }
+        }
+
 #if FEATURE_COMPILED
         /// <summary>
         /// This method is here for perf reasons: if the call to RegexCompiler is NOT in the 
@@ -224,6 +211,21 @@ namespace System.Text.RegularExpressions
         private RegexRunnerFactory Compile(RegexCode code, RegexOptions roptions)
         {
             return RegexCompiler.Compile(code, roptions);
+        }
+
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+        }
+
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
+        }
+
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, string resourceFile)
+        {
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
         }
 #endif
 
@@ -247,7 +249,6 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Unescapes any escaped characters in the input string.
         /// </summary>
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Unescape", Justification = "Already shipped since v1 - can't fix without causing a breaking change")]
         public static string Unescape(string str)
         {
             if (str == null)
@@ -259,38 +260,17 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns the options passed into the constructor
         /// </summary>
-        public RegexOptions Options
-        {
-            get { return roptions; }
-        }
-
-
-        /// <summary>
-        /// The match timeout used by this Regex instance.
-        /// </summary>
-        public TimeSpan MatchTimeout
-        {
-            get { return internalMatchTimeout; }
-        }
+        public RegexOptions Options => roptions;
 
         /// <summary>
         /// Indicates whether the regular expression matches from right to left.
         /// </summary>
-        public bool RightToLeft
-        {
-            get
-            {
-                return UseOptionR();
-            }
-        }
+        public bool RightToLeft => UseOptionR();
 
         /// <summary>
         /// Returns the regular expression pattern passed into the constructor
         /// </summary>
-        public override string ToString()
-        {
-            return pattern;
-        }
+        public override string ToString() => pattern;
 
         /*
          * Returns an array of the group names that are used to capture groups
@@ -319,7 +299,6 @@ namespace System.Text.RegularExpressions
             else
             {
                 result = new string[capslist.Length];
-
                 Array.Copy(capslist, 0, result, 0, capslist.Length);
             }
 
@@ -444,26 +423,6 @@ namespace System.Text.RegularExpressions
             return -1;
         }
 
-#if FEATURE_COMPILED
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "assemblyname", Justification = "Microsoft: already shipped since v1 - can't fix without causing a breaking change")]
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
-
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "assemblyname", Justification = "Microsoft: already shipped since v1 - can't fix without causing a breaking change")]
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
-
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "assemblyname", Justification = "Microsoft: already shipped since v1 - can't fix without causing a breaking change")]
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, string resourceFile)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-        }
-#endif
-
         protected void InitializeReferences()
         {
             if (_refsInitialized)
@@ -474,15 +433,12 @@ namespace System.Text.RegularExpressions
             _replref = new SharedReference();
         }
 
-
-        /*
-         * Internal worker called by all the public APIs
-         */
+        /// <summary>
+        /// Internal worker called by all the public APIs
+        /// </summary>
+        /// <returns></returns>
         internal Match Run(bool quick, int prevlen, string input, int beginning, int length, int startat)
         {
-            Match match;
-            RegexRunner runner = null;
-
             if (startat < 0 || startat > input.Length)
                 throw new ArgumentOutOfRangeException(nameof(startat), SR.BeginIndexNotNegative);
 
@@ -490,21 +446,19 @@ namespace System.Text.RegularExpressions
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
 
             // There may be a cached runner; grab ownership of it if we can.
-
-            runner = (RegexRunner)_runnerref.Get();
+            RegexRunner runner = (RegexRunner)_runnerref.Get();
 
             // Create a RegexRunner instance if we need to
-
             if (runner == null)
             {
                 // Use the compiled RegexRunner factory if the code was compiled to MSIL
-
                 if (factory != null)
                     runner = factory.CreateInstance();
                 else
                     runner = new RegexInterpreter(_code, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
             }
 
+            Match match;
             try
             {
                 // Do the scan starting at the requested position
@@ -523,35 +477,20 @@ namespace System.Text.RegularExpressions
             return match;
         }
 
-        protected bool UseOptionC()
-        {
-            return (roptions & RegexOptions.Compiled) != 0;
-        }
+        protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
         /*
          * True if the L option was set
          */
-        protected internal bool UseOptionR()
-        {
-            return (roptions & RegexOptions.RightToLeft) != 0;
-        }
+        protected internal bool UseOptionR() => (roptions & RegexOptions.RightToLeft) != 0;
 
-        internal bool UseOptionInvariant()
-        {
-            return (roptions & RegexOptions.CultureInvariant) != 0;
-        }
+        internal bool UseOptionInvariant() => (roptions & RegexOptions.CultureInvariant) != 0;
 
 #if DEBUG
-        /*
-         * True if the regex has debugging enabled
-         */
-        internal bool Debug
-        {
-            get
-            {
-                return (roptions & RegexOptions.Debug) != 0;
-            }
-        }
+        /// <summary>
+        /// True if the regex has debugging enabled
+        /// </summary>
+        internal bool Debug => (roptions & RegexOptions.Debug) != 0;
 #endif
     }
 }

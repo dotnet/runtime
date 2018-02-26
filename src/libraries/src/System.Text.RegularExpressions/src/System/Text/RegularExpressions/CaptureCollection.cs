@@ -70,7 +70,7 @@ namespace System.Text.RegularExpressions
                 _captures = new Capture[_capcount];
                 for (int j = 0; j < _capcount - 1; j++)
                 {
-                    _captures[j] = new Capture(_group._text, _group._caps[j * 2], _group._caps[j * 2 + 1]);
+                    _captures[j] = new Capture(_group.Text, _group._caps[j * 2], _group._caps[j * 2 + 1]);
                 }
             }
 
@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions
 
         int IList<Capture>.IndexOf(Capture item)
         {
-            var comparer = EqualityComparer<Capture>.Default;
+            EqualityComparer<Capture> comparer = EqualityComparer<Capture>.Default;
             for (int i = 0; i < Count; i++)
             {
                 if (comparer.Equals(this[i], item))
