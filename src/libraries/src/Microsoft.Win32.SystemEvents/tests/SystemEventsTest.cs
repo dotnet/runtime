@@ -32,11 +32,11 @@ namespace Microsoft.Win32.SystemEventsTests
                 var windowClassName = windowClassNameField.GetValue(null) as string;
                 Assert.NotNull(windowClassName);
 
-                s_hwnd = User32.FindWindow(windowClassName, null);
+                s_hwnd = User32.FindWindowW(windowClassName, null);
                 Assert.NotEqual(s_hwnd, IntPtr.Zero);
             }
 
-            return User32.SendMessage(s_hwnd, msg, wParam, lParam);
+            return User32.SendMessageW(s_hwnd, msg, wParam, lParam);
         }
     }
 }

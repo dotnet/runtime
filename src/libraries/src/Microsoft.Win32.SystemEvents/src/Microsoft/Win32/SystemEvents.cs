@@ -112,7 +112,7 @@ namespace Microsoft.Win32
                         int lengthNeeded = 0;
                         Interop.User32.USEROBJECTFLAGS flags = new Interop.User32.USEROBJECTFLAGS();
 
-                        if (Interop.User32.GetUserObjectInformation(hwinsta, Interop.User32.UOI_FLAGS, flags, Marshal.SizeOf(flags), ref lengthNeeded))
+                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, flags, Marshal.SizeOf(flags), ref lengthNeeded))
                         {
                             if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
                             {
@@ -447,9 +447,7 @@ namespace Microsoft.Win32
             {
                 if (s_defWindowProc == IntPtr.Zero)
                 {
-                    string defproc = (Marshal.SystemDefaultCharSize == 1 ? "DefWindowProcA" : "DefWindowProcW");
-
-                    s_defWindowProc = Interop.Kernel32.GetProcAddress(Interop.Kernel32.GetModuleHandle("user32.dll"), defproc);
+                    s_defWindowProc = Interop.Kernel32.GetProcAddress(Interop.Kernel32.GetModuleHandle("user32.dll"), "DefWindowProcW");
                 }
                 return s_defWindowProc;
             }
@@ -473,9 +471,9 @@ namespace Microsoft.Win32
             Interop.User32.WNDCLASS_I wndclassi = new Interop.User32.WNDCLASS_I();
             IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
-            if (!Interop.User32.GetClassInfo(hInstance, WndClass.lpszClassName, wndclassi))
+            if (!Interop.User32.GetClassInfoW(hInstance, WndClass.lpszClassName, wndclassi))
             {
-                if (Interop.User32.RegisterClass(WndClass) == 0)
+                if (Interop.User32.RegisterClassW(WndClass) == 0)
                 {
                     _windowProc = null;
                     Debug.Fail("Unable to register broadcast window class");
@@ -484,16 +482,16 @@ namespace Microsoft.Win32
             }
             else
             {
-                //lets double check the wndproc returned by getclassinfo for defwndproc.
+                //lets double check the wndproc returned by getclassinfo for sentinel value defwndproc.
                 if (wndclassi.lpfnWndProc == DefWndProc)
                 {
                     //if we are in there, it means className belongs to an unloaded appdomain.
                     short atom = 0;
 
                     //try to unregister it.
-                    if (0 != Interop.User32.UnregisterClass(WndClass.lpszClassName, Interop.Kernel32.GetModuleHandle(null)))
+                    if (0 != Interop.User32.UnregisterClassW(WndClass.lpszClassName, Interop.Kernel32.GetModuleHandle(null)))
                     {
-                        atom = Interop.User32.RegisterClass(WndClass);
+                        atom = Interop.User32.RegisterClassW(WndClass);
                     }
 
                     if (atom == 0)
@@ -501,7 +499,7 @@ namespace Microsoft.Win32
                         do
                         {
                             BumpQualifier();
-                            atom = Interop.User32.RegisterClass(WndClass);
+                            atom = Interop.User32.RegisterClassW(WndClass);
                         } while (atom == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_CLASS_ALREADY_EXISTS);
                     }
                 }
@@ -509,7 +507,7 @@ namespace Microsoft.Win32
 
             // And create an instance of the window.
             //
-            IntPtr hwnd = Interop.User32.CreateWindowEx(
+            IntPtr hwnd = Interop.User32.CreateWindowExW(
                                                             0,
                                                             WndClass.lpszClassName,
                                                             WndClass.lpszClassName,
@@ -532,7 +530,7 @@ namespace Microsoft.Win32
             }
 
             EnsureSystemEvents(true, true);
-            IntPtr timerId = Interop.User32.SendMessage(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
+            IntPtr timerId = Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
                                                         Interop.User32.WM_CREATETIMER, (IntPtr)interval, IntPtr.Zero);
 
             if (timerId == IntPtr.Zero)
@@ -558,11 +556,19 @@ namespace Microsoft.Win32
                 //if this were true, we want to unregister the class.
                 if (Interop.User32.IsWindow(handle) && DefWndProc != IntPtr.Zero)
                 {
-                    Interop.User32.SetWindowLongPtr(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
-
                     //set our sentinel value that we will look for upon initialization to indicate
                     //the window class belongs to an unloaded appdomain and therefore should not be used.
-                    Interop.User32.SetClassLongPtr(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                    if (IntPtr.Size == 4)
+                    {
+                        // In a 32-bit process we must call the non-'ptr' version of these APIs
+                        Interop.User32.SetWindowLongW(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
+                        Interop.User32.SetClassLongW(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                    }
+                    else
+                    {
+                        Interop.User32.SetWindowLongPtrW(handle, Interop.User32.GWL_WNDPROC, DefWndProc);
+                        Interop.User32.SetClassLongPtrW(handle, Interop.User32.GCL_WNDPROC, DefWndProc);
+                    }
                 }
 
                 // If DestroyWindow failed, it is because we're being
@@ -572,12 +578,12 @@ namespace Microsoft.Win32
                 //
                 if (Interop.User32.IsWindow(handle) && !Interop.User32.DestroyWindow(handle))
                 {
-                    Interop.User32.PostMessage(handle, Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                    Interop.User32.PostMessageW(handle, Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
                 }
                 else
                 {
                     IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
-                    Interop.User32.UnregisterClass(s_className, hInstance);
+                    Interop.User32.UnregisterClassW(s_className, hInstance);
                 }
             }
 
@@ -667,11 +673,11 @@ namespace Microsoft.Win32
 
             if (msg == Interop.User32.WM_SETTINGCHANGE)
             {
-                if (lParam != IntPtr.Zero && Marshal.PtrToStringAuto(lParam).Equals("Policy"))
+                if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam).Equals("Policy"))
                 {
                     pref = UserPreferenceCategory.Policy;
                 }
-                else if (lParam != IntPtr.Zero && Marshal.PtrToStringAuto(lParam).Equals("intl"))
+                else if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam).Equals("intl"))
                 {
                     pref = UserPreferenceCategory.Locale;
                 }
@@ -885,7 +891,7 @@ namespace Microsoft.Win32
                 {
                     if (s_threadCallbackList == null)
                     {
-                        s_threadCallbackMessage = Interop.User32.RegisterWindowMessage("SystemEventsThreadCallbackMessage");
+                        s_threadCallbackMessage = Interop.User32.RegisterWindowMessageW("SystemEventsThreadCallbackMessage");
                         s_threadCallbackList = new Queue<Delegate>();
                     }
                 }
@@ -898,7 +904,7 @@ namespace Microsoft.Win32
                 s_threadCallbackList.Enqueue(method);
             }
 
-            Interop.User32.PostMessage(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
         }
 
         /// <internalonly/>
@@ -910,7 +916,7 @@ namespace Microsoft.Win32
             EnsureSystemEvents(true, true);
             if (s_systemEvents._windowHandle != IntPtr.Zero)
             {
-                int res = (int)Interop.User32.SendMessage(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
+                int res = (int)Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
                                                                 Interop.User32.WM_KILLTIMER, timerId, IntPtr.Zero);
 
                 if (res == 0)
@@ -1210,7 +1216,7 @@ namespace Microsoft.Win32
                             int thread = Interop.User32.GetWindowThreadProcessId(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), out pid);
                             Debug.Assert(thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call Shutdown on the system events thread");
 #endif
-                            Interop.User32.PostMessage(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
 
                             s_eventThreadTerminated.WaitOne();
                             s_windowThread.Join(); //avoids an AppDomainUnloaded exception on our background thread.
@@ -1245,13 +1251,13 @@ namespace Microsoft.Win32
                     IntPtr newStringPtr = lParam;
                     if (lParam != IntPtr.Zero)
                     {
-                        newString = Marshal.PtrToStringAuto(lParam);
+                        newString = Marshal.PtrToStringUni(lParam);
                         if (newString != null)
                         {
-                            newStringPtr = Marshal.StringToHGlobalAuto(newString);
+                            newStringPtr = Marshal.StringToHGlobalUni(newString);
                         }
                     }
-                    Interop.User32.PostMessage(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, newStringPtr);
+                    Interop.User32.PostMessageW(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, newStringPtr);
                     break;
                 case Interop.User32.WM_WTSSESSION_CHANGE:
                     OnSessionSwitch((int)wParam);
@@ -1264,7 +1270,7 @@ namespace Microsoft.Win32
                 case Interop.User32.WM_TIMECHANGE:
                 case Interop.User32.WM_TIMER:
                 case Interop.User32.WM_THEMECHANGED:
-                    Interop.User32.PostMessage(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, lParam);
+                    Interop.User32.PostMessageW(_windowHandle, Interop.User32.WM_REFLECT + msg, wParam, lParam);
                     break;
 
                 case Interop.User32.WM_CREATETIMER:
@@ -1352,7 +1358,7 @@ namespace Microsoft.Win32
                     break;
             }
 
-            return Interop.User32.DefWindowProc(hWnd, msg, wParam, lParam);
+            return Interop.User32.DefWindowProcW(hWnd, msg, wParam, lParam);
         }
 
         /// <devdoc>
@@ -1390,7 +1396,7 @@ namespace Microsoft.Win32
                         }
                         else
                         {
-                            while (Interop.User32.PeekMessage(ref msg, IntPtr.Zero, 0, 0, Interop.User32.PM_REMOVE))
+                            while (Interop.User32.PeekMessageW(ref msg, IntPtr.Zero, 0, 0, Interop.User32.PM_REMOVE))
                             {
                                 if (msg.message == Interop.User32.WM_QUIT)
                                 {
@@ -1399,7 +1405,7 @@ namespace Microsoft.Win32
                                 }
 
                                 Interop.User32.TranslateMessage(ref msg);
-                                Interop.User32.DispatchMessage(ref msg);
+                                Interop.User32.DispatchMessageW(ref msg);
                             }
                         }
                     }

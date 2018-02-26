@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet = CharSet.Auto)]
-        public static extern bool PeekMessage([In, Out] ref MSG msg, IntPtr hwnd, int msgMin, int msgMax, int remove);
+        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        public static extern bool PeekMessageW([In, Out] ref MSG msg, IntPtr hwnd, int msgMin, int msgMax, int remove);
     }
 }

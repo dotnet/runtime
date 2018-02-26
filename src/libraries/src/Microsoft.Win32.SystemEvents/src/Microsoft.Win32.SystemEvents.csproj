@@ -74,11 +74,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SendMessage.cs">
       <Link>Common\Interop\Windows\user32\Interop.SendMessage.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SetClassLong.cs">
+      <Link>Common\Interop\Windows\user32\Interop.SetClassLong.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SetClassLongPtr.cs">
       <Link>Common\Interop\Windows\user32\Interop.SetClassLongPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SetTimer.cs">
       <Link>Common\Interop\Windows\user32\Interop.SetTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SetWindowLong.cs">
+      <Link>Common\Interop\Windows\user32\Interop.SetWindowLong.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SetWindowLongPtr.cs">
       <Link>Common\Interop\Windows\user32\Interop.SetWindowLongPtr.cs</Link>
