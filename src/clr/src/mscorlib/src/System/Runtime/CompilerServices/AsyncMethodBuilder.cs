@@ -784,7 +784,6 @@ namespace System.Runtime.CompilerServices
                 // - Boolean
                 // - Byte, SByte
                 // - Char
-                // - Decimal
                 // - Int32, UInt32
                 // - Int64, UInt64
                 // - Int16, UInt16
@@ -819,7 +818,6 @@ namespace System.Runtime.CompilerServices
                     (typeof(TResult) == typeof(Byte) && default(Byte) == (Byte)(object)result) ||
                     (typeof(TResult) == typeof(SByte) && default(SByte) == (SByte)(object)result) ||
                     (typeof(TResult) == typeof(Char) && default(Char) == (Char)(object)result) ||
-                    (typeof(TResult) == typeof(Decimal) && default(Decimal) == (Decimal)(object)result) ||
                     (typeof(TResult) == typeof(Int64) && default(Int64) == (Int64)(object)result) ||
                     (typeof(TResult) == typeof(UInt64) && default(UInt64) == (UInt64)(object)result) ||
                     (typeof(TResult) == typeof(Int16) && default(Int16) == (Int16)(object)result) ||
