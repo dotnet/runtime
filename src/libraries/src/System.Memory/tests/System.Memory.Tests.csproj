@@ -74,6 +74,7 @@
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceFactory.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.cs" />
+    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.TryGet.cs" />
     <Compile Include="ReadOnlyBuffer\SequencePosition.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -233,7 +233,7 @@ namespace System.IO.Pipelines.Tests
             //     block 1       ->    block2
             // [padding..hello]  ->  [  world   ]
             PipeWriter writeBuffer = _pipe.Writer;
-            var blockSize = _pipe.Writer.GetMemory(0).Length;
+            var blockSize = _pipe.Writer.GetMemory().Length;
 
             byte[] paddingBytes = Enumerable.Repeat((byte)'a', blockSize - 5).ToArray();
             byte[] bytes = Encoding.ASCII.GetBytes("Hello World");

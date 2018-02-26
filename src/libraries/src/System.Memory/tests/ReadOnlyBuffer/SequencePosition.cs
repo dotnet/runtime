@@ -34,13 +34,5 @@ namespace System.Memory.Tests
             Assert.False(position != position2);
             Assert.Equal(position.GetHashCode(),position2.GetHashCode());
         }
-
-        [Fact]
-        public void ToStringIsCorrect()
-        {
-            Assert.Equal("System.Object[2]", new SequencePosition(new object(), 2).ToString());
-            Assert.Equal("2", new SequencePosition(null, 2).ToString());
-            Assert.Equal("(default)", new SequencePosition().ToString());
-        }
     }
 }

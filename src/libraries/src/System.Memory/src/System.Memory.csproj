@@ -45,6 +45,7 @@
     <Compile Include="System\Buffers\Binary\WriterLittleEndian.cs" />
     <Compile Include="System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="System\Buffers\Text\Base64Encoder.cs" />
+    <Compile Include="System\Runtime\InteropServices\SequenceMarshal.cs" />
   </ItemGroup>
   <!-- Utf8 Formatter/Parser -->
   <ItemGroup>
