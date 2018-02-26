@@ -2426,11 +2426,9 @@ namespace System
         internal IntPtr m_handle;
 
         internal static readonly RuntimeType ValueType = (RuntimeType)typeof(System.ValueType);
-        internal static readonly RuntimeType EnumType = (RuntimeType)typeof(System.Enum);
 
         private static readonly RuntimeType ObjectType = (RuntimeType)typeof(System.Object);
         private static readonly RuntimeType StringType = (RuntimeType)typeof(System.String);
-        private static readonly RuntimeType DelegateType = (RuntimeType)typeof(System.Delegate);
         #endregion
 
         #region Constructor
