@@ -32,7 +32,6 @@ namespace Microsoft.Win32
         // SystemEvents around so we can bind delegates to it.
         // Non-static methods in this class will only be called through
         // one of the delegates.
-        //
         private static readonly object s_eventLockObject = new object();
         private static readonly object s_procLockObject = new object();
         private static volatile SystemEvents s_systemEvents;
@@ -53,13 +52,11 @@ namespace Microsoft.Win32
         private static volatile ManualResetEvent s_eventThreadTerminated;
 
         // Per-instance data that is isolated to the window thread.
-        //
         private volatile IntPtr _windowHandle;
         private Interop.User32.WndProc _windowProc;
         private Interop.Kernel32.ConsoleCtrlHandlerRoutine _consoleHandler;
 
         // The set of events we respond to.  
-        //
         private static readonly object s_onUserPreferenceChangingEvent = new object();
         private static readonly object s_onUserPreferenceChangedEvent = new object();
         private static readonly object s_onSessionEndingEvent = new object();
@@ -78,7 +75,6 @@ namespace Microsoft.Win32
 
         // Our list of handler information.  This is a lookup of the above keys and objects that
         // match a delegate with a SyncronizationContext so we can fire on the proper thread.
-        //
         private static Dictionary<object, List<SystemEventInvokeInfo>> s_handlers;
 
 
@@ -92,7 +88,6 @@ namespace Microsoft.Win32
 
         // stole from SystemInformation... if we get SystemInformation moved
         // to somewhere that we can use it... rip this!
-        //
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static volatile IntPtr s_processWinStation = IntPtr.Zero;
         private static volatile bool s_isUserInteractive = false;
@@ -417,13 +412,12 @@ namespace Microsoft.Win32
             {
                 if (s_staticwndclass == null)
                 {
-                    const string classNameFormat = ".NET-BroadcastEventWindow.{0}.{1}.{2}";
+                    const string classNameFormat = ".NET-BroadcastEventWindow.{0}.{1}";
 
                     IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
                     s_className = string.Format(System.Globalization.CultureInfo.InvariantCulture,
                         classNameFormat,
-                        "4.0.0.0", //todo
                         Convert.ToString(AppDomain.CurrentDomain.GetHashCode(), 16),
                         s_domainQualifier);
 
@@ -467,7 +461,6 @@ namespace Microsoft.Win32
         private IntPtr CreateBroadcastWindow()
         {
             // Register the window class.
-            //
             Interop.User32.WNDCLASS_I wndclassi = new Interop.User32.WNDCLASS_I();
             IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
@@ -482,13 +475,13 @@ namespace Microsoft.Win32
             }
             else
             {
-                //lets double check the wndproc returned by getclassinfo for sentinel value defwndproc.
+                // lets double check the wndproc returned by getclassinfo for sentinel value defwndproc.
                 if (wndclassi.lpfnWndProc == DefWndProc)
                 {
-                    //if we are in there, it means className belongs to an unloaded appdomain.
+                    // if we are in there, it means className belongs to an unloaded appdomain.
                     short atom = 0;
 
-                    //try to unregister it.
+                    // try to unregister it.
                     if (0 != Interop.User32.UnregisterClassW(WndClass.lpszClassName, Interop.Kernel32.GetModuleHandle(null)))
                     {
                         atom = Interop.User32.RegisterClassW(WndClass);
@@ -506,7 +499,6 @@ namespace Microsoft.Win32
             }
 
             // And create an instance of the window.
-            //
             IntPtr hwnd = Interop.User32.CreateWindowExW(
                                                             0,
                                                             WndClass.lpszClassName,
@@ -552,12 +544,12 @@ namespace Microsoft.Win32
                 IntPtr handle = _windowHandle;
                 _windowHandle = IntPtr.Zero;
 
-                //we check IsWindow because Application may have rudely destroyed our broadcast window.
-                //if this were true, we want to unregister the class.
+                // we check IsWindow because Application may have rudely destroyed our broadcast window.
+                // if this were true, we want to unregister the class.
                 if (Interop.User32.IsWindow(handle) && DefWndProc != IntPtr.Zero)
                 {
-                    //set our sentinel value that we will look for upon initialization to indicate
-                    //the window class belongs to an unloaded appdomain and therefore should not be used.
+                    // set our sentinel value that we will look for upon initialization to indicate
+                    // the window class belongs to an unloaded appdomain and therefore should not be used.
                     if (IntPtr.Size == 4)
                     {
                         // In a 32-bit process we must call the non-'ptr' version of these APIs
@@ -573,9 +565,9 @@ namespace Microsoft.Win32
 
                 // If DestroyWindow failed, it is because we're being
                 // shutdown from another thread.  In this case, locate the
-                // DefWindowProc call in User32, sling the window back to it,
-                // and post a nice fat WM_CLOSE
-                //
+                // DefWindowProc call in User32, set the window proc to call it,
+                // and post a WM_CLOSE.  This will close the window from 
+                // the correct thread without relying on managed code executing.
                 if (Interop.User32.IsWindow(handle) && !Interop.User32.DestroyWindow(handle))
                 {
                     Interop.User32.PostMessageW(handle, Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
@@ -604,7 +596,6 @@ namespace Microsoft.Win32
             // app domains to field requests and we do not want to gobble up an 
             // additional thread per domain.  So under this scenario SystemEvents
             // becomes a nop.
-            //
             if (s_systemEvents == null)
             {
                 lock (s_procLockObject)
@@ -622,7 +613,6 @@ namespace Microsoft.Win32
 
                         // If we are creating system events on a thread declared as STA, then
                         // just share the thread.
-                        //
                         if (!UserInteractive || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                         {
                             s_systemEvents = new SystemEvents();
@@ -835,14 +825,12 @@ namespace Microsoft.Win32
             }
 
             // Now invoke on all the queued items.
-            //
             while (current != null)
             {
                 try
                 {
                     // Optimize a common case of using EventHandler. This allows us to invoke
                     // early bound, which is a bit more efficient.
-                    //
                     EventHandler c = current as EventHandler;
                     if (c != null)
                     {
@@ -1014,7 +1002,6 @@ namespace Microsoft.Win32
         {
             // wParam will be nonzero if the session is actually ending.  If
             // it was canceled then we do not want to raise the event.
-            //
             if (wParam != (IntPtr)0)
             {
                 SessionEndReasons reason = SessionEndReasons.SystemShutdown;
@@ -1039,7 +1026,7 @@ namespace Microsoft.Win32
 
             SessionEndReasons reason = SessionEndReasons.SystemShutdown;
 
-            //Casting to (int) is bad if we're 64-bit; casting to (long) is ok whether we're 64- or 32-bit.
+            // Casting to (int) is bad if we're 64-bit; casting to (long) is ok whether we're 64- or 32-bit.
             if ((((long)lParam) & Interop.User32.ENDSESSION_LOGOFF) != 0)
             {
                 reason = SessionEndReasons.Logoff;
@@ -1069,8 +1056,8 @@ namespace Microsoft.Win32
         /// </devdoc>
         private void OnThemeChanged()
         {
-            //we need to fire a changing event handler for Themes.
-            //note that it needs to be documented that accessing theme information during the changing event is forbidden.
+            // we need to fire a changing event handler for Themes.
+            // note that it needs to be documented that accessing theme information during the changing event is forbidden.
             RaiseEvent(s_onUserPreferenceChangingEvent, this, new UserPreferenceChangingEventArgs(UserPreferenceCategory.VisualStyle));
 
             UserPreferenceCategory pref = UserPreferenceCategory.Window;
@@ -1116,7 +1103,7 @@ namespace Microsoft.Win32
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void RaiseEvent(bool checkFinalization, object key, params object[] args)
         {
-            //If the AppDomain's unloading, we shouldn't fire SystemEvents other than Shutdown.
+            // If the AppDomain's unloading, we shouldn't fire SystemEvents other than Shutdown.
             if (checkFinalization && AppDomain.CurrentDomain.IsFinalizingForUnload())
             {
                 return;
@@ -1132,7 +1119,6 @@ namespace Microsoft.Win32
 
                     // clone the list so we don't have this type locked and cause
                     // a deadlock if someone tries to modify handlers during an invoke.
-                    //
                     if (invokeItems != null)
                     {
                         invokeItemArray = invokeItems.ToArray();
@@ -1152,12 +1138,11 @@ namespace Microsoft.Win32
                     }
                     catch (Exception)
                     {
-                        //Eat exceptions (Everett compat)
+                        // Eat exceptions (Everett compat)
                     }
                 }
 
                 // clean out any that are dead.
-                //
                 lock (s_eventLockObject)
                 {
                     List<SystemEventInvokeInfo> invokeItems = null;
@@ -1172,7 +1157,6 @@ namespace Microsoft.Win32
                                 if (!s_handlers.TryGetValue(key, out invokeItems))
                                 {
                                     // weird.  just to be safe.
-                                    //
                                     return;
                                 }
                             }
@@ -1206,7 +1190,6 @@ namespace Microsoft.Win32
                     if (s_systemEvents != null)
                     {
                         // If we are using system events from another thread, request that it terminate
-                        //
                         if (s_windowThread != null)
                         {
                             s_eventThreadTerminated = new ManualResetEvent(false);
@@ -1219,7 +1202,7 @@ namespace Microsoft.Win32
                             Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
 
                             s_eventThreadTerminated.WaitOne();
-                            s_windowThread.Join(); //avoids an AppDomainUnloaded exception on our background thread.
+                            s_windowThread.Join(); // avoids an AppDomainUnloaded exception on our background thread.
                         }
                         else
                         {
@@ -1349,7 +1332,6 @@ namespace Microsoft.Win32
 
                 default:
                     // If we received a thread execute message, then execute it.
-                    //
                     if (msg == s_threadCallbackMessage && msg != 0)
                     {
                         InvokeMarshaledCallbacks();
@@ -1385,7 +1367,6 @@ namespace Microsoft.Win32
                     // Blocking on a GetMessage() call prevents the EE from being able to unwind
                     // this thread properly (e.g. during AppDomainUnload). So, we use PeekMessage()
                     // and sleep so we always block in managed code instead.
-                    //
                     while (keepRunning)
                     {
                         int ret = Interop.User32.MsgWaitForMultipleObjectsEx(0, IntPtr.Zero, 100, Interop.User32.QS_ALLINPUT, Interop.User32.MWMO_INPUTAVAILABLE);
@@ -1417,7 +1398,6 @@ namespace Microsoft.Win32
             {
                 // In case something very very wrong happend during the creation action.
                 // This will unblock the calling thread.
-                //
                 s_eventWindowReady.Set();
 
                 if (!((e is ThreadInterruptedException) || (e is ThreadAbortException)))
@@ -1434,7 +1414,6 @@ namespace Microsoft.Win32
         }
 
         // A class that helps fire events on the right thread.
-        //
         private class SystemEventInvokeInfo
         {
             private SynchronizationContext _syncContext; // the context that we'll use to fire against.
@@ -1446,13 +1425,11 @@ namespace Microsoft.Win32
             }
 
             // fire the given event with the given params.
-            //
             public void Invoke(bool checkFinalization, params object[] args)
             {
                 try
                 {
                     // If we didn't get call back invoke directly.
-                    //
                     if (_syncContext == null)
                     {
                         InvokeCallback(args);
@@ -1460,14 +1437,13 @@ namespace Microsoft.Win32
                     else
                     {
                         // otherwise tell the context to do it for us.
-                        //
                         _syncContext.Send(new SendOrPostCallback(InvokeCallback), args);
                     }
                 }
                 catch (InvalidAsynchronousStateException)
                 {
-                    //if the synch context is invalid -- do the invoke directly for app compat.
-                    //If the app's shutting down, don't fire the event (unless it's shutdown).
+                    // if the synch context is invalid -- do the invoke directly for app compat.
+                    // If the app's shutting down, don't fire the event (unless it's shutdown).
                     if (!checkFinalization || !AppDomain.CurrentDomain.IsFinalizingForUnload())
                     {
                         InvokeCallback(args);
@@ -1476,7 +1452,6 @@ namespace Microsoft.Win32
             }
 
             // our delegate method that the SyncContext will call on.
-            //
             private void InvokeCallback(object arg)
             {
                 _delegate.DynamicInvoke((object[])arg);
