@@ -14,20 +14,15 @@ namespace System.Buffers
         void Advance(int count);
 
         /// <summary>
-        /// Requests the <see cref="Memory{Byte}"/> of at least <paramref name="minimumLength"/> in size.
-        /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
+        /// Requests the <see cref="Memory{T}"/> that is at least <paramref name="sizeHint"/> in size if possible, otherwise returns maximum available memory.
+        /// If <paramref name="sizeHint"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
-        Memory<T> GetMemory(int minimumLength = 0);
+        Memory<T> GetMemory(int sizeHint = 0);
 
         /// <summary>
-        /// Requests the <see cref="Span{Byte}"/> of at least <paramref name="minimumLength"/> in size.
-        /// If <paramref name="minimumLength"/> is equal to <code>0</code>, currently available memory would get returned.
+        /// Requests the <see cref="Span{T}"/> that is at least <paramref name="sizeHint"/> in size if possible, otherwise returns maximum available memory.
+        /// If <paramref name="sizeHint"/> is equal to <code>0</code>, currently available memory would get returned.
         /// </summary>
-        Span<T> GetSpan(int minimumLength = 0);
-
-        /// <summary>
-        /// Returns the maximum buffer size supported by this <see cref="IBufferWriter{T}"/>.
-        /// </summary>
-        int MaxBufferSize { get; }
+        Span<T> GetSpan(int sizeHint = 0);
     }
 }
