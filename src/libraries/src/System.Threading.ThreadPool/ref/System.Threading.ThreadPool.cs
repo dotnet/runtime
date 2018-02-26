@@ -23,7 +23,7 @@ namespace System.Threading
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads) { throw null; }
         public static bool QueueUserWorkItem(System.Threading.WaitCallback callBack) { throw null; }
         public static bool QueueUserWorkItem(System.Threading.WaitCallback callBack, object state) { throw null; }
-        public static bool QueueUserWorkItem(System.Threading.WaitCallback callBack, object state, bool preferLocal) { throw null; }
+        public static bool QueueUserWorkItem<TState>(System.Action<TState> callBack, TState state, bool preferLocal) { throw null; }
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object state, int millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object state, long millisecondsTimeOutInterval, bool executeOnlyOnce) { throw null; }
         public static System.Threading.RegisteredWaitHandle RegisterWaitForSingleObject(System.Threading.WaitHandle waitObject, System.Threading.WaitOrTimerCallback callBack, object state, System.TimeSpan timeout, bool executeOnlyOnce) { throw null; }
