@@ -23,6 +23,7 @@
   <ItemGroup>
     <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry" />
     <PrereleaseLibraryPackage Include="Microsoft.Win32.Registry.AccessControl" />
+    <PrereleaseLibraryPackage Include="Microsoft.Win32.SystemEvents" />
     <PrereleaseLibraryPackage Include="System.CodeDom" />
     <PrereleaseLibraryPackage Include="System.ComponentModel.Composition" />
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
