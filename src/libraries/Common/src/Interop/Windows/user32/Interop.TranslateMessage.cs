@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet = CharSet.Auto)]
+        [DllImport(Libraries.User32, ExactSpelling = true)]
         public static extern bool TranslateMessage([In, Out] ref MSG msg);
     }
 }

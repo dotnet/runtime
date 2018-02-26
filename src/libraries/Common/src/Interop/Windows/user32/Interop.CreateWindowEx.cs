@@ -9,8 +9,8 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet=CharSet.Auto, SetLastError=true, BestFitMapping=true)]
-        public static extern IntPtr CreateWindowEx(int exStyle, string lpszClassName, string lpszWindowName, int style, int x, int y, int width,
+        [DllImport(Libraries.User32, CharSet=CharSet.Unicode, SetLastError=true, BestFitMapping=true, ExactSpelling =true)]
+        public static extern IntPtr CreateWindowExW(int exStyle, string lpszClassName, string lpszWindowName, int style, int x, int y, int width,
                                               int height, IntPtr hWndParent, IntPtr hMenu, IntPtr hInst, IntPtr pvParam);
     }
 }

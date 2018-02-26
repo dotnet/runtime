@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
-        public static extern short UnregisterClass(string lpClassName, IntPtr hInstance);
+        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        public static extern short UnregisterClassW(string lpClassName, IntPtr hInstance);
     }
 }

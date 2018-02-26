@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class User32
     {
         [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern int DispatchMessageW([In] ref MSG msg);
+        public static extern IntPtr SetWindowLongW(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
     }
 }
