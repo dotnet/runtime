@@ -21,7 +21,12 @@
     <Compile Include="System\Text\RegularExpressions\GroupCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Match.cs" />
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexBoyerMoore.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
