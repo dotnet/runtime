@@ -33,16 +33,6 @@ namespace System.Configuration
 
             "mscorlib",
             "System",
-
-            // TODO: ISSUE #14528
-            // System facade isn't currently part of the framework
-            // package. Once it is added the following locations can
-            // be removed. There are tests for types from each of
-            // these locations.
-            "System.Runtime",
-            "System.Collections",
-            "System.Collections.Concurrent",
-            "System.Collections.Specialized",
         };
 
         /// <summary>
