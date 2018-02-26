@@ -64,34 +64,43 @@ namespace Microsoft.Win32.SystemEventsTests
             finally
             {
                 SystemEvents.TimerElapsed -= handler;
+                elapsed.Dispose();
             }
         }
 
         [Fact]
         public void ConcurrentTimers()
         {
-            const int numConcurrentTimers = 10;
+            const int NumConcurrentTimers = 10;
             var timersSignalled = new Dictionary<IntPtr, bool>();
+            int numSignaled = 0;
+            var elapsed = new AutoResetEvent(false);
 
             TimerElapsedEventHandler handler = (sender, args) =>
             {
-                if (timersSignalled.ContainsKey(args.TimerId))
+                bool signaled = false;
+                if (timersSignalled.TryGetValue(args.TimerId, out signaled) && !signaled)
                 {
                     timersSignalled[args.TimerId] = true;
+
+                    if (Interlocked.Increment(ref numSignaled) == NumConcurrentTimers)
+                    {
+                        elapsed.Set();
+                    }
                 }
             };
 
             SystemEvents.TimerElapsed += handler;
             try
             {
-                for (int i = 0; i < numConcurrentTimers; i++)
+                for (int i = 0; i < NumConcurrentTimers; i++)
                 {
                     timersSignalled[SystemEvents.CreateTimer(TimerInterval)] = false;
                 }
 
-                Thread.Sleep(TimerInterval * SystemEventsTest.ExpectedEventMultiplier);
+                Assert.True(elapsed.WaitOne(TimerInterval * SystemEventsTest.ExpectedEventMultiplier));
 
-                foreach(var timer in timersSignalled.Keys.ToArray())
+                foreach (var timer in timersSignalled.Keys.ToArray())
                 {
                     Assert.True(timersSignalled[timer]);
                     SystemEvents.KillTimer(timer);
@@ -100,6 +109,7 @@ namespace Microsoft.Win32.SystemEventsTests
             finally
             {
                 SystemEvents.TimerElapsed -= handler;
+                elapsed.Dispose();
             }
         }
 
@@ -112,7 +122,8 @@ namespace Microsoft.Win32.SystemEventsTests
         [InlineData(30000)] // 30s
         public void TimerElapsedIsRoughlyEquivalentToInterval(int interval)
         {
-            const double permittedPercentDifference = 0.1;
+            const double permittedProportionUnder = -0.1;
+            const double permittedProportionOver = 0.5;
             var elapsed = new AutoResetEvent(false);
             IntPtr timer = IntPtr.Zero;
             var stopwatch = new Stopwatch();
@@ -133,14 +144,15 @@ namespace Microsoft.Win32.SystemEventsTests
                 stopwatch.Start();
                 Assert.True(elapsed.WaitOne(interval * SystemEventsTest.ExpectedEventMultiplier));
 
-                var percentDifference = (double)Math.Abs(stopwatch.ElapsedMilliseconds - interval) / interval;
-                Assert.True(percentDifference < permittedPercentDifference, $"Timer should fire within {permittedPercentDifference * 100.0}% of expected interval {interval}, actual: {stopwatch.ElapsedMilliseconds}, difference: {percentDifference * 100.0}%");
+                var proportionDifference = (double)(stopwatch.ElapsedMilliseconds - interval) / interval;
+                Assert.True(permittedProportionUnder < proportionDifference && proportionDifference < permittedProportionOver, 
+                    $"Timer should fire less than {permittedProportionUnder * 100.0}% before and less than {permittedProportionOver * 100.0}% after expected interval {interval}, actual: {stopwatch.ElapsedMilliseconds}, difference: {proportionDifference * 100.0}%");
+                
             }
             finally
             {
                 SystemEvents.TimerElapsed -= handler;
             }
-
         }
 
         [Fact]
