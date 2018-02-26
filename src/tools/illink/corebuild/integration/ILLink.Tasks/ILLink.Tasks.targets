@@ -26,6 +26,7 @@
     <RootAllApplicationAssemblies Condition=" '$(RootAllApplicationAssemblies)' != 'true' ">false</RootAllApplicationAssemblies>
     <LinkerTrimNativeDeps Condition=" '$(LinkerTrimNativeDeps)' == '' ">true</LinkerTrimNativeDeps>
     <LinkerTrimNativeDeps Condition=" '$(LinkerTrimNativeDeps)' != 'true' ">false</LinkerTrimNativeDeps>
+    <ClearInitLocals Condition=" '$(ClearInitLocals)' == '' ">false</ClearInitLocals>
   </PropertyGroup>
 
   <!-- This depends on LinkDuringPublish, so it needs to be imported
@@ -223,6 +224,9 @@
          scenario in which the linker is invoked. -->
     <PropertyGroup>
       <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true --skip-unresolved true</ExtraLinkerArgs>
+      <!-- version of ILLink.CustomSteps is passed as a workaround for msbuild issue #3016 -->
+      <ExtraLinkerArgs Condition=" '$(ClearInitLocals)' == 'true' ">$(ExtraLinkerArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep</ExtraLinkerArgs>
+      <ExtraLinkerArgs Condition=" '$(ClearInitLocals)' == 'true' and '$(ClearInitLocalsAssemblies)' != ''">$(ExtraLinkerArgs) -m ClearInitLocalsAssemblies $(ClearInitLocalsAssemblies)</ExtraLinkerArgs>
     </PropertyGroup>
     <ILLink AssemblyPaths="@(_ManagedAssembliesToLink)"
             RootAssemblyNames="@(LinkerRootAssemblies)"
