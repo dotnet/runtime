@@ -405,6 +405,9 @@ GPTR_DECL(MethodDesc,       g_pExecuteBackoutCodeHelperMethod);
 
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
+#ifdef FEATURE_INTEROP_DEBUGGING
+GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
+#endif
 GVAL_DECL(DWORD,            g_TlsIndex);
 
 // Global System Information

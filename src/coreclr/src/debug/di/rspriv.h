@@ -2316,7 +2316,7 @@ public:
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
 
 #ifdef FEATURE_CORESYSTEM
-	HMODULE GetTargetCLR() { return m_targetCLR; }
+    HMODULE GetTargetCLR() { return m_targetCLR; }
 #endif
 
 private:
@@ -2338,7 +2338,7 @@ private:
 //Note - this code could be useful outside coresystem, but keeping the change localized
 // because we are late in the win8 release
 #ifdef FEATURE_CORESYSTEM
-	HMODULE m_targetCLR;
+    HMODULE m_targetCLR;
 #endif
 };
 
@@ -2480,12 +2480,12 @@ public:
     // ICorDebugAppDomain3 APIs
     //-----------------------------------------------------------
     COM_METHOD GetCachedWinRTTypesForIIDs(
-					    ULONG32               cGuids,
-    					GUID                * guids,
-	    				ICorDebugTypeEnum * * ppTypesEnum);
+                        ULONG32               cGuids,
+                        GUID                * guids,
+                        ICorDebugTypeEnum * * ppTypesEnum);
 
     COM_METHOD GetCachedWinRTTypes(
-						ICorDebugGuidToTypeEnum * * ppType);
+                        ICorDebugGuidToTypeEnum * * ppType);
 
     //-----------------------------------------------------------
     // ICorDebugAppDomain4
@@ -2730,6 +2730,7 @@ public:
         {
             case cInband: return "cInband";
             case cInband_NotNewEvent: return "cInband_NotNewEvent";
+            case cFirstChanceHijackStarted: return "cFirstChanceHijackStarted";
             case cInbandHijackComplete: return "cInbandHijackComplete";
             case cInbandExceptionRetrigger: return "cInbandExceptionRetrigger";
             case cBreakpointRequiringHijack: return "cBreakpointRequiringHijack";
@@ -10590,43 +10591,17 @@ private:
     HRESULT EnableSSAfterBP();
     bool GetEEThreadCantStopHelper();
 
-    DWORD_PTR GetTlsSlot(SIZE_T slot);
+    HRESULT GetTlsSlot(DWORD slot, REMOTE_PTR *pValue);
+    HRESULT SetTlsSlot(DWORD slot, REMOTE_PTR value);
     REMOTE_PTR GetPreDefTlsSlot(SIZE_T slot, bool * pRead);
 
     void * m_pPatchSkipAddress;
 
-
-
-    /* 
-     * This abstracts away an overload of the OS thread's TLS slot. In 
-     * particular the runtime may or may not have created a thread object for
-     * a particular OS thread at any point.
-     *
-     * If the runtime has created a thread object, then it stores a pointer to
-     * that thread object in the thread's TLS slot.
-     *
-     * If not, then interop-debugging uses that TLS slot to store temporary 
-     * information.
-     *
-     * To determine this, interop-debugging will set the low bit.  Thus when
-     * we read the TLS slot, if it is non-NULL, anything w/o the low bit set
-     * is an EE thread object ptr.  Anything with the low bit set is an 
-     * interop-debugging value.  Any NULL is null, and an indicator that 
-     * there does not exist a runtime thread object for this thread yet.
-     *
-     */
-    REMOTE_PTR m_pEEThread;
-    REMOTE_PTR m_pdwTlsValue;
-    BOOL m_fValidTlsData;
-
     UINT m_continueCountCached;
 
-    void CacheEEDebuggerWord();
-    HRESULT SetEEThreadValue(REMOTE_PTR EETlsValue);
-
     DWORD_PTR GetEEThreadValue();
-    REMOTE_PTR GetClrModuleTlsDataAddress();
     REMOTE_PTR GetEETlsDataBlock();
+    HRESULT GetClrModuleTlsDataAddress(REMOTE_PTR* pAddress);
 
 public:
     HRESULT GetEEDebuggerWord(REMOTE_PTR *pValue);
