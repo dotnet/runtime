@@ -7551,6 +7551,8 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_raiseException=                 0x%p\n",
          m_runtimeOffsets.m_raiseExceptionAddr));
+    LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
+         m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
 
     LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08x\n",
@@ -7563,8 +7565,6 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_EEThreadPGCDisabledOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledValue=       0x%08x\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerWordOffset=     0x%08x\n",
-         m_runtimeOffsets.m_EEThreadDebuggerWordOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08x\n",
          m_runtimeOffsets.m_EEThreadFrameOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08x\n",
@@ -12132,6 +12132,7 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
     DWORD dwExCode = pEvent->u.Exception.ExceptionRecord.ExceptionCode;
     const void * pExAddress = pEvent->u.Exception.ExceptionRecord.ExceptionAddress;
 
+    LOG((LF_CORDB, LL_INFO1000, "CP::TE1stCAI: Enter\n"));
 
 #ifdef _DEBUG
     // Some Interop bugs involve threads that land at a crazy IP. Since we're interop-debugging, we can't
@@ -12377,6 +12378,8 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
     }
     else
     {
+	    LOG((LF_CORDB, LL_INFO1000, "CP::TE1stCAI: Triage1stChanceNonSpecial\n"));
+
         Reaction r(REACTION(cOOB));
         HRESULT hrCheck = S_OK;;
         EX_TRY
