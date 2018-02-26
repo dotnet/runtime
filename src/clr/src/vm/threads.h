@@ -2348,15 +2348,6 @@ public:
     }
 
     //---------------------------------------------------------------
-    // Expose offset of the debugger word for the debugger
-    //---------------------------------------------------------------
-    static SIZE_T GetOffsetOfDebuggerWord()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T)(offsetof(class Thread, m_debuggerWord));
-    }
-
-    //---------------------------------------------------------------
     // Expose offset of the debugger cant stop count for the debugger
     //---------------------------------------------------------------
     static SIZE_T GetOffsetOfCantStop()
@@ -4106,12 +4097,6 @@ private:
     // areas that the Interop Debugging Services must know about.
     //---------------------------------------------------------------
     DWORD m_debuggerCantStop;
-
-    //---------------------------------------------------------------
-    // A word reserved for use by the CLR Debugging Services during
-    // managed/unmanaged debugging.
-    //---------------------------------------------------------------
-    VOID*    m_debuggerWord;
 
     //---------------------------------------------------------------
     // The current custom notification data object (or NULL if none

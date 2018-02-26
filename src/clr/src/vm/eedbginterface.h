@@ -74,8 +74,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual void SetEEThreadPtr(VOID* newPtr) = 0;
-
     virtual StackWalkAction StackWalkFramesEx(Thread* pThread,
                                               PREGDISPLAY pRD,
                                               PSTACKWALKFRAMESCALLBACK pCallback,
@@ -126,10 +124,11 @@ public:
 
     virtual T_CONTEXT *GetThreadFilterContext(Thread *thread) = 0;
 
-    virtual VOID *GetThreadDebuggerWord(Thread *thread) = 0;
+#ifdef FEATURE_INTEROP_DEBUGGING
+    virtual VOID *GetThreadDebuggerWord() = 0;
 
-    virtual void SetThreadDebuggerWord(Thread *thread,
-                                       VOID *dw) = 0;
+    virtual void SetThreadDebuggerWord(VOID *dw) = 0;
+#endif
 
     virtual BOOL IsManagedNativeCode(const BYTE *address) = 0;
 
@@ -286,7 +285,6 @@ public:
                                   SIZE_T *pEEThreadStateNCOffset,
                                   SIZE_T *pEEThreadPGCDisabledOffset,
                                   DWORD  *pEEThreadPGCDisabledValue,
-                                  SIZE_T *pEEThreadDebuggerWordOffset,
                                   SIZE_T *pEEThreadFrameOffset,
                                   SIZE_T *pEEThreadMaxNeededSize,
                                   DWORD  *pEEThreadSteppingStateMask,
