@@ -1693,12 +1693,10 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	 * is generic.
 	 */
 	if (*sig & 0x10) {
-		generic_container = mono_metadata_load_generic_params (image, token, container);
+		generic_container = mono_metadata_load_generic_params (image, token, container, result);
 	}
 	if (generic_container) {
 		result->is_generic = TRUE;
-		generic_container->owner.method = result;
-		generic_container->is_anonymous = FALSE; // Method is now known, container is no longer anonymous
 		/*FIXME put this before the image alloc*/
 		if (!mono_metadata_load_generic_param_constraints_checked (image, token, generic_container, error))
 			return NULL;

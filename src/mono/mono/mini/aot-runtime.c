@@ -555,10 +555,9 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 				t->data.generic_param = mono_generic_container_get_param (container, num);
 			} else {
 				/* Anonymous */
-				MonoGenericParam *par = (MonoGenericParam*)mono_image_alloc0 (module->assembly->image, sizeof (MonoGenericParamFull));
-				par->owner = container;
-				par->num = num;
+				MonoGenericParam *par = mono_metadata_create_anon_gparam (module->assembly->image, num, type == MONO_TYPE_MVAR);
 				t->data.generic_param = par;
+				// FIXME: maybe do this for all anon gparams?
 				((MonoGenericParamFull*)par)->info.name = make_generic_name_string (module->assembly->image, num);
 			}
 			// FIXME: Maybe use types directly to avoid

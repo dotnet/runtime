@@ -1628,7 +1628,7 @@ reflection_param_handle_mono_type (MonoReflectionGenericParamHandle ref_gparam, 
 	MonoStringHandle ref_name = MONO_HANDLE_NEW_GET (MonoString, ref_gparam, name);
 	param->info.name = mono_string_to_utf8_image (image, ref_name, error);
 	mono_error_assert_ok (error);
-	param->param.num = MONO_HANDLE_GETVAL (ref_gparam, index);
+	param->num = MONO_HANDLE_GETVAL (ref_gparam, index);
 
 	MonoReflectionMethodBuilderHandle ref_mbuilder = MONO_HANDLE_NEW_GET (MonoReflectionMethodBuilder, ref_gparam, mbuilder);
 	if (!MONO_HANDLE_IS_NULL (ref_mbuilder)) {
@@ -1644,13 +1644,13 @@ reflection_param_handle_mono_type (MonoReflectionGenericParamHandle ref_gparam, 
 			generic_container->owner.image = image;
 			MONO_HANDLE_SETVAL (ref_mbuilder, generic_container, MonoGenericContainer*, generic_container);
 		}
-		param->param.owner = generic_container;
+		param->owner = generic_container;
 	} else {
 		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionType, ref_tbuilder), error);
 		goto_if_nok (error, leave);
 		MonoClass *owner = mono_class_from_mono_type (type);
 		g_assert (mono_class_is_gtd (owner));
-		param->param.owner = mono_class_get_generic_container (owner);
+		param->owner = mono_class_get_generic_container (owner);
 	}
 
 	MonoClass *pklass = mono_class_create_generic_parameter ((MonoGenericParam *) param);
@@ -2642,11 +2642,11 @@ reflection_init_generic_class (MonoReflectionTypeBuilderHandle ref_tb, MonoError
 		MonoGenericParamFull *param = (MonoGenericParamFull *) param_type->data.generic_param;
 		generic_container->type_params [i] = *param;
 		/*Make sure we are a diferent type instance */
-		generic_container->type_params [i].param.owner = generic_container;
+		generic_container->type_params [i].owner = generic_container;
 		generic_container->type_params [i].info.pklass = NULL;
 		generic_container->type_params [i].info.flags = MONO_HANDLE_GETVAL (ref_gparam, attrs);
 
-		g_assert (generic_container->type_params [i].param.owner);
+		g_assert (generic_container->type_params [i].owner);
 	}
 
 	generic_container->context.class_inst = mono_get_shared_generic_inst (generic_container);
@@ -2926,7 +2926,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			mono_error_assert_ok (error);
 			MonoGenericParamFull *param = (MonoGenericParamFull *) gp_type->data.generic_param;
 			container->type_params [i] = *param;
-			container->type_params [i].param.owner = container;
+			container->type_params [i].owner = container;
 
 			gp->type.type->data.generic_param = (MonoGenericParam*)&container->type_params [i];
 
