@@ -1284,7 +1284,7 @@ namespace System.Net.Security
                     AsyncProtocolRequest request = (AsyncProtocolRequest)_queuedReadStateRequest;
                     request.Buffer = renegotiateBuffer;
                     _queuedReadStateRequest = null;
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(AsyncResumeHandshakeRead), request);
+                    ThreadPool.QueueUserWorkItem(s => s.sslState.AsyncResumeHandshakeRead(s.request), (sslState: this, request), preferLocal: false);
                 }
             }
         }
@@ -1382,7 +1382,7 @@ namespace System.Net.Security
                     taskCompletionSource.SetResult(0);
                     break;
                 default:
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(AsyncResumeHandshake), obj);
+                    ThreadPool.QueueUserWorkItem(s => s.sslState.AsyncResumeHandshake(s.obj), (sslState: this, obj), preferLocal: false);
                     break;
             }
         }
@@ -1746,9 +1746,8 @@ namespace System.Net.Security
         //
         // Called with no user stack.
         //
-        private void AsyncResumeHandshakeRead(object state)
+        private void AsyncResumeHandshakeRead(AsyncProtocolRequest asyncRequest)
         {
-            AsyncProtocolRequest asyncRequest = (AsyncProtocolRequest)state;
             try
             {
                 if (_pendingReHandshake)
@@ -1772,22 +1771,6 @@ namespace System.Net.Security
 
                 FinishHandshake(e, asyncRequest);
             }
-        }
-
-        //
-        // Called with no user stack.
-        //
-        private void CompleteRequestWaitCallback(object state)
-        {
-            AsyncProtocolRequest request = (AsyncProtocolRequest)state;
-
-            // Force async completion.
-            if (request.MustCompleteSynchronously)
-            {
-                throw new InternalException();
-            }
-
-            request.CompleteRequest(0);
         }
 
         private void RehandshakeCompleteCallback(IAsyncResult result)
