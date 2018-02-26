@@ -38,6 +38,7 @@ namespace System.Runtime.ExceptionServices.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Feature Corrupting Exceptions not present for Linux
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21123", TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(27460)]
         public static void ProcessExit_Called()
         {
             using (RemoteInvokeHandle handle = RemoteInvoke(() => { CauseAVInNative(); return SuccessExitCode; }))
