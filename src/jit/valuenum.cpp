@@ -7119,6 +7119,9 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
 #ifdef FEATURE_SIMD
             case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+            case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
             {
                 // A bounds check node has no value, but may throw exceptions.
                 ValueNumPair excSet = vnStore->VNPExcSetSingleton(

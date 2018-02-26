@@ -1661,6 +1661,12 @@ public:
             return true;
         }
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+        if (op == GT_HW_INTRINSIC_CHK)
+        {
+            return true;
+        }
+#endif // FEATURE_HW_INTRINSICS
         return false;
     }
 

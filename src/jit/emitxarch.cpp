@@ -187,6 +187,14 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_psubusb:
         case INS_psubusw:
         case INS_psubw:
+        case INS_pslld:
+        case INS_psllq:
+        case INS_psllw:
+        case INS_psrld:
+        case INS_psrlq:
+        case INS_psrlw:
+        case INS_psrad:
+        case INS_psraw:
         case INS_punpckhbw:
         case INS_punpckhdq:
         case INS_punpckhqdq:
@@ -209,6 +217,11 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_vinsertf128:
         case INS_vinserti128:
         case INS_vperm2i128:
+        case INS_vpsrlvd:
+        case INS_vpsrlvq:
+        case INS_vpsravd:
+        case INS_vpsllvd:
+        case INS_vpsllvq:
         case INS_xorpd:
         case INS_xorps:
             return IsAVXInstruction(ins);
@@ -366,7 +379,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
     // required, the instruction must be created with the register size attribute (EA_16BYTE or EA_32BYTE),
     // and here we must special case these by the opcode.
-    if (ins == INS_vpermq)
+    if (ins == INS_vpermq || ins == INS_vpsrlvq || ins == INS_vpsllvq)
     {
         return true;
     }
@@ -5476,6 +5489,50 @@ void emitter::emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, 
             emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
         emitIns_R_R(ins, attr, reg, reg2);
+    }
+}
+
+static bool isSseShift(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_psrldq:
+        case INS_pslldq:
+        case INS_psrld:
+        case INS_psrlw:
+        case INS_psrlq:
+        case INS_pslld:
+        case INS_psllw:
+        case INS_psllq:
+        case INS_psrad:
+        case INS_psraw:
+            return true;
+        default:
+            return false;
+    }
+}
+
+void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int ival)
+{
+    // TODO-XARCH refactoring emitIns_R_R_I to handle SSE2/AVX2 shift as well as emitIns_R_I
+    bool isShift = isSseShift(ins);
+    if (UseVEXEncoding() && !isShift)
+    {
+        emitIns_R_R_I(ins, attr, reg, reg1, ival);
+    }
+    else
+    {
+        if (reg1 != reg)
+        {
+            emitIns_R_R(INS_movaps, attr, reg, reg1);
+        }
+        // TODO-XARCH-BUG emitOutputRI cannot work with SSE2 shift instruction on imm8 > 127, so we replace it by the
+        // semantic alternatives. https://github.com/dotnet/coreclr/issues/16543
+        if (isShift && ival > 127)
+        {
+            ival = 127;
+        }
+        emitIns_R_I(ins, attr, reg, ival);
     }
 }
 
@@ -10746,6 +10803,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
                 regOpcode = (regNumber)6;
                 break;
             case INS_psrad:
+            case INS_psraw:
                 regOpcode = (regNumber)4;
                 break;
             default:
