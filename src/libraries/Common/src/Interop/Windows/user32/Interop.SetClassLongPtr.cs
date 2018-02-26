@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet = CharSet.Auto)]
-        public static extern IntPtr SetClassLongPtr(IntPtr hwnd, int nIndex, IntPtr dwNewLong);
+        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        public static extern IntPtr SetClassLongPtrW(IntPtr hwnd, int nIndex, IntPtr dwNewLong);
     }
 }

@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        public static extern bool GetClassInfo(IntPtr hInst, string lpszClass, [In, Out] WNDCLASS_I wc);
+        [DllImport(Libraries.User32, CharSet=CharSet.Unicode, ExactSpelling = true)]
+        public static extern bool GetClassInfoW(IntPtr hInst, string lpszClass, [In, Out] WNDCLASS_I wc);
     }
 }

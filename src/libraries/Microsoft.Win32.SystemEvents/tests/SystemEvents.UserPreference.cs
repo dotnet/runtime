@@ -16,7 +16,7 @@ namespace Microsoft.Win32.SystemEventsTests
 
         private void SendMessage(int message, int uiAction, string area)
         {
-            var areaPtr = Marshal.StringToHGlobalAuto(area);
+            var areaPtr = Marshal.StringToHGlobalUni(area);
             try
             {
                 SendMessage((int)message, (IntPtr)uiAction, areaPtr);

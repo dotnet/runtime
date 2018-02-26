@@ -9,7 +9,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet=CharSet.Auto)]
-        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        [DllImport(Libraries.User32, CharSet=CharSet.Auto, ExactSpelling = true)]
+        public static extern IntPtr FindWindowW(string lpClassName, string lpWindowName);
     }
 }

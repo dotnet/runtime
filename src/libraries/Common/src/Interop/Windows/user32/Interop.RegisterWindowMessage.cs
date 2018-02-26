@@ -8,7 +8,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, CharSet=CharSet.Auto, BestFitMapping=false)]
-        public static extern int RegisterWindowMessage(string msg);
+        [DllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        public static extern int RegisterWindowMessageW(string msg);
     }
 }
