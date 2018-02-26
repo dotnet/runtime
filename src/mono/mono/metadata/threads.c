@@ -4835,6 +4835,7 @@ self_interrupt_thread (void *_unused)
 {
 	MonoException *exc;
 	MonoThreadInfo *info;
+	MonoContext ctx;
 
 	exc = mono_thread_execute_interruption ();
 	if (!exc) {
@@ -4849,7 +4850,10 @@ self_interrupt_thread (void *_unused)
 
 	info = mono_thread_info_current ();
 
-	mono_raise_exception_with_context (exc, &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx); /* FIXME using thread_saved_state [ASYNC_SUSPEND_STATE_INDEX] can race with another suspend coming in. */
+	/* FIXME using thread_saved_state [ASYNC_SUSPEND_STATE_INDEX] can race with another suspend coming in. */
+	ctx = info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx;
+
+	mono_raise_exception_with_context (exc, &ctx);
 }
 
 static gboolean
