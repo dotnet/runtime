@@ -16,7 +16,7 @@
 #define OFFSETOF__TLS__tls_CurrentThread         (0x0)
 #define OFFSETOF__TLS__tls_EETlsData             (2*sizeof(void*))
 
-#ifdef _TARGET_WIN64_
+#ifdef DBG_TARGET_WIN64
 #define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x58
 #else
 #define WINNT_OFFSETOF__TEB__ThreadLocalStoragePointer  0x2c

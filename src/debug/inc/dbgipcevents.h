@@ -129,6 +129,7 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     void   *m_excepNotForRuntimeBPAddr;
     void   *m_notifyRSOfSyncCompleteBPAddr;
     void   *m_raiseExceptionAddr;                       // The address of kernel32!RaiseException in the debuggee
+    DWORD   m_debuggerWordTLSIndex;                     // The TLS slot for the debugger word used in the debugger hijack functions
 #endif // FEATURE_INTEROP_DEBUGGING
     SIZE_T  m_TLSIndex;                                 // The TLS index the CLR is using to hold Thread objects
     SIZE_T  m_TLSIsSpecialIndex;                        // The index into the Predef block of the the "IsSpecial" status for a thread.
@@ -137,7 +138,6 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     SIZE_T  m_EEThreadStateNCOffset;                    // Offset of m_stateNC in a Thread
     SIZE_T  m_EEThreadPGCDisabledOffset;                // Offset of the bit for whether PGC is disabled or not in a Thread
     DWORD   m_EEThreadPGCDisabledValue;                 // Value at m_EEThreadPGCDisabledOffset that equals "PGC disabled".
-    SIZE_T  m_EEThreadDebuggerWordOffset;               // Offset of debugger word in a Thread
     SIZE_T  m_EEThreadFrameOffset;                      // Offset of the Frame ptr in a Thread
     SIZE_T  m_EEThreadMaxNeededSize;                    // Max memory to read to get what we need out of a Thread object
     DWORD   m_EEThreadSteppingStateMask;                // Mask for Thread::TSNC_DebuggerIsStepping
