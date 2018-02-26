@@ -19,6 +19,17 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/appdomain.h"
+#ifdef MONO_CLASS_DEF_PRIVATE
+/* Rationale: we want the functions in this file to work even when everything
+ * is broken.  They may be called from a debugger session, for example.  If
+ * MonoClass getters include assertions or trigger class loading, we don't want
+ * that kicked off by a call to one of the functions in here.
+ */
+#define REALLY_INCLUDE_CLASS_DEF 1
+#include <mono/metadata/class-private-definition.h>
+#undef REALLY_INCLUDE_CLASS_DEF
+#endif
+
 
 struct MonoMethodDesc {
 	char *name_space;

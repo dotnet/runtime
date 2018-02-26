@@ -75,7 +75,7 @@ get_type_name (MonoErrorInternal *error)
 		return error->type_name;
 	MonoClass *klass = get_class (error);
 	if (klass)
-		return klass->name;
+		return m_class_get_name (klass);
 	return "<unknown type>";
 }
 
@@ -85,8 +85,8 @@ get_assembly_name (MonoErrorInternal *error)
 	if (error->assembly_name)
 		return error->assembly_name;
 	MonoClass *klass = get_class (error);
-	if (klass && klass->image)
-		return klass->image->name;
+	if (klass && m_class_get_image (klass))
+		return m_class_get_image (klass)->name;
 	return "<unknown assembly>";
 }
 
@@ -531,7 +531,7 @@ get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, Mono
 	} else {
 		MonoClass *klass = get_class (error);
 		if (klass) {
-			char *name = mono_type_full_name (&klass->byval_arg);
+			char *name = mono_type_full_name (m_class_get_byval_arg (klass));
 			if (name) {
 				res = string_new_cleanup (domain, name);
 				g_free (name);

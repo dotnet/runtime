@@ -777,7 +777,7 @@ class_key_extract (gpointer value)
 {
 	MonoClass *klass = (MonoClass *)value;
 
-	return GUINT_TO_POINTER (klass->type_token);
+	return GUINT_TO_POINTER (m_class_get_type_token (klass));
 }
 
 static gpointer*
@@ -785,7 +785,7 @@ class_next_value (gpointer value)
 {
 	MonoClassDef *klass = (MonoClassDef *)value;
 
-	return (gpointer*)&klass->next_class_cache;
+	return (gpointer*)m_classdef_get_next_class_cache (klass);
 }
 
 /**
@@ -2901,7 +2901,7 @@ mono_image_property_remove (MonoImage *image, gpointer subject)
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass)
 {
-	MonoImage *image = klass->image;
+	MonoImage *image = m_class_get_image (klass);
 	g_assert (image_is_dynamic (image));
 	mono_image_lock (image);
 	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, klass);

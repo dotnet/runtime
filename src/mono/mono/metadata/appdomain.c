@@ -2507,10 +2507,10 @@ clear_cached_vtable (MonoVTable *vtable)
 	MonoClassRuntimeInfo *runtime_info;
 	void *data;
 
-	runtime_info = klass->runtime_info;
+	runtime_info = m_class_get_runtime_info (klass);
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id)
 		runtime_info->domain_vtables [domain->domain_id] = NULL;
-	if (klass->has_static_refs && (data = mono_vtable_get_static_field_data (vtable)))
+	if (m_class_has_static_refs (klass) && (data = mono_vtable_get_static_field_data (vtable)))
 		mono_gc_free_fixed (data);
 }
 
@@ -2520,7 +2520,7 @@ zero_static_data (MonoVTable *vtable)
 	MonoClass *klass = vtable->klass;
 	void *data;
 
-	if (klass->has_static_refs && (data = mono_vtable_get_static_field_data (vtable)))
+	if (m_class_has_static_refs (klass) && (data = mono_vtable_get_static_field_data (vtable)))
 		mono_gc_bzero_aligned (data, mono_class_data_size (klass));
 }
 

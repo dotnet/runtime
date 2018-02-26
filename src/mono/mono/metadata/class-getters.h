@@ -81,7 +81,7 @@ MONO_CLASS_GETTER(m_classdef_get_first_method_idx, guint32, ,  MonoClassDef, fir
 MONO_CLASS_GETTER(m_classdef_get_first_field_idx, guint32, , MonoClassDef, first_field_idx)
 MONO_CLASS_GETTER(m_classdef_get_method_count, guint32, ,  MonoClassDef, method_count)
 MONO_CLASS_GETTER(m_classdef_get_field_count, guint32, ,  MonoClassDef, field_count)
-MONO_CLASS_GETTER(m_classdef_get_next_class_cache, MonoClass *, , MonoClassDef, next_class_cache)
+MONO_CLASS_GETTER(m_classdef_get_next_class_cache, MonoClass **, &, MonoClassDef, next_class_cache)
 
 /* Accessors for _MonoClassGtd fields. */
 MONO_CLASS_GETTER(m_classgtd_get_klass, MonoClassDef*, &, MonoClassGtd, klass)

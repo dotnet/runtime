@@ -1273,11 +1273,11 @@ mono_error_set_field_missing (MonoError *error, MonoClass *klass, const char *fi
 	}
 
 	if (klass) {
-		if (klass->name_space) {
-			g_string_append (res, klass->name_space);
+		if (m_class_get_name_space (klass)) {
+			g_string_append (res, m_class_get_name_space (klass));
 			g_string_append_c (res, '.');
 		}
-		g_string_append (res, klass->name);
+		g_string_append (res, m_class_get_name (klass));
 	}
 	else {
 		g_string_append (res, "<unknown type>");
@@ -1323,11 +1323,11 @@ mono_error_set_method_missing (MonoError *error, MonoClass *klass, const char *m
 	}
 
 	if (klass) {
-		if (klass->name_space) {
-			g_string_append (res, klass->name_space);
+		if (m_class_get_name_space (klass)) {
+			g_string_append (res, m_class_get_name_space (klass));
 			g_string_append_c (res, '.');
 		}
-		g_string_append (res, klass->name);
+		g_string_append (res, m_class_get_name (klass));
 	}
 	else {
 		g_string_append (res, "<unknown type>");
