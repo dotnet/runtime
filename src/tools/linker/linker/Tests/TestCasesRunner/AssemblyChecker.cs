@@ -98,7 +98,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				VerifyBaseType (original, linked);
 
 			VerifyInterfaces (original, linked);
-
+			VerifyPseudoAttributes (original, linked);
 			VerifyGenericParameters (original, linked);
 			VerifyCustomAttributes (original, linked);
 			VerifySecurityAttributes (original, linked);
@@ -198,9 +198,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (linked == null)
 				Assert.Fail ($"Field `{src}' should have been kept");
 
-			Assert.AreEqual (src?.Attributes, linked?.Attributes, $"Field `{src}' attributes");
 			Assert.AreEqual (src?.Constant, linked?.Constant, $"Field `{src}' value");
 
+			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
 		}
 
@@ -220,9 +220,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (linked == null)
 				Assert.Fail ($"Property `{src}' should have been kept");
 
-			Assert.AreEqual (src?.Attributes, linked?.Attributes, $"Property `{src}' attributes");
 			Assert.AreEqual (src?.Constant, linked?.Constant, $"Property `{src}' value");
 
+			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
 		}
 
@@ -254,8 +254,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				linkedMembers.Remove (src.RemoveMethod.FullName);
 			}
 
-			Assert.AreEqual (src?.Attributes, linked?.Attributes, $"Event `{src}' attributes");
-
+			VerifyPseudoAttributes (src, linked);
 			VerifyCustomAttributes (src, linked);
 		}
 
@@ -310,8 +309,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (linked == null)
 				Assert.Fail ($"Method `{src.FullName}' should have been kept");
 
-			Assert.AreEqual (src?.Attributes, linked.Attributes, $"Method `{src}' attributes");
-
+			VerifyPseudoAttributes (src, linked);
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
 			VerifyParameters (src, linked);
@@ -324,6 +322,36 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)));
 
 			Assert.That (linked.MainModule.Resources.Select (r => r.Name), Is.EquivalentTo (expectedResources));
+		}
+
+		protected virtual void VerifyPseudoAttributes (MethodDefinition src, MethodDefinition linked)
+		{
+			var expected = (MethodAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			Assert.AreEqual (expected, linked.Attributes, $"Method `{src}' pseudo attributes did not match expected");
+		}
+
+		protected virtual void VerifyPseudoAttributes (TypeDefinition src, TypeDefinition linked)
+		{
+			var expected = (TypeAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			Assert.AreEqual (expected, linked.Attributes, $"Type `{src}' pseudo attributes did not match expected");
+		}
+
+		protected virtual void VerifyPseudoAttributes (FieldDefinition src, FieldDefinition linked)
+		{
+			var expected = (FieldAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			Assert.AreEqual (expected, linked.Attributes, $"Field `{src}' pseudo attributes did not match expected");
+		}
+
+		protected virtual void VerifyPseudoAttributes (PropertyDefinition src, PropertyDefinition linked)
+		{
+			var expected = (PropertyAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			Assert.AreEqual (expected, linked.Attributes, $"Property `{src}' pseudo attributes did not match expected");
+		}
+
+		protected virtual void VerifyPseudoAttributes (EventDefinition src, EventDefinition linked)
+		{
+			var expected = (EventAttributes) GetExpectedPseudoAttributeValue(src, (uint) src.Attributes);
+			Assert.AreEqual (expected, linked.Attributes, $"Event `{src}' pseudo attributes did not match expected");
 		}
 
 		protected virtual void VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
@@ -439,6 +467,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				return false;
 
 			return GetCustomAttributeCtorValues<string> (cap, nameof (KeptMemberAttribute)).Any (a => a == (signature ?? member.Name));
+		}
+
+		protected static uint GetExpectedPseudoAttributeValue (ICustomAttributeProvider provider, uint sourceValue)
+		{
+			var removals = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (RemovedPseudoAttributeAttribute)).ToArray ();
+			return removals.Aggregate (sourceValue, (accum, item) => accum & ~((uint) item.ConstructorArguments [0].Value));
 		}
 
 		protected static IEnumerable<T> GetCustomAttributeCtorValues<T> (ICustomAttributeProvider provider, string attributeName) where T : class

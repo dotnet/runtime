@@ -55,6 +55,7 @@
     <Compile Include="Assertions\KeptTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedMemberInAssemblyAttribute.cs" />
+    <Compile Include="Assertions\RemovedPseudoAttributeAttribute.cs" />
     <Compile Include="Assertions\RemovedResourceInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedSymbolsAttribute.cs" />
     <Compile Include="Assertions\RemovedTypeInAssemblyAttribute.cs" />
