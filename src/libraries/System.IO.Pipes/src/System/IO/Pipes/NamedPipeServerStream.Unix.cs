@@ -83,8 +83,25 @@ namespace System.IO.Pipes
         private void HandleAcceptedSocket(Socket acceptedSocket)
         {
             var serverHandle = new SafePipeHandle(acceptedSocket);
+
             try
             {
+                if (IsCurrentUserOnly)
+                {
+                    uint serverEUID = Interop.Sys.GetEUid();
+
+                    uint peerID;
+                    if (Interop.Sys.GetPeerID(serverHandle, out peerID) == -1)
+                    {
+                        throw CreateExceptionForLastError(_instance?.PipeName);
+                    }
+                    
+                    if (serverEUID != peerID)
+                    {
+                        throw new UnauthorizedAccessException(string.Format(SR.UnauthorizedAccess_ClientIsNotCurrentUser, peerID, serverEUID));
+                    }
+                }
+
                 ConfigureSocket(acceptedSocket, serverHandle, _direction, _inBufferSize, _outBufferSize, _inheritability);
             }
             catch
