@@ -67,14 +67,22 @@ namespace System.Text.RegularExpressions
             // first time a capture is accessed, compute them all
             if (_captures == null)
             {
-                _captures = new Capture[_capcount];
-                for (int j = 0; j < _capcount - 1; j++)
-                {
-                    _captures[j] = new Capture(_group.Text, _group._caps[j * 2], _group._caps[j * 2 + 1]);
-                }
+                ForceInitialized();
             }
 
             return _captures[i];
+        }
+
+        /// <summary>
+        /// Compute all captures
+        /// </summary>
+        internal void ForceInitialized()
+        {
+            _captures = new Capture[_capcount];
+            for (int j = 0; j < _capcount - 1; j++)
+            {
+                _captures[j] = new Capture(_group.Text, _group._caps[j * 2], _group._caps[j * 2 + 1]);
+            }
         }
 
         public bool IsSynchronized => false;

@@ -64,9 +64,9 @@ namespace System.Text.RegularExpressions
 
             // force Captures to be computed.
             CaptureCollection capcoll = inner.Captures;
-            if (inner._capcount > 0)
+            if (inner.Success)
             {
-                Capture _ = capcoll[0];
+                capcoll.ForceInitialized();
             }
 
             return inner;
