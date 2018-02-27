@@ -65,7 +65,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int CompareOrdinalHelper(String strA, int indexA, int countA, String strB, int indexB, int countB);
 
-        //This will not work in case-insensitive mode for any character greater than 0x80.  
+        //This will not work in case-insensitive mode for any character greater than 0x7F.  
         //We'll throw an ArgumentException.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         unsafe internal static extern int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte* strBBytes);
