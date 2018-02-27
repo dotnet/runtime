@@ -24,7 +24,7 @@ namespace Microsoft.Win32.SystemEventsTests
             SendMessage(User32.WM_REFLECT + MessageId, IntPtr.Zero, IntPtr.Zero);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void SignalsEventsAsynchronouslyOnMessage()
         {
             var signal = new AutoResetEvent(false);
@@ -44,7 +44,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void SignalsEventsSynchronouslyOnReflectedMessage()
         {
             bool signal = false;
