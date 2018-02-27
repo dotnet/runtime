@@ -152,6 +152,21 @@ namespace System.Net.Http
             }
         }
 
+        internal int MaxResponseDrainSize // TODO #27329: Expose publicly.
+        {
+            get => _settings._maxResponseDrainSize;
+            set
+            {
+                if (value < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegativeNum);
+                }
+
+                CheckDisposedOrStarted();
+                _settings._maxResponseDrainSize = value;
+            }
+        }
+
         public int MaxResponseHeadersLength
         {
             get => _settings._maxResponseHeadersLength;
