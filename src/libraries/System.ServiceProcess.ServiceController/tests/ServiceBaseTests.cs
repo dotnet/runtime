@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 /// </summary>
 namespace System.ServiceProcess.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/27071")]
     [OuterLoop(/* Modifies machine state */)]
     public class ServiceBaseTests : IDisposable
     {
