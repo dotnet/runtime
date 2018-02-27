@@ -12,7 +12,7 @@ namespace System.Text.RegularExpressions
         private readonly DynamicMethod _findFirstCharMethod;
         private readonly DynamicMethod _initTrackCountMethod;
 
-        internal CompiledRegexRunnerFactory(DynamicMethod go, DynamicMethod firstChar, DynamicMethod trackCount)
+        public CompiledRegexRunnerFactory(DynamicMethod go, DynamicMethod firstChar, DynamicMethod trackCount)
         {
             _goMethod = go;
             _findFirstCharMethod = firstChar;

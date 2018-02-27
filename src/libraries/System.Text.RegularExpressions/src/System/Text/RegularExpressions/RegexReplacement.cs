@@ -15,11 +15,11 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexReplacement
     {
         // Constants for special insertion patterns
-        internal const int Specials = 4;
-        internal const int LeftPortion = -1;
-        internal const int RightPortion = -2;
-        internal const int LastGroup = -3;
-        internal const int WholeString = -4;
+        private const int Specials = 4;
+        public const int LeftPortion = -1;
+        public const int RightPortion = -2;
+        public const int LastGroup = -3;
+        public const int WholeString = -4;
 
         private readonly List<string> _strings; // table of string constants
         private readonly List<int> _rules;      // negative -> group #, positive -> string #
@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
         /// the constructor takes a RegexNode which is a concatenation
         /// of constant strings and backreferences.
         /// </summary>
-        internal RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
+        public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
             if (concat.Type() != RegexNode.Concatenate)
                 throw new ArgumentException(SR.ReplacementError);
@@ -45,11 +45,11 @@ namespace System.Text.RegularExpressions
                 switch (child.Type())
                 {
                     case RegexNode.Multi:
-                        sb.Append(child._str);
+                        sb.Append(child.Str);
                         break;
 
                     case RegexNode.One:
-                        sb.Append(child._ch);
+                        sb.Append(child.Ch);
                         break;
 
                     case RegexNode.Ref:
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions
                             strings.Add(sb.ToString());
                             sb.Length = 0;
                         }
-                        int slot = child._m;
+                        int slot = child.M;
 
                         if (_caps != null && slot >= 0)
                             slot = (int)_caps[slot];
@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// The original pattern string
         /// </summary>
-        internal string Pattern { get; }
+        public string Pattern { get; }
 
         /// <summary>
         /// Given a Match, emits into the StringBuilder the evaluated
@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns the replacement result for a single match
         /// </summary>
-        internal string Replacement(Match match)
+        public string Replacement(Match match)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
 
@@ -182,7 +182,7 @@ namespace System.Text.RegularExpressions
         /// The right-to-left case is split out because StringBuilder
         /// doesn't handle right-to-left string building directly very well.
         /// </summary>
-        internal string Replace(Regex regex, string input, int count, int startat)
+        public string Replace(Regex regex, string input, int count, int startat)
         {
             if (count < -1)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);

@@ -567,7 +567,7 @@ namespace System.Text.RegularExpressions
             Debug.WriteLine("Stack: " + StackDescription(runstack, runstackpos));
         }
 
-        internal static string StackDescription(int[] a, int index)
+        private static string StackDescription(int[] a, int index)
         {
             var sb = new StringBuilder();
 
