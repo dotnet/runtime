@@ -2253,14 +2253,18 @@ void LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 
 void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-    TreeNodeInfo*  info        = currentNodeInfo;
-    NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
-    InstructionSet isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
-    int            numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
+    TreeNodeInfo*       info        = currentNodeInfo;
+    NamedIntrinsic      intrinsicID = intrinsicTree->gtHWIntrinsicId;
+    InstructionSet      isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
+    HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
+    HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
+
     if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
     {
         SetContainsAVXFlags(true, 32);
     }
+
     GenTree* op1   = intrinsicTree->gtOp.gtOp1;
     GenTree* op2   = intrinsicTree->gtOp.gtOp2;
     info->srcCount = 0;
@@ -2285,8 +2289,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         info->srcCount += GetOperandInfo(op2);
     }
 
-    if (Compiler::categoryOfHWIntrinsic(intrinsicID) == HW_Category_IMM &&
-        (Compiler::flagsOfHWIntrinsic(intrinsicID) & HW_Flag_NoJmpTableIMM) == 0)
+    if ((category == HW_Category_IMM) && ((flags & HW_Flag_NoJmpTableIMM) == 0))
     {
         GenTree* lastOp = Compiler::lastOpOfHWIntrinsic(intrinsicTree, numArgs);
         assert(lastOp != nullptr);
@@ -2300,6 +2303,32 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
             info->internalIntCount = 2;
             info->setInternalCandidates(this, allRegs(TYP_INT));
+        }
+    }
+
+    if (!compiler->canUseVexEncoding())
+    {
+        // On machines without VEX support, we sometimes have to inject an intermediate
+        // `movaps targetReg, op1Reg` in order to maintain the correct behavior. This
+        // becomes a problem if `op2Reg == targetReg` since that means we will overwrite
+        // op2. In order to resolve this, we currently mark the second operand as delay free.
+
+        if ((flags & HW_Flag_NoRMWSemantics) == 0)
+        {
+            assert(category != HW_Category_MemoryLoad);
+            assert(category != HW_Category_MemoryStore);
+
+            assert((flags & HW_Flag_NoCodeGen) == 0);
+
+            assert(numArgs != 0);
+            assert(numArgs != 1);
+
+            if (info->srcCount >= 2)
+            {
+                LocationInfoListNode* op2Info = useList.Begin()->Next();
+                op2Info->info.isDelayFree     = true;
+                info->hasDelayFreeSrc         = true;
+            }
         }
     }
 
