@@ -78,7 +78,7 @@ namespace System.ServiceModel.Syndication
             _feedType = feedToWrite.GetType();
         }
 
-        internal override TryParseDateTime GetDefaultDateTimeParser()
+        internal override TryParseDateTimeCallback GetDefaultDateTimeParser()
         {
             return DateTimeHelper.DefaultRss20DateTimeParser;
         }
@@ -275,7 +275,7 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        internal static SyndicationLink ReadAlternateLink(XmlReader reader, Uri baseUri, TryParseUri uriParser, bool preserveAttributeExtensions)
+        internal static SyndicationLink ReadAlternateLink(XmlReader reader, Uri baseUri, TryParseUriCallback uriParser, bool preserveAttributeExtensions)
         {
             SyndicationLink link = new SyndicationLink();
             link.BaseUri = baseUri;

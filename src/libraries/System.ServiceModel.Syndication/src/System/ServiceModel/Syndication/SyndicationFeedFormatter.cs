@@ -11,8 +11,8 @@ namespace System.ServiceModel.Syndication
     using System.Xml;
     using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
 
-    public delegate bool TryParseDateTime(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset);
-    public delegate bool TryParseUri(ParseUriArgs parseUriArgs, out Uri uri);
+    public delegate bool TryParseDateTimeCallback(XmlDateTimeData data, out DateTimeOffset dateTimeOffset);
+    public delegate bool TryParseUriCallback(XmlUriData data, out Uri uri);
 
     [DataContract]
     public abstract class SyndicationFeedFormatter
@@ -43,17 +43,17 @@ namespace System.ServiceModel.Syndication
             }
         }
 
-        public TryParseUri UriParser { get; set; } = DefaultUriParser;
+        public TryParseUriCallback UriParser { get; set; } = DefaultUriParser;
 
         // Different DateTimeParsers are needed for Atom and Rss so can't set inline
-        public TryParseDateTime DateTimeParser { get; set; }
+        public TryParseDateTimeCallback DateTimeParser { get; set; }
 
-        internal virtual TryParseDateTime GetDefaultDateTimeParser()
+        internal virtual TryParseDateTimeCallback GetDefaultDateTimeParser()
         {
             return NotImplementedDateTimeParser;
         }
 
-        private bool NotImplementedDateTimeParser(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset)
+        private bool NotImplementedDateTimeParser(XmlDateTimeData XmlDateTimeData, out DateTimeOffset dateTimeOffset)
         {
             return false;
         }
@@ -399,12 +399,12 @@ namespace System.ServiceModel.Syndication
             return UriFromString(UriParser, uriString, uriKind, localName, namespaceURI, reader);
         }
 
-        internal static Uri UriFromString(TryParseUri uriParser, string uriString, UriKind uriKind, string localName, string namespaceURI, XmlReader reader)
+        internal static Uri UriFromString(TryParseUriCallback uriParser, string uriString, UriKind uriKind, string localName, string namespaceURI, XmlReader reader)
         {
             Uri uri = null;
             var elementQualifiedName = new XmlQualifiedName(localName, namespaceURI);
-            var parseUriArgs = new ParseUriArgs(uriString, uriKind, elementQualifiedName);
-            object[] args = new object[] { parseUriArgs, uri };
+            var xmlUriData = new XmlUriData(uriString, uriKind, elementQualifiedName);
+            object[] args = new object[] { xmlUriData, uri };
             try
             {
                 foreach (Delegate parser in uriParser.GetInvocationList())
@@ -422,7 +422,7 @@ namespace System.ServiceModel.Syndication
                     new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingUri), e));
             }
 
-            DefaultUriParser(parseUriArgs, out uri);
+            DefaultUriParser(xmlUriData, out uri);
             return uri;
         }
 
@@ -432,8 +432,8 @@ namespace System.ServiceModel.Syndication
             {
                 DateTimeOffset dateTimeOffset;
                 var elementQualifiedName = new XmlQualifiedName(reader.LocalName, reader.NamespaceURI);
-                var parseDateTimeArgs = new ParseDateTimeArgs(dateTimeString, elementQualifiedName);
-                object[] args = new object[] { parseDateTimeArgs, dateTimeOffset };
+                var xmlDateTimeData = new XmlDateTimeData(dateTimeString, elementQualifiedName);
+                object[] args = new object[] { xmlDateTimeData, dateTimeOffset };
                 foreach (Delegate dateTimeParser in DateTimeParser.GetInvocationList())
                 {
                     if ((bool)dateTimeParser.Method.Invoke(dateTimeParser.Target, args))
@@ -453,9 +453,9 @@ namespace System.ServiceModel.Syndication
                     new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime)));
         }
 
-        internal static bool DefaultUriParser(ParseUriArgs parseUriArgs, out Uri uri)
+        internal static bool DefaultUriParser(XmlUriData XmlUriData, out Uri uri)
         {
-            uri = new Uri(parseUriArgs.UriString, parseUriArgs.UriKind);
+            uri = new Uri(XmlUriData.UriString, XmlUriData.UriKind);
             return true;
         }
 

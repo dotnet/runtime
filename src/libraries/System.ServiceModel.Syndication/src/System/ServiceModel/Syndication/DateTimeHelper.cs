@@ -12,9 +12,9 @@ namespace System.ServiceModel.Syndication
     {
         private const string Rfc3339DateTimeFormat = "yyyy-MM-ddTHH:mm:ssK";
 
-        public static bool DefaultRss20DateTimeParser(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset)
+        public static bool DefaultRss20DateTimeParser(XmlDateTimeData XmlDateTimeData, out DateTimeOffset dateTimeOffset)
         {
-            string dateTimeString = parseDateTimeArgs.DateTimeString;
+            string dateTimeString = XmlDateTimeData.DateTimeString;
 
             // First check if DateTimeOffset default parsing can parse the date
             if (DateTimeOffset.TryParse(dateTimeString, out dateTimeOffset))
@@ -37,9 +37,9 @@ namespace System.ServiceModel.Syndication
             return false;
         }
 
-        public static bool DefaultAtom10DateTimeParser(ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset)
+        public static bool DefaultAtom10DateTimeParser(XmlDateTimeData XmlDateTimeData, out DateTimeOffset dateTimeOffset)
         {
-            return Rfc3339DateTimeParser(parseDateTimeArgs.DateTimeString, out dateTimeOffset);
+            return Rfc3339DateTimeParser(XmlDateTimeData.DateTimeString, out dateTimeOffset);
         }
 
         private static bool Rfc3339DateTimeParser(string dateTimeString, out DateTimeOffset dto)
