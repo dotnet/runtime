@@ -146,7 +146,11 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())
             {
                 CmsRecipient recipient = new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert);
-                Assert.Throws<PlatformNotSupportedException>(() => ecms.Encrypt(recipient));
+
+                CryptographicException e =
+                    Assert.Throws<CryptographicException>(() => ecms.Encrypt(recipient));
+
+                Assert.Contains(Oids.Rc4, e.Message);
             }
         }
 
