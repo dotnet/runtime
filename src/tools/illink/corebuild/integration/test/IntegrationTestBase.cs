@@ -60,14 +60,18 @@ namespace ILLink.Tests
 		///   that the project already contains a reference to the
 		///   linker task package.
 		///   Optionally takes a list of root descriptor files.
+		///   Returns the path to the built app, either the renamed
+		///   host for self-contained publish, or the dll containing
+		///   the entry point.
 		/// </summary>
-		public void BuildAndLink(string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null)
+		public string BuildAndLink(string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null, bool selfContained = false)
 		{
-			string rid = context.RuntimeIdentifier;
-			string config = context.Configuration;
 			string demoRoot = Path.GetDirectoryName(csproj);
 
-			string publishArgs = $"publish -r {rid} -c {config} /v:n /p:ShowLinkerSizeComparison=true";
+			string publishArgs = $"publish -c {context.Configuration} /v:n /p:ShowLinkerSizeComparison=true";
+			if (selfContained) {
+				publishArgs += $" -r {context.RuntimeIdentifier}";
+			}
 			string rootFilesStr;
 			if (rootFiles != null && rootFiles.Any()) {
 				rootFilesStr = String.Join(";", rootFiles);
@@ -83,28 +87,45 @@ namespace ILLink.Tests
 			if (ret != 0) {
 				output.WriteLine("publish failed, returning " + ret);
 				Assert.True(false);
-				return;
 			}
-		}
 
-		public int RunApp(string csproj, out string processOutput, int timeout = Int32.MaxValue, string terminatingOutput = null)
-		{
-			string demoRoot = Path.GetDirectoryName(csproj);
 			// detect the target framework for which the app was published
 			string tfmDir = Path.Combine(demoRoot, "bin", context.Configuration);
 			string tfm = Directory.GetDirectories(tfmDir).Select(p => Path.GetFileName(p)).Single();
-			string executablePath = Path.Combine(tfmDir, tfm,
-				context.RuntimeIdentifier, "publish",
-				Path.GetFileNameWithoutExtension(csproj)
-			);
-			if (context.RuntimeIdentifier.Contains("win")) {
-				executablePath += ".exe";
+			string builtApp = Path.Combine(tfmDir, tfm);
+			if (selfContained) {
+				builtApp = Path.Combine(builtApp, context.RuntimeIdentifier);
 			}
-			Assert.True(File.Exists(executablePath));
+			builtApp = Path.Combine(builtApp, "publish",
+				Path.GetFileNameWithoutExtension(csproj));
+			if (selfContained) {
+				if (context.RuntimeIdentifier.Contains("win")) {
+					builtApp += ".exe";
+				}
+			} else {
+				builtApp += ".dll";
+			}
+			Assert.True(File.Exists(builtApp));
+			return builtApp;
+		}
 
-			int ret = RunCommand(executablePath, null,
-				Directory.GetParent(executablePath).FullName,
-				null, out processOutput, timeout, terminatingOutput);
+		public int RunApp(string target, out string processOutput, int timeout = Int32.MaxValue,
+			string terminatingOutput = null, bool selfContained = false)
+		{
+			Assert.True(File.Exists(target));
+			int ret;
+			if (selfContained) {
+				ret = RunCommand(
+					target, null,
+					Directory.GetParent(target).FullName,
+					null, out processOutput, timeout, terminatingOutput);
+			} else {
+				ret = RunCommand(
+					Path.GetFullPath(context.DotnetToolPath),
+					Path.GetFullPath(target),
+					Directory.GetParent(target).FullName,
+					null, out processOutput, timeout, terminatingOutput);
+			}
 			return ret;
 		}
 

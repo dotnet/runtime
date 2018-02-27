@@ -10,8 +10,6 @@ namespace ILLink.Tests
 {
 	public class MusicStoreTest : IntegrationTestBase
 	{
-		public MusicStoreTest(ITestOutputHelper output) : base(output) {}
-
 		private static List<string> rootFiles = new List<string> { "MusicStoreReflection.xml" };
 
 		private static string gitRepo = "http://github.com/aspnet/JitBench";
@@ -34,40 +32,140 @@ namespace ILLink.Tests
 		// The version of Microsoft.AspNetCore.All to publish with.
 		private static string aspNetVersion = "2.1.0-preview1-27654";
 
-		[Fact]
-		public void RunMusicStore()
+		private static Dictionary<string, string> versionPublishArgs;
+		private static Dictionary<string, string> VersionPublishArgs
 		{
-			string csproj = SetupProject();
+			get {
+				if (versionPublishArgs != null) {
+					return versionPublishArgs;
+				}
+				versionPublishArgs = new Dictionary<string, string>();
+				versionPublishArgs.Add("JITBENCH_FRAMEWORK_VERSION", runtimeVersion);
+				versionPublishArgs.Add("JITBENCH_ASPNET_VERSION", aspNetVersion);
+				return versionPublishArgs;
+			}
+		}
 
-			// Copy root files into the project directory
-			string demoRoot= Path.GetDirectoryName(csproj);
-			CopyRootFiles(demoRoot);
+		private static string csproj;
 
-			// This is necessary because JitBench comes with a
-			// NuGet.Config that has a <clear /> line, preventing
-			// NuGet.Config sources defined in outer directories from
-			// applying.
-			string nugetConfig = Path.Combine("JitBench", "NuGet.config");
-			AddLocalNugetFeedAfterClear(nugetConfig);
+		public MusicStoreTest(ITestOutputHelper output) : base(output) {
+			csproj = SetupProject();
 
-			AddLinkerReference(csproj);
+			// MusicStore targets .NET Core 2.1, so it must be built
+			// using an SDK that can target 2.1. We obtain that SDK
+			// here.
+			context.DotnetToolPath = ObtainSDK(context.TestBin, repoName);
+		}
 
-			Dictionary<string, string> extraPublishArgs = new Dictionary<string, string>();
-			extraPublishArgs.Add("JITBENCH_FRAMEWORK_VERSION", runtimeVersion);
-			extraPublishArgs.Add("JITBENCH_ASPNET_VERSION", aspNetVersion);
-			BuildAndLink(csproj, rootFiles, extraPublishArgs);
+		[Fact]
+		public void RunMusicStoreStandalone()
+		{
+			string executablePath = BuildAndLink(csproj, rootFiles, VersionPublishArgs, selfContained: true);
+			CheckOutput(executablePath, selfContained: true);
+		}
 
-			int ret = RunApp(csproj, out string commandOutput);
+		[Fact]
+		public void RunMusicStorePortable()
+		{
+			Dictionary<string, string> extraPublishArgs = new Dictionary<string, string>(VersionPublishArgs);
+			extraPublishArgs.Add("PublishWithAspNetCoreTargetManifest", "false");
+			string target = BuildAndLink(csproj, null, extraPublishArgs, selfContained: false);
+			CheckOutput(target, selfContained: false);
+		}
+
+		void CheckOutput(string target, bool selfContained = false)
+		{
+			int ret = RunApp(target, out string commandOutput, selfContained: selfContained);
+
 			Assert.True(commandOutput.Contains("Starting request to http://localhost:5000"));
 			Assert.True(commandOutput.Contains("Response: OK"));
 			Assert.True(commandOutput.Contains("Running 100 requests"));
 			Assert.True(ret == 0);
 		}
 
+		// returns path to .csproj project file
+		string SetupProject()
+		{
+			int ret;
+			string demoRoot = Path.Combine(repoName, Path.Combine("src", "MusicStore"));
+			string csproj = Path.Combine(demoRoot, "MusicStore.csproj");
+
+			if (File.Exists(csproj)) {
+				output.WriteLine($"using existing project {csproj}");
+				return csproj;
+			}
+
+			if (Directory.Exists(repoName)) {
+				Directory.Delete(repoName, true);
+			}
+
+			ret = RunCommand("git", $"clone {gitRepo} {repoName}");
+			if (ret != 0) {
+				output.WriteLine("git failed");
+				Assert.True(false);
+			}
+
+			if (!Directory.Exists(demoRoot)) {
+				output.WriteLine($"{demoRoot} does not exist");
+				Assert.True(false);
+			}
+
+			ret = RunCommand("git", $"checkout {gitRevision}", demoRoot);
+			if (ret != 0) {
+				output.WriteLine($"problem checking out revision {gitRevision}");
+				Assert.True(false);
+			}
+
+			// Copy root files into the project directory
+			CopyRootFiles(demoRoot);
+
+			// This is necessary because JitBench comes with a
+			// NuGet.Config that has a <clear /> line, preventing
+			// NuGet.Config sources defined in outer directories from
+			// applying.
+			string nugetConfig = Path.Combine(repoName, "NuGet.config");
+			AddLocalNugetFeedAfterClear(nugetConfig);
+
+			AddLinkerReference(csproj);
+
+			AddGlobalJson(repoName);
+
+			return csproj;
+		}
+
+		void AddGlobalJson(string repoDir)
+		{
+			string globalJson = Path.Combine(repoDir, "global.json");
+			string globalJsonContents = "{ \"sdk\": { \"version\": \"" + sdkVersion + "\" } }\n";
+			File.WriteAllText(globalJson, globalJsonContents);
+		}
+
+
+		string GetDotnetToolPath(string dotnetDir)
+		{
+			string dotnetToolName = Directory.GetFiles(dotnetDir)
+				.Select(p => Path.GetFileName(p))
+				.Where(p => p.Contains("dotnet"))
+				.Single();
+			string dotnetToolPath = Path.Combine(dotnetDir, dotnetToolName);
+
+			if (!File.Exists(dotnetToolPath)) {
+				output.WriteLine("repo-local dotnet tool does not exist.");
+				Assert.True(false);
+			}
+
+			return dotnetToolPath;
+		}
+
 		string ObtainSDK(string rootDir, string repoDir)
 		{
 			int ret;
 			string dotnetDirName = ".dotnet";
+			string dotnetDir = Path.Combine(rootDir, dotnetDirName);
+			if (Directory.Exists(dotnetDir)) {
+				return GetDotnetToolPath(dotnetDir);
+			}
+
 			string dotnetInstall = Path.Combine(Path.GetFullPath(repoDir), "dotnet-install");
 			if (context.RuntimeIdentifier.Contains("win")) {
 				dotnetInstall += ".ps1";
@@ -103,57 +201,7 @@ namespace ILLink.Tests
 				}
 			}
 
-			string dotnetDir = Path.Combine(rootDir, dotnetDirName);
-			string dotnetToolName = Directory.GetFiles(dotnetDir)
-				.Select(p => Path.GetFileName(p))
-				.Where(p => p.Contains("dotnet"))
-				.Single();
-			string dotnetToolPath = Path.Combine(dotnetDir, dotnetToolName);
-			if (!File.Exists(dotnetToolPath)) {
-				output.WriteLine("repo-local dotnet tool does not exist.");
-				Assert.True(false);
-			}
-
-			string globalJson = Path.Combine(repoDir, "global.json");
-			string globalJsonContents = "{ \"sdk\": { \"version\": \"" + sdkVersion + "\" } }\n";
-			File.WriteAllText(globalJson, globalJsonContents);
-
-			return dotnetToolPath;
-		}
-
-		// returns path to .csproj project file
-		string SetupProject()
-		{
-			int ret;
-			if (Directory.Exists(repoName)) {
-				Directory.Delete(repoName, true);
-			}
-
-			ret = RunCommand("git", $"clone {gitRepo}");
-			if (ret != 0) {
-				output.WriteLine("git failed");
-				Assert.True(false);
-			}
-
-			string demoRoot = Path.Combine("JitBench", Path.Combine("src", "MusicStore"));
-			if (!Directory.Exists(demoRoot)) {
-				output.WriteLine($"{demoRoot} does not exist");
-				Assert.True(false);
-			}
-
-			ret = RunCommand("git", $"checkout {gitRevision}", demoRoot);
-			if (ret != 0) {
-				output.WriteLine($"problem checking out revision {gitRevision}");
-				Assert.True(false);
-			}
-
-			// MusicStore targets .NET Core 2.1, so it must be built
-			// using an SDK that can target 2.1. We obtain that SDK
-			// here.
-			context.DotnetToolPath = ObtainSDK(context.TestBin, repoName);
-
-			string csproj = Path.Combine(demoRoot, "MusicStore.csproj");
-			return csproj;
+			return GetDotnetToolPath(dotnetDir);
 		}
 
 		static void CopyRootFiles(string demoRoot)
