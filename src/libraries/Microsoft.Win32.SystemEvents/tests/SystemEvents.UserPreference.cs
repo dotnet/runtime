@@ -14,7 +14,7 @@ namespace Microsoft.Win32.SystemEventsTests
     public class UserPreferenceTests : SystemEventsTest
     {
 
-        private void SendMessage(int message, int uiAction, string area)
+        private void SendMessage(int message, int uiAction, string area, bool freeMemory = true)
         {
             var areaPtr = Marshal.StringToHGlobalUni(area);
             try
@@ -23,13 +23,19 @@ namespace Microsoft.Win32.SystemEventsTests
             }
             finally
             {
-                Marshal.FreeHGlobal(areaPtr);
+                if (freeMemory)
+                {
+                    Marshal.FreeHGlobal(areaPtr);
+                }
             }
         }
 
         private void SendReflectedMessage(int message, int uiAction, string area)
         {
-            SendMessage(User32.WM_REFLECT + message, uiAction, area);
+            // WM_REFLECT is an internal message where the SystemEvents WndProc will copy
+            // the lParam and pass it back in a posted message.  In that case it expects
+            // to be the source of the message and will free the memory itself.
+            SendMessage(User32.WM_REFLECT + message, uiAction, area, freeMemory:false);
         }
 
         public static IEnumerable<object[]> PreferenceChangingCases() =>
