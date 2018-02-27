@@ -12,13 +12,13 @@
 
 struct deps_asset_t
 {
-    deps_asset_t() : deps_asset_t(_X(""), version_t(), version_t()) { }
+    deps_asset_t() : deps_asset_t(_X(""), _X(""), version_t(), version_t()) { }
 
-    deps_asset_t(const pal::string_t& relative_path, const version_t& assembly_version, const version_t& file_version)
-        : relative_path(get_replaced_char(relative_path, _X('\\'), _X('/'))) // Deps file does not follow spec. It uses '\\', should use '/'
+    deps_asset_t(const pal::string_t& name, const pal::string_t& relative_path, const version_t& assembly_version, const version_t& file_version)
+        : name(name)
+        , relative_path(get_replaced_char(relative_path, _X('\\'), _X('/'))) // Deps file does not follow spec. It uses '\\', should use '/'
         , assembly_version(assembly_version)
-        , file_version(file_version)
-        , name(get_filename_without_ext(relative_path)) { }
+        , file_version(file_version) { }
 
     pal::string_t name;
     pal::string_t relative_path;

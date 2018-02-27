@@ -89,7 +89,7 @@ void deps_json_t::reconcile_libraries_with_targets(
             for (const auto& asset : get_assets_fn(library.first, i, &rid_specific))
             {
                 bool ni_dll = false;
-                auto asset_name = get_filename_without_ext(asset.relative_path);
+                auto asset_name = asset.name;
                 if (ends_with(asset_name, _X(".ni"), false))
                 {
                     ni_dll = true;
@@ -110,6 +110,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.is_rid_specific = rid_specific;
                 entry.deps_file = deps_file;
                 entry.asset = asset;
+                entry.asset.name = asset_name;
 
                 m_deps_entries[i].push_back(entry);
 
@@ -250,7 +251,7 @@ bool deps_json_t::process_runtime_targets(const json_value& json, const pal::str
                         version_t::parse(file_version_str, &file_version);
                     }
 
-                    deps_asset_t asset(file.first, assembly_version, file_version);
+                    deps_asset_t asset(get_filename_without_ext(file.first), file.first, assembly_version, file_version);
 
                     trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
                         deps_entry_t::s_known_asset_types[i],
@@ -302,7 +303,7 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
                         version_t::parse(file_version_str, &file_version);
                     }
 
-                    deps_asset_t asset(file.first, assembly_version, file_version);
+                    deps_asset_t asset(get_filename_without_ext(file.first), file.first, assembly_version, file_version);
 
                     trace::info(_X("Adding %s asset %s assemblyVersion=%s fileVersion=%s from %s"),
                         deps_entry_t::s_known_asset_types[i],
