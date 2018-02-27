@@ -136,19 +136,19 @@ namespace System.Text.RegularExpressions
                 if (r >= 0)  // string lookup
                     al.Add(_strings[r]);
                 else if (r < -Specials) // group lookup
-                    al.Add(match.GroupToStringImpl(-Specials - 1 - r));
+                    al.Add(match.GroupToStringImpl(-Specials - 1 - r).ToString());
                 else
                 {
                     switch (-Specials - 1 - r)
                     { // special insertion patterns
                         case LeftPortion:
-                            al.Add(match.GetLeftSubstring());
+                            al.Add(match.GetLeftSubstring().ToString());
                             break;
                         case RightPortion:
-                            al.Add(match.GetRightSubstring());
+                            al.Add(match.GetRightSubstring().ToString());
                             break;
                         case LastGroup:
-                            al.Add(match.LastGroupToStringImpl());
+                            al.Add(match.LastGroupToStringImpl().ToString());
                             break;
                         case WholeString:
                             al.Add(match.Text);

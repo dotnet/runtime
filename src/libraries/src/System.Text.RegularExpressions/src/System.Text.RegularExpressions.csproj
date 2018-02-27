@@ -62,14 +62,15 @@
     <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Buffers" />
   </ItemGroup>
   <!-- References required for compiled feature -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
