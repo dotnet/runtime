@@ -50,5 +50,14 @@ namespace System.Runtime.InteropServices
         {
             return sequence.TryGetReadOnlyMemory(out readOnlyMemory);
         }
+
+        /// <summary>
+        /// Get <see cref="string"/> from the underlying <see cref="ReadOnlySequence{T}"/>.
+        /// If unable to get the <see cref="string"/>, return false.
+        /// </summary>
+        internal static bool TryGetString(ReadOnlySequence<char> sequence, out string text, out int start, out int length)
+        {
+            return sequence.TryGetString(out text, out start, out length);
+        }
     }
 }

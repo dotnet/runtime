@@ -12,19 +12,43 @@ namespace System.Buffers
         /// <summary>
         /// Returns position of first occurrence of item in the <see cref="ReadOnlySequence{T}"/>
         /// </summary>
-        public static SequencePosition? PositionOf<T>(this ReadOnlySequence<T> sequence, T value) where T : IEquatable<T>
+        public static SequencePosition? PositionOf<T>(in this ReadOnlySequence<T> sequence, T value) where T : IEquatable<T>
+        {
+            if (sequence.IsSingleSegment)
+            {
+                int index = sequence.First.Span.IndexOf(value);
+                if (index != -1)
+                {
+                    return sequence.GetPosition(sequence.Start, index);
+                }
+
+                return null;
+            }
+            else
+            {
+                return PositionOfMultiSegement(sequence, value);
+            }
+        }
+
+        private static SequencePosition? PositionOfMultiSegement<T>(in ReadOnlySequence<T> sequence, T value) where T : IEquatable<T>
         {
             SequencePosition position = sequence.Start;
             SequencePosition result = position;
-            while (sequence.TryGet(ref position, out var memory))
+            while (sequence.TryGet(ref position, out ReadOnlyMemory<T> memory))
             {
-                var index = memory.Span.IndexOf(value);
+                int index = memory.Span.IndexOf(value);
                 if (index != -1)
                 {
                     return sequence.GetPosition(result, index);
                 }
+                else if (position.GetObject() == null)
+                {
+                    break;
+                }
+
                 result = position;
             }
+
             return null;
         }
 
@@ -33,22 +57,43 @@ namespace System.Buffers
         /// </summary>
         /// <param name="sequence">The source <see cref="ReadOnlySequence{T}"/>.</param>
         /// <param name="destination">The destination <see cref="Span{Byte}"/>.</param>
-        public static void CopyTo<T>(this ReadOnlySequence<T> sequence, Span<T> destination)
+        public static void CopyTo<T>(in this ReadOnlySequence<T> sequence, Span<T> destination)
         {
             if (sequence.Length > destination.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.destination);
 
-            foreach (var segment in sequence)
+            if (sequence.IsSingleSegment)
             {
-                segment.Span.CopyTo(destination);
-                destination = destination.Slice(segment.Length);
+                sequence.First.Span.CopyTo(destination);
+            }
+            else
+            {
+                CopyToMultiSegement(sequence, destination);
+            }
+        }
+
+        private static void CopyToMultiSegement<T>(in ReadOnlySequence<T> sequence, Span<T> destination)
+        {
+            SequencePosition position = sequence.Start;
+            while (sequence.TryGet(ref position, out ReadOnlyMemory<T> memory))
+            {
+                ReadOnlySpan<T> span = memory.Span;
+                span.CopyTo(destination);
+                if (position.GetObject() != null)
+                {
+                    destination = destination.Slice(span.Length);
+                }
+                else
+                {
+                    break;
+                }
             }
         }
 
         /// <summary>
         /// Converts the <see cref="ReadOnlySequence{T}"/> to an array
         /// </summary>
-        public static T[] ToArray<T>(this ReadOnlySequence<T> sequence)
+        public static T[] ToArray<T>(in this ReadOnlySequence<T> sequence)
         {
             var array = new T[sequence.Length];
             sequence.CopyTo(array);
@@ -67,23 +112,25 @@ namespace System.Buffers
             {
                 source.CopyTo(destination);
                 bufferWriter.Advance(source.Length);
-                return;
             }
-
-            WriteMultiSegment(bufferWriter, source, destination);
+            else
+            {
+                WriteMultiSegment(bufferWriter, source, destination);
+            }
         }
 
-        private static void WriteMultiSegment<T>(IBufferWriter<T> bufferWriter, ReadOnlySpan<T> source, Span<T> destination)
+        private static void WriteMultiSegment<T>(IBufferWriter<T> bufferWriter, in ReadOnlySpan<T> source, Span<T> destination)
         {
+            ReadOnlySpan<T> input = source;
             while (true)
             {
-                int writeSize = Math.Min(destination.Length, source.Length);
-                source.Slice(0, writeSize).CopyTo(destination);
+                int writeSize = Math.Min(destination.Length, input.Length);
+                input.Slice(0, writeSize).CopyTo(destination);
                 bufferWriter.Advance(writeSize);
-                source = source.Slice(writeSize);
-                if (source.Length > 0)
+                input = input.Slice(writeSize);
+                if (input.Length > 0)
                 {
-                    destination = bufferWriter.GetSpan(source.Length);
+                    destination = bufferWriter.GetSpan(input.Length);
                     continue;
                 }
 
