@@ -110,17 +110,16 @@ namespace Tests.System.IO
 
             // Skip tests
             InlineData(@"  :", @"  :"),
-            InlineData(@"  C:", @"C:"),
-            InlineData(@"   C:\", @"C:\"),
-            InlineData(@"   C:/", @"C:\"),
+            InlineData(@"  C:", @"  C:"),
+            InlineData(@"C:\", @"C:\"),
+            InlineData(@"C:/", @"C:\"),
             InlineData(@"  ", @"  "),
-            InlineData(@"  \", @"\"),
-            InlineData(@"  /", @"\"),
+            InlineData(@"  \", @"  \"),
+            InlineData(@"  /", @"  \"),
             InlineData(@"  8:", @"  8:"),
-            InlineData(@"    \\", @"\\"),
-            InlineData(@"    //", @"\\")
+            InlineData(@"    \\", @"    \"),
+            InlineData(@"    //", @"    \")
             ]
-        [ActiveIssue(27401)]
         public void NormalizeDirectorySeparatorTests(string path, string expected)
         {
             string result = PathInternal.NormalizeDirectorySeparators(path);
@@ -140,6 +139,99 @@ namespace Tests.System.IO
         public void AreRootsEqual(string first, string second, StringComparison comparisonType, bool expected)
         {
             Assert.Equal(expected, PathInternal.AreRootsEqual(first, second, comparisonType));
+        }
+
+        public static TheoryData<string, int> GetRootLength_Data => new TheoryData<string, int>
+        {
+            { @"C:\git\corefx", 3},
+            { @"C:\git\.\", 3},
+            { @"C:\git\..\", 3},
+            { @"C:\git\..\..\", 3},
+            { @"C:\..\", 3},
+            { @"C:\", 3},
+            { @"C:", 2},
+            { @"C:git\corefx", 2},
+            { @"C:git\.\", 2},
+            { @"C:git\..\", 2},
+            { @"C:..\", 2},
+        };
+
+        public static TheoryData<string, int> GetRootLengthRooted => new TheoryData<string, int>
+        {
+            { @"\tmp", 1},
+            { @"\.", 1},
+            { @"\..", 1},
+            { @"\tmp\..\..", 1},
+            { @"\\", 2},
+        };
+
+        [Theory,
+            MemberData(nameof(GetRootLength_Data))]
+        public void GetRootLength(string path, int length)
+        {
+            Assert.Equal(length, PathInternal.GetRootLength(path));
+            Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\?\" + path));
+            Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\.\" + path));
+        }
+
+        [Theory,
+    MemberData(nameof(GetRootLengthRooted))]
+        public void GetRootLength_Rooted(string path, int length)
+        {
+            Assert.Equal(length, PathInternal.GetRootLength(path));
+        }
+
+        public static TheoryData<string, int> GetRootLength_UNCData => new TheoryData<string, int>
+        {
+            { @"Server\Share\git\corefx", 13},
+            { @"Server\Share\git\.\", 13},
+            { @"Server\Share\git\..\", 13},
+            { @"Server\Share\git\..\..\", 13},
+            { @"Server\Share\..\", 13},
+            { @"Server\Share\", 13},
+            { @"Server\Share", 12},
+            { @"Server\Share\", 13},
+            { @"Server\Share\\git", 13},
+        };
+
+        [Theory,
+            MemberData(nameof(GetRootLength_UNCData))]
+        public void GetRootLengthUnc(string path, int length)
+        {
+            Assert.Equal(length + 2, PathInternal.GetRootLength(@"\\" + path));
+            Assert.Equal(length + PathInternal.UncExtendedPrefixLength, PathInternal.GetRootLength(@"\\?\UNC\" + path));
+            Assert.Equal(length + PathInternal.UncExtendedPrefixLength, PathInternal.GetRootLength(@"\\.\UNC\" + path));
+        }
+
+        public static TheoryData<string, int> GetRootLength_DeviceData => new TheoryData<string, int>
+        {
+            { @"..\", 3},
+            { @"..\..\", 3},
+            { @"..\.\", 3},
+            { @"...\", 4},
+            { @".\", 2},
+            { @".\..\", 2},
+            { @"..\", 3},
+            { @"\.\", 0},
+            { @"\..\", 0},
+            { @"\\..", 0},
+            { @"foo\..", 4},
+            { @".", 1},
+            { @"..", 2},
+            { @"foo", 3},
+            { @"foo\", 4},
+            { @"foo\\", 4},
+            { @"..\foo", 3},
+            { @"\\\.\", 0},
+            { @"\\.\", 0},
+        };
+
+        [Theory,
+            MemberData(nameof(GetRootLength_DeviceData))]
+        public void GetRootLengthDevice(string path, int length)
+        {
+            Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\?\" + path));
+            Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\.\" + path));
         }
     }
 }

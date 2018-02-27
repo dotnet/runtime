@@ -190,6 +190,7 @@ namespace System.IO
             int i = 0;
             int volumeSeparatorLength = 2;  // Length to the colon "C:"
             int uncRootLength = 2;          // Length to the start of the server name "\\"
+            int devicePrefixLength = PathInternal.ExtendedPathPrefix.Length;
 
             bool deviceSyntax = IsDevice(path);
             bool deviceUnc = deviceSyntax && IsDeviceUNC(path);
@@ -201,10 +202,10 @@ namespace System.IO
                     // "\\" -> "\\?\UNC\"
                     uncRootLength = UncExtendedPathPrefix.Length;
                 }
-                else
+                else if (devicePrefixLength + 1 < pathLength && path[devicePrefixLength + 1] == VolumeSeparatorChar && IsValidDriveChar(path[devicePrefixLength]))
                 {
                     // "C:" -> "\\?\C:"
-                    volumeSeparatorLength += ExtendedPathPrefix.Length;
+                    volumeSeparatorLength += devicePrefixLength;
                 }
             }
 
@@ -233,7 +234,18 @@ namespace System.IO
                 if (pathLength >= volumeSeparatorLength + 1 && IsDirectorySeparator(path[volumeSeparatorLength]))
                     i++;
             }
-            return i;
+            else if (deviceSyntax && ((devicePrefixLength + 1 >= pathLength) || !(path[devicePrefixLength + 1] == VolumeSeparatorChar)))
+            {
+                i = devicePrefixLength;
+                int n = 1; // Maximum separators to skip
+                while (i < pathLength && (!IsDirectorySeparator(path[i]) || --n > 0))
+                    i++;
+
+                if (i == devicePrefixLength)
+                    i--;
+            }
+
+            return (i < pathLength && IsDirectorySeparator(path[i])) ? i + 1 : i;
         }
 
         private static bool StartsWithOrdinal(ReadOnlySpan<char> source, string value)
