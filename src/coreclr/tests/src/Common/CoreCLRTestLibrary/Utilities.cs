@@ -89,6 +89,18 @@ namespace TestLibrary
             return sb.ToString();
         }
 
+        public static bool CompareBytes(byte[] arr1, byte[] arr2)
+        {
+            if (arr1 == null) return (arr2 == null);
+            if (arr2 == null) return false;
+
+            if (arr1.Length != arr2.Length) return false;
+
+            for (int i = 0; i < arr1.Length; i++) if (arr1[i] != arr2[i]) return false;
+
+            return true;
+        }
+
         // Given a string, display the unicode characters in hex format, optionally displaying each 
         // characters unicode category
         public static string FormatHexStringFromUnicodeString(string string1, bool includeUnicodeCategory)
