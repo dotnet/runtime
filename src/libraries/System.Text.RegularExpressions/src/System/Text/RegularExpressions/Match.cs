@@ -138,7 +138,7 @@ namespace System.Text.RegularExpressions
             return repl.Replacement(this);
         }
 
-        internal virtual string GroupToStringImpl(int groupnum)
+        internal virtual ReadOnlySpan<char> GroupToStringImpl(int groupnum)
         {
             int c = _matchcount[groupnum];
             if (c == 0)
@@ -146,10 +146,10 @@ namespace System.Text.RegularExpressions
 
             int[] matches = _matches[groupnum];
 
-            return Text.Substring(matches[(c - 1) * 2], matches[(c * 2) - 1]);
+            return Text.AsSpan(matches[(c - 1) * 2], matches[(c * 2) - 1]);
         }
 
-        internal string LastGroupToStringImpl()
+        internal ReadOnlySpan<char> LastGroupToStringImpl()
         {
             return GroupToStringImpl(_matchcount.Length - 1);
         }
