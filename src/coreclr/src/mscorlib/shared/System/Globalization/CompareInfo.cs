@@ -566,7 +566,7 @@ namespace System.Globalization
                 char* b = bp;
 
                 // in InvariantMode we support all range and not only the ascii characters.
-                char maxChar = (char) (GlobalizationMode.Invariant ? 0xFFFF : 0x80);
+                char maxChar = (char) (GlobalizationMode.Invariant ? 0xFFFF : 0x7F);
 
                 while (length != 0 && (*a <= maxChar) && (*b <= maxChar))
                 {
