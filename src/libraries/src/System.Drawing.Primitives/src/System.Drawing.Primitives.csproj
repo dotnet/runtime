@@ -7,8 +7,6 @@
     <AssemblyName>System.Drawing.Primitives</AssemblyName>
     <ProjectGuid>{8F472B93-574C-4AEC-9D28-6C2360A55BBF}</ProjectGuid>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
-    <!-- This library contains PInvokes that cannot be used on OneCore. -->
-    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
