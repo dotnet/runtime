@@ -7,26 +7,24 @@
 
 namespace System.ServiceModel.Syndication
 {
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ParseDateTimeArgs
+    public partial struct XmlDateTimeData
     {
-        internal ParseDateTimeArgs(string dateTimeString, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
-        public string DateTimeString { get { throw null; } }
-        public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
+        public XmlDateTimeData(string dateTimeString, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
+        public string DateTimeString { get; }
+        public System.Xml.XmlQualifiedName ElementQualifiedName { get; }
     }
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct ParseUriArgs
+    public partial struct XmlUriData
     {
-        internal ParseUriArgs(string uriString, UriKind uriKind, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
-        public System.Xml.XmlQualifiedName ElementQualifiedName { get { throw null; } }
-        public System.UriKind UriKind { get { throw null; } }
-        public string UriString { get { throw null; } }
+        public XmlUriData(string uriString, UriKind uriKind, System.Xml.XmlQualifiedName elementQualifiedName) { throw null; }
+        public System.Xml.XmlQualifiedName ElementQualifiedName { get; }
+        public System.UriKind UriKind { get; }
+        public string UriString { get; }
     }
     public abstract partial class SyndicationFeedFormatter
     {
-        public System.ServiceModel.Syndication.TryParseDateTime DateTimeParser { get { throw null; } set { } }
-        public System.ServiceModel.Syndication.TryParseUri UriParser { get { throw null; } set { } }
+        public System.ServiceModel.Syndication.TryParseDateTimeCallback DateTimeParser { get; set; }
+        public System.ServiceModel.Syndication.TryParseUriCallback UriParser { get; set; }
     }
-    public delegate bool TryParseDateTime(System.ServiceModel.Syndication.ParseDateTimeArgs parseDateTimeArgs, out System.DateTimeOffset dateTimeOffset);
-    public delegate bool TryParseUri(System.ServiceModel.Syndication.ParseUriArgs parseUriArgs, out System.Uri uri);
+    public delegate bool TryParseDateTimeCallback(System.ServiceModel.Syndication.XmlDateTimeData data, out System.DateTimeOffset dateTimeOffset);
+    public delegate bool TryParseUriCallback(System.ServiceModel.Syndication.XmlUriData data, out System.Uri uri);
 }

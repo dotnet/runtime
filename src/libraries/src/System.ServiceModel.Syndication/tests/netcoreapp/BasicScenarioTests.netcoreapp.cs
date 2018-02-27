@@ -25,7 +25,7 @@ namespace System.ServiceModel.Syndication.Tests
             using (XmlReader reader = XmlReader.Create(@"RssSpecCustomParser.xml"))
             {
                 var formatter = new Rss20FeedFormatter();
-                formatter.DateTimeParser = (ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset) =>
+                formatter.DateTimeParser = (XmlDateTimeData xmlDateTimeData, out DateTimeOffset dateTimeOffset) =>
                 {
                     dateTimeOffset = dto;
                     return true;
@@ -49,9 +49,9 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 var formatter = new Rss20FeedFormatter
                 {
-                    UriParser = (ParseUriArgs parseUriArgs, out Uri uri) =>
+                    UriParser = (XmlUriData xmlUriData, out Uri uri) =>
                     {
-                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElementQualifiedName.Name}-ns-{parseUriArgs.ElementQualifiedName.Namespace}-end");
+                        uri = new Uri($"http://value-{xmlUriData.UriString}-kind-{xmlUriData.UriKind}-localName-{xmlUriData.ElementQualifiedName.Name}-ns-{xmlUriData.ElementQualifiedName.Namespace}-end");
                         return true;
                     }
                 };
@@ -84,7 +84,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 var formatter = new Atom10FeedFormatter
                 {
-                    DateTimeParser = (ParseDateTimeArgs parseDateTimeArgs, out DateTimeOffset dateTimeOffset) =>
+                    DateTimeParser = (XmlDateTimeData xmlDateTimeData, out DateTimeOffset dateTimeOffset) =>
                     {
                         dateTimeOffset = dto;
                         return true;
@@ -113,9 +113,9 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 var formatter = new Atom10FeedFormatter
                 {
-                    UriParser = (ParseUriArgs parseUriArgs, out Uri uri) =>
+                    UriParser = (XmlUriData xmlUriData, out Uri uri) =>
                     {
-                        uri = new Uri($"http://value-{parseUriArgs.UriString}-kind-{parseUriArgs.UriKind}-localName-{parseUriArgs.ElementQualifiedName.Name}-ns-{parseUriArgs.ElementQualifiedName.Namespace}-end");
+                        uri = new Uri($"http://value-{xmlUriData.UriString}-kind-{xmlUriData.UriKind}-localName-{xmlUriData.ElementQualifiedName.Name}-ns-{xmlUriData.ElementQualifiedName.Namespace}-end");
                         return true;
                     }
                 };
