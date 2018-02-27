@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading;
 using Xunit;
 using static Interop;
 
@@ -18,16 +19,29 @@ namespace Microsoft.Win32.SystemEventsTests
 
         protected IntPtr SendMessage(int msg, IntPtr wParam, IntPtr lParam)
         {
+            EnsureHwnd();
+            return User32.SendMessageW(s_hwnd, msg, wParam, lParam);
+        }
+
+        private void EnsureHwnd()
+        {
             if (s_hwnd == IntPtr.Zero)
             {
-                // locate the hwnd used by SystemEvents in this domain
-                var windowClassNameField = typeof(SystemEvents).GetField("s_className", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-                if (windowClassNameField == null)
+                // wait for the window to be created
+                var windowReadyField = typeof(SystemEvents).GetField("s_eventWindowReady", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic) ??  // corefx
+                                       typeof(SystemEvents).GetField("eventWindowReady", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);      // desktop
+                Assert.NotNull(windowReadyField);
+                var windowReadyEvent = windowReadyField.GetValue(null) as ManualResetEvent;
+                if (windowReadyEvent != null)
                 {
-                    // desktop doesn't use the s_ prefix
-                    windowClassNameField = typeof(SystemEvents).GetField("className", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+                    // on an STA thread the HWND is created in the same thread synchronously when attaching to an event handler
+                    // if we're on an MTA thread, a new thread is created to handle events and that thread creates the window, wait for it to complete.
+                    Assert.True(windowReadyEvent.WaitOne(PostMessageWait * ExpectedEventMultiplier));
                 }
 
+                // locate the hwnd used by SystemEvents in this domain
+                var windowClassNameField = typeof(SystemEvents).GetField("s_className", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic) ??  // corefx
+                                           typeof(SystemEvents).GetField("className", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);      // desktop
                 Assert.NotNull(windowClassNameField);
                 var windowClassName = windowClassNameField.GetValue(null) as string;
                 Assert.NotNull(windowClassName);
@@ -35,8 +49,6 @@ namespace Microsoft.Win32.SystemEventsTests
                 s_hwnd = User32.FindWindowW(windowClassName, null);
                 Assert.NotEqual(s_hwnd, IntPtr.Zero);
             }
-
-            return User32.SendMessageW(s_hwnd, msg, wParam, lParam);
         }
     }
 }
