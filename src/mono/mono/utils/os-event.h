@@ -8,6 +8,7 @@
 #include <config.h>
 #include <glib.h>
 
+#include <mono/utils/mono-publib.h>
 #include "mono-os-mutex.h"
 
 #ifndef MONO_INFINITE_WAIT
@@ -35,22 +36,22 @@ struct _MonoOSEvent {
 #endif
 };
 
-void
+MONO_API void
 mono_os_event_init (MonoOSEvent *event, gboolean initial);
 
-void
+MONO_API void
 mono_os_event_destroy (MonoOSEvent *event);
 
-void
+MONO_API void
 mono_os_event_set (MonoOSEvent *event);
 
-void
+MONO_API void
 mono_os_event_reset (MonoOSEvent *event);
 
-MonoOSEventWaitRet
+MONO_API MonoOSEventWaitRet
 mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable);
 
-MonoOSEventWaitRet
+MONO_API MonoOSEventWaitRet
 mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout, gboolean alertable);
 
 #endif /* _MONO_UTILS_OS_EVENT_H_ */

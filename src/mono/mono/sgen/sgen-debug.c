@@ -501,10 +501,10 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 #ifndef SGEN_WITHOUT_MONO
 	char *endobj = obj + size;
 
-	FOREACH_THREAD (info) {
+	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		mword *ctxstart, *ctxcurrent, *ctxend;
 		char **start = (char**)info->client_info.stack_start;
-		if (info->client_info.skip || info->client_info.gc_disabled)
+		if (info->client_info.skip)
 			continue;
 		while (start < (char**)info->client_info.info.stack_end) {
 			if (*start >= obj && *start < endobj)

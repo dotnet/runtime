@@ -61,7 +61,7 @@ MONO_API gpointer
 mono_lls_get_hazardous_pointer_with_mask (gpointer volatile *pp, MonoThreadHazardPointers *hp, int hazard_index);
 
 static inline gboolean
-mono_lls_filter_accept_all (gpointer elem)
+mono_lls_filter_accept_all (gpointer elem, gpointer dummy)
 {
 	return TRUE;
 }
@@ -70,13 +70,13 @@ mono_lls_filter_accept_all (gpointer elem)
  * These macros assume that no other threads are actively modifying the list.
  */
 
-#define MONO_LLS_FOREACH_FILTERED(list, type, elem, filter) \
+#define MONO_LLS_FOREACH_FILTERED(list, type, elem, filter, ...) \
 	do { \
 		MonoLinkedListSet *list__ = (list); \
 		for (MonoLinkedListSetNode *cur__ = list__->head; cur__; cur__ = (MonoLinkedListSetNode *) mono_lls_pointer_unmask (cur__->next)) { \
 			if (!mono_lls_pointer_get_mark (cur__->next)) { \
 				type *elem = (type *) cur__; \
-				if (filter (elem)) {
+				if (filter (elem, __VA_ARGS__)) {
 
 #define MONO_LLS_FOREACH_END \
 				} \
@@ -85,18 +85,18 @@ mono_lls_filter_accept_all (gpointer elem)
 	} while (0);
 
 #define MONO_LLS_FOREACH(list, type, elem) \
-	MONO_LLS_FOREACH_FILTERED ((list), type, elem, mono_lls_filter_accept_all)
+	MONO_LLS_FOREACH_FILTERED ((list), type, elem, mono_lls_filter_accept_all, NULL)
 
 /*
  * These macros can be used while other threads are potentially modifying the
  * list, but they only provide a snapshot of the list as a result.
  *
  * NOTE: Do NOT break out of the loop through any other means than a break
- * statement, as other ways of breaking the loop will skip past important
- * cleanup work.
+ * statement, as other ways of breaking the loop (return, goto, etc) will skip
+ * past important cleanup work.
  */
 
-#define MONO_LLS_FOREACH_FILTERED_SAFE(list, type, elem, filter) \
+#define MONO_LLS_FOREACH_FILTERED_SAFE(list, type, elem, filter, ...) \
 	do { \
 		/* NOTE: Keep this macro's code in sync with the mono_lls_find () logic. */ \
 		MonoLinkedListSet *list__ = (list); \
@@ -125,7 +125,7 @@ mono_lls_filter_accept_all (gpointer elem)
 						progress__ = TRUE; \
 						hkey__ = ckey__; \
 						type *elem = (type *) cur__; \
-						if (filter (elem)) { \
+						if (filter (elem, __VA_ARGS__)) { \
 							gboolean broke__ = TRUE; \
 							gboolean done__ = FALSE; \
 							do { \
@@ -169,6 +169,6 @@ mono_lls_filter_accept_all (gpointer elem)
 	} while (0);
 
 #define MONO_LLS_FOREACH_SAFE(list, type, elem) \
-	MONO_LLS_FOREACH_FILTERED_SAFE ((list), type, elem, mono_lls_filter_accept_all)
+	MONO_LLS_FOREACH_FILTERED_SAFE ((list), type, elem, mono_lls_filter_accept_all, NULL)
 
 #endif /* __MONO_SPLIT_ORDERED_LIST_H__ */

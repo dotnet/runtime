@@ -893,7 +893,7 @@ finalizer_thread (gpointer unused)
 		 */
 
 		g_assert (mono_domain_get () == mono_get_root_domain ());
-		mono_gc_set_skip_thread (TRUE);
+		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC);
 
 		if (wait) {
 			/* An alertable wait is required so this thread can be suspended on windows */
@@ -901,7 +901,7 @@ finalizer_thread (gpointer unused)
 		}
 		wait = TRUE;
 
-		mono_gc_set_skip_thread (FALSE);
+		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
 		mono_runtime_do_background_work ();
 

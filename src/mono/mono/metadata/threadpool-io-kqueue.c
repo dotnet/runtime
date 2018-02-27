@@ -82,13 +82,13 @@ kqueue_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), 
 
 	memset (kqueue_events, 0, sizeof (struct kevent) * KQUEUE_NEVENTS);
 
-	mono_gc_set_skip_thread (TRUE);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC);
 
 	MONO_ENTER_GC_SAFE;
 	ready = kevent (kqueue_fd, NULL, 0, kqueue_events, KQUEUE_NEVENTS, NULL);
 	MONO_EXIT_GC_SAFE;
 
-	mono_gc_set_skip_thread (FALSE);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
 	if (ready == -1) {
 		switch (errno) {

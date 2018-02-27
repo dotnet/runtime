@@ -148,17 +148,42 @@ enum {
 
 typedef struct _MonoThreadInfoInterruptToken MonoThreadInfoInterruptToken;
 
+/*
+ * These flags control how the rest of the runtime will see and interact with
+ * a thread.
+ */
+typedef enum {
+	/*
+	 * No flags means it's a normal thread that takes part in all runtime
+	 * functionality.
+	 */
+	MONO_THREAD_INFO_FLAGS_NONE = 0,
+	/*
+	 * The thread will not be suspended by the STW machinery. The thread is not
+	 * allowed to allocate or access managed memory at all, nor execute managed
+	 * code.
+	 */
+	MONO_THREAD_INFO_FLAGS_NO_GC = 1,
+	/*
+	 * The thread will not be subject to profiler sampling signals.
+	 */
+	MONO_THREAD_INFO_FLAGS_NO_SAMPLE = 2,
+} MonoThreadInfoFlags;
+
 typedef struct {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
 	MonoNativeThreadHandle native_handle; /* Valid on mach and android */
 	int thread_state;
 
+	/*
+	 * Must not be changed directly, and especially not by other threads. Use
+	 * mono_thread_info_get/set_flags () to manipulate this.
+	 */
+	volatile gint32 flags;
+
 	/*Tells if this thread was created by the runtime or not.*/
 	gboolean runtime_thread;
-
-	/* Tells if this thread should be ignored or not by runtime services such as GC and profiling */
-	gboolean tools_thread;
 
 	/* Max stack bounds, all valid addresses must be between [stack_start_limit, stack_end[ */
 	void *stack_start_limit, *stack_end;
@@ -255,6 +280,10 @@ typedef struct {
 	void (*thread_detach_with_lock)(THREAD_INFO_TYPE *info);
 	gboolean (*ip_in_critical_region) (MonoDomain *domain, gpointer ip);
 	gboolean (*thread_in_critical_region) (THREAD_INFO_TYPE *info);
+
+	// Called on the affected thread.
+	void (*thread_flags_changing) (MonoThreadInfoFlags old, MonoThreadInfoFlags new_);
+	void (*thread_flags_changed) (MonoThreadInfoFlags old, MonoThreadInfoFlags new_);
 } MonoThreadInfoCallbacks;
 
 typedef struct {
@@ -272,26 +301,41 @@ typedef enum {
 
 typedef SuspendThreadResult (*MonoSuspendThreadCallback) (THREAD_INFO_TYPE *info, gpointer user_data);
 
-static inline gboolean
-mono_threads_filter_tools_threads (THREAD_INFO_TYPE *info)
-{
-	return !((MonoThreadInfo*)info)->tools_thread;
-}
+MONO_API MonoThreadInfoFlags
+mono_thread_info_get_flags (THREAD_INFO_TYPE *info);
 
 /*
-Requires the world to be stoped
-*/
-#define FOREACH_THREAD(thread) \
-	MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_tools_threads)
+ * Sets the thread info flags for the current thread. This function may invoke
+ * callbacks containing arbitrary code (e.g. locks) so it must be assumed to be
+ * async unsafe.
+ */
+MONO_API void
+mono_thread_info_set_flags (MonoThreadInfoFlags flags);
+
+static inline gboolean
+mono_threads_filter_exclude_flags (THREAD_INFO_TYPE *info, MonoThreadInfoFlags flags)
+{
+	return !(mono_thread_info_get_flags (info) & flags);
+}
+
+/* Normal iteration; requires the world to be stopped. */
+
+#define FOREACH_THREAD_ALL(thread) \
+	MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_lls_filter_accept_all, NULL)
+
+#define FOREACH_THREAD_EXCLUDE(thread, not_flags) \
+	MONO_LLS_FOREACH_FILTERED (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_exclude_flags, not_flags)
 
 #define FOREACH_THREAD_END \
 	MONO_LLS_FOREACH_END
 
-/*
-Snapshot iteration.
-*/
-#define FOREACH_THREAD_SAFE(thread) \
-	MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_tools_threads)
+/* Snapshot iteration; can be done anytime but is slower. */
+
+#define FOREACH_THREAD_SAFE_ALL(thread) \
+	MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_lls_filter_accept_all, NULL)
+
+#define FOREACH_THREAD_SAFE_EXCLUDE(thread, not_flags) \
+	MONO_LLS_FOREACH_FILTERED_SAFE (mono_thread_info_list_head (), THREAD_INFO_TYPE, thread, mono_threads_filter_exclude_flags, not_flags)
 
 #define FOREACH_THREAD_SAFE_END \
 	MONO_LLS_FOREACH_SAFE_END
@@ -443,10 +487,6 @@ mono_threads_open_thread_handle (MonoThreadHandle *handle);
 
 void
 mono_threads_close_thread_handle (MonoThreadHandle *handle);
-
-MONO_API void
-mono_threads_attach_tools_thread (void);
-
 
 #if !defined(HOST_WIN32)
 

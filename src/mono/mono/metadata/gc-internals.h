@@ -319,7 +319,9 @@ gboolean mono_gc_card_table_nursery_check (void);
 
 void* mono_gc_get_nursery (int *shift_bits, size_t *size);
 
-void mono_gc_set_skip_thread (gboolean skip);
+// Don't use directly; set/unset MONO_THREAD_INFO_FLAGS_NO_GC instead.
+void mono_gc_skip_thread_changing (gboolean skip);
+void mono_gc_skip_thread_changed (gboolean skip);
 
 #ifndef HOST_WIN32
 int mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);

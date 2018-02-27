@@ -140,13 +140,13 @@ poll_event_wait (void (*callback) (gint fd, gint events, gpointer user_data), gp
 	for (i = 0; i < poll_fds_size; ++i)
 		poll_fds [i].revents = 0;
 
-	mono_gc_set_skip_thread (TRUE);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC);
 
 	MONO_ENTER_GC_SAFE;
 	ready = mono_poll (poll_fds, poll_fds_size, -1);
 	MONO_EXIT_GC_SAFE;
 
-	mono_gc_set_skip_thread (FALSE);
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
 
 	if (ready == -1) {
 		/*

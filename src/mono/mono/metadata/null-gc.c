@@ -520,7 +520,14 @@ mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void 
 }
 #endif
 
-void mono_gc_set_skip_thread (gboolean value)
+void
+mono_gc_skip_thread_changing (gboolean skip)
+{
+	// No STW, nothing needs to be done.
+}
+
+void
+mono_gc_skip_thread_changed (gboolean skip)
 {
 }
 

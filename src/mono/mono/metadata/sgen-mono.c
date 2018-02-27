@@ -879,7 +879,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 
 	sgen_clear_nursery_fragments ();
 
-	FOREACH_THREAD (info) {
+	FOREACH_THREAD_ALL (info) {
 		mono_handle_stack_free_domain ((HandleStack*)info->client_info.info.handle_stack, domain);
 	} FOREACH_THREAD_END
 
@@ -2074,12 +2074,10 @@ static void
 report_stack_roots (void)
 {
 	GCRootReport report = {0};
-	FOREACH_THREAD (info) {
+	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		void *aligned_stack_start;
 
 		if (info->client_info.skip) {
-			continue;
-		} else if (info->client_info.gc_disabled) {
 			continue;
 		} else if (!mono_thread_info_is_live (info)) {
 			continue;
@@ -2450,7 +2448,7 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 {
 	mono_tls_set_sgen_thread_info (info);
 
-	info->client_info.skip = 0;
+	info->client_info.skip = FALSE;
 
 	info->client_info.stack_start = NULL;
 
@@ -2502,21 +2500,30 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 }
 
 void
-mono_gc_set_skip_thread (gboolean skip)
+mono_gc_skip_thread_changing (gboolean skip)
 {
-	SgenThreadInfo *info = mono_thread_info_current ();
-
+	/*
+	 * SGen's STW will respect the thread info flags, but we do need to take
+	 * the GC lock when changing them. If we don't do this, SGen might end up
+	 * trying to resume a thread that wasn't suspended because it had
+	 * MONO_THREAD_INFO_FLAGS_NO_GC set when STW began.
+	 */
 	LOCK_GC;
-	info->client_info.gc_disabled = skip;
-	UNLOCK_GC;
 
 	if (skip) {
-		/* If we skip scanning a thread with a non-empty handle stack, we may move an
+		/*
+		 * If we skip scanning a thread with a non-empty handle stack, we may move an
 		 * object but fail to update the reference in the handle.
 		 */
-		HandleStack *stack = info->client_info.info.handle_stack;
+		HandleStack *stack = mono_thread_info_current ()->client_info.info.handle_stack;
 		g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
 	}
+}
+
+void
+mono_gc_skip_thread_changed (gboolean skip)
+{
+	UNLOCK_GC;
 }
 
 gboolean
@@ -2591,16 +2598,13 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 	return;
 #endif
 
-	FOREACH_THREAD (info) {
+	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		int skip_reason = 0;
 		void *aligned_stack_start;
 
 		if (info->client_info.skip) {
 			SGEN_LOG (3, "Skipping dead thread %p, range: %p-%p, size: %zd", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start);
 			skip_reason = 1;
-		} else if (info->client_info.gc_disabled) {
-			SGEN_LOG (3, "GC disabled for thread %p, range: %p-%p, size: %zd", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start);
-			skip_reason = 2;
 		} else if (!mono_thread_info_is_live (info)) {
 			SGEN_LOG (3, "Skipping non-running thread %p, range: %p-%p, size: %zd (state %x)", info, info->client_info.stack_start, info->client_info.info.stack_end, (char*)info->client_info.info.stack_end - (char*)info->client_info.stack_start, info->client_info.info.thread_state);
 			skip_reason = 3;

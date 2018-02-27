@@ -3110,6 +3110,18 @@ ip_in_critical_region (MonoDomain *domain, gpointer ip)
 	return mono_gc_is_critical_method (method);
 }
 
+static void
+thread_flags_changing (MonoThreadInfoFlags old, MonoThreadInfoFlags new_)
+{
+	mono_gc_skip_thread_changing (!!(new_ & MONO_THREAD_INFO_FLAGS_NO_GC));
+}
+
+static void
+thread_flags_changed (MonoThreadInfoFlags old, MonoThreadInfoFlags new_)
+{
+	mono_gc_skip_thread_changed (!!(new_ & MONO_THREAD_INFO_FLAGS_NO_GC));
+}
+
 void
 mono_thread_callbacks_init (void)
 {
@@ -3121,6 +3133,8 @@ mono_thread_callbacks_init (void)
 	cb.thread_detach_with_lock = thread_detach_with_lock;
 	cb.ip_in_critical_region = ip_in_critical_region;
 	cb.thread_in_critical_region = thread_in_critical_region;
+	cb.thread_flags_changing = thread_flags_changing;
+	cb.thread_flags_changed = thread_flags_changed;
 	mono_thread_info_callbacks_init (&cb);
 }
 

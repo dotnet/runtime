@@ -611,7 +611,7 @@ static void
 mono_push_other_roots (void)
 {
 	g_hash_table_foreach (roots, push_root, NULL);
-	FOREACH_THREAD (info) {
+	FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 		HandleStack* stack = (HandleStack*)info->handle_stack;
 		if (stack)
 			push_handle_stack (stack);
@@ -1478,7 +1478,22 @@ mono_gc_set_stack_end (void *stack_end)
 {
 }
 
-void mono_gc_set_skip_thread (gboolean value)
+void
+mono_gc_skip_thread_changing (gboolean skip)
+{
+	/*
+	 * Unlike SGen, Boehm doesn't respect our thread info flags. We need to
+	 * inform Boehm manually to skip/not skip the current thread.
+	 */
+
+	if (skip)
+		GC_start_blocking ();
+	else
+		GC_end_blocking ();
+}
+
+void
+mono_gc_skip_thread_changed (gboolean skip)
 {
 }
 

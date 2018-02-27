@@ -40,15 +40,6 @@ struct _SgenClientThreadInfo {
 	gboolean skip, suspend_done;
 	volatile int in_critical_region;
 
-	/*
-	This is set the argument of mono_gc_set_skip_thread.
-
-	A thread that knowingly holds no managed state can call this
-	function around blocking loops to reduce the GC burden by not
-	been scanned.
-	*/
-	gboolean gc_disabled;
-
 #ifdef SGEN_POSIX_STW
 	/* This is -1 until the first suspend. */
 	int signal;

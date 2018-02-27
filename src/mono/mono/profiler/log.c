@@ -19,7 +19,10 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/threads.h>
+#include <mono/metadata/threads-types.h>
 #include <mono/mini/jit.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>
@@ -37,6 +40,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/os-event.h>
 #include "log.h"
 
 #ifdef HAVE_DLFCN_H
@@ -145,6 +149,9 @@ typedef struct {
 
 	// Was this thread added to the LLS?
 	gboolean attached;
+
+	// Did this thread detach from the runtime? Only used for internal profiler threads.
+	gboolean did_detach;
 
 	// The current log buffer for this thread.
 	LogBuffer *buffer;
@@ -317,12 +324,18 @@ struct _MonoProfiler {
 	volatile gint32 buffer_lock_exclusive_intent;
 
 	volatile gint32 runtime_inited;
+	volatile gint32 detach_threads;
 	volatile gint32 in_shutdown;
 
+	MonoSemType attach_threads_sem;
+	MonoSemType detach_threads_sem;
+
 	MonoNativeThreadId helper_thread;
+	MonoOSEvent helper_thread_exited;
 
 	MonoNativeThreadId writer_thread;
 	volatile gint32 run_writer_thread;
+	MonoOSEvent writer_thread_exited;
 	MonoLockFreeQueue writer_queue;
 	MonoSemType writer_queue_sem;
 
@@ -334,6 +347,7 @@ struct _MonoProfiler {
 
 	MonoNativeThreadId dumper_thread;
 	volatile gint32 run_dumper_thread;
+	MonoOSEvent dumper_thread_exited;
 	MonoLockFreeQueue dumper_queue;
 	MonoSemType dumper_queue_sem;
 
@@ -520,6 +534,7 @@ init_thread (gboolean add_to_lls)
 	thread = g_malloc (sizeof (MonoProfilerThread));
 	thread->node.key = thread_id ();
 	thread->attached = add_to_lls;
+	thread->did_detach = FALSE;
 	thread->call_depth = 0;
 	thread->busy = FALSE;
 	thread->ended = FALSE;
@@ -1088,15 +1103,6 @@ dump_buffer (LogBuffer *buf)
 	free_buffer (buf, buf->size);
 }
 
-static void
-dump_buffer_threadless (LogBuffer *buf)
-{
-	for (LogBuffer *iter = buf; iter; iter = iter->next)
-		iter->thread_id = 0;
-
-	dump_buffer (buf);
-}
-
 // Only valid if init_thread () was called with add_to_lls = FALSE.
 static void
 send_log_unsafe (gboolean if_needed)
@@ -1104,10 +1110,6 @@ send_log_unsafe (gboolean if_needed)
 	MonoProfilerThread *thread = get_thread ();
 
 	if (!if_needed || (if_needed && thread->buffer->next)) {
-		if (!thread->attached)
-			for (LogBuffer *iter = thread->buffer; iter; iter = iter->next)
-				iter->thread_id = 0;
-
 		send_buffer (thread);
 		init_buffer_state (thread);
 	}
@@ -2084,10 +2086,13 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 
 	MonoProfilerThread *thread = get_thread ();
 
-	thread->ended = TRUE;
-	remove_thread (thread);
+	// Internal profiler threads will clean up manually.
+	if (thread->attached) {
+		thread->ended = TRUE;
+		remove_thread (thread);
 
-	PROF_TLS_SET (MONO_PROFILER_THREAD_DEAD);
+		PROF_TLS_SET (MONO_PROFILER_THREAD_DEAD);
+	}
 }
 
 static void
@@ -2852,12 +2857,38 @@ cleanup_reusable_samples (void)
 }
 
 static void
+signal_helper_thread (char c)
+{
+	if (write (log_profiler.pipes [1], &c, 1) != 1) {
+		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", g_strerror (errno));
+		exit (1);
+	}
+}
+
+static void
 log_early_shutdown (MonoProfiler *prof)
 {
 	if (log_config.hs_on_shutdown) {
 		mono_atomic_store_i32 (&log_profiler.heapshot_requested, 1);
 		mono_gc_collect (mono_gc_max_generation ());
 	}
+
+	/*
+	 * We need to detach the internal threads early on. log_shutdown () is
+	 * called after the threading subsystem has been cleaned up, so detaching
+	 * there would crash.
+	 */
+	mono_os_sem_init (&log_profiler.detach_threads_sem, 0);
+	mono_atomic_store_i32 (&log_profiler.detach_threads, 1);
+
+	signal_helper_thread (2);
+	mono_os_sem_post (&prof->dumper_queue_sem);
+	mono_os_sem_post (&prof->writer_queue_sem);
+
+	for (int i = 0; i < 3; i++)
+		mono_os_sem_wait (&log_profiler.detach_threads_sem, MONO_SEM_FLAGS_NONE);
+
+	mono_os_sem_destroy (&log_profiler.detach_threads_sem);
 }
 
 static void
@@ -2868,14 +2899,9 @@ log_shutdown (MonoProfiler *prof)
 	if (ENABLED (PROFLOG_COUNTER_EVENTS))
 		counters_and_perfcounters_sample ();
 
-	char c = 1;
-
-	if (write (prof->pipes [1], &c, 1) != 1) {
-		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", g_strerror (errno));
-		exit (1);
-	}
-
-	mono_native_thread_join (prof->helper_thread);
+	signal_helper_thread (1);
+	mono_os_event_wait_one (&prof->helper_thread_exited, MONO_INFINITE_WAIT, FALSE);
+	mono_os_event_destroy (&prof->helper_thread_exited);
 
 	mono_os_mutex_destroy (&log_profiler.counters_mutex);
 
@@ -2914,12 +2940,14 @@ log_shutdown (MonoProfiler *prof)
 
 	mono_atomic_store_i32 (&prof->run_dumper_thread, 0);
 	mono_os_sem_post (&prof->dumper_queue_sem);
-	mono_native_thread_join (prof->dumper_thread);
+	mono_os_event_wait_one (&prof->dumper_thread_exited, MONO_INFINITE_WAIT, FALSE);
+	mono_os_event_destroy (&prof->dumper_thread_exited);
 	mono_os_sem_destroy (&prof->dumper_queue_sem);
 
 	mono_atomic_store_i32 (&prof->run_writer_thread, 0);
 	mono_os_sem_post (&prof->writer_queue_sem);
-	mono_native_thread_join (prof->writer_thread);
+	mono_os_event_wait_one (&prof->writer_thread_exited, MONO_INFINITE_WAIT, FALSE);
+	mono_os_event_destroy (&prof->writer_thread_exited);
 	mono_os_sem_destroy (&prof->writer_queue_sem);
 
 	/*
@@ -3021,6 +3049,62 @@ new_filename (const char* filename)
 	return res;
 }
 
+static MonoProfilerThread *
+profiler_thread_begin (const char *name)
+{
+	MonoProfilerThread *thread = init_thread (FALSE);
+
+	mono_thread_attach (mono_get_root_domain ());
+
+	MonoInternalThread *internal = mono_thread_internal_current ();
+
+	/*
+	 * Don't let other threads try to suspend internal profiler threads during
+	 * shutdown. This can happen if a program calls Environment.Exit () which
+	 * calls mono_thread_suspend_all_other_threads ().
+	 */
+	internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
+
+	ERROR_DECL (error);
+
+	MonoString *name_str = mono_string_new_checked (mono_get_root_domain (), name, error);
+	mono_error_assert_ok (error);
+	mono_thread_set_name_internal (internal, name_str, FALSE, FALSE, error);
+	mono_error_assert_ok (error);
+
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+
+	mono_os_sem_post (&log_profiler.attach_threads_sem);
+
+	return thread;
+}
+
+static void
+profiler_thread_end (MonoProfilerThread *thread, MonoOSEvent *event, gboolean send)
+{
+	if (send)
+		send_log_unsafe (FALSE);
+	else
+		dump_buffer (thread->buffer);
+
+	deinit_thread (thread);
+
+	mono_os_event_set (event);
+}
+
+static void
+profiler_thread_check_detach (MonoProfilerThread *thread)
+{
+	if (mono_atomic_load_i32 (&log_profiler.detach_threads) && !thread->did_detach) {
+		thread->did_detach = TRUE;
+
+		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
+		mono_thread_detach (mono_thread_current ());
+
+		mono_os_sem_post (&log_profiler.detach_threads_sem);
+	}
+}
+
 static void
 add_to_fd_set (fd_set *set, int fd, int *max_fd)
 {
@@ -3044,10 +3128,7 @@ add_to_fd_set (fd_set *set, int fd, int *max_fd)
 static void *
 helper_thread (void *arg)
 {
-	mono_threads_attach_tools_thread ();
-	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler helper");
-
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Helper");
 
 	GArray *command_sockets = g_array_new (FALSE, FALSE, sizeof (int));
 
@@ -3083,11 +3164,14 @@ helper_thread (void *arg)
 
 		buffer_unlock_excl ();
 
-		// Are we shutting down?
+		// Did we get a shutdown or detach signal?
 		if (FD_ISSET (log_profiler.pipes [0], &rfds)) {
 			char c;
+
 			read (log_profiler.pipes [0], &c, 1);
-			break;
+
+			if (c == 1)
+				break;
 		}
 
 		for (gint i = 0; i < command_sockets->len; i++) {
@@ -3126,6 +3210,8 @@ helper_thread (void *arg)
 					g_array_append_val (command_sockets, fd);
 			}
 		}
+
+		profiler_thread_check_detach (thread);
 	}
 
 	for (gint i = 0; i < command_sockets->len; i++)
@@ -3133,10 +3219,7 @@ helper_thread (void *arg)
 
 	g_array_free (command_sockets, TRUE);
 
-	send_log_unsafe (FALSE);
-	deinit_thread (thread);
-
-	mono_thread_info_detach ();
+	profiler_thread_end (thread, &log_profiler.helper_thread_exited, TRUE);
 
 	return NULL;
 }
@@ -3276,7 +3359,7 @@ handle_writer_queue_entry (void)
 		if (wrote_methods) {
 			MonoProfilerThread *thread = get_thread ();
 
-			dump_buffer_threadless (thread->buffer);
+			dump_buffer (thread->buffer);
 			init_buffer_state (thread);
 		}
 
@@ -3294,25 +3377,21 @@ handle_writer_queue_entry (void)
 static void *
 writer_thread (void *arg)
 {
-	mono_threads_attach_tools_thread ();
-	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler writer");
-
 	dump_header ();
 
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Writer");
 
 	while (mono_atomic_load_i32 (&log_profiler.run_writer_thread)) {
 		mono_os_sem_wait (&log_profiler.writer_queue_sem, MONO_SEM_FLAGS_NONE);
 		handle_writer_queue_entry ();
+
+		profiler_thread_check_detach (thread);
 	}
 
 	/* Drain any remaining entries on shutdown. */
 	while (handle_writer_queue_entry ());
 
-	free_buffer (thread->buffer, thread->buffer->size);
-	deinit_thread (thread);
-
-	mono_thread_info_detach ();
+	profiler_thread_end (thread, &log_profiler.writer_thread_exited, FALSE);
 
 	return NULL;
 }
@@ -3401,10 +3480,7 @@ handle_dumper_queue_entry (void)
 static void *
 dumper_thread (void *arg)
 {
-	mono_threads_attach_tools_thread ();
-	mono_native_thread_set_name (mono_native_thread_id_get (), "Profiler dumper");
-
-	MonoProfilerThread *thread = init_thread (FALSE);
+	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Dumper");
 
 	while (mono_atomic_load_i32 (&log_profiler.run_dumper_thread)) {
 		/*
@@ -3415,15 +3491,14 @@ dumper_thread (void *arg)
 			send_log_unsafe (FALSE);
 
 		handle_dumper_queue_entry ();
+
+		profiler_thread_check_detach (thread);
 	}
 
 	/* Drain any remaining entries on shutdown. */
 	while (handle_dumper_queue_entry ());
 
-	send_log_unsafe (FALSE);
-	deinit_thread (thread);
-
-	mono_thread_info_detach ();
+	profiler_thread_end (thread, &log_profiler.dumper_thread_exited, TRUE);
 
 	return NULL;
 }
@@ -3444,6 +3519,11 @@ register_counter (const char *name, gint32 *counter)
 {
 	mono_counters_register (name, MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, counter);
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#endif
 
 ICALL_EXPORT gint32
 proflog_icall_GetMaxStackTraceFrames (void)
@@ -3770,6 +3850,10 @@ proflog_icall_SetJitEvents (MonoBoolean value)
 	mono_coop_mutex_unlock (&log_profiler.api_mutex);
 }
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
@@ -3825,14 +3909,26 @@ runtime_initialized (MonoProfiler *profiler)
 
 	counters_init ();
 
+	mono_os_sem_init (&log_profiler.attach_threads_sem, 0);
+
 	/*
 	 * We must start the helper thread before the writer thread. This is
-	 * because the helper thread sets up the command port which is written to
-	 * the log header by the writer thread.
+	 * because start_helper_thread () sets up the command port which is written
+	 * to the log header by the writer thread.
 	 */
 	start_helper_thread ();
 	start_writer_thread ();
 	start_dumper_thread ();
+
+	/*
+	 * Wait for all the internal threads to be started. If we don't do this, we
+	 * might shut down before they finish initializing, which could lead to
+	 * various deadlocks when waiting for them to exit during shutdown.
+	 */
+	for (int i = 0; i < 3; i++)
+		mono_os_sem_wait (&log_profiler.attach_threads_sem, MONO_SEM_FLAGS_NONE);
+
+	mono_os_sem_destroy (&log_profiler.attach_threads_sem);
 
 	mono_coop_mutex_init (&log_profiler.api_mutex);
 
@@ -3934,9 +4030,13 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	mono_lock_free_allocator_init_size_class (&log_profiler.writer_entry_size_class, sizeof (WriterQueueEntry), WRITER_ENTRY_BLOCK_SIZE);
 	mono_lock_free_allocator_init_allocator (&log_profiler.writer_entry_allocator, &log_profiler.writer_entry_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
+	mono_os_event_init (&log_profiler.helper_thread_exited, FALSE);
+
+	mono_os_event_init (&log_profiler.writer_thread_exited, FALSE);
 	mono_lock_free_queue_init (&log_profiler.writer_queue);
 	mono_os_sem_init (&log_profiler.writer_queue_sem, 0);
 
+	mono_os_event_init (&log_profiler.dumper_thread_exited, FALSE);
 	mono_lock_free_queue_init (&log_profiler.dumper_queue);
 	mono_os_sem_init (&log_profiler.dumper_queue_sem, 0);
 
