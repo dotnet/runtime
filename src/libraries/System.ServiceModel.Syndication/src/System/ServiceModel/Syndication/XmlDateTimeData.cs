@@ -6,15 +6,16 @@ using System.Xml;
 
 namespace System.ServiceModel.Syndication
 {
-    public struct ParseDateTimeArgs
+    public struct XmlDateTimeData
     {
-        internal ParseDateTimeArgs(string dateTimeString, XmlQualifiedName elementQualifiedName)
+        public XmlDateTimeData(string dateTimeString, XmlQualifiedName elementQualifiedName)
         {
             DateTimeString = dateTimeString;
             ElementQualifiedName = elementQualifiedName;
         }
 
-        public string DateTimeString { get; private set; }
-        public XmlQualifiedName ElementQualifiedName { get; private set; }
+        public string DateTimeString { get; }
+
+        public XmlQualifiedName ElementQualifiedName { get; }
     }
 }

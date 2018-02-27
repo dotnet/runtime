@@ -71,7 +71,7 @@ namespace System.ServiceModel.Syndication
             _feedType = feedToWrite.GetType();
         }
 
-        internal override TryParseDateTime GetDefaultDateTimeParser()
+        internal override TryParseDateTimeCallback GetDefaultDateTimeParser()
         {
             return DateTimeHelper.DefaultAtom10DateTimeParser;
         }
