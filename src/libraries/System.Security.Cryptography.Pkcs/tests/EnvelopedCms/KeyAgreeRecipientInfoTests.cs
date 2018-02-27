@@ -24,7 +24,11 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             using (X509Certificate2 cert = Certificates.DHKeyAgree1.GetCertificate())
             {
                 CmsRecipient cmsRecipient = new CmsRecipient(cert);
-                Assert.Throws<PlatformNotSupportedException>(() => ecms.Encrypt(cmsRecipient));
+
+                CryptographicException e =
+                    Assert.Throws<CryptographicException>(() => ecms.Encrypt(cmsRecipient));
+
+                Assert.Contains(cert.GetKeyAlgorithm(), e.Message);
             }
         }
 
