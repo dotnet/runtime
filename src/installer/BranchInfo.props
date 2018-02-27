@@ -4,7 +4,8 @@
     <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <PreReleaseLabel Condition="'$(PackageVersionStamp)' != ''">$(PackageVersionStamp)</PreReleaseLabel>
+    <PreReleaseLabel Condition="'$(PreReleaseLabel)' == ''">preview2</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
     <ReleaseBrandSuffix>Preview 2</ReleaseBrandSuffix>
     <Channel>master</Channel>
