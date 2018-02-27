@@ -109,12 +109,14 @@ namespace System.Text.RegularExpressions
 
         int IList<Capture>.IndexOf(Capture item)
         {
-            EqualityComparer<Capture> comparer = EqualityComparer<Capture>.Default;
             for (int i = 0; i < Count; i++)
             {
-                if (comparer.Equals(this[i], item))
+                if (EqualityComparer<Capture>.Default.Equals(this[i], item))
+                {
                     return i;
+                }
             }
+
             return -1;
         }
 
