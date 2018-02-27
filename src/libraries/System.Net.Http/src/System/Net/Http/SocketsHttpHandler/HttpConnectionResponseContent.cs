@@ -14,25 +14,26 @@ namespace System.Net.Http
         private sealed class HttpConnectionResponseContent : HttpContent
         {
             private HttpContentStream _stream;
+            private bool _consumedStream;
 
             public void SetStream(HttpContentStream stream)
             {
                 Debug.Assert(stream != null);
                 Debug.Assert(stream.CanRead);
+                Debug.Assert(!_consumedStream);
 
                 _stream = stream;
             }
 
             private HttpContentStream ConsumeStream()
             {
-                if (_stream == null)
+                if (_consumedStream || _stream == null)
                 {
                     throw new InvalidOperationException(SR.net_http_content_stream_already_read);
                 }
+                _consumedStream = true;
 
-                HttpContentStream stream = _stream;
-                _stream = null;
-                return stream;
+                return _stream;
             }
 
             protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>

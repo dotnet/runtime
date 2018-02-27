@@ -9,94 +9,105 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal abstract class HttpContentReadStream : HttpContentStream
+    internal partial class HttpConnection
     {
-        public HttpContentReadStream(HttpConnection connection) : base(connection)
+        internal abstract class HttpContentReadStream : HttpContentStream
         {
-        }
+            private int _disposed; // 0==no, 1==yes
 
-        public sealed override bool CanRead => true;
-        public sealed override bool CanWrite => false;
-
-        public sealed override void Flush() { }
-        public sealed override Task FlushAsync(CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled(cancellationToken) :
-                Task.CompletedTask;
-
-        public sealed override void WriteByte(byte value) => throw new NotSupportedException();
-        public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public sealed override void Write(ReadOnlySpan<byte> source) => throw new NotSupportedException();
-        public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public sealed override Task WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public sealed override int Read(byte[] buffer, int offset, int count)
-        {
-            ValidateBufferArgs(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
-        }
-
-        public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            ValidateBufferArgs(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
-        }
-
-        public sealed override void CopyTo(Stream destination, int bufferSize) =>
-            CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
-
-        public virtual bool NeedsDrain => false;
-
-        public virtual Task<bool> DrainAsync(int maxDrainBytes)
-        {
-            Debug.Assert(false, "DrainAsync should not be called for this response stream");
-            return Task.FromResult(false);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
+            public HttpContentReadStream(HttpConnection connection) : base(connection)
             {
-                if (NeedsDrain)
+            }
+
+            public sealed override bool CanRead => true;
+            public sealed override bool CanWrite => false;
+
+            public sealed override void Flush() { }
+            public sealed override Task FlushAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ?
+                    Task.FromCanceled(cancellationToken) :
+                    Task.CompletedTask;
+
+            public sealed override void WriteByte(byte value) => throw new NotSupportedException();
+            public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public sealed override void Write(ReadOnlySpan<byte> source) => throw new NotSupportedException();
+            public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException();
+            public sealed override Task WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+            public sealed override int Read(byte[] buffer, int offset, int count)
+            {
+                ValidateBufferArgs(buffer, offset, count);
+                return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+            }
+
+            public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArgs(buffer, offset, count);
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
+
+            public sealed override void CopyTo(Stream destination, int bufferSize) =>
+                CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
+
+            public virtual bool NeedsDrain => false;
+
+            public virtual Task<bool> DrainAsync(int maxDrainBytes)
+            {
+                Debug.Fail($"DrainAsync should not be called for this response stream: {GetType()}");
+                return Task.FromResult(false);
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                // Only attempt draining if we haven't started draining due to disposal; otherwise
+                // multiple calls to Dispose (which happens frequently when someone disposes of the
+                // response stream and response content) will kick off multiple concurrent draining
+                // operations. Also don't delegate to the base if Dispose has already been called,
+                // as doing so will end up disposing of the connection before we're done draining.
+                if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                {
+                    return;
+                }
+
+                if (disposing && NeedsDrain)
                 {
                     // Start the asynchronous drain.
                     // It may complete synchronously, in which case the connection will be put back in the pool synchronously.
-                    // Skip the call to base.Dispose -- it will be deferred until DrainOnDispose finishes.
-                    DrainOnDispose();
+                    // Skip the call to base.Dispose -- it will be deferred until DrainOnDisposeAsync finishes.
+                    DrainOnDisposeAsync();
                     return;
                 }
+
+                base.Dispose(disposing);
             }
 
-            base.Dispose(disposing);
-        }
-
-        // Maximum request drain size, 1MB.
-        private const int MaxDrainBytes = 1024 * 1024;
-
-        private async void DrainOnDispose()
-        {
-            HttpConnection connection = _connection;        // Will be null after drain succeeds
-
-            try
+            private async void DrainOnDisposeAsync()
             {
-                bool drained = await DrainAsync(MaxDrainBytes).ConfigureAwait(false);
+                HttpConnection connection = _connection;        // Will be null after drain succeeds
 
-                if (NetEventSource.IsEnabled)
+                try
                 {
-                    connection.Trace(drained ? "Connection drain succeeded" : "Connection drain failed because MaxDrainSize was exceeded");
+                    bool drained = await DrainAsync(connection._pool.Settings._maxResponseDrainSize).ConfigureAwait(false);
+
+                    if (NetEventSource.IsEnabled)
+                    {
+                        connection.Trace(drained ?
+                            "Connection drain succeeded" :
+                            $"Connection drain failed because MaxResponseDrainSize of {connection._pool.Settings._maxResponseDrainSize} bytes was exceeded");
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                if (NetEventSource.IsEnabled)
+                catch (Exception e)
                 {
-                    connection.Trace($"Connection drain failed due to exception: {e}");
+                    if (NetEventSource.IsEnabled)
+                    {
+                        connection.Trace($"Connection drain failed due to exception: {e}");
+                    }
+
+                    // Eat any exceptions and just Dispose.
                 }
 
-                // Eat any exceptions and just Dispose.
+                base.Dispose(true);
             }
-
-            base.Dispose(true);
         }
     }
 }
