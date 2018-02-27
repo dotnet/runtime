@@ -173,7 +173,14 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
             cms.Decode(encodedMessage);
 
-            Assert.Equal(cms.ContentInfo.Content, new byte[] { 188, 234, 58, 16, 208, 115, 126, 185 });
+            string expectedHex = "BCEA3A10D0737EB9";
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                expectedHex = "BCEA3A10D0737EB9000000000000";
+            }
+
+            Assert.Equal(expectedHex, cms.ContentInfo.Content.ByteArrayToHex());
         }
 
         [Fact]
