@@ -45,6 +45,7 @@ CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS,   "Compute edge weights (1, false
 CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,        "Create EH funclets",             "EH-FUNC",  false, -1, false)
 #endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,        "Optimize layout",                "LAYOUT",   false, -1, false)
+CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,   "Compute blocks reachability",    "BL_REACH", false, -1, false)
 CompPhaseNameMacro(PHASE_ALLOCATE_OBJECTS,       "Allocate Objects",               "ALLOC-OBJ",false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LOOPS,         "Optimize loops",                 "LOOP-OPT", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,            "Clone loops",                    "LP-CLONE", false, -1, false)

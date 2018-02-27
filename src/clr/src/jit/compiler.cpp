@@ -4718,6 +4718,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
         // Compute reachability sets and dominators.
         fgComputeReachability();
+        EndPhase(PHASE_COMPUTE_REACHABILITY);
     }
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
