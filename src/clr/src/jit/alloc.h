@@ -131,7 +131,7 @@ inline void* ArenaAllocator::allocateMemory(size_t size)
     }
 
 #if defined(DEBUG)
-    memset(block, UninitializedWord<char>(), size);
+    memset(block, UninitializedWord<char>(nullptr), size);
 #endif
 
     return block;

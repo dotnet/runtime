@@ -1942,8 +1942,9 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
         }
 #endif
 
-        unsigned varNum = lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
-                                                             // they are long lifetime temps.
+        unsigned varNum = lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs,
+                                                             // so they must be long lifetime temps.
+        varDsc = &lvaTable[lclNum];                          // lvaGrabTemp can reallocate the lvaTable
 
         LclVarDsc* fieldVarDsc       = &lvaTable[varNum];
         fieldVarDsc->lvType          = pFieldInfo->fldType;
