@@ -5490,6 +5490,9 @@ void emitter::emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber reg, 
     {
         if (reg1 != reg)
         {
+            // Ensure we aren't overwriting op2
+            assert(reg2 != reg);
+
             emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
         emitIns_R_R(ins, attr, reg, reg2);
@@ -5569,10 +5572,18 @@ void emitter::emitIns_SIMD_R_R_R_R(
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         if (reg3 != REG_XMM0)
         {
+            // Ensure we aren't overwriting op1 or op2
+            assert(reg1 != REG_XMM0);
+            assert(reg2 != REG_XMM0);
+
             emitIns_R_R(INS_movaps, attr, REG_XMM0, reg3);
         }
         if (reg1 != reg)
         {
+            // Ensure we aren't overwriting op2 or op3
+            assert(reg2 != reg);
+            assert((reg3 == REG_XMM0) || (reg != REG_XMM0));
+
             emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
         emitIns_R_R(ins, attr, reg, reg2);
@@ -5657,6 +5668,9 @@ void emitter::emitIns_SIMD_R_R_R_I(
     {
         if (reg1 != reg)
         {
+            // Ensure we aren't overwriting op2
+            assert(reg2 != reg);
+
             emitIns_R_R(INS_movaps, attr, reg, reg1);
         }
         emitIns_R_R_I(ins, attr, reg, reg2, ival);
