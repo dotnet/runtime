@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions
         /// If the exclusive lock can't be obtained, null is returned;
         /// if the object can't be returned, the lock is released.
         /// </summary>
-        internal object Get()
+        public object Get()
         {
             // try to obtain the lock
 
@@ -53,7 +53,7 @@ namespace System.Text.RegularExpressions
         /// If the object is the one that's under lock, the lock is released.
         /// If there is no cached object, then the lock is obtained and the object is placed in the cache.
         /// </summary>
-        internal void Release(object obj)
+        public void Release(object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
         /// If the exclusive lock can't be obtained, null is returned;
         /// Note that _ref.Target is referenced only under the protection of the lock. (Is this necessary?)
         /// </summary>
-        internal object Get()
+        public object Get()
         {
             if (0 == Interlocked.Exchange(ref _locked, 1))
             {
@@ -117,7 +117,7 @@ namespace System.Text.RegularExpressions
         /// 
         /// Note that _ref.Target is referenced only under the protection of the lock. (Is this necessary?)
         /// </summary>
-        internal void Cache(object obj)
+        public void Cache(object obj)
         {
             if (0 == Interlocked.Exchange(ref _locked, 1))
             {

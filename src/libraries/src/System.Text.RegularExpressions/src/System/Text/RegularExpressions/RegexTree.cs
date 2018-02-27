@@ -11,36 +11,36 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexTree
     {
-        internal readonly RegexNode _root;
-        internal readonly Hashtable _caps;
-        internal readonly int[] _capnumlist;
-        internal readonly Hashtable _capnames;
-        internal readonly string[] _capslist;
-        internal readonly RegexOptions _options;
-        internal readonly int _captop;
+        public readonly RegexNode Root;
+        public readonly Hashtable Caps;
+        public readonly int[] CapNumList;
+        public readonly int CapTop;
+        public readonly Hashtable CapNames;
+        public readonly string[] CapsList;
+        public readonly RegexOptions Options;
 
-        internal RegexTree(RegexNode root, Hashtable caps, int[] capnumlist, int captop, Hashtable capnames, string[] capslist, RegexOptions opts)
+        internal RegexTree(RegexNode root, Hashtable caps, int[] capNumList, int capTop, Hashtable capNames, string[] capsList, RegexOptions options)
         {
-            _root = root;
-            _caps = caps;
-            _capnumlist = capnumlist;
-            _capnames = capnames;
-            _capslist = capslist;
-            _captop = captop;
-            _options = opts;
+            Root = root;
+            Caps = caps;
+            CapNumList = capNumList;
+            CapTop = capTop;
+            CapNames = capNames;
+            CapsList = capsList;
+            Options = options;
         }
 
 #if DEBUG
-        internal void Dump()
+        public void Dump()
         {
-            _root.Dump();
+            Root.Dump();
         }
 
-        internal bool Debug
+        public bool Debug
         {
             get
             {
-                return (_options & RegexOptions.Debug) != 0;
+                return (Options & RegexOptions.Debug) != 0;
             }
         }
 #endif

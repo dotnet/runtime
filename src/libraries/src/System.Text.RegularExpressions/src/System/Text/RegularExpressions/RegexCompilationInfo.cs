@@ -60,10 +60,7 @@ namespace System.Text.RegularExpressions
         public string Namespace
         {
             get => _nspace;
-            set
-            {
-                _nspace = value ?? throw new ArgumentNullException(nameof(Namespace));
-            }
+            set => _nspace = value ?? throw new ArgumentNullException(nameof(Namespace));
         }
 
         public RegexOptions Options { get; set; }

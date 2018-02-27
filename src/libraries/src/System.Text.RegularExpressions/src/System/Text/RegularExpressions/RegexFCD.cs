@@ -22,14 +22,14 @@ namespace System.Text.RegularExpressions
 
         // where the regex can be pegged
 
-        internal const int Beginning = 0x0001;
-        internal const int Bol = 0x0002;
-        internal const int Start = 0x0004;
-        internal const int Eol = 0x0008;
-        internal const int EndZ = 0x0010;
-        internal const int End = 0x0020;
-        internal const int Boundary = 0x0040;
-        internal const int ECMABoundary = 0x0080;
+        public const int Beginning = 0x0001;
+        public const int Bol = 0x0002;
+        public const int Start = 0x0004;
+        public const int Eol = 0x0008;
+        public const int EndZ = 0x0010;
+        public const int End = 0x0020;
+        public const int Boundary = 0x0040;
+        public const int ECMABoundary = 0x0080;
 
         private int[] _intStack;
         private int _intDepth;
@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Takes a RegexTree and computes the set of chars that can start it.
         /// </summary>
-        internal static RegexPrefix FirstChars(RegexTree t)
+        public static RegexPrefix FirstChars(RegexTree t)
         {
             RegexFCD s = new RegexFCD();
             RegexFC fc = s.RegexFCFromRegexTree(t);
@@ -56,7 +56,7 @@ namespace System.Text.RegularExpressions
             if (fc == null || fc._nullable)
                 return null;
 
-            CultureInfo culture = ((t._options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            CultureInfo culture = ((t.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
             return new RegexPrefix(fc.GetFirstChars(culture), fc.IsCaseInsensitive());
         }
@@ -65,15 +65,15 @@ namespace System.Text.RegularExpressions
         /// This is a related computation: it takes a RegexTree and computes the
         /// leading substring if it see one. It's quite trivial and gives up easily.
         /// </summary>
-        internal static RegexPrefix Prefix(RegexTree tree)
+        public static RegexPrefix Prefix(RegexTree tree)
         {
-            RegexNode curNode = tree._root;
+            RegexNode curNode = tree.Root;
             RegexNode concatNode = null;
             int nextChild = 0;
 
             for (; ;)
             {
-                switch (curNode._type)
+                switch (curNode.NType)
                 {
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
@@ -91,19 +91,19 @@ namespace System.Text.RegularExpressions
 
                     case RegexNode.Oneloop:
                     case RegexNode.Onelazy:
-                        if (curNode._m > 0)
+                        if (curNode.M > 0)
                         {
-                            string pref = string.Empty.PadRight(curNode._m, curNode._ch);
-                            return new RegexPrefix(pref, 0 != (curNode._options & RegexOptions.IgnoreCase));
+                            string pref = string.Empty.PadRight(curNode.M, curNode.Ch);
+                            return new RegexPrefix(pref, 0 != (curNode.Options & RegexOptions.IgnoreCase));
                         }
                         else
                             return RegexPrefix.Empty;
 
                     case RegexNode.One:
-                        return new RegexPrefix(curNode._ch.ToString(), 0 != (curNode._options & RegexOptions.IgnoreCase));
+                        return new RegexPrefix(curNode.Ch.ToString(), 0 != (curNode.Options & RegexOptions.IgnoreCase));
 
                     case RegexNode.Multi:
-                        return new RegexPrefix(curNode._str, 0 != (curNode._options & RegexOptions.IgnoreCase));
+                        return new RegexPrefix(curNode.Str, 0 != (curNode.Options & RegexOptions.IgnoreCase));
 
                     case RegexNode.Bol:
                     case RegexNode.Eol:
@@ -133,18 +133,18 @@ namespace System.Text.RegularExpressions
         /// Yet another related computation: it takes a RegexTree and computes 
         /// the leading anchors that it encounters.
         /// </summary>
-        internal static int Anchors(RegexTree tree)
+        public static int Anchors(RegexTree tree)
         {
             RegexNode curNode;
             RegexNode concatNode = null;
             int nextChild = 0;
             int result = 0;
 
-            curNode = tree._root;
+            curNode = tree.Root;
 
             for (; ;)
             {
-                switch (curNode._type)
+                switch (curNode.NType)
                 {
                     case RegexNode.Concatenate:
                         if (curNode.ChildCount() > 0)
@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Start:
                     case RegexNode.EndZ:
                     case RegexNode.End:
-                        return result | AnchorFromType(curNode._type);
+                        return result | AnchorFromType(curNode.NType);
 
                     case RegexNode.Empty:
                     case RegexNode.Require:
@@ -206,7 +206,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        internal static string AnchorDescription(int anchors)
+        public static string AnchorDescription(int anchors)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -308,24 +308,24 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private RegexFC RegexFCFromRegexTree(RegexTree tree)
         {
-            RegexNode curNode = tree._root;
+            RegexNode curNode = tree.Root;
             int curChild = 0;
 
             for (; ;)
             {
-                if (curNode._children == null)
+                if (curNode.Children == null)
                 {
                     // This is a leaf node
-                    CalculateFC(curNode._type, curNode, 0);
+                    CalculateFC(curNode.NType, curNode, 0);
                 }
-                else if (curChild < curNode._children.Count && !_skipAllChildren)
+                else if (curChild < curNode.Children.Count && !_skipAllChildren)
                 {
                     // This is an interior node, and we have more children to analyze
-                    CalculateFC(curNode._type | BeforeChild, curNode, curChild);
+                    CalculateFC(curNode.NType | BeforeChild, curNode, curChild);
 
                     if (!_skipchild)
                     {
-                        curNode = curNode._children[curChild];
+                        curNode = curNode.Children[curChild];
                         // this stack is how we get a depth first walk of the tree.
                         PushInt(curChild);
                         curChild = 0;
@@ -346,9 +346,9 @@ namespace System.Text.RegularExpressions
                     break;
 
                 curChild = PopInt();
-                curNode = curNode._next;
+                curNode = curNode.Next;
 
-                CalculateFC(curNode._type | AfterChild, curNode, curChild);
+                CalculateFC(curNode.NType | AfterChild, curNode, curChild);
                 if (_failed)
                     return null;
 
@@ -379,9 +379,9 @@ namespace System.Text.RegularExpressions
 
             if (NodeType <= RegexNode.Ref)
             {
-                if ((node._options & RegexOptions.IgnoreCase) != 0)
+                if ((node.Options & RegexOptions.IgnoreCase) != 0)
                     ci = true;
-                if ((node._options & RegexOptions.RightToLeft) != 0)
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
                     rtl = true;
             }
 
@@ -439,7 +439,7 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.Loop | AfterChild:
                 case RegexNode.Lazyloop | AfterChild:
-                    if (node._m == 0)
+                    if (node.M == 0)
                         TopFC()._nullable = true;
                     break;
 
@@ -463,35 +463,35 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.One:
                 case RegexNode.Notone:
-                    PushFC(new RegexFC(node._ch, NodeType == RegexNode.Notone, false, ci));
+                    PushFC(new RegexFC(node.Ch, NodeType == RegexNode.Notone, false, ci));
                     break;
 
                 case RegexNode.Oneloop:
                 case RegexNode.Onelazy:
-                    PushFC(new RegexFC(node._ch, false, node._m == 0, ci));
+                    PushFC(new RegexFC(node.Ch, false, node.M == 0, ci));
                     break;
 
                 case RegexNode.Notoneloop:
                 case RegexNode.Notonelazy:
-                    PushFC(new RegexFC(node._ch, true, node._m == 0, ci));
+                    PushFC(new RegexFC(node.Ch, true, node.M == 0, ci));
                     break;
 
                 case RegexNode.Multi:
-                    if (node._str.Length == 0)
+                    if (node.Str.Length == 0)
                         PushFC(new RegexFC(true));
                     else if (!rtl)
-                        PushFC(new RegexFC(node._str[0], false, false, ci));
+                        PushFC(new RegexFC(node.Str[0], false, false, ci));
                     else
-                        PushFC(new RegexFC(node._str[node._str.Length - 1], false, false, ci));
+                        PushFC(new RegexFC(node.Str[node.Str.Length - 1], false, false, ci));
                     break;
 
                 case RegexNode.Set:
-                    PushFC(new RegexFC(node._str, false, ci));
+                    PushFC(new RegexFC(node.Str, false, ci));
                     break;
 
                 case RegexNode.Setloop:
                 case RegexNode.Setlazy:
-                    PushFC(new RegexFC(node._str, node._m == 0, ci));
+                    PushFC(new RegexFC(node.Str, node.M == 0, ci));
                     break;
 
                 case RegexNode.Ref:
@@ -520,17 +520,17 @@ namespace System.Text.RegularExpressions
 
     internal sealed class RegexFC
     {
-        internal RegexCharClass _cc;
-        internal bool _nullable;
-        internal bool _caseInsensitive;
+        public RegexCharClass _cc;
+        public bool _nullable;
+        public bool _caseInsensitive;
 
-        internal RegexFC(bool nullable)
+        public RegexFC(bool nullable)
         {
             _cc = new RegexCharClass();
             _nullable = nullable;
         }
 
-        internal RegexFC(char ch, bool not, bool nullable, bool caseInsensitive)
+        public RegexFC(char ch, bool not, bool nullable, bool caseInsensitive)
         {
             _cc = new RegexCharClass();
 
@@ -550,7 +550,7 @@ namespace System.Text.RegularExpressions
             _nullable = nullable;
         }
 
-        internal RegexFC(string charClass, bool nullable, bool caseInsensitive)
+        public RegexFC(string charClass, bool nullable, bool caseInsensitive)
         {
             _cc = RegexCharClass.Parse(charClass);
 
@@ -558,7 +558,7 @@ namespace System.Text.RegularExpressions
             _caseInsensitive = caseInsensitive;
         }
 
-        internal bool AddFC(RegexFC fc, bool concatenate)
+        public bool AddFC(RegexFC fc, bool concatenate)
         {
             if (!_cc.CanMerge || !fc._cc.CanMerge)
             {
@@ -584,7 +584,7 @@ namespace System.Text.RegularExpressions
             return true;
         }
 
-        internal String GetFirstChars(CultureInfo culture)
+        public String GetFirstChars(CultureInfo culture)
         {
             if (_caseInsensitive)
                 _cc.AddLowercase(culture);
@@ -592,7 +592,7 @@ namespace System.Text.RegularExpressions
             return _cc.ToStringClass();
         }
 
-        internal bool IsCaseInsensitive()
+        public bool IsCaseInsensitive()
         {
             return _caseInsensitive;
         }
@@ -600,18 +600,18 @@ namespace System.Text.RegularExpressions
 
     internal sealed class RegexPrefix
     {
-        internal string _prefix;
-        internal bool _caseInsensitive;
+        public string _prefix;
+        public bool _caseInsensitive;
 
-        internal static RegexPrefix _empty = new RegexPrefix(string.Empty, false);
+        private static RegexPrefix _empty = new RegexPrefix(string.Empty, false);
 
-        internal RegexPrefix(string prefix, bool ci)
+        public RegexPrefix(string prefix, bool ci)
         {
             _prefix = prefix;
             _caseInsensitive = ci;
         }
 
-        internal string Prefix
+        public string Prefix
         {
             get
             {
@@ -619,14 +619,14 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal bool CaseInsensitive
+        public bool CaseInsensitive
         {
             get
             {
                 return _caseInsensitive;
             }
         }
-        internal static RegexPrefix Empty
+        public static RegexPrefix Empty
         {
             get
             {

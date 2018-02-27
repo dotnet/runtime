@@ -9,27 +9,23 @@ using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
-    internal class RegexLWCGCompiler : RegexCompiler
+    internal sealed class RegexLWCGCompiler : RegexCompiler
     {
         private static int s_regexCount = 0;
         private static Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
 
-        internal RegexLWCGCompiler()
-        {
-        }
-
         /*
          * The top-level driver. Initializes everything then calls the Generate* methods.
          */
-        internal RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options)
+        public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options)
         {
             _code = code;
-            _codes = code._codes;
-            _strings = code._strings;
-            _fcPrefix = code._fcPrefix;
-            _bmPrefix = code._bmPrefix;
-            _anchors = code._anchors;
-            _trackcount = code._trackcount;
+            _codes = code.Codes;
+            _strings = code.Strings;
+            _fcPrefix = code.FCPrefix;
+            _bmPrefix = code.BMPrefix;
+            _anchors = code.Anchors;
+            _trackcount = code.TrackCount;
             _options = options;
 
             // pick a unique number for the methods we generate
@@ -51,7 +47,7 @@ namespace System.Text.RegularExpressions
         /*
          * Begins the definition of a new method (no args) with a specified return value
          */
-        internal DynamicMethod DefineDynamicMethod(string methname, Type returntype, Type hostType)
+        public DynamicMethod DefineDynamicMethod(string methname, Type returntype, Type hostType)
         {
             // We're claiming that these are static methods, but really they are instance methods.
             // By giving them a parameter which represents "this", we're tricking them into 
