@@ -124,6 +124,50 @@ namespace System
             ThrowHelper.ThrowFormatException_BadFormatSpecifier();
             return false;
         }
+
+        //
+        // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
+        //
+        public static void ThrowArgumentValidationException<T>(IMemoryList<T> startSegment, int startIndex, IMemoryList<T> endSegment)
+            => throw CreateArgumentValidationException(startSegment, startIndex, endSegment);
+
+        private static Exception CreateArgumentValidationException<T>(IMemoryList<T> startSegment, int startIndex, IMemoryList<T> endSegment)
+        {
+            if (startSegment == null)
+                return CreateArgumentNullException(ExceptionArgument.startSegment);
+            else if (endSegment == null)
+                return CreateArgumentNullException(ExceptionArgument.endSegment);
+            else if ((uint)startSegment.Memory.Length < (uint)startIndex)
+                return CreateArgumentOutOfRangeException(ExceptionArgument.startIndex);
+            else
+                return CreateArgumentOutOfRangeException(ExceptionArgument.endIndex);
+        }
+
+        public static void ThrowArgumentValidationException(Array array, int start)
+            => throw CreateArgumentValidationException(array, start);
+
+        private static Exception CreateArgumentValidationException(Array array, int start)
+        {
+            if (array == null)
+                return CreateArgumentNullException(ExceptionArgument.array);
+            else if ((uint)start > (uint)array.Length)
+                return CreateArgumentOutOfRangeException(ExceptionArgument.start);
+            else
+                return CreateArgumentOutOfRangeException(ExceptionArgument.length);
+        }
+
+        public static void ThrowArgumentValidationException<T>(OwnedMemory<T> ownedMemory, int start)
+            => throw CreateArgumentValidationException(ownedMemory, start);
+
+        private static Exception CreateArgumentValidationException<T>(OwnedMemory<T> ownedMemory, int start)
+        {
+            if (ownedMemory == null)
+                return CreateArgumentNullException(ExceptionArgument.ownedMemory);
+            else if ((uint)start > (uint)ownedMemory.Length)
+                return CreateArgumentOutOfRangeException(ExceptionArgument.start);
+            else
+                return CreateArgumentOutOfRangeException(ExceptionArgument.length);
+        }
     }
 
     //

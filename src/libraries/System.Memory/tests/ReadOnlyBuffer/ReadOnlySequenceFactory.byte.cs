@@ -9,13 +9,13 @@ using System.Text;
 
 namespace System.Memory.Tests
 {
-    public abstract class ReadOnlySequenceFactory
+    public abstract class ReadOnlySequenceFactoryByte
     {
-        public static ReadOnlySequenceFactory ArrayFactory { get; } = new ArrayTestSequenceFactory();
-        public static ReadOnlySequenceFactory MemoryFactory { get; } = new MemoryTestSequenceFactory();
-        public static ReadOnlySequenceFactory OwnedMemoryFactory { get; } = new OwnedMemoryTestSequenceFactory();
-        public static ReadOnlySequenceFactory SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
-        public static ReadOnlySequenceFactory SegmentPerByteFactory { get; } = new BytePerSegmentTestSequenceFactory();
+        public static ReadOnlySequenceFactoryByte ArrayFactory { get; } = new ArrayTestSequenceFactoryByte();
+        public static ReadOnlySequenceFactoryByte MemoryFactory { get; } = new MemoryTestSequenceFactoryByte();
+        public static ReadOnlySequenceFactoryByte OwnedMemoryFactory { get; } = new OwnedMemoryTestSequenceFactoryByte();
+        public static ReadOnlySequenceFactoryByte SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactoryByte();
+        public static ReadOnlySequenceFactoryByte SegmentPerByteFactory { get; } = new BytePerSegmentTestSequenceFactoryByte();
 
         public abstract ReadOnlySequence<byte> CreateOfSize(int size);
         public abstract ReadOnlySequence<byte> CreateWithContent(byte[] data);
@@ -25,7 +25,7 @@ namespace System.Memory.Tests
             return CreateWithContent(Encoding.ASCII.GetBytes(data));
         }
 
-        internal class ArrayTestSequenceFactory : ReadOnlySequenceFactory
+        internal class ArrayTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
         {
             public override ReadOnlySequence<byte> CreateOfSize(int size)
             {
@@ -40,7 +40,7 @@ namespace System.Memory.Tests
             }
         }
 
-        internal class MemoryTestSequenceFactory : ReadOnlySequenceFactory
+        internal class MemoryTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
         {
             public override ReadOnlySequence<byte> CreateOfSize(int size)
             {
@@ -55,7 +55,7 @@ namespace System.Memory.Tests
             }
         }
 
-        internal class OwnedMemoryTestSequenceFactory : ReadOnlySequenceFactory
+        internal class OwnedMemoryTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
         {
             public override ReadOnlySequence<byte> CreateOfSize(int size)
             {
@@ -70,7 +70,7 @@ namespace System.Memory.Tests
             }
         }
 
-        internal class SingleSegmentTestSequenceFactory : ReadOnlySequenceFactory
+        internal class SingleSegmentTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
         {
             public override ReadOnlySequence<byte> CreateOfSize(int size)
             {
@@ -83,7 +83,7 @@ namespace System.Memory.Tests
             }
         }
 
-        internal class BytePerSegmentTestSequenceFactory : ReadOnlySequenceFactory
+        internal class BytePerSegmentTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
         {
             public override ReadOnlySequence<byte> CreateOfSize(int size)
             {
@@ -114,8 +114,8 @@ namespace System.Memory.Tests
 
             int i = 0;
 
-            BufferSegment last = null;
-            BufferSegment first = null;
+            BufferSegment<byte> last = null;
+            BufferSegment<byte> first = null;
 
             do
             {
@@ -130,11 +130,11 @@ namespace System.Memory.Tests
                 }
 
                 // Create a segment that has offset relative to the OwnedMemory and OwnedMemory itself has offset relative to array
-                var memory = new Memory<byte>(chars).Slice(length, length);
+                Memory<byte> memory = new Memory<byte>(chars).Slice(length, length);
 
                 if (first == null)
                 {
-                    first = new BufferSegment(memory);
+                    first = new BufferSegment<byte>(memory);
                     last = first;
                 }
                 else

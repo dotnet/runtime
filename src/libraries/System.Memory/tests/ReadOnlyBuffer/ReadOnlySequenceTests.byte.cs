@@ -9,36 +9,36 @@ using Xunit;
 
 namespace System.Memory.Tests
 {
-    public abstract class ReadOnlySequenceTests
+    public abstract class ReadOnlySequenceTestsByte
     {
-        public class Array : ReadOnlySequenceTests
+        public class Array : ReadOnlySequenceTestsByte
         {
-            public Array() : base(ReadOnlySequenceFactory.ArrayFactory) { }
+            public Array() : base(ReadOnlySequenceFactoryByte.ArrayFactory) { }
         }
 
-        public class OwnedMemory : ReadOnlySequenceTests
+        public class OwnedMemory : ReadOnlySequenceTestsByte
         {
-            public OwnedMemory() : base(ReadOnlySequenceFactory.OwnedMemoryFactory) { }
+            public OwnedMemory() : base(ReadOnlySequenceFactoryByte.OwnedMemoryFactory) { }
         }
 
-        public class Memory : ReadOnlySequenceTests
+        public class Memory : ReadOnlySequenceTestsByte
         {
-            public Memory() : base(ReadOnlySequenceFactory.MemoryFactory) { }
+            public Memory() : base(ReadOnlySequenceFactoryByte.MemoryFactory) { }
         }
 
-        public class SingleSegment : ReadOnlySequenceTests
+        public class SingleSegment : ReadOnlySequenceTestsByte
         {
-            public SingleSegment() : base(ReadOnlySequenceFactory.SingleSegmentFactory) { }
+            public SingleSegment() : base(ReadOnlySequenceFactoryByte.SingleSegmentFactory) { }
         }
 
-        public class SegmentPerByte : ReadOnlySequenceTests
+        public class SegmentPerByte : ReadOnlySequenceTestsByte
         {
-            public SegmentPerByte() : base(ReadOnlySequenceFactory.SegmentPerByteFactory) { }
+            public SegmentPerByte() : base(ReadOnlySequenceFactoryByte.SegmentPerByteFactory) { }
         }
 
-        internal ReadOnlySequenceFactory Factory { get; }
+        internal ReadOnlySequenceFactoryByte Factory { get; }
 
-        internal ReadOnlySequenceTests(ReadOnlySequenceFactory factory)
+        internal ReadOnlySequenceTestsByte(ReadOnlySequenceFactoryByte factory)
         {
             Factory = factory;
         }
@@ -129,8 +129,8 @@ namespace System.Memory.Tests
             // 0               50           100    0             50             100
             // [                ##############] -> [##############                ]
             //                         ^c1            ^c2
-            var bufferSegment1 = new BufferSegment(new byte[49]);
-            BufferSegment bufferSegment2 = bufferSegment1.Append(new byte[50]);
+            var bufferSegment1 = new BufferSegment<byte>(new byte[49]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[50]);
 
             var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 50);
 
@@ -144,8 +144,8 @@ namespace System.Memory.Tests
         [Fact]
         public void GetPositionPrefersNextSegment()
         {
-            BufferSegment bufferSegment1 = new BufferSegment(new byte[50]);
-            BufferSegment bufferSegment2 = bufferSegment1.Append(new byte[0]);
+            BufferSegment<byte> bufferSegment1 = new BufferSegment<byte>(new byte[50]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
 
             ReadOnlySequence<byte> buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
 
@@ -158,9 +158,9 @@ namespace System.Memory.Tests
         [Fact]
         public void GetPositionDoesNotCrossOutsideBuffer()
         {
-            var bufferSegment1 = new BufferSegment(new byte[100]);
-            BufferSegment bufferSegment2 = bufferSegment1.Append(new byte[100]);
-            BufferSegment bufferSegment3 = bufferSegment2.Append(new byte[0]);
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
 
             var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 100);
 
