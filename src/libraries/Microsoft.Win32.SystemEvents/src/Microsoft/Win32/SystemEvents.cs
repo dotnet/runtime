@@ -469,7 +469,7 @@ namespace Microsoft.Win32
                 if (Interop.User32.RegisterClassW(WndClass) == 0)
                 {
                     _windowProc = null;
-                    Debug.Fail("Unable to register broadcast window class");
+                    Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastWin32Error());
                     return IntPtr.Zero;
                 }
             }
@@ -798,7 +798,7 @@ namespace Microsoft.Win32
             }
 
             _windowHandle = CreateBroadcastWindow();
-            Debug.Assert(_windowHandle != IntPtr.Zero, "CreateBroadcastWindow failed");
+            Debug.WriteLineIf(_windowHandle == IntPtr.Zero, "CreateBroadcastWindow failed");
 
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(SystemEvents.Shutdown);
             AppDomain.CurrentDomain.DomainUnload += new EventHandler(SystemEvents.Shutdown);
