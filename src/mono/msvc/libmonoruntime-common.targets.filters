@@ -421,6 +421,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\abi-details.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-abi-details.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\metadata-cross-helpers.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>

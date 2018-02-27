@@ -8,6 +8,8 @@
 /* No include guards - this file is meant to be included multiple times.
  * Before including the file define the following macros:
  * MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname)
+ * 
+ * MONO_CLASS_OFFSET(funcname, argtype, fieldname)
  */
 
 /* Accessors for _MonoClass fields. */
@@ -101,3 +103,16 @@ MONO_CLASS_GETTER(m_classarray_get_method_count, guint32, , MonoClassArray, meth
 
 /* Accessors for _MonoClassPointer fields. */
 MONO_CLASS_GETTER(m_classpointer_get_klass, MonoClass*, &, MonoClassPointer, klass)
+
+MONO_CLASS_OFFSET(m_class_offsetof_interface_bitmap, MonoClass, interface_bitmap)
+MONO_CLASS_OFFSET(m_class_offsetof_byval_arg, MonoClass, byval_arg)
+MONO_CLASS_OFFSET(m_class_offsetof_cast_class, MonoClass, cast_class)
+MONO_CLASS_OFFSET(m_class_offsetof_element_class, MonoClass, element_class)
+MONO_CLASS_OFFSET(m_class_offsetof_idepth, MonoClass, idepth)
+MONO_CLASS_OFFSET(m_class_offsetof_instance_size, MonoClass, instance_size)
+MONO_CLASS_OFFSET(m_class_offsetof_interface_id, MonoClass, interface_id)
+MONO_CLASS_OFFSET(m_class_offsetof_max_interface_id, MonoClass, max_interface_id)
+MONO_CLASS_OFFSET(m_class_offsetof_parent, MonoClass, parent)
+MONO_CLASS_OFFSET(m_class_offsetof_rank, MonoClass, rank)
+MONO_CLASS_OFFSET(m_class_offsetof_sizes, MonoClass, sizes)
+MONO_CLASS_OFFSET(m_class_offsetof_supertypes, MonoClass, supertypes)

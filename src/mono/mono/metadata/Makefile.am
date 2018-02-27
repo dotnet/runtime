@@ -282,6 +282,7 @@ common_sources = \
 	file-mmap.h	\
 	object-offsets.h	\
 	abi-details.h	\
+	class-abi-details.h	\
 	metadata-cross-helpers.c	\
 	seq-points-data.h	\
 	seq-points-data.c	\

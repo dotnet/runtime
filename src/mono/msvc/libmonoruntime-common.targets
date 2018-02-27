@@ -148,6 +148,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\file-mmap.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\object-offsets.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\abi-details.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-abi-details.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\metadata-cross-helpers.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\seq-points-data.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\seq-points-data.c" />
