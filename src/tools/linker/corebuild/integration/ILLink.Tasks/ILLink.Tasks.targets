@@ -223,7 +223,7 @@
          the future we will want to generate these depending on the
          scenario in which the linker is invoked. -->
     <PropertyGroup>
-      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true --skip-unresolved true</ExtraLinkerArgs>
+      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true --skip-unresolved true --verbose</ExtraLinkerArgs>
       <!-- version of ILLink.CustomSteps is passed as a workaround for msbuild issue #3016 -->
       <ExtraLinkerArgs Condition=" '$(ClearInitLocals)' == 'true' ">$(ExtraLinkerArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep</ExtraLinkerArgs>
       <ExtraLinkerArgs Condition=" '$(ClearInitLocals)' == 'true' and '$(ClearInitLocalsAssemblies)' != ''">$(ExtraLinkerArgs) -m ClearInitLocalsAssemblies $(ClearInitLocalsAssemblies)</ExtraLinkerArgs>

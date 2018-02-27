@@ -133,7 +133,7 @@ namespace Mono.Linker {
 			set { _symbolWriterProvider = value; }
 		}
 
-		public bool LogInternalExceptions { get; set; } = false;
+		public bool LogMessages { get; set; } = false;
 
 		public ILogger Logger { get; set; } = new ConsoleLogger ();
 
@@ -342,7 +342,7 @@ namespace Mono.Linker {
 
 		public void LogMessage (MessageImportance importance, string message, params object [] values)
 		{
-			if (LogInternalExceptions && Logger != null)
+			if (LogMessages && Logger != null)
 				Logger.LogMessage (importance, message, values);
 		}
 	}
