@@ -3000,9 +3000,6 @@ try_dev_random=$enableval, try_dev_random=yes)
 AC_MSG_RESULT($try_dev_random)
 
 case "{$build}" in
-    *-openbsd*)
-    NAME_DEV_RANDOM="/dev/srandom"
-    ;;
 
 dnl IBM i does not have /dev/random, use unblocking only
 
@@ -3053,7 +3050,7 @@ if test "x$ac_cv_have_dev_random" = "xno" \
 *** will throw a NotImplemented exception.
 ***
 *** If you are seeing this message, and you know your system DOES have an
-*** entropy collection in place, please contact <crichton@gimp.org> and
+*** entropy collection in place, please report an issue on GitHub and
 *** provide information about the system and how to access the random device.
 ***
 *** Otherwise you can install either egd or prngd and set the environment
