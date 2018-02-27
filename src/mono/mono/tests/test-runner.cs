@@ -17,6 +17,7 @@ using System.Globalization;
 using System.Xml;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 #if !FULL_AOT_DESKTOP && !MOBILE
 using Mono.Unix.Native;
@@ -53,6 +54,7 @@ public class TestRunner
 		bool verbose = false;
 		string testsuiteName = null;
 		string inputFile = null;
+		int repeat = 1;
 
 		string disabled_tests = null;
 		string runtime = "mono";
@@ -158,6 +160,17 @@ public class TestRunner
 				} else if (args [i] == "--verbose") {
 					verbose = true;
 					i ++;
+				} else if (args [i] == "--repeat") {
+					if (i + 1 >= args.Length) {
+						Console.WriteLine ("Missing argument to --repeat command line option.");
+						return 1;
+					}
+					repeat = Int32.Parse (args [i + 1]);
+					if (repeat <= 1) {
+						Console.WriteLine ("Invalid argument to --repeat command line option, should be > 1");
+						return 1;
+					}
+					i += 2;
 				} else {
 					Console.WriteLine ("Unknown command line option: '" + args [i] + "'.");
 					return 1;
@@ -182,13 +195,24 @@ public class TestRunner
 		var tests = new List<string> ();
 
 		if (!String.IsNullOrEmpty (inputFile)) {
-			tests.AddRange (File.ReadAllLines (inputFile));
+			foreach (string l in File.ReadAllLines (inputFile)) {
+				for (int r = 0; r < repeat; ++r)
+					tests.Add (l);
+			}
 		} else {
 			// The remaining arguments are the tests
 			for (int j = i; j < args.Length; ++j)
-				if (!disabled.ContainsKey (args [j]))
-					tests.Add (args [j]);
+				if (!disabled.ContainsKey (args [j])) {
+					for (int r = 0; r < repeat; ++r)
+						tests.Add (args [j]);
+				}
 		}
+
+		/* If tests are repeated, we don't want the same test to run consecutively, so we need to randomise their order.
+		 * But to ease reproduction of certain order-based bugs (if and only if test A and B execute at the same time),
+		 * we want to use a constant seed so the tests always run in the same order. */
+		var random = new Random (0);
+		tests = tests.OrderBy (t => random.Next ()).ToList ();
 
 		var passed = new List<ProcessData> ();
 		var failed = new List<ProcessData> ();
