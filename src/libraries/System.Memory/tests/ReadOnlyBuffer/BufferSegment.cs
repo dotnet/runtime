@@ -6,9 +6,9 @@ using System.Buffers;
 
 namespace System.Memory.Tests
 {
-    internal class BufferSegment : IMemoryList<byte>
+    internal class BufferSegment<T> : IMemoryList<T>
     {
-        public BufferSegment(Memory<byte> memory)
+        public BufferSegment(Memory<T> memory)
         {
             Memory = memory;
         }
@@ -18,13 +18,13 @@ namespace System.Memory.Tests
         /// </summary>
         public long RunningIndex { get; private set; }
 
-        public Memory<byte> Memory { get; set; }
+        public Memory<T> Memory { get; set; }
 
-        public IMemoryList<byte> Next { get; private set; }
+        public IMemoryList<T> Next { get; private set; }
 
-        public BufferSegment Append(Memory<byte> memory)
+        public BufferSegment<T> Append(Memory<T> memory)
         {
-            var segment = new BufferSegment(memory)
+            var segment = new BufferSegment<T>(memory)
             {
                 RunningIndex = RunningIndex + Memory.Length
             };
