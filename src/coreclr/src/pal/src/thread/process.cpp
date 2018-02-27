@@ -1462,7 +1462,7 @@ static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
 #define HashSemaphoreName(a,b) a,b
 #endif
 
-static const char* PipeNameFormat = TEMP_DIRECTORY_PATH "clr-debug-pipe-%d-%llu-%s";
+static const char* PipeNameFormat = "clr-debug-pipe-%d-%llu-%s";
 
 class PAL_RuntimeStartupHelper
 {
@@ -2097,7 +2097,10 @@ PAL_GetTransportPipeName(
     IN DWORD id,
     IN const char *suffix)
 {
+    *name = '\0';
+    DWORD dwRetVal = 0;
     UINT64 disambiguationKey = 0;
+    char formatBuffer[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
     BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
 
     // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
@@ -2105,7 +2108,26 @@ PAL_GetTransportPipeName(
     // also try to use 0 as the value.
     _ASSERTE(ret == TRUE || disambiguationKey == 0);
 
-    int chars = snprintf(name, MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, PipeNameFormat, id, disambiguationKey, suffix);
+    // Get a temp file location
+    dwRetVal = ::GetTempPathA(MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, formatBuffer);
+    if (dwRetVal == 0)
+    {
+        ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
+        return;
+    }
+    if (dwRetVal > MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH)
+    {
+        ERROR("GetTempPath returned a path that was larger than MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH");
+        return;
+    }
+
+    if (strncat_s(formatBuffer, _countof(formatBuffer), PipeNameFormat, strlen(PipeNameFormat)) == STRUNCATE)
+    {
+        ERROR("TransportPipeName was larger than MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH");
+        return;
+    }
+
+    int chars = snprintf(name, MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, formatBuffer, id, disambiguationKey, suffix);
     _ASSERTE(chars > 0 && chars < MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH);
 }
 
