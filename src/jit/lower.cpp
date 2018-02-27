@@ -2149,10 +2149,12 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     // Create tmp and use it in place of callerArgDsc
                     if (tmpLclNum == BAD_VAR_NUM)
                     {
+                        // Set tmpType first before calling lvaGrabTemp, as that call invalidates callerArgDsc
+                        tmpType   = genActualType(callerArgDsc->lvaArgType());
                         tmpLclNum = comp->lvaGrabTemp(
                             true DEBUGARG("Fast tail call lowering is creating a new local variable"));
+
                         comp->lvaSortAgain                          = true;
-                        tmpType                                     = genActualType(callerArgDsc->lvaArgType());
                         comp->lvaTable[tmpLclNum].lvType            = tmpType;
                         comp->lvaTable[tmpLclNum].lvRefCnt          = 1;
                         comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->gtLclNum].lvDoNotEnregister;
