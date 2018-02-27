@@ -57,23 +57,6 @@ namespace System
             return true;
         }
 
-        public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> source)
-        {
-            int startIndex = 0, endIndex = source.Length - 1;
-
-            while (startIndex <= endIndex && char.IsWhiteSpace(source[startIndex]))
-            {
-                startIndex++;
-            }
-
-            while (endIndex >= startIndex && char.IsWhiteSpace(source[endIndex]))
-            {
-                endIndex--;
-            }
-
-            return source.Slice(startIndex, endIndex - startIndex + 1);
-        }
-
         public static int IndexOf(this ReadOnlySpan<char> source, char value) =>
             IndexOf(source, value, 0);
 
