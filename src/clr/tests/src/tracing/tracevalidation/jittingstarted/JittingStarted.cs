@@ -17,25 +17,10 @@ namespace Tracing.Tests
 
         public static int Main(string[] args)
         {
-            bool pass = true;
-            bool keepOutput = false;
-
-            // Use the first arg as an output filename if there is one.
-            string outputFilename = null;
-            if (args.Length >= 1)
-            {
-                outputFilename = args[0];
-                keepOutput = true;
-            }
-            else
-            {
-                outputFilename = System.IO.Path.GetTempPath() + Guid.NewGuid().ToString() + ".netperf";
-            }
-
-            try
+            using (var netPerfFile = NetPerfFile.Create(args))
             {
                 Console.WriteLine("\tStart: Enable tracing.");
-                TraceControl.EnableDefault(outputFilename);
+                TraceControl.EnableDefault(netPerfFile.Path);
                 Console.WriteLine("\tEnd: Enable tracing.\n");
 
                 Console.WriteLine("\tStart: Generate some events.");
@@ -52,7 +37,7 @@ namespace Tracing.Tests
                 int matchingEventCount = 0;
                 int nonMatchingEventCount = 0;
 
-                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(outputFilename))
+                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(netPerfFile.Path))
                 {
                     string methodNamespace = "dynamicClass";
                     string methodName = "DynamicallyCompiledMethod";
@@ -78,17 +63,6 @@ namespace Tracing.Tests
 
                 // CompiledMethod
                 Assert.Equal(nameof(matchingEventCount), matchingEventCount, 1);
-            }
-            finally
-            {
-                if (keepOutput)
-                {
-                    Console.WriteLine("\n\tOutput file: {0}", outputFilename);
-                }
-                else
-                {
-                    System.IO.File.Delete(outputFilename);
-                }
             }
 
             return 100;

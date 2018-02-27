@@ -20,13 +20,13 @@
 // 
 // Conceptually and EventSouce is something takes event logging data from the source methods 
 // To the EventListener that can subscribe them.  Note that CONCEPTUALLY EVENTSOURCES DON'T
-// KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListern Which
+// KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListener Which
 // we will call the EtwEventListener, that forwards commands from ETW to EventSources and
 // listeners to the EventSources and forwards on those events to ETW.   THus the model should
 // be that you DON'T NEED ETW.    
 //
 // Now in actual practice, EventSouce have rather intimate knowledge of ETW and send events
-// to it directly, but this can be VIEWED AS AN OPTIMIATION.  
+// to it directly, but this can be VIEWED AS AN OPTIMIZATION.  
 //
 // Basic Event Data Flow:
 // 
@@ -656,7 +656,7 @@ namespace System.Diagnostics.Tracing
                     foreach (var parameter in m_eventData[i].Parameters)
                     {
                         // Write parameter type.
-                        WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)Type.GetTypeCode(parameter.ParameterType));
+                        WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)GetTypeCodeExtended(parameter.ParameterType));
                         
                         // Write parameter name.
                         string parameterName = parameter.Name;
@@ -698,7 +698,19 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(bufferLength >= (offset + 8));
             *(long *)(buffer + offset) = value;
             offset += 8;
-        }           
+        }
+
+        private static TypeCode GetTypeCodeExtended(Type parameterType)
+        {
+            // Guid is not part of TypeCode, we decided to use 17 to represent it, as it's the "free slot" 
+            // see https://github.com/dotnet/coreclr/issues/16105#issuecomment-361749750 for more
+            const TypeCode GuidTypeCode = (TypeCode)17;
+
+            if (parameterType == typeof(Guid)) // Guid is not a part of TypeCode enum
+                return GuidTypeCode;
+
+            return Type.GetTypeCode(parameterType);
+        }
 #endif
 
         internal virtual void GetMetadata(out Guid eventSourceGuid, out string eventSourceName, out EventMetadata[] eventData, out byte[] manifestBytes)

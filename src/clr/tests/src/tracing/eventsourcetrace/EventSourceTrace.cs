@@ -48,24 +48,13 @@ namespace Tracing.Tests
         static int Main(string[] args)
         {
             bool pass = true;
-            bool keepOutput = false;
-
-            // Use the first arg as an output filename if there is one
-            string outputFilename = null;
-            if (args.Length >= 1) {
-                outputFilename = args[0];
-                keepOutput = true;
-            }
-            else {
-                outputFilename = System.IO.Path.GetTempPath() + Guid.NewGuid().ToString() + ".netperf";
-            }
 
             SimpleEventSource eventSource = new SimpleEventSource();
 
-            try
+            using (var netPerfFile = NetPerfFile.Create(args))
             {
                 Console.WriteLine("\tStart: Enable tracing.");
-                TraceControl.Enable(GetConfig(eventSource, outputFilename));
+                TraceControl.Enable(GetConfig(eventSource, netPerfFile.Path));
                 Console.WriteLine("\tEnd: Enable tracing.\n");
 
                 Console.WriteLine("\tStart: Messaging.");
@@ -88,7 +77,7 @@ namespace Tracing.Tests
 
                 Console.WriteLine("\tStart: Processing events from file.");
                 int msgCount = 0;
-                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(outputFilename))
+                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(netPerfFile.Path))
                 {
                     var names = new HashSet<string>();
 
@@ -113,16 +102,6 @@ namespace Tracing.Tests
                 Console.WriteLine("\tProcessed {0} events from EventSource", msgCount);
 
                 pass &= msgCount == messageIterations;
-            }
-            finally {
-                if (keepOutput)
-                {
-                    Console.WriteLine("\n\tOutput file: {0}", outputFilename);
-                }
-                else
-                {
-                    System.IO.File.Delete(outputFilename);
-                }
             }
 
             return pass ? 100 : 0;
