@@ -51,6 +51,12 @@ set __ZipTests=
 set __TargetsWindows=1
 set __DoCrossgen=
 
+@REM CMD has a nasty habit of eating "=" on the argument list, so passing:
+@REM    -priority=1
+@REM appears to CMD parsing as "-priority 1". Handle -priority specially to avoid problems,
+@REM and allow the "-priority=1" syntax.
+set __Priority=0
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -75,6 +81,7 @@ if /i "%1" == "crossgen"              (set __DoCrossgen=1&set processedArgs=!pro
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   set __UnprocessedBuildArgs=%__args%
@@ -86,6 +93,9 @@ if [!processedArgs!]==[] (
 )
 
 :ArgsDone
+
+@REM Special handling for -priority=N argument.
+if %__Priority% GTR 0 (set "__UnprocessedBuildArgs=!__UnprocessedBuildArgs! -priority=%__Priority%")
 
 if defined __BuildAgainstPackagesArg (
     if not defined __RuntimeID (
@@ -267,22 +277,43 @@ if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1
 )
-
+set __AppendToLog=false
 set __BuildLogRootName=Tests_Managed
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
 set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
 set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
-call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
+REM Execute msbuild test build in stages - workaround for excessive data retention in MSBuild ConfigCache
+REM See https://github.com/Microsoft/msbuild/issues/2993
+
+set __SkipPackageRestore=false
+set __SkipTargetingPackBuild=false
+set __BuildLoopCount=2
+set __TestGroupToBuild=1
+
+if %__Priority% GTR 0 (set __BuildLoopCount=16&set __TestGroupToBuild=2)
+echo %__MsgPrefix%Building tests group %__TestGroupToBuild% with %__BuildLoopCount% subgroups
+
+for /l %%G in (1, 1, %__BuildLoopCount%) do (
+
+    set __msbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
+    set __msbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%";Append=!__AppendToLog!
+    set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
+
+    set TestBuildSlice=%%G
+    call "%__ProjectDir%\run.cmd" build -Project=%__ProjectDir%\tests\build.proj -MsBuildLog=!__msbuildLog! -MsBuildWrn=!__msbuildWrn! -MsBuildErr=!__msbuildErr! %__RunArgs% %__BuildAgainstPackagesArg% %__unprocessedBuildArgs%
+
+    if errorlevel 1 (
+        echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
+        echo     %__BuildLog%
+        echo     %__BuildWrn%
+        echo     %__BuildErr%
+        exit /b 1
+    )
+
+    set __SkipPackageRestore=true
+    set __SkipTargetingPackBuild=true
+    set __AppendToLog=true
 )
 
 REM Prepare the Test Drop
