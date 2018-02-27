@@ -68,7 +68,7 @@ namespace System.IO.Pipes
                     throw CreateExceptionForLastError();
                 }
 
-                return Path.Combine(directory, s_pipePrefix + pipeName);
+                return Path.Combine(directory, pipeName);
             }
 
             return s_pipePrefix + pipeName;
