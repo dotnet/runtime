@@ -2,17 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Linq;
-using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.Xml;
-using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
 using Test.Cryptography;
@@ -166,6 +156,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             // the default constructor initializes with DateTime.Now. 
             Assert.NotNull(p.RawData);
+            Assert.Equal(DateTimeKind.Local, p.SigningTime.Kind);
             string oid = p.Oid.Value;
             Assert.Equal(s_OidSigningTime, oid);
         }
@@ -178,13 +169,14 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Pkcs9SigningTime p = new Pkcs9SigningTime(rawData);
             Assert.Equal(rawData, p.RawData);
             DateTime cookedData = p.SigningTime;
+            Assert.Equal(DateTimeKind.Utc, cookedData.Kind);
             Assert.Equal(dateTime, cookedData);
             string oid = p.Oid.Value;
             Assert.Equal(s_OidSigningTime, oid);
         }
 
         [Fact]
-        public static void SigningTimeFromCookedData()
+        public static void SigningTimeFromCookedData_Unspecified()
         {
             DateTime dateTime = new DateTime(2015, 4, 1);
             Pkcs9SigningTime p = new Pkcs9SigningTime(dateTime);
@@ -194,6 +186,35 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Pkcs9SigningTime p2 = new Pkcs9SigningTime(p.RawData);
             DateTime cookedData = p2.SigningTime;
             Assert.Equal(dateTime, cookedData);
+            Assert.Equal(DateTimeKind.Utc, cookedData.Kind);
+        }
+
+        [Fact]
+        public static void SigningTimeFromCookedData_Local()
+        {
+            DateTime dateTime = new DateTime(2015, 4, 1, 0, 0, 0, DateTimeKind.Local);
+            Pkcs9SigningTime p = new Pkcs9SigningTime(dateTime);
+            string oid = p.Oid.Value;
+            Assert.Equal(s_OidSigningTime, oid);
+
+            Pkcs9SigningTime p2 = new Pkcs9SigningTime(p.RawData);
+            DateTime cookedData = p2.SigningTime;
+            Assert.Equal(dateTime, cookedData.ToLocalTime());
+            Assert.Equal(DateTimeKind.Utc, cookedData.Kind);
+        }
+        
+        [Fact]
+        public static void SigningTimeFromCookedData_Utc()
+        {
+            DateTime dateTime = new DateTime(2015, 4, 1, 0, 0, 0, DateTimeKind.Utc);
+            Pkcs9SigningTime p = new Pkcs9SigningTime(dateTime);
+            string oid = p.Oid.Value;
+            Assert.Equal(s_OidSigningTime, oid);
+
+            Pkcs9SigningTime p2 = new Pkcs9SigningTime(p.RawData);
+            DateTime cookedData = p2.SigningTime;
+            Assert.Equal(dateTime, cookedData);
+            Assert.Equal(DateTimeKind.Utc, cookedData.Kind);
         }
 
         [Fact]
