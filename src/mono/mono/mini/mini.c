@@ -3044,6 +3044,9 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_NO_DIV_WITH_MUL
 	backend->disable_div_with_mul = 1;
 #endif
+#ifdef MONO_ARCH_EXPLICIT_NULL_CHECKS
+	backend->explicit_null_checks = 1;
+#endif
 }
 
 /*
@@ -3171,7 +3174,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	/* coop requires loop detection to happen */
 	if (mono_threads_are_safepoints_enabled ())
 		cfg->opt |= MONO_OPT_LOOP;
-	cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
+	if (cfg->backend->explicit_null_checks) {
+		/* some platforms have null pages, so we can't SIGSEGV */
+		cfg->explicit_null_checks = TRUE;
+	} else {
+		cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
+	}
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;
 	cfg->disable_direct_icalls = disable_direct_icalls;

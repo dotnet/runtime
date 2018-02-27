@@ -254,6 +254,15 @@ typedef struct MonoCompileArch {
 #endif
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 
+#if defined(_AIX)
+/*
+ * HACK: AIX always allows accessing page 0! We can't rely on SIGSEGV
+ * to save us when a null dereference in managed code occurs, so we
+ * always have to check for null.
+ */
+#define MONO_ARCH_EXPLICIT_NULL_CHECKS 1
+#endif
+
 #define PPC_NUM_REG_ARGS (PPC_LAST_ARG_REG-PPC_FIRST_ARG_REG+1)
 #define PPC_NUM_REG_FPARGS (PPC_LAST_FPARG_REG-PPC_FIRST_FPARG_REG+1)
 
