@@ -30,6 +30,7 @@
 #include "abi-details.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
@@ -3527,8 +3528,9 @@ publish_anon_gparam_slow (MonoImage *image, MonoGenericParam *gparam)
 	if (!*cache) {
 		mono_image_lock (image);
 		if (!*cache) {
-			*cache = mono_conc_hashtable_new ((GHashFunc)mono_metadata_generic_param_hash,
-							  (GEqualFunc) mono_metadata_generic_param_equal);
+			MonoConcurrentHashTable *ht = mono_conc_hashtable_new ((GHashFunc)mono_metadata_generic_param_hash,
+										(GEqualFunc) mono_metadata_generic_param_equal);
+			mono_atomic_store_release (cache, ht);
 		}
 		mono_image_unlock (image);
 	}
