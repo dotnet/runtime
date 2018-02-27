@@ -117,6 +117,35 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void TestKeyTransRecipientIdValue_ExplicitSki_RoundTrip()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo);
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer_ExplicitSki.GetCertificate())
+            {
+                CmsRecipient cmsRecipient = new CmsRecipient(SubjectIdentifierType.SubjectKeyIdentifier, cert);
+                ecms.Encrypt(cmsRecipient);
+            }
+            byte[] encodedMessage = ecms.Encode();
+
+            EnvelopedCms ecms2 = new EnvelopedCms();
+            ecms2.Decode(encodedMessage);
+
+            RecipientInfoCollection recipients = ecms2.RecipientInfos;
+            Assert.Equal(1, recipients.Count);
+            RecipientInfo recipientInfo = recipients[0];
+            Assert.IsType<KeyTransRecipientInfo>(recipientInfo);
+            KeyTransRecipientInfo recipient = (KeyTransRecipientInfo)recipientInfo;
+
+            SubjectIdentifier subjectIdentifier = recipient.RecipientIdentifier;
+            object value = subjectIdentifier.Value;
+            Assert.IsType<string>(value);
+            string ski = (string)value;
+            Assert.Equal("01952851C55DB594B0C6167F5863C5B6B67AEFE6", ski);
+        }
+
+        [Fact]
         public static void TestKeyTransRecipientIdValue_Ski_FixedValue()
         {
             KeyTransRecipientInfo recipient = FixedValueKeyTrans1(SubjectIdentifierType.SubjectKeyIdentifier);
@@ -183,7 +212,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             RecipientInfoCollection recipients = ecms2.RecipientInfos;
             Assert.Equal(1, recipients.Count);
             RecipientInfo recipientInfo = recipients[0];
-            Assert.True(recipientInfo is KeyTransRecipientInfo);
+            Assert.IsType<KeyTransRecipientInfo>(recipientInfo);
             return (KeyTransRecipientInfo)recipientInfo;
         }
 
@@ -210,7 +239,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             RecipientInfoCollection recipients = ecms.RecipientInfos;
             Assert.Equal(1, recipients.Count);
             RecipientInfo recipientInfo = recipients[0];
-            Assert.True(recipientInfo is KeyTransRecipientInfo);
+            Assert.IsType<KeyTransRecipientInfo>(recipientInfo);
             return (KeyTransRecipientInfo)recipientInfo;
         }
 

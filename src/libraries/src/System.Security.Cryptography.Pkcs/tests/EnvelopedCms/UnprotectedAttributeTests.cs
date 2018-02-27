@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Linq;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Security.Cryptography.Pkcs;
-using System.Security.Cryptography.Xml;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
@@ -410,6 +403,73 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(1, attributes.Length);
             AsnEncodedData a = attributes[0];
             Assert.True(a is Pkcs9AttributeObject);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void PostEncrypt_UnprotectedAttributes()
+        {
+            byte[] docDescription = ("041E4D00790020004400650073006300720069007000740069006F006E000000").HexToByteArray();
+            byte[] docName1 = ("0410AA00790020004E0061006D0065000000").HexToByteArray();
+            byte[] docName2 = ("04104D00790020004E0061006D0065000000").HexToByteArray();
+            ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(expectedContentInfo);
+            AsnEncodedData[] attributes = {
+                new AsnEncodedData(Oids.DocumentName, docName1),
+                new AsnEncodedData(Oids.DocumentName, docName2),
+                new AsnEncodedData(Oids.DocumentDescription, docDescription)};
+
+            foreach (AsnEncodedData attribute in attributes)
+            {
+                ecms.UnprotectedAttributes.Add(attribute);
+            }
+
+            AsnEncodedData[] before = ecms.UnprotectedAttributes.FlattenAndSort();
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                ecms.Encrypt(new CmsRecipient(cert));
+            }
+
+            AsnEncodedData[] after = ecms.UnprotectedAttributes.FlattenAndSort();
+
+            // There are three objects, but ecms.UnprotectedAttributes.Count returns the count of different Oids,
+            // not the amount of objects inside.
+            Assert.Equal(2, ecms.UnprotectedAttributes.Count);
+
+            Assert.Equal(before.Length, after.Length);
+            for (int i = 0; i<before.Length; i++)
+            {
+                Assert.Equal(before[i].GetType(), after[i].GetType());
+                Assert.Equal(before[i].Oid.Value, after[i].Oid.Value);
+                Assert.Equal(before[i].RawData, after[i].RawData);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, 0)]
+        [InlineData(true, 2)]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void TestVersionNumber_RoundTrip(bool addUnprotectedAttrs, int expectedVersion)
+        {
+            ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            byte[] docName = ("0410AA00790020004E0061006D0065000000").HexToByteArray();
+            EnvelopedCms ecms = new EnvelopedCms(expectedContentInfo);
+
+            if (addUnprotectedAttrs)
+                ecms.UnprotectedAttributes.Add(new AsnEncodedData(new Oid(Oids.DocumentName), docName));
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                ecms.Encrypt(new CmsRecipient(cert));
+            }
+
+            byte[] encodedMessage = ecms.Encode();
+
+            ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            Assert.Equal(expectedVersion, ecms.Version);
         }
 
         private static void AssertIsDocumentationDescription(this AsnEncodedData attribute, string expectedDocumentDescription)
