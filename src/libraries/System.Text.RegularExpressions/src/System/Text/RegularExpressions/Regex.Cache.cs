@@ -13,7 +13,6 @@ namespace System.Text.RegularExpressions
         internal static LinkedList<CachedCodeEntry> s_livecode = new LinkedList<CachedCodeEntry>();// the cache of code and factories that are currently loaded
         internal static int s_cacheSize = 15;
 
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety")]
         public static int CacheSize
         {
             get
@@ -101,7 +100,7 @@ namespace System.Text.RegularExpressions
             private readonly string _cultureKey;
             private readonly string _pattern;
 
-            internal CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern)
+            public CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern)
             {
                 _options = options;
                 _cultureKey = cultureKey;
@@ -139,19 +138,20 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal sealed class CachedCodeEntry
         {
-            internal CachedCodeEntryKey _key;
-            internal RegexCode _code;
-            internal Hashtable _caps;
-            internal Hashtable _capnames;
-            internal string[] _capslist;
+            public CachedCodeEntryKey _key;
+            public RegexCode _code;
+            public Hashtable _caps;
+            public Hashtable _capnames;
+            public string[] _capslist;
 #if FEATURE_COMPILED
-            internal RegexRunnerFactory _factory;
+            public RegexRunnerFactory _factory;
 #endif
-            internal int _capsize;
-            internal ExclusiveReference _runnerref;
-            internal SharedReference _replref;
+            public int _capsize;
+            public ExclusiveReference _runnerref;
+            public SharedReference _replref;
 
-            internal CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code, Hashtable caps, int capsize, ExclusiveReference runner, SharedReference repl)
+            public CachedCodeEntry(CachedCodeEntryKey key, Hashtable capnames, string[] capslist, RegexCode code, 
+                Hashtable caps, int capsize, ExclusiveReference runner, SharedReference repl)
             {
                 _key = key;
                 _capnames = capnames;
@@ -166,7 +166,7 @@ namespace System.Text.RegularExpressions
             }
 
 #if FEATURE_COMPILED
-            internal void AddCompiled(RegexRunnerFactory factory)
+            public void AddCompiled(RegexRunnerFactory factory)
             {
                 _factory = factory;
                 _code = null;

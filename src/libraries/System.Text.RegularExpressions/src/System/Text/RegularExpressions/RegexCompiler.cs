@@ -7,11 +7,9 @@
 // subclass of the RegexRunner type.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.Versioning;
 
 namespace System.Text.RegularExpressions
 {
@@ -28,90 +26,90 @@ namespace System.Text.RegularExpressions
     internal abstract class RegexCompiler
     {
         // fields that never change (making them saves about 6% overall running time)
-        internal static FieldInfo s_textbegF;
-        internal static FieldInfo s_textendF;
-        internal static FieldInfo s_textstartF;
-        internal static FieldInfo s_textposF;
-        internal static FieldInfo s_textF;
-        internal static FieldInfo s_trackposF;
-        internal static FieldInfo s_trackF;
-        internal static FieldInfo s_stackposF;
-        internal static FieldInfo s_stackF;
-        internal static FieldInfo s_trackcountF;
+        private static FieldInfo s_textbegF;
+        private static FieldInfo s_textendF;
+        private static FieldInfo s_textstartF;
+        private static FieldInfo s_textposF;
+        private static FieldInfo s_textF;
+        private static FieldInfo s_trackposF;
+        private static FieldInfo s_trackF;
+        private static FieldInfo s_stackposF;
+        private static FieldInfo s_stackF;
+        private static FieldInfo s_trackcountF;
 
-        internal static MethodInfo s_ensurestorageM;
-        internal static MethodInfo s_captureM;
-        internal static MethodInfo s_transferM;
-        internal static MethodInfo s_uncaptureM;
-        internal static MethodInfo s_ismatchedM;
-        internal static MethodInfo s_matchlengthM;
-        internal static MethodInfo s_matchindexM;
-        internal static MethodInfo s_isboundaryM;
-        internal static MethodInfo s_isECMABoundaryM;
-        internal static MethodInfo s_chartolowerM;
-        internal static MethodInfo s_getcharM;
-        internal static MethodInfo s_crawlposM;
-        internal static MethodInfo s_charInSetM;
-        internal static MethodInfo s_getCurrentCulture;
-        internal static MethodInfo s_getInvariantCulture;
-        internal static MethodInfo s_checkTimeoutM;
+        private static MethodInfo s_ensurestorageM;
+        private static MethodInfo s_captureM;
+        private static MethodInfo s_transferM;
+        private static MethodInfo s_uncaptureM;
+        private static MethodInfo s_ismatchedM;
+        private static MethodInfo s_matchlengthM;
+        private static MethodInfo s_matchindexM;
+        private static MethodInfo s_isboundaryM;
+        private static MethodInfo s_isECMABoundaryM;
+        private static MethodInfo s_chartolowerM;
+        private static MethodInfo s_getcharM;
+        private static MethodInfo s_crawlposM;
+        private static MethodInfo s_charInSetM;
+        private static MethodInfo s_getCurrentCulture;
+        private static MethodInfo s_getInvariantCulture;
+        private static MethodInfo s_checkTimeoutM;
 #if DEBUG
-        internal static MethodInfo s_dumpstateM;
+        private static MethodInfo s_dumpstateM;
 #endif
 
-        internal ILGenerator _ilg;
+        protected ILGenerator _ilg;
 
         // tokens representing local variables
-        internal LocalBuilder _textstartV;
-        internal LocalBuilder _textbegV;
-        internal LocalBuilder _textendV;
-        internal LocalBuilder _textposV;
-        internal LocalBuilder _textV;
-        internal LocalBuilder _trackposV;
-        internal LocalBuilder _trackV;
-        internal LocalBuilder _stackposV;
-        internal LocalBuilder _stackV;
-        internal LocalBuilder _tempV;
-        internal LocalBuilder _temp2V;
-        internal LocalBuilder _temp3V;
+        private LocalBuilder _textstartV;
+        private LocalBuilder _textbegV;
+        private LocalBuilder _textendV;
+        private LocalBuilder _textposV;
+        private LocalBuilder _textV;
+        private LocalBuilder _trackposV;
+        private LocalBuilder _trackV;
+        private LocalBuilder _stackposV;
+        private LocalBuilder _stackV;
+        private LocalBuilder _tempV;
+        private LocalBuilder _temp2V;
+        private LocalBuilder _temp3V;
 
-        internal RegexCode _code;              // the RegexCode object (used for debugging only)
-        internal int[] _codes;             // the RegexCodes being translated
-        internal string[] _strings;           // the stringtable associated with the RegexCodes
-        internal RegexPrefix _fcPrefix;          // the possible first chars computed by RegexFCD
-        internal RegexBoyerMoore _bmPrefix;          // a prefix as a boyer-moore machine
-        internal int _anchors;           // the set of anchors
+        protected RegexCode _code;              // the RegexCode object (used for debugging only)
+        protected int[] _codes;             // the RegexCodes being translated
+        protected string[] _strings;           // the stringtable associated with the RegexCodes
+        protected RegexPrefix _fcPrefix;          // the possible first chars computed by RegexFCD
+        protected RegexBoyerMoore _bmPrefix;          // a prefix as a boyer-moore machine
+        protected int _anchors;           // the set of anchors
 
-        internal Label[] _labels;            // a label for every operation in _codes
-        internal BacktrackNote[] _notes;             // a list of the backtracking states to be generated
-        internal int _notecount;         // true count of _notes (allocation grows exponentially)
-        internal int _trackcount;        // count of backtracking states (used to reduce allocations)
+        private Label[] _labels;            // a label for every operation in _codes
+        private BacktrackNote[] _notes;             // a list of the backtracking states to be generated
+        private int _notecount;         // true count of _notes (allocation grows exponentially)
+        protected int _trackcount;        // count of backtracking states (used to reduce allocations)
 
-        internal Label _backtrack;         // label for backtracking
+        private Label _backtrack;         // label for backtracking
 
 
-        internal int _regexopcode;       // the current opcode being processed
-        internal int _codepos;           // the current code being translated
-        internal int _backpos;           // the current backtrack-note being translated
+        private int _regexopcode;       // the current opcode being processed
+        private int _codepos;           // the current code being translated
+        private int _backpos;           // the current backtrack-note being translated
 
-        internal RegexOptions _options;           // options
+        protected RegexOptions _options;           // options
 
         // special code fragments
-        internal int[] _uniquenote;        // _notes indices for code that should be emitted <= once
-        internal int[] _goto;              // indices for forward-jumps-through-switch (for allocations)
+        private int[] _uniquenote;        // _notes indices for code that should be emitted <= once
+        private int[] _goto;              // indices for forward-jumps-through-switch (for allocations)
 
         // indices for unique code fragments
-        internal const int Stackpop = 0;    // pop one
-        internal const int Stackpop2 = 1;    // pop two
-        internal const int Stackpop3 = 2;    // pop three
-        internal const int Capback = 3;    // uncapture
-        internal const int Capback2 = 4;    // uncapture 2
-        internal const int Branchmarkback2 = 5;    // back2 part of branchmark
-        internal const int Lazybranchmarkback2 = 6;    // back2 part of lazybranchmark
-        internal const int Branchcountback2 = 7;    // back2 part of branchcount
-        internal const int Lazybranchcountback2 = 8;    // back2 part of lazybranchcount
-        internal const int Forejumpback = 9;    // back part of forejump
-        internal const int Uniquecount = 10;
+        private const int Stackpop = 0;    // pop one
+        private const int Stackpop2 = 1;    // pop two
+        private const int Stackpop3 = 2;    // pop three
+        private const int Capback = 3;    // uncapture
+        private const int Capback2 = 4;    // uncapture 2
+        private const int Branchmarkback2 = 5;    // back2 part of branchmark
+        private const int Lazybranchmarkback2 = 6;    // back2 part of lazybranchmark
+        private const int Branchcountback2 = 7;    // back2 part of branchcount
+        private const int Lazybranchcountback2 = 8;    // back2 part of lazybranchcount
+        private const int Forejumpback = 9;    // back part of forejump
+        private const int Uniquecount = 10;
 
         static RegexCompiler()
         {
@@ -161,7 +159,6 @@ namespace System.Text.RegularExpressions
             return typeof(RegexRunner).GetMethod(methname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
         }
 
-
         /* 
          * Entry point to dynamically compile a regular expression.  The expression is compiled to 
          * an in-memory assembly.
@@ -175,25 +172,25 @@ namespace System.Text.RegularExpressions
          * Keeps track of an operation that needs to be referenced in the backtrack-jump
          * switch table, and that needs backtracking code to be emitted (if flags != 0)
          */
-        internal sealed class BacktrackNote
+        private sealed class BacktrackNote
         {
-            internal BacktrackNote(int flags, Label label, int codepos)
+            internal int _codepos;
+            internal int _flags;
+            internal Label _label;
+
+            public BacktrackNote(int flags, Label label, int codepos)
             {
                 _codepos = codepos;
                 _flags = flags;
                 _label = label;
             }
-
-            internal int _codepos;
-            internal int _flags;
-            internal Label _label;
         }
 
         /*
          * Adds a backtrack note to the list of them, and returns the index of the new
          * note (which is also the index for the jump used by the switch table)
          */
-        internal int AddBacktrackNote(int flags, Label l, int codepos)
+        private int AddBacktrackNote(int flags, Label l, int codepos)
         {
             if (_notes == null || _notecount >= _notes.Length)
             {
@@ -212,7 +209,7 @@ namespace System.Text.RegularExpressions
          * Adds a backtrack note for the current operation; creates a new label for
          * where the code will be, and returns the switch index.
          */
-        internal int AddTrack()
+        private int AddTrack()
         {
             return AddTrack(RegexCode.Back);
         }
@@ -221,7 +218,7 @@ namespace System.Text.RegularExpressions
          * Adds a backtrack note for the current operation; creates a new label for
          * where the code will be, and returns the switch index.
          */
-        internal int AddTrack(int flags)
+        private int AddTrack(int flags)
         {
             return AddBacktrackNote(flags, DefineLabel(), _codepos);
         }
@@ -230,7 +227,7 @@ namespace System.Text.RegularExpressions
          * Adds a switchtable entry for the specified position (for the forward
          * logic; does not cause backtracking logic to be generated)
          */
-        internal int AddGoto(int destpos)
+        private int AddGoto(int destpos)
         {
             if (_goto[destpos] == -1)
                 _goto[destpos] = AddBacktrackNote(0, _labels[destpos], destpos);
@@ -243,7 +240,7 @@ namespace System.Text.RegularExpressions
          * if it's already marked to be generated, returns the switch index
          * for the unique piece of code.
          */
-        internal int AddUniqueTrack(int i)
+        private int AddUniqueTrack(int i)
         {
             return AddUniqueTrack(i, RegexCode.Back);
         }
@@ -253,7 +250,7 @@ namespace System.Text.RegularExpressions
          * if it's already marked to be generated, returns the switch index
          * for the unique piece of code.
          */
-        internal int AddUniqueTrack(int i, int flags)
+        private int AddUniqueTrack(int i, int flags)
         {
             if (_uniquenote[i] == -1)
                 _uniquenote[i] = AddTrack(flags);
@@ -264,7 +261,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.DefineLabel
          */
-        internal Label DefineLabel()
+        private Label DefineLabel()
         {
             return _ilg.DefineLabel();
         }
@@ -272,7 +269,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.MarkLabel
          */
-        internal void MarkLabel(Label l)
+        private void MarkLabel(Label l)
         {
             _ilg.MarkLabel(l);
         }
@@ -280,7 +277,7 @@ namespace System.Text.RegularExpressions
         /*
          * Returns the ith operand of the current operation
          */
-        internal int Operand(int i)
+        private int Operand(int i)
         {
             return _codes[_codepos + i + 1];
         }
@@ -288,7 +285,7 @@ namespace System.Text.RegularExpressions
         /*
          * True if the current operation is marked for the leftward direction
          */
-        internal bool IsRtl()
+        private bool IsRtl()
         {
             return (_regexopcode & RegexCode.Rtl) != 0;
         }
@@ -296,7 +293,7 @@ namespace System.Text.RegularExpressions
         /*
          * True if the current operation is marked for case insensitive operation
          */
-        internal bool IsCi()
+        private bool IsCi()
         {
             return (_regexopcode & RegexCode.Ci) != 0;
         }
@@ -305,14 +302,14 @@ namespace System.Text.RegularExpressions
         /*
          * True if we need to do the backtrack logic for the current operation
          */
-        internal bool IsBack() {
+        private bool IsBack() {
             return(_regexopcode & RegexCode.Back) != 0;
         }
 
         /*
          * True if we need to do the second-backtrack logic for the current operation
          */
-        internal bool IsBack2() {
+        private bool IsBack2() {
             return(_regexopcode & RegexCode.Back2) != 0;
         }
 #endif
@@ -320,12 +317,12 @@ namespace System.Text.RegularExpressions
         /*
          * Returns the raw regex opcode (masking out Back and Rtl)
          */
-        internal int Code()
+        private int Code()
         {
             return _regexopcode & RegexCode.Mask;
         }
 
-        internal void Ldstr(string str)
+        private void Ldstr(string str)
         {
             _ilg.Emit(OpCodes.Ldstr, str);
         }
@@ -333,7 +330,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for the various forms of Ldc
          */
-        internal void Ldc(int i)
+        private void Ldc(int i)
         {
             if (i <= 127 && i >= -128)
                 _ilg.Emit(OpCodes.Ldc_I4_S, (byte)i);
@@ -341,7 +338,7 @@ namespace System.Text.RegularExpressions
                 _ilg.Emit(OpCodes.Ldc_I4, i);
         }
 
-        internal void LdcI8(long i)
+        private void LdcI8(long i)
         {
             if (i <= int.MaxValue && i >= int.MinValue)
             {
@@ -357,7 +354,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Dup)
          */
-        internal void Dup()
+        private void Dup()
         {
             _ilg.Emit(OpCodes.Dup);
         }
@@ -365,7 +362,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Ret)
          */
-        internal void Ret()
+        private void Ret()
         {
             _ilg.Emit(OpCodes.Ret);
         }
@@ -373,7 +370,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Pop)
          */
-        internal void Pop()
+        private void Pop()
         {
             _ilg.Emit(OpCodes.Pop);
         }
@@ -381,7 +378,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Add)
          */
-        internal void Add()
+        private void Add()
         {
             _ilg.Emit(OpCodes.Add);
         }
@@ -389,7 +386,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Add); a true flag can turn it into a Sub
          */
-        internal void Add(bool negate)
+        private void Add(bool negate)
         {
             if (negate)
                 _ilg.Emit(OpCodes.Sub);
@@ -400,7 +397,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Sub)
          */
-        internal void Sub()
+        private void Sub()
         {
             _ilg.Emit(OpCodes.Sub);
         }
@@ -408,7 +405,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Sub); a true flag can turn it into a Add
          */
-        internal void Sub(bool negate)
+        private void Sub(bool negate)
         {
             if (negate)
                 _ilg.Emit(OpCodes.Add);
@@ -419,7 +416,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Ldloc);
          */
-        internal void Ldloc(LocalBuilder lt)
+        private void Ldloc(LocalBuilder lt)
         {
             _ilg.Emit(OpCodes.Ldloc_S, lt);
         }
@@ -427,7 +424,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Stloc);
          */
-        internal void Stloc(LocalBuilder lt)
+        private void Stloc(LocalBuilder lt)
         {
             _ilg.Emit(OpCodes.Stloc_S, lt);
         }
@@ -435,7 +432,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Ldarg_0);
          */
-        internal void Ldthis()
+        private void Ldthis()
         {
             _ilg.Emit(OpCodes.Ldarg_0);
         }
@@ -443,7 +440,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for Ldthis(); Ldfld();
          */
-        internal void Ldthisfld(FieldInfo ft)
+        private void Ldthisfld(FieldInfo ft)
         {
             Ldthis();
             _ilg.Emit(OpCodes.Ldfld, ft);
@@ -452,7 +449,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for Ldthis(); Ldfld(); Stloc();
          */
-        internal void Mvfldloc(FieldInfo ft, LocalBuilder lt)
+        private void Mvfldloc(FieldInfo ft, LocalBuilder lt)
         {
             Ldthisfld(ft);
             Stloc(lt);
@@ -461,7 +458,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for Ldthis(); Ldthisfld(); Stloc();
          */
-        internal void Mvlocfld(LocalBuilder lt, FieldInfo ft)
+        private void Mvlocfld(LocalBuilder lt, FieldInfo ft)
         {
             Ldthis();
             Ldloc(lt);
@@ -471,7 +468,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Stfld);
          */
-        internal void Stfld(FieldInfo ft)
+        private void Stfld(FieldInfo ft)
         {
             _ilg.Emit(OpCodes.Stfld, ft);
         }
@@ -479,7 +476,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Callvirt);
          */
-        internal void Callvirt(MethodInfo mt)
+        private void Callvirt(MethodInfo mt)
         {
             _ilg.Emit(OpCodes.Callvirt, mt);
         }
@@ -487,7 +484,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Call);
          */
-        internal void Call(MethodInfo mt)
+        private void Call(MethodInfo mt)
         {
             _ilg.Emit(OpCodes.Call, mt);
         }
@@ -495,7 +492,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Newobj);
          */
-        internal void Newobj(ConstructorInfo ct)
+        private void Newobj(ConstructorInfo ct)
         {
             _ilg.Emit(OpCodes.Newobj, ct);
         }
@@ -503,7 +500,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Brfalse) (long form)
          */
-        internal void BrfalseFar(Label l)
+        private void BrfalseFar(Label l)
         {
             _ilg.Emit(OpCodes.Brfalse, l);
         }
@@ -511,7 +508,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Brtrue) (long form)
          */
-        internal void BrtrueFar(Label l)
+        private void BrtrueFar(Label l)
         {
             _ilg.Emit(OpCodes.Brtrue, l);
         }
@@ -519,7 +516,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Br) (long form)
          */
-        internal void BrFar(Label l)
+        private void BrFar(Label l)
         {
             _ilg.Emit(OpCodes.Br, l);
         }
@@ -527,7 +524,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Ble) (long form)
          */
-        internal void BleFar(Label l)
+        private void BleFar(Label l)
         {
             _ilg.Emit(OpCodes.Ble, l);
         }
@@ -535,7 +532,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Blt) (long form)
          */
-        internal void BltFar(Label l)
+        private void BltFar(Label l)
         {
             _ilg.Emit(OpCodes.Blt, l);
         }
@@ -543,7 +540,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bge) (long form)
          */
-        internal void BgeFar(Label l)
+        private void BgeFar(Label l)
         {
             _ilg.Emit(OpCodes.Bge, l);
         }
@@ -551,7 +548,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bgt) (long form)
          */
-        internal void BgtFar(Label l)
+        private void BgtFar(Label l)
         {
             _ilg.Emit(OpCodes.Bgt, l);
         }
@@ -559,7 +556,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bne) (long form)
          */
-        internal void BneFar(Label l)
+        private void BneFar(Label l)
         {
             _ilg.Emit(OpCodes.Bne_Un, l);
         }
@@ -567,7 +564,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Beq) (long form)
          */
-        internal void BeqFar(Label l)
+        private void BeqFar(Label l)
         {
             _ilg.Emit(OpCodes.Beq, l);
         }
@@ -575,7 +572,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Brfalse_S) (short jump)
          */
-        internal void Brfalse(Label l)
+        private void Brfalse(Label l)
         {
             _ilg.Emit(OpCodes.Brfalse_S, l);
         }
@@ -583,7 +580,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Br_S) (short jump)
          */
-        internal void Br(Label l)
+        private void Br(Label l)
         {
             _ilg.Emit(OpCodes.Br_S, l);
         }
@@ -591,7 +588,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Ble_S) (short jump)
          */
-        internal void Ble(Label l)
+        private void Ble(Label l)
         {
             _ilg.Emit(OpCodes.Ble_S, l);
         }
@@ -599,7 +596,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Blt_S) (short jump)
          */
-        internal void Blt(Label l)
+        private void Blt(Label l)
         {
             _ilg.Emit(OpCodes.Blt_S, l);
         }
@@ -607,7 +604,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bge_S) (short jump)
          */
-        internal void Bge(Label l)
+        private void Bge(Label l)
         {
             _ilg.Emit(OpCodes.Bge_S, l);
         }
@@ -615,7 +612,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bgt_S) (short jump)
          */
-        internal void Bgt(Label l)
+        private void Bgt(Label l)
         {
             _ilg.Emit(OpCodes.Bgt_S, l);
         }
@@ -623,7 +620,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bleun_S) (short jump)
          */
-        internal void Bgtun(Label l)
+        private void Bgtun(Label l)
         {
             _ilg.Emit(OpCodes.Bgt_Un_S, l);
         }
@@ -631,7 +628,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Bne_S) (short jump)
          */
-        internal void Bne(Label l)
+        private void Bne(Label l)
         {
             _ilg.Emit(OpCodes.Bne_Un_S, l);
         }
@@ -639,7 +636,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for _ilg.Emit(OpCodes.Beq_S) (short jump)
          */
-        internal void Beq(Label l)
+        private void Beq(Label l)
         {
             _ilg.Emit(OpCodes.Beq_S, l);
         }
@@ -647,7 +644,7 @@ namespace System.Text.RegularExpressions
         /*
          * A macro for the Ldlen instruction
          */
-        internal void Ldlen()
+        private void Ldlen()
         {
             _ilg.Emit(OpCodes.Ldlen);
         }
@@ -655,7 +652,7 @@ namespace System.Text.RegularExpressions
         /*
          * Loads the char to the right of the current position
          */
-        internal void Rightchar()
+        private void Rightchar()
         {
             Ldloc(_textV);
             Ldloc(_textposV);
@@ -665,7 +662,7 @@ namespace System.Text.RegularExpressions
         /*
          * Loads the char to the right of the current position and advances the current position
          */
-        internal void Rightcharnext()
+        private void Rightcharnext()
         {
             Ldloc(_textV);
             Ldloc(_textposV);
@@ -679,7 +676,7 @@ namespace System.Text.RegularExpressions
         /*
          * Loads the char to the left of the current position
          */
-        internal void Leftchar()
+        private void Leftchar()
         {
             Ldloc(_textV);
             Ldloc(_textposV);
@@ -691,7 +688,7 @@ namespace System.Text.RegularExpressions
         /*
          * Loads the char to the left of the current position and advances (leftward)
          */
-        internal void Leftcharnext()
+        private void Leftcharnext()
         {
             Ldloc(_textV);
             Ldloc(_textposV);
@@ -705,7 +702,7 @@ namespace System.Text.RegularExpressions
         /*
          * Creates a backtrack note and pushes the switch index it on the tracking stack
          */
-        internal void Track()
+        private void Track()
         {
             ReadyPushTrack();
             Ldc(AddTrack());
@@ -717,9 +714,8 @@ namespace System.Text.RegularExpressions
          * logic will be repeated again next time we backtrack here.
          *
          * <
-
-*/
-        internal void Trackagain()
+         */
+        private void Trackagain()
         {
             ReadyPushTrack();
             Ldc(_backpos);
@@ -729,7 +725,7 @@ namespace System.Text.RegularExpressions
         /*
          * Saves the value of a local variable on the tracking stack
          */
-        internal void PushTrack(LocalBuilder lt)
+        private void PushTrack(LocalBuilder lt)
         {
             ReadyPushTrack();
             Ldloc(lt);
@@ -740,7 +736,7 @@ namespace System.Text.RegularExpressions
          * Creates a backtrack note for a piece of code that should only be generated once,
          * and emits code that pushes the switch index on the backtracking stack.
          */
-        internal void TrackUnique(int i)
+        private void TrackUnique(int i)
         {
             ReadyPushTrack();
             Ldc(AddUniqueTrack(i));
@@ -752,7 +748,7 @@ namespace System.Text.RegularExpressions
          * generated once, and emits code that pushes the switch index on the
          * backtracking stack.
          */
-        internal void TrackUnique2(int i)
+        private void TrackUnique2(int i)
         {
             ReadyPushTrack();
             Ldc(AddUniqueTrack(i, RegexCode.Back2));
@@ -762,7 +758,7 @@ namespace System.Text.RegularExpressions
         /*
          * Prologue to code that will push an element on the tracking stack
          */
-        internal void ReadyPushTrack()
+        private void ReadyPushTrack()
         {
             _ilg.Emit(OpCodes.Ldloc_S, _trackV);
             _ilg.Emit(OpCodes.Ldloc_S, _trackposV);
@@ -775,7 +771,7 @@ namespace System.Text.RegularExpressions
         /*
          * Pops an element off the tracking stack (leave it on the operand stack)
          */
-        internal void PopTrack()
+        private void PopTrack()
         {
             _ilg.Emit(OpCodes.Ldloc_S, _trackV);
             _ilg.Emit(OpCodes.Ldloc_S, _trackposV);
@@ -789,7 +785,7 @@ namespace System.Text.RegularExpressions
         /*
          * Retrieves the top entry on the tracking stack without popping
          */
-        internal void TopTrack()
+        private void TopTrack()
         {
             _ilg.Emit(OpCodes.Ldloc_S, _trackV);
             _ilg.Emit(OpCodes.Ldloc_S, _trackposV);
@@ -799,7 +795,7 @@ namespace System.Text.RegularExpressions
         /*
          * Saves the value of a local variable on the grouping stack
          */
-        internal void PushStack(LocalBuilder lt)
+        private void PushStack(LocalBuilder lt)
         {
             ReadyPushStack();
             _ilg.Emit(OpCodes.Ldloc_S, lt);
@@ -823,7 +819,7 @@ namespace System.Text.RegularExpressions
         /*
          * Prologue to code that will push an element on the grouping stack
          */
-        internal void ReadyPushStack()
+        private void ReadyPushStack()
         {
             _ilg.Emit(OpCodes.Ldloc_S, _stackV);
             _ilg.Emit(OpCodes.Ldloc_S, _stackposV);
@@ -836,7 +832,7 @@ namespace System.Text.RegularExpressions
         /*
          * Retrieves the top entry on the stack without popping
          */
-        internal void TopStack()
+        private void TopStack()
         {
             _ilg.Emit(OpCodes.Ldloc_S, _stackV);
             _ilg.Emit(OpCodes.Ldloc_S, _stackposV);
@@ -846,7 +842,7 @@ namespace System.Text.RegularExpressions
         /*
          * Pops an element off the grouping stack (leave it on the operand stack)
          */
-        internal void PopStack()
+        private void PopStack()
         {
             _ilg.Emit(OpCodes.Ldloc_S, _stackV);
             _ilg.Emit(OpCodes.Ldloc_S, _stackposV);
@@ -860,7 +856,7 @@ namespace System.Text.RegularExpressions
         /*
          * Pops 1 element off the grouping stack and discards it
          */
-        internal void PopDiscardStack()
+        private void PopDiscardStack()
         {
             PopDiscardStack(1);
         }
@@ -868,7 +864,7 @@ namespace System.Text.RegularExpressions
         /*
          * Pops i elements off the grouping stack and discards them
          */
-        internal void PopDiscardStack(int i)
+        private void PopDiscardStack(int i)
         {
             _ilg.Emit(OpCodes.Ldloc_S, _stackposV);
             Ldc(i);
@@ -879,7 +875,7 @@ namespace System.Text.RegularExpressions
         /*
          * Epilogue to code that will replace an element on a stack (use Ld* in between)
          */
-        internal void DoReplace()
+        private void DoReplace()
         {
             _ilg.Emit(OpCodes.Stelem_I4);
         }
@@ -887,7 +883,7 @@ namespace System.Text.RegularExpressions
         /*
          * Epilogue to code that will push an element on a stack (use Ld* in between)
          */
-        internal void DoPush()
+        private void DoPush()
         {
             _ilg.Emit(OpCodes.Stelem_I4);
         }
@@ -895,7 +891,7 @@ namespace System.Text.RegularExpressions
         /*
          * Jump to the backtracking switch
          */
-        internal void Back()
+        private void Back()
         {
             _ilg.Emit(OpCodes.Br, _backtrack);
         }
@@ -915,7 +911,7 @@ namespace System.Text.RegularExpressions
          *
          * Since forward gotos pose no threat, they just turn into a Br.
          */
-        internal void Goto(int i)
+        private void Goto(int i)
         {
             if (i < _codepos)
             {
@@ -944,7 +940,7 @@ namespace System.Text.RegularExpressions
          * Returns the position of the next operation in the regex code, taking
          * into account the different numbers of arguments taken by operations
          */
-        internal int NextCodepos()
+        private int NextCodepos()
         {
             return _codepos + RegexCode.OpcodeSize(_codes[_codepos]);
         }
@@ -952,7 +948,7 @@ namespace System.Text.RegularExpressions
         /*
          * The label for the next (forward) operation
          */
-        internal Label AdvanceLabel()
+        private Label AdvanceLabel()
         {
             return _labels[NextCodepos()];
         }
@@ -960,12 +956,12 @@ namespace System.Text.RegularExpressions
         /*
          * Goto the next (forward) operation
          */
-        internal void Advance()
+        private void Advance()
         {
             _ilg.Emit(OpCodes.Br, AdvanceLabel());
         }
 
-        internal void CallToLower()
+        private void CallToLower()
         {
             if ((_options & RegexOptions.CultureInvariant) != 0)
                 Call(s_getInvariantCulture);
@@ -981,7 +977,7 @@ namespace System.Text.RegularExpressions
          *
          * In the absence of backtracking, this is all we would need.
          */
-        internal void GenerateForwardSection()
+        private void GenerateForwardSection()
         {
             int codepos;
 
@@ -1029,7 +1025,7 @@ namespace System.Text.RegularExpressions
          * and it also contains the calls that expand the tracking and the
          * grouping stack when they get too full.
          */
-        internal void GenerateMiddleSection()
+        private void GenerateMiddleSection()
         {
             Label l1 = DefineLabel();
             Label[] table;
@@ -1056,14 +1052,13 @@ namespace System.Text.RegularExpressions
                 table[i] = _notes[i]._label;
 
             _ilg.Emit(OpCodes.Switch, table);
-
         }
 
         /*
          * Generates the last section of the MSIL. This section contains all of
          * the backtracking logic.
          */
-        internal void GenerateBacktrackSection()
+        private void GenerateBacktrackSection()
         {
             int i;
 
@@ -1088,7 +1083,7 @@ namespace System.Text.RegularExpressions
         // !!!! This function must be kept synchronized with FindFirstChar in      !!!!
         // !!!! RegexInterpreter.cs                                                !!!!
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        internal void GenerateFindFirstChar()
+        protected void GenerateFindFirstChar()
         {
             _textposV = DeclareInt();
             _textV = DeclareString();
@@ -1097,7 +1092,7 @@ namespace System.Text.RegularExpressions
 
             if (0 != (_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                 {
                     if (0 != (_anchors & RegexFCD.Beginning))
                     {
@@ -1230,7 +1225,7 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Ret();
             }
-            else if (_bmPrefix != null && _bmPrefix._negativeUnicode == null)
+            else if (_bmPrefix != null && _bmPrefix.NegativeUnicode == null)
             {
                 // Compiled Boyer-Moore string matching
                 // <
@@ -1253,35 +1248,35 @@ namespace System.Text.RegularExpressions
                 int last;
                 Label[] table;
 
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                 {
                     beforefirst = -1;
-                    last = _bmPrefix._pattern.Length - 1;
+                    last = _bmPrefix.Pattern.Length - 1;
                 }
                 else
                 {
-                    beforefirst = _bmPrefix._pattern.Length;
+                    beforefirst = _bmPrefix.Pattern.Length;
                     last = 0;
                 }
 
-                chLast = _bmPrefix._pattern[last];
+                chLast = _bmPrefix.Pattern[last];
 
                 Mvfldloc(s_textF, _textV);
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                     Ldthisfld(s_textendF);
                 else
                     Ldthisfld(s_textbegF);
                 Stloc(limitV);
 
                 Ldthisfld(s_textposF);
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                 {
-                    Ldc(_bmPrefix._pattern.Length - 1);
+                    Ldc(_bmPrefix.Pattern.Length - 1);
                     Add();
                 }
                 else
                 {
-                    Ldc(_bmPrefix._pattern.Length);
+                    Ldc(_bmPrefix.Pattern.Length);
                     Sub();
                 }
                 Stloc(_textposV);
@@ -1289,10 +1284,10 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(lDefaultAdvance);
 
-                if (!_code._rightToLeft)
-                    Ldc(_bmPrefix._pattern.Length);
+                if (!_code.RightToLeft)
+                    Ldc(_bmPrefix.Pattern.Length);
                 else
-                    Ldc(-_bmPrefix._pattern.Length);
+                    Ldc(-_bmPrefix.Pattern.Length);
 
                 MarkLabel(lAdvance);
 
@@ -1304,13 +1299,13 @@ namespace System.Text.RegularExpressions
 
                 Ldloc(_textposV);
                 Ldloc(limitV);
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                     BgeFar(lFail);
                 else
                     BltFar(lFail);
 
                 Rightchar();
-                if (_bmPrefix._caseInsensitive)
+                if (_bmPrefix.CaseInsensitive)
                     CallToLower();
 
                 Dup();
@@ -1319,34 +1314,34 @@ namespace System.Text.RegularExpressions
                 BeqFar(lPartialMatch);
 
                 Ldloc(chV);
-                Ldc(_bmPrefix._lowASCII);
+                Ldc(_bmPrefix.LowASCII);
                 Sub();
                 Dup();
                 Stloc(chV);
-                Ldc(_bmPrefix._highASCII - _bmPrefix._lowASCII);
+                Ldc(_bmPrefix.HighASCII - _bmPrefix.LowASCII);
                 Bgtun(lDefaultAdvance);
 
-                table = new Label[_bmPrefix._highASCII - _bmPrefix._lowASCII + 1];
+                table = new Label[_bmPrefix.HighASCII - _bmPrefix.LowASCII + 1];
 
-                for (i = _bmPrefix._lowASCII; i <= _bmPrefix._highASCII; i++)
+                for (i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
                 {
-                    if (_bmPrefix._negativeASCII[i] == beforefirst)
-                        table[i - _bmPrefix._lowASCII] = lDefaultAdvance;
+                    if (_bmPrefix.NegativeASCII[i] == beforefirst)
+                        table[i - _bmPrefix.LowASCII] = lDefaultAdvance;
                     else
-                        table[i - _bmPrefix._lowASCII] = DefineLabel();
+                        table[i - _bmPrefix.LowASCII] = DefineLabel();
                 }
 
                 Ldloc(chV);
                 _ilg.Emit(OpCodes.Switch, table);
 
-                for (i = _bmPrefix._lowASCII; i <= _bmPrefix._highASCII; i++)
+                for (i = _bmPrefix.LowASCII; i <= _bmPrefix.HighASCII; i++)
                 {
-                    if (_bmPrefix._negativeASCII[i] == beforefirst)
+                    if (_bmPrefix.NegativeASCII[i] == beforefirst)
                         continue;
 
-                    MarkLabel(table[i - _bmPrefix._lowASCII]);
+                    MarkLabel(table[i - _bmPrefix.LowASCII]);
 
-                    Ldc(_bmPrefix._negativeASCII[i]);
+                    Ldc(_bmPrefix.NegativeASCII[i]);
                     BrFar(lAdvance);
                 }
 
@@ -1355,29 +1350,29 @@ namespace System.Text.RegularExpressions
                 Ldloc(_textposV);
                 Stloc(testV);
 
-                for (i = _bmPrefix._pattern.Length - 2; i >= 0; i--)
+                for (i = _bmPrefix.Pattern.Length - 2; i >= 0; i--)
                 {
                     Label lNext = DefineLabel();
                     int charindex;
 
-                    if (!_code._rightToLeft)
+                    if (!_code.RightToLeft)
                         charindex = i;
                     else
-                        charindex = _bmPrefix._pattern.Length - 1 - i;
+                        charindex = _bmPrefix.Pattern.Length - 1 - i;
 
                     Ldloc(_textV);
                     Ldloc(testV);
                     Ldc(1);
-                    Sub(_code._rightToLeft);
+                    Sub(_code.RightToLeft);
                     Dup();
                     Stloc(testV);
                     Callvirt(s_getcharM);
-                    if (_bmPrefix._caseInsensitive)
+                    if (_bmPrefix.CaseInsensitive)
                         CallToLower();
 
-                    Ldc(_bmPrefix._pattern[charindex]);
+                    Ldc(_bmPrefix.Pattern[charindex]);
                     Beq(lNext);
-                    Ldc(_bmPrefix._positive[charindex]);
+                    Ldc(_bmPrefix.Positive[charindex]);
                     BrFar(lAdvance);
 
                     MarkLabel(lNext);
@@ -1386,7 +1381,7 @@ namespace System.Text.RegularExpressions
 
                 Ldthis();
                 Ldloc(testV);
-                if (_code._rightToLeft)
+                if (_code.RightToLeft)
                 {
                     Ldc(1);
                     Add();
@@ -1398,7 +1393,7 @@ namespace System.Text.RegularExpressions
                 MarkLabel(lFail);
 
                 Ldthis();
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                     Ldthisfld(s_textendF);
                 else
                     Ldthisfld(s_textbegF);
@@ -1424,7 +1419,7 @@ namespace System.Text.RegularExpressions
                 Mvfldloc(s_textposF, _textposV);
                 Mvfldloc(s_textF, _textV);
 
-                if (!_code._rightToLeft)
+                if (!_code.RightToLeft)
                 {
                     Ldthisfld(s_textendF);
                     Ldloc(_textposV);
@@ -1448,7 +1443,7 @@ namespace System.Text.RegularExpressions
                 Sub();
                 Stloc(cV);
 
-                if (_code._rightToLeft)
+                if (_code.RightToLeft)
                     Leftcharnext();
                 else
                     Rightcharnext();
@@ -1522,7 +1517,7 @@ namespace System.Text.RegularExpressions
 
                 Ldloc(_textposV);
                 Ldc(1);
-                Sub(_code._rightToLeft);
+                Sub(_code.RightToLeft);
                 Stloc(_textposV);
                 Ldc(1);
 
@@ -1541,7 +1536,7 @@ namespace System.Text.RegularExpressions
         /*
          * Generates a very simple method that sets the _trackcount field.
          */
-        internal void GenerateInitTrackCount()
+        protected void GenerateInitTrackCount()
         {
             Ldthis();
             Ldc(_trackcount);
@@ -1552,7 +1547,7 @@ namespace System.Text.RegularExpressions
         /*
          * Declares a local int
          */
-        internal LocalBuilder DeclareInt()
+        private LocalBuilder DeclareInt()
         {
             return _ilg.DeclareLocal(typeof(int));
         }
@@ -1560,7 +1555,7 @@ namespace System.Text.RegularExpressions
         /*
          * Declares a local int array
          */
-        internal LocalBuilder DeclareIntArray()
+        private LocalBuilder DeclareIntArray()
         {
             return _ilg.DeclareLocal(typeof(int[]));
         }
@@ -1568,7 +1563,7 @@ namespace System.Text.RegularExpressions
         /*
          * Declares a local string
          */
-        internal LocalBuilder DeclareString()
+        private LocalBuilder DeclareString()
         {
             return _ilg.DeclareLocal(typeof(string));
         }
@@ -1576,7 +1571,7 @@ namespace System.Text.RegularExpressions
         /*
          * Generates the code for "RegexRunner.Go"
          */
-        internal void GenerateGo()
+        protected void GenerateGo()
         {
             // declare some locals
 
@@ -1614,12 +1609,12 @@ namespace System.Text.RegularExpressions
         /*
          * Some simple debugging stuff
          */
-        internal static MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] {typeof(string)});
+        private static MethodInfo s_debugWriteLine = typeof(Debug).GetMethod("WriteLine", new Type[] {typeof(string)});
 
         /*
          * Debug only: emit code to print out a message
          */
-        internal void Message(string str) {
+        private void Message(string str) {
             Ldstr(str);
             Call(s_debugWriteLine);
         }
@@ -1638,7 +1633,7 @@ namespace System.Text.RegularExpressions
          * dealt with one-at-a-time in RegexIntepreter. We can also unroll loops that
          * iterate over constant strings or sets.
          */
-        internal void GenerateOneCode()
+        private void GenerateOneCode()
         {
 #if DEBUG
             if ((_options & RegexOptions.Debug) != 0) {

@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions
         /// This is the only function that should be called from outside.
         /// It takes a RegexTree and creates a corresponding RegexCode.
         /// </summary>
-        internal static RegexCode Write(RegexTree t)
+        public static RegexCode Write(RegexTree t)
         {
             Span<int> emittedSpan = stackalloc int[EmittedSize];
             Span<int> intStackSpan = stackalloc int[IntStackSize];
@@ -73,35 +73,35 @@ namespace System.Text.RegularExpressions
         {
             // construct sparse capnum mapping if some numbers are unused
             int capsize;
-            if (tree._capnumlist == null || tree._captop == tree._capnumlist.Length)
+            if (tree.CapNumList == null || tree.CapTop == tree.CapNumList.Length)
             {
-                capsize = tree._captop;
+                capsize = tree.CapTop;
                 _caps = null;
             }
             else
             {
-                capsize = tree._capnumlist.Length;
-                _caps = tree._caps;
-                for (int i = 0; i < tree._capnumlist.Length; i++)
-                    _caps[tree._capnumlist[i]] = i;
+                capsize = tree.CapNumList.Length;
+                _caps = tree.Caps;
+                for (int i = 0; i < tree.CapNumList.Length; i++)
+                    _caps[tree.CapNumList[i]] = i;
             }
 
-            RegexNode curNode = tree._root;
+            RegexNode curNode = tree.Root;
             int curChild = 0;
 
             Emit(RegexCode.Lazybranch, 0);
 
             for (; ; )
             {
-                if (curNode._children == null)
+                if (curNode.Children == null)
                 {
-                    EmitFragment(curNode._type, curNode, 0);
+                    EmitFragment(curNode.NType, curNode, 0);
                 }
-                else if (curChild < curNode._children.Count)
+                else if (curChild < curNode.Children.Count)
                 {
-                    EmitFragment(curNode._type | BeforeChild, curNode, curChild);
+                    EmitFragment(curNode.NType | BeforeChild, curNode, curChild);
 
-                    curNode = curNode._children[curChild];
+                    curNode = curNode.Children[curChild];
                     _intStack.Append(curChild);
                     curChild = 0;
                     continue;
@@ -111,9 +111,9 @@ namespace System.Text.RegularExpressions
                     break;
 
                 curChild = _intStack.Pop();
-                curNode = curNode._next;
+                curNode = curNode.Next;
 
-                EmitFragment(curNode._type | AfterChild, curNode, curChild);
+                EmitFragment(curNode.NType | AfterChild, curNode, curChild);
                 curChild++;
             }
 
@@ -122,9 +122,9 @@ namespace System.Text.RegularExpressions
 
             RegexPrefix fcPrefix = RegexFCD.FirstChars(tree);
             RegexPrefix prefix = RegexFCD.Prefix(tree);
-            bool rtl = ((tree._options & RegexOptions.RightToLeft) != 0);
+            bool rtl = ((tree.Options & RegexOptions.RightToLeft) != 0);
 
-            CultureInfo culture = (tree._options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
             RegexBoyerMoore bmPrefix;
 
             if (prefix != null && prefix.Prefix.Length > 0)
@@ -239,7 +239,7 @@ namespace System.Text.RegularExpressions
             {
                 if (node.UseOptionR())
                     bits |= RegexCode.Rtl;
-                if ((node._options & RegexOptions.IgnoreCase) != 0)
+                if ((node.Options & RegexOptions.IgnoreCase) != 0)
                     bits |= RegexCode.Ci;
             }
 
@@ -251,7 +251,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Alternate | BeforeChild:
-                    if (curIndex < node._children.Count - 1)
+                    if (curIndex < node.Children.Count - 1)
                     {
                         _intStack.Append(_emitted.Length);
                         Emit(RegexCode.Lazybranch, 0);
@@ -260,7 +260,7 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.Alternate | AfterChild:
                     {
-                        if (curIndex < node._children.Count - 1)
+                        if (curIndex < node.Children.Count - 1)
                         {
                             int LBPos = _intStack.Pop();
                             _intStack.Append(_emitted.Length);
@@ -285,7 +285,7 @@ namespace System.Text.RegularExpressions
                             Emit(RegexCode.Setjump);
                             _intStack.Append(_emitted.Length);
                             Emit(RegexCode.Lazybranch, 0);
-                            Emit(RegexCode.Testref, MapCapnum(node._m));
+                            Emit(RegexCode.Testref, MapCapnum(node.M));
                             Emit(RegexCode.Forejump);
                             break;
                     }
@@ -301,7 +301,7 @@ namespace System.Text.RegularExpressions
                                 Emit(RegexCode.Goto, 0);
                                 PatchJump(Branchpos, _emitted.Length);
                                 Emit(RegexCode.Forejump);
-                                if (node._children.Count > 1)
+                                if (node.Children.Count > 1)
                                     break;
                                 // else fallthrough
                                 goto case 1;
@@ -339,7 +339,7 @@ namespace System.Text.RegularExpressions
                             Emit(RegexCode.Getmark);
                             Emit(RegexCode.Forejump);
 
-                            if (node._children.Count > 2)
+                            if (node.Children.Count > 2)
                                 break;
                             // else fallthrough
                             goto case 2;
@@ -352,12 +352,12 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Loop | BeforeChild:
                 case RegexNode.Lazyloop | BeforeChild:
 
-                    if (node._n < int.MaxValue || node._m > 1)
-                        Emit(node._m == 0 ? RegexCode.Nullcount : RegexCode.Setcount, node._m == 0 ? 0 : 1 - node._m);
+                    if (node.N < int.MaxValue || node.M > 1)
+                        Emit(node.M == 0 ? RegexCode.Nullcount : RegexCode.Setcount, node.M == 0 ? 0 : 1 - node.M);
                     else
-                        Emit(node._m == 0 ? RegexCode.Nullmark : RegexCode.Setmark);
+                        Emit(node.M == 0 ? RegexCode.Nullmark : RegexCode.Setmark);
 
-                    if (node._m == 0)
+                    if (node.M == 0)
                     {
                         _intStack.Append(_emitted.Length);
                         Emit(RegexCode.Goto, 0);
@@ -371,12 +371,12 @@ namespace System.Text.RegularExpressions
                         int StartJumpPos = _emitted.Length;
                         int Lazy = (nodetype - (RegexNode.Loop | AfterChild));
 
-                        if (node._n < int.MaxValue || node._m > 1)
-                            Emit(RegexCode.Branchcount + Lazy, _intStack.Pop(), node._n == int.MaxValue ? int.MaxValue : node._n - node._m);
+                        if (node.N < int.MaxValue || node.M > 1)
+                            Emit(RegexCode.Branchcount + Lazy, _intStack.Pop(), node.N == int.MaxValue ? int.MaxValue : node.N - node.M);
                         else
                             Emit(RegexCode.Branchmark + Lazy, _intStack.Pop());
 
-                        if (node._m == 0)
+                        if (node.M == 0)
                             PatchJump(_intStack.Pop(), StartJumpPos);
                     }
                     break;
@@ -390,7 +390,7 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Capture | AfterChild:
-                    Emit(RegexCode.Capturemark, MapCapnum(node._m), MapCapnum(node._n));
+                    Emit(RegexCode.Capturemark, MapCapnum(node.M), MapCapnum(node.N));
                     break;
 
                 case RegexNode.Require | BeforeChild:
@@ -433,40 +433,40 @@ namespace System.Text.RegularExpressions
 
                 case RegexNode.One:
                 case RegexNode.Notone:
-                    Emit(node._type | bits, node._ch);
+                    Emit(node.NType | bits, node.Ch);
                     break;
 
                 case RegexNode.Notoneloop:
                 case RegexNode.Notonelazy:
                 case RegexNode.Oneloop:
                 case RegexNode.Onelazy:
-                    if (node._m > 0)
-                        Emit(((node._type == RegexNode.Oneloop || node._type == RegexNode.Onelazy) ?
-                              RegexCode.Onerep : RegexCode.Notonerep) | bits, node._ch, node._m);
-                    if (node._n > node._m)
-                        Emit(node._type | bits, node._ch, node._n == int.MaxValue ?
-                             int.MaxValue : node._n - node._m);
+                    if (node.M > 0)
+                        Emit(((node.NType == RegexNode.Oneloop || node.NType == RegexNode.Onelazy) ?
+                              RegexCode.Onerep : RegexCode.Notonerep) | bits, node.Ch, node.M);
+                    if (node.N > node.M)
+                        Emit(node.NType | bits, node.Ch, node.N == int.MaxValue ?
+                             int.MaxValue : node.N - node.M);
                     break;
 
                 case RegexNode.Setloop:
                 case RegexNode.Setlazy:
-                    if (node._m > 0)
-                        Emit(RegexCode.Setrep | bits, StringCode(node._str), node._m);
-                    if (node._n > node._m)
-                        Emit(node._type | bits, StringCode(node._str),
-                             (node._n == int.MaxValue) ? int.MaxValue : node._n - node._m);
+                    if (node.M > 0)
+                        Emit(RegexCode.Setrep | bits, StringCode(node.Str), node.M);
+                    if (node.N > node.M)
+                        Emit(node.NType | bits, StringCode(node.Str),
+                             (node.N == int.MaxValue) ? int.MaxValue : node.N - node.M);
                     break;
 
                 case RegexNode.Multi:
-                    Emit(node._type | bits, StringCode(node._str));
+                    Emit(node.NType | bits, StringCode(node.Str));
                     break;
 
                 case RegexNode.Set:
-                    Emit(node._type | bits, StringCode(node._str));
+                    Emit(node.NType | bits, StringCode(node.Str));
                     break;
 
                 case RegexNode.Ref:
-                    Emit(node._type | bits, MapCapnum(node._m));
+                    Emit(node.NType | bits, MapCapnum(node.M));
                     break;
 
                 case RegexNode.Nothing:
@@ -480,7 +480,7 @@ namespace System.Text.RegularExpressions
                 case RegexNode.Start:
                 case RegexNode.EndZ:
                 case RegexNode.End:
-                    Emit(node._type);
+                    Emit(node.NType);
                     break;
 
                 default:

@@ -10,9 +10,9 @@ namespace System.Text.RegularExpressions
         private Func<RegexRunner, bool> _findFirstCharMethod;
         private Action<RegexRunner> _initTrackCountMethod;
 
-        internal CompiledRegexRunner() { }
+        public CompiledRegexRunner() { }
 
-        internal void SetDelegates(Action<RegexRunner> go, Func<RegexRunner,bool> firstChar, Action<RegexRunner> trackCount)
+        public void SetDelegates(Action<RegexRunner> go, Func<RegexRunner,bool> firstChar, Action<RegexRunner> trackCount)
         {
             _goMethod = go;
             _findFirstCharMethod = firstChar;

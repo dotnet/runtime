@@ -29,13 +29,6 @@ namespace System.Text.RegularExpressions
 {
     internal sealed class RegexCharClass
     {
-        // instance data
-        private List<SingleRange> _rangelist;
-        private StringBuilder _categories;
-        private bool _canonical;
-        private bool _negate;
-        private RegexCharClass _subtractor;
-
         // Constants
         private const int FLAGS = 0;
         private const int SETLENGTH = 1;
@@ -43,12 +36,9 @@ namespace System.Text.RegularExpressions
         private const int SETSTART = 3;
 
         private const string NullCharString = "\0";
-
         private const char NullChar = '\0';
         private const char LastChar = '\uFFFF';
-
         private const char GroupChar = (char)0;
-
 
         private const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
@@ -56,19 +46,18 @@ namespace System.Text.RegularExpressions
         private const char ZeroWidthJoiner = '\u200D';
         private const char ZeroWidthNonJoiner = '\u200C';
 
-
         private static readonly string s_internalRegexIgnoreCase = "__InternalRegexIgnoreCase__";
         private static readonly string s_space = "\x64";
         private static readonly string s_notSpace = "\uFF9C";
         private static readonly string s_word = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
         private static readonly string s_notWord = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
 
-        internal static readonly string SpaceClass = "\u0000\u0000\u0001\u0064";
-        internal static readonly string NotSpaceClass = "\u0001\u0000\u0001\u0064";
-        internal static readonly string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        internal static readonly string NotWordClass = "\u0001\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        internal static readonly string DigitClass = "\u0000\u0000\u0001\u0009";
-        internal static readonly string NotDigitClass = "\u0000\u0000\u0001\uFFF7";
+        public static readonly string SpaceClass = "\u0000\u0000\u0001\u0064";
+        public static readonly string NotSpaceClass = "\u0001\u0000\u0001\u0064";
+        public static readonly string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        public static readonly string NotWordClass = "\u0001\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
+        public static readonly string DigitClass = "\u0000\u0000\u0001\u0009";
+        public static readonly string NotDigitClass = "\u0000\u0000\u0001\uFFF7";
 
         private const string ECMASpaceSet = "\u0009\u000E\u0020\u0021";
         private const string NotECMASpaceSet = "\0\u0009\u000E\u0020\u0021";
@@ -77,15 +66,15 @@ namespace System.Text.RegularExpressions
         private const string ECMADigitSet = "\u0030\u003A";
         private const string NotECMADigitSet = "\0\u0030\u003A";
 
-        internal const string ECMASpaceClass = "\x00\x04\x00" + ECMASpaceSet;
-        internal const string NotECMASpaceClass = "\x01\x04\x00" + ECMASpaceSet;
-        internal const string ECMAWordClass = "\x00\x0A\x00" + ECMAWordSet;
-        internal const string NotECMAWordClass = "\x01\x0A\x00" + ECMAWordSet;
-        internal const string ECMADigitClass = "\x00\x02\x00" + ECMADigitSet;
-        internal const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitSet;
+        public const string ECMASpaceClass = "\x00\x04\x00" + ECMASpaceSet;
+        public const string NotECMASpaceClass = "\x01\x04\x00" + ECMASpaceSet;
+        public const string ECMAWordClass = "\x00\x0A\x00" + ECMAWordSet;
+        public const string NotECMAWordClass = "\x01\x0A\x00" + ECMAWordSet;
+        public const string ECMADigitClass = "\x00\x02\x00" + ECMADigitSet;
+        public const string NotECMADigitClass = "\x01\x02\x00" + ECMADigitSet;
 
-        internal const string AnyClass = "\x00\x01\x00\x00";
-        internal const string EmptyClass = "\x00\x00\x00";
+        public const string AnyClass = "\x00\x01\x00\x00";
+        public const string EmptyClass = "\x00\x00\x00";
 
         // UnicodeCategory is zero based, so we add one to each value and subtract it off later
         private const int DefinedCategoriesCapacity = 38;
@@ -279,7 +268,6 @@ namespace System.Text.RegularExpressions
                 +"\u3041\u3097\u3099\u30A0\u30A1\u30FB\u30FC\u3100\u3105\u312D\u3131\u318F\u3190\u31B8\u31F0\u321D\u3220\u3244\u3251\u327C\u327F\u32CC\u32D0\u32FF\u3300\u3377\u337B\u33DE\u33E0\u33FF\u3400\u4DB6\u4E00\u9FA6\uA000\uA48D\uA490\uA4C7\uAC00\uD7A4\uF900\uFA2E\uFA30\uFA6B\uFB00\uFB07\uFB13\uFB18\uFB1D\uFB37\uFB38\uFB3D\uFB3E\uFB3F\uFB40\uFB42\uFB43\uFB45\uFB46\uFBB2\uFBD3\uFD3E\uFD50\uFD90\uFD92\uFDC8\uFDF0\uFDFD\uFE00\uFE10\uFE20\uFE24\uFE62\uFE63\uFE64\uFE67\uFE69\uFE6A\uFE70\uFE75\uFE76\uFEFD\uFF04\uFF05\uFF0B\uFF0C\uFF10\uFF1A\uFF1C\uFF1F\uFF21\uFF3B\uFF3E\uFF3F\uFF40\uFF5B\uFF5C\uFF5D\uFF5E\uFF5F\uFF66\uFFBF\uFFC2\uFFC8\uFFCA\uFFD0\uFFD2\uFFD8\uFFDA\uFFDD\uFFE0\uFFE7\uFFE8\uFFEF\uFFFC\uFFFE"},
         };
 
-
         /**************************************************************************
             Let U be the set of Unicode character values and let L be the lowercase
             function, mapping from U to U. To perform case insensitive matching of
@@ -411,6 +399,12 @@ namespace System.Text.RegularExpressions
             new LowerCaseMapping('\uFF21', '\uFF3A', LowercaseAdd, 32),
         };
 
+        private List<SingleRange> _rangelist;
+        private StringBuilder _categories;
+        private bool _canonical;
+        private bool _negate;
+        private RegexCharClass _subtractor;
+
 #if DEBUG
         static RegexCharClass()
         {
@@ -432,7 +426,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Creates an empty character class.
         /// </summary>
-        internal RegexCharClass()
+        public RegexCharClass()
         {
             _rangelist = new List<SingleRange>(6);
             _canonical = true;
@@ -448,7 +442,7 @@ namespace System.Text.RegularExpressions
             _subtractor = subtraction;
         }
 
-        internal bool CanMerge
+        public bool CanMerge
         {
             get
             {
@@ -456,12 +450,12 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal bool Negate
+        public bool Negate
         {
             set { _negate = value; }
         }
 
-        internal void AddChar(char c)
+        public void AddChar(char c)
         {
             AddRange(c, c);
         }
@@ -469,7 +463,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a regex char class
         /// </summary>
-        internal void AddCharClass(RegexCharClass cc)
+        public void AddCharClass(RegexCharClass cc)
         {
             int i;
 
@@ -480,7 +474,7 @@ namespace System.Text.RegularExpressions
                 // if the new char class to add isn't canonical, we're not either.
                 _canonical = false;
             }
-            else if (_canonical && RangeCount() > 0 && cc.RangeCount() > 0 && cc.GetRangeAt(0)._first <= GetRangeAt(RangeCount() - 1)._last)
+            else if (_canonical && RangeCount() > 0 && cc.RangeCount() > 0 && cc.GetRangeAt(0).First <= GetRangeAt(RangeCount() - 1).Last)
                 _canonical = false;
 
             for (i = 0; i < cc.RangeCount(); i += 1)
@@ -499,7 +493,7 @@ namespace System.Text.RegularExpressions
             int i;
 
             if (_canonical && RangeCount() > 0 && set.Length > 0 &&
-                set[0] <= GetRangeAt(RangeCount() - 1)._last)
+                set[0] <= GetRangeAt(RangeCount() - 1).Last)
                 _canonical = false;
 
             for (i = 0; i < set.Length - 1; i += 2)
@@ -513,7 +507,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void AddSubtraction(RegexCharClass sub)
+        public void AddSubtraction(RegexCharClass sub)
         {
             Debug.Assert(_subtractor == null, "Can't add two subtractions to a char class. ");
             _subtractor = sub;
@@ -522,17 +516,17 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a single range of characters to the class.
         /// </summary>
-        internal void AddRange(char first, char last)
+        public void AddRange(char first, char last)
         {
             _rangelist.Add(new SingleRange(first, last));
             if (_canonical && _rangelist.Count > 0 &&
-                first <= _rangelist[_rangelist.Count - 1]._last)
+                first <= _rangelist[_rangelist.Count - 1].Last)
             {
                 _canonical = false;
             }
         }
 
-        internal void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
+        public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern)
         {
             if (s_definedCategories.TryGetValue(categoryName, out string category) && !categoryName.Equals(s_internalRegexIgnoreCase))
             {
@@ -561,7 +555,7 @@ namespace System.Text.RegularExpressions
         /// Adds to the class any lowercase versions of characters already
         /// in the class. Used for case-insensitivity.
         /// </summary>
-        internal void AddLowercase(CultureInfo culture)
+        public void AddLowercase(CultureInfo culture)
         {
             _canonical = false;
 
@@ -569,14 +563,14 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < count; i++)
             {
                 SingleRange range = _rangelist[i];
-                if (range._first == range._last)
+                if (range.First == range.Last)
                 {
-                    char lower = culture.TextInfo.ToLower(range._first);
+                    char lower = culture.TextInfo.ToLower(range.First);
                     _rangelist[i] = new SingleRange(lower, lower);
                 }
                 else
                 {
-                    AddLowercaseRange(range._first, range._last, culture);
+                    AddLowercaseRange(range.First, range.Last, culture);
                 }
             }
         }
@@ -594,7 +588,7 @@ namespace System.Text.RegularExpressions
             for (i = 0, iMax = s_lcTable.Length; i < iMax;)
             {
                 iMid = (i + iMax) / 2;
-                if (s_lcTable[iMid]._chMax < chMin)
+                if (s_lcTable[iMid].ChMax < chMin)
                     i = iMid + 1;
                 else
                     iMax = iMid;
@@ -603,25 +597,25 @@ namespace System.Text.RegularExpressions
             if (i >= s_lcTable.Length)
                 return;
 
-            for (; i < s_lcTable.Length && (lc = s_lcTable[i])._chMin <= chMax; i++)
+            for (; i < s_lcTable.Length && (lc = s_lcTable[i]).ChMin <= chMax; i++)
             {
-                if ((chMinT = lc._chMin) < chMin)
+                if ((chMinT = lc.ChMin) < chMin)
                     chMinT = chMin;
 
-                if ((chMaxT = lc._chMax) > chMax)
+                if ((chMaxT = lc.ChMax) > chMax)
                     chMaxT = chMax;
 
-                switch (lc._lcOp)
+                switch (lc.LcOp)
                 {
                     case LowercaseSet:
-                        chMinT = (char)lc._data;
-                        chMaxT = (char)lc._data;
+                        chMinT = (char)lc.Data;
+                        chMaxT = (char)lc.Data;
                         break;
                     case LowercaseAdd:
                         unchecked
                         {
-                            chMinT += (char)lc._data;
-                            chMaxT += (char)lc._data;
+                            chMinT += (char)lc.Data;
+                            chMaxT += (char)lc.Data;
                         }
                         break;
                     case LowercaseBor:
@@ -639,7 +633,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void AddWord(bool ecma, bool negate)
+        public void AddWord(bool ecma, bool negate)
         {
             if (negate)
             {
@@ -657,7 +651,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void AddSpace(bool ecma, bool negate)
+        public void AddSpace(bool ecma, bool negate)
         {
             if (negate)
             {
@@ -675,7 +669,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        internal void AddDigit(bool ecma, bool negate, string pattern)
+        public void AddDigit(bool ecma, bool negate, string pattern)
         {
             if (ecma)
             {
@@ -688,7 +682,7 @@ namespace System.Text.RegularExpressions
                 AddCategoryFromName("Nd", negate, false, pattern);
         }
 
-        internal static string ConvertOldStringsToClass(string set, string category)
+        public static string ConvertOldStringsToClass(string set, string category)
         {
             StringBuilder sb = StringBuilderCache.Acquire(set.Length + category.Length + 3);
 
@@ -714,29 +708,26 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Returns the char
         /// </summary>
-        internal static char SingletonChar(string set)
+        public static char SingletonChar(string set)
         {
             Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
             return set[SETSTART];
         }
 
-        internal static bool IsMergeable(string charClass)
+        public static bool IsMergeable(string charClass)
         {
             return (!IsNegated(charClass) && !IsSubtraction(charClass));
         }
 
-        internal static bool IsEmpty(string charClass)
+        public static bool IsEmpty(string charClass)
         {
-            if (charClass[CATEGORYLENGTH] == 0 && charClass[FLAGS] == 0 && charClass[SETLENGTH] == 0 && !IsSubtraction(charClass))
-                return true;
-            else
-                return false;
+            return (charClass[CATEGORYLENGTH] == 0 && charClass[FLAGS] == 0 && charClass[SETLENGTH] == 0 && !IsSubtraction(charClass));
         }
 
         /// <summary>
         /// <c>true</c> if the set contains a single character only
         /// </summary>
-        internal static bool IsSingleton(string set)
+        public static bool IsSingleton(string set)
         {
             if (set[FLAGS] == 0 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
                 (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
@@ -745,7 +736,7 @@ namespace System.Text.RegularExpressions
                 return false;
         }
 
-        internal static bool IsSingletonInverse(string set)
+        public static bool IsSingletonInverse(string set)
         {
             if (set[FLAGS] == 1 && set[CATEGORYLENGTH] == 0 && set[SETLENGTH] == 2 && !IsSubtraction(set) &&
                 (set[SETSTART] == LastChar || set[SETSTART] + 1 == set[SETSTART + 1]))
@@ -759,12 +750,12 @@ namespace System.Text.RegularExpressions
             return (charClass.Length > SETSTART + charClass[SETLENGTH] + charClass[CATEGORYLENGTH]);
         }
 
-        internal static bool IsNegated(string set)
+        private static bool IsNegated(string set)
         {
             return (set != null && set[FLAGS] == 1);
         }
 
-        internal static bool IsECMAWordChar(char ch)
+        public static bool IsECMAWordChar(char ch)
         {
             // According to ECMA-262, \s, \S, ., ^, and $ use Unicode-based interpretations of
             // whitespace and newline, while \d, \D\, \w, \W, \b, and \B use ASCII-only
@@ -774,7 +765,7 @@ namespace System.Text.RegularExpressions
             return CharInClass(ch, ECMAWordClass);
         }
 
-        internal static bool IsWordChar(char ch)
+        public static bool IsWordChar(char ch)
         {
             // According to UTS#18 Unicode Regular Expressions (http://www.unicode.org/reports/tr18/)
             // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
@@ -783,13 +774,12 @@ namespace System.Text.RegularExpressions
             return CharInClass(ch, WordClass) || ch == ZeroWidthJoiner || ch == ZeroWidthNonJoiner;
         }
 
-        internal static bool CharInClass(char ch, string set)
+        public static bool CharInClass(char ch, string set)
         {
             return CharInClassRecursive(ch, set, 0);
         }
 
-
-        internal static bool CharInClassRecursive(char ch, string set, int start)
+        private static bool CharInClassRecursive(char ch, string set, int start)
         {
             int mySetLength = set[start + SETLENGTH];
             int myCategoryLength = set[start + CATEGORYLENGTH];
@@ -976,7 +966,7 @@ namespace System.Text.RegularExpressions
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        internal static RegexCharClass Parse(string charClass)
+        public static RegexCharClass Parse(string charClass)
         {
             return ParseRecursive(charClass, 0);
         }
@@ -1022,7 +1012,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        internal string ToStringClass()
+        public string ToStringClass()
         {
             if (!_canonical)
                 Canonicalize();
@@ -1046,10 +1036,10 @@ namespace System.Text.RegularExpressions
             for (int i = 0; i < _rangelist.Count; i++)
             {
                 SingleRange currentRange = _rangelist[i];
-                sb.Append(currentRange._first);
+                sb.Append(currentRange.First);
 
-                if (currentRange._last != LastChar)
-                    sb.Append((char)(currentRange._last + 1));
+                if (currentRange.Last != LastChar)
+                    sb.Append((char)(currentRange.Last + 1));
             }
 
             sb[SETLENGTH] = (char)(sb.Length - SETSTART);
@@ -1082,7 +1072,7 @@ namespace System.Text.RegularExpressions
             bool done;
 
             _canonical = true;
-            _rangelist.Sort(SingleRangeComparer.s_instance);
+            _rangelist.Sort(SingleRangeComparer.Instance);
 
             //
             // Find and eliminate overlapping or abutting ranges
@@ -1094,7 +1084,7 @@ namespace System.Text.RegularExpressions
 
                 for (i = 1, j = 0; ; i++)
                 {
-                    for (last = _rangelist[j]._last; ; i++)
+                    for (last = _rangelist[j].Last; ; i++)
                     {
                         if (i == _rangelist.Count || last == LastChar)
                         {
@@ -1102,14 +1092,14 @@ namespace System.Text.RegularExpressions
                             break;
                         }
 
-                        if ((CurrentRange = _rangelist[i])._first > last + 1)
+                        if ((CurrentRange = _rangelist[i]).First > last + 1)
                             break;
 
-                        if (last < CurrentRange._last)
-                            last = CurrentRange._last;
+                        if (last < CurrentRange.Last)
+                            last = CurrentRange.Last;
                     }
 
-                    _rangelist[j] = new SingleRange(_rangelist[j]._first, last);
+                    _rangelist[j] = new SingleRange(_rangelist[j].First, last);
 
                     j++;
 
@@ -1158,10 +1148,20 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
 
+        public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+        public static readonly string[] Categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", s_internalRegexIgnoreCase,
+                                                                     "Mn", "Mc", "Me",
+                                                                     "Nd", "Nl", "No",
+                                                                     "Zs", "Zl", "Zp",
+                                                                     "Cc", "Cf", "Cs", "Co",
+                                                                     "Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po",
+                                                                     "Sm", "Sc", "Sk", "So",
+                                                                     "Cn" };
+
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        internal static string SetDescription(string set)
+        public static string SetDescription(string set)
         {
             int mySetLength = set[SETLENGTH];
             int myCategoryLength = set[CATEGORYLENGTH];
@@ -1255,20 +1255,10 @@ namespace System.Text.RegularExpressions
             return desc.ToString();
         }
 
-        internal static readonly char[] s_hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-        internal static readonly string[] s_categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", s_internalRegexIgnoreCase,
-                                                                     "Mn", "Mc", "Me",
-                                                                     "Nd", "Nl", "No",
-                                                                     "Zs", "Zl", "Zp",
-                                                                     "Cc", "Cf", "Cs", "Co",
-                                                                     "Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po",
-                                                                     "Sm", "Sc", "Sk", "So",
-                                                                     "Cn" };
-
         /// <summary>
         /// Produces a human-readable description for a single character.
         /// </summary>
-        internal static string CharDescription(char ch)
+        public static string CharDescription(char ch)
         {
             if (ch == '\\')
                 return "\\\\";
@@ -1295,7 +1285,7 @@ namespace System.Text.RegularExpressions
             while (shift > 0)
             {
                 shift -= 4;
-                sb.Append(s_hex[(ch >> shift) & 0xF]);
+                sb.Append(Hex[(ch >> shift) & 0xF]);
             }
 
             return sb.ToString();
@@ -1309,11 +1299,11 @@ namespace System.Text.RegularExpressions
                 return "\\S";
             else if ((short)ch < 0)
             {
-                return "\\P{" + s_categories[(-((short)ch) - 1)] + "}";
+                return "\\P{" + Categories[(-((short)ch) - 1)] + "}";
             }
             else
             {
-                return "\\p{" + s_categories[(ch - 1)] + "}";
+                return "\\p{" + Categories[(ch - 1)] + "}";
             }
         }
 
@@ -1324,18 +1314,18 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private readonly struct LowerCaseMapping
         {
+            public readonly char ChMin;
+            public readonly char ChMax;
+            public readonly int LcOp;
+            public readonly int Data;
+
             internal LowerCaseMapping(char chMin, char chMax, int lcOp, int data)
             {
-                _chMin = chMin;
-                _chMax = chMax;
-                _lcOp = lcOp;
-                _data = data;
+                ChMin = chMin;
+                ChMax = chMax;
+                LcOp = lcOp;
+                Data = data;
             }
-
-            internal readonly char _chMin;
-            internal readonly char _chMax;
-            internal readonly int _lcOp;
-            internal readonly int _data;
         }
 
         /// <summary>
@@ -1343,7 +1333,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private sealed class SingleRangeComparer : IComparer<SingleRange>
         {
-            public static readonly SingleRangeComparer s_instance = new SingleRangeComparer();
+            public static readonly SingleRangeComparer Instance = new SingleRangeComparer();
 
             private SingleRangeComparer()
             {
@@ -1351,7 +1341,7 @@ namespace System.Text.RegularExpressions
 
             public int Compare(SingleRange x, SingleRange y)
             {
-                return x._first.CompareTo(y._first);
+                return x.First.CompareTo(y.First);
             }
         }
 
@@ -1360,14 +1350,14 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private readonly struct SingleRange
         {
+            public readonly char First;
+            public readonly char Last;
+
             internal SingleRange(char first, char last)
             {
-                _first = first;
-                _last = last;
+                First = first;
+                Last = last;
             }
-
-            internal readonly char _first;
-            internal readonly char _last;
         }
     }
 }
