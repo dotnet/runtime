@@ -19,7 +19,7 @@ namespace Microsoft.Win32.SystemEventsTests
         /// </summary>
         public const int TimerInterval = 10;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CreateTimerInvalidInterval()
         {
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(0));
@@ -27,7 +27,7 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(int.MinValue));
         }
         
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TimerElapsedSignaled()
         {
             var elapsed = new AutoResetEvent(false);
@@ -68,7 +68,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void ConcurrentTimers()
         {
             const int NumConcurrentTimers = 10;
@@ -114,7 +114,7 @@ namespace Microsoft.Win32.SystemEventsTests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(500)]  // .5s
         [InlineData(1000)]  // 1s
         [InlineData(2000)]  // 2s
@@ -155,7 +155,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void KillTimerInvalidTimer()
         {
             Assert.Throws<ExternalException>(() => SystemEvents.KillTimer(IntPtr.Zero));

@@ -15,7 +15,7 @@ namespace Microsoft.Win32.SystemEventsTests
             SendMessage(User32.WM_POWERBROADCAST, (IntPtr)pmEvent, IntPtr.Zero);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(User32.PBT_APMBATTERYLOW, PowerModes.StatusChange)]
         [InlineData(User32.PBT_APMOEMEVENT, PowerModes.StatusChange)]
         [InlineData(User32.PBT_APMPOWERSTATUSCHANGE, PowerModes.StatusChange)]
@@ -49,7 +49,7 @@ namespace Microsoft.Win32.SystemEventsTests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(User32.PBT_APMQUERYSTANDBY)]
         [InlineData(User32.PBT_APMQUERYSTANDBYFAILED)]
         [InlineData(User32.PBT_APMQUERYSUSPEND)]
