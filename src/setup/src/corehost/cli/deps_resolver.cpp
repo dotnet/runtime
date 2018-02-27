@@ -163,7 +163,7 @@ void deps_resolver_t::get_dir_assemblies(
                 dir_name.c_str(),
                 file_path.c_str());
 
-            deps_asset_t asset(file_name, empty, empty);
+            deps_asset_t asset(file_name, file, empty, empty);
             deps_resolved_asset_t resolved_asset(asset, file_path);
             add_tpa_asset(resolved_asset, items);
         }
@@ -481,7 +481,7 @@ bool deps_resolver_t::resolve_tpa_list(
                             existing_entry = nullptr;
                             items.erase(existing);
 
-                            deps_asset_t asset(entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
+                            deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
                             deps_resolved_asset_t resolved_asset(asset, resolved_path);
                             add_tpa_asset(resolved_asset, &items);
                         }
@@ -500,8 +500,7 @@ bool deps_resolver_t::resolve_tpa_list(
     // First add managed assembly to the TPA.
     // TODO: Remove: the deps should contain the managed DLL.
     // Workaround for: csc.deps.json doesn't have the csc.dll
-    pal::string_t managed_app_asset = get_filename_without_ext(m_managed_app);
-    deps_asset_t asset(managed_app_asset, version_t(), version_t());
+    deps_asset_t asset(get_filename_without_ext(m_managed_app), get_filename(m_managed_app), version_t(), version_t());
     deps_resolved_asset_t resolved_asset(asset, m_managed_app);
     add_tpa_asset(resolved_asset, &items);
 
