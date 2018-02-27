@@ -108,7 +108,7 @@ namespace System.Threading
 
         public virtual void Post(SendOrPostCallback d, Object state)
         {
-            ThreadPool.QueueUserWorkItem(new WaitCallback(d), state);
+            ThreadPool.QueueUserWorkItem(s => s.d(s.state), (d, state), preferLocal: false);
         }
 
 

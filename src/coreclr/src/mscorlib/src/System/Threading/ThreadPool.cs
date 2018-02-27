@@ -894,23 +894,19 @@ namespace System.Threading
         void MarkAborted(ThreadAbortException tae);
     }
 
-    internal sealed class QueueUserWorkItemCallback : IThreadPoolWorkItem
+    internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
-        private WaitCallback _callback;
-        private readonly ExecutionContext _context;
-        private readonly Object _state;
-
 #if DEBUG
         private volatile int executed;
 
-        ~QueueUserWorkItemCallback()
+        ~QueueUserWorkItemCallbackBase()
         {
             Debug.Assert(
                 executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(),
                 "A QueueUserWorkItemCallback was never called!");
         }
 
-        private void MarkExecuted(bool aborted)
+        protected void MarkExecuted(bool aborted)
         {
             GC.SuppressFinalize(this);
             Debug.Assert(
@@ -919,109 +915,152 @@ namespace System.Threading
         }
 #endif
 
-        internal QueueUserWorkItemCallback(WaitCallback waitCallback, Object stateObj, ExecutionContext ec)
-        {
-            _callback = waitCallback;
-            _state = stateObj;
-            _context = ec;
-        }
-
-        void IThreadPoolWorkItem.ExecuteWorkItem()
-        {
-#if DEBUG
-            MarkExecuted(aborted: false);
-#endif
-            // call directly if it is an unsafe call OR EC flow is suppressed
-            ExecutionContext context = _context;
-            if (context == null)
-            {
-                WaitCallback cb = _callback;
-                _callback = null;
-                cb(_state);
-            }
-            else
-            {
-                ExecutionContext.RunInternal(context, ccb, this);
-            }
-        }
-
         void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
         {
 #if DEBUG
-            // this workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.  
+            // This workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.
             // This counts as being executed for our purposes.
             MarkExecuted(aborted: true);
 #endif
         }
 
-        internal static readonly ContextCallback ccb = new ContextCallback(WaitCallback_Context);
-
-        private static void WaitCallback_Context(Object state)
+        public virtual void ExecuteWorkItem()
         {
-            QueueUserWorkItemCallback obj = (QueueUserWorkItemCallback)state;
-            WaitCallback wc = obj._callback;
-            Debug.Assert(null != wc);
-            wc(obj._state);
+#if DEBUG
+            MarkExecuted(aborted: false);
+#endif
         }
     }
 
-    internal sealed class QueueUserWorkItemCallbackDefaultContext : IThreadPoolWorkItem
+    internal sealed class QueueUserWorkItemCallback : QueueUserWorkItemCallbackBase
     {
-        private WaitCallback callback;
-        private readonly Object state;
+        private WaitCallback _callback;
+        private readonly object _state;
+        private readonly ExecutionContext _context;
 
-#if DEBUG
-        private volatile int executed;
-
-        ~QueueUserWorkItemCallbackDefaultContext()
+        internal static readonly ContextCallback s_executionContextShim = state =>
         {
-            Debug.Assert(
-                executed != 0 || Environment.HasShutdownStarted || AppDomain.CurrentDomain.IsFinalizingForUnload(),
-                "A QueueUserWorkItemCallbackDefaultContext was never called!");
+            var obj = (QueueUserWorkItemCallback)state;
+            WaitCallback c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallback(WaitCallback callback, object state, ExecutionContext context)
+        {
+            _callback = callback;
+            _state = state;
+            _context = context;
         }
 
-        private void MarkExecuted(bool aborted)
+        public override void ExecuteWorkItem()
         {
-            GC.SuppressFinalize(this);
-            Debug.Assert(
-                0 == Interlocked.Exchange(ref executed, 1) || aborted,
-                "A QueueUserWorkItemCallbackDefaultContext was called twice!");
+            base.ExecuteWorkItem();
+            ExecutionContext context = _context;
+            if (context == null)
+            {
+                WaitCallback c = _callback;
+                _callback = null;
+                c(_state);
+            }
+            else
+            {
+                ExecutionContext.RunInternal(context, s_executionContextShim, this);
+            }
         }
-#endif
+    }
 
-        internal QueueUserWorkItemCallbackDefaultContext(WaitCallback waitCallback, Object stateObj)
+    internal sealed class QueueUserWorkItemCallback<TState> : QueueUserWorkItemCallbackBase
+    {
+        private Action<TState> _callback;
+        private readonly TState _state;
+        private readonly ExecutionContext _context;
+
+        internal static readonly ContextCallback s_executionContextShim = state =>
         {
-            callback = waitCallback;
-            state = stateObj;
+            var obj = (QueueUserWorkItemCallback<TState>)state;
+            Action<TState> c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallback(Action<TState> callback, TState state, ExecutionContext context)
+        {
+            _callback = callback;
+            _state = state;
+            _context = context;
         }
 
-        void IThreadPoolWorkItem.ExecuteWorkItem()
+        public override void ExecuteWorkItem()
         {
-#if DEBUG
-            MarkExecuted(aborted: false);
-#endif
-            // null executionContext on RunInternal is Default context
-            ExecutionContext.RunInternal(executionContext: null, ccb, this);
+            base.ExecuteWorkItem();
+            ExecutionContext context = _context;
+            if (context == null)
+            {
+                Action<TState> c = _callback;
+                _callback = null;
+                c(_state);
+            }
+            else
+            {
+                ExecutionContext.RunInternal(context, s_executionContextShim, this);
+            }
+        }
+    }
+
+    internal sealed class QueueUserWorkItemCallbackDefaultContext : QueueUserWorkItemCallbackBase
+    {
+        private WaitCallback _callback;
+        private readonly object _state;
+
+        internal static readonly ContextCallback s_executionContextShim = state =>
+        {
+            var obj = (QueueUserWorkItemCallbackDefaultContext)state;
+            WaitCallback c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallbackDefaultContext(WaitCallback callback, object state)
+        {
+            _callback = callback;
+            _state = state;
         }
 
-        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae)
+        public override void ExecuteWorkItem()
         {
-#if DEBUG
-            // this workitem didn't execute because we got a ThreadAbortException prior to the call to ExecuteWorkItem.  
-            // This counts as being executed for our purposes.
-            MarkExecuted(aborted: true);
-#endif
+            base.ExecuteWorkItem();
+            ExecutionContext.RunInternal(executionContext: null, s_executionContextShim, this); // null executionContext on RunInternal is Default context
+        }
+    }
+
+    internal sealed class QueueUserWorkItemCallbackDefaultContext<TState> : QueueUserWorkItemCallbackBase
+    {
+        private Action<TState> _callback;
+        private readonly TState _state;
+
+        internal static readonly ContextCallback s_executionContextShim = state =>
+        {
+            var obj = (QueueUserWorkItemCallbackDefaultContext<TState>)state;
+            Action<TState> c = obj._callback;
+            Debug.Assert(c != null);
+            obj._callback = null;
+            c(obj._state);
+        };
+
+        internal QueueUserWorkItemCallbackDefaultContext(Action<TState> callback, TState state)
+        {
+            _callback = callback;
+            _state = state;
         }
 
-        internal static readonly ContextCallback ccb = new ContextCallback(WaitCallback_Context);
-
-        private static void WaitCallback_Context(Object state)
+        public override void ExecuteWorkItem()
         {
-            QueueUserWorkItemCallbackDefaultContext obj = (QueueUserWorkItemCallbackDefaultContext)state;
-            WaitCallback wc = obj.callback;
-            Debug.Assert(null != wc);
-            obj.callback = null;
-            wc(obj.state);
+            base.ExecuteWorkItem();
+            ExecutionContext.RunInternal(executionContext: null, s_executionContextShim, this); // null executionContext on RunInternal is Default context
         }
     }
 
@@ -1271,12 +1310,9 @@ namespace System.Threading
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
-            QueueUserWorkItem(callBack, null, preferLocal: false);
+            QueueUserWorkItem(callBack, null);
 
-        public static bool QueueUserWorkItem(WaitCallback callBack, object state) =>
-            QueueUserWorkItem(callBack, state, preferLocal: false);
-
-        public static bool QueueUserWorkItem(WaitCallback callBack, object state, bool preferLocal)
+        public static bool QueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
             {
@@ -1290,6 +1326,26 @@ namespace System.Threading
             IThreadPoolWorkItem tpcallBack = (context != null && context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (IThreadPoolWorkItem)new QueueUserWorkItemCallback(callBack, state, context);
+
+            ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
+
+            return true;
+        }
+
+        public static bool QueueUserWorkItem<TState>(Action<TState> callBack, TState state, bool preferLocal)
+        {
+            if (callBack == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
+            }
+
+            EnsureVMInitialized();
+
+            ExecutionContext context = ExecutionContext.Capture();
+
+            IThreadPoolWorkItem tpcallBack = (context != null && context.IsDefault) ?
+                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state) :
+                (IThreadPoolWorkItem)new QueueUserWorkItemCallback<TState>(callBack, state, context);
 
             ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: !preferLocal);
 
