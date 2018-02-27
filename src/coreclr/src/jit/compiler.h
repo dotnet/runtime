@@ -8960,6 +8960,9 @@ public:
     bool compDonotInline();
 
 #ifdef DEBUG
+    unsigned char compGetJitDefaultFill(); // Get the default fill char value
+                                           // we randomize this value when JitStress is enabled
+
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName compVarName(regNumber reg, bool isFloatReg = false);
     const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
