@@ -360,7 +360,7 @@ namespace Internal.Cryptography.Pal
             // This needs to be kept in sync with IsCertValid in the
             // Unix/OpenSSL PAL version (and potentially any other PALs that come about)
             ChainPal chainPal = ChainPal.BuildChain(
-                true,
+                false,
                 CertificatePal.FromHandle(pCertContext.DangerousGetHandle()),
                 null, //extraStore
                 null, //applicationPolicy
