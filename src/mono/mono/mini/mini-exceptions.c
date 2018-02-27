@@ -2680,7 +2680,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 
 	/* Try to get more meaningful information using gdb */
 
-#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && defined(SYS_fork)
+#if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
 	if (!mini_get_debug_options ()->no_gdb_backtrace) {
 		/* From g_spawn_command_line_sync () in eglib */
 		pid_t pid;
@@ -2696,7 +2696,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		g_assert_not_reached ();
 #elif !defined(HOST_DARWIN) && defined(SYS_fork)
 		pid = (pid_t) syscall (SYS_fork);
-#elif defined(HOST_DARWIN) && HAVE_FORK
+#elif HAVE_FORK
 		pid = (pid_t) fork ();
 #else
 		g_assert_not_reached ();
