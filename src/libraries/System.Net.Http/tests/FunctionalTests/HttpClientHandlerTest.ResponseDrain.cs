@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
             BytePerChunk
         }
 
-        private static string GetResponseForContentMode(string content, ContentMode mode)
+        protected static string GetResponseForContentMode(string content, ContentMode mode)
         {
             switch (mode)
             {
@@ -115,13 +115,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10000, 9500, ContentMode.BytePerChunk)]
         public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(int totalSize, int readSize, ContentMode mode)
         {
-            if (IsWinHttpHandler && 
-                ((mode == ContentMode.SingleChunk && readSize == 0) ||
-                 (mode == ContentMode.BytePerChunk)))
+            if (IsWinHttpHandler)
             {
-                // WinHttpHandler seems to only do a limited amount of draining when TE is used;
-                // I *think* it's not draining anything beyond the current chunk being processed.
-                // So, these cases won't pass.
+                // WinHttpHandler seems to only do a limited amount of draining, and this test starts
+                // failing if there's any measurable delay introduced in the response such that it dribbles
+                // in.  So just skip these tests.
                 return;
             }
 
@@ -162,7 +160,15 @@ namespace System.Net.Http.Functional.Tests
                     string response = GetResponseForContentMode(content, mode);
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
+                        // Process the first request, with some introduced delays in the response to
+                        // stress the draining.
+                        await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
+                        foreach (char c in response)
+                        {
+                            await connection.Writer.WriteAsync(c);
+                        }
+
+                        // Process the second request.
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync(response);
                     });
                 });
@@ -243,7 +249,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        private static void ValidateResponseHeaders(HttpResponseMessage response, int contentLength, ContentMode mode)
+        protected static void ValidateResponseHeaders(HttpResponseMessage response, int contentLength, ContentMode mode)
         {
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -260,7 +266,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static async Task<byte[]> ReadToByteCount(Stream stream, int byteCount)
+        protected static async Task<byte[]> ReadToByteCount(Stream stream, int byteCount)
         {
             byte[] buffer = new byte[byteCount];
             int totalBytesRead = 0;
