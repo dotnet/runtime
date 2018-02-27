@@ -157,7 +157,7 @@ namespace SoDBench
         <packageSources>
             <add key='nuget.org' value='https://api.nuget.org/v3/index.json' protocolVersion='3' />
             <add key='myget.org/dotnet-core' value='https://dotnet.myget.org/F/dotnet-core/api/v3/index.json' protocolVersion='3' />
-            <add key='myget.org/aspnet-core' value='https://dotnet.myget.org/F/aspnetcore-ci-dev/api/v3/index.json' protocolVersion='3' />
+            <add key='myget.org/aspnet-core' value='https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json' protocolVersion='3' />
         </packageSources>
         </configuration>";
 
@@ -396,12 +396,16 @@ namespace SoDBench
                         continue;
                     }
 
-                    // If we published this project, only report published it's size
+                    // If we published this project, only report it's published size
                     if (publishDir.Exists)
                     {
                         var publishNode = new SizeReportingNode(publishDir, 0);
                         publishNode.Name = deploymentSandbox.Name;
                         templateNode.AddChild(publishNode);
+
+                        if (publishNode.Size <= 0) {
+                            throw new InvalidOperationException($"{publishNode.Name} reports as invalid size {publishNode.Size}");
+                        }
                     }
                     else
                     {
@@ -427,7 +431,7 @@ namespace SoDBench
             var psi = new ProcessStartInfo() {
                 WorkingDirectory = s_sandboxDir.FullName,
                 FileName = @"powershell.exe",
-                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -Runtime dotnet -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
         }
