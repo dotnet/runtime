@@ -99,7 +99,7 @@
       <ResolvedAssembliesToPublish Include="@(_NativeKeptDepsToPublish)" />
       <ResolvedAssembliesToPublish Include="@(_LinkedResolvedAssemblies)" />
     </ItemGroup>
-    
+
     <!-- Rewrite IntermediateAssembly, which is an input to
          ComputeFilesToPublish. -->
     <ItemGroup>
@@ -114,7 +114,7 @@
       <_DebugSymbolsIntermediatePath Include="@(_LinkedDebugSymbols)" Condition=" '$(_DebugSymbolsProduced)' == 'true' " />
     </ItemGroup>
   </Target>
-  
+
   <!-- The SDK has a target called ComputeRefAssembliesToPublish that
        runs after ComputeFilesToPublish and rewrites
        ResolvedFileToPublish to include any reference assemblies that
@@ -207,7 +207,7 @@
           <_ManagedAssembliesToLink Include="@(_ManagedAssembliesToLinkWithActions)" />
       </ItemGroup>
   </Target>
-    
+
   <!-- This calls the linker. Inputs are the managed assemblies to
        link, and root specifications. The semaphore enables msbuild to
        skip linking during an incremental build, when the semaphore is
@@ -281,6 +281,26 @@
       <_ManagedAssembliesToLink Include="@(IntermediateAssembly)" />
       <_ManagedAssembliesToLink Include="@(_ManagedResolvedAssembliesToPublish)" />
     </ItemGroup>
+
+    <!-- Portable publish: need to supply the linker with any needed
+         reference assemblies as well.
+
+         Sometimes assemblies have separate reference and
+         implementation assemblies. In these cases, prefer the
+         implementation assembly, and prevent inclusion of the ref
+         assembly by filtering on filename instead of the full
+         path. -->
+    <FilterByMetadata Items="@(ReferencePath->'%(ResolvedPath)')"
+                      MetadataName="Filename"
+                      MetadataValues="@(_ManagedAssembliesToLink->'%(Filename)')"
+                      Condition=" '$(SelfContained)' != 'true' ">
+      <Output TaskParameter="FilteredItems" ItemName="_ReferencedLibrariesToExclude" />
+    </FilterByMetadata>
+    <ItemGroup Condition=" '$(SelfContained)' != 'true' ">
+      <_ReferencedLibraries Include="@(ReferencePath->'%(ResolvedPath)')" Exclude="@(_ReferencedLibrariesToExclude)" />
+      <_ManagedAssembliesToLink Include="@(_ReferencedLibraries)" />
+    </ItemGroup>
+
   </Target>
 
 
@@ -307,7 +327,7 @@
          output and the generated deps.json file. Excluding it from
          _ManagedResolvedAssembliesToPublish will prevent it from
          getting filtered out of the publish output later.
-         
+
          In the future we may want to detect ngen assemblies and
          filter them more robustly. -->
     <!-- TODO: Which .ni files do we expect to be in
@@ -339,12 +359,13 @@
        to work on the publish output. -->
   <Target Name="_ComputeLinkerRootAssemblies"
           DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputePlatformLibraries;_CheckSystemPrivateCorelibEmbeddedRoots">
-    <!-- If RootAllApplicationAssemblies is true, roots are everything minus the framework
-         assemblies. This doesn't include the intermediate assembly,
-         because we root it separately using an xml file,
-         which lets us explicitly root everything.
+    <!-- If RootAllApplicationAssemblies is true, roots are everything
+         minus the framework assemblies. This doesn't include the
+         intermediate assembly, because we root it separately using an
+         xml file, which lets us explicitly root everything.
 
-         If RootAllApplicationAssemblies is false, only intermediate assembly's Main method is rooted.
+         If RootAllApplicationAssemblies is false, only intermediate
+         assembly's Main method is rooted.
 
          System.Private.CoreLib is rooted unless it has an embedded
          xml descriptor file. -->
@@ -363,7 +384,7 @@
   </Target>
 
   <UsingTask TaskName="CheckEmbeddedRootDescriptor" AssemblyFile="$(LinkTaskDllPath)" />
-  <Target Name="_CheckSystemPrivateCorelibEmbeddedRoots"
+  <Target Name="_CheckSystemPrivateCorelibEmbeddedRoots" Condition=" '$(SelfContained)' == 'true' "
           DependsOnTargets="_ComputeManagedAssembliesToLink">
     <CheckEmbeddedRootDescriptor AssemblyPath="@(_ManagedAssembliesToLink->WithMetadataValue('Filename', 'System.Private.CoreLib'))">
       <Output TaskParameter="HasEmbeddedRootDescriptor" PropertyName="_SPCHasEmbeddedRootDescriptor" />
@@ -373,13 +394,19 @@
   <!-- Platform libraries are the managed runtime assets needed by the
        "platform", currently Microsoft.NETCore.App. -->
   <UsingTask TaskName="GetRuntimeLibraries" AssemblyFile="$(LinkTaskDllPath)" />
-  <Target Name="_ComputePlatformLibraries">
-    <GetRuntimeLibraries AssetsFilePath="$(ProjectAssetsFile)"
+  <Target Name="_ComputePlatformLibraries"
+          DependsOnTargets="_ComputeManagedAssembliesToLink">
+    <GetRuntimeLibraries Condition=" '$(SelfContained)' == 'true' "
+                         AssetsFilePath="$(ProjectAssetsFile)"
                          TargetFramework="$(TargetFrameworkMoniker)"
                          RuntimeIdentifier="$(RuntimeIdentifier)"
                          PackageNames="$(MicrosoftNETPlatformLibrary)">
       <Output TaskParameter="RuntimeLibraries" ItemName="PlatformLibraries" />
     </GetRuntimeLibraries>
+    <ItemGroup Condition=" '$(SelfContained)' != 'true' ">
+      <!-- Portable publish: computed referenced-not-published set in _ComputeManagedAssembliesToLink -->
+      <PlatformLibraries Include="@(_ReferencedLibraries)" />
+    </ItemGroup>
   </Target>
 
 
@@ -425,7 +452,7 @@
     <ItemGroup>
       <_RemovedNativeDeps Include="@(_NativeResolvedDepsToPublish)" />
       <_RemovedNativeDeps Remove="@(_NativeKeptDepsToPublish)" />
-      
+
       <_PublishConflictPackageFiles Include="@(_RemovedManagedAssemblies)" />
       <_PublishConflictPackageFiles Include="@(_RemovedNativeDeps)" />
     </ItemGroup>

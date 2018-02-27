@@ -67,6 +67,7 @@ namespace ILLink.Tests
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
 			};
+			outputHelper.WriteLine($"caller working directory: {Environment.CurrentDirectory}");
 			if (!String.IsNullOrEmpty(args)) {
 				psi.Arguments = args;
 				outputHelper.WriteLine($"{command} {args}");
@@ -74,7 +75,7 @@ namespace ILLink.Tests
 				outputHelper.WriteLine($"{command}");
 			}
 			if (!String.IsNullOrEmpty(workingDir)) {
-				outputHelper.WriteLine("$working directory: {workingDir}");
+				outputHelper.WriteLine($"working directory: {workingDir}");
 				psi.WorkingDirectory = workingDir;
 			}
 			if (!String.IsNullOrEmpty(additionalPath)) {

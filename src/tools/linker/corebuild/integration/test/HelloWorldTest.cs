@@ -7,11 +7,21 @@ namespace ILLink.Tests
 {
 	public class HelloWorldTest : IntegrationTestBase
 	{
-		public HelloWorldTest(ITestOutputHelper output) : base(output) {}
+		private string csproj;
+
+		public HelloWorldTest(ITestOutputHelper output) : base(output) {
+			csproj = SetupProject();
+		}
 
 		public string SetupProject()
 		{
 			string projectRoot = "helloworld";
+			string csproj = Path.Combine(projectRoot, $"{projectRoot}.csproj");
+
+			if (File.Exists(csproj)) {
+				output.WriteLine($"using existing project {csproj}");
+				return csproj;
+			}
 
 			if (Directory.Exists(projectRoot)) {
 				Directory.Delete(projectRoot, true);
@@ -24,20 +34,28 @@ namespace ILLink.Tests
 				Assert.True(false);
 			}
 
-			string csproj = Path.Combine(projectRoot, $"{projectRoot}.csproj");
+			AddLinkerReference(csproj);
+
 			return csproj;
 		}
 
 		[Fact]
-		public void RunHelloWorld()
+		public void RunHelloWorldStandalone()
 		{
-			string csproj = SetupProject();
+			string executablePath = BuildAndLink(csproj, selfContained: true);
+			CheckOutput(executablePath, selfContained: true);
+		}
 
-			AddLinkerReference(csproj);
+		[Fact]
+		public void RunHelloWorldPortable()
+		{
+			string target = BuildAndLink(csproj, selfContained: false);
+			CheckOutput(target, selfContained: false);
+		}
 
-			BuildAndLink(csproj, null);
-
-			int ret = RunApp(csproj, out string commandOutput);
+		void CheckOutput(string target, bool selfContained = false)
+		{
+			int ret = RunApp(target, out string commandOutput, selfContained: selfContained);
 			Assert.True(ret == 0);
 			Assert.True(commandOutput.Contains("Hello World!"));
 		}
