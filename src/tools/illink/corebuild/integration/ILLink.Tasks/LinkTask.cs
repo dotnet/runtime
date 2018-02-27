@@ -47,6 +47,17 @@ namespace ILLink.Tasks
 		public ITaskItem [] RootDescriptorFiles { get; set; }
 
 		/// <summary>
+		///   Boolean specifying whether to clear initlocals flag on methods.
+		/// </summary>
+		public bool ClearInitLocals { get; set; }
+
+		/// <summary>
+		///   A comma-separated list of assemblies whose methods
+		///   should have initlocals flag cleared if ClearInitLocals is true.
+		/// </summary>
+		public string ClearInitLocalsAssemblies { get; set; }
+
+		/// <summary>
 		///   Extra arguments to pass to illink, delimited by spaces.
 		/// </summary>
 		public string ExtraArgs { get; set; }
@@ -103,6 +114,17 @@ namespace ILLink.Tasks
 			if (OutputDirectory != null) {
 				args.Add ("-out");
 				args.Add (OutputDirectory.ItemSpec);
+			}
+
+			if (ClearInitLocals) {
+				args.Add ("-s");
+				// Version of ILLink.CustomSteps is passed as a workaround for msbuild issue #3016
+				args.Add ("ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep");
+				if ((ClearInitLocalsAssemblies != null) && (ClearInitLocalsAssemblies.Length > 0)) {
+					args.Add ("-m");
+					args.Add ("ClearInitLocalsAssemblies");
+					args.Add (ClearInitLocalsAssemblies);
+				}
 			}
 
 			if (ExtraArgs != null) {
