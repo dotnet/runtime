@@ -3496,6 +3496,16 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 			return TRUE;
 
 		if (m_class_is_array_special_interface (klass) && m_class_get_rank (oklass) == 1) {
+			if (mono_class_is_gtd (klass)) {
+				/* klass is an array special gtd like
+				 * IList`1<>, and oklass is X[] for some X.
+				 * Moreover we know that X isn't !0 (the gparam
+				 * of IList`1) because in that case we would
+				 * have returned TRUE for
+				 * MONO_CLASS_IMPLEMENTS_INTERFACE, above.
+				 */
+				return FALSE;
+			}
 			//XXX we could offset this by having the cast target computed at JIT time
 			//XXX we could go even further and emit a wrapper that would do the extra type check
 			MonoClass *iface_klass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
