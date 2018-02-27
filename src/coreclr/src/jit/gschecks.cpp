@@ -399,6 +399,9 @@ void Compiler::gsParamsToShadows()
         }
 
         int shadowVar = lvaGrabTemp(false DEBUGARG("shadowVar"));
+        // reload varDsc as lvaGrabTemp may realloc the lvaTable[]
+        varDsc = &lvaTable[lclNum];
+
         // Copy some info
 
         var_types type             = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();

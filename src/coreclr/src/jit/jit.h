@@ -591,29 +591,13 @@ struct JitOptions
 
 extern JitOptions jitOpts;
 
-/*****************************************************************************
-*
-*  Returns a word filled with the JITs allocator CHK fill value.
-*
-*/
+// Forward declarations for UninitializedWord and IsUninitialized are needed by alloc.h
 template <typename T>
-inline T UninitializedWord()
-{
-    __int64 word = 0x0101010101010101LL * (JitConfig.JitDefaultFill() & 0xFF);
-    return (T)word;
-}
-
-/*****************************************************************************
-*
-*  Determines whether this value is coming from uninitialized JIT memory
-*
-*/
+inline T UninitializedWord(Compiler* comp);
 
 template <typename T>
-inline bool IsUninitialized(T data)
-{
-    return data == UninitializedWord<T>();
-}
+inline bool IsUninitialized(T data);
+
 #endif // DEBUG
 
 /*****************************************************************************/
@@ -731,7 +715,6 @@ private:
 #pragma warning(push)
 #pragma warning(default : 4820) // 'bytes' bytes padding added after construct 'member_name'
 #endif                          // CHECK_STRUCT_PADDING
-
 #include "alloc.h"
 #include "target.h"
 
@@ -947,9 +930,49 @@ public:
 };
 
 #if defined(DEBUG)
-
+//  Include the definition of Compiler for use by these template functions
+//
 #include "compiler.h"
 
+//****************************************************************************
+//
+//  Returns a word filled with the JITs allocator default fill value.
+//
+template <typename T>
+inline T UninitializedWord(Compiler* comp)
+{
+    unsigned char defaultFill = 0xdd;
+    if (comp == nullptr)
+    {
+        comp = JitTls::GetCompiler();
+    }
+    defaultFill = comp->compGetJitDefaultFill();
+    assert(defaultFill <= 0xff);
+    __int64 word = 0x0101010101010101LL * defaultFill;
+    return (T)word;
+}
+
+//****************************************************************************
+//
+//  Tries to determine if this value is coming from uninitialized JIT memory
+//    - Returns true if the value matches what we initialized the memory to.
+//
+//  Notes:
+//    - Asserts that use this are assuming that the UninitializedWord value
+//      isn't a legal value for 'data'.  Thus using a default fill value of
+//      0x00 will often trigger such asserts.
+//
+template <typename T>
+inline bool IsUninitialized(T data)
+{
+    return data == UninitializedWord<T>(JitTls::GetCompiler());
+}
+
+//****************************************************************************
+//
+//  Debug template definitions for dspPtr, dspOffset
+//    - Used to format pointer/offset values for diffable Disasm
+//
 template <typename T>
 T dspPtr(T p)
 {
@@ -964,6 +987,11 @@ T dspOffset(T o)
 
 #else // !defined(DEBUG)
 
+//****************************************************************************
+//
+//  Non-Debug template definitions for dspPtr, dspOffset
+//    - This is a nop in non-Debug builds
+//
 template <typename T>
 T dspPtr(T p)
 {
