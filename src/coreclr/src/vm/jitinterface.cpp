@@ -1942,7 +1942,7 @@ unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, BOOL f
     } CONTRACTL_END;
 
     // Default alignment is sizeof(void*)
-    unsigned result = sizeof(void*);
+    unsigned result = TARGET_POINTER_SIZE;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -1976,7 +1976,7 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
     LIMITED_METHOD_CONTRACT;
 
     // Default alignment is sizeof(void*)
-    unsigned result = sizeof(void*);
+    unsigned result = TARGET_POINTER_SIZE;
 
     MethodTable * pMT = clsHnd.GetMethodTable();
     if (pMT == NULL)
@@ -2137,7 +2137,7 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
-        int fieldStartIndex = pFD->GetOffset() / sizeof(void*);
+        int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
 
         if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
         {
@@ -2185,7 +2185,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         // native value types have no GC pointers
         result = 0;
         memset(gcPtrs, TYPE_GC_NONE,
-               (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
+               (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
     }
     else if (pMT->IsByRefLike())
     {
@@ -2200,7 +2200,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         else
         {
             memset(gcPtrs, TYPE_GC_NONE,
-                (VMClsHnd.GetSize() + sizeof(void*) - 1) / sizeof(void*));
+                (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
             // Note: This case is more complicated than the TypedReference case
             // due to ByRefLike structs being included as fields in other value 
             // types (TypedReference can not be.)
@@ -2215,7 +2215,7 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
         // assume no GC pointers at first
         result = 0;
         memset(gcPtrs, TYPE_GC_NONE,
-               (VMClsHnd.GetSize() + sizeof(void*) -1)/ sizeof(void*));
+               (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
 
         // walk the GC descriptors, turning on the correct bits
         if (pMT->ContainsPointers())
@@ -2229,11 +2229,11 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
                 size_t cbSeriesSize = pByValueSeries->GetSeriesSize() + pMT->GetBaseSize();
                 size_t cbOffset = pByValueSeries->GetSeriesOffset() - sizeof(Object);
 
-                _ASSERTE (cbOffset % sizeof(void*) == 0);
-                _ASSERTE (cbSeriesSize % sizeof(void*) == 0);
+                _ASSERTE (cbOffset % TARGET_POINTER_SIZE == 0);
+                _ASSERTE (cbSeriesSize % TARGET_POINTER_SIZE == 0);
 
-                result += (unsigned) (cbSeriesSize / sizeof(void*));
-                memset(&gcPtrs[cbOffset/sizeof(void*)], TYPE_GC_REF, cbSeriesSize / sizeof(void*));
+                result += (unsigned) (cbSeriesSize / TARGET_POINTER_SIZE);
+                memset(&gcPtrs[cbOffset / TARGET_POINTER_SIZE], TYPE_GC_REF, cbSeriesSize / TARGET_POINTER_SIZE);
 
                 pByValueSeries++;
             }
@@ -13079,17 +13079,17 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
     {
         // offset to embedded references in this series must be
         // adjusted by the VTable pointer, when in the unboxed state.
-        size_t offset = cur->GetSeriesOffset() - sizeof(void*);
+        size_t offset = cur->GetSeriesOffset() - TARGET_POINTER_SIZE;
         size_t offsetStop = offset + cur->GetSeriesSize() + size;
         while (offset < offsetStop)
         {
-            size_t bit = offset / sizeof(void *);
+            size_t bit = offset / TARGET_POINTER_SIZE;
 
             size_t index = bit / 8;
             _ASSERTE(index < cbGCRefMap);
             pGCRefMap[index] |= (1 << (bit & 7));
 
-            offset += sizeof(void *);
+            offset += TARGET_POINTER_SIZE;
         }
         cur--;
     } while (cur >= last);
@@ -13145,7 +13145,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
 
     if (dwFlags & READYTORUN_LAYOUT_Alignment)
     {
-        DWORD dwExpectedAlignment = sizeof(void *);
+        DWORD dwExpectedAlignment = TARGET_POINTER_SIZE;
         if (!(dwFlags & READYTORUN_LAYOUT_Alignment_Native))
         {
             IfFailThrow(p.GetData(&dwExpectedAlignment));
@@ -13166,7 +13166,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob)
         }
         else
         {
-            size_t cbGCRefMap = (dwActualSize / sizeof(TADDR) + 7) / 8;
+            size_t cbGCRefMap = (dwActualSize / TARGET_POINTER_SIZE + 7) / 8;
             _ASSERTE(cbGCRefMap > 0);
 
             BYTE * pGCRefMap = (BYTE *)_alloca(cbGCRefMap);
