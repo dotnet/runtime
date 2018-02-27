@@ -3715,4 +3715,7 @@
   <data name="Argument_InvalidGenericInstantiation" xml:space="preserve">
     <value>The given generic instantiation was invalid.</value>
   </data>
+  <data name="Argument_OverlapAlignmentMismatch" xml:space="preserve">
+    <value>Overlapping spans have mismatching alignment.</value>
+  </data>
 </root>
