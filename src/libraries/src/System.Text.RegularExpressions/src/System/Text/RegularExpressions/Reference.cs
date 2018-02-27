@@ -13,7 +13,7 @@ namespace System.Text.RegularExpressions
     {
         private RegexRunner _ref;
         private object _obj;
-        private int _locked;
+        private volatile int _locked;
 
         /// <summary>
         /// Return an object and grab an exclusive lock.
@@ -91,8 +91,8 @@ namespace System.Text.RegularExpressions
     /// </summary>
     internal sealed class SharedReference
     {
-        private WeakReference _ref = new WeakReference(null);
-        private int _locked;
+        private readonly WeakReference _ref = new WeakReference(null);
+        private volatile int _locked;
 
         /// <summary>
         /// Return an object from a weakref, protected by a lock.
