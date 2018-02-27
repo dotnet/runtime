@@ -13,25 +13,10 @@ namespace Tracing.Tests
 
         public static int Main(string[] args)
         {
-            bool pass = true;
-            bool keepOutput = false;
-
-            // Use the first arg as an output filename if there is one.
-            string outputFilename = null;
-            if (args.Length >= 1)
-            {
-                outputFilename = args[0];
-                keepOutput = true;
-            }
-            else
-            {
-                outputFilename = System.IO.Path.GetTempPath() + Guid.NewGuid().ToString() + ".netperf";
-            }
-
-            try
+            using (var netPerfFile = NetPerfFile.Create(args))
             {
                 Console.WriteLine("\tStart: Enable tracing.");
-                TraceControl.EnableDefault(outputFilename);
+                TraceControl.EnableDefault(netPerfFile.Path);
                 Console.WriteLine("\tEnd: Enable tracing.\n");
 
                 Console.WriteLine("\tStart: Generate some events.");
@@ -48,7 +33,7 @@ namespace Tracing.Tests
                 Console.WriteLine("\tStart: Process the trace file.");
                 int matchingEventCount = 0;
                 int nonMatchingEventCount = 0;
-                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(outputFilename))
+                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(netPerfFile.Path))
                 {
                     string gcReasonInduced = GCReason.Induced.ToString();
                     string providerName = "Microsoft-Windows-DotNETRuntime";
@@ -74,16 +59,6 @@ namespace Tracing.Tests
 
                 Assert.Equal(nameof(matchingEventCount), InducedGCIterations, matchingEventCount);
                 Assert.Equal(nameof(nonMatchingEventCount), nonMatchingEventCount, 0);
-            }
-            finally {
-                if (keepOutput)
-                {
-                    Console.WriteLine("\n\tOutput file: {0}", outputFilename);
-                }
-                else
-                {
-                    System.IO.File.Delete(outputFilename);
-                }
             }
 
             return 100;
