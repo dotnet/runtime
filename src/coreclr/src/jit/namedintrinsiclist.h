@@ -88,6 +88,10 @@ enum HWIntrinsicFlag : unsigned int
     // NoJmpTable IMM
     // the imm intrinsic does not need jumptable fallback when it gets non-const argument
     HW_Flag_NoJmpTableIMM = 0x2000,
+
+    // No Read/Modify/Write Semantics
+    // the intrinsic does not have read/modify/write semantics and doesn't need
+    HW_Flag_NoRMWSemantics = 0x4000,
 };
 
 inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)
