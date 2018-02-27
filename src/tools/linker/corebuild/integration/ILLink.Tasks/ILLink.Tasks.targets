@@ -224,15 +224,14 @@
          scenario in which the linker is invoked. -->
     <PropertyGroup>
       <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -l none -b true --skip-unresolved true --verbose</ExtraLinkerArgs>
-      <!-- version of ILLink.CustomSteps is passed as a workaround for msbuild issue #3016 -->
-      <ExtraLinkerArgs Condition=" '$(ClearInitLocals)' == 'true' ">$(ExtraLinkerArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep</ExtraLinkerArgs>
-      <ExtraLinkerArgs Condition=" '$(ClearInitLocals)' == 'true' and '$(ClearInitLocalsAssemblies)' != ''">$(ExtraLinkerArgs) -m ClearInitLocalsAssemblies $(ClearInitLocalsAssemblies)</ExtraLinkerArgs>
     </PropertyGroup>
     <ILLink AssemblyPaths="@(_ManagedAssembliesToLink)"
             RootAssemblyNames="@(LinkerRootAssemblies)"
             RootDescriptorFiles="@(LinkerRootDescriptors)"
             OutputDirectory="$(IntermediateLinkDir)"
             DumpDependencies="$(LinkerDumpDependencies)"
+            ClearInitLocals="$(ClearInitLocals)"
+            ClearInitLocalsAssemblies="$(ClearInitLocalsAssemblies)"
             ExtraArgs="$(ExtraLinkerArgs)" />
 
     <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true">
