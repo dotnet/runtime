@@ -320,21 +320,6 @@ namespace TestLibrary
             return c;
         }
 
-        // if value is no-weight char, return true
-        public static bool NoWeightChar(int value)
-        {
-            if ((int)'a' == value) // 'a' = 97
-                return false;
-
-            String strA = "a" + Convert.ToChar(value);
-            String strB = "a";
-
-            if (0 == GlobLocHelper.OSCompare(CultureInfo.CurrentCulture, strA, 0, 2, strB, 0, 1, CompareOptions.None))
-                return true;
-
-            return false;
-        }
-
         // returns a  string.  If "validPath" is set, only valid path characters
         //  will be included
         public static string GetString(Int32 new_seed, Boolean validPath, Int32 minLength, Int32 maxLength)
