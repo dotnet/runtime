@@ -746,6 +746,7 @@ namespace System.Net.WebSockets
                 {
                     throw new OperationCanceledException(nameof(WebSocketState.Aborted), exc);
                 }
+                _abortSource.Cancel();
                 throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
             }
             finally
