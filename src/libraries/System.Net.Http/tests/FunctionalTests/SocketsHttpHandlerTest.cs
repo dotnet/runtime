@@ -77,33 +77,18 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
-        // Set MaxResponseDrainSize. TODO #27329: Avoid reflection once exposed publicly.
-        private int GetMaxResponseDrainSize(SocketsHttpHandler handler) =>
-            (int)typeof(SocketsHttpHandler).GetProperty("MaxResponseDrainSize", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(handler);
-        private void SetMaxResponseDrainSize(SocketsHttpHandler handler, int value)
-        {
-            try
-            {
-                typeof(SocketsHttpHandler).GetProperty("MaxResponseDrainSize", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(handler, value);
-            }
-            catch (TargetInvocationException tie)
-            {
-                throw tie.InnerException;
-            }
-        }
-
         [Fact]
         public void MaxResponseDrainSize_Roundtrips()
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(1024 * 1024, GetMaxResponseDrainSize(handler));
+                Assert.Equal(1024 * 1024, handler.MaxResponseDrainSize);
 
-                SetMaxResponseDrainSize(handler, 0);
-                Assert.Equal(0, GetMaxResponseDrainSize(handler));
+                handler.MaxResponseDrainSize = 0;
+                Assert.Equal(0, handler.MaxResponseDrainSize);
 
-                SetMaxResponseDrainSize(handler, int.MaxValue);
-                Assert.Equal(int.MaxValue, GetMaxResponseDrainSize(handler));
+                handler.MaxResponseDrainSize = int.MaxValue;
+                Assert.Equal(int.MaxValue, handler.MaxResponseDrainSize);
             }
         }
 
@@ -112,12 +97,12 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(1024 * 1024, GetMaxResponseDrainSize(handler));
+                Assert.Equal(1024 * 1024, handler.MaxResponseDrainSize);
 
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainSize(handler, -1));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainSize(handler, int.MinValue));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxResponseDrainSize = -1);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.MaxResponseDrainSize = int.MinValue);
 
-                Assert.Equal(1024 * 1024, GetMaxResponseDrainSize(handler));
+                Assert.Equal(1024 * 1024, handler.MaxResponseDrainSize);
             }
         }
 
@@ -127,10 +112,10 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new SocketsHttpHandler())
             using (var client = new HttpClient(handler))
             {
-                SetMaxResponseDrainSize(handler, 1);
+                handler.MaxResponseDrainSize = 1;
                 client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
-                Assert.Equal(1, GetMaxResponseDrainSize(handler));
-                Assert.Throws<InvalidOperationException>(() => SetMaxResponseDrainSize(handler, 1));
+                Assert.Equal(1, handler.MaxResponseDrainSize);
+                Assert.Throws<InvalidOperationException>(() => handler.MaxResponseDrainSize = 1);
             }
         }
 
@@ -145,7 +130,7 @@ namespace System.Net.Http.Functional.Tests
                 async url =>
                 {
                     var handler = new SocketsHttpHandler();
-                    SetMaxResponseDrainSize(handler, maxDrainSize);
+                    handler.MaxResponseDrainSize = maxDrainSize;
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
@@ -190,7 +175,7 @@ namespace System.Net.Http.Functional.Tests
                 async url =>
                 {
                     var handler = new SocketsHttpHandler();
-                    SetMaxResponseDrainSize(handler, maxDrainSize);
+                    handler.MaxResponseDrainSize = maxDrainSize;
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
