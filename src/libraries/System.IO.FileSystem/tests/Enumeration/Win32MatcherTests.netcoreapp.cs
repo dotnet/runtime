@@ -9,20 +9,31 @@ namespace System.IO.Tests
 {
     public class Win32MatcherTests
     {
-        [Theory, MemberData(nameof(Win32MatchData)), MemberData(nameof(EscapedWin32MatchData))]
+        [Theory,
+            MemberData(nameof(SimpleMatchData)),
+            MemberData(nameof(EscapedSimpleMatchData)),
+            MemberData(nameof(Win32MatchData)),
+            MemberData(nameof(EscapedWin32MatchData))]
         public static void Win32Match(string expression, string name, bool ignoreCase, bool expected)
         {
             Assert.Equal(expected, FileSystemName.MatchesWin32Expression(expression, name.AsSpan(), ignoreCase));
         }
 
-        public static TheoryData<string, string, bool, bool> EscapedWin32MatchData => new TheoryData<string, string, bool, bool>
+        [Theory,
+            MemberData(nameof(SimpleMatchData)),
+            MemberData(nameof(EscapedSimpleMatchData))]
+        public static void SimpleMatch(string expression, string name, bool ignoreCase, bool expected)
+        {
+            Assert.Equal(expected, FileSystemName.MatchesSimpleExpression(expression, name.AsSpan(), ignoreCase));
+        }
+
+        public static TheoryData<string, string, bool, bool> EscapedSimpleMatchData => new TheoryData<string, string, bool, bool>
         {
             // Trailing escape matches as it is considered "invisible"
             { "\\", "\\", false, true },
             { "\\", "\\", true, true },
             { "\\\\", "\\", false, true },
             { "\\\\", "\\", true, true },
-
 
             { "\\*", "a", false, false },
             { "\\*", "a", true, false },
@@ -36,14 +47,17 @@ namespace System.IO.Tests
             { "*\\*", "***A", true, false },
             { "*\\*", "ABC*A", false, false },
             { "*\\*", "ABC*A", true, false },
+        };
 
+        public static TheoryData<string, string, bool, bool> EscapedWin32MatchData => new TheoryData<string, string, bool, bool>
+        {
             { "\\\"", "a", false, false },
             { "\\\"", "a", true, false },
             { "\\\"", "\"", false, true },
             { "\\\"", "\"", true, true },
         };
 
-        public static TheoryData<string, string, bool, bool> Win32MatchData => new TheoryData<string, string, bool, bool>
+        public static TheoryData<string, string, bool, bool> SimpleMatchData => new TheoryData<string, string, bool, bool>
         {
             { null, "", false, false },
             { null, "", true, false },
@@ -58,7 +72,6 @@ namespace System.IO.Tests
             { "*foo", "nofoo", true, true },
             { "*foo", "NoFOO", true, true },
             { "*foo", "noFOO", false, false },
-
             { @"*", @"foo.txt", true, true },
             { @".", @"foo.txt", true, false },
             { @".", @"footxt", true, false },
@@ -66,6 +79,10 @@ namespace System.IO.Tests
             { @"*.*", @"foo.", true, true },
             { @"*.*", @".foo", true, true },
             { @"*.*", @"footxt", true, false },
+        };
+
+        public static TheoryData<string, string, bool, bool> Win32MatchData => new TheoryData<string, string, bool, bool>
+        {
             { "<\"*", @"footxt", true, true },              // DOS equivalent of *.*
             { "<\"*", @"foo.txt", true, true },             // DOS equivalent of *.*
             { "<\"*", @".foo", true, true },                // DOS equivalent of *.*
@@ -112,5 +129,19 @@ namespace System.IO.Tests
             { @"<.", @"a.", true, true },
             { @"<.", @"a.b", true, false },
         };
+
+        [Theory,
+            InlineData("", "*"),
+            InlineData("*.*", "*"),
+            InlineData("*", "*"),
+            InlineData(".", "."),
+            InlineData("?", ">"),
+            InlineData("*.", "<"),
+            InlineData("?.?", ">\">"),
+            InlineData("foo*.", "foo<")]
+        public void TranslateExpression(string expression, string expected)
+        {
+            Assert.Equal(expected, FileSystemName.TranslateWin32Expression(expression));
+        }
     }
 }
