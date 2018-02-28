@@ -828,6 +828,18 @@ INST1(cset,    "cset",   0, 0, IF_DR_1D,  0x1A9F07E0)
 INST1(csetm,   "csetm",  0, 0, IF_DR_1D,  0x5A9F03E0)
                                    //  csetm   Rd,cond              DR_1D  X101101010011111 cccc0011111ddddd   5A9F 03E0   Rd cond
 
+INST1(aese,    "aese",   0, 0, IF_DV_2P,  0x4E284800)
+                                   //  aese   Vd.16B,Vn.16B         DV_2P  0100111000101000 010010nnnnnddddd   4E28 4800   Vd.16B Vn.16B  (vector)
+
+INST1(aesd,    "aesd",   0, 0, IF_DV_2P,  0x4E285800)
+                                   //  aesd   Vd.16B,Vn.16B         DV_2P  0100111000101000 010110nnnnnddddd   4E28 5800   Vd.16B Vn.16B  (vector)
+
+INST1(aesmc,   "aesmc",  0, 0, IF_DV_2P,  0x4E286800)
+                                   //  aesmc  Vd.16B,Vn.16B         DV_2P  0100111000101000 011010nnnnnddddd   4E28 6800   Vd.16B Vn.16B  (vector)
+
+INST1(aesimc,  "aesimc", 0, 0, IF_DV_2P,  0x4E287800)
+                                   //  aesimc Vd.16B,Vn.16B         DV_2P  0100111000101000 011110nnnnnddddd   4E28 7800   Vd.16B Vn.16B  (vector)
+
 INST1(rev,     "rev",    0, 0, IF_DR_2G,  0x5AC00800)
                                    //  rev     Rd,Rm                DR_2G  X101101011000000 00001Xnnnnnddddd   5AC0 0800   Rd Rn
 
