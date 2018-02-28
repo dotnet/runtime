@@ -14,21 +14,12 @@ namespace System.Net
     [EventSource(Name = "Microsoft-System-Net-Security", LocalizationResources = "FxResources.System.Net.Security.SR")]
     internal sealed partial class NetEventSource
     {
-        private const int EnumerateSecurityPackagesId = NextAvailableEventId;
-        private const int SspiPackageNotFoundId = EnumerateSecurityPackagesId + 1;
-        private const int AcquireDefaultCredentialId = SspiPackageNotFoundId + 1;
-        private const int AcquireCredentialsHandleId = AcquireDefaultCredentialId + 1;
-        private const int SecureChannelCtorId = AcquireCredentialsHandleId + 1;
+        private const int SecureChannelCtorId = NextAvailableEventId;
         private const int LocatingPrivateKeyId = SecureChannelCtorId + 1;
         private const int CertIsType2Id = LocatingPrivateKeyId + 1;
         private const int FoundCertInStoreId = CertIsType2Id + 1;
         private const int NotFoundCertInStoreId = FoundCertInStoreId + 1;
-        private const int InitializeSecurityContextId = NotFoundCertInStoreId + 1;
-        private const int SecurityContextInputBufferId = InitializeSecurityContextId + 1;
-        private const int SecurityContextInputBuffersId = SecurityContextInputBufferId + 1;
-        private const int AcceptSecuritContextId = SecurityContextInputBuffersId + 1;
-        private const int OperationReturnedSomethingId = AcceptSecuritContextId + 1;
-        private const int RemoteCertificateId = OperationReturnedSomethingId + 1;
+        private const int RemoteCertificateId = NotFoundCertInStoreId + 1;
         private const int CertificateFromDelegateId = RemoteCertificateId + 1;
         private const int NoDelegateNoClientCertId = CertificateFromDelegateId + 1;
         private const int NoDelegateButClientCertId = NoDelegateNoClientCertId + 1;
