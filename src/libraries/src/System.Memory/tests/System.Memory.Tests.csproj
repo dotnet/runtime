@@ -82,6 +82,8 @@
     <Compile Include="ReadOnlySpan\AsBytes.cs" />
     <Compile Include="ReadOnlySpan\AsReadOnlySpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
+    <Compile Include="ReadOnlySpan\CompareTo.cs" />
+    <Compile Include="ReadOnlySpan\Contains.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
@@ -91,12 +93,14 @@
     <Compile Include="ReadOnlySpan\EndsWith.char.cs" />
     <Compile Include="ReadOnlySpan\EndsWith.T.cs" />
     <Compile Include="ReadOnlySpan\Equality.cs" />
+    <Compile Include="ReadOnlySpan\Equals.cs" />
     <Compile Include="ReadOnlySpan\GetEnumerator.cs" />
     <Compile Include="ReadOnlySpan\GetHashCode.cs" />
     <Compile Include="ReadOnlySpan\ImplicitConversion.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.char.cs" />
+    <Compile Include="ReadOnlySpan\IndexOf.charSpan.cs" />
     <Compile Include="ReadOnlySpan\IndexOfAny.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOfAny.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.T.cs" />
