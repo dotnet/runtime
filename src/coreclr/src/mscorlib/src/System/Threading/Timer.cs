@@ -2,23 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
+using System;
+using System.Security;
+using Microsoft.Win32;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
+using Microsoft.Win32.SafeHandles;
+
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
-    using System;
-    using System.Security;
-    using Microsoft.Win32;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.InteropServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-    using System.Diagnostics.Tracing;
-    using Microsoft.Win32.SafeHandles;
-
-
-
     public delegate void TimerCallback(Object state);
 
     //
@@ -449,7 +447,7 @@ namespace System.Threading
             m_dueTime = Timeout.UnsignedInfinite;
             m_period = Timeout.UnsignedInfinite;
             m_executionContext = ExecutionContext.Capture();
-            m_associatedTimerQueue = TimerQueue.Instances[Environment.CurrentExecutionId % TimerQueue.Instances.Length];
+            m_associatedTimerQueue = TimerQueue.Instances[RuntimeThread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
 
             //
             // After the following statement, the timer may fire.  No more manipulation of timer state outside of
