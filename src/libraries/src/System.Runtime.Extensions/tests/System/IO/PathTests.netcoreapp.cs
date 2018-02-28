@@ -105,7 +105,6 @@ namespace System.IO.Tests
             PathAssert.Equal(expected, Path.GetFileName(path.AsSpan()));
         }
 
-        [ActiveIssue(27269, TestPlatforms.Windows)]
         [Theory, MemberData(nameof(TestData_GetFileNameWithoutExtension))]
         public void GetFileNameWithoutExtension_Span(string path, string expected)
         {
@@ -137,7 +136,6 @@ namespace System.IO.Tests
             Assert.False(Path.IsPathRooted(path.AsSpan()));
         }
 
-        [ActiveIssue(27269, TestPlatforms.Windows)]
         [Fact]
         public void GetInvalidPathChars()
         {
@@ -181,7 +179,6 @@ namespace System.IO.Tests
             });
         }
 
-        [ActiveIssue(27269, TestPlatforms.Windows)]
         [Theory,
             InlineData("http://www.microsoft.com"),
             InlineData("file://somefile")]
@@ -193,7 +190,6 @@ namespace System.IO.Tests
                 Path.GetFullPath(uriAsFileName));
         }
 
-        [ActiveIssue(27269, TestPlatforms.Windows)]
         [Theory, MemberData(nameof(TestData_NonDriveColonPaths))]
         public void GetFullPath_NowSupportedColons(string path)
         {
@@ -201,7 +197,6 @@ namespace System.IO.Tests
             Path.GetFullPath(path);
         }
 
-        [ActiveIssue(27269, TestPlatforms.Windows)]
         [Theory, MemberData(nameof(TestData_InvalidUnc))]
         public static void GetFullPath_UNC_Invalid(string path)
         {
@@ -209,7 +204,6 @@ namespace System.IO.Tests
             Path.GetFullPath(path);
         }
 
-        [ActiveIssue(27269, TestPlatforms.Windows)]
         [Theory,
             MemberData(nameof(TestData_Wildcards)),
             MemberData(nameof(TestData_ExtendedWildcards))]
