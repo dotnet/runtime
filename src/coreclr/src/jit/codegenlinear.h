@@ -67,7 +67,7 @@ enum SIMDScalarMoveType
 };
 
 #ifdef _TARGET_ARM64_
-insOpts genGetSimdInsOpt(bool is16B, var_types elementType);
+insOpts genGetSimdInsOpt(emitAttr size, var_types elementType);
 #endif
 instruction getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_types baseType, unsigned* ival = nullptr);
 void genSIMDScalarMove(

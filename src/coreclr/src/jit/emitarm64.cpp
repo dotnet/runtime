@@ -11449,8 +11449,9 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg2(), size, true);
                 emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
             }
-            else
+            else // INS_sha1su0, INS_sha256su1
             {
+                // Vd, Vn, Vm   (vector)
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
