@@ -5011,6 +5011,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case HWIntrinsicInfo::SimdUnaryOp:
             genHWIntrinsicSimdUnaryOp(node);
             break;
+        case HWIntrinsicInfo::SimdBinaryRMWOp:
+            genHWIntrinsicSimdBinaryRMWOp(node);
+            break;
         default:
             NYI("HWIntrinsic form not implemented");
     }
@@ -5575,6 +5578,54 @@ void CodeGen::genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node)
     insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
 
     getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
+
+    genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsicSimdBinaryRMWOp:
+//
+// Produce code for a GT_HWIntrinsic node with form SimdBinaryRMWOp.
+//
+// Consumes two SIMD operands and produces a SIMD result.
+// First operand is both source and destination.
+//
+// Arguments:
+//    node - the GT_HWIntrinsic node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genHWIntrinsicSimdBinaryRMWOp(GenTreeHWIntrinsic* node)
+{
+    GenTree*  op1       = node->gtGetOp1();
+    GenTree*  op2       = node->gtGetOp2();
+    var_types baseType  = node->gtSIMDBaseType;
+    regNumber targetReg = node->gtRegNum;
+
+    assert(targetReg != REG_NA);
+
+    genConsumeOperands(node);
+
+    regNumber op1Reg = op1->gtRegNum;
+    regNumber op2Reg = op2->gtRegNum;
+
+    assert(genIsValidFloatReg(op1Reg));
+    assert(genIsValidFloatReg(op2Reg));
+    assert(genIsValidFloatReg(targetReg));
+
+    instruction ins = getOpForHWIntrinsic(node, baseType);
+    assert(ins != INS_invalid);
+
+    bool     is16Byte = (node->gtSIMDSize > 8);
+    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+
+    if (targetReg != op1Reg)
+    {
+        getEmitter()->emitIns_R_R(INS_mov, attr, targetReg, op1Reg);
+    }
+    getEmitter()->emitIns_R_R(ins, attr, targetReg, op2Reg, opt);
 
     genProduceReg(node);
 }

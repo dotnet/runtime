@@ -188,6 +188,7 @@ IF_DEF(DV_2L, IS_NONE, NONE) // DV_2L   ........XX...... ......nnnnnddddd      V
 IF_DEF(DV_2M, IS_NONE, NONE) // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg - vector)
 IF_DEF(DV_2N, IS_NONE, NONE) // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm  (shift - scalar)
 IF_DEF(DV_2O, IS_NONE, NONE) // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm  (shift - vector)
+IF_DEF(DV_2P, IS_NONE, NONE) // DV_2P   .,.............. ......nnnnnddddd      Vd Vn      (Vd used as both source and destination)
 
 IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
