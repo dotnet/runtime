@@ -1318,19 +1318,14 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
-            HttpContentReadStream responseStream = (HttpContentReadStream)await response.Content.ReadAsStreamAsync();
+            HttpContentReadStream responseStream = (HttpContentReadStream)await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
 
             if (responseStream.NeedsDrain)
             {
                 Debug.Assert(response.RequestMessage == _currentRequest);
 
-                if (!await responseStream.DrainAsync(_pool.Settings._maxResponseDrainSize))
-                {
-                    throw new HttpRequestException(SR.net_http_authconnectionfailure);
-                }
-
-                // Draining may have set _connectionClose, so check again
-                if (_connectionClose)
+                if (!await responseStream.DrainAsync(_pool.Settings._maxResponseDrainSize).ConfigureAwait(false) ||
+                    _connectionClose)       // Draining may have set this
                 {
                     throw new HttpRequestException(SR.net_http_authconnectionfailure);
                 }
