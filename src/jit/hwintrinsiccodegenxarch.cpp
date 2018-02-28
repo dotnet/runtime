@@ -56,7 +56,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
     int                 ival        = Compiler::ivalOfHWIntrinsic(intrinsicID);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID, node);
 
     assert((flags & HW_Flag_NoCodeGen) == 0);
 

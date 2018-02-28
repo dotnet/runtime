@@ -5535,15 +5535,28 @@ static bool isSseShift(instruction ins)
     }
 }
 
-static bool isSSEExtract(instruction ins)
+//------------------------------------------------------------------------
+// IsDstSrcImmAvxInstruction: check if instruction has RM R I format
+// for all encodings: EVEX, VEX and legacy SSE
+//
+// Arguments:
+//    instruction -- processor instruction to check
+//
+// Return Value:
+//    true if instruction has RRI format
+//
+static bool IsDstSrcImmAvxInstruction(instruction ins)
 {
     switch (ins)
     {
+        case INS_extractps:
         case INS_pextrb:
         case INS_pextrw:
         case INS_pextrd:
         case INS_pextrq:
-        case INS_extractps:
+        case INS_pshufd:
+        case INS_pshufhw:
+        case INS_pshuflw:
             return true;
         default:
             return false;
@@ -5554,7 +5567,7 @@ void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, 
 {
     // TODO-XARCH refactoring emitIns_R_R_I to handle SSE2/AVX2 shift as well as emitIns_R_I
     bool isShift = isSseShift(ins);
-    if (isSSEExtract(ins) || (UseVEXEncoding() && !isShift))
+    if (IsDstSrcImmAvxInstruction(ins) || (UseVEXEncoding() && !isShift))
     {
         emitIns_R_R_I(ins, attr, reg, reg1, ival);
     }
