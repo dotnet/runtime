@@ -25,6 +25,12 @@
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' AND '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(ILLinkTrimXml)' != ''">
+    <EmbeddedResource Include="$(ILLinkTrimXml)">
+      <LogicalName>$(AssemblyName).xml</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   --> 
@@ -60,20 +66,23 @@
   <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'" DependsOnTargets="EnsureBuildToolsRuntime">
     <PropertyGroup>
       <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
-      <!-- don't trim anything that's defined in core assemblies -->
+      <!-- default action for core assemblies -->
       <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
-      <ILLinkArgs>$(ILLinkArgs) -p skip netstandard</ILLinkArgs>
+      <!-- default action for non-core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
+      <!-- trim the target assembly -->
+      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
       <!-- keep type-forward assemblies (facades) -->
       <ILLinkArgs>$(ILLinkArgs) -t</ILLinkArgs>
-      <ILLinkArgs Condition="'$(ILLinkTrimXml)' != ''">$(ILLinkArgs) -x $(ILLinkTrimXml)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
       <!-- keep types and members required by Debugger-related attributes -->
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
+      <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
+      <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
       <!-- reflection heuristics to apply -->
       <ILLinkArgs>$(ILLinkArgs) -h LdtokenTypeMethods,InstanceConstructors</ILLinkArgs>
-      <!-- add a linker step to clear initlocals flag on all assemblies before the output step -->
-      <!-- version of ILLink.CustomSteps is passed as a workaround for msbuild issue #3016 -->
-      <ILLinkArgs Condition="'$(ILLinkClearInitLocals)' == 'true'">$(ILLinkArgs) -s ILLink.CustomSteps.ClearInitLocalsStep,ILLink.CustomSteps,Version=0.0.0.0:OutputStep</ILLinkArgs>
+      <!-- ignore unresolved references -->
+      <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
@@ -100,6 +109,8 @@
     <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly);@(_DependencyDirectories)"
             RootAssemblyNames=""
             OutputDirectory="$(ILLinkTrimOutputPath)"
+            ClearInitLocals="$(ILLinkClearInitLocals)"
+            ClearInitLocalsAssemblies="$(TargetName)"
             ExtraArgs="$(ILLinkArgs)" />
 
   </Target>
