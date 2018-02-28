@@ -59,13 +59,8 @@ static int (*FAMNextEvent) (gpointer, gpointer);
 gint
 ves_icall_System_IO_FSW_SupportsFSW (void)
 {
-#if defined(__APPLE__)
-	if (getenv ("MONO_DARWIN_USE_KQUEUE_FSW"))
-		return 3; /* kqueue */
-	else
-		return 6; /* FSEvent */
-#elif HAVE_KQUEUE
-	return 3; /* kqueue */
+#if HAVE_KQUEUE
+	return 3;
 #else
 	MonoDl *fam_module;
 	int lib_used = 4; /* gamin */
@@ -265,42 +260,3 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 
 #endif /* #if HAVE_KQUEUE */
 
-#if defined(__APPLE__)
-
-#include <CoreFoundation/CFRunLoop.h>
-
-static void
-interrupt_CFRunLoop (gpointer data)
-{
-	g_assert (data);
-	CFRunLoopStop(data);
-}
-
-void
-ves_icall_CoreFX_Interop_RunLoop_CFRunLoopRun (void)
-{
-	gpointer runloop_ref = CFRunLoopGetCurrent();
-	gboolean interrupted;
-	mono_thread_info_install_interrupt (interrupt_CFRunLoop, runloop_ref, &interrupted);
-
-	if (interrupted)
-		return;
-
-	MONO_ENTER_GC_SAFE;
-	CFRunLoopRun();
-	MONO_EXIT_GC_SAFE;
-
-	mono_thread_info_uninstall_interrupt (&interrupted);
-}
-
-MONO_API char* SystemNative_RealPath(const char* path)
-{
-    assert(path != NULL);
-    return realpath(path, NULL);
-}
-
-MONO_API void SystemNative_Sync(void)
-{
-    sync();
-}
-#endif /* #if defined(__APPLE__) */
