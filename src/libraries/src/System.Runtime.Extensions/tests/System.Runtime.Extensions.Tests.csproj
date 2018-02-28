@@ -42,6 +42,7 @@
     <Compile Include="System\IO\PathTests_Windows.netcoreapp.cs" />
     <Compile Include="System\IO\PathTests.netcoreapp.cs" />
     <Compile Include="System\IO\PathTests_Unix.cs" />
+    <Compile Include="System\IO\PathTests_Join.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
     <Compile Include="System\BitConverterSpan.cs" />
