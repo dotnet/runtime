@@ -6,6 +6,8 @@ using Microsoft.Win32;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Runtime.Augments;
+
 namespace System.Buffers
 {
     /// <summary>
@@ -228,7 +230,7 @@ namespace System.Buffers
                 // Try to push on to the associated stack first.  If that fails,
                 // round-robin through the other stacks.
                 LockedStack[] stacks = _perCoreStacks;
-                int index = Environment.CurrentExecutionId % stacks.Length;
+                int index = RuntimeThread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if (stacks[index].TryPush(array)) return;
@@ -244,7 +246,7 @@ namespace System.Buffers
                 // round-robin through the other stacks.
                 T[] arr;
                 LockedStack[] stacks = _perCoreStacks;
-                int index = Environment.CurrentExecutionId % stacks.Length;
+                int index = RuntimeThread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
                 {
                     if ((arr = stacks[index].TryPop()) != null) return arr;
