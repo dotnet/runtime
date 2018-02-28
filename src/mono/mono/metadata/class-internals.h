@@ -1413,6 +1413,9 @@ mono_type_has_exceptions (MonoType *type);
 void
 mono_class_set_nonblittable (MonoClass *klass);
 
+void
+mono_class_compute_gc_descriptor (MonoClass *klass);
+
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
 

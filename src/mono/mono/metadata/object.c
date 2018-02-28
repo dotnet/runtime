@@ -1055,107 +1055,6 @@ ves_icall_string_alloc (int length)
 	return str;
 }
 
-#define BITMAP_EL_SIZE (sizeof (gsize) * 8)
-
-/* LOCKING: Acquires the loader lock */
-/*
- * Sets the following fields in KLASS:
- * - gc_desc
- * - gc_descr_inited
- */
-void
-mono_class_compute_gc_descriptor (MonoClass *klass)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	int max_set = 0;
-	gsize *bitmap;
-	gsize default_bitmap [4] = {0};
-	MonoGCDescriptor gc_descr;
-
-	if (!klass->inited)
-		mono_class_init (klass);
-
-	if (klass->gc_descr_inited)
-		return;
-
-	bitmap = default_bitmap;
-	if (klass == mono_defaults.string_class) {
-		gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
-	} else if (klass->rank) {
-		mono_class_compute_gc_descriptor (klass->element_class);
-		if (MONO_TYPE_IS_REFERENCE (&klass->element_class->byval_arg)) {
-			gsize abm = 1;
-			gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
-			/*printf ("new array descriptor: 0x%x for %s.%s\n", class->gc_descr,
-				class->name_space, class->name);*/
-		} else {
-			/* remove the object header */
-			bitmap = compute_class_bitmap (klass->element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
-			gc_descr = mono_gc_make_descr_for_array (klass->byval_arg.type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
-			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
-				class->name_space, class->name);*/
-		}
-	} else {
-		/*static int count = 0;
-		if (count++ > 58)
-			return;*/
-		bitmap = compute_class_bitmap (klass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
-		/*
-		if (class->gc_descr == MONO_GC_DESCRIPTOR_NULL)
-			g_print ("disabling typed alloc (%d) for %s.%s\n", max_set, class->name_space, class->name);
-		*/
-		/*printf ("new descriptor: %p 0x%x for %s.%s\n", class->gc_descr, bitmap [0], class->name_space, class->name);*/
-
-		if (klass->has_weak_fields) {
-			gsize *weak_bitmap = NULL;
-			int weak_bitmap_nbits = 0;
-
-			weak_bitmap = (gsize *)mono_class_alloc0 (klass, klass->instance_size / sizeof (gsize));
-			if (mono_class_has_static_metadata (klass)) {
-				for (MonoClass *p = klass; p != NULL; p = p->parent) {
-					gpointer iter = NULL;
-					guint32 first_field_idx = mono_class_get_first_field_idx (p);
-					MonoClassField *field;
-
-					while ((field = mono_class_get_fields (p, &iter))) {
-						guint32 field_idx = first_field_idx + (field - p->fields);
-						if (MONO_TYPE_IS_REFERENCE (field->type) && mono_assembly_is_weak_field (p->image, field_idx + 1)) {
-							int pos = field->offset / sizeof (gpointer);
-							if (pos + 1 > weak_bitmap_nbits)
-								weak_bitmap_nbits = pos + 1;
-							weak_bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-						}
-					}
-				}
-			}
-
-			for (int pos = 0; pos < weak_bitmap_nbits; ++pos) {
-				if (weak_bitmap [pos / BITMAP_EL_SIZE] & ((gsize)1) << (pos % BITMAP_EL_SIZE)) {
-					/* Clear the normal bitmap so these refs don't keep an object alive */
-					bitmap [pos / BITMAP_EL_SIZE] &= ~((gsize)1) << (pos % BITMAP_EL_SIZE);
-				}
-			}
-
-			mono_loader_lock ();
-			mono_class_set_weak_bitmap (klass, weak_bitmap_nbits, weak_bitmap);
-			mono_loader_unlock ();
-		}
-
-		gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, klass->instance_size);
-	}
-
-	if (bitmap != default_bitmap)
-		g_free (bitmap);
-
-	/* Publish the data */
-	mono_loader_lock ();
-	klass->gc_descr = gc_descr;
-	mono_memory_barrier ();
-	klass->gc_descr_inited = TRUE;
-	mono_loader_unlock ();
-}
-
 /**
  * field_is_special_static:
  * @fklass: The MonoClass to look up.
@@ -2201,34 +2100,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	 */
 	mono_memory_barrier ();
 
-	old_info = klass->runtime_info;
-	if (old_info && old_info->max_domain >= domain->domain_id) {
-		/* someone already created a large enough runtime info */
-		old_info->domain_vtables [domain->domain_id] = vt;
-	} else {
-		int new_size = domain->domain_id;
-		if (old_info)
-			new_size = MAX (new_size, old_info->max_domain);
-		new_size++;
-		/* make the new size a power of two */
-		i = 2;
-		while (new_size > i)
-			i <<= 1;
-		new_size = i;
-		/* this is a bounded memory retention issue: may want to 
-		 * handle it differently when we'll have a rcu-like system.
-		 */
-		runtime_info = (MonoClassRuntimeInfo *)mono_image_alloc0 (klass->image, MONO_SIZEOF_CLASS_RUNTIME_INFO + new_size * sizeof (gpointer));
-		runtime_info->max_domain = new_size - 1;
-		/* copy the stuff from the older info */
-		if (old_info) {
-			memcpy (runtime_info->domain_vtables, old_info->domain_vtables, (old_info->max_domain + 1) * sizeof (gpointer));
-		}
-		runtime_info->domain_vtables [domain->domain_id] = vt;
-		/* keep this last*/
-		mono_memory_barrier ();
-		klass->runtime_info = runtime_info;
-	}
+	mono_class_setup_runtime_info  (klass, domain, vt);
 
 	if (klass == mono_defaults.runtimetype_class) {
 		vt->type = mono_type_get_object_checked (domain, &klass->byval_arg, error);
