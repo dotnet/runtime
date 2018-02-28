@@ -917,6 +917,24 @@ INST1(asrv,    "asrv",   0, 0, IF_DR_3A,  0x1AC02800)
 
 INST1(rorv,    "rorv",   0, 0, IF_DR_3A,  0x1AC02C00)
                                    //  rorv    Rd,Rn,Rm             DR_3A  X0011010110mmmmm 001011nnnnnddddd   1AC0 2C00
+
+INST1(sha1c,   "sha1c",  0, 0, IF_DV_3F,   0x5E000000)
+                                   //  sha1c   Qd, Sn Vm.4S         DV_3F  01011110000mmmmm 000000nnnnnddddd   5E00 0000   Qd Sn Vm.4S   (vector)
+
+INST1(sha1m,   "sha1m",  0, 0, IF_DV_3F,   0x5E002000)
+                                   //  sha1m   Qd, Sn Vm.4S         DV_3F  01011110000mmmmm 001000nnnnnddddd   5E00 0000   Qd Sn Vm.4S   (vector)
+
+INST1(sha1p,   "sha1p",  0, 0, IF_DV_3F,   0x5E001000)
+                                   //  sha1m   Qd, Sn Vm.4S         DV_3F  01011110000mmmmm 000100nnnnnddddd   5E00 0000   Qd Sn Vm.4S   (vector)
+
+INST1(sha1h,   "sha1h",  0, 0, IF_DR_2J,   0x5E280800)
+                                   //  sha1h   Sd, Sn               DR_2H  0101111000101000 000010nnnnnddddd   5E28 0800   Sn Sn
+
+INST1(sha1su0, "sha1su0",  0, 0, IF_DV_3F,  0x5E003000)
+                                   //  sha1su0 Vd.4S,Vn.4S,Vm.4S    DV_3F  01011110000mmmmm 001100nnnnnddddd   5E00 3000   Vd.4S Vn.4S Vm.4S   (vector)
+
+INST1(sha1su1, "sha1su1",  0, 0, IF_DV_2P,  0x5E281800)
+                                   //  sha1su1 Vd.4S, Vn.4S         DV_2P  0101111000101000 000110nnnnnddddd   5E28 1800   Vd.4S Vn.4S   (vector)
    
 INST1(sbfm,    "sbfm",   0, 0, IF_DI_2D,  0x13000000)
                                    //  sbfm    Rd,Rn,imr,ims        DI_2D  X00100110Nrrrrrr ssssssnnnnnddddd   1300 0000   imr, ims
