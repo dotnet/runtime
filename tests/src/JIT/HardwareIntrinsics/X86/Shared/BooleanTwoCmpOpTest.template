@@ -163,35 +163,46 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }})
-                                     .Invoke(null, new object[] {{
+            var method = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }});
+            
+            if (method != null)
+            {{
+                var result = method.Invoke(null, new object[] {{
                                         Unsafe.Read<{5}<{6}>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<{7}<{8}>>(_dataTable.inArray2Ptr)
                                      }});
 
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+            }}
         }}
 
         public void RunReflectionScenario_Load()
         {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }})
-                                     .Invoke(null, new object[] {{
+            var method = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }});
+            
+            if (method != null)
+            {{
+                var result = method.Invoke(null, new object[] {{
                                         {1}.Load{5}(({6}*)(_dataTable.inArray1Ptr)),
                                         {1}.Load{7}(({8}*)(_dataTable.inArray2Ptr))
                                      }});
 
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+            }}
         }}
 
         public void RunReflectionScenario_LoadAligned()
-        {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }})
-                                     .Invoke(null, new object[] {{
+        {{var method = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({7}<{8}>) }});
+            
+            if (method != null)
+            {{
+                var result = method.Invoke(null, new object[] {{
                                         {1}.LoadAligned{5}(({6}*)(_dataTable.inArray1Ptr)),
                                         {1}.LoadAligned{7}(({8}*)(_dataTable.inArray2Ptr))
                                      }});
 
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+            }}
         }}
 
         public void RunClsVarScenario()

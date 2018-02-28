@@ -163,35 +163,46 @@ namespace JIT.HardwareIntrinsics.X86
 
         public void RunReflectionScenario_UnsafeRead()
         {
-            var result = typeof(Sse41).GetMethod(nameof(Sse41.TestNotZAndNotC), new Type[] { typeof(Vector128<Int16>), typeof(Vector128<Int16>) })
-                                     .Invoke(null, new object[] {
+            var method = typeof(Sse41).GetMethod(nameof(Sse41.TestNotZAndNotC), new Type[] { typeof(Vector128<Int16>), typeof(Vector128<Int16>) });
+            
+            if (method != null)
+            {
+                var result = method.Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Int16>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<Vector128<Int16>>(_dataTable.inArray2Ptr)
                                      });
 
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+            }
         }
 
         public void RunReflectionScenario_Load()
         {
-            var result = typeof(Sse41).GetMethod(nameof(Sse41.TestNotZAndNotC), new Type[] { typeof(Vector128<Int16>), typeof(Vector128<Int16>) })
-                                     .Invoke(null, new object[] {
+            var method = typeof(Sse41).GetMethod(nameof(Sse41.TestNotZAndNotC), new Type[] { typeof(Vector128<Int16>), typeof(Vector128<Int16>) });
+            
+            if (method != null)
+            {
+                var result = method.Invoke(null, new object[] {
                                         Sse2.LoadVector128((Int16*)(_dataTable.inArray1Ptr)),
                                         Sse2.LoadVector128((Int16*)(_dataTable.inArray2Ptr))
                                      });
 
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+            }
         }
 
         public void RunReflectionScenario_LoadAligned()
-        {
-            var result = typeof(Sse41).GetMethod(nameof(Sse41.TestNotZAndNotC), new Type[] { typeof(Vector128<Int16>), typeof(Vector128<Int16>) })
-                                     .Invoke(null, new object[] {
+        {var method = typeof(Sse41).GetMethod(nameof(Sse41.TestNotZAndNotC), new Type[] { typeof(Vector128<Int16>), typeof(Vector128<Int16>) });
+            
+            if (method != null)
+            {
+                var result = method.Invoke(null, new object[] {
                                         Sse2.LoadAlignedVector128((Int16*)(_dataTable.inArray1Ptr)),
                                         Sse2.LoadAlignedVector128((Int16*)(_dataTable.inArray2Ptr))
                                      });
 
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
+            }
         }
 
         public void RunClsVarScenario()
