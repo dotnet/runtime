@@ -47,6 +47,7 @@ namespace System.IO.Tests
             Assert.Equal(TestDirectory, directory);
         }
 
+        [ActiveIssue(27552)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // UNC shares
         public void UNCShares()
