@@ -7384,6 +7384,9 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee)
         {
             JITDUMP("[Fast tailcall decision]: %s\n", msg);
         }
+#else
+        (void)this;
+        (void)callee;
 #endif // DEBUG
     };
 
