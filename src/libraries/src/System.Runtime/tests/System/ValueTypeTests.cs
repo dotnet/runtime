@@ -141,6 +141,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void StructWithFloatFieldNotTightlyPackedZeroCompareTest()
         {
             StructWithFloatFieldNotTightlyPacked obj1 = new StructWithFloatFieldNotTightlyPacked();
@@ -172,6 +173,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void StructWithFloatFieldNotTightlyPackedNaNCompareTest()
         {
             StructWithFloatFieldNotTightlyPacked obj1 = new StructWithFloatFieldNotTightlyPacked();
@@ -203,6 +205,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void StructWithNestedFloatFieldNotTightlyPackedZeroCompareTest()
         {
             StructWithFloatFieldNestedNotTightlyPacked obj1 = new StructWithFloatFieldNestedNotTightlyPacked();
@@ -234,6 +237,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void StructWithNestedFloatFieldNotTightlyPackedNaNCompareTest()
         {
             StructWithFloatFieldNestedNotTightlyPacked obj1 = new StructWithFloatFieldNestedNotTightlyPacked();

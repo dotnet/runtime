@@ -214,6 +214,7 @@ namespace System.Tests
         [InlineData(float.NaN, -float.NaN, true)]
         [InlineData((float)789, (double)789, false)]
         [InlineData((float)789, "789", false)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void Equals(float f1, object value, bool expected)
         {
             if (value is float f2)
