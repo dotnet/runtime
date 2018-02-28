@@ -285,7 +285,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<T> ExtractVector128<T>(Vector256<T> value, byte index) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return ExtractVector128<T>(value, index);
         }
 
@@ -350,7 +349,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> ExtendToVector256<T>(Vector128<T> value) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return ExtendToVector256<T>(value);
         }
 
@@ -375,7 +373,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<T> GetLowerHalf<T>(Vector256<T> value) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return GetLowerHalf<T>(value);
         }
 
@@ -452,7 +449,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> Insert<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return Insert<T>(value, data, index);
         }
 
@@ -781,7 +777,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> Permute2x128<T>(Vector256<T> left, Vector256<T> right, byte control) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return Permute2x128<T>(left, right, control);
         }
 
@@ -937,7 +932,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> SetAllVector256<T>(T value) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return SetAllVector256<T>(value);
         }
 
@@ -951,7 +945,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> SetHighLow<T>(Vector128<T> hi, Vector128<T> lo) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return SetHighLow<T>(hi, lo);
         }
 
@@ -965,7 +958,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> SetZeroVector256<T>() where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return SetZeroVector256<T>();
         }
 
@@ -1007,8 +999,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<U> StaticCast<T, U>(Vector256<T> value) where T : struct where U : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return StaticCast<T, U>(value);
         }
 
@@ -1197,7 +1187,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static bool TestC<T>(Vector256<T> left, Vector256<T> right) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return TestC<T>(left, right);
         }
 
@@ -1222,7 +1211,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static bool TestNotZAndNotC<T>(Vector256<T> left, Vector256<T> right) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return TestNotZAndNotC<T>(left, right);
         }
 
@@ -1247,7 +1235,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static bool TestZ<T>(Vector256<T> left, Vector256<T> right) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return TestZ<T>(left, right);
         }
 
@@ -1305,7 +1292,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> ZeroExtendToVector256<T>(Vector128<T> value) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return ZeroExtendToVector256<T>(value);
         }
     }

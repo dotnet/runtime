@@ -503,8 +503,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<U> StaticCast<T, U>(Vector128<T> value) where T : struct where U : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<U>();
             return StaticCast<T, U>(value);
         }
 
