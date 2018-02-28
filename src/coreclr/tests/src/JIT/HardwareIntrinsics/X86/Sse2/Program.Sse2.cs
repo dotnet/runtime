@@ -142,6 +142,14 @@ namespace JIT.HardwareIntrinsics.X86
                 ["ShiftRightLogical128BitLane.UInt32.1"] = ShiftRightLogical128BitLaneUInt321,
                 ["ShiftRightLogical128BitLane.Int64.1"] = ShiftRightLogical128BitLaneInt641,
                 ["ShiftRightLogical128BitLane.UInt64.1"] = ShiftRightLogical128BitLaneUInt641,
+                ["Extract.Int16.1"] = ExtractInt161,
+                ["Extract.UInt16.1"] = ExtractUInt161,
+                ["Extract.Int16.129"] = ExtractInt16129,
+                ["Extract.UInt16.129"] = ExtractUInt16129,
+                ["Insert.Int16.1"] = InsertInt161,
+                ["Insert.UInt16.1"] = InsertUInt161,
+                ["Insert.Int16.129"] = InsertInt16129,
+                ["Insert.UInt16.129"] = InsertUInt16129,
             };
         }
     }
