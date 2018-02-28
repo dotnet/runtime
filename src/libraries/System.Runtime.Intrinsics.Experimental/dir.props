@@ -3,7 +3,8 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <IsNETCoreApp>true</IsNETCoreApp>
     <AssemblyKey>Open</AssemblyKey>
+    <!-- DO NOT ship this as stable. It contains preview-only APIs that will be stable in a future version. -->
+    <BlockStable>true</BlockStable>
   </PropertyGroup>
 </Project>
