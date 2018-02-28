@@ -166,7 +166,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }
 
-        [ActiveIssue(27550)]        // NTLM source files seem to cause an event source conflict
         [ActiveIssue(23771, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]

@@ -75,7 +75,19 @@ namespace System.Net
         private const int CriticalFailureEventId = 6;
         private const int DumpArrayEventId = 7;
 
-        private const int NextAvailableEventId = 8; // Update this value whenever new events are added.  Derived types should base all events off of this to avoid conflicts.
+        // These events are implemented in NetEventSource.Security.cs.
+        // Define the ids here so that projects that include NetEventSource.Security.cs will not have conflicts.
+        private const int EnumerateSecurityPackagesId = 8;
+        private const int SspiPackageNotFoundId = 9;
+        private const int AcquireDefaultCredentialId = 10;
+        private const int AcquireCredentialsHandleId = 11;
+        private const int InitializeSecurityContextId = 12;
+        private const int SecurityContextInputBufferId = 13;
+        private const int SecurityContextInputBuffersId = 14;
+        private const int AcceptSecuritContextId = 15;
+        private const int OperationReturnedSomethingId = 16;
+
+        private const int NextAvailableEventId = 17; // Update this value whenever new events are added.  Derived types should base all events off of this to avoid conflicts.
         #endregion
 
         #region Events
