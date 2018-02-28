@@ -4,7 +4,7 @@
 
 namespace System.Net.Http
 {
-    internal enum HttpConnectionKind
+    internal enum HttpConnectionKind : byte
     {
         Http,
         Https,

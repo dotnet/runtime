@@ -10,6 +10,22 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
+    // General flow of requests through the various layers:
+    //
+    // (1) HttpConnectionPoolManager.SendAsync: Does proxy lookup
+    // (2) HttpConnectionPoolManager.SendAsyncCore: Find or create connection pool
+    // (3) HttpConnectionPool.SendAsync: Handle basic/digest request auth
+    // (4) HttpConnectionPool.SendWithProxyAuthAsync: Handle basic/digest proxy auth
+    // (5) HttpConnectionPool.SendWithRetryAsync: Retrieve connection from pool, or create new
+    //                                            Also, handle retry for failures on connection reuse
+    // (6) HttpConnection.SendAsync: Handle negotiate/ntlm connection auth
+    // (7) HttpConnection.SendWithNtProxyAuthAsync: Handle negotiate/ntlm proxy auth
+    // (8) HttpConnection.SendAsyncCore: Write request to connection and read response
+    //                                   Also, handle cookie processing
+    //
+    // Redirect and deompression handling are done above HttpConnectionPoolManager,
+    // in RedirectHandler and DecompressionHandler respectively.
+
     /// <summary>Provides a set of connection pools, each for its own endpoint.</summary>
     internal sealed class HttpConnectionPoolManager : IDisposable
     {
@@ -162,7 +178,7 @@ namespace System.Net.Http
             }
         }
 
-        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri proxyUri, bool doNtConnectionAuth, bool isProxyConnect, CancellationToken cancellationToken)
+        public Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, Uri proxyUri, bool doRequestAuth, bool isProxyConnect, CancellationToken cancellationToken)
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
@@ -186,7 +202,7 @@ namespace System.Net.Http
                 }
             }
 
-            return pool.SendAsync(request, doNtConnectionAuth, cancellationToken);
+            return pool.SendAsync(request, doRequestAuth, cancellationToken);
         }
 
         public Task<HttpResponseMessage> SendProxyConnectAsync(HttpRequestMessage request, Uri proxyUri, CancellationToken cancellationToken)

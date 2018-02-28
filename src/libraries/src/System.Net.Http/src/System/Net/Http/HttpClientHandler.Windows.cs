@@ -193,8 +193,7 @@ namespace System.Net.Http
             // This property only affect .ServerCredentials and not .DefaultProxyCredentials.
 
             get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials :
-                    _socketsHttpHandler != null ? _socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials :
-                    false;
+                    _socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials;
             set
             {
                 if (_winHttpHandler != null)
@@ -222,7 +221,7 @@ namespace System.Net.Http
                     {
                         if (_socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials)
                         {
-                            // Only clear out the ServerCredentials property if it was a DefaultCredentials.
+                            // Only clear out the Credentials property if it was a DefaultCredentials.
                             _socketsHttpHandler.Credentials = null;
                         }
                     }
