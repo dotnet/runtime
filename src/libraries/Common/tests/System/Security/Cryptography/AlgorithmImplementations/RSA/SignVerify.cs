@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using Test.Cryptography;
 using Test.IO.Streams;
 using Xunit;
 
@@ -38,6 +39,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
     public abstract class SignVerify
     {
+        public static bool SupportsPss => RSAFactory.SupportsPss;
         public static bool BadKeyFormatDoesntThrow => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
         public static bool InvalidKeySizeDoesntThrow => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
 
@@ -546,6 +548,29 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public void PkcsSignHash_MismatchedHashSize()
+        {
+            RSASignaturePadding padding = RSASignaturePadding.Pkcs1;
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] data152 = new byte[152 / 8];
+                byte[] data168 = new byte[168 / 8];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => SignHash(rsa, data152, HashAlgorithmName.SHA1, padding));
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => SignHash(rsa, data168, HashAlgorithmName.SHA1, padding));
+
+                byte[] data160 = new byte[160 / 8];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => SignHash(rsa, data160, HashAlgorithmName.SHA256, padding));
+            }
+        }
+
+        [Fact]
         public void ExpectedHashSignature_SHA1_2048()
         {
             byte[] expectedHashSignature = new byte[]
@@ -805,6 +830,340 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
 
             VerifyHashSignature(hashSignature, dataHash, "SHA256", TestData.RSA2048Params);
+        }
+
+        [Theory]
+        [InlineData("SHA256")]
+        [InlineData("SHA384")]
+        [InlineData("SHA512")]
+        [InlineData("MD5")]
+        [InlineData("SHA1")]
+        public void PssRoundtrip(string hashAlgorithmName)
+        {
+            RSAParameters privateParameters = TestData.RSA2048Params;
+            RSAParameters publicParameters = new RSAParameters
+            {
+                Modulus = privateParameters.Modulus,
+                Exponent = privateParameters.Exponent,
+            };
+
+            using (RSA privateKey = RSAFactory.Create())
+            using (RSA publicKey = RSAFactory.Create())
+            {
+                privateKey.ImportParameters(privateParameters);
+                publicKey.ImportParameters(publicParameters);
+
+                byte[] data = TestData.RsaBigExponentParams.Modulus;
+                HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
+                RSASignaturePadding padding = RSASignaturePadding.Pss;
+
+                if (RSAFactory.SupportsPss)
+                {
+                    byte[] signature = SignData(privateKey, data, hashAlgorithm, padding);
+
+                    Assert.NotNull(signature);
+                    Assert.Equal(publicParameters.Modulus.Length, signature.Length);
+
+                    Assert.True(VerifyData(publicKey, data, signature, hashAlgorithm, padding));
+                }
+                else
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => SignData(privateKey, data, hashAlgorithm, padding));
+
+                    byte[] signature = new byte[privateParameters.Modulus.Length];
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => VerifyData(privateKey, data, signature, hashAlgorithm, padding));
+                }
+            }
+        }
+
+        [Fact]
+        public void VerifyExpectedSignature_PssSha256_RSA2048()
+        {
+            byte[] modulus2048Signature = (
+                "460CA7273FF6CC02DD57F07CB18E65E5AF23B0285E26122B810EC6D2F4EE7E1A" +
+                "1B01A203623E800C9940CE827614B2F1DC7C7B1CC3A976D27F82517EB64AC90B" +
+                "9A97D1CC17FB4731C63CA02C9F46B57A4A03981D73265CDB36E28EF08FCA77ED" +
+                "FAB34EE91FE6AABF00045489ACEB631FB004438344EA7997ADE2191C1A70E9F9" +
+                "2BA809FEFB4EFA0DBC1075A7EBBBCF57747DA8D0B3467BD3DAC5EA8B47F76F07" +
+                "7043497E7459A83349FE74320E77D471008CB7B43707561FA8DC9251F8EAE531" +
+                "5AC1894C4F9E6B7BECF993C146C5D6CF0DB60992A297F358A0895831965887C4" +
+                "B9153B96771C998CD61DA0C487D63555AE66F917F1BFDF509BFFEB21440F6A3C").HexToByteArray();
+
+            VerifyExpectedSignature_Pss(
+                TestData.RSA2048Params,
+                HashAlgorithmName.SHA256,
+                TestData.RSA2048Params.Modulus,
+                modulus2048Signature);
+        }
+
+        [Fact]
+        public void VerifyExpectedSignature_PssSha256_RSA16384()
+        {
+            byte[] modulus2048Signature = (
+                "1D92D529567F6922866FFDE4BF44C427FA511BF5EDF163ED51A0D14ADECD98FB" +
+                "C6A61A61532404AF74C3AB65119BB1358855A68362FBABAED7D8E56403EE9AFA" +
+                "33C8D73E35880066556A7304F8E8A3EBF981C8318958AC867B32F3A01F085F53" +
+                "B0885781DFCF4DE4183805B7B26C4718E58031FF8D0B82B38D958BF0147C263F" +
+                "A4012FE29E8B3D7EA18780C3A6B01E15D81387C4367AFB35FF4868309928C112" +
+                "86F030AFED02B2C8CED24C527B8EAA126076B268F469427E70D0ACFC4C3E007D" +
+                "05F84E2F3D3DC3028674DA38026F9054F54636FBED099CD528782F60F1882045" +
+                "E2F297B467496F01AE566EC80C384A5E775481EECEA713D0F35C75CBFDB33F52" +
+                "FC4699EDBEB1F938368AA2B261402634BEE548F38821E6FCBFE7C26C0C44EB1D" +
+                "58D215500E11EA400AE44B349727BE28A62188770393863B0F9BCC6C82717C35" +
+                "34334205B931BDD6FEA4FDCC681566BCB2AF80266D692007E027682535BFD265" +
+                "3E8D906D3531575975F2BB77457378FA84A34F2F064F6E5B986D48FBFD9F8BF8" +
+                "BD3CDFDA21C624A315C8246764841C811939B60BC73AB4CD15B141A1C3D063B6" +
+                "9529FB4B4342B1064650272CECE2B0A398A5F9B5FD2D107A9FE84781CA11D29F" +
+                "00986BEE1850BC5E46570FDFD54DBD15C6C8BA12AC0CA7825765009346AB7E95" +
+                "848F95928368E65AFDCB8AA058B0EE31320584248327F4D22017480BAB38BA47" +
+                "4FFCBBE68C5A24582AB9594EAD26ACE67170319B1BA9FB514070A5051744EAB3" +
+                "BDC1C131A8AF580CE5B11B23B50FF66D4DC6F6064C7FBA88D8CB74A3A85A51EB" +
+                "C344F7226871286109B0B9D33B7137B223FDC152EDD1BA0641D906A22F91D146" +
+                "8B39EAC8261EB05CA7757AEA46051599087CE92A9962D1DEF8DAF910F10169E0" +
+                "A0F8F864C0E4B29DC12958B06E8E4225C90CFEB6D7367DFEB7F8DF2891D50DCC" +
+                "89F435466A3D25B676BD06C69D39EDE7EDD639703C262B7C0257C88BD197542F" +
+                "0CE25F8E317037C1DC4380E2AA43CB4FBBA078AF83CDCA8DD8A8545267E3F853" +
+                "8DE7A897269E492A1400715FC3BABF2E30D2696216F51FD30FC3BE67FB9813CA" +
+                "DAEE3E4CB779A5F8A10DBCA11927CBC50721A5412680E490A68CA3DFF74B9E2A" +
+                "774DCC32B84B9D5B253268465A911A6CF3D189F51D21DDEF30006F929C151402" +
+                "E821F4097A8514192F95CA8B9ABFD0B7C7C86AAC5B0FDAECB02EABBC3B1F8442" +
+                "2A1921AE0B4BC01B6C037038DF382DC130843B15F5F042A98053578248E8DB02" +
+                "A1B5FC702B59FEAD99C32F6DAF15308A53CA139E408CE0F45DEC48FF1E5DB77B" +
+                "0305196F16598A21AF92603F77BA061A2A12B5D6F69B19F2EBDDE47578DD3895" +
+                "8D36D15D88015F5E51AA818669B6A65DE40C264CAD22B8E25D4866E8BBC0A64E" +
+                "59E0D95C69DF925BB9B9C88AB0542E53C6034DDE4FB5763D21C62765FA7A39AA" +
+                "B50652F20D464652710162EBBE7ECFEFF255864B459A0DD83DD3E7DD88EA1271" +
+                "442D70A944106A47EF22ADF67AD9D7CC24FC47C66B5D9B15E3D0104491D8C060" +
+                "A6E46F96A8E0C11A7D25211E2206B1CE272143B4B369D7B07645CB1E94668C43" +
+                "3D412A4600364122F22D7EC6B79227FA215CD230E3D09D0AA5BE3B291C4BE343" +
+                "808582C7F6EE20D7457DE1955F9E7E40A4C9EF55C5A5A0D3D125D8F53E69477B" +
+                "F0D91BD8B3401ECEEFE9D94382F836ACFB81814DFEF86F614406B02B6001E90E" +
+                "E84DA2BD0441BB943A6295F530AA7B7F375CD91EBA4CA83A0CF35FCBCA9F9915" +
+                "3BA0C28D1DA762D6257C99378F21FD6D890C31B9606BB6238CD3B0DBD4012649" +
+                "602E5352D20DA067576A94DB21E323B7902885F8892C844411027C3F4ED1F28B" +
+                "DBFB929E986DA6AF15F552975705C9C2C5500CE52F90903EF4BD53B145FB713B" +
+                "8A62FA292E608438A1CBF663FCCCEC99489CE9D709BF92AA9260F3950B058618" +
+                "B4EED63DD02376057460AF3854976C6A9C605148B0882F337253AD8AE8FA3AA6" +
+                "4194EF462A403D8198F1FBEFCC2ECAAE6B3C3A52AC79F5311F60B3EF2B281FE1" +
+                "C22E2C820570C687A1B5C7A1BB5013844DEE5AD720BE9D186B14EF38EA2FCB12" +
+                "4358CF552BEB3B9A0B36FB298FE527EEE2CD428680C4D6C55CCBFCE6F8E81162" +
+                "32198584267DF41CF50BDDBA22C601ADCA005A2187FC0097DC0B6AF0552B3034" +
+                "BA6E432DD0D7D6F3D58DDA91AC4756D2CFFC28DCF0A7EEE2D2A6CC23C77A2E2F" +
+                "9DD26143AAD7062093D7592C282A02FABC3815DD285064F6F5F0848294D781B3" +
+                "20C3F2DA3C26E1CCF6DB171908D5AFABA1A7BABC6D3F31FD7B566B7321AF6297" +
+                "F3EE652ABD11DD4FFF39D77B4FE06A838412B85C4877534369D115C65FA36BA3" +
+                "DDFF9B50C95B2AD649A5C814C9183ED743FA5CB23F65C5216C0F61B16CB73409" +
+                "D105EE6321C7D210C4DABC7A80C63B383178669FA9E79DCDD3DB1C175EED5199" +
+                "9F51BBAC06C90794B77491D0BC2FED10199EE322B7B23DB5B63B6C6B85E39ED3" +
+                "D145BC070EA912820C2E59FE9ED3670D8FBC44B9B2D6FAEEF95154972BA509CC" +
+                "96F83328DD7243DB11F9CDD5D8013DB8C7DD5ED58DEEFAC7FD282085715A063E" +
+                "320B167C904A65761233361B8232DAE539A8B5B38D9506ABBA9844E24D64E2DA" +
+                "ACD1E4F22546959282B721ACDA8289AE92C5FE0775F59A4EA10C732EE22FA01C" +
+                "E6556E8CCA94E6DD87F3A50EDF6FFDC4D10B07B3FBC55111DF62088A1AFCE2B6" +
+                "C6CF4C18CAA3BA05E7117368546B241236DDE91DF9CE30AE691C6044F30EA85A" +
+                "F169F0B64C353A40BC4AFF467C4B304B70751248B1B09F3781DDB84087B972FD" +
+                "0C92C6ABE141D38327BD810F87F0E058098B6E8A538E236C40955005AC4A232D" +
+                "22F7F9B479D0C093F18C4C4756B06F80132980E30716A3282306D1352CBBCD31").HexToByteArray();
+
+            VerifyExpectedSignature_Pss(
+                TestData.RSA16384Params,
+                HashAlgorithmName.SHA256,
+                TestData.RSA2048Params.Modulus,
+                modulus2048Signature);
+        }
+
+        [Fact]
+        public void VerifyExpectedSignature_PssSha384()
+        {
+            byte[] bigModulusSignature = (
+                "70F48CA4E8640701369DB986C4D09C91E4C197DB1BE4F32C3F37A67AEC4BA95D" +
+                "733EAACAE139B7B9C8E66C5BC82629971C3BEBF93A949CB81763FECDF96B73DA" +
+                "7D5929A15DFEF58B51E6D43F46238FC1121AAA3A5F3DF6B56E0FE2B6205192AB" +
+                "BA9752FC9CFD3000B08E3A823514A93FD90871FD09A005DA191431487DAF6364" +
+                "22").HexToByteArray();
+
+            VerifyExpectedSignature_Pss(
+                TestData.RSA1032Parameters,
+                HashAlgorithmName.SHA384,
+                TestData.RSA16384Params.Modulus,
+                bigModulusSignature);
+        }
+
+        [Fact]
+        public void VerifyExpectedSignature_PssSha512()
+        {
+            byte[] helloSignature = (
+                "60678D68816149206AD33F7153FFBAA1043FF7ABC539D6C88E5D2C94BCC10CF4" +
+                "E66A6F0F08DEA15781B8FA06F9E27D0B01347DAAA4B760D8978EC2EF87B508A2" +
+                "680FBE59F8BCC8A6AF413A1CB2373DFF32C4217542A9EE86179083DD316485FB" +
+                "E496EEF0EBE3E4A2793C888E988962C5EAF35136172E74B02724770863D10B19" +
+                "AACDE7D31CE77BE96EA54DE7A2409648AB3105FAC1003B00E32FAE4527284352" +
+                "A859C17F4C7D611DE4C451291A3096A0D6230EE2699B79CD571DE6D441CB372A" +
+                "9D6E46080AB8041D45D4B9475CBE6B48D10F4332910869D8C3931133224475D9" +
+                "BA1E0B92161BB2C17A96F92432F2BA1AEBAD8C7CD33D79F5C6EFB9BF6F192205").HexToByteArray();
+
+            VerifyExpectedSignature_Pss(
+                TestData.RSA2048Params,
+                HashAlgorithmName.SHA512,
+                TestData.HelloBytes,
+                helloSignature);
+        }
+
+        private void VerifyExpectedSignature_Pss(
+            RSAParameters keyParameters,
+            HashAlgorithmName hashAlgorithm,
+            byte[] data,
+            byte[] signature,
+            [System.Runtime.CompilerServices.CallerMemberName] string callerName = null)
+        {
+            RSAParameters publicParameters = new RSAParameters
+            {
+                Modulus = keyParameters.Modulus,
+                Exponent = keyParameters.Exponent,
+            };
+
+            RSASignaturePadding padding = RSASignaturePadding.Pss;
+
+            using (RSA rsaPublic = RSAFactory.Create())
+            using (RSA rsaPrivate = RSAFactory.Create())
+            {
+                try
+                {
+                    rsaPublic.ImportParameters(publicParameters);
+                }
+                catch (CryptographicException)
+                {
+                    // The key didn't load, not anything else this test can do.
+                    return;
+                }
+
+                rsaPrivate.ImportParameters(keyParameters);
+
+                // Generator for new tests.
+                if (signature == null)
+                {
+                    signature = SignData(rsaPrivate, data, hashAlgorithm, padding);
+                    Console.WriteLine($"{callerName}: {signature.ByteArrayToHex()}");
+                }
+
+                if (RSAFactory.SupportsPss)
+                {
+                    Assert.True(
+                        VerifyData(rsaPublic, data, signature, hashAlgorithm, padding),
+                        "Public key verified the signature");
+
+                    Assert.True(
+                        VerifyData(rsaPrivate, data, signature, hashAlgorithm, padding),
+                        "Private key verified the signature");
+                }
+                else
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => VerifyData(rsaPublic, data, signature, hashAlgorithm, padding));
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => VerifyData(rsaPrivate, data, signature, hashAlgorithm, padding));
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsPss))]
+        public void PssSignature_WrongHashAlgorithm()
+        {
+            RSASignaturePadding padding = RSASignaturePadding.Pss;
+            byte[] data = TestData.HelloBytes;
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] signature = SignData(rsa, data, HashAlgorithmName.SHA256, padding);
+                Assert.False(VerifyData(rsa, data, signature, HashAlgorithmName.SHA384, padding));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsPss))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void PssVerifyHash_MismatchedHashSize()
+        {
+            // This is a legal SHA-1 value, which we're going to use with SHA-2-256 instead.
+            byte[] hash = "75ED7E627DB9AECBD870E27EED49ED7D9AEB2F52".HexToByteArray();
+
+            byte[] sig = (
+                "837A17C13618030A6C0C17551D8A34CA5AE4BB1D45A5DAD091F4016C630E0838" +
+                "5F9D9F1F75EF4CCBBE723C0630AC699C43587D81BD16AFBD2F797215F68F8062" +
+                "87A352BB269FB9D042DA4D9D664172E4B3B39FC3457879C8DBDD56FAB44F2515" +
+                "71E2E607A964CB548CB36198004ACD8D3E3B80D10917CE582710BB65513C0310" +
+                "4A0A82C63D2B8898F5BAF97618B5EBE5F3B0824561C059FD7FC949B12837E8B1" +
+                "E86380E9A68F6D7E8E8BD5C57B04E831DBBDBDCA20403EC988635F62D4B48382" +
+                "56E2AF4213FDCA6BF801C06AF6381DAC61288C13B08806A323B3E956A13BCB29" +
+                "680F62CCA9880A8A1FD1A2CA61DCFE008AC7FC55E98ACCE9B7BE010E5BCB836A").HexToByteArray();
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                Assert.False(VerifyHash(rsa, hash, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pss));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsPss))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void PssSignHash_MismatchedHashSize()
+        {
+            RSASignaturePadding padding = RSASignaturePadding.Pss;
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] data152 = new byte[152 / 8];
+                byte[] data168 = new byte[168 / 8];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => SignHash(rsa, data152, HashAlgorithmName.SHA1, padding));
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => SignHash(rsa, data168, HashAlgorithmName.SHA1, padding));
+
+                byte[] data160 = new byte[160 / 8];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => SignHash(rsa, data160, HashAlgorithmName.SHA256, padding));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsPss))]
+        public void PssSignature_WrongData()
+        {
+            RSASignaturePadding padding = RSASignaturePadding.Pss;
+            byte[] dataCopy = (byte[])TestData.HelloBytes.Clone();
+            HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA256;
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] signature = SignData(rsa, dataCopy, hashAlgorithmName, padding);
+                dataCopy[0] ^= 0xFF;
+                Assert.False(VerifyData(rsa, dataCopy, signature, hashAlgorithmName, padding));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsPss))]
+        public void PssSignature_WrongLength()
+        {
+            RSASignaturePadding padding = RSASignaturePadding.Pss;
+            byte[] data = TestData.HelloBytes;
+            HashAlgorithmName hashAlgorithmName = HashAlgorithmName.SHA256;
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] signature = SignData(rsa, data, hashAlgorithmName, padding);
+
+                // Too long by a byte
+                Array.Resize(ref signature, signature.Length + 1);
+                Assert.False(VerifyData(rsa, data, signature, hashAlgorithmName, padding));
+
+                // Net too short by a byte
+                Array.Resize(ref signature, signature.Length - 2);
+                Assert.False(VerifyData(rsa, data, signature, hashAlgorithmName, padding));
+            }
         }
 
         private void ExpectSignature(

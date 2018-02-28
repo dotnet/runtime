@@ -385,6 +385,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyBlobHelpers.cs">
       <Link>Common\System\Security\Cryptography\KeyBlobHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RsaPaddingProcessor.cs">
+      <Link>Common\System\Security\Cryptography\RsaPaddingProcessor.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSASecurityTransforms.cs">
       <Link>Common\System\Security\Cryptography\RSASecurityTransforms.cs</Link>
     </Compile>
@@ -410,7 +413,9 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />

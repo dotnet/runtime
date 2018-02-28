@@ -45,13 +45,14 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        public bool SupportsSha2Oaep
-        {
-            // Currently only RSACng does, which is the default provider on Windows.
-            get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !(Create() is RSACryptoServiceProvider); }
-        }
+        public bool SupportsSha2Oaep { get; } =
+            !PlatformDetection.IsFullFramework || !(RSA.Create() is RSACryptoServiceProvider);
+
+        public bool SupportsPss { get; } =
+            !PlatformDetection.IsFullFramework || !(RSA.Create() is RSACryptoServiceProvider);
 
         public bool SupportsDecryptingIntoExactSpaceRequired => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
     }
 
     public partial class RSAFactory

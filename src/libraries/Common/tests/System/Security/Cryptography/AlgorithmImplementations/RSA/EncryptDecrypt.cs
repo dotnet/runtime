@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -26,6 +27,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
     public abstract class EncryptDecrypt
     {
+        public static bool SupportsSha2Oaep => RSAFactory.SupportsSha2Oaep;
         private static bool EphemeralKeysAreExportable => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer;
 
         protected abstract byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding);
@@ -36,8 +38,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                AssertExtensions.Throws<ArgumentNullException>("padding", () => Encrypt(rsa, new byte[1], null));
-                AssertExtensions.Throws<ArgumentNullException>("padding", () => Decrypt(rsa, new byte[1], null));
+                AssertExtensions.Throws<ArgumentNullException>("padding", () => Encrypt(rsa, TestData.HelloBytes, null));
+                AssertExtensions.Throws<ArgumentNullException>("padding", () => Decrypt(rsa, TestData.HelloBytes, null));
             }
         }
 
@@ -115,6 +117,41 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public void DecryptSavedAnswer_OaepSHA256()
+        {
+            byte[] cipherBytes = (
+                "3ED1D2DCFBD1778D1B1F20C2CC4FD364D7236ACB6DBD7109CE9C44F6DA8D47A4" +
+                "53C36A3D4E8E87168CD1E5427A6C261F87CDC5A62507AF6127D1C5D274D5EECD" +
+                "50DC53C559FC85624D9FB999ADDD9BE5652926440A3DE32CA27554F524C30A7A" +
+                "E66215FE725F5998FB2AFD2E1E5F06F2944B61502A27272660A21363F35C3DC8" +
+                "8ED072096391B27D27BE5E1775F949A3A5C9C2903794090CE8D9DFE7003A4745" +
+                "E7029B0D4C0F6FD28E9886227E05B56D6BB0BA2933126C808EE0D972054A26DB" +
+                "2CA97B09967B2B6D7592F2563302111DE2FC42ED442522CD83A1AE9E8C3F0B1A" +
+                "9D50A4A89008D2135E0D8BC859F81CEF76166834432B4AE9BAAD1FC08E4C2C70").HexToByteArray();
+
+            byte[] output;
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(TestData.RSA2048Params);
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA256);
+                }
+                else
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA256));
+
+                    return;
+                }
+            }
+
+            Assert.Equal(TestData.RSA2048Params.InverseQ, output);
+        }
+
+        [Fact]
         public void DecryptSavedAnswer_OaepSHA384()
         {
             byte[] cipherBytes =
@@ -176,6 +213,41 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public void DecryptSavedAnswer_OaepSHA512()
+        {
+            byte[] cipherBytes = (
+                "7F0598C7257433FCDEF3F6C0AE69517D3AA6B4FD67D7F4C25F9A5996D20843AF" +
+                "E14C21D35D4D289CE4E720A1C9D998C9F95AFB73E523F5EA4B54D0BAE9B5665C" +
+                "B0A5F5719F5466A491FDB5B323F6B741CF7E0C263D1274959AD87B64B789F7EC" +
+                "6E52085954B59F7A3EBE6295EB7F168E8DADB49F166B4CB753F0D2774370D3E2" +
+                "D5B9F6493D7EEA65AA7BD8867313C13850CB2F2D7CCF46E553BEBDADA6060C14" +
+                "CC43AE238410167BC42FDE9DA07D135C0D2DB48537299DC067A808CCBA2B0B0A" +
+                "7A741705DA98872A7416610939DE4E2D4C387662ABD74D80E33502AFF1D571DB" +
+                "B874CA25CC54CEE69B6252B33BA92119873E0F8B5CCE0496324904A7847D73FB").HexToByteArray();
+
+            byte[] output;
+
+            using (RSA rsa = RSAFactory.Create())
+            {
+                rsa.ImportParameters(TestData.RSA2048Params);
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA512);
+                }
+                else
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA512));
+
+                    return;
+                }
+            }
+
+            Assert.Equal(TestData.RSA1032Parameters.DQ, output);
+        }
+
+        [Fact]
         public void DecryptSavedAnswerUnusualExponent()
         {
             byte[] cipherBytes =
@@ -210,19 +282,196 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public void RsaCryptRoundtrip()
+        public void RsaCryptRoundtrip_OaepSHA1() => RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA1);
+
+        [Fact]
+        public void RsaCryptRoundtrip_OaepSHA256() =>
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA256, RSAFactory.SupportsSha2Oaep);
+
+        [Fact]
+        public void RsaCryptRoundtrip_OaepSHA384() =>
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA384, RSAFactory.SupportsSha2Oaep);
+
+        [Fact]
+        public void RsaCryptRoundtrip_OaepSHA512() =>
+            RsaCryptRoundtrip(RSAEncryptionPadding.OaepSHA512, RSAFactory.SupportsSha2Oaep);
+
+        private void RsaCryptRoundtrip(RSAEncryptionPadding paddingMode, bool expectSuccess=true)
         {
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(2048))
             {
-                crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
-                output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
+                if (!expectSuccess)
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Encrypt(rsa, TestData.HelloBytes, paddingMode));
+
+                    return;
+                }
+
+                crypt = Encrypt(rsa, TestData.HelloBytes, paddingMode);
+                output = Decrypt(rsa, crypt, paddingMode);
             }
 
             Assert.NotEqual(crypt, output);
             Assert.Equal(TestData.HelloBytes, output);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void RoundtripEmptyArray()
+        {
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                void RoundtripEmpty(RSAEncryptionPadding paddingMode)
+                {
+                    byte[] encrypted = Encrypt(rsa, Array.Empty<byte>(), paddingMode);
+                    byte[] decrypted = Decrypt(rsa, encrypted, paddingMode);
+
+                    Assert.Equal(Array.Empty<byte>(), decrypted);
+                }
+
+                RoundtripEmpty(RSAEncryptionPadding.Pkcs1);
+                RoundtripEmpty(RSAEncryptionPadding.OaepSHA1);
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    RoundtripEmpty(RSAEncryptionPadding.OaepSHA256);
+                    RoundtripEmpty(RSAEncryptionPadding.OaepSHA384);
+                    RoundtripEmpty(RSAEncryptionPadding.OaepSHA512);
+                }
+            }
+        }
+
+        [Fact]
+        public void RsaOaepMaxSize()
+        {
+            RSAParameters rsaParameters = TestData.RSA2048Params;
+
+            using (RSA rsa = RSAFactory.Create(rsaParameters))
+            {
+                void Test(RSAEncryptionPadding paddingMode, int hashSizeInBits)
+                {
+                    // The overhead required is hLen + hLen + 2.
+                    int hLen = (hashSizeInBits + 7) / 8;
+                    int overhead = hLen + hLen + 2;
+                    int maxSize = rsaParameters.Modulus.Length - overhead;
+
+                    byte[] data = new byte[maxSize];
+                    byte[] encrypted = Encrypt(rsa, data, paddingMode);
+                    byte[] decrypted = Decrypt(rsa, encrypted, paddingMode);
+
+                    Assert.Equal(data.ByteArrayToHex(), decrypted.ByteArrayToHex());
+
+                    data = new byte[maxSize + 1];
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Encrypt(rsa, data, paddingMode));
+                }
+
+                Test(RSAEncryptionPadding.OaepSHA1, 160);
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    Test(RSAEncryptionPadding.OaepSHA256, 256);
+                    Test(RSAEncryptionPadding.OaepSHA384, 384);
+                    Test(RSAEncryptionPadding.OaepSHA512, 512);
+                }
+            }
+        }
+
+        [Fact]
+        public void RsaDecryptOaep_ExpectFailure()
+        {
+            // This particular byte pattern, when decrypting under OAEP-SHA-2-384 has
+            // an 0x01 in the correct range, and y=0, but lHash and lHashPrime do not agree
+            byte[] encrypted = (
+                "2A1914D11E2F6B9E286DAC9D76F32A008EC31457522CEA058D7C48C85085899F" +
+                "E9C2DBD4FCA5FAD936F2B747E0BEF131217F8521FA921DF807A83C1B34DB1547" +
+                "8D637EDFED222B6411C80D465332B2EE5208F87D4F8D1736FEBC291E14E77C4B" +
+                "75A1F06B5124F225F310BFFA83BCA9F11101BA67A64109C37F52BF00B84FFD9A" +
+                "D39282AD2BA9EEADADA0FE38998755B556B152EE8974F2C8158ACFA5F509DD4A" +
+                "BFE72218C0DF596DFF02C332F45ECC04280455F5D2666E93A3522BB8B41FC92E" +
+                "0176AFB1D3A5AE474B708B882ACA88447046E13D44E5EA8D66421DFC177A683B" +
+                "7B395F18886AAFD9CED072079739ED1D390354976D188C50A29AAD58784886E6").HexToByteArray();
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA384));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsSha2Oaep))]
+        public void RsaDecryptOaepWrongAlgorithm()
+        {
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] data = TestData.HelloBytes;
+                byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA384));
+            }
+        }
+
+        [Fact]
+        public void RsaDecryptOaepWrongData()
+        {
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] data = TestData.HelloBytes;
+                byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA1);
+                encrypted[1] ^= 0xFF;
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
+                    encrypted[1] ^= 0xFF;
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));
+                }
+            }
+        }
+
+        [Fact]
+        public void RsaDecryptOaepWrongDataLength()
+        {
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] data = TestData.HelloBytes;
+
+                byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA1);
+                Array.Resize(ref encrypted, encrypted.Length + 1);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+
+                Array.Resize(ref encrypted, encrypted.Length - 2);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+
+                if (RSAFactory.SupportsSha2Oaep)
+                {
+                    encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
+                    Array.Resize(ref encrypted, encrypted.Length + 1);
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+
+                    Array.Resize(ref encrypted, encrypted.Length - 2);
+
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+                }
+            }
         }
 
         [ConditionalFact(nameof(EphemeralKeysAreExportable))]
