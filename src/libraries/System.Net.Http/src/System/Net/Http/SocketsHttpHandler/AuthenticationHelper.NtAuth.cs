@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Http
 {
@@ -48,8 +49,9 @@ namespace System.Net.Http
                 {
                     string challengeData = challenge.ChallengeData;
 
-                    // TODO: Validate correct arguments to NTAuthentication
-                    NTAuthentication authContext = new NTAuthentication(false, challenge.SchemeName, challenge.Credential, null, ContextFlagsPal.Connection, null);
+                    string spn = "HTTP/" + authUri.IdnHost;
+                    ChannelBinding channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
+                    NTAuthentication authContext = new NTAuthentication(false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
                     try
                     {
                         while (true)
