@@ -61697,7 +61697,7 @@ RelativePath=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel\Consol
 WorkingDir=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;R2R_FAIL
 HostStyle=0
 
 [RayTracer.cmd_8031]
@@ -71545,7 +71545,7 @@ RelativePath=JIT\SIMD\VectorReturn_r\VectorReturn_r.cmd
 WorkingDir=JIT\SIMD\VectorReturn_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;R2R_FAIL
 HostStyle=0
 
 [VectorReturn_ro.cmd_9293]
@@ -71553,7 +71553,7 @@ RelativePath=JIT\SIMD\VectorReturn_ro\VectorReturn_ro.cmd
 WorkingDir=JIT\SIMD\VectorReturn_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;ISSUE_5642
+Categories=EXPECTED_PASS;ISSUE_5642;R2R_FAIL
 HostStyle=0
 
 [VectorSet_r.cmd_9294]
