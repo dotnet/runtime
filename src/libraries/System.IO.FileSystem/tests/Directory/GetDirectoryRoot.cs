@@ -49,6 +49,7 @@ namespace System.IO.Tests
             Assert.Equal(Path.GetPathRoot(Directory.GetCurrentDirectory()), root);
         }
 
+        [ActiveIssue(27552)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // UNC shares
         public void UNCShares()
