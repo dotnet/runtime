@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -12,6 +13,92 @@ namespace System
     /// </summary>
     public static partial class MemoryExtensions
     {
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to lowercase,
+        /// using the casing rules of the specified culture.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <param name="culture">An object that supplies culture-specific casing rules.</param>
+        /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.</remarks>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when <paramref name="culture"/> is null.
+        /// </exception>
+        public static int ToLower(this ReadOnlySpan<char> source, Span<char> destination, CultureInfo culture)
+        {
+            if (culture == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            string sourceString = source.ToString();
+#if !netstandard11
+            string resultString = sourceString.ToLower(culture);
+#else
+            string resultString = culture.TextInfo.ToLower(sourceString);
+#endif
+            Debug.Assert(sourceString.Length == resultString.Length);
+            resultString.AsSpan().CopyTo(destination);
+            return source.Length;
+        }
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to lowercase,
+        /// using the casing rules of the invariant culture.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.</remarks>
+        public static int ToLowerInvariant(this ReadOnlySpan<char> source, Span<char> destination)
+            => ToLower(source, destination, CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to uppercase,
+        /// using the casing rules of the specified culture.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <param name="culture">An object that supplies culture-specific casing rules.</param>
+        /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.</remarks>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when <paramref name="culture"/> is null.
+        /// </exception>
+        public static int ToUpper(this ReadOnlySpan<char> source, Span<char> destination, CultureInfo culture)
+        {
+            if (culture == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            string sourceString = source.ToString();
+#if !netstandard11
+            string resultString = sourceString.ToUpper(culture);
+#else
+            string resultString = culture.TextInfo.ToUpper(sourceString);
+#endif
+            Debug.Assert(sourceString.Length == resultString.Length);
+            resultString.AsSpan().CopyTo(destination);
+            return source.Length;
+        }
+
+        /// <summary>
+        /// Copies the characters from the source span into the destination, converting each character to uppercase
+        /// using the casing rules of the invariant culture.
+        /// </summary>
+        /// <param name="source">The source span.</param>
+        /// <param name="destination">The destination span which contains the transformed characters.</param>
+        /// <remarks>If the source and destinations overlap, this method behaves as if the original values are in
+        /// a temporary location before the destination is overwritten.</remarks>
+        public static int ToUpperInvariant(this ReadOnlySpan<char> source, Span<char> destination)
+            => ToUpper(source, destination, CultureInfo.InvariantCulture);
+
         /// <summary>
         /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
