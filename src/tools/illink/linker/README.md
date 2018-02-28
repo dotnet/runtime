@@ -1,164 +1,102 @@
-monolinker
-====
-
-monolinker is the Mono CIL Linker.
+# IL Linker
 
 The linker is a tool one can use to only ship the minimal possible set of
 functions that a set of programs might require to run as opposed to the full
 libraries.
 
-* How does the linker work?
+## How does the linker work?
 
 The linker analyses the intermediate code (CIL) produced by every compiler
-targeting the Mono platform like mcs, gmcs, vbnc, booc or others. It will walk
+targeting the .NET platform like mcs, csc, vbnc, booc or others. It will walk
 through all the code that it is given to it, and basically, perform a mark and
 sweep operations on all the code that it is referenced, to only keep what is
 necessary for the source program to run.
 
-* Usage
+## Usage
 
-1) Linking from a source assembly
+### Linking from a source assembly
 
 The command:
 
-monolinker -a Program.exe
+`illinker -a Program.exe`
 
 will use the assembly Program.exe as a source. That means that the linker will
 walk through all the methods of Program.exe to generate only what is necessary
 for this assembly to run.
 
-2) Linking from an xml descriptor
+### Linking from an [XML descriptor](#syntax-of-xml-descriptor)
 
 The command:
 
-monolinker -x desc.xml
+`illinker -x desc.xml`
 
 will use the XML descriptor as a source. That means that the linker will
 use this file to decide what to link in a set of assemblies. The format of the
 descriptors is described further on in this document.
 
-3) Linking from an api info file
+### Linking from an API info file
 
 The command:
 
-monolinker -i assembly.info
+`illinker -i assembly.info`
 
-will use a file produced by mono-api-info as a source. The linker will use
+will use a file produced by `mono-api-info` as a source. The linker will use
 this file to link only what is necessary to match the public API defined in
 the info file.
 
-4) Actions on the assemblies
+### Actions on the assemblies
 
 You can specify what the linker should do exactly per assembly.
 
 The linker can do 3 things:
 
-	- skip them, and do nothing with them,
-	- copy them to the output directory,
-	- link them, to reduce their size.
+- skip them, and do nothing with them,
+- copy them to the output directory,
+- link them, to reduce their size.
 
 You can specify an action per assembly like this:
 
-monolinker -p link Foo
+`illinker -p link Foo`
 
 or
 
-monolinker -p skip System.Windows.Forms
+`illinker -p skip System.Windows.Forms`
 
 Or you can specify what to do for the core assemblies.
 
-Core assemblies are the assemblies that belongs to the base class library,
+Core assemblies are the assemblies that belong to the base class library,
 like mscorlib.dll, System.dll or System.Windows.Forms.dll.
 
 You can specify what action to do on the core assemblies with the option:
 
--c skip|copy|link
+`-c skip|copy|link`
 
-5) The output directory
+### The output directory
 
-By default, the linker will create an `output' directory in the current
+By default, the linker will create an `output` directory in the current
 directory where it will emit the linked files, to avoid erasing source
 assemblies. You can specify the output directory with the option:
 
--o output_directory
+`-o output_directory`
 
 If you specify the directory `.', please ensure that you won't write over
 important assemblies of yours.
 
-* Syntax of a xml descriptor
+### Specifying directories where the linker should look for assemblies
 
-Here is an example that shows all the possibilities of this format:
-
----
-<linker>
-	<assembly fullname="Library">
-		<type fullname="Foo" />
-		<type fullname="Bar" preserve="nothing" required="false" />
-		<type fullname="Baz" preserve="fields" required="false" />
-		<type fullname="Gazonk">
-			<method signature="System.Void .ctor(System.String)" />
-			<field signature="System.String _blah" />
-		</type>
-	</assembly>
-</linker>
----
-
-In this example, the linker will link the types Foo, Bar, Baz and Gazonk.
-
-The fullname attribute specifies the fullname of the type in the format
-specified by ECMA-335. This is in Mono and certain cases not the same
-as the one reported by Type.FullName (nested classes e.g.).
-
-The preserve attribute ensures that all the fields of the type Baz will be
-always be linked, not matter if they are used or not, but that neither the
-fields or the methods of Bar will be linked if they are not used. Not
-specifying a preserve attribute implies that we are preserving everything in
-the specified type.
-
-The required attribute specifies that if the type is not marked, during the
-mark operation, it will not be linked.
-
-The type Gazonk will be linked, as well as its constructor taking a string as a
-parameter, and it's _blah field.
-
-You can have multiple assembly nodes.
-
-6) The i18n Assemblies
-
-Mono have a few assemblies which contains everything region specific:
-
-    I18N.CJK.dll
-    I18N.MidEast.dll
-    I18N.Other.dll
-    I18N.Rare.dll
-    I18N.West.dll
-
-By default, they will all be copied to the output directory. But you can
-specify which one you want using the command:
-
-monolinker -l choice
-
-Where choice can either be: none, all, cjk, mideast, other, rare or west. You can
-combine the values with a comma.
+By default, the linker will first look for assemblies in the directories `.`
+and `bin`. You can specify
 
 Example:
 
-monolinker -a assembly -l mideast,cjk
+`illinker -d ../../libs -a program.exe`
 
-7) Specifying directories where the linker should look for assemblies
-
-By default, the linker will first look for assemblies in the directories `.'
-and `bin'. You can specify
-
-Example:
-
-monolinker -d ../../libs -a program.exe
-
-8) Adding custom steps to the linker.
+### Adding custom steps to the linker.
 
 You can write custom steps for the linker and tell the linker to use them.
 Let's take a simple example:
 
+```csharp
 using System;
 
 using Mono.Linker;
@@ -176,58 +114,120 @@ namespace Foo {
 		}
 	}
 }
+```
 
-
-That is compiled against the linker to a Foo.dll assembly.
+That is compiled against the linker to `Foo.dll` assembly.
 
 You can ask the linker to add it at the end of the pipeline:
 
-monolinker -s Foo.FooStep,Foo -a program.exe
+`illinker -s Foo.FooStep,Foo -a program.exe`
 
 Or you can ask the linker to add it after a specific step:
 
-monolinker -s MarkStep:Foo.FooStep,Foo -a program.exe
+`illinker -s MarkStep:Foo.FooStep,Foo -a program.exe`
 
 Or before a specific step:
 
-monolinker -s Foo.FooStep,Foo:MarkStep
+`illinker -s Foo.FooStep,Foo:MarkStep`
 
-* Inside the linker
+## Mono specific options
+
+### The i18n Assemblies
+
+Mono has a few assemblies which contains everything region specific:
+
+    I18N.CJK.dll
+    I18N.MidEast.dll
+    I18N.Other.dll
+    I18N.Rare.dll
+    I18N.West.dll
+
+By default, they will all be copied to the output directory. But you can
+specify which one you want using the command:
+
+`illinker -l choice`
+
+Where choice can either be: none, all, cjk, mideast, other, rare or west. You can
+combine the values with a comma.
+
+Example:
+
+`illinker -a assembly -l mideast,cjk`
+
+## Syntax of xml descriptor
+
+Here is an example that shows all the possibilities of this format:
+
+```xml
+<linker>
+	<assembly fullname="Library">
+		<type fullname="Foo" />
+		<type fullname="Bar" preserve="nothing" required="false" />
+		<type fullname="Baz" preserve="fields" required="false" />
+		<type fullname="Gazonk">
+			<method signature="System.Void .ctor(System.String)" />
+			<field signature="System.String _blah" />
+		</type>
+	</assembly>
+</linker>
+```
+
+In this example, the linker will link the types Foo, Bar, Baz and Gazonk.
+
+The fullname attribute specifies the fullname of the type in the format
+specified by ECMA-335. This is in certain cases not the same
+as the one reported by Type.FullName (nested classes e.g.).
+
+The preserve attribute ensures that all the fields of the type Baz will be
+always be linked, not matter if they are used or not, but that neither the
+fields or the methods of Bar will be linked if they are not used. Not
+specifying a preserve attribute implies that we are preserving everything in
+the specified type.
+
+The required attribute specifies that if the type is not marked, during the
+mark operation, it will not be linked.
+
+The type Gazonk will be linked, as well as its constructor taking a string as a
+parameter, and it's _blah field.
+
+You can have multiple assembly nodes.
+
+# Inside the linker
 
 The linker is a quite small piece of code, and it pretty simple to address.
-Its only dependency is Mono.Cecil, that is used to read, modify and write back
+Its only dependency is `Mono.Cecil`, that is used to read, modify and write back
 the assemblies.
 
-Everything is located in the namespace Mono.Linker, or in sub namespaces.
+Everything is located in the namespace Linker, or in sub namespaces.
 Being a command line utility, its entry point function is in the class Driver.
 
 This class is in charge of analyzing the command line, and to instantiate two
 important objects, a LinkContext, and a Pipeline.
 
-The LinkContext contains all the informations that will be used during the
+The LinkContext contains all the information that will be used during the
 linking process, such as the assemblies involved, the output directory and
 probably other useful stuff.
 
 The Pipeline is simply a queue of actions (steps), to be applied to the current
-context. The whole process of linking is split into those differents steps
-that are all located in the Mono.Linker.Steps namespace.
+context. The whole process of linking is split into those different steps
+that are all located in the Linker.Steps namespace.
 
 Here are the current steps that are implemented, in the order they are used:
 
-1) ResolveFromAssembly or ResolveFromXml
+## ResolveFromAssembly or ResolveFromXml
 
-Those steps are used to initialize the context, and pre-mark the root code
+Those steps are used to initialize the context and pre-mark the root code
 that will be used as a source for the linker.
 
-Resolving from an assembly or resolving from a xml descriptor is a decision
+Resolving from an assembly or resolving from an xml descriptor is a decision
 taken in the command line parsing.
 
-2) LoadReferences
+## LoadReferences
 
 This step will load all the references of all the assemblies involved in the
 current context.
 
-3) Blacklist
+## Blacklist
 
 This step is used if and only if you have specified that the core should be
 linked. It will load a bunch of resources from the assemblies, that are
@@ -237,7 +237,7 @@ that are used from inside the runtime are properly linked and not removed.
 It is doing so by inserting a ResolveFromXml step per blacklist in the
 pipeline.
 
-4) Mark
+## Mark
 
 This is the most complex step. The linker will get from the context the list
 of types, fields and methods that have been pre-marked in the resolve steps,
@@ -252,53 +252,47 @@ mscorlib assembly, and add it to the queue. When this WriteLine method will be
 dequeued, and processed, the linker will go through everything that is used in
 it, and add it to the queue, if they have not been processed already.
 
-To know if something have been marked to be linked, or processed, the linker
+To know if something has been marked to be linked, or processed, the linker
 is using a functionality of Cecil called annotations. Almost everything in
-Cecil can be annotated. Concretely, it means that almost everything own an
+Cecil can be annotated. Concretely, it means that almost everything owns an
 Hashtable in which you can add what you want, using the keys and the values you
 want.
 
 So the linker will annotate assemblies, types, methods and fields to know
-what should be linked or not, and what have been processed, and how it should
+what should be linked or not, and what has been processed, and how it should
 process them.
 
 This is really useful as we don't have to recreate a full hierarchy of classes
-to encapsulate the different Cecil types to add the few informations we want.
+to encapsulate the different Cecil types to add the few pieces of information we want.
 
-5) Sweep
+## Sweep
 
 This simple step will walk through all the elements of an assembly, and based
 on their annotations, remove them or keep them.
 
-6) Clean
+## Clean
 
-This step will clean parts of the assemblies, like properties. If a proprety
+This step will clean parts of the assemblies, like properties. If a property
 used to have a getter and a setter, and that after the mark & sweep steps,
 only the getter is linked, it will update the property to reflect that.
 
-There is a few things to keep clean like properties has we've seen, events,
+There are a few things to keep clean like properties we've seen, events,
 nested classes, and probably a few others.
 
-7) Output
+## Output
 
 For each assembly in the context, this step will act on the action associated
-to the assembly. If the assembly is marked as skip, it won't do anything,
+with the assembly. If the assembly is marked as skip, it won't do anything,
 if it's marked as copy, it will copy the assembly to the output directory,
 and if it's link, it will save the modified assembly to the output directory.
 
-* Reporting a bug
+# Reporting a bug
 
-If you face a bug in the linker, please report it to:
+If you face a bug in the linker, please report it using GitHub issues
 
-http://bugzilla.ximian.com
-
-Product: Mono tools, Component: linker.
-
-* Mailing lists
+# Mailing lists
 
 You can ask questions about the linker of the cecil Google Group:
 
 http://groups.google.com/group/mono-cecil
 
---
-Jb Evain <jbevain@novell.com>
