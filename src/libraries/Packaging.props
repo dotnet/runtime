@@ -1,6 +1,12 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <PreReleaseLabel Condition="'$(PackageVersionStamp)' != ''">$(PackageVersionStamp)</PreReleaseLabel>
+    <PreReleaseLabel Condition="'$(PreReleaseLabel)' == ''">preview2</PreReleaseLabel>
+    <IncludePreReleaseLabelInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true' or '$(PackageVersionStamp)' != ''">true</IncludePreReleaseLabelInPackageVersion>
+    <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">false</IncludeBuildNumberInPackageVersion>
+    <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
+
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>

@@ -49,4 +49,9 @@
     <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
   </ItemGroup>
   
+  <PropertyGroup>
+    <!-- BlockStable on private packages by default -->
+    <BlockStable Condition="'$(BlockStable)' == '' and $(MSBuildProjectName.Contains('Private'))">true</BlockStable>
+  </PropertyGroup>
+  
 </Project>
