@@ -4316,6 +4316,7 @@ void emitter::emitIns_R_R(
             fmt = IF_DR_2J;
             break;
 
+        case INS_sha256su0:
         case INS_sha1su1:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -5387,6 +5388,9 @@ void emitter::emitIns_R_R_R(
             fmt = IF_LS_3D;
             break;
 
+        case INS_sha256h:
+        case INS_sha256h2:
+        case INS_sha256su1:
         case INS_sha1su0:
         case INS_sha1c:
         case INS_sha1p:
@@ -11436,6 +11440,13 @@ void emitter::emitDispIns(
                 // Qd, Sn, Vm (vector)
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), EA_4BYTE, true);
+                emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
+            }
+            else if ((ins == INS_sha256h) || (ins == INS_sha256h2))
+            {
+                // Qd Qn Vm (vector)
+                emitDispReg(id->idReg1(), size, true);
+                emitDispReg(id->idReg2(), size, true);
                 emitDispVectorReg(id->idReg3(), id->idInsOpt(), false);
             }
             else
