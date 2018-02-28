@@ -152,6 +152,8 @@ namespace System.Net.Http
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
 
+        public TransportContext TransportContext => _transportContext;
+
         private int ReadBufferSize => _readBuffer.Length;
 
         private ReadOnlyMemory<byte> RemainingBuffer => new ReadOnlyMemory<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
