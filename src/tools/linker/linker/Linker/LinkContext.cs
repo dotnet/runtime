@@ -233,16 +233,18 @@ namespace Mono.Linker {
 
 			if (_symbolReaderProvider == null)
 				throw new ArgumentNullException (nameof (_symbolReaderProvider));
-			
-			var symbolReader = _symbolReaderProvider.GetSymbolReader (
-				assembly.MainModule,
-				assembly.MainModule.FileName);
 
-			if (symbolReader == null)
-				return;
+			try {
+				var symbolReader = _symbolReaderProvider.GetSymbolReader (
+					assembly.MainModule,
+					assembly.MainModule.FileName);
 
-			_annotations.AddSymbolReader (assembly, symbolReader);
-			assembly.MainModule.ReadSymbols (symbolReader);
+				if (symbolReader == null)
+					return;
+
+				_annotations.AddSymbolReader (assembly, symbolReader);
+				assembly.MainModule.ReadSymbols (symbolReader);
+			} catch { }
 		}
 
 		public virtual ICollection<AssemblyDefinition> ResolveReferences (AssemblyDefinition assembly)
