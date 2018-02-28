@@ -64,6 +64,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {
+            if (IsWinHttpHandler)
+            {
+                // WinHttpHandler does not support Expect: 100-continue.
+                return;
+            }
+
             var contentSending = new TaskCompletionSource<bool>();
             var connectionClosed = new TaskCompletionSource<bool>();
 
@@ -81,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
                     // close the connection; then once the connection is closed, the send will be allowed
                     // to continue and will fail.
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
-                    request.Headers.ExpectContinue = true; // use Expect: 100-continue when supported, but the test works regardless
+                    request.Headers.ExpectContinue = true;
                     request.Content = new SynchronizedSendContent(contentSending, connectionClosed.Task);
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
                 }
