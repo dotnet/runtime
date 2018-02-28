@@ -27,6 +27,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2ED
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3F794AE4-319F-4498-A9DA-C49A4EB11D9E}"
 	ProjectSection(SolutionItems) = preProject
+		..\Common\src\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs = ..\Common\src\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs
 		..\Common\src\CoreLib\System\ReadOnlySpan.Fast.cs = ..\Common\src\CoreLib\System\ReadOnlySpan.Fast.cs
 		..\Common\src\CoreLib\System\Span.Fast.cs = ..\Common\src\CoreLib\System\Span.Fast.cs
 		..\Common\src\CoreLib\System\Span.NonGeneric.cs = ..\Common\src\CoreLib\System\Span.NonGeneric.cs
