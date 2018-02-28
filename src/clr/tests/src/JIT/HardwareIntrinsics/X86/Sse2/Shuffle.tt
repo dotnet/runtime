@@ -1,0 +1,225 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs"  encoding="utf-8" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+//
+
+using System;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace IntelHardwareIntrinsicTest
+{
+    internal static partial class Program
+    {
+        const int Pass = 100;
+        const int Fail = 0;
+
+        static unsafe int Main(string[] args)
+        {
+            int testResult = Pass;
+            int testCount = 16;
+            string methodUnderTestName = nameof(Sse2.Shuffle);
+
+<#
+            string[] permuteData = new string[]
+            {
+                "0b11100100",         // identity
+                "0b00011011",         // invert
+                "0b00000000",         // broadcast element 0
+                "0b11111111",         // broadcast element 3
+                "0b01010101",         // broadcast element 1
+                "0b10101010",         // broadcast element 2
+                "0b11011000",         // swap middle elements
+                "0b00100111",         // swap external elements
+                "0b10110001",         // swap internal with external elements
+                "0b11110000",         // divide everything between external elements
+                "0b10100101",         // divide everything between internal elements
+                "0b00010100",         // pattern (0, 1, 1, 0)
+                "0b10000010",         // pattern (2, 0, 0, 2)
+                "0b11001100",         // pattern (3, 0, 3, 0)
+                "0b01100110",         // pattern (1, 2, 1, 2)
+                "0b10011001"          // pattern (2, 1, 2, 1)
+            };
+
+            string[] permuteDouble = new string[]
+            {
+                "0b00",
+                "0b01",
+                "0b10",
+                "0b11",
+            };
+
+#>
+
+            if (Sse2.IsSupported)
+            {
+
+                string[] permuteData = new string[]
+                {
+                    "0b11100100",         // identity
+                    "0b00011011",         // invert
+                    "0b00000000",         // broadcast element 0
+                    "0b11111111",         // broadcast element 3
+                    "0b01010101",         // broadcast element 1
+                    "0b10101010",         // broadcast element 2
+                    "0b11011000",         // swap middle elements
+                    "0b00100111",         // swap external elements
+                    "0b10110001",         // swap internal with external elements
+                    "0b11110000",         // divide everything between external elements
+                    "0b10100101",         // divide everything between internal elements
+                    "0b00010100",         // pattern (0, 1, 1, 0)
+                    "0b10000010",         // pattern (2, 0, 0, 2)
+                    "0b11001100",         // pattern (3, 0, 3, 0)
+                    "0b01100110",         // pattern (1, 2, 1, 2)
+                    "0b10011001"          // pattern (2, 1, 2, 1)
+                };
+
+                string[] permuteDouble = new string[]
+                {
+                    "0b00",
+                    "0b01",
+                    "0b10",
+                    "0b11",
+                };
+
+                using (var doubleTable = TestTableTuvImmSse2<double, double, byte>.Create(permuteDouble.Length))
+                using (var intTable = TestTableTuvImmSse2<int, int, byte>.Create(permuteData.Length))
+                using (var uintTable = TestTableTuvImmSse2<uint, uint, byte>.Create(permuteData.Length))
+                {
+
+                    // Vector128<double> tests
+
+                    TestUtilities.InitializeWithElementNumberingModuloVectorLength<double>(
+                        doubleTable.inArray1, 16, (int i, int elNo) =>
+                        {
+                            return (uint) i % 2;
+                        });
+
+                    TestUtilities.InitializeWithElementNumberingModuloVectorLength<double>(
+                        doubleTable.inArray2, 16, (int i, int elNo) =>
+                        {
+                            return (uint) i % 2 + 10;
+                        });
+
+<#
+       for (int i = 0; i < permuteDouble.Length; i++)
+       {
+#>
+                    (Vector128<double>, Vector128<double>) valueDouble_<#= i #> = doubleTable[<#= i #>];
+                    Vector128<double> resultDouble_<#= i #> = Sse2.Shuffle(valueDouble_<#= i #>.Item1, valueDouble_<#= i #>.Item2, (byte) <#= permuteDouble[i] #>);
+                    doubleTable.SetOutArray(resultDouble_<#= i #>, <#= i #>, (byte) <#= permuteDouble[i] #>);
+
+<#
+
+       }
+#>
+
+                    // Vector128<int> tests
+
+                    TestUtilities.InitializeWithElementNumberingModuloVectorLength<uint>(
+                        uintTable.inArray1, 16, (int i, int elNo) =>
+                        {
+                            return (uint) i % 4;
+                        });
+
+<#
+       for (int i = 0; i < permuteData.Length; i++)
+       {
+#>
+                    (Vector128<int>, Vector128<int>) valueInt32_<#= i #> = intTable[<#= i #>];
+                    Vector128<int> resultInt32_<#= i #> = Sse2.Shuffle(valueInt32_<#= i #>.Item1, (byte) <#= permuteData[i] #>);
+                    intTable.SetOutArray(resultInt32_<#= i #>, <#= i #>, (byte) <#= permuteData[i] #>);
+
+<#
+
+       }
+#>
+
+                    // Vector128<uint> tests
+
+                    TestUtilities.InitializeWithElementNumberingModuloVectorLength<uint>(
+                        uintTable.inArray1, 16, (int i, int elNo) =>
+                        {
+                            return (uint) i % 4;
+                        });
+
+<#
+       for (int i = 0; i < permuteData.Length; i++)
+       {
+#>
+                    (Vector128<uint>, Vector128<uint>) valueUInt32_<#= i #> = uintTable[<#= i #>];
+                    Vector128<uint> resultUInt32_<#= i #> = Sse2.Shuffle(valueUInt32_<#= i #>.Item1, (byte) <#= permuteData[i] #>);
+                    uintTable.SetOutArray(resultUInt32_<#= i #>, <#= i #>, (byte) <#= permuteData[i] #>);
+
+<#
+
+       }
+#>
+
+                    CheckMethodFiveDouble<double, double, byte> checkDouble =
+                    (Span<double> x, Span<double> y, byte imm, Span<double> z, Span<double> a) =>
+                    {
+                        a[0] = (0x01 & imm) > 0 ? x[1] : x[0];
+                        a[1] = (0x02 & imm) > 0 ? y[1] : y[0];
+                        return a[0] == z[0] && a[1] == z[1];
+                    };
+
+                    if (!doubleTable.CheckResultShuffle(checkDouble))
+                    {
+                        PrintError8(doubleTable, methodUnderTestName, "(double x, byte y, double z, ref double a) => (a = x * y) == z", checkDouble);
+                        testResult = Fail;
+                    }
+
+                    CheckMethodFive<int, int, byte> checkInt32 = (Span<int> x, byte imm, Span<int> z, Span<int> a) =>
+                    {
+                        bool result = true;
+                        for (int i = 0; i < x.Length; i++)
+                        {
+                            a[i] = x[imm & 0x03];
+                            if (z[i] != a[i])
+                                result = false;
+                            imm = (byte) (imm >> 2);
+                        }
+                        return result;
+                    };
+
+                    if (!intTable.CheckResultShuffle(checkInt32))
+                    {
+                        PrintError(intTable, methodUnderTestName, "(int x, byte y, int z, ref int a) => (a = x << y) == z", checkInt32);
+                        testResult = Fail;
+                    }
+
+                    CheckMethodFive<uint, uint, byte> checkUInt32 = (Span<uint> x, byte imm, Span<uint> z, Span<uint> a) =>
+                    {
+                        bool result = true;
+                        for (int i = 0; i < x.Length; i++)
+                        {
+                            a[i] = x[imm & 0x03];
+                            if (z[i] != a[i])
+                                result = false;
+                            imm = (byte) (imm >> 2);
+                        }
+                        return result;
+                    };
+
+                    if (!uintTable.CheckResultShuffle(checkUInt32))
+                    {
+                        PrintError(uintTable, methodUnderTestName, "(uint x, byte y, uint z, ref uint a) => (a = x << y) == z", checkUInt32);
+                        testResult = Fail;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Sse2.IsSupported: {Sse2.IsSupported}, skipped tests of {typeof(Sse2)}.{methodUnderTestName}");
+            }
+            return testResult;
+        }
+    }
+}
