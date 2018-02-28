@@ -86,7 +86,7 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #endif
 #ifdef HWCAP_SHA2
     if (hwCap & HWCAP_SHA2)
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA2);
+        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_SHA256);
 #endif
 #ifdef HWCAP_SHA512
     if (hwCap & HWCAP_SHA512)

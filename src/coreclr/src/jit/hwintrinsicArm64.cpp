@@ -166,6 +166,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         case HWIntrinsicInfo::SimdSelectOp:
         case HWIntrinsicInfo::SimdSetAllOp:
         case HWIntrinsicInfo::SimdUnaryOp:
+        case HWIntrinsicInfo::SimdBinaryRMWOp:
+        case HWIntrinsicInfo::SimdTernaryRMWOp:
+        case HWIntrinsicInfo::Sha1HashOp:
             simdClass = sig->retTypeClass;
             break;
         case HWIntrinsicInfo::SimdExtractOp:
@@ -196,6 +199,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
 
         case HWIntrinsicInfo::SimdBinaryOp:
+        case HWIntrinsicInfo::SimdBinaryRMWOp:
             // op1 is the first operand
             // op2 is the second operand
             op2 = impSIMDPopStack(simdType);
@@ -203,6 +207,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, op2, intrinsic, simdBaseType, simdSizeBytes);
 
+        case HWIntrinsicInfo::SimdTernaryRMWOp:
         case HWIntrinsicInfo::SimdSelectOp:
             // op1 is the first operand
             // op2 is the second operand
@@ -245,6 +250,17 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack(simdType);
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
+
+        case HWIntrinsicInfo::Sha1HashOp:
+            op3 = impSIMDPopStack(simdType);
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(simdType);
+
+            return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
+
+        case HWIntrinsicInfo::Sha1RotateOp:
+            assert(sig->numArgs == 1);
+            return gtNewScalarHWIntrinsicNode(TYP_UINT, impPopStack().val, NI_ARM64_Sha1FixedRotate);
 
         default:
             JITDUMP("Not implemented hardware intrinsic form");
