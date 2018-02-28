@@ -80,26 +80,30 @@ namespace System.IO
                 // Path is current drive rooted i.e. starts with \:
                 // "\Foo" and "C:\Bar" => "C:\Foo"
                 // "\Foo" and "\\?\C:\Bar" => "\\?\C:\Foo"
-                combinedPath = CombineNoChecks(GetPathRoot(basePath), path.AsSpan().Slice(1));
+                combinedPath = Join(GetPathRoot(basePath.AsSpan()), path);
             }
             else if (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == PathInternal.VolumeSeparatorChar)
             {
                 // Drive relative paths
                 Debug.Assert(length == 2 || !PathInternal.IsDirectorySeparator(path[2]));
 
-                if (StringSpanHelpers.Equals(GetVolumeName(path.AsSpan()), GetVolumeName(basePath.AsSpan())))
+                if (StringSpanHelpers.Equals(GetVolumeName(path), GetVolumeName(basePath)))
                 {
                     // Matching root
                     // "C:Foo" and "C:\Bar" => "C:\Bar\Foo"
                     // "C:Foo" and "\\?\C:\Bar" => "\\?\C:\Bar\Foo"
-                    combinedPath = CombineNoChecks(basePath, path.AsSpan().Slice(2));
+                    combinedPath = Join(basePath, path.AsSpan().Slice(2));
                 }
                 else
                 {
                     // No matching root, root to specified drive
                     // "D:Foo" and "C:\Bar" => "D:Foo"
                     // "D:Foo" and "\\?\C:\Bar" => "\\?\D:\Foo"
-                    combinedPath = PathInternal.IsDevice(basePath) ? CombineNoChecksInternal(basePath.AsSpan().Slice(0, 4), path.AsSpan().Slice(0, 2), @"\", path.AsSpan().Slice(2)) : path.Insert(2, "\\");
+                    combinedPath = !PathInternal.IsDevice(basePath)
+                        ? path.Insert(2, @"\")
+                        : length == 2
+                            ? JoinInternal(basePath.AsSpan().Slice(0, 4), path, @"\")
+                            : JoinInternal(basePath.AsSpan().Slice(0, 4), path.AsSpan().Slice(0, 2), @"\", path.AsSpan().Slice(2));
                 }
             }
             else
@@ -107,7 +111,7 @@ namespace System.IO
                 // "Simple" relative path
                 // "Foo" and "C:\Bar" => "C:\Bar\Foo"
                 // "Foo" and "\\?\C:\Bar" => "\\?\C:\Bar\Foo"
-                combinedPath = CombineNoChecks(basePath, path);
+                combinedPath = JoinInternal(basePath, path);
             }
 
             // Device paths are normalized by definition, so passing something of this format
@@ -216,19 +220,11 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Returns true if the path ends in a directory separator.
-        /// </summary>
-        internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path)
-        {
-            return path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
-        }
-
-        /// <summary>
         /// Trims the ending directory separator if present.
         /// </summary>
         /// <param name="path"></param>
         internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
-            EndsInDirectorySeparator(path) ?
+            PathInternal.EndsInDirectorySeparator(path) ?
                 path.Slice(0, path.Length - 1) :
                 path;
 
