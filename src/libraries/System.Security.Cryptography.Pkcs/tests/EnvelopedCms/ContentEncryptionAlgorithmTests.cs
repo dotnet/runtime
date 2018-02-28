@@ -13,6 +13,22 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class ContentEncryptionAlgorithmTests
     {
         public static bool SupportsRc4 => PlatformDetection.IsWindows;
+        public static bool DoesNotSupportRc4 => !SupportsRc4;
+
+        [Fact]
+        public static void EncryptionAlgorithmRc2_InvalidKeyLength()
+        {
+            // For desktop compat, variable key length ciphers throw an error if the key length provided
+            // is not a multiple of 8.
+            AlgorithmIdentifier algorithm = new AlgorithmIdentifier(new Oid(Oids.Rc2), 3);
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, algorithm);
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                CmsRecipient cmsRecipient = new CmsRecipient(cert);
+                Assert.ThrowsAny<CryptographicException>(() => ecms.Encrypt(cmsRecipient));
+            }
+        }
 
         [Fact]
         public static void DecodeAlgorithmRc2_128_RoundTrip()
@@ -50,6 +66,92 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.NotNull(algorithm.Oid);
             Assert.Equal(Oids.Rc2, algorithm.Oid.Value);
             Assert.Equal(128, algorithm.KeyLength);
+        }
+
+        [Fact]
+        public static void DecodeAlgorithmRc2_40_FixedValue()
+        {
+            ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3, 4 });
+            byte[] encodedMessage =
+                ("3082011806092A864886F70D010703A0820109308201050201003181CC3081C90201003032301E311C301A0"
+                + "60355040313135253414B65795472616E73666572436170693102105D2FFFF863BABC9B4D3C80AB178A4CCA"
+                + "300D06092A864886F70D010101050004818004E46A48651034B01134B0D4F665C9E85F6C45B58458ECDBAFE"
+                + "B6B55CBFA9AEBEFA52BCBEF3C8811B5118970562623FC35D4B733B55CBC50DA4F49822E1D198834897D3540"
+                + "7B329FECF49277159F2FEAB31173004776B03746381E0DA660B6D656A861E54E79186F36F450105DEB2714D"
+                + "02DB5500921EBE4F1A7D3DFB07E4EE9303106092A864886F70D010701301A06082A864886F70D0302300E02"
+                + "0200A00408D621253C94AF659B800802930ACE6A997122").HexToByteArray();
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            AlgorithmIdentifier algorithm = ecms.ContentEncryptionAlgorithm;
+            Assert.NotNull(algorithm.Oid);
+            Assert.Equal(Oids.Rc2, algorithm.Oid.Value);
+            Assert.Equal(40, algorithm.KeyLength);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void DecodeAlgorithmRc2_40_RoundTrip()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3, 4 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, new AlgorithmIdentifier(new Oid(Oids.Rc2), 40));
+
+            using (X509Certificate2 cert =  Certificates.RSAKeyTransferCapi1.GetCertificate())
+            {
+                ecms.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
+            }
+
+            byte[] encodedMessage = ecms.Encode();
+
+            ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            AlgorithmIdentifier algorithm = ecms.ContentEncryptionAlgorithm;
+            Assert.NotNull(algorithm.Oid);
+            Assert.Equal(Oids.Rc2, algorithm.Oid.Value);
+            Assert.Equal(40, algorithm.KeyLength);
+        }
+
+        [ConditionalFact(nameof(SupportsRc4))]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void DecodeAlgorithmRc4_40_RoundTrip()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3, 4 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, new AlgorithmIdentifier(new Oid(Oids.Rc4), 40));
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())
+            {
+                ecms.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
+            }
+
+            byte[] encodedMessage = ecms.Encode();
+
+            ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            AlgorithmIdentifier algorithm = ecms.ContentEncryptionAlgorithm;
+            Assert.NotNull(algorithm.Oid);
+            Assert.Equal(Oids.Rc4, algorithm.Oid.Value);
+            Assert.Equal(40, algorithm.KeyLength);
+        }
+
+
+        [ConditionalFact(nameof(DoesNotSupportRc4))]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void DecodeAlgorithmRc4_40_PlatformNotSupported()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3, 4 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, new AlgorithmIdentifier(new Oid(Oids.Rc4), 40));
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.GetCertificate())
+            {
+                CmsRecipient recipient = new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+
+                CryptographicException e =
+                    Assert.Throws<CryptographicException>(() => ecms.Encrypt(recipient));
+
+                Assert.Contains(Oids.Rc4, e.Message);
+            }
         }
 
         [Fact]
@@ -163,6 +265,46 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.NotNull(algorithm.Oid);
             Assert.Equal(Oids.Rc4, algorithm.Oid.Value);
             Assert.Equal(128, algorithm.KeyLength);
+        }
+
+        [Fact]
+        public static void DecodeAlgorithmRc4_40_FixedValue()
+        {
+            byte[] encodedMessage =
+                ("3082011006092A864886F70D010703A08201013081FE0201003181CC3081C90201003032301E311C301A060"
+                + "355040313135253414B65795472616E73666572436170693102105D2FFFF863BABC9B4D3C80AB178A4CCA30"
+                + "0D06092A864886F70D01010105000481809D242C1517B82A58335E0337B0B2CE97B2789AF31A6B31311417B"
+                + "A069D0D76FD08AE5B4F58C290116667FFD00319AA7AFED4EEAD9D5031C0D17A48E6CB39A5EB62C8BD7F4C2C"
+                + "BE8E581EF8B7FF7BA9376923A367B9B7E031F630E4CA6ADCB31209B04B03E64076FB0465E7E437B13D4AEA2"
+                + "70CA89EB58C1A598F0AC88DCB4024302A06092A864886F70D010701301706082A864886F70D0304040B4B5A"
+                + "8F64D714F933642D4A8004C68A936F").HexToByteArray();
+
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+            AlgorithmIdentifier algorithm = ecms.ContentEncryptionAlgorithm;
+            Assert.NotNull(algorithm.Oid);
+            Assert.Equal(Oids.Rc4, algorithm.Oid.Value);
+            Assert.Equal(40, algorithm.KeyLength);
+        }
+
+        [Fact]
+        public static void EncryptionAlgorithmAes128_IgnoresKeyLength()
+        {
+            // For desktop compat, static key length ciphers ignore the key lengths supplied
+            AlgorithmIdentifier algorithm = new AlgorithmIdentifier(new Oid(Oids.Aes128), 3);
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, algorithm);
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                CmsRecipient cmsRecipient = new CmsRecipient(cert);
+                ecms.Encrypt(cmsRecipient);
+            }
+            byte[] encodedMessage = ecms.Encode();
+
+            ecms.Decode(encodedMessage);
+
+            Assert.Equal(Oids.Aes128, ecms.ContentEncryptionAlgorithm.Oid.Value);
+            Assert.Equal(0, ecms.ContentEncryptionAlgorithm.KeyLength);
         }
 
         [Fact]
