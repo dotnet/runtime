@@ -103,7 +103,7 @@ namespace System.Buffers
         /// <summary>
         /// Converts a classic .NET format string into a StandardFormat
         /// </summary>
-        public static StandardFormat Parse(string format) => format == null ? default : Parse(MemoryExtensions.AsSpan(format));  //@todo: Change back to extension syntax once the ambiguous reference with CoreLib is eliminated.
+        public static StandardFormat Parse(string format) => format == null ? default : Parse(format.AsSpan());
 
         /// <summary>
         /// Returns true if both the Symbol and Precision are equal.
