@@ -250,7 +250,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<T> BroadcastScalarToVector128<T>(Vector128<T> value) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return BroadcastScalarToVector128<T>(value);
         }
 
@@ -270,7 +269,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<T> BroadcastScalarToVector256<T>(Vector128<T> value) where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return BroadcastScalarToVector256<T>(value);
         }
 
