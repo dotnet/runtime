@@ -262,7 +262,6 @@ namespace System.IO
             return !PathInternal.IsPartiallyQualified(path);
         }
 
-
         /// <summary>
         /// Tests if a path's file name includes a file extension. A trailing period
         /// is not considered an extension.
@@ -296,7 +295,7 @@ namespace System.IO
             if (path1 == null || path2 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
 
-            return CombineNoChecks(path1, path2);
+            return CombineInternal(path1, path2);
         }
 
         public static string Combine(string path1, string path2, string path3)
@@ -304,7 +303,7 @@ namespace System.IO
             if (path1 == null || path2 == null || path3 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
 
-            return CombineNoChecks(path1, path2, path3);
+            return CombineInternal(path1, path2, path3);
         }
 
         public static string Combine(string path1, string path2, string path3, string path4)
@@ -312,7 +311,7 @@ namespace System.IO
             if (path1 == null || path2 == null || path3 == null || path4 == null)
                 throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
 
-            return CombineNoChecks(path1, path2, path3, path4);
+            return CombineInternal(path1, path2, path3, path4);
         }
 
         public static string Combine(params string[] paths)
@@ -383,11 +382,102 @@ namespace System.IO
             return StringBuilderCache.GetStringAndRelease(finalPath);
         }
 
-        /// <summary>
-        /// Combines two paths. Does no validation of paths, only concatenates the paths
-        /// and places a directory separator between them if needed.
-        /// </summary>
-        private static string CombineNoChecks(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
+        // Unlike Combine(), Join() methods do not consider rooting. They simply combine paths, ensuring that there
+        // is a directory separator between them.
+
+        public static string Join(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2)
+        {
+            if (path1.Length == 0)
+                return new string(path2);
+            if (path2.Length == 0)
+                return new string(path1);
+
+            return JoinInternal(path1, path2);
+        }
+
+        public static string Join(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, ReadOnlySpan<char> path3)
+        {
+            if (path1.Length == 0)
+                return Join(path2, path3);
+
+            if (path2.Length == 0)
+                return Join(path1, path3);
+
+            if (path3.Length == 0)
+                return Join(path1, path2);
+
+            return JoinInternal(path1, path2, path3);
+        }
+
+        public static bool TryJoin(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+            if (path1.Length == 0 && path2.Length == 0)
+                return true;
+
+            if (path1.Length == 0 || path2.Length == 0)
+            {
+                ref ReadOnlySpan<char> pathToUse = ref path1.Length == 0 ? ref path2 : ref path1;
+                if (destination.Length < pathToUse.Length)
+                {
+                    return false;
+                }
+
+                pathToUse.CopyTo(destination);
+                charsWritten = pathToUse.Length;
+                return true;
+            }
+
+            bool needsSeparator = !(PathInternal.EndsInDirectorySeparator(path1) || PathInternal.StartsWithDirectorySeparator(path2));
+            int charsNeeded = path1.Length + path2.Length + (needsSeparator ? 1 : 0);
+            if (destination.Length < charsNeeded)
+                return false;
+
+            path1.CopyTo(destination);
+            if (needsSeparator)
+                destination[path1.Length] = DirectorySeparatorChar;
+
+            path2.CopyTo(destination.Slice(path1.Length + (needsSeparator ? 1 : 0)));
+
+            charsWritten = charsNeeded;
+            return true;
+        }
+
+        public static bool TryJoin(ReadOnlySpan<char> path1, ReadOnlySpan<char> path2, ReadOnlySpan<char> path3, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+            if (path1.Length == 0 && path2.Length == 0 && path3.Length == 0)
+                return true;
+
+            if (path1.Length == 0)
+                return TryJoin(path2, path3, destination, out charsWritten);
+            if (path2.Length == 0)
+                return TryJoin(path1, path3, destination, out charsWritten);
+            if (path3.Length == 0)
+                return TryJoin(path1, path2, destination, out charsWritten);
+
+            int neededSeparators = PathInternal.EndsInDirectorySeparator(path1) || PathInternal.StartsWithDirectorySeparator(path2) ? 0 : 1;
+            bool needsSecondSeparator = !(PathInternal.EndsInDirectorySeparator(path2) || PathInternal.StartsWithDirectorySeparator(path3));
+            if (needsSecondSeparator)
+                neededSeparators++;
+
+            int charsNeeded = path1.Length + path2.Length + path3.Length + neededSeparators;
+            if (destination.Length < charsNeeded)
+                return false;
+
+            bool result = TryJoin(path1, path2, destination, out charsWritten);
+            Debug.Assert(result, "should never fail joining first two paths");
+
+            if (needsSecondSeparator)
+                destination[charsWritten++] = DirectorySeparatorChar;
+
+            path3.CopyTo(destination.Slice(charsWritten));
+            charsWritten += path3.Length;
+
+            return true;
+        }
+
+        private static string CombineInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
             if (first.Length == 0)
                 return second.Length == 0
@@ -400,10 +490,10 @@ namespace System.IO
             if (IsPathRooted(second))
                 return new string(second);
 
-            return CombineNoChecksInternal(first, second);
+            return JoinInternal(first, second);
         }
 
-        private static string CombineNoChecks(string first, string second)
+        private static string CombineInternal(string first, string second)
         {
             if (string.IsNullOrEmpty(first))
                 return second;
@@ -414,86 +504,48 @@ namespace System.IO
             if (IsPathRooted(second.AsSpan()))
                 return second;
 
-            return CombineNoChecksInternal(first, second);
+            return JoinInternal(first, second);
         }
 
-        private static string CombineNoChecks(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
-        {
-            if (first.Length == 0)
-                return CombineNoChecks(second, third);
-            if (second.Length == 0)
-                return CombineNoChecks(first, third);
-            if (third.Length == 0)
-                return CombineNoChecks(first, second);
-
-            if (IsPathRooted(third))
-                return new string(third);
-            if (IsPathRooted(second))
-                return CombineNoChecks(second, third);
-
-            return CombineNoChecksInternal(first, second, third);
-        }
-
-        private static string CombineNoChecks(string first, string second, string third)
+        private static string CombineInternal(string first, string second, string third)
         {
             if (string.IsNullOrEmpty(first))
-                return CombineNoChecks(second, third);
+                return CombineInternal(second, third);
             if (string.IsNullOrEmpty(second))
-                return CombineNoChecks(first, third);
+                return CombineInternal(first, third);
             if (string.IsNullOrEmpty(third))
-                return CombineNoChecks(first, second);
+                return CombineInternal(first, second);
 
             if (IsPathRooted(third.AsSpan()))
                 return third;
             if (IsPathRooted(second.AsSpan()))
-                return CombineNoChecks(second, third);
+                return CombineInternal(second, third);
 
-            return CombineNoChecksInternal(first, second, third);
+            return JoinInternal(first, second, third);
         }
 
-        private static string CombineNoChecks(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third, ReadOnlySpan<char> fourth)
-        {
-            if (first.Length == 0)
-                return CombineNoChecks(second, third, fourth);
-            if (second.Length == 0)
-                return CombineNoChecks(first, third, fourth);
-            if (third.Length == 0)
-                return CombineNoChecks(first, second, fourth);
-            if (fourth.Length == 0)
-                return CombineNoChecks(first, second, third);
-
-            if (IsPathRooted(fourth))
-                return new string(fourth);
-            if (IsPathRooted(third))
-                return CombineNoChecks(third, fourth);
-            if (IsPathRooted(second))
-                return CombineNoChecks(second, third, fourth);
-
-            return CombineNoChecksInternal(first, second, third, fourth);
-        }
-
-        private static string CombineNoChecks(string first, string second, string third, string fourth)
+        private static string CombineInternal(string first, string second, string third, string fourth)
         {
             if (string.IsNullOrEmpty(first))
-                return CombineNoChecks(second, third, fourth);
+                return CombineInternal(second, third, fourth);
             if (string.IsNullOrEmpty(second))
-                return CombineNoChecks(first, third, fourth);
+                return CombineInternal(first, third, fourth);
             if (string.IsNullOrEmpty(third))
-                return CombineNoChecks(first, second, fourth);
+                return CombineInternal(first, second, fourth);
             if (string.IsNullOrEmpty(fourth))
-                return CombineNoChecks(first, second, third);
+                return CombineInternal(first, second, third);
 
             if (IsPathRooted(fourth.AsSpan()))
                 return fourth;
             if (IsPathRooted(third.AsSpan()))
-                return CombineNoChecks(third, fourth);
+                return CombineInternal(third, fourth);
             if (IsPathRooted(second.AsSpan()))
-                return CombineNoChecks(second, third, fourth);
+                return CombineInternal(second, third, fourth);
 
-            return CombineNoChecksInternal(first, second, third, fourth);
+            return JoinInternal(first, second, third, fourth);
         }
 
-        private unsafe static string CombineNoChecksInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
+        private unsafe static string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0, "should have dealt with empty paths");
 
@@ -515,7 +567,7 @@ namespace System.IO
             }
         }
 
-        private unsafe static string CombineNoChecksInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
+        private unsafe static string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0, "should have dealt with empty paths");
 
@@ -543,7 +595,7 @@ namespace System.IO
             }
         }
 
-        private unsafe static string CombineNoChecksInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third, ReadOnlySpan<char> fourth)
+        private unsafe static string JoinInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third, ReadOnlySpan<char> fourth)
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
