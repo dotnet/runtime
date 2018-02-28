@@ -1226,6 +1226,31 @@ void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
         }
+
+        case NI_AVX_TestC:
+        {
+            emit->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
+            emit->emitIns_R_R(ins, attr, op1->gtRegNum, op2->gtRegNum);
+            emit->emitIns_R(INS_setb, EA_1BYTE, targetReg);
+            break;
+        }
+
+        case NI_AVX_TestNotZAndNotC:
+        {
+            emit->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
+            emit->emitIns_R_R(ins, attr, op1->gtRegNum, op2->gtRegNum);
+            emit->emitIns_R(INS_seta, EA_1BYTE, targetReg);
+            break;
+        }
+
+        case NI_AVX_TestZ:
+        {
+            emit->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
+            emit->emitIns_R_R(ins, attr, op1->gtRegNum, op2->gtRegNum);
+            emit->emitIns_R(INS_sete, EA_1BYTE, targetReg);
+            break;
+        }
+
         default:
             unreached();
             break;
