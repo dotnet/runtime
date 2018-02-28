@@ -11,7 +11,7 @@
       If we are stabilizing set the StableVersion property for the packages.
       Needs to happen in dir.targets to allow all the pkgproj's to set Version property first.
     -->
-    <StableVersion Condition="'$(StabilizePackageVersion)' =='true'">$(Version)</StableVersion>
+    <StableVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">$(Version)</StableVersion>
   </PropertyGroup>
 
   <!--
