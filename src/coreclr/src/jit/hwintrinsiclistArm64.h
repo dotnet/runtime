@@ -23,7 +23,7 @@ HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_JSCVT     , Jscvt    )
 HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_LRCPC     , Lrcpc    )
 HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_PMULL     , Pmull    )
 HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_SHA1      , Sha1     )
-HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_SHA2      , Sha2     )
+HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_SHA256    , Sha256   )
 HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_SHA512    , Sha512   )
 HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_SHA3      , Sha3     )
 HARDWARE_INTRINSIC_CLASS(JIT_FLAG_HAS_ARM64_SIMD      , Simd     )
@@ -94,6 +94,11 @@ HARDWARE_INTRINSIC(NI_ARM64_Sha1FixedRotate,     Sha1,      FixedRotate,        
 HARDWARE_INTRINSIC(NI_ARM64_Sha1SchedulePart1,   Sha1,      SchedulePart1,                 SimdTernaryRMWOp,       INS_invalid,    INS_invalid, INS_sha1su0,    None )
 HARDWARE_INTRINSIC(NI_ARM64_Sha1SchedulePart2,   Sha1,      SchedulePart2,                 SimdBinaryRMWOp,        INS_invalid,    INS_invalid, INS_sha1su1,    None )
 
+//Sha256
+HARDWARE_INTRINSIC(NI_ARM64_Sha256HashLower,       Sha256,      HashLower,                 SimdTernaryRMWOp,   INS_invalid,    INS_invalid, INS_sha256h,    None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha256HashUpper,       Sha256,      HashUpper,                 SimdTernaryRMWOp,   INS_invalid,    INS_invalid, INS_sha256h2,   None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha256SchedulePart1,   Sha256,      SchedulePart1,             SimdBinaryRMWOp,    INS_invalid,    INS_invalid, INS_sha256su0,  None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha256SchedulePart2,   Sha256,      SchedulePart2,             SimdTernaryRMWOp,   INS_invalid,    INS_invalid, INS_sha256su1,  None )
 #endif
 
 
