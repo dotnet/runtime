@@ -75,8 +75,8 @@ enum HWIntrinsicFlag : unsigned int
     // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
     HW_Flag_CopyUpperBits = 0x200,
 
-    // Select base type using argument type
-    HW_Flag_BaseTypeFromArg = 0x400,
+    // Select base type using the first argument type
+    HW_Flag_BaseTypeFromFirstArg = 0x400,
 
     // Indicates compFloatingPointUsed does not need to be set.
     HW_Flag_NoFloatingPointUsed = 0x800,
@@ -89,9 +89,22 @@ enum HWIntrinsicFlag : unsigned int
     // the imm intrinsic does not need jumptable fallback when it gets non-const argument
     HW_Flag_NoJmpTableIMM = 0x2000,
 
+    // 64-bit intrinsics
+    // Intrinsics that operate over 64-bit general purpose registers are not supported on 32-bit platform
+    HW_Flag_64BitOnly           = 0x4000,
+    HW_Flag_SecondArgMaybe64Bit = 0x8000,
+
+    // Select base type using the second argument type
+    HW_Flag_BaseTypeFromSecondArg = 0x10000,
+
+    // Specail codegen
+    // the intrinsics need special rules in CodeGen,
+    // but can be table-driven in the front-end
+    HW_Flag_SpecialCodeGen = 0x20000,
+
     // No Read/Modify/Write Semantics
     // the intrinsic does not have read/modify/write semantics and doesn't need
-    HW_Flag_NoRMWSemantics = 0x4000,
+    HW_Flag_NoRMWSemantics = 0x40000,
 };
 
 inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)

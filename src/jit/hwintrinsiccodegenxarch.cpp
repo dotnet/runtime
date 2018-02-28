@@ -36,10 +36,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 static bool genIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
 {
     // TODO - make more categories to the table-driven framework
-    // HW_Category_Helper and HW_Flag_MultiIns usually need manual codegen
+    // HW_Category_Helper and HW_Flag_MultiIns/HW_Flag_SpecialCodeGen usually need manual codegen
     const bool tableDrivenCategory =
         category != HW_Category_Special && category != HW_Category_Scalar && category != HW_Category_Helper;
-    const bool tableDrivenFlag = (flags & HW_Flag_MultiIns) == 0;
+    const bool tableDrivenFlag = (flags & (HW_Flag_MultiIns | HW_Flag_SpecialCodeGen)) == 0;
     return tableDrivenCategory && tableDrivenFlag;
 }
 
@@ -593,17 +593,6 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicID)
     {
-        case NI_SSE_ConvertScalarToVector128Single:
-        {
-            assert(node->TypeGet() == TYP_SIMD16);
-            assert(node->gtSIMDBaseType == TYP_FLOAT);
-            assert(Compiler::ivalOfHWIntrinsic(intrinsicID) == -1);
-
-            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
-            genHWIntrinsic_R_R_RM(node, ins);
-            break;
-        }
-
         case NI_SSE_CompareEqualOrderedScalar:
         case NI_SSE_CompareEqualUnorderedScalar:
         {
@@ -973,19 +962,14 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op2 == nullptr);
             assert(baseType == TYP_DOUBLE || baseType == TYP_FLOAT || baseType == TYP_INT || baseType == TYP_UINT ||
                    baseType == TYP_LONG || baseType == TYP_ULONG);
-            if (op1Reg != targetReg)
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+            if (baseType == TYP_DOUBLE || baseType == TYP_FLOAT)
             {
-                instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
-                if (baseType == TYP_DOUBLE || baseType == TYP_FLOAT)
-                {
-                    emit->emitIns_R_R(ins, emitTypeSize(targetType), targetReg, op1Reg);
-                }
-                else
-                {
-                    // TODO-XArch-Bug https://github.com/dotnet/coreclr/issues/16329
-                    // using hardcoded instruction as workaround for inexact type conversions
-                    emit->emitIns_R_R(INS_mov_xmm2i, emitActualTypeSize(baseType), op1Reg, targetReg);
-                }
+                emit->emitIns_R_R(ins, emitTypeSize(targetType), targetReg, op1Reg);
+            }
+            else
+            {
+                emit->emitIns_R_R(ins, emitActualTypeSize(baseType), op1Reg, targetReg);
             }
             break;
         }
