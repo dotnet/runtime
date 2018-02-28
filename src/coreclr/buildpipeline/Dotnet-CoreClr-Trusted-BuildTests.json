@@ -88,6 +88,27 @@
     {
       "environment": {},
       "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Uninstall SCEP",
+      "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "refName": "Task20",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "scep-ops.cmd",
+        "arguments": "-u",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-test.cmd",
@@ -102,6 +123,27 @@
       "inputs": {
         "filename": "build-test.cmd",
         "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg)$(CrossgenArg)-OfficialBuildId=$(OfficialBuildId) -OverwriteCoreClrPackageVersion -Priority=$(Priority) -- /p:IntermediateAzureFeed=$(IntermediateAzureFeed)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Install SCEP",
+      "timeoutInMinutes": 0,
+      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "refName": "Task21",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "scep-ops.cmd",
+        "arguments": "-i",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
