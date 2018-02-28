@@ -2362,6 +2362,14 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             useList.Last()->info.isTgtPref = true;
             break;
 
+        case NI_SSE2_MaskMove:
+        {
+            // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
+            LocationInfoListNode* op3Info = useList.Begin()->Next()->Next();
+            op3Info->info.setSrcCandidates(this, RBM_EDI);
+            break;
+        }
+
         case NI_SSE41_BlendVariable:
             if (!compiler->canUseVexEncoding())
             {
