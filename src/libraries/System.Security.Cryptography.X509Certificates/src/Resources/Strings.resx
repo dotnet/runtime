@@ -151,6 +151,9 @@
   <data name="Cryptography_ECC_NamedCurvesOnly" xml:space="preserve">
     <value>Only named curves are supported on this platform.</value>
   </data>
+  <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
+    <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
+  </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>
   </data>
@@ -178,6 +181,12 @@
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
   </data>
+  <data name="Cryptography_KeyTooSmall" xml:space="preserve">
+    <value>The key is too small for the requested operation.</value>
+  </data>
+  <data name="Cryptography_OAEP_Decryption_Failed" xml:space="preserve">
+    <value>Error occurred while decoding OAEP padding.</value>
+  </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
@@ -186,6 +195,9 @@
   </data>
   <data name="Cryptography_PrivateKey_WrongAlgorithm" xml:space="preserve">
     <value>The provided key does not match the public key algorithm for this certificate.</value>
+  </data>
+  <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
+    <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
   </data>
   <data name="Cryptography_Unix_X509_DisallowedStoreNotEmpty" xml:space="preserve">
    <value>The Disallowed store is not supported on this platform, but already has data. All files under '{0}' must be removed.</value>

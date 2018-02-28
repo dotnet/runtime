@@ -254,6 +254,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     PER_FUNCTION_BLOCK(RSA_get_method, true) \
     PER_FUNCTION_BLOCK(RSA_new, true) \
     PER_FUNCTION_BLOCK(RSA_private_decrypt, true) \
+    PER_FUNCTION_BLOCK(RSA_private_encrypt, true) \
+    PER_FUNCTION_BLOCK(RSA_public_decrypt, true) \
     PER_FUNCTION_BLOCK(RSA_public_encrypt, true) \
     PER_FUNCTION_BLOCK(RSA_sign, true) \
     PER_FUNCTION_BLOCK(RSA_size, true) \
@@ -552,6 +554,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_new RSA_new_ptr
 #define RSA_private_decrypt RSA_private_decrypt_ptr
+#define RSA_private_encrypt RSA_private_encrypt_ptr
+#define RSA_public_decrypt RSA_public_decrypt_ptr
 #define RSA_public_encrypt RSA_public_encrypt_ptr
 #define RSA_sign RSA_sign_ptr
 #define RSA_size RSA_size_ptr

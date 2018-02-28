@@ -106,6 +106,9 @@
   <data name="Cryptography_DSA_KeyGenNotSupported" xml:space="preserve">
     <value>DSA keys can be imported, but new key generation is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
+    <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
+  </data>
   <data name="Cryptography_ECXmlSerializationFormatRequired" xml:space="preserve">
     <value>XML serialization of an elliptic curve key requires using an overload which specifies the XML format to be used.</value>
   </data>
@@ -184,6 +187,9 @@
   <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
     <value>The string contains a character not in the 7 bit ASCII character set.</value>
   </data>
+  <data name="Cryptography_KeyTooSmall" xml:space="preserve">
+    <value>The key is too small for the requested operation.</value>
+  </data>
   <data name="Cryptography_MissingIV" xml:space="preserve">
     <value>The cipher mode specified requires that an initialization vector (IV) be used.</value>
   </data>
@@ -201,6 +207,9 @@
   </data>
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_OAEP_Decryption_Failed" xml:space="preserve">
+    <value>Error occurred while decoding OAEP padding.</value>
   </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
@@ -222,6 +231,9 @@
   </data>
   <data name="Cryptography_Rijndael_BlockSize" xml:space="preserve">
     <value>BlockSize must be 128 in this implementation.</value>
+  </data>
+  <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
+    <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
   </data>
   <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
     <value>Attempt to transform beyond end of buffer.</value>
