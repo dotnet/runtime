@@ -207,6 +207,11 @@
     <Compile Include="Base64\Base64TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs">
+    <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
+  </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>
