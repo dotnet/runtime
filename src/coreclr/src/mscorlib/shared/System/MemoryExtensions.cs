@@ -707,7 +707,7 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new span over the portion of the target array.
+        /// Creates a new span over the target array.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> AsSpan<T>(this T[] array)
@@ -716,12 +716,73 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a new Span over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the Span.</param>
+        /// <param name="length">The number of items in the Span.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this T[] array, int start, int length)
+        {
+            return new Span<T>(array, start, length);
+        }
+
+        /// <summary>
         /// Creates a new span over the portion of the target array segment.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment)
+        public static Span<T> AsSpan<T>(this ArraySegment<T> segment)
         {
-            return new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+            return new Span<T>(segment.Array, segment.Offset, segment.Count);
+        }
+
+        /// <summary>
+        /// Creates a new Span over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the Span.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=segment.Count).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this ArraySegment<T> segment, int start)
+        {
+            if (((uint)start) > segment.Count)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+
+            return new Span<T>(segment.Array, segment.Offset + start, segment.Count - start);
+        }
+
+        /// <summary>
+        /// Creates a new Span over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the Span.</param>
+        /// <param name="length">The number of items in the Span.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=segment.Count).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<T> AsSpan<T>(this ArraySegment<T> segment, int start, int length)
+        {
+            if (((uint)start) > segment.Count)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+            if (((uint)length) > segment.Count - start)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+
+            return new Span<T>(segment.Array, segment.Offset + start, length);
         }
 
         /// <summary>
@@ -753,9 +814,82 @@ namespace System
         public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this Memory<T> memory) => memory;
 
         /// <summary>
+        /// Creates a new memory over the target array.
+        /// </summary>
+        public static Memory<T> AsMemory<T>(this T[] array) => new Memory<T>(array);
+
+        /// <summary>
+        /// Creates a new memory over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=array.Length).
+        /// </exception>
+        public static Memory<T> AsMemory<T>(this T[] array, int start) => new Memory<T>(array, start);
+
+        /// <summary>
+        /// Creates a new memory over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <param name="length">The number of items in the memory.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
+        /// </exception>
+        public static Memory<T> AsMemory<T>(this T[] array, int start, int length) => new Memory<T>(array, start, length);
+
+        /// <summary>
         /// Creates a new memory over the portion of the target array.
         /// </summary>
-        public static Memory<T> AsMemory<T>(this T[] array, int start) => new Memory<T>(array, start);
+        public static Memory<T> AsMemory<T>(this ArraySegment<T> segment) => new Memory<T>(segment.Array, segment.Offset, segment.Count);
+
+        /// <summary>
+        /// Creates a new memory over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=segment.Count).
+        /// </exception>
+        public static Memory<T> AsMemory<T>(this ArraySegment<T> segment, int start)
+        {
+            if (((uint)start) > segment.Count)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+
+            return new Memory<T>(segment.Array, segment.Offset + start, segment.Count - start);
+        }
+
+        /// <summary>
+        /// Creates a new memory over the portion of the target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The target array.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <param name="length">The number of items in the memory.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=segment.Count).
+        /// </exception>
+        public static Memory<T> AsMemory<T>(this ArraySegment<T> segment, int start, int length)
+        {
+            if (((uint)start) > segment.Count)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+            if (((uint)length) > segment.Count - start)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+
+            return new Memory<T>(segment.Array, segment.Offset + start, length);
+        }
 
         /// <summary>
         /// Copies the contents of the array into the span. If the source
