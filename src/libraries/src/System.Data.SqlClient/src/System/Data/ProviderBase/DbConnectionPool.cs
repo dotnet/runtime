@@ -413,10 +413,7 @@ namespace System.Data.ProviderBase
 
             _objectList = new List<DbConnectionInternal>(MaxPoolSize);
 
-            if (ADP.IsPlatformNT5)
-            {
-                _transactedConnectionPool = new TransactedConnectionPool(this);
-            }
+            _transactedConnectionPool = new TransactedConnectionPool(this); // initialize irrespective of platform
 
             _poolCreateRequest = new WaitCallback(PoolCreateRequest); // used by CleanupCallback
             _state = State.Running;
