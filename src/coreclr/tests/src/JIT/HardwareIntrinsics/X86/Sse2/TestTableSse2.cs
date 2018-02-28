@@ -14,15 +14,23 @@ namespace IntelHardwareIntrinsicTest
 {
     public delegate bool CheckMethod<T>(T x, T y, T z, ref T c);
 
+    public delegate bool CheckMethodSpan<T>(Span<T> x, Span<T> y, Span<T> z, Span<T> a);
+
     public delegate bool CheckMethodTwo<T, U>(T x, T y, U z, ref U c);
 
     public delegate bool CheckMethodTwo<T, U, V>(T x, V y, U z, ref U c);
+
+    public delegate bool CheckMethodTwoSpan<T, U, V>(Span<T> x, V y, U z, ref U c);
 
     public delegate bool CheckMethodThree<T, U>(T x1, T x2, T y1, T y2, U z, ref U c);
 
     public delegate bool CheckMethodFour<T, U>(T x1, T x2, U z1, U z2, ref U c1, ref U c2);
 
     public delegate bool CheckMethodFive<T, U>(T x1, T x2, T y1, T y2, U z1, U z2, ref U c1, ref U c2);
+
+    public delegate bool CheckMethodFive<T, U, V>(Span<T> x, V imm, Span<U> z, Span<U> a);
+
+    public delegate bool CheckMethodFiveDouble<T, U, V>(Span<T> x, Span<T> y, V imm, Span<U> z, Span<U> a);
 
     public delegate bool CheckMethodFourTFourU<T, U>(
         ValueTuple<T, T, T, T> x,
@@ -51,6 +59,9 @@ namespace IntelHardwareIntrinsicTest
     public delegate bool CheckMethodEightImm<T, U, V>(
         Span<T> x, T value, V i, Span<U> z, Span<U> a);
 
+    public delegate bool CheckMethodEightInsert<T, U, V>(
+        Span<T> x, T value, V i, Span<U> z, Span<U> a);
+
     public delegate bool CheckMethodSixteen<T, U>(
         ValueTuple<T, T, T, T, T, T, T, ValueTuple<T>> x,
         ValueTuple<T, T, T, T, T, T, T, ValueTuple<T>> y,
@@ -73,7 +84,9 @@ namespace IntelHardwareIntrinsicTest
     public enum InitMode
     {
         Undefined = 0,
-        NumberFirstVectors = 0b00000001
+        NumberFirstVectors = 0b00000001,
+        NumberAllVectors = 0b00000010,
+        UseConstValue = 0b00000100,
     }
 
     public unsafe struct TestTableSse2<T> : IDisposable where T : struct
@@ -127,6 +140,18 @@ namespace IntelHardwareIntrinsicTest
         public ValueTuple<T, T, T, T> GetDataPoint(int index)
         {
             return (inArray1[index], inArray2[index], outArray[index], checkArray[index]);
+        }
+
+        public Memory<T> GetAssignmentData(int index)
+        {
+            _index = index;
+            return new Memory<T>(inArray2, index * _stepSize, _stepSize);
+        }
+
+        public ValueTuple<Memory<T>, Memory<T>, Memory<T>, Memory<T>> GetAssignmentDataPoint(int index)
+        {
+            return (new Memory<T>(inArray1, index, _stepSize), new Memory<T>(inArray2, index, _stepSize),
+                    new Memory<T>(outArray, index, _stepSize), new Memory<T>(outArray, index, _stepSize));
         }
 
         public static TestTableSse2<T> Create(int lengthInVectors)
@@ -188,6 +213,24 @@ namespace IntelHardwareIntrinsicTest
             for (int i = 0; i < inArray1.Length; i++)
             {
                 if (!check(inArray1[i], inArray2[i], outArray[i], ref checkArray[i]))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public bool CheckResult(CheckMethodSpan<T> check)
+        {
+            bool result = true;
+            for (int i = 0; i < inArray1.Length; i += _stepSize)
+            {
+                var x = new Span<T>(inArray1, i, _stepSize);
+                var y = new Span<T>(inArray2, i, _stepSize);
+                var z = new Span<T>(inArray2, i, _stepSize);
+                var a = new Span<T>(inArray2, i, _stepSize);
+
+                if (!check(x, y, z, a))
                 {
                     result = false;
                 }
@@ -802,6 +845,12 @@ namespace IntelHardwareIntrinsicTest
             Unsafe.Write((byte*)OutArrayPtr + (_index * _stepSize), value);
         }
 
+        public void SetOutArray(U value, int index = -1)
+        {
+            index = index < 0 ? _index : index;
+            outArray[_index] = value;
+        }
+
         public Vector128<T> this[int index]
         {
             get
@@ -1050,7 +1099,8 @@ namespace IntelHardwareIntrinsicTest
     {
         private const int _stepSize = 16;
         private static int s_tSize;
-        private static int s_ElementCount;
+        public static int ElementCount;
+        private int _lengthInVectors;
 
         private GCHandle _inHandle1;
         private GCHandle _inHandle2;
@@ -1073,12 +1123,26 @@ namespace IntelHardwareIntrinsicTest
         public void* CheckArrayPtr => _checkHandle.AddrOfPinnedObject().ToPointer();
 
         public Vector128<T> Vector1 => Unsafe.Read<Vector128<T>>((byte*)InArray1Ptr + (_index * _stepSize));
-        public T Value => Unsafe.Read<T>((byte*)InArray2Ptr + (_index));
-        public V Immediate => Unsafe.Read<V>((byte*)ImmArrayPtr + (_index));
+        public T Value => inArray2[_index];
+        public V Immediate => immArray[_index];
         public Vector128<U> Vector3 => Unsafe.Read<Vector128<U>>((byte*)OutArrayPtr + (_index * _stepSize));
         public Vector128<U> Vector4 => Unsafe.Read<Vector128<U>>((byte*)CheckArrayPtr + (_index * _stepSize));
 
-        public int Index { get => _index; set => _index = value; }
+        public int Index
+        {
+            get => _index;
+            set
+            {
+                if (value < 0 || value >= _lengthInVectors)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                else
+                {
+                    _index = value;
+                }
+            }
+        }
 
         public void SetOutArray(Vector128<T> value, int index = -1)
         {
@@ -1086,12 +1150,26 @@ namespace IntelHardwareIntrinsicTest
             Unsafe.Write((byte*)OutArrayPtr + (_index * _stepSize), value);
         }
 
+        public void SetOutArray(U value, V imm, int index = -1)
+        {
+            index = index < 0 ? _index : index;
+            outArray[_index] = value;
+            immArray[_index] = imm;
+        }
+
+        public void SetOutArray(Vector128<T> value1, int index, V value2)
+        {
+            Index = index;
+            Unsafe.Write((byte*)OutArrayPtr + (index * _stepSize), value1);
+            immArray[index] = value2;
+        }
+
         public (Vector128<T>, T) this[int index]
         {
             get
             {
-                _index = index;
-                return (Vector1, Value);
+                Index = index;
+                return (Vector1, inArray2[index]);
             }
         }
 
@@ -1103,6 +1181,12 @@ namespace IntelHardwareIntrinsicTest
                     (checkArray[index], checkArray[index + 1], checkArray[index + 2], checkArray[index + 3], checkArray[index + 4], checkArray[index + 5], checkArray[index + 6], checkArray[index + 7]));
         }
 
+        public (Memory<T>, V, U, U) GetExtractDataPoint(int index)
+        {
+            int ii = index / ElementCount;
+            return (new Memory<T>(inArray1, index, ElementCount), immArray[ii], outArray[ii], checkArray[ii]);
+        }
+
         public static TestTableImmSse2<T, U, V> Create(int lengthInVectors, double tSizeMultiplier = 1.0)
         {
             return new TestTableImmSse2<T, U, V>(lengthInVectors, tSizeMultiplier);
@@ -1111,8 +1195,9 @@ namespace IntelHardwareIntrinsicTest
         public TestTableImmSse2(int lengthInVectors, double tSizeMultiplier = 1.0, bool initialize = true)
         {
             s_tSize = Marshal.SizeOf<T>();
-            s_ElementCount = _stepSize / s_tSize;
-            int length = s_ElementCount * lengthInVectors;
+            ElementCount = _stepSize / s_tSize;
+            _lengthInVectors = lengthInVectors;
+            int length = ElementCount * lengthInVectors;
             inArray1 = new T[length];
             inArray2 = new T[lengthInVectors];
             immArray = new V[lengthInVectors];
@@ -1243,12 +1328,46 @@ namespace IntelHardwareIntrinsicTest
             }
         }
 
+        public bool CheckResultExtract(CheckMethodTwoSpan<T, U, V> check)
+        {
+            int topIndex = inArray1.Length - ElementCount + 1;
+            bool result = true;
+            for (int i = 0; i < topIndex; i += ElementCount)
+            {
+                int ii = i / ElementCount;
+                var x = new Span<T>(inArray1, i, ElementCount);
+                if (!check(x, immArray[ii], outArray[ii], ref checkArray[ii]))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public bool CheckResultInsert(CheckMethodEightInsert<T, U, V> check)
+        {
+            bool result = true;
+            for (int i = 0; i < inArray1.Length - 1; i+= ElementCount)
+            {
+                var x = new Span<T>(inArray1, i, ElementCount);
+                var z = new Span<U>(outArray, i, ElementCount);
+                var a = new Span<U>(checkArray, i, ElementCount);
+                int ii = i / ElementCount;
+
+                if (!check(x, inArray2[ii], immArray[ii], z, a))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
         public bool CheckResultImm(CheckMethodEightImm<T, U, V> check)
         {
             bool result = true;
+            int elNo = _stepSize / s_tSize;
             for (int i = 0; i < inArray1.Length; i++)
             {
-                int elNo = _stepSize / s_tSize;
                 if (!check(
                     new Span<T>(inArray1, Index * elNo, elNo),
                     inArray2[i], immArray[i],
@@ -1522,6 +1641,398 @@ namespace IntelHardwareIntrinsicTest
         }
     }
 
+    public unsafe struct TestTableTuvImmSse2<T, U, V> : IDisposable
+        where T : struct
+        where U : struct
+        where V : struct
+    {
+        private const int _vectorSize = 16;
+        private static int _tSize;
+        private static int _elementsNo;
+        private static int _lengthInVectors;
+
+        private GCHandle _inHandle1;
+        private GCHandle _inHandle2;
+        private GCHandle _immHandle;
+        private GCHandle _outHandle;
+        private GCHandle _checkHandle;
+
+        private int _index;
+
+        public T[] inArray1;
+        public T[] inArray2;
+        public V[] immArray;
+        public U[] outArray;
+        public U[] checkArray;
+
+        public void* InArray1Ptr => _inHandle1.AddrOfPinnedObject().ToPointer();
+        public void* InArray2Ptr => _inHandle2.AddrOfPinnedObject().ToPointer();
+        public void* ImmArrayPtr => _inHandle2.AddrOfPinnedObject().ToPointer();
+        public void* OutArrayPtr => _outHandle.AddrOfPinnedObject().ToPointer();
+        public void* CheckArrayPtr => _checkHandle.AddrOfPinnedObject().ToPointer();
+
+        public Vector128<T> Vector1 => Unsafe.Read<Vector128<T>>((byte*)InArray1Ptr + (_index * _vectorSize));
+        public Vector128<T> Vector2 => Unsafe.Read<Vector128<T>>((byte*)InArray2Ptr + (_index * _vectorSize));
+        public V Immediate => Unsafe.Read<V>((byte*)ImmArrayPtr + (_index));
+        public Vector128<U> Vector3 => Unsafe.Read<Vector128<U>>((byte*)OutArrayPtr + (_index * _vectorSize));
+        public Vector128<U> Vector4 => Unsafe.Read<Vector128<U>>((byte*)CheckArrayPtr + (_index * _vectorSize));
+
+        public int Index
+        {
+            get => _index;
+            set
+            {
+                if (value < 0 || value >= _lengthInVectors)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                else
+                {
+                    _index = value;
+                }
+            }
+        }
+
+        public void SetOutArray(Vector128<T> value, int index = -1)
+        {
+            index = index < 0 ? _index : index;
+            Unsafe.Write((byte*)OutArrayPtr + (_index * _vectorSize), value);
+        }
+
+        public void SetOutArray(Vector128<T> value1, int index, V value2)
+        {
+            Index = index;
+            Unsafe.Write((byte*)OutArrayPtr + (Index * _vectorSize), value1);
+            immArray[Index] = value2;
+        }
+
+        public (Vector128<T>, Vector128<T>) this[int index]
+        {
+            get
+            {
+                _index = index;
+                return (Vector1, Vector2);
+            }
+        }
+
+        public unsafe ValueTuple<T, V, U, U> GetQuad22DataPoint(int index)
+        {
+            return (inArray1[index], immArray[index / (_vectorSize / _tSize)], outArray[index], checkArray[index]);
+        }
+
+        public ((T, T), (T, T), V, (U, U), (U, U)) GetDoubleImmDataPoint(int index)
+        {
+            return ((inArray1[index], inArray1[index + 1]),
+                    (inArray2[index], inArray2[index + 1]),
+                    immArray[index / 2],
+                    (outArray[index], outArray[index + 1]),
+                    (checkArray[index], checkArray[index + 1]));
+        }
+
+        public ((T, T, T, T), V, (U, U, U, U), (U, U, U, U)) GetQuadImmDataPoint(int index)
+        {
+            return ((inArray1[index], inArray1[index + 1], inArray1[index + 2], inArray1[index + 3]),
+                    immArray[index / 4],
+                    (outArray[index], outArray[index + 1], outArray[index + 2], outArray[index + 3]),
+                    (checkArray[index], checkArray[index + 1], checkArray[index + 2], checkArray[index + 3]));
+
+        }
+
+        public ((T, T, T, T, T, T, T, T), T, V, (U, U, U, U, U, U, U, U), (U, U, U, U, U, U, U, U)) GetOctaImmDataPoint(int index)
+        {
+            return ((inArray1[index], inArray1[index + 1], inArray1[index + 2], inArray1[index + 3], inArray1[index + 4], inArray1[index + 5], inArray1[index + 6], inArray1[index + 7]),
+                    inArray2[index / 8], immArray[index / 8],
+                    (outArray[index], outArray[index + 1], outArray[index + 2], outArray[index + 3], outArray[index + 4], outArray[index + 5], outArray[index + 6], outArray[index + 7]),
+                    (checkArray[index], checkArray[index + 1], checkArray[index + 2], checkArray[index + 3], checkArray[index + 4], checkArray[index + 5], checkArray[index + 6], checkArray[index + 7]));
+        }
+
+        public static TestTableTuvImmSse2<T, U, V> Create(int lengthInVectors, double tSizeMultiplier = 1.0)
+        {
+            return new TestTableTuvImmSse2<T, U, V>(lengthInVectors, tSizeMultiplier);
+        }
+
+        public TestTableTuvImmSse2(int lengthInVectors, double tSizeMultiplier = 1.0, bool initialize = true)
+        {
+            _lengthInVectors = lengthInVectors;
+            _tSize = Marshal.SizeOf<T>();
+            _elementsNo = _vectorSize / _tSize;
+            int length = _elementsNo * lengthInVectors;
+            inArray1 = new T[length];
+            inArray2 = new T[length];
+            immArray = new V[lengthInVectors];
+            outArray = new U[(int)(length * (1 / tSizeMultiplier))];
+            checkArray = new U[(int)(length * (1 / tSizeMultiplier))];
+            _index = 0;
+            _inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
+            _inHandle2 = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
+            _immHandle = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
+            _outHandle = GCHandle.Alloc(outArray, GCHandleType.Pinned);
+            _checkHandle = GCHandle.Alloc(checkArray, GCHandleType.Pinned);
+            if (initialize)
+            {
+                Initialize();
+            }
+        }
+
+        public void Initialize(InitMode mode = InitMode.Undefined)
+        {
+            TestUtilities.InitializeData(inArray1, inArray2, mode, InArray1Ptr, InArray2Ptr);
+        }
+
+        public bool CheckResultImm(CheckMethodTwo<T, U, V> check)
+        {
+            bool result = true;
+            for (int i = 0; i < inArray1.Length; i++)
+            {
+                int elNo = _vectorSize / _tSize;
+                if (!check(
+                    inArray1[i], immArray[i / elNo],
+                    outArray[i], ref checkArray[i]))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public bool CheckResultImm(CheckMethodEightImm<T, U, V> check)
+        {
+            bool result = true;
+            for (int i = 0; i < inArray1.Length; i++)
+            {
+                if (!check(
+                    new Span<T>(inArray1, Index * _elementsNo, _elementsNo),
+                    inArray2[i], immArray[i],
+                    new Span<U>(outArray, Index * _elementsNo, _elementsNo),
+                    new Span<U>(checkArray, Index * _elementsNo, _elementsNo)))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public bool CheckResultShuffle(CheckMethodFive<T, U, V> check)
+        {
+            bool result = true;
+            for (int i = 0; i < inArray1.Length; i += _elementsNo)
+            {
+                if (!check(
+                    new Span<T>(inArray1, i, _elementsNo),
+                    immArray[i / _elementsNo],
+                    new Span<U>(outArray, i, _elementsNo),
+                    new Span<U>(checkArray, i, _elementsNo)))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public bool CheckResultShuffle(CheckMethodFiveDouble<T, U, V> check)
+        {
+            bool result = true;
+            for (int i = 0; i < inArray1.Length; i += _elementsNo)
+            {
+                if (!check(
+                    new Span<T>(inArray1, i, _elementsNo),
+                    new Span<T>(inArray2, i, _elementsNo),
+                    immArray[i / _elementsNo],
+                    new Span<U>(outArray, i, _elementsNo),
+                    new Span<U>(checkArray, i, _elementsNo)))
+                {
+                    result = false;
+                }
+            }
+            return result;
+        }
+
+        public void Dispose()
+        {
+            _inHandle1.Free();
+            _inHandle2.Free();
+            _immHandle.Free();
+            _outHandle.Free();
+            _checkHandle.Free();
+        }
+    }
+
+    public static class TestUtilities
+    {
+        public static unsafe void InitializeData<T>(
+            T[] inArray1, T[] inArray2, InitMode mode = InitMode.Undefined,
+            void* InArray1Ptr = null, void* InArray2Ptr = null, T value = default(T))
+        {
+            if (mode == InitMode.Undefined)
+            {
+                InitializeWithRandomData(inArray1, inArray2, InArray1Ptr, InArray2Ptr);
+            }
+            else if (mode == InitMode.NumberFirstVectors)
+            {
+                InitializeWithContinuosIndependentNumbering<T>(inArray1, inArray2);
+            }
+            else if (mode == InitMode.UseConstValue)
+            {
+                InitializeWithConstValue(value, inArray1);
+            }
+            else if (mode == InitMode.NumberAllVectors)
+            {
+            }
+        }
+
+        public static unsafe void InitializeWithRandomData<T>(
+            T[] inArray1, T[] inArray2, void* InArray1Ptr = null, void* InArray2Ptr = null)
+        {
+            InitializeWithRandomData<T>(inArray1, InArray1Ptr);
+            InitializeWithRandomData<T>(inArray2, InArray2Ptr);
+        }
+
+        public static unsafe void InitializeWithRandomData<T>(
+            T[] array, void* arrayPtr = null)
+        {
+            Random random = new Random(unchecked((int)(DateTime.UtcNow.Ticks & 0x00000000ffffffffl)));
+            if (array is double[])
+            {
+                var array1 = array as double[];
+                for (int i = 0; i < array1.Length; i++)
+                {
+                    array1[i] = random.NextDouble() * random.Next();
+                }
+            }
+            else if (array is float[])
+            {
+                var arrayFloat1 = array as float[];
+                for (int i = 0; i < arrayFloat1.Length; i++)
+                {
+                    arrayFloat1[i] = (float)(random.NextDouble() * random.Next(ushort.MaxValue));
+                }
+            }
+            else
+            {
+                if (arrayPtr == null)
+                    throw new ArgumentNullException(nameof(arrayPtr));
+
+                int tSize = Marshal.SizeOf<T>();
+                random.NextBytes(new Span<byte>(((byte*)arrayPtr), array.Length * tSize));
+            }
+        }
+
+        public static void InitializeWithContinuosIndependentNumbering<T>(T[] array1, T[] array2)
+        {
+            if (array1 is double[] doubleArray1)
+            {
+                double[] doubleArray2 = array2 as double[];
+                for (double i = 0.0, j = 10000.0; i < doubleArray1.Length; i++, j++)
+                {
+                    doubleArray1[(int)i] = i;
+                    doubleArray2[(int)i] = j;
+                }
+            }
+            else if (array1 is float[] floatArray1)
+            {
+                float[] floatArray2 = array2 as float[];
+                for (float i = 0.0f, j = 10000.0f; i < floatArray1.Length; i++, j++)
+                {
+                    floatArray1[(int)i] = i;
+                    floatArray2[(int)i] = j;
+                }
+            }
+            else if (array1 is byte[] byteArray1)
+            {
+                byte[] byteArray2 = array2 as byte[];
+                for (byte i = 0, j = 100; i < byteArray1.Length; i++, j++)
+                {
+                    byteArray1[i] = i;
+                    byteArray2[i] = j;
+                }
+            }
+            else if (array1 is sbyte[] sbyteArray1)
+            {
+                sbyte[] sbyteArray2 = array2 as sbyte[];
+                for (sbyte i = 0, j = 100; i < sbyteArray1.Length; i++, j++)
+                {
+                    sbyteArray1[i] = i;
+                    sbyteArray2[i] = j;
+                }
+            }
+            else if (array1 is short[] shortArray1)
+            {
+                short[] shortArray2 = array2 as short[];
+                for (short i = 0, j = 10000; i < shortArray1.Length; i++, j++)
+                {
+                    shortArray1[i] = i;
+                    shortArray2[i] = j;
+                }
+
+            }
+            else if (array1 is ushort[] ushortArray1)
+            {
+                ushort[] ushortArray2 = array2 as ushort[];
+                for (ushort i = 0, j = 10000; i < ushortArray1.Length; i++, j++)
+                {
+                    ushortArray1[i] = i;
+                    ushortArray2[i] = j;
+                }
+            }
+            else if (array1 is int[] intArray1)
+            {
+                int[] intArray2 = array2 as int[];
+                for (int i = 0, j = 10000; i < intArray1.Length; i++, j++)
+                {
+                    intArray1[i] = i;
+                    intArray2[i] = j;
+                }
+            }
+            else if (array1 is uint[] uintArray1)
+            {
+                uint[] uintArray2 = array2 as uint[];
+                for (uint i = 0, j = 10000; i < uintArray1.Length; i++, j++)
+                {
+                    uintArray1[i] = i;
+                    uintArray2[i] = j;
+                }
+            }
+            else if (array1 is long[] longArray1)
+            {
+                long[] longArray2 = array2 as long[];
+                for (long i = 0, j = 10000; i < longArray1.Length; i++, j++)
+                {
+                    longArray1[i] = i;
+                    longArray2[i] = j;
+                }
+            }
+            else if (array1 is ulong[] ulongArray1)
+            {
+                ulong[] ulongArray2 = array2 as ulong[];
+                for (uint i = 0, j = 10000; i < ulongArray1.Length; i++, j++)
+                {
+                    ulongArray1[i] = i;
+                    ulongArray2[i] = j;
+                }
+            }
+        }
+
+        public static void InitializeWithConstValue<T>(T value, T[] array)
+        {
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = value;
+            }
+        }
+
+        public static void InitializeWithElementNumberingModuloVectorLength<T>(T[] array, int vectorSize, Func<int, int, T> function)
+        {
+            int elNo = vectorSize / Marshal.SizeOf<T>();
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = function(i, elNo);
+            }
+        }
+    }
+
     public enum SpecialCheck
     {
         Undefined = 0,
@@ -1571,6 +2082,20 @@ namespace IntelHardwareIntrinsicTest
             Console.WriteLine("\n");
         }
 
+        private static void PrintError<T>(TestTableSse2<T> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodSpan<T> check = null) where T : struct
+        {
+            PrintErrorHeaderTu<T>(functionName, testFuncString);
+            for (int i = 0; i < testTable.outArray.Length; i++)
+            {
+                (Memory<T>, Memory<T>, Memory<T>, Memory<T>) item = testTable.GetAssignmentDataPoint(i);
+                Console.Write(
+                    $"({(PrintMemory<T>(item.Item1), PrintMemory<T>(item.Item2), PrintMemory<T>(item.Item3), PrintMemory<T>(item.Item4))})" +
+                    (check != null ? $"->{check(item.Item1.Span, item.Item2.Span, item.Item3.Span, item.Item4.Span)}, " : ", "));
+            }
+            Console.WriteLine("\n");
+        }
+
         private static void PrintError<T, U>(TestTableSse2<T, U> testTable, string functionName = "", string testFuncString = "",
             CheckMethodTwo<T, U> check = null) where T : struct where U : struct
         {
@@ -1591,6 +2116,18 @@ namespace IntelHardwareIntrinsicTest
             {
                 (T, V, U, U) item = testTable.GetQuad22DataPoint(i);
                 Console.Write( $"({item})" + (check != null ? $"->{check(item.Item1, item.Item2, item.Item3, ref item.Item4)}, " : ", "));
+            }
+            Console.WriteLine();
+        }
+
+        private static void PrintError<T, U, V>(TestTableImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodTwoSpan<T, U, V> check = null) where T : struct where U : struct where V : struct
+        {
+            PrintErrorHeaderTuv<T, V>(functionName, testFuncString);
+            for (int i = 0; i < testTable.inArray1.Length; i+= TestTableImmSse2<T, U, V>.ElementCount)
+            {
+                (Memory<T>, V, U, U) item = testTable.GetExtractDataPoint(i);
+                Console.Write($"({item})" + (check != null ? $"->{check(item.Item1.Span, item.Item2, item.Item3, ref item.Item4)}, " : ", "));
             }
             Console.WriteLine();
         }
@@ -1653,6 +2190,61 @@ namespace IntelHardwareIntrinsicTest
             Console.WriteLine();
         }
 
+        private static void PrintError<T, U, V>(TestTableTuvImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodFive<T, U, V> check = null) where T : struct where U : struct where V : struct
+        {
+            PrintErrorHeaderTu<T>(functionName, testFuncString);
+            for (int i = 0; i < testTable.inArray1.Length - 3; i += 4)
+            {
+                // (T, T, T, T, U, U, U, U)
+                var item = testTable.GetQuadImmDataPoint(i);
+                Console.Write($"({item}), ");
+            }
+            Console.WriteLine();
+        }
+
+        private static void PrintError8<T, U, V>(TestTableTuvImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodFive<T, U, V> check = null) where T : struct where U : struct where V : struct
+        {
+            byte ConvertToByte(V value)
+            {
+                if (value is byte result)
+                    return result;
+                else
+                    return 0;
+            }
+
+            PrintErrorHeaderTu<T>(functionName, testFuncString);
+            for (int i = 0; i < testTable.inArray1.Length - 7; i += 8)
+            {
+                // ((T, T, T, T, T, T, T, T), T, V, (U, U, U, U, U, U, U, U), (U, U, U, U, U, U, U, U))
+                var item = testTable.GetOctaImmDataPoint(i);
+                Console.Write($"((x{item.Item1}, y({item.Item2}), imm({Convert.ToString(ConvertToByte(item.Item3), 2)}), z{item.Item4}, a{item.Item5})), ");
+            }
+            Console.WriteLine();
+        }
+
+        private static void PrintError8<T, U, V>(TestTableTuvImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodFiveDouble<T, U, V> check = null) where T : struct where U : struct where V : struct
+        {
+            byte ConvertToByte(V value)
+            {
+                if (value is byte result)
+                    return result;
+                else
+                    return 0;
+            }
+
+            PrintErrorHeaderTu<T>(functionName, testFuncString);
+            for (int i = 0; i < testTable.inArray1.Length - 7; i += 8)
+            {
+                // ((T, T), (T, T), V, (U, U), (U, U))
+                var item = testTable.GetDoubleImmDataPoint(i);
+                Console.Write($"((x{item.Item1}, y({item.Item2}), imm({Convert.ToString(ConvertToByte(item.Item3), 2)}), z{item.Item4}, a{item.Item5})), ");
+            }
+            Console.WriteLine();
+        }
+
         private static void PrintError<T, U>(TestTableSse2<T, U> testTable, string functionName = "", string testFuncString = "",
             CheckMethodSix<T, U> check = null) where T : struct where U : struct
         {
@@ -1705,6 +2297,19 @@ namespace IntelHardwareIntrinsicTest
 
         private static void PrintError<T, U, V>(TestTableImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
             CheckMethodEightImm<T, U, V> check = null) where T : struct where U : struct where V : struct
+        {
+            PrintErrorHeaderTu<T>(functionName, testFuncString);
+            for (int i = 0, j = 0; i < testTable.inArray1.Length - 7 && j < testTable.inArray2.Length; i += 8, j += 1)
+            {
+                // ((T, T, T, T, T, T, T, T), T, V, (U, U, U, U, U, U, U, U), (U, U, U, U, U, U, U, U))
+                var item = testTable.GetOctaImmDataPoint(i);
+                Console.Write($"({item})");
+            }
+            Console.WriteLine();
+        }
+
+        private static void PrintError<T, U, V>(TestTableImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodEightInsert<T, U, V> check = null) where T : struct where U : struct where V : struct
         {
             PrintErrorHeaderTu<T>(functionName, testFuncString);
             for (int i = 0, j = 0; i < testTable.inArray1.Length - 7 && j < testTable.inArray2.Length; i += 8, j += 1)
