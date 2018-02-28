@@ -109,6 +109,13 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 "650304012A0410280AC7A629BFC9FD6FB24F8A42F094B4"
             ).HexToByteArray();
 
+            if (PlatformDetection.IsFullFramework)
+            {
+                // On NetFx when Array.Empty should be returned an array of 6 zeros is
+                // returned instead.
+                content = new byte[6];
+            }
+
             VerifySimpleDecrypt(message, Certificates.RSASha512KeyTransfer1, new ContentInfo(content));
         }
 
