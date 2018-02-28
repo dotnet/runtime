@@ -152,7 +152,7 @@ namespace System.Net.Http
             }
         }
 
-        internal int MaxResponseDrainSize // TODO #27329: Expose publicly.
+        public int MaxResponseDrainSize
         {
             get => _settings._maxResponseDrainSize;
             set
