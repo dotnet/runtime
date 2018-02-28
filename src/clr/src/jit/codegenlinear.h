@@ -149,6 +149,10 @@ void genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node);
 void genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdBinaryRMWOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicSimdTernaryRMWOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicShaHashOp(GenTreeHWIntrinsic* node);
+void genHWIntrinsicShaRotateOp(GenTreeHWIntrinsic* node);
 template <typename HWIntrinsicSwitchCaseBody>
 void genHWIntrinsicSwitchTable(regNumber swReg, regNumber tmpReg, int swMax, HWIntrinsicSwitchCaseBody emitSwCase);
 #endif // defined(_TARGET_XARCH_)
