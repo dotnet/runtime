@@ -22,11 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\MemoryExtensions.cs" />
     <Compile Include="System\SequencePosition.cs" />
-    <Compile Include="System\SpanHelpers.BinarySearch.cs" />
-    <Compile Include="System\SpanHelpers.T.cs" />
-    <Compile Include="System\SpanHelpers.byte.cs" />
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Buffers\ArrayMemoryPool.cs" />
     <Compile Include="System\Buffers\ArrayMemoryPool.ArrayMemoryPoolBuffer.cs" />
@@ -113,10 +109,14 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\CoreLib\System\Memory.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\MemoryDebugView.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\MemoryExtensions.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\ReadOnlyMemory.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\ReadOnlySpan.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Span.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\SpanDebugView.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.BinarySearch.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.Byte.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.T.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IRetainable.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\MemoryHandle.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\OwnedMemory.cs" />
@@ -126,7 +126,6 @@
     <Compile Include="System\MemoryExtensions.Portable.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
-    <Compile Include="System\SpanHelpers.Clear.cs" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.Portable.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -149,9 +148,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Condition="'$(TargetGroup)' != 'netstandard1.1'" Include="System.Numerics.Vectors" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
-    <Compile Include="System\MemoryExtensions.Fast.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
