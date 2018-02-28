@@ -957,6 +957,38 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     switch (compiler->getHWIntrinsicInfo(intrinsicID).form)
     {
+        case HWIntrinsicInfo::Sha1HashOp:
+            info->setInternalCandidates(this, RBM_ALLFLOAT);
+            info->internalFloatCount = 1;
+            if (!op2->isContained())
+            {
+                LocationInfoListNode* op2Info = useList.Begin()->Next();
+                op2Info->info.isDelayFree     = true;
+                GenTree* op3                  = intrinsicTree->gtOp.gtOp1->AsArgList()->Rest()->Rest()->Current();
+                assert(!op3->isContained());
+                LocationInfoListNode* op3Info = op2Info->Next();
+                op3Info->info.isDelayFree     = true;
+                info->hasDelayFreeSrc         = true;
+                info->isInternalRegDelayFree  = true;
+            }
+            break;
+        case HWIntrinsicInfo::SimdTernaryRMWOp:
+            if (!op2->isContained())
+            {
+                LocationInfoListNode* op2Info = useList.Begin()->Next();
+                op2Info->info.isDelayFree     = true;
+                GenTree* op3                  = intrinsicTree->gtOp.gtOp1->AsArgList()->Rest()->Rest()->Current();
+                assert(!op3->isContained());
+                LocationInfoListNode* op3Info = op2Info->Next();
+                op3Info->info.isDelayFree     = true;
+                info->hasDelayFreeSrc         = true;
+            }
+            break;
+        case HWIntrinsicInfo::Sha1RotateOp:
+            info->setInternalCandidates(this, RBM_ALLFLOAT);
+            info->internalFloatCount = 1;
+            break;
+
         case HWIntrinsicInfo::SimdExtractOp:
         case HWIntrinsicInfo::SimdInsertOp:
             if (!op2->isContained())

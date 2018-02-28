@@ -159,6 +159,7 @@ IF_DEF(DR_2F, IS_NONE, NONE) // DR_2F   X.......sh.mmmmm ssssss.....ddddd      R
 IF_DEF(DR_2G, IS_NONE, NONE) // DR_2G   X............... ......nnnnnddddd      Rd Rn
 IF_DEF(DR_2H, IS_NONE, NONE) // DR_2H   X........X...... ......nnnnnddddd      Rd Rn
 IF_DEF(DR_2I, IS_NONE, NONE) // DR_2I   X..........mmmmm cccc..nnnnn.nzcv      Rn Rm    nzcv cond
+IF_DEF(DR_2J, IS_NONE, NONE) // DR_2J   ................ ......nnnnnddddd      Sd Sn
 
 IF_DEF(DR_3A, IS_NONE, NONE) // DR_3A   X..........mmmmm ......nnnnnddddd      Rd Rn Rm
 IF_DEF(DR_3B, IS_NONE, NONE) // DR_3B   X.......sh.mmmmm ssssssnnnnnddddd      Rd Rn Rm {LSL,LSR,ASR} imm(0-63)
@@ -188,6 +189,7 @@ IF_DEF(DV_2L, IS_NONE, NONE) // DV_2L   ........XX...... ......nnnnnddddd      V
 IF_DEF(DV_2M, IS_NONE, NONE) // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn      (abs, neg - vector)
 IF_DEF(DV_2N, IS_NONE, NONE) // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm  (shift - scalar)
 IF_DEF(DV_2O, IS_NONE, NONE) // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm  (shift - vector)
+IF_DEF(DV_2P, IS_NONE, NONE) // DV_2P   .,.............. ......nnnnnddddd      Vd Vn      (Vd used as both source and destination)
 
 IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
@@ -197,6 +199,7 @@ IF_DEF(DV_3C, IS_NONE, NONE)  // DV_3C   .Q.........mmmmm ......nnnnnddddd      
 IF_DEF(DV_3D, IS_NONE, NONE)  // DV_3D   .........X.mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
 IF_DEF(DV_3DI, IS_NONE, NONE) // DV_3DI  .........XLmmmmm ....H.nnnnnddddd      Vd Vn Vm[] (scalar by elem)
 IF_DEF(DV_3E, IS_NONE, NONE)  // DV_3E   ...........mmmmm ......nnnnnddddd      Vd Vn Vm   (scalar)
+IF_DEF(DV_3F, IS_NONE, NONE)  // DV_3F   ...........mmmmm ......nnnnnddddd      Qd Sn Vm   (Qd used as both source and destination)
 
 IF_DEF(DV_4A, IS_NONE, NONE) // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Vd Vn Vm Va (scalar)
 
