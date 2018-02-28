@@ -180,6 +180,24 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal<byte>(expectedContentInfo.Content, actualContentInfo.Content);
         }
 
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void PostEncrypt_Certs()
+        {
+            ContentInfo expectedContentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(expectedContentInfo);
+            ecms.Certificates.Add(Certificates.RSAKeyTransfer2.GetCertificate());
+            ecms.Certificates.Add(Certificates.RSAKeyTransfer3.GetCertificate());
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                ecms.Encrypt(new CmsRecipient(cert));
+            }
+
+            Assert.Equal(Certificates.RSAKeyTransfer2.GetCertificate(), ecms.Certificates[0]);
+            Assert.Equal(Certificates.RSAKeyTransfer3.GetCertificate(), ecms.Certificates[1]);
+        }
+
         //
         // State 3: Called Decode()
         //
@@ -371,6 +389,40 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 // after a successful Decrypt() throws a CryptographicException saying "Already decrypted."
                 Assert.ThrowsAny<CryptographicException>(() => ecms.Decrypt(r[1], extraStore));
             }
+        }
+
+        [Fact]
+        public static void PostEncode_DifferentData()
+        {
+            // This ensures that the decoding and encoding output different values to make sure Encrypt changes the state of the data.
+            byte[] encoded =
+                ("3082010206092A864886F70D010703A081F43081F10201003181C83081C5020100302E301A311830160603550403130F"
+                + "5253414B65795472616E7366657231021031D935FB63E8CFAB48A0BF7B397B67C0300D06092A864886F70D0101010500"
+                + "04818009C16B674495C2C3D4763189C3274CF7A9142FBEEC8902ABDC9CE29910D541DF910E029A31443DC9A9F3B05F02"
+                + "DA1C38478C400261C734D6789C4197C20143C4312CEAA99ECB1849718326D4FC3B7FBB2D1D23281E31584A63E99F2C17"
+                + "132BCD8EDDB632967125CD0A4BAA1EFA8CE4C855F7C093339211BDF990CEF5CCE6CD74302106092A864886F70D010701"
+                + "301406082A864886F70D03070408779B3DE045826B18").HexToByteArray();
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encoded);
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                ecms.Encrypt(new CmsRecipient(cert));
+            }
+
+            byte[] encrypted = ecms.Encode();
+
+            Assert.NotEqual<byte>(encoded, encrypted);
+        }
+
+        private static void AssertEncryptedContentEqual(byte[] expected, byte[] actual)
+        {
+            if (expected.SequenceEqual(actual))
+                return;
+
+            if (actual.Length > expected.Length && actual.Take(expected.Length).SequenceEqual(expected))
+                throw new Exception("Returned content had extra bytes padded. If you're running this test on the desktop framework, this is a known bug.");
+
+            Assert.Equal<byte>(expected, actual);
         }
     }
 }

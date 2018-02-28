@@ -87,6 +87,34 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
+        public static void ZeroLengthContextUntagged_FixedValue()
+        {
+            // This test ensures that we can handle when the enveloped message has no content inside. This test differs
+            // from "ZeroLengthContent_FixedValue" in that it doesn't have a context specific [0] in the EncryptedContentInfo
+            // section of the DER encoding of the message.
+            // EncryptedContentInfo ::= SEQUENCE {
+            //      contentType ContentType,
+            //      contentEncryptionAlgorithm ContentEncryptionAlgorithmIdentifier,
+            //      encryptedContent[0] IMPLICIT EncryptedContent OPTIONAL }
+            // The input was created with ASN1 editor and verified with .NET framework. It's an enveloped message, version 0,
+            // with one Key Transport recipient and holds data encrypted with 3DES. 
+            byte[] content =
+                 ("3082010206092A864886F70D010703A081F43081F10201003181C83081C5020100302E301A311830160603550403130F"
+                 + "5253414B65795472616E7366657231021031D935FB63E8CFAB48A0BF7B397B67C0300D06092A864886F70D0101010500"
+                 + "04818009C16B674495C2C3D4763189C3274CF7A9142FBEEC8902ABDC9CE29910D541DF910E029A31443DC9A9F3B05F02"
+                 + "DA1C38478C400261C734D6789C4197C20143C4312CEAA99ECB1849718326D4FC3B7FBB2D1D23281E31584A63E99F2C17"
+                 + "132BCD8EDDB632967125CD0A4BAA1EFA8CE4C855F7C093339211BDF990CEF5CCE6CD74302106092A864886F70D010701"
+                 + "301406082A864886F70D03070408779B3DE045826B18").HexToByteArray();
+
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(content);
+
+            int expected = PlatformDetection.IsFullFramework ? 6 : 0; // Desktop bug gives 6
+            Assert.Equal(expected, ecms.ContentInfo.Content.Length);
+            Assert.Equal(Oids.Pkcs7Data, ecms.ContentInfo.ContentType.Value);
+        }
+
+        [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop rejects zero length content: corefx#18724")]
         public static void ZeroLengthContent_RoundTrip()
