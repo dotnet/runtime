@@ -21,8 +21,9 @@ struct HWIntrinsicInfo
         UnaryOp, // Non SIMD intrinsics which take a single argument
         CrcOp,   // Crc intrinsics.
         // SIMD common forms
-        SimdBinaryOp, // SIMD intrinsics which take two vector operands and return a vector
-        SimdUnaryOp,  // SIMD intrinsics which take one vector operand and return a vector
+        SimdBinaryOp,        // SIMD intrinsics which take two vector operands and return a vector
+        SimdUnaryOp,         // SIMD intrinsics which take one vector operand and return a vector
+        SimdBinaryRMWOp,     // Same as SimdBinaryOp , with first source vector used as destination vector also.
         // SIMD custom forms
         SimdExtractOp, // SIMD intrinsics which take one vector operand and a lane index and return an element
         SimdInsertOp,  // SIMD intrinsics which take one vector operand and a lane index and value and return a vector

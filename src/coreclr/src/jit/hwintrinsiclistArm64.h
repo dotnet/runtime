@@ -80,6 +80,11 @@ HARDWARE_INTRINSIC(NI_ARM64_SIMD_GetItem,         Simd,     Extract,            
 HARDWARE_INTRINSIC(NI_ARM64_SIMD_SetItem,         Simd,     Insert,                         SimdInsertOp,  INS_mov,     INS_mov,     INS_mov,      None )
 HARDWARE_INTRINSIC(NI_ARM64_SIMD_SetAllVector64,  Simd,     SetAllVector64,                 SimdSetAllOp,  INS_dup,     INS_dup,     INS_dup,      None )
 HARDWARE_INTRINSIC(NI_ARM64_SIMD_SetAllVector128, Simd,     SetAllVector128,                SimdSetAllOp,  INS_dup,     INS_dup,     INS_dup,      None )
+//Aes
+HARDWARE_INTRINSIC(NI_ARM64_AesEncrypt,           Aes,      Encrypt,                        SimdBinaryRMWOp,   INS_invalid,    INS_invalid, INS_aese,      None )
+HARDWARE_INTRINSIC(NI_ARM64_AesDecrypt,           Aes,      Decrypt,                        SimdBinaryRMWOp,   INS_invalid,    INS_invalid, INS_aesd,      None )
+HARDWARE_INTRINSIC(NI_ARM64_AesMixColumns,        Aes,      MixColumns,                     SimdUnaryOp,           INS_invalid,    INS_invalid, INS_aesmc,     None )
+HARDWARE_INTRINSIC(NI_ARM64_AesInvMixColumns,     Aes,      InverseMixColumns,              SimdUnaryOp,           INS_invalid,    INS_invalid, INS_aesimc,    None )
 
 #endif
 

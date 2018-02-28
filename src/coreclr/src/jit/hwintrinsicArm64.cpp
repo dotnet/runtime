@@ -166,6 +166,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         case HWIntrinsicInfo::SimdSelectOp:
         case HWIntrinsicInfo::SimdSetAllOp:
         case HWIntrinsicInfo::SimdUnaryOp:
+        case HWIntrinsicInfo::SimdBinaryRMWOp:
             simdClass = sig->retTypeClass;
             break;
         case HWIntrinsicInfo::SimdExtractOp:
@@ -196,6 +197,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
 
         case HWIntrinsicInfo::SimdBinaryOp:
+        case HWIntrinsicInfo::SimdBinaryRMWOp:
             // op1 is the first operand
             // op2 is the second operand
             op2 = impSIMDPopStack(simdType);
