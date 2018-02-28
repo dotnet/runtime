@@ -94,6 +94,9 @@
   <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
     <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
   </data>
+  <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
+    <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
+  </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
@@ -154,6 +157,9 @@
   <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
     <value>Key Blob not in expected format.</value>
   </data>
+  <data name="Cryptography_KeyTooSmall" xml:space="preserve">
+    <value>The key is too small for the requested operation.</value>
+  </data>
   <data name="Cryptography_OpenEphemeralKeyHandleWithoutEphemeralFlag" xml:space="preserve">
     <value>The CNG key handle being opened was detected to be ephemeral, but the EphemeralKey open option was not specified.</value>
   </data>
@@ -172,8 +178,14 @@
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>
   </data>
+  <data name="Cryptography_OAEP_Decryption_Failed" xml:space="preserve">
+    <value>Error occurred while decoding OAEP padding.</value>
+  </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
+  </data>
+  <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
+    <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
   </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>

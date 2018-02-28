@@ -287,6 +287,9 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\RSACng.SignVerify.cs">
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RsaPaddingProcessor.cs">
+      <Link>Common\System\Security\Cryptography\RsaPaddingProcessor.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />
@@ -298,6 +301,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Buffers" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
@@ -310,6 +315,7 @@
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

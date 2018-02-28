@@ -267,3 +267,76 @@ cleanup:
 
     return ret;
 }
+
+static int32_t RsaPrimitive(SecKeyRef key,
+                            uint8_t* pbData,
+                            int32_t cbData,
+                            CFDataRef* pDataOut,
+                            CFErrorRef* pErrorOut,
+                            SecKeyAlgorithm algorithm,
+                            CFDataRef func(SecKeyRef, SecKeyAlgorithm, CFDataRef, CFErrorRef*))
+{
+    if (pDataOut != nullptr)
+        *pDataOut = nullptr;
+    if (pErrorOut != nullptr)
+        *pErrorOut = nullptr;
+
+    if (key == nullptr || pbData == nullptr || cbData < 0 || pDataOut == nullptr || pErrorOut == nullptr)
+    {
+        return kErrorBadInput;
+    }
+
+    assert(func != nullptr);
+
+    CFDataRef input = CFDataCreateWithBytesNoCopy(nullptr, pbData, cbData, kCFAllocatorNull);
+    CFDataRef output = func(key, algorithm, input, pErrorOut);
+
+    if (*pErrorOut != nullptr)
+    {
+        if (output != nullptr)
+        {
+            CFRelease(output);
+            output = nullptr;
+        }
+
+        return kErrorSeeError;
+    }
+
+    if (output == nullptr)
+    {
+        return kErrorUnknownState;
+    }
+
+    *pDataOut = output;
+    return 1;
+}
+
+extern "C" int32_t AppleCryptoNative_RsaSignaturePrimitive(
+    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
+{
+    return RsaPrimitive(
+        privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSASignatureRaw, SecKeyCreateSignature);
+}
+
+extern "C" int32_t AppleCryptoNative_RsaDecryptionPrimitive(
+    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
+{
+    return RsaPrimitive(
+        privateKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateDecryptedData);
+}
+
+extern "C" int32_t AppleCryptoNative_RsaEncryptionPrimitive(
+    SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
+{
+    return RsaPrimitive(
+        publicKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateEncryptedData);
+}
+
+extern "C" int32_t AppleCryptoNative_RsaVerificationPrimitive(
+    SecKeyRef publicKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDataOut, CFErrorRef* pErrorOut)
+{
+    // Since there's not an API which will give back the still-padded signature block with
+    // kSecAlgorithmRSASignatureRaw, use the encryption primitive to achieve the same result.
+    return RsaPrimitive(
+        publicKey, pbData, cbData, pDataOut, pErrorOut, kSecKeyAlgorithmRSAEncryptionRaw, SecKeyCreateEncryptedData);
+}

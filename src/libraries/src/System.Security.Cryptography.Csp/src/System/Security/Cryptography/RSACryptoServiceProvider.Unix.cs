@@ -170,12 +170,18 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm => "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
 
         public override byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.SignData(data, hashAlgorithm, padding);
 
         public override byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.SignData(data, offset, count, hashAlgorithm, padding);
 
         public override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.TrySignData(data, destination, hashAlgorithm, padding, out bytesWritten);
 
         public byte[] SignData(byte[] buffer, int offset, int count, object halg) =>
@@ -188,9 +194,13 @@ namespace System.Security.Cryptography
             _impl.SignData(inputStream, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() : 
             _impl.SignHash(hash, hashAlgorithm, padding);
 
         public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.TrySignHash(hash, destination, hashAlgorithm, padding, out bytesWritten);
 
         public byte[] SignHash(byte[] rgbHash, string str)
@@ -210,9 +220,13 @@ namespace System.Security.Cryptography
             _impl.VerifyData(buffer, signature, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public override bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.VerifyData(data, offset, count, signature, hashAlgorithm, padding);
 
         public override bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
+            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.VerifyData(data, signature, hashAlgorithm, padding);
 
         public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)

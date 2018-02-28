@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Internal.Cryptography;
@@ -18,6 +20,28 @@ namespace System.Security.Cryptography
 #endif
     public sealed partial class RSACng : RSA
     {
+        private static readonly ConcurrentDictionary<HashAlgorithmName, int> s_hashSizes =
+            new ConcurrentDictionary<HashAlgorithmName, int>(
+                new[]
+                {
+                    KeyValuePair.Create(HashAlgorithmName.SHA256, 256 / 8),
+                    KeyValuePair.Create(HashAlgorithmName.SHA384, 384 / 8),
+                    KeyValuePair.Create(HashAlgorithmName.SHA512, 512 / 8),
+                });
+
+        private static int GetHashSizeInBytes(HashAlgorithmName hashAlgorithm)
+        {
+            return s_hashSizes.GetOrAdd(
+                hashAlgorithm,
+                alg =>
+                {
+                    using (HashProviderCng hashProvider = new HashProviderCng(alg.Name, null))
+                    {
+                        return hashProvider.HashSizeInBytes;
+                    }
+                });
+        }
+
         /// <summary>
         ///     Computes the signature of a hash that was produced by the hash algorithm specified by "hashAlgorithm."
         /// </summary>
@@ -36,6 +60,11 @@ namespace System.Security.Cryptography
             if (padding == null)
             {
                 throw new ArgumentNullException(nameof(padding));
+            }
+
+            if (hash.Length != GetHashSizeInBytes(hashAlgorithm))
+            {
+                throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
             }
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
@@ -82,6 +111,11 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
+                if (hash.Length != GetHashSizeInBytes(hashAlgorithm))
+                {
+                    throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
+                }
+
                 IntPtr namePtr = Marshal.StringToHGlobalUni(hashAlgorithmName);
                 try
                 {
@@ -137,6 +171,11 @@ namespace System.Security.Cryptography
 
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
+                if (hash.Length != GetHashSizeInBytes(hashAlgorithm))
+                {
+                    return false;
+                }
+
                 IntPtr namePtr = Marshal.StringToHGlobalUni(hashAlgorithmName);
                 try
                 {

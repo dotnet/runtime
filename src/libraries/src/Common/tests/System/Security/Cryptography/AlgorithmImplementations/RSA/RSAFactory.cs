@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         RSA Create(int keySize);
         bool Supports384PrivateKey { get; }
         bool SupportsSha2Oaep { get; }
+        bool SupportsPss { get; }
         bool SupportsDecryptingIntoExactSpaceRequired { get; }
     }
 
@@ -25,9 +26,18 @@ namespace System.Security.Cryptography.Rsa.Tests
             return s_provider.Create(keySize);
         }
 
+        public static RSA Create(RSAParameters rsaParameters)
+        {
+            RSA rsa = Create();
+            rsa.ImportParameters(rsaParameters);
+            return rsa;
+        }
+
         public static bool Supports384PrivateKey => s_provider.Supports384PrivateKey;
 
         public static bool SupportsSha2Oaep => s_provider.SupportsSha2Oaep;
+
+        public static bool SupportsPss => s_provider.SupportsPss;
 
         public static bool SupportsDecryptingIntoExactSpaceRequired => s_provider.SupportsDecryptingIntoExactSpaceRequired;
     }

@@ -906,7 +906,9 @@ namespace Internal.NativeCrypto
             // parameter specifies the size of the plaintext to encrypt.
             if (!Interop.CryptEncrypt(safeKeyHandle, SafeHashHandle.InvalidHandle, true, dwEncryptFlags, pbEncryptedKey, ref cbKey, cbEncryptedKey))
             {
+                throw GetErrorCode().ToCryptographicException();
             }
+
             Debug.Assert(cbKey == cbEncryptedKey);
             Array.Reverse(pbEncryptedKey);
         }

@@ -27,7 +27,14 @@ internal static partial class Interop
             try
             {
                 cfData.DangerousAddRef(ref addedRef);
-                byte[] bytes = new byte[CFDataGetLength(cfData).ToInt64()];
+                long length = CFDataGetLength(cfData).ToInt64();
+
+                if (length == 0)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                byte[] bytes = new byte[length];
 
                 unsafe
                 {
@@ -55,16 +62,20 @@ internal static partial class Interop
                 cfData.DangerousAddRef(ref addedRef);
 
                 long length = CFDataGetLength(cfData).ToInt64();
-                if (destination.Length < length)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
 
-                byte* dataBytes = CFDataGetBytePtr(cfData);
-                fixed (byte* destinationPtr = &MemoryMarshal.GetReference(destination))
+                if (length > 0)
                 {
-                    Buffer.MemoryCopy(dataBytes, destinationPtr, destination.Length, length);
+                    if (destination.Length < length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    byte* dataBytes = CFDataGetBytePtr(cfData);
+                    fixed (byte* destinationPtr = &MemoryMarshal.GetReference(destination))
+                    {
+                        Buffer.MemoryCopy(dataBytes, destinationPtr, destination.Length, length);
+                    }
                 }
 
                 bytesWritten = (int)length;
