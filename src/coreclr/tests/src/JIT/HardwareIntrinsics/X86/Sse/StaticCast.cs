@@ -11,6 +11,13 @@ using System.Runtime.Intrinsics;
 
 namespace IntelHardwareIntrinsicTest
 {
+    // that it is intentionally designed to be a struct type that meets 
+    // the generic constraint but is not supported by any intrinsics
+    struct Num
+    {
+        public int a;
+    }
+
     class Program
     {
         const int Pass = 100;
@@ -39,11 +46,44 @@ namespace IntelHardwareIntrinsicTest
                         Console.WriteLine();
                         testResult = Fail;
                     }
+
+                    // the successful path is the one that catches the exception, so that does nothing, 
+                    // it is the fall-through path that's the error path
+                    try
+                    {
+                        var v = Sse.StaticCast<float, Num>(vf1);
+                        Unsafe.Write(floatTable.outArrayPtr, v);
+                        Console.WriteLine("SSE StaticCast failed on target type test:");
+                        testResult = Fail;
+                    }
+                    catch (System.NotSupportedException)
+                    {
+                    }
+
+                    // the successful path is the one that catches the exception, so that does nothing, 
+                    // it is the fall-through path that's the error path
+                    try
+                    {
+                        var v = TestSrcType();
+                        Unsafe.Write(floatTable.outArrayPtr, v);
+                        Console.WriteLine("SSE StaticCast failed on source type test:");
+                        testResult = Fail;
+                    }
+                    catch (System.NotSupportedException)
+                    {
+                    }
                 }
             }
-
-
+            
             return testResult;
+        }
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Vector128<int> TestSrcType()
+        {
+            Vector128<Num> v1 = new Vector128<Num>();
+            Vector128<Num> v2 = new Vector128<Num>();
+            return Sse2.Add(Sse.StaticCast<Num, int>(v1), Sse.StaticCast<Num, int>(v2));
         }
 
         public unsafe struct TestTable<T, U> : IDisposable where T : struct where U : struct
