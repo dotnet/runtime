@@ -41,8 +41,6 @@ namespace System.Net.Http
 
         private static bool TryGetChallengeDataForScheme(string scheme, HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues, out string challengeData)
         {
-            challengeData = null;
-
             foreach (AuthenticationHeaderValue ahv in authenticationHeaderValues)
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(scheme, ahv.Scheme))
@@ -53,6 +51,7 @@ namespace System.Net.Http
                 }
             }
 
+            challengeData = null;
             return false;
         }
 
@@ -69,7 +68,7 @@ namespace System.Net.Http
             NetworkCredential credential = credentials.GetCredential(uri, scheme);
             if (credential == null)
             {
-                // We have no credential for this auth type, so we can't response to the challenge.
+                // We have no credential for this auth type, so we can't respond to the challenge.
                 // We'll continue to look for a different auth type that we do have a credential for.
                 return false;
             }
@@ -175,7 +174,9 @@ namespace System.Net.Http
 
         private static async Task<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            if (preAuthenticate)
+            // Only do preauthentication if the credentials are a CredentialCache.
+            // Otherwise we'll end up sending the same basic credentials to any server we connect to.
+            if (preAuthenticate && credentials is CredentialCache)
             {
                 NetworkCredential credential = credentials.GetCredential(authUri, BasicScheme);
                 if (credential != null)
