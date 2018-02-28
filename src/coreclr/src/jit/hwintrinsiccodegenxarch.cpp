@@ -184,6 +184,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         genHWIntrinsicJumpTableFallback(intrinsicID, op3Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
+                else if (category == HW_Category_MemoryStore)
+                {
+                    assert(intrinsicID == NI_SSE2_MaskMove);
+                    assert(targetReg == REG_NA);
+
+                    // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
+                    if (op3Reg != REG_EDI)
+                    {
+                        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_EDI, op3Reg);
+                    }
+                    emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
+                }
                 else
                 {
                     emit->emitIns_SIMD_R_R_R_R(ins, simdSize, targetReg, op1Reg, op2Reg, op3Reg);
