@@ -112,6 +112,8 @@ public:
     static FCDECL2(void,    SetAbortReason, ThreadBaseObject* pThisUNSAFE, Object* pObject);
     static FCDECL1(void,    ClearAbortReason, ThreadBaseObject* pThisUNSAFE);
 
+    static FCDECL0(INT32,   GetCurrentProcessorNumber);
+
 private:
 
     struct KickOffThread_Args {
