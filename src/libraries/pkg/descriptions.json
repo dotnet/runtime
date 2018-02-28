@@ -1515,6 +1515,14 @@
     ]
   },
   {
+    "Name": "System.Runtime.Intrinsics.Experimental",
+    "Description": "Provides APIs to processor specific instructions.",
+    "CommonTypes": [
+        "System.Runtime.Intrinsics.Vector128<>",
+        "System.Runtime.Intrinsics.Vector256<>"
+    ]
+  },
+  {
     "Name": "System.Runtime.Loader",
     "Description": "Provides the System.Runtime.Loader.AssemblyLoadContext class, which provides members for loading assemblies.",
     "CommonTypes": [
