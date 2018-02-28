@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Authentication_TestData))]
         public async Task HttpClientHandler_Authentication_Succeeds(string authenticateHeader, bool result)
         {
-            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest", StringComparison.OrdinalIgnoreCase)))
+            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.ToLowerInvariant().Contains("digest")))
             {
                 // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
                 return;
