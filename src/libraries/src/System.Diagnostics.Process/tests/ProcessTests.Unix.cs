@@ -422,7 +422,12 @@ namespace System.Diagnostics.Tests
                 Start = false,
                 RunAsSudo = true
             };
-            Process p = RemoteInvoke(testMethod, arg, options).Process;
+            Process p = null;
+            using (RemoteInvokeHandle handle = RemoteInvoke(testMethod, arg, options))
+            {
+                p = handle.Process;
+                handle.Process = null;
+            }
             AddProcessForDispose(p);
 
             p.Start();
