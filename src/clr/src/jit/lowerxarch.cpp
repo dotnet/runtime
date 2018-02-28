@@ -2367,7 +2367,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic      intrinsicID = node->gtHWIntrinsicId;
     HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID, node);
     GenTree*            op1         = node->gtGetOp1();
     GenTree*            op2         = node->gtGetOp2();
 

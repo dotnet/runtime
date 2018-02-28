@@ -369,8 +369,10 @@ INST3( pcmpeqb,     "pcmpeqb"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,    
 INST3( pcmpgtb,     "pcmpgtb"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x64))   // Packed compare 8-bit signed integers for greater than
 
 INST3( pshufd,      "pshufd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x70))   // Packed shuffle of 32-bit integers
+INST3( pshufhw,     "pshufhw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      SSEFLT(0x70))   // Shuffle the high words in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
+INST3( pshuflw,     "pshuflw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      SSEDBL(0x70))   // Shuffle the low words in xmm2/m128 based on the encoding in imm8 and store the result in xmm1.
 INST3( pextrw,      "pextrw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0xC5))   // Extract 16-bit value into a r32 with zero extended to 32-bits
-INST3( pinsrw,      "pinsrw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0xC4))   // packed insert word
+INST3( pinsrw,      "pinsrw"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0xC4))   // Insert word at index
 
 INST3( punpckhbw,   "punpckhbw"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x68))   // Packed logical (unsigned) widen ubyte to ushort (hi)
 INST3( punpcklbw,   "punpcklbw"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE,      PCKDBL(0x60))   // Packed logical (unsigned) widen ubyte to ushort (lo)
@@ -448,7 +450,7 @@ INST3( phsubsw,      "phsubsw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( lddqu,        "lddqu"       , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0xF0))  // Load Unaligned integer
 INST3( movntdqa,     "movntdqa"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2A))   // Load Double Quadword Non-Temporal Aligned Hint
 INST3( movddup,      "movddup"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEDBL(0x12))  // Replicate Double FP Values
-INST3( movsldup,     "movsldup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x12))  // Replicate even-indexed Single FP Values  
+INST3( movsldup,     "movsldup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x12))  // Replicate even-indexed Single FP Values
 INST3( movshdup,     "movshdup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x16))  // Replicate odd-indexed Single FP Values
 INST3( phminposuw,   "phminposuw"  , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x41))   // Packed Horizontal Word Minimum
 INST3( mpsadbw,      "mpsadbw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x42))   // Compute Multiple Packed Sums of Absolute Difference
