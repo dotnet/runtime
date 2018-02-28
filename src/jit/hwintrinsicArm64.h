@@ -18,17 +18,22 @@ struct HWIntrinsicInfo
         IsSupported, // The IsSupported property will use this form
         Unsupported, // Any intrisic which is unsupported and must throw PlatformNotSupportException will use this form
         // Non SIMD forms
-        UnaryOp, // Non SIMD intrinsics which take a single argument
-        CrcOp,   // Crc intrinsics.
+        UnaryOp,      // Non SIMD intrinsics which take a single argument
+        CrcOp,        // Crc intrinsics.
+        Sha1RotateOp, // SHA1 Hash Rotate intrinsics. Takes hash index unsigned int and returns unsigned int.
+
         // SIMD common forms
-        SimdBinaryOp,        // SIMD intrinsics which take two vector operands and return a vector
-        SimdUnaryOp,         // SIMD intrinsics which take one vector operand and return a vector
-        SimdBinaryRMWOp,     // Same as SimdBinaryOp , with first source vector used as destination vector also.
+        SimdBinaryOp,     // SIMD intrinsics which take two vector operands and return a vector
+        SimdUnaryOp,      // SIMD intrinsics which take one vector operand and return a vector
+        SimdBinaryRMWOp,  // Same as SimdBinaryOp , with first source vector used as destination vector also.
+        SimdTernaryRMWOp, // SIMD intrinsics which take three vector operands and return a vector ,
+                          // with destination vector same as first source vector
         // SIMD custom forms
         SimdExtractOp, // SIMD intrinsics which take one vector operand and a lane index and return an element
         SimdInsertOp,  // SIMD intrinsics which take one vector operand and a lane index and value and return a vector
         SimdSelectOp,  // BitwiseSelect intrinsic which takes three vector operands and returns a vector
         SimdSetAllOp,  // Simd intrinsics which take one numeric operand and return a vector
+        Sha1HashOp     // SIMD instrisics for SHA1 Hash operations. Takes two vectors and hash index and returns vector
     };
 
     // Flags will be used to handle secondary meta-data which will help

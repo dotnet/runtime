@@ -86,6 +86,14 @@ HARDWARE_INTRINSIC(NI_ARM64_AesDecrypt,           Aes,      Decrypt,            
 HARDWARE_INTRINSIC(NI_ARM64_AesMixColumns,        Aes,      MixColumns,                     SimdUnaryOp,           INS_invalid,    INS_invalid, INS_aesmc,     None )
 HARDWARE_INTRINSIC(NI_ARM64_AesInvMixColumns,     Aes,      InverseMixColumns,              SimdUnaryOp,           INS_invalid,    INS_invalid, INS_aesimc,    None )
 
+//Sha1
+HARDWARE_INTRINSIC(NI_ARM64_Sha1Choose,          Sha1,      HashChoose,                    Sha1HashOp,             INS_invalid,    INS_invalid, INS_sha1c,      None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha1Parity,          Sha1,      HashParity,                    Sha1HashOp,             INS_invalid,    INS_invalid, INS_sha1p,      None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha1Majority,        Sha1,      HashMajority,                  Sha1HashOp,             INS_invalid,    INS_invalid, INS_sha1m,      None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha1FixedRotate,     Sha1,      FixedRotate,                   Sha1RotateOp,           INS_invalid,    INS_invalid, INS_sha1h,      None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha1SchedulePart1,   Sha1,      SchedulePart1,                 SimdTernaryRMWOp,       INS_invalid,    INS_invalid, INS_sha1su0,    None )
+HARDWARE_INTRINSIC(NI_ARM64_Sha1SchedulePart2,   Sha1,      SchedulePart2,                 SimdBinaryRMWOp,        INS_invalid,    INS_invalid, INS_sha1su1,    None )
+
 #endif
 
 
