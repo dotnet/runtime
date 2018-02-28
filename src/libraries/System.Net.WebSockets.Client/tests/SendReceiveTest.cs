@@ -412,59 +412,27 @@ namespace System.Net.WebSockets.Client.Tests
                 // Wait for the server to close the underlying connection.
                 acceptTask.Wait(cts.Token);
 
-                // Validate I/O errors and socket state.
-                if (PlatformDetection.IsFullFramework)
+                WebSocketException pendingReceiveException = await Assert.ThrowsAsync<WebSocketException>(() => pendingReceiveAsync);
+
+                Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
+
+                if (PlatformDetection.IsUap)
                 {
-                    _output.WriteLine("[Windows] ManagedWebSocket-based implementation.");
-
-                    WebSocketException pendingReceiveException = await Assert.ThrowsAsync<WebSocketException>(() => pendingReceiveAsync);
-                    Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
-
-                    WebSocketException newReceiveException =
-                        await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
-                    Assert.Equal(WebSocketError.Success, newReceiveException.WebSocketErrorCode);
-                    Assert.Equal(
-                        ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
-                        newReceiveException.Message);
-
-                    Assert.Equal(WebSocketState.Aborted, clientSocket.State);
-                    Assert.Null(clientSocket.CloseStatus);
-                }
-                else if (PlatformDetection.IsUap)
-                {
-                    _output.WriteLine("WinRTWebSocket-based implementation.");
-
                     const uint WININET_E_CONNECTION_ABORTED = 0x80072EFE;
 
-                    WebSocketException pendingReceiveException = await Assert.ThrowsAsync<WebSocketException>(() => pendingReceiveAsync);
-                    Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
                     Assert.NotNull(pendingReceiveException.InnerException);
                     Assert.Equal(WININET_E_CONNECTION_ABORTED, (uint)pendingReceiveException.InnerException.HResult);
-
-                    WebSocketException newReceiveException =
-                        await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
-                    Assert.Equal(WebSocketError.Success, newReceiveException.WebSocketErrorCode);
-                    Assert.Equal(
-                        ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
-                        newReceiveException.Message);
-
-                    Assert.Equal(WebSocketState.Aborted, clientSocket.State);
-                    Assert.Null(clientSocket.CloseStatus);
                 }
-                else
-                {
-                    _output.WriteLine("[Non-Windows] ManagedWebSocket-based implementation.");
 
-                    WebSocketException pendingReceiveException = await Assert.ThrowsAsync<WebSocketException>(() => pendingReceiveAsync);
-                    Assert.Equal(WebSocketError.ConnectionClosedPrematurely, pendingReceiveException.WebSocketErrorCode);
-
-                    WebSocketException newReceiveException =
+                WebSocketException newReceiveException =
                         await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
-                    Assert.Equal(WebSocketError.ConnectionClosedPrematurely, newReceiveException.WebSocketErrorCode);
+                
+                Assert.Equal(
+                    ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
+                    newReceiveException.Message);
 
-                    Assert.Equal(WebSocketState.Open, clientSocket.State);
-                    Assert.Null(clientSocket.CloseStatus);
-                }
+                Assert.Equal(WebSocketState.Aborted, clientSocket.State);
+                Assert.Null(clientSocket.CloseStatus);
             };
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
