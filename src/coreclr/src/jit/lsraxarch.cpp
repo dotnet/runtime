@@ -2344,12 +2344,14 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         case NI_SSE2_CompareNotEqualUnorderedScalar:
             info->internalIntCount = 1;
             info->setInternalCandidates(this, RBM_BYTE_REGS);
+            info->isInternalRegDelayFree = true;
             break;
 
         case NI_SSE_SetScalarVector128:
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             info->internalFloatCount = 1;
             info->setInternalCandidates(this, allSIMDRegs());
+            info->isInternalRegDelayFree = true;
             break;
 
         case NI_SSE_ConvertToSingle:
