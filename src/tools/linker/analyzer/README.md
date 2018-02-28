@@ -1,3 +1,5 @@
+# Linker Analyzer
+
 Linker analyzer is a command line tool to analyze dependencies, which
 were recorded during linker processing, and led linker to mark an item
 to keep it in the resulting linked assembly.
@@ -7,8 +9,7 @@ dumped during the linker run. The vertices of this graph are the items
 of interest like assemblies, types, methods, fields, linker steps,
 etc. The edges represent the dependencies.
 
-How to dump dependencies
-------------------------
+## How to dump dependencies
 
 The linker analyzer needs a linker dependencies file as an input. It
 can be retrieved by enabling dependencies dumping during linking of a
@@ -25,8 +26,7 @@ the project like this:
 After a successful build, there will be a linker-dependencies.xml.gz
 file created, containing the information for the analyzer.
 
-How to use the analyzer
------------------------
+## How to use the analyzer
 
 Let say you would like to know, why a type, Android.App.Activity for
 example, was marked by the linker. So run the analyzer like this:
@@ -48,11 +48,7 @@ Dependency #1
 	| Other:Mono.Linker.Steps.ResolveFromAssemblyStep
 ```
 
-The output contains dependencies string(s), starting with the type and
-continuing with the item of interest, which depends on the type. The
-dependency could be result of multiple reasons. For example the type
-was referenced from a method, or the type was listed in the linker xml
-file to be protected.
+The output contains dependencies string(s), starting with the type and continuing with the item of interest, which depends on the type. The dependency could be a result of multiple reasons. For example, the type was referenced from a method, or the type was listed in the linker XML descriptor file.
 
 In our example there is only one dependency string called `Dependency
 #1`. It shows us that the type `Android.App.Activity` was marked
@@ -91,8 +87,7 @@ Dependency #2
 	| Other:Mono.Linker.Steps.ResolveFromAssemblyStep
 ```
 
-Known issues
-------------
+### Known issues
 
 Sometimes the linker processing is not straight forward and the
 marking is postponed, like processing of some of the methods. They are
@@ -100,8 +95,8 @@ queued to be processed later. In such case the dependencies are
 "interrupted" and the dependecy string for the method usually shows
 just dependency on the Mark step.
 
-Command line help
------------------
+# Command line help
+
 ```
 Usage:
 
