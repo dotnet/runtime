@@ -192,12 +192,18 @@ int Compiler::ivalOfHWIntrinsic(NamedIntrinsic intrinsic)
 unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig)
 {
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    if ((Compiler::flagsOfHWIntrinsic(intrinsic) & HW_Flag_UnfixedSIMDSize) == 0)
+
+    HWIntrinsicFlag flags = flagsOfHWIntrinsic(intrinsic);
+
+    if ((flags & HW_Flag_UnfixedSIMDSize) == 0)
     {
         return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].simdSize;
     }
 
-    int simdSize = getSIMDTypeSizeInBytes(sig->retTypeSigClass);
+    CORINFO_CLASS_HANDLE typeHnd =
+        ((flags & HW_Flag_BaseTypeFromArg) == 0) ? sig->retTypeSigClass : info.compCompHnd->getArgClass(sig, sig->args);
+
+    int simdSize = getSIMDTypeSizeInBytes(typeHnd);
     assert(simdSize > 0);
     return (unsigned)simdSize;
 }
@@ -592,7 +598,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     var_types           retType  = JITtype2varType(sig->retType);
     var_types           baseType = TYP_UNKNOWN;
 
-    if (retType == TYP_STRUCT && featureSIMD)
+    if ((retType == TYP_STRUCT) && featureSIMD)
     {
         unsigned int sizeBytes;
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
@@ -648,6 +654,24 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
+    bool isTableDriven = impIsTableDrivenHWIntrinsic(category, flags);
+
+    if (isTableDriven && (!varTypeIsSIMD(retType) || ((flags & HW_Flag_BaseTypeFromArg) != 0)))
+    {
+        if (retType != TYP_VOID)
+        {
+            baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+        }
+        else
+        {
+            assert(category == HW_Category_MemoryStore);
+            baseType =
+                getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, info.compCompHnd->getArgNext(sig->args)));
+        }
+
+        assert(baseType != TYP_UNKNOWN);
+    }
+
     if ((flags & (HW_Flag_OneTypeGeneric | HW_Flag_TwoTypeGeneric)) != 0)
     {
         if (!varTypeIsArithmetic(baseType))
@@ -675,24 +699,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     // table-driven importer of simple intrinsics
-    if (impIsTableDrivenHWIntrinsic(category, flags))
+    if (isTableDriven)
     {
-        if (!varTypeIsSIMD(retType) || ((flags & HW_Flag_BaseTypeFromArg) != 0))
-        {
-            if (retType != TYP_VOID)
-            {
-                baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
-            }
-            else
-            {
-                assert(category == HW_Category_MemoryStore);
-                baseType =
-                    getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, info.compCompHnd->getArgNext(sig->args)));
-            }
-
-            assert(baseType != TYP_UNKNOWN);
-        }
-
         unsigned                simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
         CORINFO_ARG_LIST_HANDLE argList  = sig->args;
         CORINFO_CLASS_HANDLE    argClass;
