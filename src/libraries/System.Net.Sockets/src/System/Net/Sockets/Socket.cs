@@ -4373,14 +4373,16 @@ namespace System.Net.Sockets
         {
             if (!s_initialized)
             {
+                InitializeSocketsCore();
+            }
+
+            void InitializeSocketsCore()
+            {
                 lock (InternalSyncObject)
                 {
                     if (!s_initialized)
                     {
                         SocketPal.Initialize();
-
-                        // Cache some settings locally.
-                        // s_perfCountersEnabled = SocketPerfCounter.Instance.Enabled; // TODO (#7833): Implement socket perf counters.
                         s_initialized = true;
                     }
                 }
