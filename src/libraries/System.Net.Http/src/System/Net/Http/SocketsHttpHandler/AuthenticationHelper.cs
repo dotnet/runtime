@@ -12,12 +12,11 @@ namespace System.Net.Http
     {
         private const string BasicScheme = "Basic";
         private const string DigestScheme = "Digest";
-        private const string NtlmScheme = "ntlm";
-        private const string NegotiateScheme = "negotiate";
+        private const string NtlmScheme = "NTLM";
+        private const string NegotiateScheme = "Negotiate";
 
         private enum AuthenticationType
         {
-            None,
             Basic,
             Digest,
             Ntlm,
