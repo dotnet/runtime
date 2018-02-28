@@ -8,6 +8,9 @@ namespace System.IO.Tests
 {
     public partial class PathTestsBase
     {
+        protected static string Sep = Path.DirectorySeparatorChar.ToString();
+        protected static string AltSep = Path.AltDirectorySeparatorChar.ToString();
+
         public static TheoryData<string> TestData_EmbeddedNull => new TheoryData<string>
         {
             "a\0b"
