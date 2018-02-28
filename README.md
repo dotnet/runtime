@@ -52,6 +52,7 @@ Daily Builds
 |   **Fedora 24 (x64)**      |   N/A   |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
 |   **OpenSUSE 42.1 (x64)**  |  [![][OpenSUSE-42-badge-master]][OpenSUSE-42-version-master]<br>[Host][OpenSUSE-42-host-master] ([Checksum][OpenSUSE-42-host-checksum-master])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-master] ([Checksum][OpenSUSE-42-hostfxr-checksum-master])<br>[Shared Framework][OpenSUSE-42-sharedfx-master] ([Checksum][OpenSUSE-42-sharedfx-checksum-master])<br>   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
 |   **RHEL 6**  |   [![][rhel-6-badge-master]][rhel-6-version-master]<br>[tar.gz][rhel-6-targz-master]   |   [![][rhel-6-badge-2.0.X]][rhel-6-version-2.0.X]<br>[tar.gz][rhel-6-targz-2.0.X]   |   N/A   |   N/A   |
+|   **Alpine 3.6 (x64)** |   [![][alpine.3.6-x64-badge-master]][alpine.3.6-x64-version-master]<br>[tar.gz][alpine.3.6-x64-targz-master] ([Checksum][alpine.3.6-x64-targz-checksum-master])<br>[Symbols (tar.gz)][alpine.3.6-x64-symbols-targz-master]   |   N/A   |   N/A   |   N/A   |
 
 *Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
@@ -176,6 +177,12 @@ Daily Builds
 [linux-x64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-x64.tar.gz
 [linux-x64-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-linux-x64tar.gz.sha512
 [linux-x64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-linux-x64.tar.gz
+
+[alpine.3.6-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_alpine.3.6-x64_Release_version_badge.svg
+[alpine.3.6-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.alpine.3.6.x64.version
+[alpine.3.6-x64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-alpine.3.6-x64.tar.gz
+[alpine.3.6-x64-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-alpine.3.6-x64tar.gz.sha512
+[alpine.3.6-x64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-symbols-latest-alpine.3.6-x64.tar.gz
 
 [linux-x64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_linux-x64_Release_version_badge.svg
 [linux-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.linux.x64.version
