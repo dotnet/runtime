@@ -193,14 +193,18 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21404", TargetFrameworkMonikers.Uap)]
         public void FailFast_ExpectFailureExitCode()
         {
-            using (Process p = RemoteInvoke(() => { Environment.FailFast("message"); return SuccessExitCode; }).Process)
+            using (RemoteInvokeHandle handle = RemoteInvoke(() => { Environment.FailFast("message"); return SuccessExitCode; }))
             {
+                Process p = handle.Process;
+                handle.Process = null;
                 p.WaitForExit();
                 Assert.NotEqual(SuccessExitCode, p.ExitCode);
             }
 
-            using (Process p = RemoteInvoke(() => { Environment.FailFast("message", new Exception("uh oh")); return SuccessExitCode; }).Process)
+            using (RemoteInvokeHandle handle = RemoteInvoke(() => { Environment.FailFast("message", new Exception("uh oh")); return SuccessExitCode; }))
             {
+                Process p = handle.Process;
+                handle.Process = null;
                 p.WaitForExit();
                 Assert.NotEqual(SuccessExitCode, p.ExitCode);
             }
