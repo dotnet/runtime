@@ -521,7 +521,8 @@ public:
 
     // Given an "expr" trace its rhs and their definitions to check if all the assignments
     // are monotonically increasing.
-    bool IsMonotonicallyIncreasing(GenTree* tree);
+    //
+    bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);
 
     // We allocate a budget to avoid walking long UD chains. When traversing each link in the UD
     // chain, we decrement the budget. When the budget hits 0, then no more range check optimization

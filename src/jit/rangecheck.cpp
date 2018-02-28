@@ -312,7 +312,7 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
     if (range.LowerLimit().IsDependent() || range.LowerLimit().IsUnknown())
     {
         // To determine the lower bound, ask if the loop increases monotonically.
-        bool increasing = IsMonotonicallyIncreasing(tree);
+        bool increasing = IsMonotonicallyIncreasing(tree, false);
         JITDUMP("IsMonotonicallyIncreasing %d", increasing);
         if (increasing)
         {
@@ -348,10 +348,11 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     switch (op2->OperGet())
     {
         case GT_LCL_VAR:
-            return IsMonotonicallyIncreasing(op1) && IsMonotonicallyIncreasing(op2);
+            // When adding two local variables, we also must ensure that any constant is non-negative.
+            return IsMonotonicallyIncreasing(op1, true) && IsMonotonicallyIncreasing(op2, true);
 
         case GT_CNS_INT:
-            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1);
+            return (op2->AsIntConCommon()->IconValue() >= 0) && IsMonotonicallyIncreasing(op1, false);
 
         default:
             JITDUMP("Not monotonic because expression is not recognized.\n");
@@ -359,7 +360,8 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     }
 }
 
-bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr)
+// The parameter rejectNegativeConst is true when we are adding two local vars (see above)
+bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeConst)
 {
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
@@ -378,11 +380,21 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr)
     {
         return false;
     }
+
     // If expr is constant, then it is not part of the dependency
     // loop which has to increase monotonically.
-    else if (m_pCompiler->vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
+    ValueNum vn = expr->gtVNPair.GetConservative();
+    if (m_pCompiler->vnStore->IsVNInt32Constant(vn))
     {
-        return true;
+        if (rejectNegativeConst)
+        {
+            int cons = m_pCompiler->vnStore->ConstantValue<int>(vn);
+            return (cons >= 0);
+        }
+        else
+        {
+            return true;
+        }
     }
     // If the rhs expr is local, then try to find the def of the local.
     else if (expr->IsLocal())
@@ -397,7 +409,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr)
         switch (asg->OperGet())
         {
             case GT_ASG:
-                return IsMonotonicallyIncreasing(asg->gtGetOp2());
+                return IsMonotonicallyIncreasing(asg->gtGetOp2(), rejectNegativeConst);
 
 #ifdef LEGACY_BACKEND
             case GT_ASG_ADD:
@@ -427,7 +439,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr)
             {
                 continue;
             }
-            if (!IsMonotonicallyIncreasing(args->Current()))
+            if (!IsMonotonicallyIncreasing(args->Current(), rejectNegativeConst))
             {
                 JITDUMP("Phi argument not monotonic\n");
                 return false;
