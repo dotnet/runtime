@@ -25,7 +25,7 @@ namespace System.Net.WebSockets
 
         internal static ValueTask<int> ReadAsync(this Stream stream, Memory<byte> destination, CancellationToken cancellationToken = default)
         {
-            if (destination.TryGetArray(out ArraySegment<byte> array))
+            if (MemoryMarshal.TryGetArray(destination, out ArraySegment<byte> array))
             {
                 return new ValueTask<int>(stream.ReadAsync(array.Array, array.Offset, array.Count, cancellationToken));
             }

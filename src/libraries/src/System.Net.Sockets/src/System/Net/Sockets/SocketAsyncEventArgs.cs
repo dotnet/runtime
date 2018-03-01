@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -106,7 +107,7 @@ namespace System.Net.Sockets
             {
                 if (_bufferIsExplicitArray)
                 {
-                    bool success = _buffer.TryGetArray(out ArraySegment<byte> arraySegment);
+                    bool success = MemoryMarshal.TryGetArray(_buffer, out ArraySegment<byte> arraySegment);
                     Debug.Assert(success);
                     return arraySegment.Array;
                 }

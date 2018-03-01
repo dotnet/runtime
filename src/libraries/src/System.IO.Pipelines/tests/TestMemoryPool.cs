@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.IO.Pipelines
@@ -96,7 +97,7 @@ namespace System.IO.Pipelines
             protected override bool TryGetArray(out ArraySegment<byte> arraySegment)
             {
                 _pool.CheckDisposed();
-                return _ownedMemory.Memory.TryGetArray(out arraySegment);
+                return MemoryMarshal.TryGetArray(_ownedMemory.Memory, out arraySegment);
             }
 
             public override bool IsDisposed

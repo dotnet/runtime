@@ -94,7 +94,6 @@ namespace System
         public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span) { throw null; }
         public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
         public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
-        public static bool TryGetString(this System.ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
     }
     public readonly partial struct Memory<T>
     {
@@ -119,7 +118,6 @@ namespace System
         public System.Memory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
         public bool TryCopyTo(System.Memory<T> destination) { throw null; }
-        public bool TryGetArray(out System.ArraySegment<T> arraySegment) { throw null; }
     }
     public readonly partial struct ReadOnlyMemory<T>
     {
@@ -531,6 +529,7 @@ namespace System.Runtime.InteropServices
             where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
         public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> readOnlyMemory, out TOwner ownedMemory, out int index, out int length)
             where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
+        public static bool TryGetString(System.ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length) { throw null; }
     }
 
     public static partial class SequenceMarshal

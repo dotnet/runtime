@@ -206,7 +206,7 @@ namespace System.IO.Pipes
                 }
 
                 // Issue the asynchronous read.
-                return await (destination.TryGetArray(out ArraySegment<byte> buffer) ?
+                return await (MemoryMarshal.TryGetArray(destination, out ArraySegment<byte> buffer) ?
                     socket.ReceiveAsync(buffer, SocketFlags.None) :
                     socket.ReceiveAsync(destination.ToArray(), SocketFlags.None)).ConfigureAwait(false);
             }
