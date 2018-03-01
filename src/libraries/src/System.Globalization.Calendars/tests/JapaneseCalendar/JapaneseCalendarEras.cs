@@ -11,7 +11,17 @@ namespace System.Globalization.Tests
         [Fact]
         public void Eras()
         {
-            Assert.Equal(new int[] { 4, 3, 2, 1 }, new JapaneseCalendar().Eras);
+            int[] eras = new JapaneseCalendar().Eras;
+            int noOfEras = eras.Length;
+            
+            Assert.True(noOfEras >= 4);
+
+            // eras should be [ noOfEras, noOfEras - 1, ..., 1 ]
+            Assert.Equal(noOfEras, eras[0]);
+            for (int i = 0; i < noOfEras; i++)
+            {
+                Assert.Equal(noOfEras - i, eras[i]);
+            }
         }
     }
 }
