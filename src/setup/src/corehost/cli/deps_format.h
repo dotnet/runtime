@@ -79,6 +79,11 @@ public:
 
     const deps_entry_t& try_ni(const deps_entry_t& entry) const;
 
+    pal::string_t get_deps_file() const
+    {
+        return m_deps_file;
+    }
+
 private:
     bool load_standalone(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name);
     bool load_portable(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
@@ -107,6 +112,8 @@ private:
     rid_fallback_graph_t m_rid_fallback_graph;
     bool m_file_exists;
     bool m_valid;
+
+    pal::string_t m_deps_file;
 };
 
 #endif // __DEPS_FORMAT_H_

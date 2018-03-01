@@ -440,6 +440,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 //
 bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
+    m_deps_file = deps_path;
     m_file_exists = pal::file_exists(deps_path);
 
     // If file doesn't exist, then assume parsed.

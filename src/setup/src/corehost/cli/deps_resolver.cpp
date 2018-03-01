@@ -632,11 +632,11 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
         {
             for (int i = 1; i < m_fx_definitions.size(); ++i)
             {
-                // We'll search deps files in 'base_dir'/shared/fx_name/fx_ver
+                // We'll search deps files in 'base_dir'/shared/fx_name/fx_requested_ver
                 pal::string_t additional_deps_path_fx = additional_deps_path;
                 append_path(&additional_deps_path_fx, _X("shared"));
                 append_path(&additional_deps_path_fx, m_fx_definitions[i]->get_name().c_str());
-                append_path(&additional_deps_path_fx, m_fx_definitions[i]->get_found_version().c_str());
+                append_path(&additional_deps_path_fx, m_fx_definitions[i]->get_requested_version().c_str()); // Use requested version as that is what the app deployed with
 
                 // The resulting list will be empty if 'additional_deps_path_fx' is not a valid directory path
                 std::vector<pal::string_t> list;
