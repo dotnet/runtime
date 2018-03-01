@@ -354,9 +354,6 @@ namespace System.Text.RegularExpressions
 
         protected override bool FindFirstChar()
         {
-            int i;
-            string set;
-
             if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
                 if (!_code.RightToLeft)
@@ -417,14 +414,14 @@ namespace System.Text.RegularExpressions
             }
 
             _rightToLeft = _code.RightToLeft;
-            _caseInsensitive = _code.FCPrefix.CaseInsensitive;
-            set = _code.FCPrefix.Prefix;
+            _caseInsensitive = _code.FCPrefix.GetValueOrDefault().CaseInsensitive;
+            string set = _code.FCPrefix.GetValueOrDefault().Prefix;
 
             if (RegexCharClass.IsSingleton(set))
             {
                 char ch = RegexCharClass.SingletonChar(set);
 
-                for (i = Forwardchars(); i > 0; i--)
+                for (int i = Forwardchars(); i > 0; i--)
                 {
                     if (ch == Forwardcharnext())
                     {
@@ -435,7 +432,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                for (i = Forwardchars(); i > 0; i--)
+                for (int i = Forwardchars(); i > 0; i--)
                 {
                     if (RegexCharClass.CharInClass(Forwardcharnext(), set))
                     {
@@ -444,6 +441,7 @@ namespace System.Text.RegularExpressions
                     }
                 }
             }
+            
             return false;
         }
 

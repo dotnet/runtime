@@ -707,20 +707,24 @@ namespace System.Text.RegularExpressions
                 switch (ch = RightCharMoveRight())
                 {
                     case ':':
+                        // noncapturing group
                         NodeType = RegexNode.Group;
                         break;
 
                     case '=':
+                        // lookahead assertion
                         _options &= ~(RegexOptions.RightToLeft);
                         NodeType = RegexNode.Require;
                         break;
 
                     case '!':
+                        // negative lookahead assertion
                         _options &= ~(RegexOptions.RightToLeft);
                         NodeType = RegexNode.Prevent;
                         break;
 
                     case '>':
+                        // greedy subexpression
                         NodeType = RegexNode.Greedy;
                         break;
 
@@ -739,6 +743,7 @@ namespace System.Text.RegularExpressions
                                 if (close == '\'')
                                     goto BreakRecognize;
 
+                                // lookbehind assertion
                                 _options |= RegexOptions.RightToLeft;
                                 NodeType = RegexNode.Require;
                                 break;
@@ -747,6 +752,7 @@ namespace System.Text.RegularExpressions
                                 if (close == '\'')
                                     goto BreakRecognize;
 
+                                // negative lookbehind assertion
                                 _options |= RegexOptions.RightToLeft;
                                 NodeType = RegexNode.Prevent;
                                 break;
