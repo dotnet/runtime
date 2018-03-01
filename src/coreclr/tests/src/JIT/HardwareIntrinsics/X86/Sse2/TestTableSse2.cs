@@ -26,6 +26,8 @@ namespace IntelHardwareIntrinsicTest
 
     public delegate bool CheckMethodFour<T, U>(T x1, T x2, U z1, U z2, ref U c1, ref U c2);
 
+    public delegate bool CheckMethodFour<T, U, V>(Span<T> x, Span<T> y, V value, Span<U> z, Span<U> a);
+
     public delegate bool CheckMethodFive<T, U>(T x1, T x2, T y1, T y2, U z1, U z2, ref U c1, ref U c2);
 
     public delegate bool CheckMethodFive<T, U, V>(Span<T> x, V imm, Span<U> z, Span<U> a);
@@ -93,6 +95,7 @@ namespace IntelHardwareIntrinsicTest
     {
         private const int _stepSize = 16;
         private int _scalarStepSize;
+        public static int ElementCount;
 
         private GCHandle _inHandle1;
         private GCHandle _inHandle2;
@@ -137,38 +140,36 @@ namespace IntelHardwareIntrinsicTest
             }
         }
 
+        public Memory<T> GetAssignmentData(int index)
+        {
+            return new Memory<T>(inArray1, index * ElementCount, ElementCount);
+        }
+
+        public ValueTuple<Memory<T>, Memory<T>, Memory<T>, Memory<T>> GetAssignmentDataPoint(int index)
+        {
+            return (new Memory<T>(inArray1, index, ElementCount), new Memory<T>(inArray2, index, ElementCount),
+                    new Memory<T>(outArray, index, ElementCount), new Memory<T>(outArray, index, ElementCount));
+        }
+
         public ValueTuple<T, T, T, T> GetDataPoint(int index)
         {
             return (inArray1[index], inArray2[index], outArray[index], checkArray[index]);
         }
 
-        public Memory<T> GetAssignmentData(int index)
-        {
-            _index = index;
-            return new Memory<T>(inArray2, index * _stepSize, _stepSize);
-        }
-
-        public ValueTuple<Memory<T>, Memory<T>, Memory<T>, Memory<T>> GetAssignmentDataPoint(int index)
-        {
-            return (new Memory<T>(inArray1, index, _stepSize), new Memory<T>(inArray2, index, _stepSize),
-                    new Memory<T>(outArray, index, _stepSize), new Memory<T>(outArray, index, _stepSize));
-        }
-
         public static TestTableSse2<T> Create(int lengthInVectors)
         {
-            int length = _stepSize / Marshal.SizeOf<T>() * lengthInVectors;
-            var table = new TestTableSse2<T>(new T[length], new T[length], new T[length], new T[length]);
-            table.Initialize();
-            return table;
+            return new TestTableSse2<T>(lengthInVectors);
         }
 
-        public TestTableSse2(T[] a, T[] b, T[] c, T[] d)
+        public TestTableSse2(int lengthInVectors)
         {
-            inArray1 = a;
-            inArray2 = b;
-            outArray = c;
-            checkArray = d;
             _scalarStepSize = Marshal.SizeOf<T>();
+            ElementCount = _stepSize / _scalarStepSize;
+            int length = ElementCount * lengthInVectors;
+            inArray1 = new T[length];
+            inArray2 = new T[length];
+            outArray = new T[length];
+            checkArray = new T[length];
             _index = 0;
             _inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);
             _inHandle2 = GCHandle.Alloc(inArray2, GCHandleType.Pinned);
@@ -223,13 +224,12 @@ namespace IntelHardwareIntrinsicTest
         public bool CheckResult(CheckMethodSpan<T> check)
         {
             bool result = true;
-            for (int i = 0; i < inArray1.Length; i += _stepSize)
+            for (int i = 0; i < inArray1.Length; i++)
             {
-                var x = new Span<T>(inArray1, i, _stepSize);
-                var y = new Span<T>(inArray2, i, _stepSize);
-                var z = new Span<T>(inArray2, i, _stepSize);
-                var a = new Span<T>(inArray2, i, _stepSize);
-
+                var x = new Span<T>(inArray1, i, ElementCount);
+                var y = new Span<T>(inArray2, i, ElementCount);
+                var z = new Span<T>(outArray, i, ElementCount);
+                var a = new Span<T>(checkArray, i, ElementCount);
                 if (!check(x, y, z, a))
                 {
                     result = false;
@@ -1648,7 +1648,7 @@ namespace IntelHardwareIntrinsicTest
     {
         private const int _vectorSize = 16;
         private static int _tSize;
-        private static int _elementsNo;
+        public static int ElementsNo;
         private static int _lengthInVectors;
 
         private GCHandle _inHandle1;
@@ -1715,6 +1715,12 @@ namespace IntelHardwareIntrinsicTest
             }
         }
 
+        public (Memory<T>, Memory<T>, V, Memory<U>, Memory<U>) GetDataPoint(int index)
+        {
+            return (new Memory<T>(inArray1, index, ElementsNo), new Memory<T>(inArray2, index, ElementsNo), immArray[index/ElementsNo],
+                new Memory<U>(outArray, index, ElementsNo), new Memory<U>(checkArray, index, ElementsNo));
+        }
+
         public unsafe ValueTuple<T, V, U, U> GetQuad22DataPoint(int index)
         {
             return (inArray1[index], immArray[index / (_vectorSize / _tSize)], outArray[index], checkArray[index]);
@@ -1755,8 +1761,8 @@ namespace IntelHardwareIntrinsicTest
         {
             _lengthInVectors = lengthInVectors;
             _tSize = Marshal.SizeOf<T>();
-            _elementsNo = _vectorSize / _tSize;
-            int length = _elementsNo * lengthInVectors;
+            ElementsNo = _vectorSize / _tSize;
+            int length = ElementsNo * lengthInVectors;
             inArray1 = new T[length];
             inArray2 = new T[length];
             immArray = new V[lengthInVectors];
@@ -1801,10 +1807,10 @@ namespace IntelHardwareIntrinsicTest
             for (int i = 0; i < inArray1.Length; i++)
             {
                 if (!check(
-                    new Span<T>(inArray1, Index * _elementsNo, _elementsNo),
+                    new Span<T>(inArray1, Index * ElementsNo, ElementsNo),
                     inArray2[i], immArray[i],
-                    new Span<U>(outArray, Index * _elementsNo, _elementsNo),
-                    new Span<U>(checkArray, Index * _elementsNo, _elementsNo)))
+                    new Span<U>(outArray, Index * ElementsNo, ElementsNo),
+                    new Span<U>(checkArray, Index * ElementsNo, ElementsNo)))
                 {
                     result = false;
                 }
@@ -1815,13 +1821,13 @@ namespace IntelHardwareIntrinsicTest
         public bool CheckResultShuffle(CheckMethodFive<T, U, V> check)
         {
             bool result = true;
-            for (int i = 0; i < inArray1.Length; i += _elementsNo)
+            for (int i = 0; i < inArray1.Length; i += ElementsNo)
             {
                 if (!check(
-                    new Span<T>(inArray1, i, _elementsNo),
-                    immArray[i / _elementsNo],
-                    new Span<U>(outArray, i, _elementsNo),
-                    new Span<U>(checkArray, i, _elementsNo)))
+                    new Span<T>(inArray1, i, ElementsNo),
+                    immArray[i / ElementsNo],
+                    new Span<U>(outArray, i, ElementsNo),
+                    new Span<U>(checkArray, i, ElementsNo)))
                 {
                     result = false;
                 }
@@ -1832,14 +1838,14 @@ namespace IntelHardwareIntrinsicTest
         public bool CheckResultShuffle(CheckMethodFiveDouble<T, U, V> check)
         {
             bool result = true;
-            for (int i = 0; i < inArray1.Length; i += _elementsNo)
+            for (int i = 0; i < inArray1.Length; i += ElementsNo)
             {
                 if (!check(
-                    new Span<T>(inArray1, i, _elementsNo),
-                    new Span<T>(inArray2, i, _elementsNo),
-                    immArray[i / _elementsNo],
-                    new Span<U>(outArray, i, _elementsNo),
-                    new Span<U>(checkArray, i, _elementsNo)))
+                    new Span<T>(inArray1, i, ElementsNo),
+                    new Span<T>(inArray2, i, ElementsNo),
+                    immArray[i / ElementsNo],
+                    new Span<U>(outArray, i, ElementsNo),
+                    new Span<U>(checkArray, i, ElementsNo)))
                 {
                     result = false;
                 }
@@ -2086,12 +2092,12 @@ namespace IntelHardwareIntrinsicTest
             CheckMethodSpan<T> check = null) where T : struct
         {
             PrintErrorHeaderTu<T>(functionName, testFuncString);
-            for (int i = 0; i < testTable.outArray.Length; i++)
+            for (int i = 0; i < testTable.outArray.Length; i+= TestTableSse2<T>.ElementCount)
             {
-                (Memory<T>, Memory<T>, Memory<T>, Memory<T>) item = testTable.GetAssignmentDataPoint(i);
+                var item = testTable.GetAssignmentDataPoint(i);
                 Console.Write(
-                    $"({(PrintMemory<T>(item.Item1), PrintMemory<T>(item.Item2), PrintMemory<T>(item.Item3), PrintMemory<T>(item.Item4))})" +
-                    (check != null ? $"->{check(item.Item1.Span, item.Item2.Span, item.Item3.Span, item.Item4.Span)}, " : ", "));
+                    $"(x{PrintMemory(item.Item1)}, y{PrintMemory(item.Item2)}, z{PrintMemory(item.Item3)}, a{PrintMemory(item.Item4)})" +
+                    (check != null ? $"->{check(item.Item1.Span, item.Item2.Span, item.Item3.Span,item.Item4.Span)}, " : ", "));
             }
             Console.WriteLine("\n");
         }
@@ -2156,6 +2162,20 @@ namespace IntelHardwareIntrinsicTest
                 Console.Write(
                     $"({(item)})" +
                     (check != null ? $"->{check(item.Item1, item.Item2, item.Item3, item.Item4, ref item.Item5, ref item.Item6)}, " : ", "));
+            }
+            Console.WriteLine();
+        }
+
+        private static void PrintError<T, U, V>(TestTableTuvImmSse2<T, U, V> testTable, string functionName = "", string testFuncString = "",
+            CheckMethodFour<T, U, V> check = null) where T : struct where U : struct where V : struct
+        {
+            PrintErrorHeaderTu<T>(functionName, testFuncString);
+            for (int i = 0; i < testTable.inArray1.Length - 1; i += TestTableTuvImmSse2<T, U, V>.ElementsNo)
+            {
+                var item = testTable.GetDataPoint(i);
+                Console.Write(
+                    $"(x{PrintMemory(item.Item1)}, y{PrintMemory(item.Item2)}, z{PrintMemory(item.Item4)}, a{PrintMemory(item.Item5)})" +
+                    (check != null ? $"->{check(item.Item1.Span, item.Item2.Span, item.Item3, item.Item4.Span, item.Item5.Span)}, " : ", "));
             }
             Console.WriteLine();
         }
