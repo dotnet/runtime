@@ -93,6 +93,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (IsWinHttpHandler && PlatformDetection.IsWindows7)
+            {
+                // Issue #27612
+                return;
+            }
+
             const string content = "This is a test";
 
             int port;
