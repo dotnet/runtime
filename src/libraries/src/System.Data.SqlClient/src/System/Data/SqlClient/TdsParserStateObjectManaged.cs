@@ -148,7 +148,7 @@ namespace System.Data.SqlClient.SNI
 
         internal override void ReleasePacket(object syncReadPacket)
         {
-            ((SNIPacket)syncReadPacket).Release();
+            ((SNIPacket)syncReadPacket).Dispose();
         }
 
         internal override uint CheckConnection()
@@ -166,13 +166,10 @@ namespace System.Data.SqlClient.SNI
 
         internal override object CreateAndSetAttentionPacket()
         {
-            if (_sniAsyncAttnPacket == null)
-            {
-                SNIPacket attnPacket = new SNIPacket();
-                SetPacketData(attnPacket, SQL.AttentionHeader, TdsEnums.HEADER_LEN);
-                _sniAsyncAttnPacket = attnPacket;
-            }
-            return _sniAsyncAttnPacket;
+            SNIPacket attnPacket = new SNIPacket(Handle);
+            _sniAsyncAttnPacket = attnPacket;
+            SetPacketData(attnPacket, SQL.AttentionHeader, TdsEnums.HEADER_LEN);
+            return attnPacket;
         }
 
         internal override uint WritePacket(object packet, bool sync)
@@ -271,7 +268,7 @@ namespace System.Data.SqlClient.SNI
                 else
                 {
                     // Failed to take a packet - create a new one
-                    packet = new SNIPacket();
+                    packet = new SNIPacket(sniHandle);
                 }
                 return packet;
             }
