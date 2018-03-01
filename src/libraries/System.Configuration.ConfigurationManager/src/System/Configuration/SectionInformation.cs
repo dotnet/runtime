@@ -584,7 +584,7 @@ namespace System.Configuration
                 // fail silently so that app code can easily loop through sections
                 // and declare all of them?
                 if (force && BaseConfigurationRecord.IsImplicitSection(SectionName))
-                    throw new ConfigurationErrorsException(SR.Cannot_declare_or_remove_implicit_section);
+                    throw new ConfigurationErrorsException(SR.Format(SR.Cannot_declare_or_remove_implicit_section, SectionName));
 
                 if (force && _flags[FlagIsUndeclared])
                 {

@@ -425,7 +425,7 @@ namespace System.Reflection.Metadata.Ecma335
                     return SignatureTypeKind.Unknown;
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(typeHandle), SR.UnexpectedHandleKind);
+                    throw new ArgumentOutOfRangeException(nameof(typeHandle), SR.Format(SR.UnexpectedHandleKind, typeHandle.Kind));
             }
         }
     }

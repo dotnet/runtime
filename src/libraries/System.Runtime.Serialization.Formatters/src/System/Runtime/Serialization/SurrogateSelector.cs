@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization
             // Verify that we don't try and add ourself twice.
             if (selector == this)
             {
-                throw new SerializationException(SR.Serialization_DuplicateSelector);
+                throw new SerializationException(SR.Serialization_SurrogateCycle);
             }
 
             // Verify that the argument doesn't contain a cycle.
