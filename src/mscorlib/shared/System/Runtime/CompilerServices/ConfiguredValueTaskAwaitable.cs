@@ -63,7 +63,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (_value._obj != null)
                 {
-                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation,
+                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token,
                         ValueTaskSourceOnCompletedFlags.FlowExecutionContext |
                             (_value.ContinueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None));
                 }
@@ -82,7 +82,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (_value._obj != null)
                 {
-                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation,
+                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token,
                         _value.ContinueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
                 else
@@ -100,7 +100,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (_value._obj != null)
                 {
-                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeAsyncStateMachineBox, box,
+                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value.ContinueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
                 else
@@ -165,7 +165,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (_value._obj != null)
                 {
-                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation,
+                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token,
                         ValueTaskSourceOnCompletedFlags.FlowExecutionContext |
                             (_value.ContinueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None));
                 }
@@ -184,7 +184,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (_value._obj != null)
                 {
-                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation,
+                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token,
                         _value.ContinueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
                 else
@@ -202,7 +202,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (_value._obj != null)
                 {
-                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeAsyncStateMachineBox, box, 
+                    _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value.ContinueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
                 else
