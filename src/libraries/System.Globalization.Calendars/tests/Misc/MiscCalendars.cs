@@ -40,7 +40,7 @@ namespace System.Globalization.Tests
         public static void JapaneseTest()
         {
             JapaneseCalendar jCal = new JapaneseCalendar();
-            DateTime dTest = jCal.ToDateTime(1, 1, 8, 0, 0, 0, 0);
+            DateTime dTest = jCal.ToDateTime(1, 1, 8, 0, 0, 0, 0, 4);
             Assert.Equal(dTest, new DateTime(1989, 1, 8));
         }
     }
