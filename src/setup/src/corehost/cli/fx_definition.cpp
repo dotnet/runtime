@@ -26,10 +26,11 @@ fx_definition_t::fx_definition_t(
 void fx_definition_t::parse_runtime_config(
     const pal::string_t& path,
     const pal::string_t& dev_path,
-    const runtime_config_t* defaults
+    const runtime_config_t* higher_layer_config,
+    const runtime_config_t* app_config
 )
 {
-    m_runtime_config.parse(path, dev_path, defaults);
+    m_runtime_config.parse(path, dev_path, higher_layer_config, app_config);
 }
 
 void fx_definition_t::parse_deps()
