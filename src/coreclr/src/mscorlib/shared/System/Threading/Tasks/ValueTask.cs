@@ -25,9 +25,11 @@ namespace System.Threading.Tasks
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
+        internal static Task CompletedTask
 #if netstandard
-        /// <summary>A successfully completed task.</summary>
-        private static readonly Task s_completedTask = Task.Delay(0);
+            { get; } = Task.Delay(0);
+#else
+            => Task.CompletedTask;
 #endif
 
         /// <summary>null if representing a successful synchronous completion, otherwise a <see cref="Task"/> or a <see cref="IValueTaskSource"/>.</summary>
@@ -149,12 +151,7 @@ namespace System.Threading.Tasks
         /// manufacture a new task object to represent the result.
         /// </remarks>
         public Task AsTask() =>
-            _obj == null ?
-#if netstandard
-                s_completedTask :
-#else
-                Task.CompletedTask :
-#endif
+            _obj == null ? ValueTask.CompletedTask :
             ObjectIsTask ? UnsafeTask :
             GetTaskForValueTaskSource();
 
@@ -173,12 +170,7 @@ namespace System.Threading.Tasks
                     // Propagate any exceptions that may have occurred, then return
                     // an already successfully completed task.
                     t.GetResult(_token);
-                    return
-#if netstandard
-                        s_completedTask;
-#else
-                        Task.CompletedTask;
-#endif
+                    return ValueTask.CompletedTask;
 
                     // If status is Faulted or Canceled, GetResult should throw.  But
                     // we can't guarantee every implementation will do the "right thing".
