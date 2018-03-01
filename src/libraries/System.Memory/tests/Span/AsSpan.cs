@@ -95,5 +95,116 @@ namespace System.SpanTests
             Span<int> spanInt = segmentInt.AsSpan();
             spanInt.ValidateNonNullEmpty();
         }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(3, 0)]
+        [InlineData(3, 1)]
+        [InlineData(3, 2)]
+        [InlineData(3, 3)]
+        [InlineData(10, 0)]
+        [InlineData(10, 3)]
+        [InlineData(10, 10)]
+        public static void ArrayAsSpanWithStart(int length, int start)
+        {
+            int[] a = new int[length];
+            Span<int> s = a.AsSpan(start);
+            Assert.Equal(length - start, s.Length);
+            if (start != length)
+            {
+                s[0] = 42;
+                Assert.Equal(42, a[start]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(3, 0)]
+        [InlineData(3, 1)]
+        [InlineData(3, 2)]
+        [InlineData(3, 3)]
+        [InlineData(10, 0)]
+        [InlineData(10, 3)]
+        [InlineData(10, 10)]
+        public static void ArraySegmentAsSpanWithStart(int length, int start)
+        {
+            const int segmentOffset = 5;
+
+            int[] a = new int[length + segmentOffset];
+            ArraySegment<int> segment = new ArraySegment<int>(a, 5, length);
+            Span<int> s = segment.AsSpan(start);
+            Assert.Equal(length - start, s.Length);
+            if (s.Length != 0)
+            {
+                s[0] = 42;
+                Assert.Equal(42, a[segmentOffset + start]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(3, 0, 3)]
+        [InlineData(3, 1, 2)]
+        [InlineData(3, 2, 1)]
+        [InlineData(3, 3, 0)]
+        [InlineData(10, 0, 5)]
+        [InlineData(10, 3, 2)]
+        public static void ArrayAsSpanWithStartAndLength(int length, int start, int subLength)
+        {
+            int[] a = new int[length];
+            Span<int> s = a.AsSpan(start, subLength);
+            Assert.Equal(subLength, s.Length);
+            if (subLength != 0)
+            {
+                s[0] = 42;
+                Assert.Equal(42, a[start]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(3, 0, 3)]
+        [InlineData(3, 1, 2)]
+        [InlineData(3, 2, 1)]
+        [InlineData(3, 3, 0)]
+        [InlineData(10, 0, 5)]
+        [InlineData(10, 3, 2)]
+        public static void ArraySegmentAsSpanWithStartAndLength(int length, int start, int subLength)
+        {
+            const int segmentOffset = 5;
+
+            int[] a = new int[length + segmentOffset];
+            ArraySegment<int> segment = new ArraySegment<int>(a, segmentOffset, length);
+            Span<int> s = segment.AsSpan(start, subLength);
+            Assert.Equal(subLength, s.Length);
+            if (subLength != 0)
+            {
+                s[0] = 42;
+                Assert.Equal(42, a[segmentOffset + start]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, -1)]
+        [InlineData(0, 1)]
+        [InlineData(5, 6)]
+        public static void ArrayAsSpanWithStartNegative(int length, int start)
+        {
+            int[] a = new int[length];
+            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsSpan(start));
+        }
+
+        [Theory]
+        [InlineData(0, -1, 0)]
+        [InlineData(0, 1, 0)]
+        [InlineData(0, 0, -1)]
+        [InlineData(0, 0, 1)]
+        [InlineData(5, 6, 0)]
+        [InlineData(5, 3, 3)]
+        public static void ArrayAsSpanWithStartAndLengthNegative(int length, int start, int subLength)
+        {
+            int[] a = new int[length];
+            Assert.Throws<ArgumentOutOfRangeException>(() => a.AsSpan(start, subLength));
+        }
     }
 }

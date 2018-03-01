@@ -41,6 +41,28 @@ namespace System
             _byteOffset = SpanHelpers.PerTypeValues<T>.ArrayAdjustment;
         }
 
+        // This is a constructor that takes an array and start but not length. The reason we expose it as a static method as a constructor
+        // is to mirror the actual api shape. This overload of the constructor was removed from the api surface area due to possible
+        // confusion with other overloads that take an int parameter that don't represent a start index.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Span<T> Create(T[] array, int start)
+        {
+            if (array == null)
+            {
+                if (start != 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                return default;
+            }
+            if (default(T) == null && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
+            if ((uint)start > (uint)array.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+
+            IntPtr byteOffset = SpanHelpers.PerTypeValues<T>.ArrayAdjustment.Add<T>(start);
+            int length = array.Length - start;
+            return new Span<T>(pinnable: Unsafe.As<Pinnable<T>>(array), byteOffset: byteOffset, length: length);
+        }
+
         /// <summary>
         /// Creates a new span over the portion of the target array beginning
         /// at 'start' index and ending at 'end' index (exclusive).
