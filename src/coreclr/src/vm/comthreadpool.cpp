@@ -120,9 +120,6 @@ DelegateInfo *DelegateInfo::MakeDelegateInfo(AppDomain *pAppDomain,
     else
         delegateInfo->m_registeredWaitHandle = NULL;
 
-    delegateInfo->m_overridesCount = 0;
-    delegateInfo->m_hasSecurityInfo = FALSE;
-
     delegateInfo.SuppressRelease();
     
     return delegateInfo;
@@ -372,20 +369,12 @@ VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN Timer
     return;
 }
 
-void ThreadPoolNative::Init()
-{
-
-}
-
-
-FCIMPL7(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
+FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
                                         Object* waitObjectUNSAFE,
                                         Object* stateUNSAFE,
                                         UINT32 timeout,
                                         CLR_BOOL executeOnlyOnce,
-                                        Object* registeredWaitObjectUNSAFE,
-                                        StackCrawlMark* stackMark,
-                                        CLR_BOOL compressStack)
+                                        Object* registeredWaitObjectUNSAFE)
 {
     FCALL_CONTRACT;
     
@@ -421,13 +410,6 @@ FCIMPL7(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
                                                                 &gc.state,
                                                                 (OBJECTREF *)&gc.waitObject,
                                                                 &gc.registeredWaitObject);
-
-    if (compressStack)
-    {
-        delegateInfo->SetThreadSecurityInfo( pCurThread, stackMark );
-    }
-
-
 
     if (!(ThreadpoolMgr::RegisterWaitForSingleObject(&handle,
                                           hWaitHandle,

@@ -117,37 +117,6 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyString, ref stackMark);
         }
 
-        // Returns type from the assembly while keeping compatibility with Assembly.Load(assemblyString).GetType(typeName) for managed types.
-        // Calls Type.GetType for WinRT types.
-        // Note: Type.GetType fails for assembly names that start with weird characters like '['. By calling it for managed types we would 
-        // break AppCompat.
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal static Type GetType_Compat(String assemblyString, String typeName)
-        {
-            // Normally we would get the stackMark only in public APIs. This is internal API, but it is AppCompat replacement of public API 
-            // call Assembly.Load(assemblyString).GetType(typeName), therefore we take the stackMark here as well, to be fully compatible with 
-            // the call sequence.
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            RuntimeAssembly assembly;
-            AssemblyName assemblyName = RuntimeAssembly.CreateAssemblyName(
-                assemblyString,
-                out assembly);
-
-            if (assembly == null)
-            {
-                if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
-                {
-                    return Type.GetType(typeName + ", " + assemblyString, true /*throwOnError*/, false /*ignoreCase*/);
-                }
-
-                assembly = RuntimeAssembly.InternalLoadAssemblyName(
-                    assemblyName, null, ref stackMark,
-                    true /*thrownOnFileNotFound*/);
-            }
-            return assembly.GetType(typeName, true /*throwOnError*/, false /*ignoreCase*/);
-        }
-
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
