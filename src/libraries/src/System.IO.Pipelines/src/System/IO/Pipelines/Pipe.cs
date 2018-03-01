@@ -332,12 +332,25 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal void AdvanceReader(SequencePosition consumed)
+        internal void AdvanceReader(in SequencePosition consumed)
         {
             AdvanceReader(consumed, consumed);
         }
 
-        internal void AdvanceReader(SequencePosition consumed, SequencePosition examined)
+        internal void AdvanceReader(in SequencePosition consumed, in SequencePosition examined)
+        {
+            // If the reader is completed
+            if (_readerCompletion.IsCompleted)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
+            }
+
+            // TODO: Use new SequenceMarshal.TryGetReadOnlySequenceSegment to get the correct data
+            // directly casting only works because the type value in ReadOnlySequenceSegment is 0
+            AdvanceReader((BufferSegment)consumed.GetObject(), consumed.GetInteger(), (BufferSegment)examined.GetObject(), examined.GetInteger());
+        }
+
+        internal void AdvanceReader(BufferSegment consumedSegment, int consumedIndex, BufferSegment examinedSegment, int examinedIndex)
         {
             BufferSegment returnStart = null;
             BufferSegment returnEnd = null;
@@ -346,12 +359,12 @@ namespace System.IO.Pipelines
             lock (_sync)
             {
                 var examinedEverything = false;
-                if (examined.GetObject() == _commitHead)
+                if (examinedSegment == _commitHead)
                 {
-                    examinedEverything = _commitHead != null ? examined.GetInteger() == _commitHeadIndex - _commitHead.Start : examined.GetInteger() == 0;
+                    examinedEverything = _commitHead != null ? examinedIndex == _commitHeadIndex - _commitHead.Start : examinedIndex == 0;
                 }
 
-                if (consumed.GetObject() != null)
+                if (consumedSegment != null)
                 {
                     if (_readHead == null)
                     {
@@ -359,13 +372,11 @@ namespace System.IO.Pipelines
                         return;
                     }
 
-                    var consumedSegment = (BufferSegment)consumed.GetObject();
-
                     returnStart = _readHead;
                     returnEnd = consumedSegment;
 
                     // Check if we crossed _maximumSizeLow and complete backpressure
-                    long consumedBytes = new ReadOnlySequence<byte>(returnStart, _readHeadIndex, consumedSegment, consumed.GetInteger()).Length;
+                    long consumedBytes = new ReadOnlySequence<byte>(returnStart, _readHeadIndex, consumedSegment, consumedIndex).Length;
                     long oldLength = _length;
                     _length -= consumedBytes;
 
@@ -378,7 +389,7 @@ namespace System.IO.Pipelines
                     // Check if we consumed entire last segment
                     // if we are going to return commit head we need to check that there is no writing operation that
                     // might be using tailspace
-                    if (consumed.GetInteger() == returnEnd.Length && _writingHead != returnEnd)
+                    if (consumedIndex == returnEnd.Length && _writingHead != returnEnd)
                     {
                         BufferSegment nextBlock = returnEnd.NextSegment;
                         if (_commitHead == returnEnd)
@@ -394,7 +405,7 @@ namespace System.IO.Pipelines
                     else
                     {
                         _readHead = consumedSegment;
-                        _readHeadIndex = consumed.GetInteger();
+                        _readHeadIndex = consumedIndex;
                     }
                 }
 
@@ -431,10 +442,14 @@ namespace System.IO.Pipelines
 
             lock (_sync)
             {
+                // If we're reading, treat clean up that state before continuting
                 if (_readingState.IsActive)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_CompleteReaderActiveReader();
+                    _readingState.End();
                 }
+
+                // REVIEW: We should consider cleaning up all of the allocated memory
+                // on the reader side now.
 
                 completionCallbacks = _readerCompletion.TryComplete(exception);
                 awaitable = _writerAwaitable.Complete();

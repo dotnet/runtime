@@ -79,6 +79,8 @@ namespace System.IO.Pipelines
             AvailableMemory = default;
         }
 
+        internal OwnedMemory<byte> OwnedMemory => _ownedMemory;
+
         public Memory<byte> AvailableMemory { get; private set; }
 
         public int Length => End - Start;

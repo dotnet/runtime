@@ -39,15 +39,11 @@ namespace System.IO.Pipelines
         public static void ThrowInvalidOperationException_NoWritingAllowed() => throw CreateInvalidOperationException_NoWritingAllowed();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_NoWritingAllowed() => new InvalidOperationException(SR.ReadingAfterCompleted);
+        public static Exception CreateInvalidOperationException_NoWritingAllowed() => new InvalidOperationException(SR.WritingAfterCompleted);
 
         public static void ThrowInvalidOperationException_NoReadingAllowed() => throw CreateInvalidOperationException_NoReadingAllowed();
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_NoReadingAllowed() => new InvalidOperationException(SR.WritingAfterCompleted);
-
-        public static void ThrowInvalidOperationException_CompleteReaderActiveReader() => throw CreateInvalidOperationException_CompleteReaderActiveReader();
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static Exception CreateInvalidOperationException_CompleteReaderActiveReader() => new InvalidOperationException(SR.CannotCompleteWhileReading);
+        public static Exception CreateInvalidOperationException_NoReadingAllowed() => new InvalidOperationException(SR.ReadingAfterCompleted);
 
         public static void ThrowInvalidOperationException_AdvancingPastBufferSize() => throw CreateInvalidOperationException_AdvancingPastBufferSize();
         [MethodImpl(MethodImplOptions.NoInlining)]
