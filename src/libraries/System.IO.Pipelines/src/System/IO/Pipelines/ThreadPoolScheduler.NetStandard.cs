@@ -11,12 +11,12 @@ namespace System.IO.Pipelines
     {
         public override void Schedule(Action action)
         {
-            Task.Factory.StartNew(action);
+            Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public override void Schedule(Action<object> action, object state)
         {
-            Task.Factory.StartNew(action, state);
+            Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
     }
 }
