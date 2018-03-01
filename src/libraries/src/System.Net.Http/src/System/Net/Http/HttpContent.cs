@@ -320,19 +320,17 @@ namespace System.Net.Http
 
             try
             {
-                Task task = null;
                 ArraySegment<byte> buffer;
                 if (TryGetBuffer(out buffer))
                 {
-                    task = stream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken);
+                    return CopyToAsyncCore(stream.WriteAsync(new ReadOnlyMemory<byte>(buffer.Array, buffer.Offset, buffer.Count), cancellationToken));
                 }
                 else
                 {
-                    task = SerializeToStreamAsync(stream, context, cancellationToken);
+                    Task task = SerializeToStreamAsync(stream, context, cancellationToken);
                     CheckTaskNotNull(task);
+                    return CopyToAsyncCore(new ValueTask(task));
                 }
-
-                return CopyToAsyncCore(task);
             }
             catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
             {
@@ -340,7 +338,7 @@ namespace System.Net.Http
             }
         }
 
-        private static async Task CopyToAsyncCore(Task copyTask)
+        private static async Task CopyToAsyncCore(ValueTask copyTask)
         {
             try
             {
@@ -733,6 +731,12 @@ namespace System.Net.Http
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+            {
+                CheckSize(source.Length);
+                return base.WriteAsync(source, cancellationToken);
+            }
+
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
             {
                 CheckSize(count);
@@ -878,10 +882,10 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {
                 Write(source.Span);
-                return Task.CompletedTask;
+                return default;
             }
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>

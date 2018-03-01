@@ -19,7 +19,7 @@ namespace System.Net.Test.Common
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
 
-            private static Mutex m;
+            private static readonly Mutex m;
             private const int MutexTimeout = 120 * 1000;
 
             static Certificates()
@@ -59,10 +59,9 @@ namespace System.Net.Test.Common
             {
                 // On Windows, .NET Core applications should not import PFX files in parallel to avoid a known system-level race condition.
                 // This bug results in corrupting the X509Certificate2 certificate state.
+                Assert.True(m.WaitOne(MutexTimeout), "Cannot acquire the global certificate mutex.");
                 try
                 {
-                    Assert.True(m.WaitOne(MutexTimeout), "Cannot acquire the global certificate mutex.");
-
                     var certCollection = new X509Certificate2Collection();
                     certCollection.Import(Path.Combine(TestDataFolder, certificateFileName), CertificatePassword, X509KeyStorageFlags.DefaultKeySet);
 

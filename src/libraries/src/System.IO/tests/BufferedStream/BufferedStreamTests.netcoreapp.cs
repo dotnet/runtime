@@ -83,7 +83,7 @@ namespace System.IO.Tests
             using (var bs = new BufferedStream(new MemoryStream()))
             {
                 Assert.Equal(TaskStatus.Canceled, bs.ReadAsync(new byte[1], new CancellationToken(true)).AsTask().Status);
-                Assert.Equal(TaskStatus.Canceled, bs.WriteAsync(new byte[1], new CancellationToken(true)).Status);
+                Assert.Equal(TaskStatus.Canceled, bs.WriteAsync(new byte[1], new CancellationToken(true)).AsTask().Status);
             }
         }
     }

@@ -124,7 +124,7 @@ namespace System.IO
         {
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
             return _content.Length > _position ?
-                destination.WriteAsync(_content.Slice(_position), cancellationToken) :
+                destination.WriteAsync(_content.Slice(_position), cancellationToken).AsTask() :
                 Task.CompletedTask;
         }
 

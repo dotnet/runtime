@@ -92,7 +92,7 @@ namespace System.Threading.Channels.Tests
         {
             var c = new TestChannelWriter<int>(10);
             Assert.False(c.TryComplete());
-            Assert.Equal(TaskStatus.Canceled, c.WriteAsync(42, new CancellationToken(true)).Status);
+            Assert.Equal(TaskStatus.Canceled, c.WriteAsync(42, new CancellationToken(true)).AsTask().Status);
 
             int count = 0;
             try
@@ -117,9 +117,9 @@ namespace System.Threading.Channels.Tests
         public async Task DefaultWriteAsync_CatchesTryWriteExceptions()
         {
             var w = new TryWriteThrowingWriter<int>();
-            Task t = w.WriteAsync(42);
-            Assert.Equal(TaskStatus.Faulted, t.Status);
-            await Assert.ThrowsAsync<FormatException>(() => t);
+            ValueTask t = w.WriteAsync(42);
+            Assert.True(t.IsFaulted);
+            await Assert.ThrowsAsync<FormatException>(async () => await t);
         }
 
         [Fact]
@@ -181,7 +181,7 @@ namespace System.Threading.Channels.Tests
                 return _reader.TryRead(out item);
             }
 
-            public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken)
+            public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
             {
                 return _reader.WaitToReadAsync(cancellationToken);
             }
@@ -207,10 +207,10 @@ namespace System.Threading.Channels.Tests
 
             public override bool TryWrite(T item) => _rand.Next(0, 2) == 0 && _count++ < _max; // succeed if we're under our limit, and add random failures
 
-            public override Task<bool> WaitToWriteAsync(CancellationToken cancellationToken) =>
-                _count >= _max ? Task.FromResult(false) :
-                _rand.Next(0, 2) == 0 ? Task.Delay(1).ContinueWith(_ => true) : // randomly introduce delays
-                Task.FromResult(true);
+            public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken) =>
+                _count >= _max ? new ValueTask<bool>(Task.FromResult(false)) :
+                _rand.Next(0, 2) == 0 ? new ValueTask<bool>(Task.Delay(1).ContinueWith(_ => true)) : // randomly introduce delays
+                new ValueTask<bool>(Task.FromResult(true));
         }
 
         private sealed class TestChannelReader<T> : ChannelReader<T>
@@ -246,22 +246,22 @@ namespace System.Threading.Channels.Tests
                 return true;
             }
 
-            public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken) =>
+            public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken) => new ValueTask<bool>(
                 _closed ? Task.FromResult(false) :
                 _rand.Next(0, 2) == 0 ? Task.Delay(1).ContinueWith(_ => true) : // randomly introduce delays
-                Task.FromResult(true);
+                Task.FromResult(true));
         }
 
         private sealed class TryWriteThrowingWriter<T> : ChannelWriter<T>
         {
             public override bool TryWrite(T item) => throw new FormatException();
-            public override Task<bool> WaitToWriteAsync(CancellationToken cancellationToken = default) => throw new InvalidDataException();
+            public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken = default) => throw new InvalidDataException();
         }
 
         private sealed class TryReadThrowingReader<T> : ChannelReader<T>
         {
             public override bool TryRead(out T item) => throw new FieldAccessException();
-            public override Task<bool> WaitToReadAsync(CancellationToken cancellationToken = default) => throw new DriveNotFoundException();
+            public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default) => throw new DriveNotFoundException();
         }
 
         private sealed class CanReadFalseStream : MemoryStream

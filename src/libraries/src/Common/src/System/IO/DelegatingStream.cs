@@ -157,7 +157,7 @@ namespace System.Net.Http
             return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             return _innerStream.WriteAsync(source, cancellationToken);
         }

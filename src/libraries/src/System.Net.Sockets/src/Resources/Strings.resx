@@ -238,4 +238,10 @@
   <data name="InvalidOperation_BufferNotExplicitArray" xml:space="preserve">
     <value>This operation may only be performed when the buffer was set using the SetBuffer overload that accepts an array.</value>
   </data>
+  <data name="InvalidOperation_IncorrectToken" xml:space="preserve">
+    <value>The result of the operation was already consumed and may not be used again.</value>
+  </data>
+  <data name="InvalidOperation_MultipleContinuations" xml:space="preserve">
+    <value>Another continuation was already registered.</value>
+  </data>
 </root>

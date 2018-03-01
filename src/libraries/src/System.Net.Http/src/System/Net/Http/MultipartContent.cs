@@ -275,10 +275,10 @@ namespace System.Net.Http
             return scratch.ToString();
         }
 
-        private static Task EncodeStringToStreamAsync(Stream stream, string input)
+        private static ValueTask EncodeStringToStreamAsync(Stream stream, string input)
         {
             byte[] buffer = HttpRuleParser.DefaultHttpEncoding.GetBytes(input);
-            return stream.WriteAsync(buffer, 0, buffer.Length);
+            return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer));
         }
 
         private static Stream EncodeStringToNewStream(string input)
@@ -583,7 +583,7 @@ namespace System.Net.Http
             public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
             public override void Write(ReadOnlySpan<byte> source) { throw new NotSupportedException(); }
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
-            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
         }
         #endregion Serialization
     }

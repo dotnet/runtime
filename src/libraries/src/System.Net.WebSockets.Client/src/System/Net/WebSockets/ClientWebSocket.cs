@@ -165,7 +165,7 @@ namespace System.Net.WebSockets
             return _innerWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
-        public override Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             ThrowIfNotConnected();
             return _innerWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);

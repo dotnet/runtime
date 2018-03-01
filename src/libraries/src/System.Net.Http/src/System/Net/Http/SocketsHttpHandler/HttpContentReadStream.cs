@@ -32,7 +32,7 @@ namespace System.Net.Http
             public sealed override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
             public sealed override void Write(ReadOnlySpan<byte> source) => throw new NotSupportedException();
             public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException();
-            public sealed override Task WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+            public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
 
             public sealed override int Read(byte[] buffer, int offset, int count)
             {

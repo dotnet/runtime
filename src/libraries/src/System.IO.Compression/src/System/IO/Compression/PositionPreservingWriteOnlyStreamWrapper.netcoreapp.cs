@@ -15,7 +15,7 @@ namespace System.IO.Compression
             _stream.Write(source);
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             _position += source.Length;
             return _stream.WriteAsync(source, cancellationToken);

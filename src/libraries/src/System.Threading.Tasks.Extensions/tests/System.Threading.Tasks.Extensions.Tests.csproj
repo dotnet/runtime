@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
+    <Compile Include="ManualResetValueTaskSource.cs" />
     <Compile Include="ValueTaskTests.cs" />
   </ItemGroup>
   <ItemGroup>

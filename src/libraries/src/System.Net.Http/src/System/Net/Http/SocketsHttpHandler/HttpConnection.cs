@@ -54,7 +54,7 @@ namespace System.Net.Http
         private int _writeOffset;
         private int _allowedReadLineBytes;
 
-        private Task<int> _readAheadTask;
+        private ValueTask<int>? _readAheadTask;
         private byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;
@@ -126,7 +126,7 @@ namespace System.Net.Http
             get
             {
                 Debug.Assert(_readAheadTask != null, $"{nameof(_readAheadTask)} should have been initialized");
-                return _readAheadTask.IsCompleted;
+                return _readAheadTask.GetValueOrDefault().IsCompleted;
             }
         }
 
@@ -389,12 +389,12 @@ namespace System.Net.Http
                 // connection again, as that would mean the connection was either closed or had
                 // erroneous data sent on it by the server in response to no request from us.
                 // We need to consume that read prior to issuing another read request.
-                Task<int> t = _readAheadTask;
+                ValueTask<int>? t = _readAheadTask;
                 if (t != null)
                 {
                     _readAheadTask = null;
 
-                    int bytesRead = await t.ConfigureAwait(false);
+                    int bytesRead = await t.GetValueOrDefault().ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
 
                     if (bytesRead == 0)
@@ -863,7 +863,7 @@ namespace System.Net.Http
             }
         }
 
-        private Task WriteWithoutBufferingAsync(ReadOnlyMemory<byte> source)
+        private ValueTask WriteWithoutBufferingAsync(ReadOnlyMemory<byte> source)
         {
             if (_writeOffset == 0)
             {
@@ -885,7 +885,7 @@ namespace System.Net.Http
 
             // There's data in the write buffer and the data we're writing doesn't fit after it.
             // Do two writes, one to flush the buffer and then another to write the supplied content.
-            return FlushThenWriteWithoutBufferingAsync(source);
+            return new ValueTask(FlushThenWriteWithoutBufferingAsync(source));
         }
 
         private async Task FlushThenWriteWithoutBufferingAsync(ReadOnlyMemory<byte> source)
@@ -1025,18 +1025,18 @@ namespace System.Net.Http
             }
         }
 
-        private Task FlushAsync()
+        private ValueTask FlushAsync()
         {
             if (_writeOffset > 0)
             {
-                Task t = WriteToStreamAsync(new ReadOnlyMemory<byte>(_writeBuffer, 0, _writeOffset));
+                ValueTask t = WriteToStreamAsync(new ReadOnlyMemory<byte>(_writeBuffer, 0, _writeOffset));
                 _writeOffset = 0;
                 return t;
             }
-            return Task.CompletedTask;
+            return default;
         }
 
-        private Task WriteToStreamAsync(ReadOnlyMemory<byte> source)
+        private ValueTask WriteToStreamAsync(ReadOnlyMemory<byte> source)
         {
             if (NetEventSource.IsEnabled) Trace($"Writing {source.Length} bytes.");
             return _stream.WriteAsync(source);
@@ -1196,7 +1196,7 @@ namespace System.Net.Http
             Debug.Assert(count <= _readLength - _readOffset);
 
             if (NetEventSource.IsEnabled) Trace($"Copying {count} bytes to stream.");
-            await destination.WriteAsync(_readBuffer, _readOffset, count, cancellationToken).ConfigureAwait(false);
+            await destination.WriteAsync(new ReadOnlyMemory<byte>(_readBuffer, _readOffset, count), cancellationToken).ConfigureAwait(false);
             _readOffset += count;
         }
 
@@ -1366,7 +1366,7 @@ namespace System.Net.Http
                     // at any point to understand if the connection has been closed or if errant data
                     // has been sent on the connection by the server, either of which would mean we
                     // should close the connection and not use it for subsequent requests.
-                    _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
+                    _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
                 }
                 catch (Exception error)
                 {

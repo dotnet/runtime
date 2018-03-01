@@ -120,27 +120,27 @@ namespace System.Net.Http
                 _connection = null;
             }
 
-            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return Task.FromCanceled(cancellationToken);
+                    return new ValueTask(Task.FromCanceled(cancellationToken));
                 }
 
                 if (_connection == null)
                 {
-                    return Task.FromException(new IOException(SR.net_http_io_write));
+                    return new ValueTask(Task.FromException(new IOException(SR.net_http_io_write)));
                 }
 
                 if (source.Length == 0)
                 {
-                    return Task.CompletedTask;
+                    return default;
                 }
 
-                Task writeTask = _connection.WriteWithoutBufferingAsync(source);
+                ValueTask writeTask = _connection.WriteWithoutBufferingAsync(source);
                 return writeTask.IsCompleted ?
                     writeTask :
-                    WaitWithConnectionCancellationAsync(writeTask, cancellationToken);
+                    new ValueTask(WaitWithConnectionCancellationAsync(writeTask, cancellationToken));
             }
 
             public override Task FlushAsync(CancellationToken cancellationToken)
@@ -155,13 +155,13 @@ namespace System.Net.Http
                     return Task.CompletedTask;
                 }
 
-                Task flushTask = _connection.FlushAsync();
+                ValueTask flushTask = _connection.FlushAsync();
                 return flushTask.IsCompleted ?
-                    flushTask :
+                    flushTask.AsTask() :
                     WaitWithConnectionCancellationAsync(flushTask, cancellationToken);
             }
 
-            private async Task WaitWithConnectionCancellationAsync(Task task, CancellationToken cancellationToken)
+            private async Task WaitWithConnectionCancellationAsync(ValueTask task, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try

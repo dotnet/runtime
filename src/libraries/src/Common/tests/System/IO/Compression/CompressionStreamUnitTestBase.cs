@@ -1333,7 +1333,7 @@ namespace System.IO.Compression
             return await base.ReadAsync(destination, cancellationToken);
         }
 
-        public override async Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             WriteHit = true;
 

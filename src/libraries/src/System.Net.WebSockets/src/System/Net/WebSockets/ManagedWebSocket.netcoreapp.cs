@@ -10,7 +10,7 @@ namespace System.Net.WebSockets
 {
     internal sealed partial class ManagedWebSocket : WebSocket
     {
-        public override Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             return SendPrivateAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
@@ -24,7 +24,7 @@ namespace System.Net.WebSockets
                 Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
                 {
-                    ThrowIfOperationInProgress(_lastReceiveAsync);
+                    ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
                     ValueTask<ValueWebSocketReceiveResult> t = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
                     _lastReceiveAsync =
                         t.IsCompletedSuccessfully ? (t.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :

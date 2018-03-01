@@ -279,7 +279,7 @@ namespace System.Net.Security
             throw new NotImplementedException();
         }
                 
-        public new Task WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public new ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
