@@ -5,6 +5,12 @@
     <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
+  <PropertyGroup>
+    <!-- Temporary property to diagnose hanging test
+    <XunitShowProgress>true</XunitShowProgress>
+    <XunitMaxThreads>1</XunitMaxThreads>
+    -->
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />

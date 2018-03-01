@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions.Tests
                     return result;
                 }
             }
-            
+
             throw new Exception($"Test method '{testDataMethodName}' not found");
         }
 
