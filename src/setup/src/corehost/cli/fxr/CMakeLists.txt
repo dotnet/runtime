@@ -41,6 +41,8 @@ set(SOURCES
     ./hostfxr.cpp
     ./fx_ver.cpp
     ./fx_muxer.cpp
+    ./framework_info.cpp
+    ./sdk_info.cpp
 )
 
 if(WIN32)
