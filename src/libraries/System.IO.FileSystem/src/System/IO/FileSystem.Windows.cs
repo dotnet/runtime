@@ -75,7 +75,7 @@ namespace System.IO
             int length = fullPath.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathHelpers.EndsInDirectorySeparator(fullPath))
+            if (length >= 2 && PathInternal.EndsInDirectorySeparator(fullPath))
                 length--;
 
             int lengthRoot = PathInternal.GetRootLength(fullPath);
@@ -193,7 +193,7 @@ namespace System.IO
             int errorCode = Interop.Errors.ERROR_SUCCESS;
 
             // Neither GetFileAttributes or FindFirstFile like trailing separators
-            path = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
+            path = PathInternal.TrimEndingDirectorySeparator(path);
 
             using (DisableMediaInsertionPrompt.Create())
             {
@@ -390,7 +390,7 @@ namespace System.IO
             int errorCode;
             Exception exception = null;
 
-            using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Directory.EnsureTrailingDirectorySeparator(fullPath) + "*", ref findData))
+            using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(Path.Join(fullPath, "*"), ref findData))
             {
                 if (handle.IsInvalid)
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
@@ -442,7 +442,7 @@ namespace System.IO
                             {
                                 // Mount point. Unmount using full path plus a trailing '\'.
                                 // (Note: This doesn't remove the underlying directory)
-                                string mountPoint = Path.Combine(fullPath, fileName + PathHelpers.DirectorySeparatorCharAsString);
+                                string mountPoint = Path.Join(fullPath, fileName, PathInternal.DirectorySeparatorCharAsString);
                                 if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
                                 {
                                     errorCode = Marshal.GetLastWin32Error();

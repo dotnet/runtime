@@ -42,7 +42,7 @@ namespace System.IO.Enumeration
         public FileSystemEnumerator(string directory, EnumerationOptions options = null)
         {
             _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _rootDirectory = PathHelpers.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+            _rootDirectory = PathInternal.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
             _options = options ?? EnumerationOptions.Default;
 
             // We'll only suppress the media insertion prompt on the topmost directory as that is the
@@ -155,7 +155,7 @@ namespace System.IO.Enumeration
                         else if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
                         {
                             // Recursion is on and the directory was accepted, Queue it
-                            string subDirectory = PathHelpers.CombineNoChecks(_currentPath, _entry->FileName);
+                            string subDirectory = Path.Join(_currentPath, _entry->FileName);
                             IntPtr subDirectoryHandle = CreateRelativeDirectoryHandle(_entry->FileName, subDirectory);
                             if (subDirectoryHandle != IntPtr.Zero)
                             {

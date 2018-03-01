@@ -41,26 +41,10 @@ namespace System.IO
             return new DirectoryInfo(fullPath, null);
         }
 
-        // Input to this method should already be fullpath. This method will ensure that we append 
-        // the trailing slash only when appropriate.
-        internal static string EnsureTrailingDirectorySeparator(string fullPath)
-        {
-            string fullPathWithTrailingDirectorySeparator;
-
-            if (!PathHelpers.EndsInDirectorySeparator(fullPath))
-                fullPathWithTrailingDirectorySeparator = fullPath + PathHelpers.DirectorySeparatorCharAsString;
-            else
-                fullPathWithTrailingDirectorySeparator = fullPath;
-
-            return fullPathWithTrailingDirectorySeparator;
-        }
-
-
         // Tests if the given path refers to an existing DirectoryInfo on disk.
         // 
         // Your application must have Read permission to the directory's
         // contents.
-        //
         public static bool Exists(string path)
         {
             try
@@ -280,10 +264,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
 
             string fullsourceDirName = Path.GetFullPath(sourceDirName);
-            string sourcePath = EnsureTrailingDirectorySeparator(fullsourceDirName);
+            string sourcePath = PathInternal.EnsureTrailingSeparator(fullsourceDirName);
 
             string fulldestDirName = Path.GetFullPath(destDirName);
-            string destPath = EnsureTrailingDirectorySeparator(fulldestDirName);
+            string destPath = PathInternal.EnsureTrailingSeparator(fulldestDirName);
 
             StringComparison pathComparison = PathInternal.StringComparison;
 

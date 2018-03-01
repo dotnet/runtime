@@ -26,12 +26,12 @@ namespace System.IO.Enumeration
             //
             // We also allowed for expression to be "foo\" which would translate to "foo\*".
 
-            ReadOnlySpan<char> directoryName = PathHelpers.GetDirectoryNameNoChecks(expression.AsSpan());
+            ReadOnlySpan<char> directoryName = Path.GetDirectoryName(expression.AsSpan());
 
             if (directoryName.Length != 0)
             {
                 // Need to fix up the input paths
-                directory = PathHelpers.CombineNoChecks(directory, directoryName);
+                directory = Path.Join(directory, directoryName);
                 expression = expression.Substring(directoryName.Length + 1);
             }
 

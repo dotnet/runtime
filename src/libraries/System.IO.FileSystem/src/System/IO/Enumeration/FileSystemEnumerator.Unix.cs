@@ -41,7 +41,7 @@ namespace System.IO.Enumeration
         public FileSystemEnumerator(string directory, EnumerationOptions options = null)
         {
             _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _rootDirectory = PathHelpers.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+            _rootDirectory = PathInternal.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
             _options = options ?? EnumerationOptions.Default;
 
             // We need to initialize the directory handle up front to ensure
@@ -151,7 +151,7 @@ namespace System.IO.Enumeration
                             // Recursion is on and the directory was accepted, Queue it
                             if (_pending == null)
                                 _pending = new Queue<string>();
-                            _pending.Enqueue(PathHelpers.CombineNoChecks(_currentPath, entry.FileName));
+                            _pending.Enqueue(Path.Join(_currentPath, entry.FileName));
                         }
                     }
 
