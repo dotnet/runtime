@@ -100,6 +100,15 @@ public:
             }
         }
 
+        for (const auto& additional_deps : m_additional_deps)
+        {
+            if (!additional_deps->is_valid())
+            {
+                errors->assign(_X("An error occurred while parsing: ") + additional_deps->get_deps_file());
+                return false;
+            }
+        }
+
         errors->clear();
         return true;
     }

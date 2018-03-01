@@ -980,6 +980,49 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             DeleteAvailableSharedFxVersions(_exeSharedUberFxBaseDir, "7777.0.0");
         }
 
+        [Fact]
+        public void Additional_Deps_Lightup_Folder_With_Roll_Forward_And_Bad_JsonFile()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Add version in the exe folder
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1");
+
+            // Set desired version = 9999.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+
+            // Create a deps.json file in the folder "additionalDeps\shared\Microsoft.NETCore.App\9999.0.0"
+            string additionalDepsRootPath = Path.Combine(_exeSharedFxBaseDir, "additionalDeps");
+            string additionalDepsPath = Path.Combine(additionalDepsRootPath, "shared", "Microsoft.NETCore.App", "9999.0.0", "myAddtionalDeps.deps.json");
+            FileInfo additionalDepsFile = new FileInfo(additionalDepsPath);
+            additionalDepsFile.Directory.Create();
+            File.WriteAllText(additionalDepsFile.FullName, "THIS IS A BAD JSON FILE");
+
+            // Version: NetCoreApp 9999.0.0
+            // Exe: NetCoreApp 9999.0.1
+            // Expected: 9999.0.1
+            // Expected: the "specified" location (9999.0.0) is used to find the lightup folder, not the "found" location (9999.0.1)
+            dotnet.Exec("exec", "--additional-deps", additionalDepsRootPath, appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1"))
+                .And
+                .HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {additionalDepsPath}");
+
+            DeleteAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.1", "additionalDeps");
+        }
+
         // This method adds a list of new framework version folders in the specified
         // sharedFxBaseDir. The files are copied from the _buildSharedFxDir.
         // Remarks:
