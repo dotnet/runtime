@@ -388,35 +388,30 @@ namespace System.IO.Tests
             string writeFileName = GetTestFilePath();
             do
             {
-                // Create a new token that expires between 100-1000ms
-                CancellationTokenSource tokenSource = new CancellationTokenSource();
-                tokenSource.CancelAfter(rand.Next(100, 1000));
+
+                int totalBytesWritten = 0;
 
                 using (var stream = new FileStream(writeFileName, FileMode.Create, FileAccess.Write))
                 {                    
                     do
                     {
-                        try
-                        {
-                            // 20%: random write size
-                            int bytesToWrite = (rand.NextDouble() < 0.2 ? rand.Next(16, MaximumWriteSize) : NormalWriteSize);
+                        // 20%: random write size
+                        int bytesToWrite = (rand.NextDouble() < 0.2 ? rand.Next(16, MaximumWriteSize) : NormalWriteSize);
 
-                            if (rand.NextDouble() < 0.1)
-                            {
-                                // 10%: Sync write
-                                stream.Write(dataToWrite, 0, bytesToWrite);
-                            }
-                            else
-                            {
-                                // 90%: Async write
-                                await WriteAsync(stream, dataToWrite, 0, bytesToWrite, tokenSource.Token);
-                            }
-                        }
-                        catch (TaskCanceledException)
+                        if (rand.NextDouble() < 0.1)
                         {
-                            Assert.True(tokenSource.Token.IsCancellationRequested, "Received cancellation exception before token expired");
+                            // 10%: Sync write
+                            stream.Write(dataToWrite, 0, bytesToWrite);
                         }
-                    } while (!tokenSource.Token.IsCancellationRequested);
+                        else
+                        {
+                            // 90%: Async write
+                            await WriteAsync(stream, dataToWrite, 0, bytesToWrite);
+                        }
+
+                        totalBytesWritten += bytesToWrite;
+                    // Cap written bytes at 10 million to avoid writing too much to disk
+                    } while (totalBytesWritten < 10_000_000);
                 }
             } while (DateTime.UtcNow - testStartTime <= testRunTime);
         }
