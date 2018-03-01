@@ -17,11 +17,11 @@
 typedef BYTE ZapRelocationType; // IMAGE_REL_XXX enum
 
 // IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
-#else
+#else // !_TARGET_64BIT_
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_HIGHLOW
-#endif
+#endif // !_TARGET_64BIT_
 
 // Special NGEN-specific relocation type for relative pointer (used to make NGen relocation section smaller)
 #define IMAGE_REL_BASED_RELPTR            0x7D
