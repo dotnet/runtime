@@ -1,5 +1,10 @@
 [
   {
+    "Name": "CoreFx.Private.TestUtilities",
+    "Description": "Private package, which provides testing utility classes. The package is meant to be used when running CoreFX tests on a runtime.",
+    "CommonTypes": []
+  },
+  {
     "Name": "RuntimePackage",
     "Description": "Internal implementation package not meant for direct consumption.  Please do not reference directly.",
     "CommonTypes": []
