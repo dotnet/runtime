@@ -50,11 +50,11 @@ namespace System.Runtime.CompilerServices
         {
             if (_value.ObjectIsTask)
             {
-                _value.UnsafeTask.GetAwaiter().OnCompleted(continuation);
+                _value.UnsafeGetTask().GetAwaiter().OnCompleted(continuation);
             }
             else if (_value._obj != null)
             {
-                _value.UnsafeValueTaskSource.OnCompleted(s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext | ValueTaskSourceOnCompletedFlags.FlowExecutionContext);
+                _value.UnsafeGetValueTaskSource().OnCompleted(s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext | ValueTaskSourceOnCompletedFlags.FlowExecutionContext);
             }
             else
             {
@@ -67,11 +67,11 @@ namespace System.Runtime.CompilerServices
         {
             if (_value.ObjectIsTask)
             {
-                _value.UnsafeTask.GetAwaiter().UnsafeOnCompleted(continuation);
+                _value.UnsafeGetTask().GetAwaiter().UnsafeOnCompleted(continuation);
             }
             else if (_value._obj != null)
             {
-                _value.UnsafeValueTaskSource.OnCompleted(s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                _value.UnsafeGetValueTaskSource().OnCompleted(s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
@@ -84,11 +84,11 @@ namespace System.Runtime.CompilerServices
         {
             if (_value.ObjectIsTask)
             {
-                TaskAwaiter.UnsafeOnCompletedInternal(_value.UnsafeTask, box, continueOnCapturedContext: true);
+                TaskAwaiter.UnsafeOnCompletedInternal(_value.UnsafeGetTask(), box, continueOnCapturedContext: true);
             }
             else if (_value._obj != null)
             {
-                _value.UnsafeValueTaskSource.OnCompleted(s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                _value.UnsafeGetValueTaskSource().OnCompleted(s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
@@ -141,11 +141,11 @@ namespace System.Runtime.CompilerServices
         {
             if (_value.ObjectIsTask)
             {
-                _value.UnsafeTask.GetAwaiter().OnCompleted(continuation);
+                _value.UnsafeGetTask().GetAwaiter().OnCompleted(continuation);
             }
             else if (_value._obj != null)
             {
-                _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext | ValueTaskSourceOnCompletedFlags.FlowExecutionContext);
+                _value.UnsafeGetValueTaskSource().OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext | ValueTaskSourceOnCompletedFlags.FlowExecutionContext);
             }
             else
             {
@@ -158,11 +158,11 @@ namespace System.Runtime.CompilerServices
         {
             if (_value.ObjectIsTask)
             {
-                _value.UnsafeTask.GetAwaiter().UnsafeOnCompleted(continuation);
+                _value.UnsafeGetTask().GetAwaiter().UnsafeOnCompleted(continuation);
             }
             else if (_value._obj != null)
             {
-                _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                _value.UnsafeGetValueTaskSource().OnCompleted(ValueTaskAwaiter.s_invokeActionDelegate, continuation, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
@@ -175,11 +175,11 @@ namespace System.Runtime.CompilerServices
         {
             if (_value.ObjectIsTask)
             {
-                TaskAwaiter.UnsafeOnCompletedInternal(_value.UnsafeTask, box, continueOnCapturedContext: true);
+                TaskAwaiter.UnsafeOnCompletedInternal(_value.UnsafeGetTask(), box, continueOnCapturedContext: true);
             }
             else if (_value._obj != null)
             {
-                _value.UnsafeValueTaskSource.OnCompleted(ValueTaskAwaiter.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
+                _value.UnsafeGetValueTaskSource().OnCompleted(ValueTaskAwaiter.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
             }
             else
             {
