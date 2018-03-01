@@ -27,6 +27,32 @@ namespace System.Runtime.Intrinsics
 }
 namespace System.Runtime.Intrinsics.Arm.Arm64
 {
+    public static class Aes
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static Vector128<byte> Decrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
+        public static Vector128<byte> Encrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw null; }
+        public static Vector128<byte> MixColumns(Vector128<byte> value) { throw null; }
+        public static Vector128<byte> InverseMixColumns(Vector128<byte> value) { throw null; }
+    }
+    public static class Sha1
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static Vector128<uint> HashChoose(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint>wk) { throw null; }
+        public static Vector128<uint> HashMajority(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint>wk) { throw null; }
+        public static Vector128<uint> HashParity(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint>wk) { throw null; }
+        public static uint FixedRotate(uint hash_e) { throw null; }
+        public static Vector128<uint> SchedulePart1(Vector128<uint> w0_3, Vector128<uint> w4_7, Vector128<uint> w8_11) { throw null; }
+        public static Vector128<uint> SchedulePart2(Vector128<uint> tw0_3, Vector128<uint> w12_15) { throw null; }
+    }
+    public static class Sha256
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static Vector128<uint> HashLower(Vector128<uint> hash_abcd, Vector128<uint> hash_efgh, Vector128<uint> wk) { throw null; }
+        public static Vector128<uint> HashUpper(Vector128<uint> hash_efgh, Vector128<uint> hash_abcd, Vector128<uint> wk) { throw null; }
+        public static Vector128<uint> SchedulePart1(Vector128<uint> w0_3, Vector128<uint> w4_7) { throw null; }
+        public static Vector128<uint> SchedulePart2(Vector128<uint> w0_3, Vector128<uint> w8_11, Vector128<uint> w12_15) { throw null; }
+    }
     public static class Simd
     {
         public static bool IsSupported { get { throw null; } }
