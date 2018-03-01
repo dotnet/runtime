@@ -133,6 +133,7 @@
     <Compile Include="ReadOnlySpan\TrimWhiteSpace.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Memory\AsMemory.cs" />
     <Compile Include="Memory\AsReadOnlyMemory.cs" />
     <Compile Include="Memory\CopyTo.cs" />
     <Compile Include="Memory\CtorArray.cs" />
