@@ -1551,29 +1551,66 @@ mono_make_shadow_copy (const char *filename, MonoError *error)
 	return (char *) filename;
 }
 #else
+
+typedef enum {
+	SHADOW_COPY_SIBLING_EXT_APPEND,
+	SHADOW_COPY_SIBLING_EXT_REPLACE,
+} ShadowCopySiblingExt;
+
+static
+gchar *
+make_sibling_path (const gchar *path, gint pathlen, const char *extension, ShadowCopySiblingExt extopt)
+{
+	gchar *result = NULL;
+	switch (extopt) {
+	case SHADOW_COPY_SIBLING_EXT_APPEND: {
+		result = g_strconcat (path, extension, NULL);
+		break;
+	}
+	case SHADOW_COPY_SIBLING_EXT_REPLACE: {
+		/* expect path to be a .dll or .exe (or some case insensitive variant) */
+		g_assert (pathlen >= 4 && path[pathlen - 4] == '.');
+		GString *s = g_string_sized_new (pathlen - 4 + strlen (extension));
+		g_string_append_len (s, path, pathlen - 4);
+		g_string_append (s, extension);
+		result = g_string_free (s, FALSE);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+	}
+	return result;
+}
+
 static gboolean
-shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *target, gint targetlen, gint tail_len)
+shadow_copy_sibling (const gchar *src_pristine, gint srclen, const char *extension, ShadowCopySiblingExt extopt, const gchar *target_pristine, gint targetlen)
 {
 	guint16 *orig, *dest;
 	gboolean copy_result;
 	gint32 copy_error;
+	gchar *src = NULL;
+	gchar *target = NULL;
 	
-	strcpy (src + srclen - tail_len, extension);
+	src = make_sibling_path (src_pristine, srclen, extension, extopt);
 
 	if (IS_PORTABILITY_CASE) {
 		gchar *file = mono_portability_find_file (src, TRUE);
 
-		if (file == NULL)
+		if (file == NULL) {
+			g_free (src);
 			return TRUE;
+		}
 
 		g_free (file);
 	} else if (!g_file_test (src, G_FILE_TEST_IS_REGULAR)) {
+		g_free (src);
 		return TRUE;
 	}
 
 	orig = g_utf8_to_utf16 (src, strlen (src), NULL, NULL, NULL);
 
-	strcpy (target + targetlen - tail_len, extension);
+	target = make_sibling_path (target_pristine, targetlen, extension, extopt);
+
 	dest = g_utf8_to_utf16 (target, strlen (target), NULL, NULL, NULL);
 	
 	mono_w32file_delete (dest);
@@ -1588,6 +1625,8 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 	g_free (orig);
 	g_free (dest);
 	
+	g_free (src);
+	g_free (target);
 	return copy_result;
 }
 
@@ -1838,8 +1877,7 @@ char *
 mono_make_shadow_copy (const char *filename, MonoError *oerror)
 {
 	ERROR_DECL (error);
-	gchar *sibling_source, *sibling_target;
-	gint sibling_source_len, sibling_target_len;
+	gint filename_len, shadow_len;
 	guint16 *orig, *dest;
 	guint32 attrs;
 	char *shadow;
@@ -1927,20 +1965,15 @@ mono_make_shadow_copy (const char *filename, MonoError *oerror)
 		return NULL;
 	}
 
-	/* attempt to copy .mdb, .config if they exist */
-	sibling_source = g_strconcat (filename, ".config", NULL);
-	sibling_source_len = strlen (sibling_source);
-	sibling_target = g_strconcat (shadow, ".config", NULL);
-	sibling_target_len = strlen (sibling_target);
+	/* attempt to copy .mdb, .pdb and .config if they exist */
+	filename_len = strlen (filename);
+	shadow_len = strlen (shadow);
 
-	copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".mdb", sibling_target, sibling_target_len, 7);
+	copy_result = shadow_copy_sibling (filename, filename_len, ".mdb", SHADOW_COPY_SIBLING_EXT_APPEND, shadow, shadow_len);
 	if (copy_result)
-		copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".pdb", sibling_target, sibling_target_len, 11);
+		copy_result = shadow_copy_sibling (filename, filename_len, ".pdb", SHADOW_COPY_SIBLING_EXT_REPLACE, shadow, shadow_len);
 	if (copy_result)
-		copy_result = shadow_copy_sibling (sibling_source, sibling_source_len, ".config", sibling_target, sibling_target_len, 7);
-	
-	g_free (sibling_source);
-	g_free (sibling_target);
+		copy_result = shadow_copy_sibling (filename, filename_len, ".config", SHADOW_COPY_SIBLING_EXT_APPEND, shadow, shadow_len);
 	
 	if (!copy_result)  {
 		g_free (shadow);
