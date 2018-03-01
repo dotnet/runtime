@@ -100,7 +100,7 @@ namespace System.Data.SqlClient.SNI
                 GetSMUXHeaderBytes(0, (byte)flags, ref headerBytes);
             }
 
-            SNIPacket packet = new SNIPacket();
+            SNIPacket packet = new SNIPacket(null);
             packet.SetData(headerBytes, SNISMUXHeader.HEADER_LENGTH);
             
             _connection.Send(packet);
@@ -143,7 +143,7 @@ namespace System.Data.SqlClient.SNI
             byte[] headerBytes = null;
             GetSMUXHeaderBytes(packet.Length, (byte)SNISMUXFlags.SMUX_DATA, ref headerBytes);
 
-            SNIPacket smuxPacket = new SNIPacket();
+            SNIPacket smuxPacket = new SNIPacket(null);
             smuxPacket.Description = string.Format("({0}) SMUX packet {1}", packet.Description == null ? "" : packet.Description, xSequenceNumber);
             smuxPacket.Allocate(16 + packet.Length);
             smuxPacket.AppendData(headerBytes, 16);

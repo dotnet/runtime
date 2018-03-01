@@ -207,7 +207,7 @@ namespace System.Data.SqlClient.SNI
                         };
 
                         _dataBytesLeft = (int)_currentHeader.length;
-                        _currentPacket = new SNIPacket();
+                        _currentPacket = new SNIPacket(null);
                         _currentPacket.Allocate((int)_currentHeader.length);
                     }
 
