@@ -174,9 +174,7 @@ namespace System.Net.Http
 
         private static async Task<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            // Only do preauthentication if the credentials are a CredentialCache.
-            // Otherwise we'll end up sending the same basic credentials to any server we connect to.
-            if (preAuthenticate && credentials is CredentialCache)
+            if (preAuthenticate)
             {
                 NetworkCredential credential = credentials.GetCredential(authUri, BasicScheme);
                 if (credential != null)
