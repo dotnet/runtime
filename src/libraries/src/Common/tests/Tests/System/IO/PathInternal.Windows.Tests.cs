@@ -141,19 +141,32 @@ namespace Tests.System.IO
             Assert.Equal(expected, PathInternal.AreRootsEqual(first, second, comparisonType));
         }
 
-        public static TheoryData<string, int> GetRootLength_Data => new TheoryData<string, int>
+        public static TheoryData<string, int, int> GetRootLength_Data => new TheoryData<string, int, int>
         {
-            { @"C:\git\corefx", 3},
-            { @"C:\git\.\", 3},
-            { @"C:\git\..\", 3},
-            { @"C:\git\..\..\", 3},
-            { @"C:\..\", 3},
-            { @"C:\", 3},
-            { @"C:", 2},
-            { @"C:git\corefx", 2},
-            { @"C:git\.\", 2},
-            { @"C:git\..\", 2},
-            { @"C:..\", 2},
+            { @"C:\git\corefx", 3, 7 },
+            { @"C:\git\.\", 3, 7 },
+            { @"C:\git\..\", 3, 7 },
+            { @"C:\git\..\..\", 3, 7 },
+            { @"C:\..\", 3, 7 },
+            { @"C:\", 3, 7 },
+            { @"C:\\", 3, 7 },
+
+            // With drive relative paths, the length changes with device syntax. There is no
+            // concept of non-resolved "\\?\" paths. "\\?\C:git\" is not rooted at "\\?\C:",
+            // it is rooted at "\\?\C:git\". While "\\.\" paths are resolved by Win32 (via
+            // GetFullPathName), they also are not recognized as drive relative. Rather than
+            // muddy the waters we'll consider the full segment as the root volume there
+            // as well, even though GetFullPathName would eat to the prefix. We don't want
+            // a conceptual model where device paths can resolve themselves out of the "volume".
+            { @"C:", 2, 6},
+            { @"C:git\", 2, 10},
+            { @"C:git\\", 2, 10},
+            { @"C:git", 2, 9},
+            { @"C:git\corefx", 2, 10},
+            { @"C:git\.\", 2, 10},
+            { @"C:git\\.\", 2, 10},
+            { @"C:git\..\", 2, 10},
+            { @"C:..\", 2, 9},
         };
 
         public static TheoryData<string, int> GetRootLengthRooted => new TheoryData<string, int>
@@ -167,15 +180,15 @@ namespace Tests.System.IO
 
         [Theory,
             MemberData(nameof(GetRootLength_Data))]
-        public void GetRootLength(string path, int length)
+        public void GetRootLength(string path, int length, int deviceLength)
         {
             Assert.Equal(length, PathInternal.GetRootLength(path));
-            Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\?\" + path));
-            Assert.Equal(length + PathInternal.ExtendedPathPrefix.Length, PathInternal.GetRootLength(@"\\.\" + path));
+            Assert.Equal(deviceLength, PathInternal.GetRootLength(@"\\?\" + path));
+            Assert.Equal(deviceLength, PathInternal.GetRootLength(@"\\.\" + path));
         }
 
         [Theory,
-    MemberData(nameof(GetRootLengthRooted))]
+            MemberData(nameof(GetRootLengthRooted))]
         public void GetRootLength_Rooted(string path, int length)
         {
             Assert.Equal(length, PathInternal.GetRootLength(path));
@@ -183,15 +196,27 @@ namespace Tests.System.IO
 
         public static TheoryData<string, int> GetRootLength_UNCData => new TheoryData<string, int>
         {
-            { @"Server\Share\git\corefx", 13},
-            { @"Server\Share\git\.\", 13},
-            { @"Server\Share\git\..\", 13},
-            { @"Server\Share\git\..\..\", 13},
-            { @"Server\Share\..\", 13},
-            { @"Server\Share\", 13},
+            // Historically we've never included the separator after a UNC with GetPathRoot()
+            // We'll continue to do so.
+            { @"a\b\git\corefx", 3},
+            { @"Server\Share\git\corefx", 12},
+            { @"Server\Share\git\.\", 12},
+            { @"Server\Share\git\..\", 12},
+            { @"Server\Share\git\..\..\", 12},
+            { @"Server\Share\..\", 12},
+            { @"Server\Share\", 12},
+            { @"Server\Share\\", 12},
             { @"Server\Share", 12},
-            { @"Server\Share\", 13},
-            { @"Server\Share\\git", 13},
+            { @"Server\Share\", 12},
+            { @"Server\Share\\git", 12},
+
+            // Degenerate paths.
+            //
+            // We expect paths to be well formed up to the root. If you have "\\Server\\Share"
+            // instead of "\\Server\Share", all bets are off. We'll test them here to make
+            // sure we don't choke.
+            { @"\a\b\git\corefx", 2},
+            { @"a\\b\git\corefx", 2},
         };
 
         [Theory,
