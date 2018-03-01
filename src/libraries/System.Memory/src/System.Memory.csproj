@@ -28,10 +28,10 @@
     <Compile Include="System\Buffers\ArrayMemoryPool.ArrayMemoryPoolBuffer.cs" />
     <Compile Include="System\Buffers\BuffersExtensions.cs" />
     <Compile Include="System\Buffers\IBufferWriter.cs" />
-    <Compile Include="System\Buffers\IMemoryList.cs" />
     <Compile Include="System\Buffers\MemoryPool.cs" />
     <Compile Include="System\Buffers\OperationStatus.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence_helpers.cs" />
     <Compile Include="System\Buffers\Binary\Reader.cs" />
     <Compile Include="System\Buffers\Binary\ReaderBigEndian.cs" />

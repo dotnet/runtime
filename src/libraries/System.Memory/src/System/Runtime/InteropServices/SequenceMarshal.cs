@@ -12,16 +12,16 @@ namespace System.Runtime.InteropServices
     public static partial class SequenceMarshal
     {
         /// <summary>
-        /// Get <see cref="IMemoryList{T}"/> from the underlying <see cref="ReadOnlySequence{T}"/>.
-        /// If unable to get the <see cref="IMemoryList{T}"/>, return false.
+        /// Get <see cref="ReadOnlySequenceSegment{T}"/> from the underlying <see cref="ReadOnlySequence{T}"/>.
+        /// If unable to get the <see cref="ReadOnlySequenceSegment{T}"/>, return false.
         /// </summary>
-        public static bool TryGetMemoryList<T>(ReadOnlySequence<T> sequence,
-            out IMemoryList<T> startSegment,
+        public static bool TryGetReadOnlySequenceSegment<T>(ReadOnlySequence<T> sequence,
+            out ReadOnlySequenceSegment<T> startSegment,
             out int startIndex,
-            out IMemoryList<T> endSegment,
+            out ReadOnlySequenceSegment<T> endSegment,
             out int endIndex)
         {
-            return sequence.TryGetMemoryList(out startSegment, out startIndex, out endSegment, out endIndex);
+            return sequence.TryGetReadOnlySequenceSegment(out startSegment, out startIndex, out endSegment, out endIndex);
         }
 
         /// <summary>
