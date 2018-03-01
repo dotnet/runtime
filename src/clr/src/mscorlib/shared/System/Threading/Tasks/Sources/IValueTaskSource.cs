@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace System.Threading.Tasks
+namespace System.Threading.Tasks.Sources
 {
     /// <summary>
     /// Flags passed from <see cref="ValueTask"/> and <see cref="ValueTask{TResult}"/> to
