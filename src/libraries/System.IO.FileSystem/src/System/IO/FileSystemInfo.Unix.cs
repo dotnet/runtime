@@ -75,7 +75,7 @@ namespace System.IO
             // being manipulated concurrently with these checks) is that we throw a
             // FileNotFoundException instead of DirectoryNotFoundException.
 
-            bool directoryError = !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(path)));
+            bool directoryError = !Directory.Exists(Path.GetDirectoryName(PathInternal.TrimEndingDirectorySeparator(path)));
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), path, directoryError);
         }
     }

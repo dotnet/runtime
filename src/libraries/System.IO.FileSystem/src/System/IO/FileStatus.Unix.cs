@@ -223,8 +223,7 @@ namespace System.IO
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _isDirectory = false;
-            if (path.Length > 1 && PathHelpers.EndsInDirectorySeparator(path))
-                path = path.Slice(0, path.Length - 1);
+            path = PathInternal.TrimEndingDirectorySeparator(path);
             int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
             {

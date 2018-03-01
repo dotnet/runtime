@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.IO.Enumeration
 {
     /// <summary>
@@ -73,12 +75,11 @@ namespace System.IO.Enumeration
             {
                 if (_fullPath.Length == 0)
                 {
-                    ReadOnlySpan<char> directory = Directory;
-                    directory.CopyTo(_pathBuffer);
-                    _pathBuffer[directory.Length] = Path.DirectorySeparatorChar;
-                    ReadOnlySpan<char> fileName = FileName;
-                    fileName.CopyTo(_pathBuffer.Slice(directory.Length + 1));
-                    _fullPath = _pathBuffer.Slice(0, directory.Length + 1 + fileName.Length);
+                    Debug.Assert(Directory.Length + FileName.Length < _pathBuffer.Length,
+                        $"directory ({Directory.Length} chars) & name ({Directory.Length} chars) too long for buffer ({_pathBuffer.Length} chars)");
+                    Path.TryJoin(Directory, FileName, _pathBuffer, out int charsWritten);
+                    Debug.Assert(charsWritten > 0, "didn't write any chars to buffer");
+                    _fullPath = _pathBuffer.Slice(0, charsWritten);
                 }
                 return _fullPath;
             }
@@ -140,7 +141,7 @@ namespace System.IO.Enumeration
         /// Returns the full path for find results, based on the initially provided path.
         /// </summary>
         public string ToSpecifiedFullPath() =>
-            PathHelpers.CombineNoChecks(OriginalRootDirectory, Directory.Slice(RootDirectory.Length), FileName);
+            Path.Join(OriginalRootDirectory, Directory.Slice(RootDirectory.Length), FileName);
 
         /// <summary>
         /// Returns the full path of the find result.
