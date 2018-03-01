@@ -218,20 +218,26 @@ unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_I
     return simdSize;
 }
 
+// TODO_XARCH-CQ - refactoring of numArgsOfHWIntrinsic fast path into inlinable
+// function and slow local static function may increase performance significantly
+
 //------------------------------------------------------------------------
-// numArgsOfHWIntrinsic: get the number of arguments based on table and
-// if numArgs is -1 check number of arguments using GenTreeHWIntrinsic
-// node unless it is nullptr
+// numArgsOfHWIntrinsic: gets the number of arguments for the hardware intrinsic.
+// This attempts to do a table based lookup but will fallback to the number
+// of operands in 'node' if the table entry is -1.
 //
 // Arguments:
-//    intrinsic -- id of the intrinsic function
 //    node      -- GenTreeHWIntrinsic* node with nullptr default value
 //
 // Return Value:
 //     number of arguments
 //
-int Compiler::numArgsOfHWIntrinsic(NamedIntrinsic intrinsic, GenTreeHWIntrinsic* node)
+int Compiler::numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node)
 {
+    assert(node != nullptr);
+
+    NamedIntrinsic intrinsic = node->gtHWIntrinsicId;
+
     assert(intrinsic != NI_Illegal);
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
 
@@ -241,7 +247,6 @@ int Compiler::numArgsOfHWIntrinsic(NamedIntrinsic intrinsic, GenTreeHWIntrinsic*
         return numArgs;
     }
 
-    noway_assert(node != nullptr);
     assert(numArgs == -1);
 
     GenTree* op1 = node->gtGetOp1();

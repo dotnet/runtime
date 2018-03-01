@@ -2261,7 +2261,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     InstructionSet      isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
     HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID, intrinsicTree);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicTree);
 
     if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
     {
@@ -2349,6 +2349,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             break;
 
         case NI_SSE_SetScalarVector128:
+        case NI_SSE2_SetScalarVector128:
             // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
             info->internalFloatCount = 1;
             info->setInternalCandidates(this, allSIMDRegs());
