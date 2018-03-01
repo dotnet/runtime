@@ -15,8 +15,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="NamedPipeTests\NamedPipeTest.cs" />
-    <Compile Include="PipeTest.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateServer.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CreateClient.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.CrossProcess.cs" />
@@ -24,6 +22,7 @@
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Read.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Specific.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.Write.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeTest.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateServer.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CreateClient.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.CrossProcess.cs" />
@@ -32,6 +31,7 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.Write.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Specific.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.Simple.cs" />
+    <Compile Include="PipeTest.cs" />
     <Compile Include="PipeTestBase.cs" />
     <Compile Include="PipeTest.Read.cs" />
     <Compile Include="PipeTest.Write.cs" />
@@ -41,6 +41,9 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.cs" />
     <Compile Include="PipeTest.Read.netcoreapp.cs" />
     <Compile Include="PipeTest.Write.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' and '$(TargetsWindows)' == 'true'">
+    <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Interop.Windows.cs" />
