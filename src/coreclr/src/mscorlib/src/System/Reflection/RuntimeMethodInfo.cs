@@ -454,27 +454,10 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
-            return UnsafeInvokeInternal(obj, invokeAttr, parameters, arguments);
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        internal object UnsafeInvoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
-        {
-            object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
-
-            return UnsafeInvokeInternal(obj, invokeAttr, parameters, arguments);
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        private object UnsafeInvokeInternal(Object obj, BindingFlags invokeAttr, Object[] parameters, Object[] arguments)
-        {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (arguments == null || arguments.Length == 0)
                 return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false, wrapExceptions);
@@ -570,8 +553,6 @@ namespace System.Reflection
 
         public override Delegate CreateDelegate(Type delegateType)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             // This API existed in v1/v1.1 and only expected to create closed
             // instance delegates. Constrain the call to BindToMethodInfo to
             // open delegates only for backwards compatibility. But we'll allow
@@ -583,14 +564,11 @@ namespace System.Reflection
             return CreateDelegateInternal(
                 delegateType,
                 null,
-                DelegateBindingFlags.OpenDelegateOnly | DelegateBindingFlags.RelaxedSignature,
-                ref stackMark);
+                DelegateBindingFlags.OpenDelegateOnly | DelegateBindingFlags.RelaxedSignature);
         }
 
         public override Delegate CreateDelegate(Type delegateType, Object target)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             // This API is new in Whidbey and allows the full range of delegate
             // flexability (open or closed delegates binding to static or
             // instance methods with relaxed signature checking). The delegate
@@ -599,11 +577,10 @@ namespace System.Reflection
             return CreateDelegateInternal(
                 delegateType,
                 target,
-                DelegateBindingFlags.RelaxedSignature,
-                ref stackMark);
+                DelegateBindingFlags.RelaxedSignature);
         }
 
-        private Delegate CreateDelegateInternal(Type delegateType, Object firstArgument, DelegateBindingFlags bindingFlags, ref StackCrawlMark stackMark)
+        private Delegate CreateDelegateInternal(Type delegateType, Object firstArgument, DelegateBindingFlags bindingFlags)
         {
             // Validate the parameters.
             if (delegateType == null)
@@ -616,7 +593,7 @@ namespace System.Reflection
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(delegateType));
 
-            Delegate d = Delegate.CreateDelegateInternal(rtType, this, firstArgument, bindingFlags, ref stackMark);
+            Delegate d = Delegate.CreateDelegateInternal(rtType, this, firstArgument, bindingFlags);
             if (d == null)
             {
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);

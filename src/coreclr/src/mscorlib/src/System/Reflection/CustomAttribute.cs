@@ -1610,7 +1610,7 @@ namespace System.Reflection
                             if (!setMethod.IsPublic)
                                 continue;
 
-                            setMethod.UnsafeInvoke(attribute, BindingFlags.Default, null, new object[] { value }, null);
+                            setMethod.Invoke(attribute, BindingFlags.Default, null, new object[] { value }, null);
                             #endregion
                         }
                         else
