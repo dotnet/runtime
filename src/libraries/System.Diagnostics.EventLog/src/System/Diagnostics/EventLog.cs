@@ -374,7 +374,7 @@ namespace System.Diagnostics
         public static void Delete(string logName, string machineName)
         {
             if (!SyntaxCheck.CheckMachineName(machineName))
-                throw new ArgumentException(SR.InvalidParameterFormat, nameof(machineName));
+                throw new ArgumentException(SR.Format(SR.InvalidParameterFormat, nameof(machineName)), nameof(machineName));
             if (logName == null || logName.Length == 0)
                 throw new ArgumentException(SR.NoLogName);
             if (!ValidLogName(logName, false))

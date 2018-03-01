@@ -201,7 +201,7 @@ namespace System.Security.Permissions.Tests
         {
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
-            AssertExtensions.Throws<ArgumentException>("System.Security.Permissions.PrincipalPermission", () => p1.Union(ep2));
+            AssertExtensions.Throws<ArgumentException>("other", () => p1.Union(ep2));
         }
 
         [Fact]
@@ -286,7 +286,7 @@ namespace System.Security.Permissions.Tests
         {
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
-            AssertExtensions.Throws<ArgumentException>("System.Security.Permissions.PrincipalPermission", () => p1.Intersect(ep2));
+            AssertExtensions.Throws<ArgumentException>("target", () => p1.Intersect(ep2));
         }
 
         [Fact]
@@ -351,7 +351,7 @@ namespace System.Security.Permissions.Tests
         {
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
-            AssertExtensions.Throws<ArgumentException>("System.Security.Permissions.PrincipalPermission", () => p1.IsSubsetOf(ep2));
+            AssertExtensions.Throws<ArgumentException>("target", () => p1.IsSubsetOf(ep2));
         }
     }
 }

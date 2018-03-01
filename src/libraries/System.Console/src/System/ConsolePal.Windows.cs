@@ -963,14 +963,14 @@ namespace System
             if (csbi.dwSize.X < csbi.srWindow.Left + width)
             {
                 if (csbi.srWindow.Left >= short.MaxValue - width)
-                    throw new ArgumentOutOfRangeException(nameof(width), SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
+                    throw new ArgumentOutOfRangeException(nameof(width), SR.Format(SR.ArgumentOutOfRange_ConsoleWindowBufferSize, short.MaxValue - width));
                 size.X = (short)(csbi.srWindow.Left + width);
                 resizeBuffer = true;
             }
             if (csbi.dwSize.Y < csbi.srWindow.Top + height)
             {
                 if (csbi.srWindow.Top >= short.MaxValue - height)
-                    throw new ArgumentOutOfRangeException(nameof(height), SR.ArgumentOutOfRange_ConsoleWindowBufferSize);
+                    throw new ArgumentOutOfRangeException(nameof(height), SR.Format(SR.ArgumentOutOfRange_ConsoleWindowBufferSize, short.MaxValue - height));
                 size.Y = (short)(csbi.srWindow.Top + height);
                 resizeBuffer = true;
             }
