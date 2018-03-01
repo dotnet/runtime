@@ -2,161 +2,20 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include <cassert>
-#include "pal.h"
-#include "utils.h"
-#include "libhost.h"
 #include "args.h"
-#include "fx_definition.h"
-#include "fx_ver.h"
-#include "fx_muxer.h"
-#include "trace.h"
-#include "runtime_config.h"
 #include "cpprest/json.h"
-#include "error_codes.h"
 #include "deps_format.h"
-
-void get_all_fx_versions(
-    host_mode_t mode,
-    const pal::string_t& own_dir,
-    const pal::string_t& fx_name,
-    std::vector<pal::string_t>* fx_framework_names,
-    std::vector<pal::string_t>* fx_versions,
-    std::vector<pal::string_t>* fx_locations)
-{
-    // No FX resolution for standalone apps
-    if (mode == host_mode_t::standalone)
-    {
-        trace::verbose(_X("Standalone mode detected. Not gathering shared FX locations"));
-        return;
-    }
-
-    // No FX resolution for mixed apps
-    if (mode == host_mode_t::split_fx)
-    {
-        trace::verbose(_X("Split/FX mode detected. Not gathering shared FX locations"));
-        return;
-    }
-
-    std::vector<pal::string_t> global_dirs;
-    bool multilevel_lookup = multilevel_lookup_enabled();
-
-    // own_dir contains DIR_SEPARATOR appended that we need to remove.
-    pal::string_t own_dir_temp = own_dir;
-    remove_trailing_dir_seperator(&own_dir_temp);
-
-    std::vector<pal::string_t> hive_dir;
-    hive_dir.push_back(own_dir_temp);
-
-    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            if (dir != own_dir_temp)
-            {
-                hive_dir.push_back(dir);
-            }
-        }
-    }
-
-    for (pal::string_t dir : hive_dir)
-    {
-        auto fx_shared_dir = dir;
-        append_path(&fx_shared_dir, _X("shared"));
-
-        if (pal::directory_exists(fx_shared_dir))
-        {
-            std::vector<pal::string_t> fx_names;
-            if (fx_name.length())
-            {
-                // Use the provided framework name
-                fx_names.push_back(fx_name);
-            }
-            else
-            {
-                // Read all frameworks, including "Microsoft.NETCore.App"
-                pal::readdir_onlydirectories(fx_shared_dir, &fx_names);
-            }
-
-            for (pal::string_t fx_name : fx_names)
-            {
-                auto fx_dir = fx_shared_dir;
-                append_path(&fx_dir, fx_name.c_str());
-
-                if (pal::directory_exists(fx_dir))
-                {
-                    trace::verbose(_X("Gathering FX locations in [%s]"), fx_dir.c_str());
-
-                    std::vector<pal::string_t> versions;
-                    pal::readdir_onlydirectories(fx_dir, &versions);
-                    for (const auto& ver : versions)
-                    {
-                        // Make sure we filter out any non-version folders.
-                        fx_ver_t parsed(-1, -1, -1);
-                        if (fx_ver_t::parse(ver, &parsed, false))
-                        {
-                            trace::verbose(_X("Found FX version [%s]"), ver.c_str());
-                            fx_framework_names->push_back(fx_name);
-                            fx_versions->push_back(ver);
-                            fx_locations->push_back(fx_shared_dir);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-void get_all_sdk_versions(
-    const pal::string_t& own_dir,
-    std::vector<pal::string_t>* sdk_versions,
-    std::vector<pal::string_t>* sdk_locations)
-{
-    std::vector<pal::string_t> global_dirs;
-    bool multilevel_lookup = multilevel_lookup_enabled();
-
-    // own_dir contains DIR_SEPARATOR appended that we need to remove.
-    pal::string_t own_dir_temp = own_dir;
-    remove_trailing_dir_seperator(&own_dir_temp);
-
-    std::vector<pal::string_t> hive_dir;
-    hive_dir.push_back(own_dir_temp);
-
-    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
-    {
-        for (pal::string_t dir : global_dirs)
-        {
-            if (dir != own_dir_temp)
-            {
-                hive_dir.push_back(dir);
-            }
-        }
-    }
-
-    for (pal::string_t dir : hive_dir)
-    {
-        auto sdk_dir = dir;
-        trace::verbose(_X("Gathering SDK locations in [%s]"), sdk_dir.c_str());
-
-        append_path(&sdk_dir, _X("sdk"));
-
-        if (pal::directory_exists(sdk_dir))
-        {
-            std::vector<pal::string_t> versions;
-            pal::readdir_onlydirectories(sdk_dir, &versions);
-            for (const auto& ver : versions)
-            {
-                // Make sure we filter out any non-version folders.
-                fx_ver_t parsed(-1, -1, -1);
-                if (fx_ver_t::parse(ver, &parsed, false))
-                {
-                    trace::verbose(_X("Found SDK version [%s]"), ver.c_str());
-                    sdk_versions->push_back(ver.c_str());
-                    sdk_locations->push_back(sdk_dir.c_str());
-                }
-            }
-        }
-    }
-}
+#include "error_codes.h"
+#include "framework_info.h"
+#include "fx_definition.h"
+#include "fx_muxer.h"
+#include "fx_ver.h"
+#include "libhost.h"
+#include "pal.h"
+#include "runtime_config.h"
+#include "sdk_info.h"
+#include "trace.h"
+#include "utils.h"
 
 /**
 * When the framework is not found, display detailed error message
@@ -169,23 +28,19 @@ void handle_missing_framework_error(
     const pal::string_t& fx_dir,
     const pal::string_t& own_dir)
 {
-    std::vector<pal::string_t> fx_framework_names;
-    std::vector<pal::string_t> fx_versions;
-    std::vector<pal::string_t> fx_locations;
+    std::vector<framework_info> framework_infos;
     pal::string_t fx_ver_dirs;
     if (fx_dir.length())
     {
         fx_ver_dirs = fx_dir;
-        get_all_fx_versions(mode, get_directory(fx_dir), fx_name, &fx_framework_names, &fx_versions, &fx_locations);
+        framework_info::get_all_framework_infos(mode, get_directory(fx_dir), fx_name, &framework_infos);
     }
     else
     {
         fx_ver_dirs = own_dir;
     }
 
-    get_all_fx_versions(mode, own_dir, fx_name, &fx_framework_names, &fx_versions, &fx_locations);
-    assert(fx_framework_names.size() == fx_versions.size());
-    assert(fx_framework_names.size() == fx_locations.size());
+    framework_info::get_all_framework_infos(mode, own_dir, fx_name, &framework_infos);
 
     // Display the error message about missing FX.
     if (fx_version.length())
@@ -207,7 +62,7 @@ void handle_missing_framework_error(
     // Gather the list of versions installed at the shared FX location.
     bool is_print_header = true;
 
-    for (int i = 0; i < fx_versions.size(); i++)
+    for (framework_info info : framework_infos)
     {
         // Print banner only once before printing the versions
         if (is_print_header)
@@ -216,7 +71,7 @@ void handle_missing_framework_error(
             is_print_header = false;
         }
 
-        trace::error(_X("      %s at [%s]"), fx_versions[i].c_str(), fx_locations[i].c_str());
+        trace::error(_X("      %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
     }
 }
 
@@ -1010,36 +865,6 @@ bool is_sdk_dir_present(const pal::string_t& own_dir)
     return pal::directory_exists(sdk_path);
 }
 
-bool versions_sdk_info(pal::string_t own_dir, pal::string_t leading_whitespace)
-{
-    std::vector<pal::string_t> sdk_versions;
-    std::vector<pal::string_t> sdk_locations;
-    get_all_sdk_versions(own_dir, &sdk_versions, &sdk_locations);
-    assert(sdk_versions.size() == sdk_locations.size());
-    for (int i = 0; i < sdk_versions.size(); i++)
-    {
-        trace::println(_X("%s%s [%s]"), leading_whitespace.c_str(), sdk_versions[i].c_str(), sdk_locations[i].c_str());
-    }
-
-    return sdk_versions.size() > 0;
-}
-
-bool versions_runtime_info(pal::string_t own_dir, pal::string_t leading_whitespace)
-{
-    std::vector<pal::string_t> fx_framework_names;
-    std::vector<pal::string_t> fx_versions;
-    std::vector<pal::string_t> fx_locations;
-    get_all_fx_versions(host_mode_t::muxer, own_dir, _X(""), &fx_framework_names, &fx_versions, &fx_locations);
-    assert(fx_framework_names.size() == fx_versions.size());
-    assert(fx_framework_names.size() == fx_locations.size());
-    for (int i = 0; i < fx_versions.size(); i++)
-    {
-        trace::println(_X("%s%s %s [%s]"), leading_whitespace.c_str(), fx_framework_names[i].c_str(), fx_versions[i].c_str(), fx_locations[i].c_str());
-    }
-
-    return fx_versions.size() > 0;
-}
-
 void muxer_info(pal::string_t own_dir)
 {
     trace::println();
@@ -1051,14 +876,14 @@ void muxer_info(pal::string_t own_dir)
 
     trace::println();
     trace::println(_X(".NET Core SDKs installed:"));
-    if (!versions_sdk_info(own_dir, _X("  ")))
+    if (!sdk_info::print_all_sdks(own_dir, _X("  ")))
     {
         trace::println(_X("  No SDKs were found."));
     }
 
     trace::println();
     trace::println(_X("The.NET Core runtimes installed:"));
-    if (!versions_runtime_info(own_dir, _X("  ")))
+    if (!framework_info::print_all_frameworks(own_dir, _X("  ")))
     {
         trace::println(_X("  No runtimes were found."));
     }
@@ -1594,12 +1419,12 @@ int fx_muxer_t::handle_cli(
     // Check for commands that don't depend on the CLI SDK to be loaded
     if (pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0)
     {
-        versions_sdk_info(own_dir, _X(""));
+        sdk_info::print_all_sdks(own_dir, _X(""));
         return StatusCode::Success;
     }
     else if (pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0)
     {
-        versions_runtime_info(own_dir, _X(""));
+        framework_info::print_all_frameworks(own_dir, _X(""));
         return StatusCode::Success;
     }
 
