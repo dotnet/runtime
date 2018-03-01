@@ -145,15 +145,21 @@
   <!-- Print out a size comparison report for the linked
        assemblies. This is disabled by default, but can be turned on
        by setting $(ShowLinkerSizeComparison) to true. This runs after
-       the top-level link target, ComputeLinkedFilesToPublish, so it
-       is output even during incremental builds. -->
+       the ComputeFilesToPublish, so it is output even during
+       incremental builds and takes into account all transformations
+       on the files to be published, including link and crossgen. -->
   <UsingTask TaskName="CompareAssemblySizes" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_CompareLinkedAssemblySizes"
-          AfterTargets="ComputeLinkedFilesToPublish"
+          AfterTargets="ComputeFilesToPublish"
           DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
           Condition=" '$(LinkDuringPublish)' == 'true' And '$(ShowLinkerSizeComparison)' == 'true' ">
+    <FilterByMetadata Items="@(ResolvedAssembliesToPublish);@(IntermediateAssembly)"
+                      MetadataName="Filename"
+                      MetadataValues="@(_ManagedAssembliesToLink->'%(Filename)')">
+      <Output TaskParameter="FilteredItems" ItemName="_FinalAssembliesTouchedByLinker" />
+    </FilterByMetadata>
     <CompareAssemblySizes UnlinkedAssemblies="@(_ManagedAssembliesToLink)"
-                          LinkedAssemblies="@(_LinkedIntermediateAssembly);@(_LinkedResolvedAssemblies)" />
+                          LinkedAssemblies="@(_FinalAssembliesTouchedByLinker)" />
   </Target>
 
 
@@ -168,7 +174,7 @@
       <__LinkedResolvedAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
       <_LinkedResolvedAssemblies Include="@(__LinkedResolvedAssemblies)" Condition="Exists('%(Identity)')" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <__LinkedIntermediateAssembly Include="@(IntermediateAssembly->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
       <_LinkedIntermediateAssembly Include="@(__LinkedIntermediateAssembly)" Condition="Exists('%(Identity)')" />
