@@ -783,11 +783,11 @@ namespace System.IO
         /// </summary>
         /// <param name="buffer">Buffer that will be written.</param>
         /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                return new ValueTask(Task.FromCanceled(cancellationToken));
             }
 
             try
@@ -802,11 +802,11 @@ namespace System.IO
                 {
                     Write(source.Span);
                 }
-                return Task.CompletedTask;
+                return default;
             }
             catch (Exception ex)
             {
-                return Task.FromException(ex);
+                return new ValueTask(Task.FromException(ex));
             }
         }
 
