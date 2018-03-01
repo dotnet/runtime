@@ -7,7 +7,7 @@ using Mono.Linker.Tests.TestCasesRunner;
 
 namespace Mono.Linker.Tests.TestCases
 {
-	static class TestDatabase
+	public static class TestDatabase
 	{
 		public static IEnumerable<TestCaseData> XmlTests()
 		{
