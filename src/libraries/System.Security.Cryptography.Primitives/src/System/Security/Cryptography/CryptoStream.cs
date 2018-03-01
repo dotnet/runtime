@@ -238,7 +238,7 @@ namespace System.Security.Cryptography
         public override int Read(byte[] buffer, int offset, int count)
         {
             CheckReadArguments(buffer, offset, count);
-            return ReadAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).ConfigureAwait(false).GetAwaiter().GetResult();
+            return ReadAsyncCore(buffer, offset, count, default(CancellationToken), useAsync: false).GetAwaiter().GetResult();
         }
 
         private void CheckReadArguments(byte[] buffer, int offset, int count)
@@ -305,7 +305,7 @@ namespace System.Security.Cryptography
                     Buffer.BlockCopy(_inputBuffer, 0, tempInputBuffer, 0, _inputBufferIndex);
                     amountRead = _inputBufferIndex;
                     amountRead += useAsync ?
-                        await _stream.ReadAsync(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex, cancellationToken) :
+                        await _stream.ReadAsync(new Memory<byte>(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex), cancellationToken) :
                         _stream.Read(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex);
 
                     _inputBufferIndex = 0;
@@ -341,7 +341,7 @@ namespace System.Security.Cryptography
                 while (_inputBufferIndex < _inputBlockSize)
                 {
                     amountRead = useAsync ?
-                        await _stream.ReadAsync(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex, cancellationToken) :
+                        await _stream.ReadAsync(new Memory<byte>(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex), cancellationToken) :
                         _stream.Read(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex);
 
                     // first, check to see if we're at the end of the input stream
@@ -475,7 +475,7 @@ namespace System.Security.Cryptography
             if (_outputBufferIndex > 0)
             {
                 if (useAsync)
-                    await _stream.WriteAsync(_outputBuffer, 0, _outputBufferIndex, cancellationToken);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, _outputBufferIndex), cancellationToken);
                 else
                     _stream.Write(_outputBuffer, 0, _outputBufferIndex);
                 _outputBufferIndex = 0;
@@ -488,7 +488,7 @@ namespace System.Security.Cryptography
                 numOutputBytes = _transform.TransformBlock(_inputBuffer, 0, _inputBlockSize, _outputBuffer, 0);
                 // write out the bytes we just got
                 if (useAsync)
-                    await _stream.WriteAsync(_outputBuffer, 0, numOutputBytes, cancellationToken);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, numOutputBytes), cancellationToken);
                 else
                     _stream.Write(_outputBuffer, 0, numOutputBytes);
 
@@ -509,7 +509,7 @@ namespace System.Security.Cryptography
                         numOutputBytes = _transform.TransformBlock(buffer, currentInputIndex, numWholeBlocksInBytes, _tempOutputBuffer, 0);
 
                         if (useAsync)
-                            await _stream.WriteAsync(_tempOutputBuffer, 0, numOutputBytes, cancellationToken);
+                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_tempOutputBuffer, 0, numOutputBytes), cancellationToken);
                         else
                             _stream.Write(_tempOutputBuffer, 0, numOutputBytes);
 
@@ -522,7 +522,7 @@ namespace System.Security.Cryptography
                         numOutputBytes = _transform.TransformBlock(buffer, currentInputIndex, _inputBlockSize, _outputBuffer, 0);
 
                         if (useAsync)
-                            await _stream.WriteAsync(_outputBuffer, 0, numOutputBytes, cancellationToken);
+                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, numOutputBytes), cancellationToken);
                         else
                             _stream.Write(_outputBuffer, 0, numOutputBytes);
 

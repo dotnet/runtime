@@ -12,7 +12,7 @@ namespace System.Net.Security
         private interface ISslWriteAdapter
         {
             Task LockAsync();
-            Task WriteAsync(byte[] buffer, int offset, int count);
+            ValueTask WriteAsync(byte[] buffer, int offset, int count);
         }
 
         private interface ISslReadAdapter
@@ -61,7 +61,7 @@ namespace System.Net.Security
 
             public Task LockAsync() => _sslState.CheckEnqueueWriteAsync();
 
-            public Task WriteAsync(byte[] buffer, int offset, int count) => _sslState.InnerStream.WriteAsync(buffer, offset, count, _cancellationToken);
+            public ValueTask WriteAsync(byte[] buffer, int offset, int count) => _sslState.InnerStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), _cancellationToken);
         }
 
         private readonly struct SslWriteSync : ISslWriteAdapter
@@ -76,10 +76,10 @@ namespace System.Net.Security
                 return Task.CompletedTask;
             }
 
-            public Task WriteAsync(byte[] buffer, int offset, int count)
+            public ValueTask WriteAsync(byte[] buffer, int offset, int count)
             {
                 _sslState.InnerStream.Write(buffer, offset, count);
-                return Task.CompletedTask;
+                return default;
             }
         }
     }

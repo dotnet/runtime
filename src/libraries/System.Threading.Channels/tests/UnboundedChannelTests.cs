@@ -10,14 +10,13 @@ namespace System.Threading.Channels.Tests
 {
     public abstract class UnboundedChannelTests : ChannelTestBase
     {
-        protected abstract bool AllowSynchronousContinuations { get; }
-        protected override Channel<int> CreateChannel() => Channel.CreateUnbounded<int>(
+        protected override Channel<T> CreateChannel<T>() => Channel.CreateUnbounded<T>(
             new UnboundedChannelOptions
             {
                 SingleReader = RequiresSingleReader,
                 AllowSynchronousContinuations = AllowSynchronousContinuations
             });
-        protected override Channel<int> CreateFullChannel() => null;
+        protected override Channel<T> CreateFullChannel<T>() => null;
 
         [Fact]
         public async Task Complete_BeforeEmpty_NoWaiters_TriggersCompletion()
@@ -107,12 +106,12 @@ namespace System.Threading.Channels.Tests
             Channel<int> c = CreateChannel();
 
             int expectedId = Environment.CurrentManagedThreadId;
-            Task r = c.Reader.WaitToReadAsync().ContinueWith(_ =>
+            Task r = c.Reader.WaitToReadAsync().AsTask().ContinueWith(_ =>
             {
                 Assert.Equal(AllowSynchronousContinuations, expectedId == Environment.CurrentManagedThreadId);
             }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
-            Assert.Equal(TaskStatus.RanToCompletion, c.Writer.WriteAsync(42).Status);
+            Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);
             ((IAsyncResult)r).AsyncWaitHandle.WaitOne(); // avoid inlining the continuation
             r.GetAwaiter().GetResult();
         }
@@ -155,11 +154,22 @@ namespace System.Threading.Channels.Tests
         public async Task MultipleWaiters_CancelsPreviousWaiter()
         {
             Channel<int> c = CreateChannel();
-            Task<bool> t1 = c.Reader.WaitToReadAsync();
-            Task<bool> t2 = c.Reader.WaitToReadAsync();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
+            ValueTask<bool> t1 = c.Reader.WaitToReadAsync();
+            ValueTask<bool> t2 = c.Reader.WaitToReadAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t1);
             Assert.True(c.Writer.TryWrite(42));
             Assert.True(await t2);
+        }
+
+        [Fact]
+        public async Task MultipleReaders_CancelsPreviousReader()
+        {
+            Channel<int> c = CreateChannel();
+            ValueTask<int> t1 = c.Reader.ReadAsync();
+            ValueTask<int> t2 = c.Reader.ReadAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await t1);
+            Assert.True(c.Writer.TryWrite(42));
+            Assert.Equal(42, await t2);
         }
 
         [Fact]

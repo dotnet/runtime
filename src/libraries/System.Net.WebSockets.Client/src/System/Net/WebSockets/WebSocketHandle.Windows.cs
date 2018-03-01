@@ -80,7 +80,7 @@ namespace System.Net.WebSockets
             return _webSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
         }
 
-        public Task SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        public ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
             {

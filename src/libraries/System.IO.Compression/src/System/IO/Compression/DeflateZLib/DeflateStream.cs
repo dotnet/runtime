@@ -199,7 +199,7 @@ namespace System.IO.Compression
                     flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
                     if (flushSuccessful)
                     {
-                        await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false);
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
                     }
                     Debug.Assert(flushSuccessful == (compressedBytes > 0));
                 } while (flushSuccessful);
@@ -643,10 +643,10 @@ namespace System.IO.Compression
         public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateParameters(array, offset, count);
-            return WriteAsyncMemory(new ReadOnlyMemory<byte>(array, offset, count), cancellationToken);
+            return WriteAsyncMemory(new ReadOnlyMemory<byte>(array, offset, count), cancellationToken).AsTask();
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             if (GetType() != typeof(DeflateStream))
             {
@@ -660,15 +660,15 @@ namespace System.IO.Compression
             }
         }
 
-        internal Task WriteAsyncMemory(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        internal ValueTask WriteAsyncMemory(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             EnsureCompressionMode();
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
-            return cancellationToken.IsCancellationRequested ?
+            return new ValueTask(cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
-                WriteAsyncMemoryCore(source, cancellationToken);
+                WriteAsyncMemoryCore(source, cancellationToken));
         }
 
         private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
@@ -701,7 +701,7 @@ namespace System.IO.Compression
                 int compressedBytes = _deflater.GetDeflateOutput(_buffer);
                 if (compressedBytes > 0)
                 {
-                    await _stream.WriteAsync(_buffer, 0, compressedBytes, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -732,7 +732,6 @@ namespace System.IO.Compression
             private readonly Stream _destination;
             private readonly CancellationToken _cancellationToken;
             private byte[] _arrayPoolBuffer;
-            private int _arrayPoolBufferHighWaterMark;
 
             public CopyToAsyncStream(DeflateStream deflateStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
@@ -757,8 +756,7 @@ namespace System.IO.Compression
                         int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
                         if (bytesRead > 0)
                         {
-                            if (bytesRead > _arrayPoolBufferHighWaterMark) _arrayPoolBufferHighWaterMark = bytesRead;
-                            await _destination.WriteAsync(_arrayPoolBuffer, 0, bytesRead, _cancellationToken).ConfigureAwait(false);
+                            await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(false);
                         }
                         else break;
                     }
@@ -770,8 +768,7 @@ namespace System.IO.Compression
                 {
                     _deflateStream.AsyncOperationCompleting();
 
-                    Array.Clear(_arrayPoolBuffer, 0, _arrayPoolBufferHighWaterMark); // clear only the most we used
-                    ArrayPool<byte>.Shared.Return(_arrayPoolBuffer, clearArray: false);
+                    ArrayPool<byte>.Shared.Return(_arrayPoolBuffer);
                     _arrayPoolBuffer = null;
                 }
             }
@@ -798,11 +795,10 @@ namespace System.IO.Compression
                 // While there's more decompressed data available, forward it to the destination stream.
                 while (true)
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
+                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
                     if (bytesRead > 0)
                     {
-                        if (bytesRead > _arrayPoolBufferHighWaterMark) _arrayPoolBufferHighWaterMark = bytesRead;
-                        await _destination.WriteAsync(_arrayPoolBuffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+                        await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
                     }
                     else break;
                 }

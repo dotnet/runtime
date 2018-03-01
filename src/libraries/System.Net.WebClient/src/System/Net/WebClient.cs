@@ -888,7 +888,7 @@ namespace System.Net
                     {
                         while (true)
                         {
-                            int bytesRead = await readStream.ReadAsync(copyBuffer, 0, copyBuffer.Length).ConfigureAwait(false);
+                            int bytesRead = await readStream.ReadAsync(new Memory<byte>(copyBuffer)).ConfigureAwait(false);
                             if (bytesRead == 0)
                             {
                                 break;
@@ -900,7 +900,7 @@ namespace System.Net
                                 PostProgressChanged(asyncOp, _progress);
                             }
 
-                            await writeStream.WriteAsync(copyBuffer, 0, bytesRead).ConfigureAwait(false);
+                            await writeStream.WriteAsync(new ReadOnlyMemory<byte>(copyBuffer, 0, bytesRead)).ConfigureAwait(false);
                         }
                     }
 
@@ -1010,7 +1010,7 @@ namespace System.Net
                 {
                     if (header != null)
                     {
-                        await writeStream.WriteAsync(header, 0, header.Length).ConfigureAwait(false);
+                        await writeStream.WriteAsync(new ReadOnlyMemory<byte>(header)).ConfigureAwait(false);
                         _progress.BytesSent += header.Length;
                         PostProgressChanged(asyncOp, _progress);
                     }
@@ -1021,9 +1021,9 @@ namespace System.Net
                         {
                             while (true)
                             {
-                                int bytesRead = await readStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                                int bytesRead = await readStream.ReadAsync(new Memory<byte>(buffer)).ConfigureAwait(false);
                                 if (bytesRead <= 0) break;
-                                await writeStream.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
+                                await writeStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead)).ConfigureAwait(false);
 
                                 _progress.BytesSent += bytesRead;
                                 PostProgressChanged(asyncOp, _progress);
@@ -1039,7 +1039,7 @@ namespace System.Net
                             {
                                 toWrite = chunkSize;
                             }
-                            await writeStream.WriteAsync(buffer, pos, toWrite).ConfigureAwait(false);
+                            await writeStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, pos, toWrite)).ConfigureAwait(false);
                             pos += toWrite;
                             _progress.BytesSent += toWrite;
                             PostProgressChanged(asyncOp, _progress);
@@ -1048,7 +1048,7 @@ namespace System.Net
 
                     if (footer != null)
                     {
-                        await writeStream.WriteAsync(footer, 0, footer.Length).ConfigureAwait(false);
+                        await writeStream.WriteAsync(new ReadOnlyMemory<byte>(footer)).ConfigureAwait(false);
                         _progress.BytesSent += footer.Length;
                         PostProgressChanged(asyncOp, _progress);
                     }

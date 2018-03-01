@@ -31,38 +31,38 @@ namespace System.Threading.Channels
         /// A <see cref="Task{Boolean}"/> that will complete with a <c>true</c> result when space is available to write an item
         /// or with a <c>false</c> result when no further writing will be permitted.
         /// </returns>
-        public abstract Task<bool> WaitToWriteAsync(CancellationToken cancellationToken = default);
+        public abstract ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken = default);
 
         /// <summary>Asynchronously writes an item to the channel.</summary>
         /// <param name="item">The value to write to the channel.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the write operation.</param>
         /// <returns>A <see cref="Task"/> that represents the asynchronous write operation.</returns>
-        public virtual Task WriteAsync(T item, CancellationToken cancellationToken = default)
+        public virtual ValueTask WriteAsync(T item, CancellationToken cancellationToken = default)
         {
             try
             {
                 return
-                    cancellationToken.IsCancellationRequested ? Task.FromCanceled<T>(cancellationToken) :
-                    TryWrite(item) ? Task.CompletedTask :
-                    WriteAsyncCore(item, cancellationToken);
+                    cancellationToken.IsCancellationRequested ? new ValueTask(Task.FromCanceled<T>(cancellationToken)) :
+                    TryWrite(item) ? default :
+                    new ValueTask(WriteAsyncCore(item, cancellationToken));
             }
             catch (Exception e)
             {
-                return Task.FromException(e);
+                return new ValueTask(Task.FromException(e));
             }
+        }
 
-            async Task WriteAsyncCore(T innerItem, CancellationToken ct)
+        private async Task WriteAsyncCore(T innerItem, CancellationToken ct)
+        {
+            while (await WaitToWriteAsync(ct).ConfigureAwait(false))
             {
-                while (await WaitToWriteAsync(ct).ConfigureAwait(false))
+                if (TryWrite(innerItem))
                 {
-                    if (TryWrite(innerItem))
-                    {
-                        return;
-                    }
+                    return;
                 }
-
-                throw ChannelUtilities.CreateInvalidCompletionException();
             }
+
+            throw ChannelUtilities.CreateInvalidCompletionException();
         }
 
         /// <summary>Mark the channel as being complete, meaning no more items will be written to it.</summary>

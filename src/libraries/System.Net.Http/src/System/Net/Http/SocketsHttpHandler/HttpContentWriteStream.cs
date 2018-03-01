@@ -32,11 +32,11 @@ namespace System.Net.Http
             public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ignored)
             {
                 ValidateBufferArgs(buffer, offset, count);
-                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), ignored);
+                return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), ignored).AsTask();
             }
 
             public sealed override Task FlushAsync(CancellationToken ignored) =>
-                _connection.FlushAsync();
+                _connection.FlushAsync().AsTask();
 
             public abstract Task FinishAsync();
         }

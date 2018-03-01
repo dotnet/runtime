@@ -18,6 +18,7 @@ namespace System.Net.Sockets.Tests
             _log = TestLogging.GetInstance();
         }
 
+        [ActiveIssue(27542)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // CreateUnixDomainSocket should throw on Windows

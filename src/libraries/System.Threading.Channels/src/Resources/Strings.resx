@@ -120,4 +120,13 @@
   <data name="ChannelClosedException_DefaultMessage" xml:space="preserve">
     <value>The channel has been closed.</value>
   </data>
+  <data name="InvalidOperation_IncompleteAsyncOperation" xml:space="preserve">
+    <value>The asynchronous operation has not completed.</value>
+  </data>
+  <data name="InvalidOperation_MultipleContinuations" xml:space="preserve">
+    <value>Another continuation was already registered.</value>
+  </data>
+  <data name="InvalidOperation_IncorrectToken" xml:space="preserve">
+    <value>The result of the operation was already consumed and may not be used again.</value>
+  </data>
 </root>

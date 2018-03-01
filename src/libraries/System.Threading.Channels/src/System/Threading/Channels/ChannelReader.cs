@@ -29,7 +29,7 @@ namespace System.Threading.Channels
         /// A <see cref="Task{Boolean}"/> that will complete with a <c>true</c> result when data is available to read
         /// or with a <c>false</c> result when no further data will ever be available to be read.
         /// </returns>
-        public abstract Task<bool> WaitToReadAsync(CancellationToken cancellationToken = default);
+        public abstract ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default);
 
         /// <summary>Asynchronously reads an item from the channel.</summary>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the read operation.</param>
