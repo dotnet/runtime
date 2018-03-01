@@ -232,11 +232,11 @@ namespace System.Buffers
         System.Memory<T> GetMemory(int sizeHint = 0);
         System.Span<T> GetSpan(int sizeHint = 0);
     }
-    public partial interface IMemoryList<T>
+    public abstract partial class ReadOnlySequenceSegment<T>
     {
-        System.Memory<T> Memory { get; }
-        System.Buffers.IMemoryList<T> Next { get; }
-        long RunningIndex { get; }
+        public System.ReadOnlyMemory<T> Memory { get; protected set; }
+        public System.Buffers.ReadOnlySequenceSegment<T> Next { get; protected set; }
+        public long RunningIndex { get; protected set; }
     }
     public partial interface IRetainable
     {
@@ -295,7 +295,7 @@ namespace System.Buffers
     {
         private readonly object _dummy;
         public static readonly System.Buffers.ReadOnlySequence<T> Empty;
-        public ReadOnlySequence(System.Buffers.IMemoryList<T> startSegment, int startIndex, System.Buffers.IMemoryList<T> endSegment, int endIndex) { throw null; }
+        public ReadOnlySequence(System.Buffers.ReadOnlySequenceSegment<T> startSegment, int startIndex, System.Buffers.ReadOnlySequenceSegment<T> endSegment, int endIndex) { throw null; }
         public ReadOnlySequence(T[] array) { throw null; }
         public ReadOnlySequence(T[] array, int start, int length) { throw null; }
         public ReadOnlySequence(System.ReadOnlyMemory<T> memory) { throw null; }
@@ -525,7 +525,7 @@ namespace System.Runtime.InteropServices
     public static partial class SequenceMarshal
     {
         public static bool TryGetArray<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ArraySegment<T> arraySegment) { throw null; }
-        public static bool TryGetMemoryList<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.IMemoryList<T> startSegment, out int startIndex, out System.Buffers.IMemoryList<T> endSegment, out int endIndex) { throw null; }
+        public static bool TryGetReadOnlySequenceSegment<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.ReadOnlySequenceSegment<T> startSegment, out int startIndex, out System.Buffers.ReadOnlySequenceSegment<T> endSegment, out int endIndex) { throw null; }
         public static bool TryGetOwnedMemory<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.OwnedMemory<T> ownedMemory, out int start, out int length) { throw null; }
         public static bool TryGetReadOnlyMemory<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ReadOnlyMemory<T> readOnlyMemory) { throw null; }
     }

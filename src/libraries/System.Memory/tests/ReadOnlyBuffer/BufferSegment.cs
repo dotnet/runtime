@@ -6,21 +6,12 @@ using System.Buffers;
 
 namespace System.Memory.Tests
 {
-    internal class BufferSegment<T> : IMemoryList<T>
+    internal class BufferSegment<T> : ReadOnlySequenceSegment<T>
     {
         public BufferSegment(Memory<T> memory)
         {
             Memory = memory;
         }
-
-        /// <summary>
-        /// Combined length of all segments before this
-        /// </summary>
-        public long RunningIndex { get; private set; }
-
-        public Memory<T> Memory { get; set; }
-
-        public IMemoryList<T> Next { get; private set; }
 
         public BufferSegment<T> Append(Memory<T> memory)
         {

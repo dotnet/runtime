@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
 
 namespace System.Buffers
 {
@@ -12,159 +16,291 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetBuffer(in SequencePosition start, in SequencePosition end, out ReadOnlyMemory<T> data, out SequencePosition next)
         {
+            SequenceType type;
+            int startIndex = 0;
+            int endIndex = 0;
             next = default;
-
-            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+            object startObject = start.GetObject();
+            if (startObject != null)
+            {
+                GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out type, out startIndex, out endIndex);
+            }
+            else
+            {
+                type = SequenceType.Empty;
+            }
 
             int length = endIndex - startIndex;
-            object startSegment = start.GetObject();
-            object endSegment = end.GetObject();
+            object endObject = end.GetObject();
 
-            if (type != SequenceType.IMemoryList && startSegment != endSegment)
+            if (type != SequenceType.MultiSegment && type != SequenceType.Empty && startObject != endObject)
                 ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
-            if (type == SequenceType.IMemoryList)
+            if (type == SequenceType.MultiSegment)
             {
-                IMemoryList<T> startMemoryList = (IMemoryList<T>)startSegment;
-                if (startSegment != endSegment)
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+                ReadOnlySequenceSegment<T> startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+
+                if (startSegment != endObject)
                 {
-                    next = GetBufferCrossSegment(startIndex, end, ref startMemoryList, ref length);
+                    next = GetBufferCrossSegment(startIndex, endObject, ref startSegment, ref length);
                 }
 
-                data = startMemoryList.Memory.Slice(startIndex, length);
+                data = startSegment.Memory;
             }
             else if (type == SequenceType.Array)
             {
-                data = new ReadOnlyMemory<T>((T[])startSegment, startIndex, length);
+                Debug.Assert(startObject is T[]);
+
+                data = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
             }
             else if (type == SequenceType.OwnedMemory)
             {
-                data = ((OwnedMemory<T>)startSegment).Memory.Slice(startIndex, length);
+                Debug.Assert(startObject is OwnedMemory<T>);
+
+                data = (Unsafe.As<OwnedMemory<T>>(startObject)).Memory;
             }
             else if (typeof(T) == typeof(char) && type == SequenceType.String)
             {
-                data = (ReadOnlyMemory<T>)(object)((string)startSegment).AsMemory(startIndex, length);
+                Debug.Assert(startObject is string);
+
+                data = (ReadOnlyMemory<T>)(object)(Unsafe.As<string>(startObject)).AsMemory();
             }
             else
             {
                 data = default;
+                return false;
             }
 
-            return type != SequenceType.Empty;
+            data = data.Slice(startIndex, length);
+            return true;
         }
 
-        private static SequencePosition GetBufferCrossSegment(int startIndex, in SequencePosition end, ref IMemoryList<T> startMemoryList, ref int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlyMemory<T> GetFirstBuffer(in SequencePosition start, in SequencePosition end)
         {
-            IMemoryList<T> nextSegment = startMemoryList.Next;
-            int currentLength = startMemoryList.Memory.Length - startIndex;
-
-            while (currentLength == 0 && nextSegment != null)
+            SequenceType type;
+            int startIndex = 0;
+            int endIndex = 0;
+            object startObject = start.GetObject();
+            if (startObject != null)
             {
-                // Skip empty Segments
-                startMemoryList = nextSegment;
-                nextSegment = nextSegment.Next;
-                currentLength = startMemoryList.Memory.Length;
-            }
-
-            length = currentLength;
-            SequencePosition next;
-            if (nextSegment == null)
-            {
-                if (end.GetObject() != null)
-                    ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
-
-                next = default;
+                GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out type, out startIndex, out endIndex);
             }
             else
             {
-                next = new SequencePosition(nextSegment, 0);
+                type = SequenceType.Empty;
             }
 
-            return next;
-        }
+            int length = endIndex - startIndex;
+            object endObject = end.GetObject();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SequencePosition Seek(in SequencePosition start, in SequencePosition end, int count, bool checkEndReachable = true)
-        {
-            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+            if (type != SequenceType.MultiSegment && type != SequenceType.Empty && startObject != endObject)
+                ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
-            object startSegment = start.GetObject();
-            bool notInRange = endIndex - startIndex < count;
-            if (type == SequenceType.IMemoryList)
+            ReadOnlyMemory<T> memory;
+            if (type == SequenceType.MultiSegment)
             {
-                object endSegment = end.GetObject();
-                if (notInRange || startSegment != endSegment)
-                {
-                    return SeekMultiSegment(startSegment, startIndex, endSegment, endIndex, count, checkEndReachable);
-                }
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+                ReadOnlySequenceSegment<T> startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+                memory = startSegment.Memory;
             }
-            else if (notInRange)
-                ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
-
-            return new SequencePosition(startSegment, startIndex + count);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal SequencePosition Seek(in SequencePosition start, in SequencePosition end, long count, bool checkEndReachable = true)
-        {
-            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
-
-            object startSegment = start.GetObject();
-            bool notInRange = endIndex - startIndex < count;
-            if (type == SequenceType.IMemoryList)
+            else if (type == SequenceType.Array)
             {
-                object endSegment = end.GetObject();
-                if (notInRange || startSegment != endSegment)
-                {
-                    return SeekMultiSegment(startSegment, startIndex, endSegment, endIndex, count, checkEndReachable);
-                }
+                Debug.Assert(startObject is T[]);
+
+                memory = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
             }
-            else if (notInRange)
-                ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
+            else if (type == SequenceType.OwnedMemory)
+            {
+                Debug.Assert(startObject is OwnedMemory<T>);
 
-            return new SequencePosition(startSegment, startIndex + (int)count);
+                memory = (Unsafe.As<OwnedMemory<T>>(startObject)).Memory;
+            }
+            else if (typeof(T) == typeof(char) && type == SequenceType.String)
+            {
+                Debug.Assert(startObject is string);
+
+                memory = (ReadOnlyMemory<T>)(object)(Unsafe.As<string>(startObject)).AsMemory();
+            }
+            else
+            {
+                return default;
+            }
+
+            return memory.Slice(startIndex, length);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static SequencePosition SeekMultiSegment(object startSegment, int startIndex, object endSegment, int endPosition, long count, bool checkEndReachable)
+        private static SequencePosition GetBufferCrossSegment(int startIndex, object endObject, ref ReadOnlySequenceSegment<T> startSegment, ref int length)
         {
-            var current = (IMemoryList<T>)startSegment;
-            var end = (IMemoryList<T>)endSegment;
+            Debug.Assert(startSegment != null);
 
-            SequencePosition result = default;
-            int currentIndex = startIndex;
+            ReadOnlySequenceSegment<T> nextSegment = startSegment.Next;
+            int currentLength = startSegment.Memory.Length - startIndex;
 
-            do
+            while (currentLength == 0 && nextSegment != endObject && nextSegment != null)
             {
-                bool isCurrentAtEnd = current == end;
+                // startSegment is at the end of a segment; move it to start of the next.
+                // However, skip any empty segments, else the caller will immedately run out of data and call back
+                startSegment = nextSegment;
+                nextSegment = nextSegment.Next;
+                currentLength = startSegment.Memory.Length;
+            }
 
-                int memoryLength = isCurrentAtEnd ? endPosition - currentIndex : current.Memory.Length - currentIndex;
-
-                if (memoryLength > count || (memoryLength == count && isCurrentAtEnd))
+            length = currentLength;
+            while (nextSegment != null && nextSegment.Memory.Length == 0)
+            {
+                // nextSegment is an empty segment, skip until one is found with data.
+                if (nextSegment == endObject)
                 {
-                    result = new SequencePosition(current, currentIndex + (int)count);
+                    // Reached the end and no segment with data found,
+                    // set nextSegment to null as if there were no following segments. 
+                    endObject = nextSegment = null;
                     break;
                 }
 
-                count -= memoryLength;
-                currentIndex = 0;
-                current = current.Next;
-            } while (current != null);
-
-            if (current == null)
-                ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
-
-            if (checkEndReachable)
-            {
-                while (current.Next != null)
-                {
-                    current = current.Next;
-                }
-                if (current != end)
-                    ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+                nextSegment = nextSegment.Next;
             }
 
-            return result;
+            if (nextSegment != null)
+            {
+                return new SequencePosition(nextSegment, 0);
+            }
+            else if (endObject != null)
+                ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+            return default;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal SequencePosition Seek(in SequencePosition start, in SequencePosition end, int count)
+        {
+            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+
+            object startObject = start.GetObject();
+            object endObject = end.GetObject();
+
+            bool notInRange = endIndex - startIndex < count;
+            if (type == SequenceType.MultiSegment && startObject != endObject)
+            {
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+
+                int currentLength = startSegment.Memory.Length - startIndex;
+                if (currentLength > count)
+                {
+                    // Position in start segment, defer to single segment seek
+                    notInRange = false;
+                }
+                else
+                {
+                    return SeekMultiSegment(startSegment, startIndex, endObject, endIndex, count - currentLength);
+                }
+            }
+            else
+            {
+                Debug.Assert(startObject == endObject);
+            }
+
+            if (notInRange)
+                ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
+
+            // Single segment Seek
+            return new SequencePosition(startObject, startIndex + count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal SequencePosition Seek(in SequencePosition start, in SequencePosition end, long count)
+        {
+            GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
+
+            object startObject = start.GetObject();
+            object endObject = end.GetObject();
+
+            bool notInRange = endIndex - startIndex < count;
+            if (type == SequenceType.MultiSegment && startObject != endObject)
+            {
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+
+                int currentLength = startSegment.Memory.Length - startIndex;
+                if (currentLength > count)
+                {
+                    // Position in start segment, defer to single segment seek
+                    notInRange = false;
+                }
+                else
+                {
+                    return SeekMultiSegment(startSegment, startIndex, endObject, endIndex, count - currentLength);
+                }
+            }
+            else
+            {
+                Debug.Assert(startObject == endObject);
+            }
+
+            if (notInRange)
+                ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
+
+            // Single segment Seek
+            return new SequencePosition(startObject, startIndex + (int)count);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static SequencePosition SeekMultiSegment(ReadOnlySequenceSegment<T> currentSegment, int startIndex, object endObject, int endPosition, long count)
+        {
+            Debug.Assert(currentSegment != null);
+            Debug.Assert(currentSegment.Next != null);
+            Debug.Assert(count >= 0);
+
+            // End of segment. Move to start of next.
+            currentSegment = currentSegment.Next;
+
+            if (count > 0 || currentSegment.Memory.Length == 0)
+            {
+                while (currentSegment != null)
+                {
+                    bool isCurrentAtEnd = currentSegment == endObject;
+                    int memoryLength = isCurrentAtEnd ? endPosition : currentSegment.Memory.Length;
+
+                    if (memoryLength > count || (memoryLength == count && isCurrentAtEnd))
+                    {
+                        // Fully contained in this segment; or at end of segment but there isn't a next one to move to
+                        break;
+                    }
+
+                    // Move to next
+                    count -= memoryLength;
+                    currentSegment = currentSegment.Next;
+                }
+            }
+
+            // Hit the end of the segments but didn't reach the count
+            if (currentSegment == null)
+                ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
+
+            return new SequencePosition(currentSegment, (int)count);
+        }
+
+        private static void CheckEndReachable(object startSegment, object endSegment)
+        {
+            Debug.Assert(startSegment != null);
+            Debug.Assert(startSegment is ReadOnlySequenceSegment<T>);
+            Debug.Assert(endSegment != null);
+
+            var current = Unsafe.As<ReadOnlySequenceSegment<T>>(startSegment);
+
+            while (current.Next != null)
+            {
+                current = current.Next;
+                if (current == endSegment)
+                {
+                    // Found end
+                    return;
+                }
+            }
+
+            ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,26 +308,24 @@ namespace System.Buffers
         {
             GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
 
-            if (type == SequenceType.IMemoryList)
+            object startObject = start.GetObject();
+            object endObject = end.GetObject();
+            if (type == SequenceType.MultiSegment && startObject != endObject)
             {
-                object startSegment = start.GetObject();
-                object endSegment = end.GetObject();
-                if (startSegment != endSegment)
-                {
-                    return GetLengthMultiSegment(startSegment, startIndex, endSegment, endIndex);
-                }
+                Debug.Assert(startObject != null);
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+                Debug.Assert(endObject != null);
+                Debug.Assert(endObject is ReadOnlySequenceSegment<T>);
+
+                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+                var endSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(endObject);
+                // (end.RunningIndex + endIndex) - (start.RunningIndex + startIndex) // (End offset) - (start offset)
+                return endSegment.RunningIndex - startSegment.RunningIndex - startIndex + endIndex; // Rearranged to avoid overflow
             }
 
+            Debug.Assert(startObject == endObject);
+            // Single segment length
             return endIndex - startIndex;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long GetLengthMultiSegment(object startSegment, int startIndex, object endSegment, int endIndex)
-        {
-            var start = (IMemoryList<T>)startSegment;
-            var end = (IMemoryList<T>)endSegment;
-            // (end.RunningIndex + endIndex) - (start.RunningIndex + startIndex) // (End offset) - (start offset)
-            return end.RunningIndex - start.RunningIndex - startIndex + endIndex; // Rearranged to avoid overflow
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -199,54 +333,53 @@ namespace System.Buffers
         {
             GetTypeAndIndices(start.GetInteger(), end.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
 
-            if (type == SequenceType.IMemoryList)
+            object startObject = start.GetObject();
+            object endObject = end.GetObject();
+            if (type == SequenceType.MultiSegment && startObject != endObject)
             {
-                object startSegment = start.GetObject();
-                object endSegment = end.GetObject();
+                Debug.Assert(startObject != null);
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+                Debug.Assert(endObject != null);
+                Debug.Assert(endObject is ReadOnlySequenceSegment<T>);
 
-                if (startSegment != endSegment)
+                var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
+                var endSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(endObject);
+
+                // start.RunningIndex + startIndex <= end.RunningIndex + endIndex
+                if (startSegment.RunningIndex - endIndex <= endSegment.RunningIndex - startIndex) // Rearranged to avoid overflow
                 {
-                    BoundsCheckMultiSegment(startSegment, startIndex, endSegment, endIndex);
+                    // Mult-segment in bounds
                     return;
                 }
             }
-
-            if (startIndex <= endIndex)
+            else if (startIndex <= endIndex)
             {
+                Debug.Assert(startObject == endObject);
+                // Single segment in bounds
                 return;
             }
 
             ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void BoundsCheckMultiSegment(object startSegment, int startIndex, object endSegment, int endIndex)
-        {
-            var start = (IMemoryList<T>)startSegment;
-            var end = (IMemoryList<T>)endSegment;
-
-            // start.RunningIndex + startIndex <= end.RunningIndex + endIndex
-            if (start.RunningIndex - endIndex <= end.RunningIndex - startIndex) // Rearranged to avoid overflow
-            {
-                return;
-            }
-
-            ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
-        }
-
-        internal bool TryGetMemoryList(out IMemoryList<T> startSegment, out int startIndex, out IMemoryList<T> endSegment, out int endIndex)
+        internal bool TryGetReadOnlySequenceSegment(out ReadOnlySequenceSegment<T> startSegment, out int startIndex, out ReadOnlySequenceSegment<T> endSegment, out int endIndex)
         {
             GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out startIndex, out endIndex);
 
-            if (type != SequenceType.IMemoryList)
+            if (type != SequenceType.MultiSegment)
             {
                 startSegment = null;
                 endSegment = null;
                 return false;
             }
 
-            startSegment = (IMemoryList<T>)Start.GetObject();
-            endSegment = (IMemoryList<T>)End.GetObject();
+            Debug.Assert(Start.GetObject() != null);
+            Debug.Assert(Start.GetObject() is ReadOnlySequenceSegment<T>);
+            Debug.Assert(End.GetObject() != null);
+            Debug.Assert(End.GetObject() is ReadOnlySequenceSegment<T>);
+
+            startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(Start.GetObject());
+            endSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(End.GetObject());
             return true;
         }
 
@@ -260,7 +393,10 @@ namespace System.Buffers
                 return false;
             }
 
-            array = new ArraySegment<T>((T[])Start.GetObject(), startIndex, endIndex - startIndex);
+            Debug.Assert(Start.GetObject() != null);
+            Debug.Assert(Start.GetObject() is T[]);
+
+            array = new ArraySegment<T>(Unsafe.As<T[]>(Start.GetObject()), startIndex, endIndex - startIndex);
             return true;
         }
 
@@ -275,7 +411,10 @@ namespace System.Buffers
                 return false;
             }
 
-            ownedMemory = (OwnedMemory<T>)Start.GetObject();
+            Debug.Assert(Start.GetObject() != null);
+            Debug.Assert(Start.GetObject() is OwnedMemory<T>);
+
+            ownedMemory = Unsafe.As<OwnedMemory<T>>(Start.GetObject());
             length = endIndex - start;
             return true;
         }
@@ -284,10 +423,14 @@ namespace System.Buffers
         {
             GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
 
-            object startSegment = Start.GetObject();
-            object endSegment = End.GetObject();
+            object startObject = Start.GetObject();
+            object endObject = End.GetObject();
+
+            Debug.Assert(startObject != null);
+            Debug.Assert(endObject != null);
+
             int length = endIndex - startIndex;
-            if (startSegment != endSegment)
+            if (startObject != endObject)
             {
                 // Can't get ReadOnlyMemory from multi-block segments
                 memory = default;
@@ -295,21 +438,31 @@ namespace System.Buffers
             }
             else if (type == SequenceType.Array)
             {
-                memory = new ReadOnlyMemory<T>((T[])startSegment, startIndex, length);
+                Debug.Assert(startObject is T[]);
+
+                memory = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
             }
             else if (type == SequenceType.OwnedMemory)
             {
-                memory = ((OwnedMemory<T>)startSegment).Memory.Slice(startIndex, length);
+                Debug.Assert(startObject is OwnedMemory<T>);
+
+                memory = Unsafe.As<OwnedMemory<T>>(startObject).Memory;
             }
             else if (typeof(T) == typeof(char) && type == SequenceType.String)
             {
-                memory = (ReadOnlyMemory<T>)(object)((string)startSegment).AsMemory(startIndex, length);
+                Debug.Assert(startObject is string);
+
+                var text = Unsafe.As<string>(startObject);
+                memory = (ReadOnlyMemory<T>)(object)text.AsMemory();
             }
-            else // IMemoryList
+            else // ReadOnlySequenceSegment
             {
-                memory = ((IMemoryList<T>)startSegment).Memory.Slice(startIndex, length);
+                Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
+
+                memory = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject).Memory;
             }
 
+            memory = memory.Slice(startIndex, length);
             return true;
         }
 

@@ -37,19 +37,16 @@ namespace System.Buffers
         /// <summary>
         /// Determines if the <see cref="ReadOnlySequence{T}"/> contains a single <see cref="ReadOnlyMemory{T}"/> segment.
         /// </summary>
-        public bool IsSingleSegment => _sequenceStart.GetObject() == _sequenceEnd.GetObject();
+        public bool IsSingleSegment
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _sequenceStart.GetObject() == _sequenceEnd.GetObject();
+        }
 
         /// <summary>
         /// Gets <see cref="ReadOnlyMemory{T}"/> from the first segment.
         /// </summary>
-        public ReadOnlyMemory<T> First
-        {
-            get
-            {
-                TryGetBuffer(_sequenceStart, _sequenceEnd, out ReadOnlyMemory<T> first, out _);
-                return first;
-            }
-        }
+        public ReadOnlyMemory<T> First => GetFirstBuffer(_sequenceStart, _sequenceEnd);
 
         /// <summary>
         /// A position to the start of the <see cref="ReadOnlySequence{T}"/>.
@@ -76,7 +73,7 @@ namespace System.Buffers
         /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from linked memory list represented by start and end segments
         /// and corresponding indexes in them.
         /// </summary>
-        public ReadOnlySequence(IMemoryList<T> startSegment, int startIndex, IMemoryList<T> endSegment, int endIndex)
+        public ReadOnlySequence(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment, int endIndex)
         {
             if (startSegment == null ||
                 endSegment == null ||
@@ -85,8 +82,8 @@ namespace System.Buffers
                 (startSegment == endSegment && endIndex < startIndex))
                 ThrowHelper.ThrowArgumentValidationException(startSegment, startIndex, endSegment);
 
-            _sequenceStart = new SequencePosition(startSegment, ReadOnlySequence.MemoryListToSequenceStart(startIndex));
-            _sequenceEnd = new SequencePosition(endSegment, ReadOnlySequence.MemoryListToSequenceEnd(endIndex));
+            _sequenceStart = new SequencePosition(startSegment, ReadOnlySequence.SegmentToSequenceStart(startIndex));
+            _sequenceEnd = new SequencePosition(endSegment, ReadOnlySequence.SegmentToSequenceEnd(endIndex));
         }
 
         /// <summary>
@@ -185,8 +182,8 @@ namespace System.Buffers
         /// <param name="length">The length of the slice</param>
         public ReadOnlySequence<T> Slice(long start, long length)
         {
-            SequencePosition begin = Seek(_sequenceStart, _sequenceEnd, start, false);
-            SequencePosition end = Seek(begin, _sequenceEnd, length, false);
+            SequencePosition begin = Seek(_sequenceStart, _sequenceEnd, start);
+            SequencePosition end = Seek(begin, _sequenceEnd, length);
             return SliceImpl(begin, end);
         }
 
@@ -200,6 +197,12 @@ namespace System.Buffers
             BoundsCheck(end, _sequenceEnd);
 
             SequencePosition begin = Seek(_sequenceStart, end, start);
+            object beginObject = begin.GetObject();
+            object endObject = end.GetObject();
+            if (beginObject != endObject)
+            {
+                CheckEndReachable(beginObject, endObject);
+            }
             return SliceImpl(begin, end);
         }
 
@@ -212,7 +215,7 @@ namespace System.Buffers
         {
             BoundsCheck(start, _sequenceEnd);
 
-            SequencePosition end = Seek(start, _sequenceEnd, length, false);
+            SequencePosition end = Seek(start, _sequenceEnd, length);
             return SliceImpl(start, end);
         }
 
@@ -223,8 +226,8 @@ namespace System.Buffers
         /// <param name="length">The length of the slice</param>
         public ReadOnlySequence<T> Slice(int start, int length)
         {
-            SequencePosition begin = Seek(_sequenceStart, _sequenceEnd, start, false);
-            SequencePosition end = Seek(begin, _sequenceEnd, length, false);
+            SequencePosition begin = Seek(_sequenceStart, _sequenceEnd, start);
+            SequencePosition end = Seek(begin, _sequenceEnd, length);
             return SliceImpl(begin, end);
         }
 
@@ -238,6 +241,12 @@ namespace System.Buffers
             BoundsCheck(end, _sequenceEnd);
 
             SequencePosition begin = Seek(_sequenceStart, end, start);
+            object beginObject = begin.GetObject();
+            object endObject = end.GetObject();
+            if (beginObject != endObject)
+            {
+                CheckEndReachable(beginObject, endObject);
+            }
             return SliceImpl(begin, end);
         }
 
@@ -250,7 +259,7 @@ namespace System.Buffers
         {
             BoundsCheck(start, _sequenceEnd);
 
-            SequencePosition end = Seek(start, _sequenceEnd, length, false);
+            SequencePosition end = Seek(start, _sequenceEnd, length);
             return SliceImpl(start, end);
         }
 
@@ -289,7 +298,7 @@ namespace System.Buffers
                 return this;
             }
 
-            SequencePosition begin = Seek(_sequenceStart, _sequenceEnd, start, false);
+            SequencePosition begin = Seek(_sequenceStart, _sequenceEnd, start);
             return SliceImpl(begin, _sequenceEnd);
         }
 
@@ -309,7 +318,7 @@ namespace System.Buffers
             if (offset < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
 
-            return Seek(origin, _sequenceEnd, offset, false);
+            return Seek(origin, _sequenceEnd, offset);
         }
 
         /// <summary>
@@ -394,7 +403,7 @@ namespace System.Buffers
 
         private enum SequenceType
         {
-            IMemoryList = 0x00,
+            MultiSegment = 0x00,
             Array = 0x1,
             OwnedMemory = 0x2,
             String = 0x3,
@@ -407,8 +416,8 @@ namespace System.Buffers
         public const int FlagBitMask = 1 << 31;
         public const int IndexBitMask = ~FlagBitMask;
 
-        public const int MemoryListStartMask = 0;
-        public const int MemoryListEndMask = 0;
+        public const int SegmentStartMask = 0;
+        public const int SegmentEndMask = 0;
 
         public const int ArrayStartMask = 0;
         public const int ArrayEndMask = FlagBitMask;
@@ -420,9 +429,9 @@ namespace System.Buffers
         public const int StringEndMask = FlagBitMask;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MemoryListToSequenceStart(int startIndex) => startIndex | MemoryListStartMask;
+        public static int SegmentToSequenceStart(int startIndex) => startIndex | SegmentStartMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MemoryListToSequenceEnd(int endIndex) => endIndex | MemoryListEndMask;
+        public static int SegmentToSequenceEnd(int endIndex) => endIndex | SegmentEndMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ArrayToSequenceStart(int startIndex) => startIndex | ArrayStartMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
