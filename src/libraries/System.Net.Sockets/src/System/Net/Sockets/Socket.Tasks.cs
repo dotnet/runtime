@@ -214,7 +214,7 @@ namespace System.Net.Sockets
         /// <summary>Implements Task-returning ReceiveAsync on top of Begin/EndReceive.</summary>
         private Task<int> ReceiveAsyncApm(Memory<byte> buffer, SocketFlags socketFlags)
         {
-            if (buffer.TryGetArray(out ArraySegment<byte> bufferArray))
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> bufferArray))
             {
                 // We were able to extract the underlying byte[] from the Memory<byte>. Use it.
                 var tcs = new TaskCompletionSource<int>(this);

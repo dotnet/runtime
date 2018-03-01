@@ -149,7 +149,6 @@
     <Compile Include="Memory\Span.cs" />
     <Compile Include="Memory\Strings.cs" />
     <Compile Include="Memory\ToArray.cs" />
-    <Compile Include="Memory\TryGetArray.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemoryMarshal\AsMemory.cs" />
@@ -158,6 +157,7 @@
     <Compile Include="MemoryMarshal\GetReference.cs" />
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
     <Compile Include="MemoryMarshal\TryGetOwnedMemory.cs" />
+    <Compile Include="MemoryMarshal\TryGetString.cs" />
     <Compile Include="MemoryMarshal\ToEnumerable.cs" />
   </ItemGroup>
   <ItemGroup>

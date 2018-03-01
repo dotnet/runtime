@@ -213,7 +213,7 @@ namespace System.MemoryTests
             using (OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42))
             {
                 Memory<int> memory = block.Memory;
-                bool success = memory.TryGetArray(out ArraySegment<int> arraySegment);
+                bool success = MemoryMarshal.TryGetArray(memory, out ArraySegment<int> arraySegment);
                 Assert.True(success);
                 Assert.Equal(block.Length, arraySegment.Count);
                 unsafe
@@ -307,7 +307,7 @@ namespace System.MemoryTests
             OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
             Memory<int> memory = block.Memory;
             block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => memory.TryGetArray(out ArraySegment<int> arraySegment));
+            Assert.Throws<ObjectDisposedException>(() => MemoryMarshal.TryGetArray(memory, out ArraySegment<int> arraySegment));
         }
     }
 }

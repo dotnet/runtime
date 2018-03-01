@@ -5,6 +5,7 @@
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -106,7 +107,7 @@ namespace System.Net
                 }
 
                 buffer = buffer.Slice(offset, Math.Min(count, MaxDumpSize));
-                byte[] slice = buffer.TryGetArray(out ArraySegment<byte> arraySegment) && arraySegment.Offset == 0 && arraySegment.Count == buffer.Length ?
+                byte[] slice = MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment) && arraySegment.Offset == 0 && arraySegment.Count == buffer.Length ?
                     arraySegment.Array :
                     buffer.ToArray();
 

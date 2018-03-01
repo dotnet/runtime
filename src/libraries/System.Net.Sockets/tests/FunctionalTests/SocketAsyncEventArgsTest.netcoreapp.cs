@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -48,7 +49,7 @@ namespace System.Net.Sockets.Tests
                 byte[] array = new byte[42];
 
                 saea.SetBuffer(array, 0, array.Length);
-                Assert.True(saea.MemoryBuffer.TryGetArray(out ArraySegment<byte> result));
+                Assert.True(MemoryMarshal.TryGetArray(saea.MemoryBuffer, out ArraySegment<byte> result));
                 Assert.Same(array, result.Array);
                 Assert.Same(saea.Buffer, array);
                 Assert.Equal(0, result.Offset);
@@ -59,7 +60,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(1, saea.Offset);
                 Assert.Equal(2, saea.Count);
 
-                Assert.True(saea.MemoryBuffer.TryGetArray(out result));
+                Assert.True(MemoryMarshal.TryGetArray(saea.MemoryBuffer, out result));
                 Assert.Same(array, result.Array);
                 Assert.Equal(0, result.Offset);
                 Assert.Equal(array.Length, result.Count);

@@ -55,14 +55,14 @@ namespace System.MemoryTests
             ReadOnlyMemory<char> readOnlyClone = memory;
 
             // TryGetString
-            bool gotString1 = readOnlyMemory.TryGetString(out string text1, out int start1, out int length1);
-            Assert.Equal(gotString1, readOnlyClone.TryGetString(out string text2, out int start2, out int length2));
+            bool gotString1 = MemoryMarshal.TryGetString(readOnlyMemory, out string text1, out int start1, out int length1);
+            Assert.Equal(gotString1, MemoryMarshal.TryGetString(readOnlyClone, out string text2, out int start2, out int length2));
             Assert.Same(text1, text2);
             Assert.Equal(start1, start2);
             Assert.Equal(length1, length2);
             if (gotString1)
             {
-                Assert.False(memory.TryGetArray(out ArraySegment<char> array));
+                Assert.False(MemoryMarshal.TryGetArray(memory, out ArraySegment<char> array));
             }
         }
 
@@ -81,7 +81,8 @@ namespace System.MemoryTests
             Assert.True(readOnlyMemory.Span == memory.Span);
 
             // TryGetArray
-            Assert.True(MemoryMarshal.TryGetArray(readOnlyMemory, out ArraySegment<T> array1) == memory.TryGetArray(out ArraySegment<T> array2));
+            Assert.True(MemoryMarshal.TryGetArray(readOnlyMemory, out ArraySegment<T> array1)
+                            == MemoryMarshal.TryGetArray(memory, out ArraySegment<T> array2));
             Assert.Same(array1.Array, array2.Array);
             Assert.Equal(array1.Offset, array2.Offset);
             Assert.Equal(array1.Count, array2.Count);
