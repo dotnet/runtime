@@ -4,6 +4,15 @@ namespace Tracing.Tests.Common
 {
     public static class Assert
     {
+        public static void True(string name, bool condition)
+        {
+            if (!condition)
+            {
+                throw new Exception(
+                    string.Format("Condition '{0}' is not true", name));
+            }
+        }
+
         public static void Equal<T>(string name, T left, T right) where T : IEquatable<T>
         {
             if (left == null && right != null)
