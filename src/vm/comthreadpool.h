@@ -23,9 +23,6 @@ class ThreadPoolNative
 {
 
 public:
-
-    static void Init();
-
     static FCDECL2(FC_BOOL_RET, CorSetMaxThreads, DWORD workerThreads, DWORD completionPortThreads);
     static FCDECL2(VOID, CorGetMaxThreads, DWORD* workerThreads, DWORD* completionPortThreads);
     static FCDECL2(FC_BOOL_RET, CorSetMinThreads, DWORD workerThreads, DWORD completionPortThreads);
@@ -40,14 +37,12 @@ public:
     static FCDECL1(void, ReportThreadStatus, CLR_BOOL isWorking);
 
 
-    static FCDECL7(LPVOID, CorRegisterWaitForSingleObject,
+    static FCDECL5(LPVOID, CorRegisterWaitForSingleObject,
                                 Object* waitObjectUNSAFE,
                                 Object* stateUNSAFE,
                                 UINT32 timeout,
                                 CLR_BOOL executeOnlyOnce,
-                                Object* registeredWaitObjectUNSAFE,
-                                StackCrawlMark* stackMark,
-                                CLR_BOOL compressStack);
+                                Object* registeredWaitObjectUNSAFE);
 
     static BOOL QCALLTYPE RequestWorkerThread();
 

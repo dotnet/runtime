@@ -122,7 +122,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // We can safely skip access check because this is only used in full trust scenarios.
             // And we have already verified that the property accessor is public.
-            return rtMethod.UnsafeInvoke(target, BindingFlags.Default, null, args, null);
+            return rtMethod.Invoke(target, BindingFlags.Default, null, args, null);
         }
 
         public Type Type

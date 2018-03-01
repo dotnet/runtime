@@ -109,7 +109,7 @@ namespace System
             RuntimeMethodHandleInternal method = new RuntimeMethodHandleInternal(GetInvokeMethod());
             RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)this.GetType(), method);
 
-            return invoke.UnsafeInvoke(this, BindingFlags.Default, null, args, null);
+            return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
 
 
@@ -427,7 +427,6 @@ namespace System
         }
 
         // V1 API.
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.
@@ -455,13 +454,11 @@ namespace System
             // pass us a static method or a method with a non-exact signature
             // and the only change in behavior from v1.1 there is that we won't
             // fail the call).
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             Delegate d = CreateDelegateInternal(
                 rtType,
                 rmi,
                 null,
-                DelegateBindingFlags.OpenDelegateOnly | DelegateBindingFlags.RelaxedSignature,
-                ref stackMark);
+                DelegateBindingFlags.OpenDelegateOnly | DelegateBindingFlags.RelaxedSignature);
 
             if (d == null && throwOnBindFailure)
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
@@ -476,7 +473,6 @@ namespace System
         }
 
         // V2 API.
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Delegate CreateDelegate(Type type, Object firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.
@@ -501,13 +497,11 @@ namespace System
             // instance methods with relaxed signature checking. The delegate
             // can also be closed over null. There's no ambiguity with all these
             // options since the caller is providing us a specific MethodInfo.
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             Delegate d = CreateDelegateInternal(
                 rtType,
                 rmi,
                 firstArgument,
-                DelegateBindingFlags.RelaxedSignature,
-               ref stackMark);
+                DelegateBindingFlags.RelaxedSignature);
 
             if (d == null && throwOnBindFailure)
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
@@ -602,7 +596,7 @@ namespace System
             // signature changes). We explicitly skip security checks here --
             // we're not really constructing a delegate, we're cloning an
             // existing instance which already passed its checks.
-            Delegate d = UnsafeCreateDelegate(type, rtMethod, firstArgument,
+            Delegate d = CreateDelegateInternal(type, rtMethod, firstArgument,
                                               DelegateBindingFlags.SkipSecurityChecks |
                                               DelegateBindingFlags.RelaxedSignature);
 
@@ -618,14 +612,7 @@ namespace System
             return CreateDelegate(type, method, true);
         }
 
-        internal static Delegate CreateDelegateInternal(RuntimeType rtType, RuntimeMethodInfo rtMethod, Object firstArgument, DelegateBindingFlags flags, ref StackCrawlMark stackMark)
-        {
-            Debug.Assert((flags & DelegateBindingFlags.SkipSecurityChecks) == 0);
-
-            return UnsafeCreateDelegate(rtType, rtMethod, firstArgument, flags);
-        }
-
-        internal static Delegate UnsafeCreateDelegate(RuntimeType rtType, RuntimeMethodInfo rtMethod, Object firstArgument, DelegateBindingFlags flags)
+        internal static Delegate CreateDelegateInternal(RuntimeType rtType, RuntimeMethodInfo rtMethod, Object firstArgument, DelegateBindingFlags flags)
         {
             Delegate d = InternalAlloc(rtType);
 
