@@ -5538,14 +5538,14 @@ static bool isSseShift(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// IsDstSrcImmAvxInstruction: check if instruction has RM R I format
-// for all encodings: EVEX, VEX and legacy SSE
+// IsDstSrcImmAvxInstruction: check if instruction has "R(M) R(M) I" format
+// for EVEX, VEX and legacy SSE encodings and has no (E)VEX.NDS
 //
 // Arguments:
 //    instruction -- processor instruction to check
 //
 // Return Value:
-//    true if instruction has RRI format
+//    true if instruction has "R(M) R(M) I" format and has no (E)VEX.NDS
 //
 static bool IsDstSrcImmAvxInstruction(instruction ins)
 {
