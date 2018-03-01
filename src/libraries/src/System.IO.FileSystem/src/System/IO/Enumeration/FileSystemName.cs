@@ -123,7 +123,8 @@ namespace System.IO.Enumeration
                         return false;
 
                     // See if we end with the expression
-                    return name.EndsWithOrdinal(expressionEnd, ignoreCase);
+
+                    return name.EndsWith(expressionEnd, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
                 }
             }
 

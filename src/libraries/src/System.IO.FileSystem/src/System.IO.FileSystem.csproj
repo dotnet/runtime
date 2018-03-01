@@ -19,7 +19,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\IO\CharSpanExtensions.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerable.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerableFactory.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.cs" />
@@ -34,7 +33,6 @@
     <Compile Include="System\IO\FileSystemInfo.cs" />
     <Compile Include="System\IO\EnumerationOptions.cs" />
     <Compile Include="System\IO\Iterator.cs" />
-    <Compile Include="System\IO\PathHelpers.cs" />
     <Compile Include="System\IO\ReadLinesIterator.cs" />
     <Compile Include="System\IO\SearchOption.cs" />
     <Compile Include="System\IO\SearchTarget.cs" />
@@ -50,11 +48,13 @@
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Windows.cs" />
-    <Compile Include="System\IO\CharSpanExtensions.Windows.cs" />
     <Compile Include="System\IO\DisableMediaInsertionPrompt.cs" />
     <Compile Include="System\IO\FileSystemInfo.Windows.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Windows.cs" />
@@ -78,8 +78,8 @@
     <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Win32.cs">
       <Link>Common\System\IO\DriveInfoInternal.Win32.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
-      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
       <Link>Common\System\IO\Win32Marshal.cs</Link>
@@ -236,7 +236,6 @@
     <Compile Include="System\IO\FileStatus.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEntry.Unix.cs" />
     <Compile Include="System\IO\Enumeration\FileSystemEnumerator.Unix.cs" />
-    <Compile Include="System\IO\CharSpanExtensions.Unix.cs" />
     <Compile Include="System\IO\FileSystemInfo.Unix.cs" />
     <Compile Include="System\IO\FileSystem.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -296,8 +295,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.UTime.cs">
       <Link>Common\Interop\Unix\Interop.UTime.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\IO\PathInternal.Unix.cs">
-      <Link>Common\System\IO\PathInternal.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Unix.cs">
+      <Link>Common\CoreLib\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\IO\DriveInfoInternal.Unix.cs">
       <Link>Common\System\IO\DriveInfoInternal.Unix.cs</Link>

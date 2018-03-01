@@ -31,9 +31,9 @@ namespace System.IO
             fullPath = fullPath ?? originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
 
-            _name = fileName ?? (PathHelpers.IsRoot(fullPath) ?
+            _name = fileName ?? (PathInternal.IsRoot(fullPath) ?
                     fullPath :
-                    Path.GetFileName(PathHelpers.TrimEndingDirectorySeparator(fullPath)));
+                    Path.GetFileName(PathInternal.TrimEndingDirectorySeparator(fullPath.AsSpan()))).ToString();
 
             FullPath = fullPath;
         }
@@ -45,7 +45,7 @@ namespace System.IO
                 // FullPath might end in either "parent\child" or "parent\child\", and in either case we want 
                 // the parent of child, not the child. Trim off an ending directory separator if there is one,
                 // but don't mangle the root.
-                string parentName = Path.GetDirectoryName(PathHelpers.IsRoot(FullPath) ? FullPath : PathHelpers.TrimEndingDirectorySeparator(FullPath));
+                string parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath) ? FullPath : PathInternal.TrimEndingDirectorySeparator(FullPath));
                 return parentName != null ? 
                     new DirectoryInfo(parentName, null) :
                     null;
@@ -56,8 +56,10 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-
-            PathHelpers.ThrowIfEmptyOrRootedPath(path);
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
+            if (Path.IsPathRooted(path))
+                throw new ArgumentException(SR.Arg_Path2IsRooted, nameof(path));
 
             string fullPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
@@ -180,14 +182,11 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
+
             string destination = Path.GetFullPath(destDirName);
 
-            string destinationWithSeparator = destination;
-            if (!PathHelpers.EndsInDirectorySeparator(destinationWithSeparator))
-                destinationWithSeparator = destinationWithSeparator + PathHelpers.DirectorySeparatorCharAsString;
-
-            string sourceWithSeparator = PathHelpers.EndsInDirectorySeparator(FullPath)
-                ? FullPath : FullPath + PathHelpers.DirectorySeparatorCharAsString;
+            string destinationWithSeparator = PathInternal.EnsureTrailingSeparator(destination);
+            string sourceWithSeparator = PathInternal.EnsureTrailingSeparator(FullPath);
 
             if (string.Equals(sourceWithSeparator, destinationWithSeparator, PathInternal.StringComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);

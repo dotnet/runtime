@@ -84,11 +84,6 @@ namespace System.IO
             return !Path.IsPathRooted(path);
         }
 
-        internal static string TrimEndingDirectorySeparator(string path) =>
-            path.Length > 1 && IsDirectorySeparator(path[path.Length - 1]) ? // exclude root "/"
-            path.Substring(0, path.Length - 1) :
-            path;
-
         /// <summary>
         /// Returns true if the path is effectively empty for the current OS.
         /// For unix, this is empty or null. For Windows, this is empty, null, or 
