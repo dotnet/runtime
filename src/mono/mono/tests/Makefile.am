@@ -741,32 +741,10 @@ endif
 
 if ARM
 PLATFORM_DISABLED_TESTS += filter-stack.exe weak-fields.exe
-INTERP_PLATFORM_DISABLED_TESTS= \
-	assemblyresolve_event6.exe \
-	delegate-async-exit.exe \
-	delegate-delegate-exit.exe \
-	delegate-exit.exe \
-	delegate1.exe \
-	delegate3.exe \
-	thunks.exe \
-	finalizer-exception.exe \
-	delegate5.exe \
-	delegate8.exe \
-	bug-323114.exe \
-	threadpool-exceptions3.exe \
-	threadpool-exceptions6.exe \
-	bug-80392.2.exe \
-	remoting3.exe \
-	remoting2.exe \
-	appdomain-unload-callback.exe \
-	monitor-abort.exe
 endif
 
 if ARM64
 PLATFORM_DISABLED_TESTS += weak-fields.exe
-INTERP_PLATFORM_DISABLED_TESTS= \
-	assemblyresolve_event6.exe \
-	finalizer-exception.exe
 endif
 
 if MIPS
@@ -1011,84 +989,118 @@ KNOWN_FAILING_TESTS = \
 	appdomain-marshalbyref-assemblyload.exe	\
 	abort-try-holes.exe \
 	threads-init.exe \
-	dim-constrainedcall.exe
+	dim-constrainedcall.exe \
+	gptail1.exe \
+	itaili1.exe \
+	ivtail1.exe \
+	sirtail1.exe \
+	srtail1.exe \
+	stail1.exe \
+	tail1.exe \
+	taili1.exe \
+	vtail1.exe
 
 DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
 	$(PLATFORM_DISABLED_TESTS) \
-	$(EXTRA_DISABLED_TESTS) \
-	$(COOP_DISABLED_TESTS) \
 	$(PROFILE_DISABLED_TESTS) \
 	$(if $(AOT),$(AOT_DISABLED_TESTS)) \
 	$(if $(CI),$(CI_DISABLED_TESTS)) \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
-	$(if $(LLVM),$(LLVM_DISABLED_TESTS)) \
-	gptail1.exe		\
-	itaili1.exe		\
-	ivtail1.exe		\
-	sirtail1.exe		\
-	srtail1.exe		\
-	stail1.exe		\
-	tail1.exe		\
-	taili1.exe		\
-	vtail1.exe
+	$(if $(LLVM),$(LLVM_DISABLED_TESTS))
 
-# bug-48015.exe: be careful when re-enabling, it happens that it returns with
-#                exit code 0, but doesn't actually execute the test.
-# block_guard_restore_aligment_on_exit.exe: flaky (10% of the time it hangs and thus times out)
-# weak-fields.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=60973
+INTERP_DISABLED_TESTS = $(DISABLED_TESTS)
+
+# bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
-INTERP_DISABLED_TESTS = \
-	$(KNOWN_FAILING_TESTS) \
-	$(INTERP_PLATFORM_DISABLED_TESTS) \
-	$(COOP_DISABLED_TESTS) \
-	$(if $(CI),$(CI_DISABLED_TESTS)) \
-	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
+
+if ARM
+INTERP_DISABLED_TESTS += \
+	appdomain-unload-callback.exe \
 	appdomain-unload.exe \
+	assemblyresolve_event6.exe \
 	async-with-cb-throws.exe \
 	block_guard_restore_aligment_on_exit.exe \
+	bug-323114.exe \
 	bug-335131.2.exe \
 	bug-415577.exe \
 	bug-45841-fpstack-exceptions.exe \
 	bug-48015.exe \
-	bug445361.exe \
 	bug-60862.exe \
+	bug-80307.exe \
+	bug-80392.2.exe \
+	bug445361.exe \
 	calliGenericTest.exe \
 	cominterop.exe \
 	context-static.exe \
+	delegate-async-exit.exe \
+	delegate-delegate-exit.exe \
+	delegate-exit.exe \
 	delegate-with-null-target.exe \
+	delegate1.exe \
+	delegate3.exe \
+	delegate5.exe \
+	delegate8.exe \
 	delegate9.exe \
+	dim-diamondshape.exe \
 	dynamic-method-stack-traces.exe \
 	even-odd.exe \
 	exception18.exe \
 	field-access.exe \
+	finalizer-exception.exe \
 	handleref.exe \
+	itail1.exe \
+	monitor-abort.exe \
 	nullable_boxing.2.exe \
 	pinvoke.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
+	remoting2.exe \
+	remoting3.exe \
 	safehandle.2.exe \
+	sitail1.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
 	threadpool-exceptions2.exe \
+	threadpool-exceptions3.exe \
 	threadpool-exceptions4.exe \
 	threadpool-exceptions5.exe \
+	threadpool-exceptions6.exe \
+	thunks.exe \
 	typeload-unaligned.exe \
 	vararg.exe \
 	vararg2.exe \
-	vararg3.exe	\
+	vararg3.exe
+endif
+
+if ARM64
+INTERP_DISABLED_TESTS += \
+	bug-48015.exe \
+	bug-80307.exe \
+	calliGenericTest.exe \
+	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
-	gptail1.exe		\
-	itaili1.exe		\
-	ivtail1.exe		\
-	sirtail1.exe		\
-	srtail1.exe		\
-	stail1.exe		\
-	tail1.exe		\
-	taili1.exe		\
-	vtail1.exe		\
-	itail1.exe 		\
+	itail1.exe \
+	pinvoke2.exe \
+	pinvoke3.exe \
 	sitail1.exe
+endif
+
+if AMD64
+INTERP_DISABLED_TESTS += \
+	assemblyresolve_event6.exe \
+	bug-48015.exe \
+	bug-60862.exe \
+	calliGenericTest.exe \
+	cominterop.exe \
+	delegate-with-null-target.exe \
+	dim-diamondshape.exe \
+	itail1.exe \
+	pinvoke.exe \
+	pinvoke2.exe \
+	pinvoke3.exe \
+	sitail1.exe
+endif
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))
 TESTS_IL=$(filter-out $(DISABLED_TESTS),$(TESTS_IL_SRC:.il=.exe))
