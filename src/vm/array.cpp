@@ -503,10 +503,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     if (arrayKind == ELEMENT_TYPE_ARRAY)
         baseSize += Rank*sizeof(DWORD)*2;
 
-#if !defined(_WIN64) && (DATA_ALIGNMENT > 4) 
+#if !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
     if (dwComponentSize >= DATA_ALIGNMENT)
         baseSize = (DWORD)ALIGN_UP(baseSize, DATA_ALIGNMENT);
-#endif // !defined(_WIN64) && (DATA_ALIGNMENT > 4)
+#endif // !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4)
     pMT->SetBaseSize(baseSize);
     // Because of array method table persisting, we need to copy the map
     for (unsigned index = 0; index < pParentClass->GetNumInterfaces(); ++index)
