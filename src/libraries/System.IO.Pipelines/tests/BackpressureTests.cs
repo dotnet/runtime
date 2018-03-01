@@ -107,6 +107,36 @@ namespace System.IO.Pipelines.Tests
             Assert.True(flushAsync.IsCompleted);
             FlushResult flushResult = flushAsync.GetResult();
             Assert.True(flushResult.IsCompleted);
+
+            writableBuffer = _pipe.Writer.WriteEmpty(64);
+            flushAsync = writableBuffer.FlushAsync();
+            flushResult = flushAsync.GetResult();
+
+            Assert.True(flushResult.IsCompleted);
+            Assert.True(flushAsync.IsCompleted);
+        }
+
+        [Fact]
+        public async Task FlushAsyncReturnsCompletedIfReaderCompletesWithoutAdvance()
+        {
+            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
+            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+
+            Assert.False(flushAsync.IsCompleted);
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.Complete();
+
+            Assert.True(flushAsync.IsCompleted);
+            FlushResult flushResult = flushAsync.GetResult();
+            Assert.True(flushResult.IsCompleted);
+
+            writableBuffer = _pipe.Writer.WriteEmpty(64);
+            flushAsync = writableBuffer.FlushAsync();
+            flushResult = flushAsync.GetResult();
+
+            Assert.True(flushResult.IsCompleted);
+            Assert.True(flushAsync.IsCompleted);
         }
 
         [Fact]
