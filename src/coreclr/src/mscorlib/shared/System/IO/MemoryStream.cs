@@ -752,11 +752,11 @@ namespace System.IO
             }
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled(cancellationToken);
+                return new ValueTask(Task.FromCanceled(cancellationToken));
             }
 
             try
@@ -771,15 +771,15 @@ namespace System.IO
                 {
                     Write(source.Span);
                 }
-                return Task.CompletedTask;
+                return default;
             }
             catch (OperationCanceledException oce)
             {
-                return Task.FromCancellation<VoidTaskResult>(oce);
+                return new ValueTask(Task.FromCancellation<VoidTaskResult>(oce));
             }
             catch (Exception exception)
             {
-                return Task.FromException(exception);
+                return new ValueTask(Task.FromException(exception));
             }
         }
 
