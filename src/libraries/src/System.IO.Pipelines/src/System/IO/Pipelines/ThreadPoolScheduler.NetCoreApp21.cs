@@ -11,14 +11,12 @@ namespace System.IO.Pipelines
     {
         public override void Schedule(Action action)
         {
-            // Queue to low contention local ThreadPool queue; rather than global queue as per Task
-            System.Threading.ThreadPool.QueueUserWorkItem(s_actionCallback, action, preferLocal: true);
+            System.Threading.ThreadPool.QueueUserWorkItem(s_actionCallback, action, preferLocal: false);
         }
 
         public override void Schedule(Action<object> action, object state)
         {
-            // Queue to low contention local ThreadPool queue; rather than global queue as per Task
-            System.Threading.ThreadPool.QueueUserWorkItem(action, state, preferLocal: true);
+            System.Threading.ThreadPool.QueueUserWorkItem(action, state, preferLocal: false);
         }
 
         private static readonly Action<Action> s_actionCallback = state => state();
