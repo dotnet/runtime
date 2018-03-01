@@ -4,10 +4,10 @@
 
 namespace System.Net.Http
 {
-    internal sealed partial class HttpProxyConnectionHandler : HttpMessageHandler
+    internal static class SystemProxyInfo
     {
         // On Unix we get default proxy configuration from environment variables
-        private static IWebProxy ConstructSystemProxy()
+        public static IWebProxy ConstructSystemProxy()
         {
             return HttpEnvironmentProxy.TryCreate(out IWebProxy proxy) ? proxy : null;
         }

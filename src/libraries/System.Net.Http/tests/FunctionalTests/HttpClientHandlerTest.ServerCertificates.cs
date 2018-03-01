@@ -86,15 +86,59 @@ namespace System.Net.Http.Functional.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
+        public async Task UseCallback_HaveCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_Success()
         {
             if (!BackendSupportsCustomCertificateHandling)
             {
                 return;
             }
-            if (UseSocketsHttpHandler)
+
+            if (IsWinHttpHandler && PlatformDetection.IsWindows7)
             {
-                return; // TODO #23136: SSL proxy tunneling not yet implemented in SocketsHttpHandler
+                // Issue #27612
+                return;
+            }
+
+            const string content = "This is a test";
+
+            int port;
+            Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
+                out port,
+                requireAuth: true,
+                expectCreds: true);
+            Uri proxyUrl = new Uri($"http://localhost:{port}");
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, new NetworkCredential("rightusername", "rightpassword"));
+            handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+            using (var client = new HttpClient(handler))
+            {
+                HttpResponseMessage response = await client.PostAsync(
+                    Configuration.Http.SecureRemoteEchoServer,
+                    new StringContent(content));
+
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                TestHelper.VerifyResponseBody(
+                    responseContent,
+                    response.Content.Headers.ContentMD5,
+                    false,
+                    content);
+            }
+
+            // Don't await proxyTask until the HttpClient is closed, otherwise it will wait for connection timeout.
+            await proxyTask;
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
+        {
+            if (!BackendSupportsCustomCertificateHandling)
+            {
+                return;
             }
 
             int port;
