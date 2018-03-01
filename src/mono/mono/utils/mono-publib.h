@@ -48,7 +48,7 @@ typedef unsigned __int64	uint64_t;
 
 #include <stdint.h>
 
-#ifdef __GNUC__
+#if defined (__clang__) || defined (__GNUC__)
 #define MONO_API_EXPORT __attribute__ ((__visibility__ ("default")))
 #else
 #define MONO_API_EXPORT
@@ -119,24 +119,27 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 #define MONO_RT_CENTRINEL_SUPPRESS
 #endif
 
-#if defined (__clang__)
+#if defined (__clang__) || defined (__GNUC__)
 #define MONO_RT_EXTERNAL_ONLY \
-	__attribute__ ((__unavailable__ ("The mono runtime must not call this function"))) \
+	__attribute__ ((__deprecated__ ("The mono runtime must not call this function."))) \
 	MONO_RT_CENTRINEL_SUPPRESS
-#elif defined (__GNUC__)
-#define MONO_RT_EXTERNAL_ONLY \
-	__attribute__ ((__error__ ("The mono runtime must not call this function"))) \
-	MONO_RT_CENTRINEL_SUPPRESS
+
+// This is used in place of configure gcc -Werror=deprecated-declarations:
+// 1. To be portable across build systems.
+// 2. configure is very sensitive to compiler flags; they break autoconf's probes.
+// Though #2 can be mitigted by being late in configure.
+#pragma GCC diagnostic error "-Wdeprecated-declarations" // Works with clang too.
+
 #else
 #define MONO_RT_EXTERNAL_ONLY MONO_RT_CENTRINEL_SUPPRESS
-#endif /* __clang__ */
+#endif /// clang or gcc
 
 #else
 #define MONO_RT_EXTERNAL_ONLY
 #define MONO_RT_MANAGED_ATTR
 #endif /* MONO_INSIDE_RUNTIME */
 
-#ifdef __GNUC__
+#if defined (__clang__) || defined (__GNUC__)
 #define _MONO_DEPRECATED __attribute__ ((__deprecated__))
 #elif defined (_MSC_VER)
 #define _MONO_DEPRECATED __declspec (deprecated)
@@ -149,4 +152,3 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 MONO_END_DECLS
 
 #endif /* __MONO_PUBLIB_H__ */
-
