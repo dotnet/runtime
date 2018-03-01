@@ -2255,6 +2255,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
     TreeNodeInfo*       info        = currentNodeInfo;
     NamedIntrinsic      intrinsicID = intrinsicTree->gtHWIntrinsicId;
+    var_types           baseType    = intrinsicTree->gtSIMDBaseType;
     InstructionSet      isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
     HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
@@ -2381,6 +2382,19 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             info->setInternalCandidates(this, allSIMDRegs());
             break;
         }
+
+        case NI_SSE41_Extract:
+            if (baseType == TYP_FLOAT)
+            {
+                info->internalIntCount += 1;
+            }
+#ifdef _TARGET_X86_
+            else if (varTypeIsByte(baseType))
+            {
+                info->setDstCandidates(this, RBM_BYTE_REGS);
+            }
+#endif
+            break;
 
 #ifdef _TARGET_X86_
         case NI_SSE42_Crc32:

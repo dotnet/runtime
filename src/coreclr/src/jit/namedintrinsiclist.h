@@ -103,7 +103,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SpecialCodeGen = 0x20000,
 
     // No Read/Modify/Write Semantics
-    // the intrinsic does not have read/modify/write semantics and doesn't need
+    // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
     HW_Flag_NoRMWSemantics = 0x40000,
 };
 
