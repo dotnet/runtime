@@ -14,6 +14,11 @@ namespace System
     public static partial class MemoryExtensions
     {
         /// <summary>
+        /// Creates a new span over the portion of the target array.
+        /// </summary>
+        public static Span<T> AsSpan<T>(this T[] array, int start) => Span<T>.Create(array, start);
+
+        /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
         /// <param name="span">The source span.</param>
         /// <param name="value">The value to seek within the source span.</param>
