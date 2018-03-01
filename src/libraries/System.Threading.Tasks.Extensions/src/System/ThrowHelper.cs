@@ -12,8 +12,14 @@ namespace System
         internal static void ThrowArgumentNullException(ExceptionArgument argument) =>
             throw GetArgumentNullException(argument);
 
+        internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) =>
+            throw GetArgumentOutOfRangeException(argument);
+
         private static ArgumentNullException GetArgumentNullException(ExceptionArgument argument) =>
             new ArgumentNullException(GetArgumentName(argument));
+
+        private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument) =>
+            new ArgumentOutOfRangeException(GetArgumentName(argument));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentName(ExceptionArgument argument)
@@ -27,6 +33,8 @@ namespace System
 
     internal enum ExceptionArgument
     {
-        task
+        task,
+        source,
+        state
     }
 }
