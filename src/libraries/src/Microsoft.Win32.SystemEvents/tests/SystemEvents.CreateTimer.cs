@@ -147,19 +147,12 @@ namespace Microsoft.Win32.SystemEventsTests
                 var proportionDifference = (double)(stopwatch.ElapsedMilliseconds - interval) / interval;
                 Assert.True(permittedProportionUnder < proportionDifference && proportionDifference < permittedProportionOver, 
                     $"Timer should fire less than {permittedProportionUnder * 100.0}% before and less than {permittedProportionOver * 100.0}% after expected interval {interval}, actual: {stopwatch.ElapsedMilliseconds}, difference: {proportionDifference * 100.0}%");
-                
             }
             finally
             {
                 SystemEvents.TimerElapsed -= handler;
+                SystemEvents.KillTimer(timer);
             }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void KillTimerInvalidTimer()
-        {
-            Assert.Throws<ExternalException>(() => SystemEvents.KillTimer(IntPtr.Zero));
-            Assert.Throws<ExternalException>(() => SystemEvents.KillTimer((IntPtr)(-1)));
         }
     }
 }
