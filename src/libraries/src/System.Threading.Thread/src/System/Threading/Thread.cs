@@ -272,6 +272,7 @@ namespace System.Threading
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
+        public static int GetCurrentProcessorId() => RuntimeThread.GetCurrentProcessorId();
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
         public static int GetDomainID() => GetDomain().Id;
         public override int GetHashCode() => ManagedThreadId;

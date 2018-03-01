@@ -7,11 +7,18 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CompressedStackTests.cs" />
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="ThreadExceptionEventArgsTests.cs" />
     <Compile Include="ThreadTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="ThreadTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">

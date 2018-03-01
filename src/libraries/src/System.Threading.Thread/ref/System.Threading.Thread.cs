@@ -65,6 +65,7 @@ namespace System.Threading
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
         [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
         public System.Threading.CompressedStack GetCompressedStack() { throw null; }
+        public static int GetCurrentProcessorId() { throw null; }
         public static object GetData(System.LocalDataStoreSlot slot) { throw null; }
         public static System.AppDomain GetDomain() { throw null; }
         public static int GetDomainID() { throw null; }
