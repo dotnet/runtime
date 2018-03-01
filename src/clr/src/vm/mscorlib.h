@@ -1058,9 +1058,9 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    Validate
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT_ADDR,              GetStubContextAddr,             SM_RetIntPtr)
-#endif // _WIN64
+#endif // _TARGET_64BIT_
 #ifdef MDA_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          TRIGGER_GC_FOR_MDA,                 TriggerGCForMDA,                SM_RetVoid)
 #endif
