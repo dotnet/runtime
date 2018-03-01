@@ -208,6 +208,8 @@ namespace System.Diagnostics
         /// <returns></returns>
         private static ThreadState ProcFsStateToThreadState(char c)
         {
+            // Information on these in fs/proc/array.c
+            // `man proc` does not document them all
             switch (c)
             {
                 case 'R': // Running
@@ -228,6 +230,9 @@ namespace System.Diagnostics
                 case 'W': // Paging or waking
                 case 'K': // Wakekill
                     return ThreadState.Transition;
+
+                case 'I': // Idle
+                    return ThreadState.Ready;
 
                 default:
                     Debug.Fail($"Unexpected status character: {c}");
