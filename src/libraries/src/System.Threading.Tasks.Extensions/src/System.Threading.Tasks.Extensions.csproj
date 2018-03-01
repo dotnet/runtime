@@ -43,10 +43,14 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\ValueTask.cs">
       <Link>Common\CoreLib\System\Threading\Tasks\ValueTask.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\Sources\IValueTaskSource.cs">
+      <Link>Common\CoreLib\System\Threading\Tasks\Sources\IValueTaskSource.cs</Link>
+    </Compile>
 
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
