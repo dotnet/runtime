@@ -90,7 +90,7 @@ namespace System.IO.Pipes
                 IsCurrentUserOnly = true;
             }
 
-            _normalizedPipePath = GetPipePath(serverName, pipeName, IsCurrentUserOnly);
+            _normalizedPipePath = GetPipePath(serverName, pipeName);
             _direction = direction;
             _inheritability = inheritability;
             _impersonationLevel = impersonationLevel;
