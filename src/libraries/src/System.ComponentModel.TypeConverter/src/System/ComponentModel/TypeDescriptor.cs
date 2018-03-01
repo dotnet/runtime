@@ -1916,7 +1916,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(Attribute).FullName));
+                            throw new ArgumentException(SR.Format(SR.TypeDescriptorExpectedElementType, typeof(Attribute).FullName));
                         }
                         cacheValue = new AttributeCollection(attrArray);
                         break;
@@ -1929,7 +1929,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(PropertyDescriptor).FullName));
+                            throw new ArgumentException(SR.Format(SR.TypeDescriptorExpectedElementType, typeof(PropertyDescriptor).FullName));
                         }
                         cacheValue = new PropertyDescriptorCollection(propArray, true);
                         break;
@@ -1942,7 +1942,7 @@ namespace System.ComponentModel
                         }
                         catch (InvalidCastException)
                         {
-                            throw new ArgumentException(SR.GetResourceString(SR.TypeDescriptorExpectedElementType, typeof(EventDescriptor).FullName));
+                            throw new ArgumentException(SR.Format(SR.TypeDescriptorExpectedElementType, typeof(EventDescriptor).FullName));
                         }
                         cacheValue = new EventDescriptorCollection(eventArray, true);
                         break;

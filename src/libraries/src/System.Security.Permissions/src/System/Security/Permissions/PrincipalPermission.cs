@@ -78,7 +78,7 @@ namespace System.Security.Permissions
             }
             else if (!VerifyType(target))
             {
-                throw new ArgumentException(SR.Argument_WrongType, GetType().FullName);
+                throw new ArgumentException(SR.Format(SR.Argument_WrongType, GetType().FullName), nameof(target));
             }
 
             PrincipalPermission operand = (PrincipalPermission)target;
@@ -121,7 +121,7 @@ namespace System.Security.Permissions
             }
             else if (!VerifyType(target))
             {
-                throw new ArgumentException(SR.Argument_WrongType, GetType().FullName);
+                throw new ArgumentException(SR.Format(SR.Argument_WrongType, GetType().FullName), nameof(target));
             }
             else if (IsUnrestricted())
             {
@@ -178,7 +178,7 @@ namespace System.Security.Permissions
             }
             else if (!VerifyType(other))
             {
-                throw new ArgumentException(SR.Argument_WrongType, GetType().FullName);
+                throw new ArgumentException(SR.Format(SR.Argument_WrongType, GetType().FullName), nameof(other));
             }
 
             PrincipalPermission operand = (PrincipalPermission)other;

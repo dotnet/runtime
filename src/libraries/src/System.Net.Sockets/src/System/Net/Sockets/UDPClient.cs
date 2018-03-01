@@ -60,7 +60,7 @@ namespace System.Net.Sockets
             // Validate the address family.
             if (family != AddressFamily.InterNetwork && family != AddressFamily.InterNetworkV6)
             {
-                throw new ArgumentException(SR.net_protocol_invalid_family, nameof(family));
+                throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "UDP"), nameof(family));
             }
 
             IPEndPoint localEP;
