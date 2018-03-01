@@ -60,74 +60,55 @@ namespace System.Threading.Channels
             return new ValueTask<T>(t);
         }
 
-        /// <summary>Wake up all of the waiters and null out the field.</summary>
-        /// <param name="waiters">The waiters.</param>
-        /// <param name="result">The value with which to complete each waiter.</param>
-        internal static void WakeUpWaiters(ref ReaderInteractor<bool> waiters, bool result)
+        internal static ValueTask<bool> QueueWaiter(ref AsyncOperation<bool> tail, AsyncOperation<bool> waiter)
         {
-            ReaderInteractor<bool> w = waiters;
-            if (w != null)
+            AsyncOperation<bool> c = tail;
+            if (c == null)
             {
-                w.Success(result);
-                waiters = null;
+                waiter.Next = waiter;
+            }
+            else
+            {
+                waiter.Next = c.Next;
+                c.Next = waiter;
+            }
+            tail = waiter;
+            return waiter.ValueTaskOfT;
+        }
+
+        internal static void WakeUpWaiters(ref AsyncOperation<bool> listTail, bool result, Exception error = null)
+        {
+            AsyncOperation<bool> tail = listTail;
+            if (tail != null)
+            {
+                listTail = null;
+
+                AsyncOperation<bool> head = tail.Next;
+                AsyncOperation<bool> c = head;
+                do
+                {
+                    AsyncOperation<bool> next = c.Next;
+                    c.Next = null;
+
+                    bool completed = error != null ? c.Fail(error) : c.Success(result);
+                    Debug.Assert(completed || c.CancellationToken.CanBeCanceled);
+
+                    c = next;
+                }
+                while (c != head);
             }
         }
 
-        /// <summary>Wake up all of the waiters and null out the field.</summary>
-        /// <param name="waiters">The waiters.</param>
-        /// <param name="result">The success value with which to complete each waiter if <paramref name="error">error</paramref> is null.</param>
-        /// <param name="error">The failure with which to cmplete each waiter, if non-null.</param>
-        internal static void WakeUpWaiters(ref ReaderInteractor<bool> waiters, bool result, Exception error = null)
-        {
-            ReaderInteractor<bool> w = waiters;
-            if (w != null)
-            {
-                if (error != null)
-                {
-                    w.Fail(error);
-                }
-                else
-                {
-                    w.Success(result);
-                }
-                waiters = null;
-            }
-        }
-
-        /// <summary>Removes all interactors from the queue, failing each.</summary>
-        /// <param name="interactors">The queue of interactors to complete.</param>
-        /// <param name="error">The error with which to complete each interactor.</param>
-        internal static void FailInteractors<T, TInner>(Dequeue<T> interactors, Exception error) where T : Interactor<TInner>
+        /// <summary>Removes all operations from the queue, failing each.</summary>
+        /// <param name="operations">The queue of operations to complete.</param>
+        /// <param name="error">The error with which to complete each operations.</param>
+        internal static void FailOperations<T, TInner>(Dequeue<T> operations, Exception error) where T : AsyncOperation<TInner>
         {
             Debug.Assert(error != null);
-            while (!interactors.IsEmpty)
+            while (!operations.IsEmpty)
             {
-                interactors.DequeueHead().Fail(error);
+                operations.DequeueHead().Fail(error);
             }
-        }
-
-        /// <summary>Gets or creates a "waiter" (e.g. WaitForRead/WriteAsync) interactor.</summary>
-        /// <param name="waiter">The field storing the waiter interactor.</param>
-        /// <param name="runContinuationsAsynchronously">true to force continuations to run asynchronously; otherwise, false.</param>
-        /// <param name="cancellationToken">The token to use to cancel the wait.</param>
-        internal static Task<bool> GetOrCreateWaiter(ref ReaderInteractor<bool> waiter, bool runContinuationsAsynchronously, CancellationToken cancellationToken)
-        {
-            // Get the existing waiters interactor.
-            ReaderInteractor<bool> w = waiter;
-
-            // If there isn't one, create one.  This explicitly does not include the cancellation token,
-            // as we reuse it for any number of waiters that overlap.
-            if (w == null)
-            {
-                waiter = w = ReaderInteractor<bool>.Create(runContinuationsAsynchronously);
-            }
-
-            // If the cancellation token can't be canceled, then just return the waiter task.
-            // If it can, we need to return a task that will complete when the waiter task does but that can also be canceled.
-            // Easiest way to do that is with a cancelable continuation.
-            return cancellationToken.CanBeCanceled ?
-                w.Task.ContinueWith(t => t.Result, cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default) :
-                w.Task;
         }
 
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>

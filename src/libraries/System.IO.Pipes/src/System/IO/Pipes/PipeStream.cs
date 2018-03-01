@@ -278,7 +278,7 @@ namespace System.IO.Pipes
             return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (!_isAsync)
             {
@@ -292,17 +292,17 @@ namespace System.IO.Pipes
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
             }
 
             CheckWriteOperations();
 
             if (source.Length == 0)
             {
-                return Task.CompletedTask;
+                return default;
             }
 
-            return WriteAsyncCore(source, cancellationToken);
+            return new ValueTask(WriteAsyncCore(source, cancellationToken));
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)

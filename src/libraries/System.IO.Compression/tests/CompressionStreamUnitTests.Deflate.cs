@@ -72,7 +72,7 @@ namespace System.IO.Compression
             ms.Position = 0;
             using (var compressor = new DerivedDeflateStream(ms, CompressionMode.Compress, leaveOpen: true))
             {
-                compressor.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])).Wait();
+                compressor.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])).AsTask().Wait();
                 Assert.True(compressor.WriteArrayInvoked);
             }
         }

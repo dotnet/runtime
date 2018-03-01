@@ -1891,8 +1891,8 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Throws<NotSupportedException>(() => responseStream.SetLength(0));
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new byte[1], 0, 1));
                         Assert.Throws<NotSupportedException>(() => responseStream.Write(new Span<byte>(new byte[1])));
-                        await Assert.ThrowsAsync<NotSupportedException>(() => responseStream.WriteAsync(new Memory<byte>(new byte[1])));
-                        await Assert.ThrowsAsync<NotSupportedException>(() => responseStream.WriteAsync(new byte[1], 0, 1));
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await responseStream.WriteAsync(new Memory<byte>(new byte[1])));
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await responseStream.WriteAsync(new byte[1], 0, 1));
                         Assert.Throws<NotSupportedException>(() => responseStream.WriteByte(1));
 
                         // Invalid arguments

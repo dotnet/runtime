@@ -88,10 +88,7 @@ namespace System.Net.WebSockets
         /// </summary>
         private readonly Utf8MessageState _utf8TextState = new Utf8MessageState();
         /// <summary>
-        /// Semaphore used to ensure that calls to SendFrameAsync don't run concurrently.  While <see cref="_lastSendAsync"/>
-        /// is used to fail if a caller tries to issue another SendAsync while a previous one is running, internally
-        /// we use SendFrameAsync as an implementation detail, and it should not cause user requests to SendAsync to fail,
-        /// nor should such internal usage be allowed to run concurrently with other internal usage or with SendAsync.
+        /// Semaphore used to ensure that calls to SendFrameAsync don't run concurrently.
         /// </summary>
         private readonly SemaphoreSlim _sendFrameAsyncLock = new SemaphoreSlim(1, 1);
 
@@ -145,15 +142,10 @@ namespace System.Net.WebSockets
         /// </summary>
         private bool _lastSendWasFragment;
         /// <summary>
-        /// The task returned from the last SendAsync operation to not complete synchronously.
-        /// If this is not null and not completed when a subsequent SendAsync is issued, an exception occurs.
-        /// </summary>
-        private Task _lastSendAsync;
-        /// <summary>
-        /// The task returned from the last ReceiveAsync operation to not complete synchronously.
+        /// The task returned from the last ReceiveAsync(ArraySegment, ...) operation to not complete synchronously.
         /// If this is not null and not completed when a subsequent ReceiveAsync is issued, an exception occurs.
         /// </summary>
-        private Task _lastReceiveAsync;
+        private Task _lastReceiveAsync = Task.CompletedTask;
 
         /// <summary>Lock used to protect update and check-and-update operations on _state.</summary>
         private object StateUpdateLock => _abortSource;
@@ -262,10 +254,10 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-            return SendPrivateAsync((ReadOnlyMemory<byte>)buffer, messageType, endOfMessage, cancellationToken);
+            return SendPrivateAsync((ReadOnlyMemory<byte>)buffer, messageType, endOfMessage, cancellationToken).AsTask();
         }
 
-        private Task SendPrivateAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        private ValueTask SendPrivateAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
             if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
             {
@@ -278,11 +270,10 @@ namespace System.Net.WebSockets
             try
             {
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
-                ThrowIfOperationInProgress(_lastSendAsync);
             }
             catch (Exception exc)
             {
-                return Task.FromException(exc);
+                return new ValueTask(Task.FromException(exc));
             }
 
             MessageOpcode opcode =
@@ -290,9 +281,8 @@ namespace System.Net.WebSockets
                 messageType == WebSocketMessageType.Binary ? MessageOpcode.Binary :
                 MessageOpcode.Text;
 
-            Task t = SendFrameAsync(opcode, endOfMessage, buffer, cancellationToken);
+            ValueTask t = SendFrameAsync(opcode, endOfMessage, buffer, cancellationToken);
             _lastSendWasFragment = !endOfMessage;
-            _lastSendAsync = t;
             return t;
         }
 
@@ -307,7 +297,7 @@ namespace System.Net.WebSockets
                 Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
                 lock (ReceiveAsyncLock) // synchronize with receives in CloseAsync
                 {
-                    ThrowIfOperationInProgress(_lastReceiveAsync);
+                    ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
                     Task<WebSocketReceiveResult> t = ReceiveAsyncPrivate<WebSocketReceiveResultGetter,WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
                     _lastReceiveAsync = t;
                     return t;
@@ -362,23 +352,14 @@ namespace System.Net.WebSockets
         /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
         /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
         /// <param name="cancellationToken">The CancellationToken to use to cancel the websocket.</param>
-        private Task SendFrameAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
+        private ValueTask SendFrameAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
-            // TODO: #4900 SendFrameAsync should in theory typically complete synchronously, making it fast and allocation free.
-            // However, due to #4900, it almost always yields, resulting in all of the allocations involved in an async method
-            // yielding, e.g. the boxed state machine, the Action delegate, the MoveNextRunner, and the resulting Task, plus it's
-            // common that the awaited operation completes so fast after the await that we may end up allocating an AwaitTaskContinuation
-            // inside of the TaskAwaiter.  Since SendFrameAsync is such a core code path, until that can be fixed, we put some
-            // optimizations in place to avoid a few of those expenses, at the expense of more complicated code; for the common case,
-            // this code has fewer than half the number and size of allocations.  If/when that issue is fixed, this method should be deleted
-            // and replaced by SendFrameFallbackAsync, which is the same logic but in a much more easily understand flow.
-
             // If a cancelable cancellation token was provided, that would require registering with it, which means more state we have to
             // pass around (the CancellationTokenRegistration), so if it is cancelable, just immediately go to the fallback path.
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
             return cancellationToken.CanBeCanceled || !_sendFrameAsyncLock.Wait(0) ?
-                SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken) :
+                new ValueTask(SendFrameFallbackAsync(opcode, endOfMessage, payloadBuffer, cancellationToken)) :
                 SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, payloadBuffer);
         }
 
@@ -386,19 +367,19 @@ namespace System.Net.WebSockets
         /// <param name="opcode">The opcode for the message.</param>
         /// <param name="endOfMessage">The value of the FIN bit for the message.</param>
         /// <param name="payloadBuffer">The buffer containing the payload data fro the message.</param>
-        private Task SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer)
+        private ValueTask SendFrameLockAcquiredNonCancelableAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer)
         {
             Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
 
             // If we get here, the cancellation token is not cancelable so we don't have to worry about it,
             // and we own the semaphore, so we don't need to asynchronously wait for it.
-            Task writeTask = null;
+            ValueTask writeTask = default;
             bool releaseSemaphoreAndSendBuffer = true;
             try
             {
                 // Write the payload synchronously to the buffer, then write that buffer out to the network.
                 int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
-                writeTask = _stream.WriteAsync(_sendBuffer, 0, sendBytes, CancellationToken.None);
+                writeTask = _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes));
 
                 // If the operation happens to complete synchronously (or, more specifically, by
                 // the time we get from the previous line to here), release the semaphore, return
@@ -415,10 +396,10 @@ namespace System.Net.WebSockets
             }
             catch (Exception exc)
             {
-                return Task.FromException(
+                return new ValueTask(Task.FromException(
                     exc is OperationCanceledException ? exc :
                     _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
+                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc)));
             }
             finally
             {
@@ -429,22 +410,26 @@ namespace System.Net.WebSockets
                 }
             }
 
-            // The write was not yet completed.  Create and return a continuation that will
-            // release the semaphore and translate any exception that occurred.
-            return writeTask.ContinueWith((t, s) =>
-            {
-                var thisRef = (ManagedWebSocket)s;
-                thisRef._sendFrameAsyncLock.Release();
-                thisRef.ReleaseSendBuffer();
+            return new ValueTask(WaitForWriteTaskAsync(writeTask));
+        }
 
-                try { t.GetAwaiter().GetResult(); }
-                catch (Exception exc) when (!(exc is OperationCanceledException))
-                {
-                    throw thisRef._state == WebSocketState.Aborted ?
-                        CreateOperationCanceledException(exc) :
-                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
-                }
-            }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        private async Task WaitForWriteTaskAsync(ValueTask writeTask)
+        {
+            try
+            {
+                await writeTask.ConfigureAwait(false);
+            }
+            catch (Exception exc) when (!(exc is OperationCanceledException))
+            {
+                throw _state == WebSocketState.Aborted ?
+                    CreateOperationCanceledException(exc) :
+                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+            }
+            finally
+            {
+                _sendFrameAsyncLock.Release();
+                ReleaseSendBuffer();
+            }
         }
 
         private async Task SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, ReadOnlyMemory<byte> payloadBuffer, CancellationToken cancellationToken)
@@ -455,7 +440,7 @@ namespace System.Net.WebSockets
                 int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
                 using (cancellationToken.Register(s => ((ManagedWebSocket)s).Abort(), this))
                 {
-                    await _stream.WriteAsync(_sendBuffer, 0, sendBytes, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -518,12 +503,12 @@ namespace System.Net.WebSockets
             {
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
                 // The call will handle releasing the lock.
-                Task t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
+                ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
 
                 // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
-                if (t.Status != TaskStatus.RanToCompletion)
+                if (!t.IsCompletedSuccessfully)
                 {
-                    t.ContinueWith(p => { Exception ignored = p.Exception; },
+                    t.AsTask().ContinueWith(p => { Exception ignored = p.Exception; },
                         CancellationToken.None,
                         TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Default);
@@ -1270,14 +1255,16 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>Aborts the websocket and throws an exception if an existing operation is in progress.</summary>
-        private void ThrowIfOperationInProgress(Task operationTask, [CallerMemberName] string methodName = null)
+        private void ThrowIfOperationInProgress(bool operationCompleted, [CallerMemberName] string methodName = null)
         {
-            if (operationTask != null && !operationTask.IsCompleted)
+            if (!operationCompleted)
             {
                 Abort();
-                throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
+                ThrowOperationInProgress(methodName);
             }
         }
+
+        private void ThrowOperationInProgress(string methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
 
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
         private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))

@@ -167,7 +167,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
 
-            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }

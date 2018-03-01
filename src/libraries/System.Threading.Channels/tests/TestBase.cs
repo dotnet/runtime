@@ -15,7 +15,11 @@ namespace System.Threading.Channels.Tests
         {
             Assert.Equal(TaskStatus.Canceled, task.Status);
             OperationCanceledException oce = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
-            Assert.Equal(token, oce.CancellationToken);
+            if (PlatformDetection.IsNetCore)
+            {
+                // Earlier netstandard versions didn't have the APIs to always make this possible.
+                Assert.Equal(token, oce.CancellationToken);
+            }
         }
 
         protected async Task AssertCanceled(Task task, CancellationToken token)
@@ -24,9 +28,17 @@ namespace System.Threading.Channels.Tests
             AssertSynchronouslyCanceled(task, token);
         }
 
+        protected void AssertSynchronousSuccess<T>(ValueTask<T> task) => Assert.True(task.IsCompletedSuccessfully);
+        protected void AssertSynchronousSuccess(ValueTask task) => Assert.True(task.IsCompletedSuccessfully);
         protected void AssertSynchronousSuccess(Task task) => Assert.Equal(TaskStatus.RanToCompletion, task.Status);
 
         protected void AssertSynchronousTrue(Task<bool> task)
+        {
+            AssertSynchronousSuccess(task);
+            Assert.True(task.Result);
+        }
+
+        protected void AssertSynchronousTrue(ValueTask<bool> task)
         {
             AssertSynchronousSuccess(task);
             Assert.True(task.Result);

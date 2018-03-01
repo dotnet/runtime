@@ -11,6 +11,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Theory]
         [InlineData(typeof(string))]
         [InlineData(typeof(int))]
+        [InlineData(typeof(AsyncValueTaskMethodBuilder))]
         [InlineData(typeof(AsyncValueTaskMethodBuilder<>))]
         [InlineData(typeof(AsyncValueTaskMethodBuilder<int>))]
         [InlineData(typeof(AsyncValueTaskMethodBuilder<string>))]

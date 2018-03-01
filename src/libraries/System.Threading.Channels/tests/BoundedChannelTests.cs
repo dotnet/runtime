@@ -9,11 +9,11 @@ namespace System.Threading.Channels.Tests
 {
     public class BoundedChannelTests : ChannelTestBase
     {
-        protected override Channel<int> CreateChannel() => Channel.CreateBounded<int>(1);
-        protected override Channel<int> CreateFullChannel()
+        protected override Channel<T> CreateChannel<T>() => Channel.CreateBounded<T>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = AllowSynchronousContinuations });
+        protected override Channel<T> CreateFullChannel<T>()
         {
-            var c = Channel.CreateBounded<int>(1);
-            c.Writer.WriteAsync(42).Wait();
+            var c = Channel.CreateBounded<T>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = AllowSynchronousContinuations });
+            c.Writer.WriteAsync(default).AsTask().Wait();
             return c;
         }
 
@@ -218,16 +218,16 @@ namespace System.Threading.Channels.Tests
         public async Task CancelPendingWrite_Reading_DataTransferredFromCorrectWriter()
         {
             var c = Channel.CreateBounded<int>(1);
-            Assert.Equal(TaskStatus.RanToCompletion, c.Writer.WriteAsync(42).Status);
+            Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);
 
             var cts = new CancellationTokenSource();
 
-            Task write1 = c.Writer.WriteAsync(43, cts.Token);
+            Task write1 = c.Writer.WriteAsync(43, cts.Token).AsTask();
             Assert.Equal(TaskStatus.WaitingForActivation, write1.Status);
 
             cts.Cancel();
 
-            Task write2 = c.Writer.WriteAsync(44);
+            Task write2 = c.Writer.WriteAsync(44).AsTask();
 
             Assert.Equal(42, await c.Reader.ReadAsync());
             Assert.Equal(44, await c.Reader.ReadAsync());
@@ -342,10 +342,10 @@ namespace System.Threading.Channels.Tests
             var c = Channel.CreateBounded<int>(1);
             Assert.True(c.Writer.TryWrite(1));
 
-            Task<bool> write1 = c.Writer.WaitToWriteAsync();
+            Task<bool> write1 = c.Writer.WaitToWriteAsync().AsTask();
             Assert.False(write1.IsCompleted);
 
-            Task<bool> write2 = c.Writer.WaitToWriteAsync();
+            Task<bool> write2 = c.Writer.WaitToWriteAsync().AsTask();
             Assert.False(write2.IsCompleted);
 
             Assert.Equal(1, await c.Reader.ReadAsync());
@@ -362,12 +362,12 @@ namespace System.Threading.Channels.Tests
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(1) { AllowSynchronousContinuations = allowSynchronousContinuations });
 
             int expectedId = Environment.CurrentManagedThreadId;
-            Task r = c.Reader.WaitToReadAsync().ContinueWith(_ =>
+            Task r = c.Reader.WaitToReadAsync().AsTask().ContinueWith(_ =>
             {
                 Assert.Equal(allowSynchronousContinuations, expectedId == Environment.CurrentManagedThreadId);
             }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
-            Assert.Equal(TaskStatus.RanToCompletion, c.Writer.WriteAsync(42).Status);
+            Assert.True(c.Writer.WriteAsync(42).IsCompletedSuccessfully);
             ((IAsyncResult)r).AsyncWaitHandle.WaitOne(); // avoid inlining the continuation
             r.GetAwaiter().GetResult();
         }
@@ -391,13 +391,13 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public void TryWrite_NoBlockedReaders_WaitingReader_WaiterNotified()
+        public async Task TryWrite_NoBlockedReaders_WaitingReader_WaiterNotified()
         {
             Channel<int> c = CreateChannel();
 
-            Task<bool> r = c.Reader.WaitToReadAsync();
+            Task<bool> r = c.Reader.WaitToReadAsync().AsTask();
             Assert.True(c.Writer.TryWrite(42));
-            AssertSynchronousTrue(r);
+            Assert.True(await r);
         }
     }
 }

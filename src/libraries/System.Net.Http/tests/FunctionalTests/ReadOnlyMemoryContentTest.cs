@@ -66,8 +66,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws<NotSupportedException>(() => stream.WriteByte(0));
                 Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
                 Assert.Throws<NotSupportedException>(() => stream.Write(new ReadOnlySpan<byte>(new byte[1])));
-                await Assert.ThrowsAsync<NotSupportedException>(() => stream.WriteAsync(new byte[1], 0, 1));
-                await Assert.ThrowsAsync<NotSupportedException>(() => stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])));
+                await Assert.ThrowsAsync<NotSupportedException>(async () => await stream.WriteAsync(new byte[1], 0, 1));
+                await Assert.ThrowsAsync<NotSupportedException>(async () => await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])));
 
                 // nops
                 stream.Flush();

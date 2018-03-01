@@ -113,7 +113,7 @@ namespace System.IO.Compression
                     {
                         int readBytes = 0;
                         int iter = 0;
-                        while (readBytes < _buffer.Length && ((iter = await _stream.ReadAsync(_buffer, readBytes, _buffer.Length - readBytes, cancellationToken).ConfigureAwait(false)) > 0))
+                        while (readBytes < _buffer.Length && ((iter = await _stream.ReadAsync(new Memory<byte>(_buffer, readBytes, _buffer.Length - readBytes), cancellationToken).ConfigureAwait(false)) > 0))
                         {
                             readBytes += iter;
                             if (readBytes > _buffer.Length)
