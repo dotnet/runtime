@@ -458,10 +458,10 @@ namespace System.IO
             if (IsClosed)
                 throw Error.GetFileNotOpen();
 
-            return WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+            return WriteAsyncInternal(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (!_useAsyncIO || GetType() != typeof(FileStream))
             {
@@ -473,7 +473,7 @@ namespace System.IO
 
             if (cancellationToken.IsCancellationRequested)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                return new ValueTask(Task.FromCanceled<int>(cancellationToken));
             }
 
             if (IsClosed)
@@ -853,7 +853,7 @@ namespace System.IO
             if (!IsAsync)
                 return base.BeginWrite(array, offset, numBytes, callback, state);
             else
-                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, numBytes), CancellationToken.None), callback, state);
+                return TaskToApm.Begin(WriteAsyncInternal(new ReadOnlyMemory<byte>(array, offset, numBytes), CancellationToken.None).AsTask(), callback, state);
         }
 
         public override int EndRead(IAsyncResult asyncResult)
