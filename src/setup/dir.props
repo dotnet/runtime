@@ -65,10 +65,11 @@
 
   <!-- Versioning -->
   <PropertyGroup>
-    <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
-    <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
-    <VersionSuffix Condition="'$(StabilizePackageVersion)' =='true'"></VersionSuffix>
-    <ProductVersionSuffix Condition="'$(StabilizePackageVersion)' !='true'">-$(VersionSuffix)</ProductVersionSuffix>
+    <VersionSuffix></VersionSuffix>
+    <VersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(PreReleaseLabel)</VersionSuffix>
+    <VersionSuffix Condition="'$(IncludeBuildNumberInPackageVersion)' == 'true'">$(VersionSuffix)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
+
+    <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
     <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(ProductVersionSuffix)</ProductVersion>
     <ProductionVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductionVersion>
 
@@ -472,7 +473,7 @@
     <!-- These properties should be passed through to new msbuild instances (like 'dotnet build')
          in order to get the correct output directories in the child project.
     -->
-    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup) /p:VersionSuffix=$(VersionSuffix)</MSBuildPassThroughPropertyList>
     <MSBuildPassThroughPropertyList Condition="'$(OutputRid)' != ''">$(MSBuildPassThroughPropertyList) /p:OutputRid=$(OutputRid)</MSBuildPassThroughPropertyList>
   </PropertyGroup>
 
