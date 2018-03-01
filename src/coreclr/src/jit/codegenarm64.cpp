@@ -3841,8 +3841,9 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
     }
 }
 
-insOpts CodeGen::genGetSimdInsOpt(bool is16Byte, var_types elementType)
+insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 {
+    assert((size == EA_16BYTE) || (size == EA_8BYTE));
     insOpts result = INS_OPTS_NONE;
 
     switch (elementType)
@@ -3850,20 +3851,20 @@ insOpts CodeGen::genGetSimdInsOpt(bool is16Byte, var_types elementType)
         case TYP_DOUBLE:
         case TYP_ULONG:
         case TYP_LONG:
-            result = is16Byte ? INS_OPTS_2D : INS_OPTS_1D;
+            result = (size == EA_16BYTE) ? INS_OPTS_2D : INS_OPTS_1D;
             break;
         case TYP_FLOAT:
         case TYP_UINT:
         case TYP_INT:
-            result = is16Byte ? INS_OPTS_4S : INS_OPTS_2S;
+            result = (size == EA_16BYTE) ? INS_OPTS_4S : INS_OPTS_2S;
             break;
         case TYP_USHORT:
         case TYP_SHORT:
-            result = is16Byte ? INS_OPTS_8H : INS_OPTS_4H;
+            result = (size == EA_16BYTE) ? INS_OPTS_8H : INS_OPTS_4H;
             break;
         case TYP_UBYTE:
         case TYP_BYTE:
-            result = is16Byte ? INS_OPTS_16B : INS_OPTS_8B;
+            result = (size == EA_16BYTE) ? INS_OPTS_16B : INS_OPTS_8B;
             break;
         default:
             assert(!"Unsupported element type");
@@ -4084,9 +4085,8 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     assert(genIsValidFloatReg(targetReg));
     assert(genIsValidIntReg(op1Reg) || genIsValidFloatReg(op1Reg));
 
-    bool     is16Byte = (simdNode->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    emitAttr attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts  opt  = genGetSimdInsOpt(attr, baseType);
 
     if (genIsValidIntReg(op1Reg))
     {
@@ -4208,11 +4208,9 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
     assert(genIsValidFloatReg(op1Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
-    bool     is16Byte = (simdNode->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = (ins == INS_mov) ? INS_OPTS_NONE : genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    emitAttr    attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = (ins == INS_mov) ? INS_OPTS_NONE : genGetSimdInsOpt(attr, baseType);
 
     getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
 
@@ -4252,10 +4250,10 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
     }
     else
     {
-        bool    is16Byte = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi);
-        insOpts opt      = genGetSimdInsOpt(is16Byte, baseType);
+        emitAttr attr = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi) ? EA_16BYTE : EA_8BYTE;
+        insOpts  opt  = genGetSimdInsOpt(attr, baseType);
 
-        getEmitter()->emitIns_R_R(ins, is16Byte ? EA_16BYTE : EA_8BYTE, targetReg, op1Reg, opt);
+        getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
     }
 
     genProduceReg(simdNode);
@@ -4378,11 +4376,9 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 
     // TODO-ARM64-CQ Contain integer constants where posible
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
-    bool     is16Byte = (simdNode->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    emitAttr    attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     getEmitter()->emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, opt);
 
@@ -4415,11 +4411,9 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
     regNumber op2Reg   = op2->gtRegNum;
     regNumber otherReg = op2Reg;
 
-    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicEqual, baseType);
-
-    bool     is16Byte = (simdNode->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForSIMDIntrinsic(SIMDIntrinsicEqual, baseType);
+    emitAttr    attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     // TODO-ARM64-CQ Contain integer constants where posible
 
@@ -4484,11 +4478,9 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
         tmpReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
     }
 
-    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicMul, baseType);
-
-    bool     is16Byte = (simdNode->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForSIMDIntrinsic(SIMDIntrinsicMul, baseType);
+    emitAttr    attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     // Vector multiply
     getEmitter()->emitIns_R_R_R(ins, attr, tmpReg, op1Reg, op2Reg, opt);
@@ -4967,7 +4959,10 @@ instruction CodeGen::getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types ins
 
     unsigned int instrTypeIndex = varTypeIsFloating(instrType) ? 0 : varTypeIsUnsigned(instrType) ? 2 : 1;
 
-    return compiler->getHWIntrinsicInfo(intrinsicID).instrs[instrTypeIndex];
+    instruction ins = compiler->getHWIntrinsicInfo(intrinsicID).instrs[instrTypeIndex];
+    assert(ins != INS_invalid);
+
+    return ins;
 }
 
 //------------------------------------------------------------------------
@@ -5056,7 +5051,6 @@ void CodeGen::genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node)
     regNumber op1Reg = op1->gtRegNum;
 
     instruction ins = getOpForHWIntrinsic(node, node->TypeGet());
-    assert(ins != INS_invalid);
 
     getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg);
 
@@ -5115,12 +5109,9 @@ void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
     assert(genIsValidFloatReg(op2Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    instruction ins = getOpForHWIntrinsic(node, baseType);
-    assert(ins != INS_invalid);
-
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForHWIntrinsic(node, baseType);
+    emitAttr    attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     getEmitter()->emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, opt);
 
@@ -5359,8 +5350,6 @@ void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
 
     if (targetReg != op1Reg)
     {
-        bool     is16Byte = (node->gtSIMDSize > 8);
-        emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
         getEmitter()->emitIns_R_R(INS_mov, baseTypeSize, targetReg, op1Reg);
     }
 
@@ -5469,8 +5458,7 @@ void CodeGen::genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node)
     assert(genIsValidFloatReg(op3Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    emitAttr attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
 
     // Arm64 has three bit select forms; each uses three source registers
     // One of the sources is also the destination
@@ -5530,12 +5518,9 @@ void CodeGen::genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node)
     assert(genIsValidFloatReg(targetReg));
     assert(genIsValidIntReg(op1Reg) || genIsValidFloatReg(op1Reg));
 
-    instruction ins = getOpForHWIntrinsic(node, baseType);
-    assert(ins != INS_invalid);
-
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForHWIntrinsic(node, baseType);
+    emitAttr    attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     // TODO-ARM64-CQ Support contained immediate cases
 
@@ -5580,12 +5565,9 @@ void CodeGen::genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node)
     assert(genIsValidFloatReg(op1Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    instruction ins = getOpForHWIntrinsic(node, baseType);
-    assert(ins != INS_invalid);
-
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForHWIntrinsic(node, baseType);
+    emitAttr    attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     getEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
 
@@ -5624,12 +5606,9 @@ void CodeGen::genHWIntrinsicSimdBinaryRMWOp(GenTreeHWIntrinsic* node)
     assert(genIsValidFloatReg(op2Reg));
     assert(genIsValidFloatReg(targetReg));
 
-    instruction ins = getOpForHWIntrinsic(node, baseType);
-    assert(ins != INS_invalid);
-
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt      = genGetSimdInsOpt(is16Byte, baseType);
+    instruction ins  = getOpForHWIntrinsic(node, baseType);
+    emitAttr    attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
+    insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
     if (targetReg != op1Reg)
     {
@@ -5681,11 +5660,8 @@ void CodeGen::genHWIntrinsicSimdTernaryRMWOp(GenTreeHWIntrinsic* node)
     assert(targetReg != op2Reg);
     assert(targetReg != op3Reg);
 
-    instruction ins = getOpForHWIntrinsic(node, baseType);
-    assert(ins != INS_invalid);
-
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    instruction ins  = getOpForHWIntrinsic(node, baseType);
+    emitAttr    attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
 
     if (targetReg != op1Reg)
     {
@@ -5739,11 +5715,8 @@ void CodeGen::genHWIntrinsicShaHashOp(GenTreeHWIntrinsic* node)
     assert(targetReg != op2Reg);
     assert(targetReg != op3Reg);
 
-    instruction ins = getOpForHWIntrinsic(node, baseType);
-    assert(ins != INS_invalid);
-
-    bool     is16Byte = (node->gtSIMDSize > 8);
-    emitAttr attr     = is16Byte ? EA_16BYTE : EA_8BYTE;
+    instruction ins  = getOpForHWIntrinsic(node, baseType);
+    emitAttr    attr = (node->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
 
     assert(genIsValidIntReg(op2Reg));
     regNumber elementReg = op2->gtRegNum;
@@ -5786,13 +5759,10 @@ void CodeGen::genHWIntrinsicShaRotateOp(GenTreeHWIntrinsic* node)
 
     genConsumeOperands(node);
 
-    regNumber op1Reg = op1->gtRegNum;
+    instruction ins        = getOpForHWIntrinsic(node, node->TypeGet());
+    regNumber   elementReg = op1->gtRegNum;
+    regNumber   tmpReg     = node->GetSingleTempReg(RBM_ALLFLOAT);
 
-    instruction ins = getOpForHWIntrinsic(node, node->TypeGet());
-    assert(ins != INS_invalid);
-
-    regNumber elementReg = op1->gtRegNum;
-    regNumber tmpReg     = node->GetSingleTempReg(RBM_ALLFLOAT);
     getEmitter()->emitIns_R_R(INS_fmov, EA_4BYTE, tmpReg, elementReg);
     getEmitter()->emitIns_R_R(ins, EA_4BYTE, tmpReg, tmpReg);
     getEmitter()->emitIns_R_R(INS_fmov, attr, targetReg, tmpReg);
