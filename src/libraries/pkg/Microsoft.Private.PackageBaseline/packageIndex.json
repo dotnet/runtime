@@ -5,6 +5,12 @@
         "net45": "4.0.0.0"
       }
     },
+    "CoreFx.Private.TestUtilities": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "1.0.0.0": "4.5.0"
+      }
+    },
     "CustomMarshalers": {
       "InboxOn": {
         "net45": "4.0.0.0"

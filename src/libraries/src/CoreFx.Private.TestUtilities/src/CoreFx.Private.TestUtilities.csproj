@@ -9,24 +9,32 @@
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
-  </PropertyGroup>
+    <NoWarn Condition="'$(TargetGroup)' == 'netstandard'">$(NoWarn);CS3021</NoWarn>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">Test Utilities are not supported on this platform</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>  
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\Diagnostics\RemoteExecutorTestBase.cs" />
     <Compile Include="System\Net\PlatformDetection.Networking.cs" />
     <Compile Include="System\TestEnvironment.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netcoreapp2.0'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.uap.cs" />
@@ -122,7 +130,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
