@@ -121,7 +121,6 @@ typedef struct _InterpMethod
 struct _InterpFrame {
 	InterpFrame *parent; /* parent */
 	InterpMethod  *imethod; /* parent */
-	MonoMethod     *method; /* parent */
 	stackval       *retval; /* parent */
 	char           *args;
 	char           *varargs;

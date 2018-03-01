@@ -5332,7 +5332,7 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 	frame->domain = iframe->domain;
 	frame->interp_frame = iframe;
 	frame->method = iframe->imethod->method;
-	frame->actual_method = frame->method;
+	frame->actual_method = iframe->imethod->method;
 	/* This is the offset in the interpreter IR */
 	frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->imethod->code;
 	frame->ji = iframe->imethod->jinfo;
