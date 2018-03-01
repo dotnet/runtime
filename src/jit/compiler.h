@@ -3103,7 +3103,7 @@ protected:
     bool isScalarISA(InstructionSet isa);
     static int ivalOfHWIntrinsic(NamedIntrinsic intrinsic);
     unsigned simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig);
-    static int numArgsOfHWIntrinsic(NamedIntrinsic intrinsic, GenTreeHWIntrinsic* node = nullptr);
+    static int numArgsOfHWIntrinsic(GenTreeHWIntrinsic* node);
     static GenTree* lastOpOfHWIntrinsic(GenTreeHWIntrinsic* node, int numArgs);
     static instruction insOfHWIntrinsic(NamedIntrinsic intrinsic, var_types type);
     static HWIntrinsicCategory categoryOfHWIntrinsic(NamedIntrinsic intrinsic);

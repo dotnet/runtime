@@ -56,7 +56,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
     int                 ival        = Compiler::ivalOfHWIntrinsic(intrinsicID);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID, node);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(node);
 
     assert((flags & HW_Flag_NoCodeGen) == 0);
 
@@ -994,6 +994,28 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 
             instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
             emit->emitIns_R_R(ins, emitTypeSize(TYP_INT), targetReg, op1Reg);
+            break;
+        }
+
+        case NI_SSE2_SetScalarVector128:
+        {
+            assert(baseType == TYP_DOUBLE);
+            assert(op2 == nullptr);
+
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+            if (op1Reg == targetReg)
+            {
+                regNumber tmpReg = node->GetSingleTempReg();
+
+                // Ensure we aren't overwriting targetReg
+                assert(tmpReg != targetReg);
+
+                emit->emitIns_R_R(INS_movapd, emitTypeSize(TYP_SIMD16), tmpReg, op1Reg);
+                op1Reg = tmpReg;
+            }
+
+            emit->emitIns_SIMD_R_R_R(INS_xorpd, emitTypeSize(TYP_SIMD16), targetReg, targetReg, targetReg);
+            emit->emitIns_SIMD_R_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, targetReg, op1Reg);
             break;
         }
 
