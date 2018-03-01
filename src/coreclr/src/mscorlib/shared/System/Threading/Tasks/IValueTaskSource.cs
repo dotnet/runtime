@@ -46,16 +46,19 @@ namespace System.Threading.Tasks
     public interface IValueTaskSource
     {
         /// <summary>Gets the status of the current operation.</summary>
-        ValueTaskSourceStatus Status { get; }
-        
+        /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+        ValueTaskSourceStatus GetStatus(short token);
+
         /// <summary>Schedules the continuation action for this <see cref="IValueTaskSource"/>.</summary>
         /// <param name="continuation">The continuation to invoke when the operation has completed.</param>
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
+        /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        void OnCompleted(Action<object> continuation, object state, ValueTaskSourceOnCompletedFlags flags);
+        void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags);
 
         /// <summary>Gets the result of the <see cref="IValueTaskSource"/>.</summary>
-        void GetResult();
+        /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+        void GetResult(short token);
     }
 
     /// <summary>Represents an object that can be wrapped by a <see cref="ValueTask{TResult}"/>.</summary>
@@ -63,15 +66,18 @@ namespace System.Threading.Tasks
     public interface IValueTaskSource<out TResult>
     {
         /// <summary>Gets the status of the current operation.</summary>
-        ValueTaskSourceStatus Status { get; }
+        /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+        ValueTaskSourceStatus GetStatus(short token);
 
         /// <summary>Schedules the continuation action for this <see cref="IValueTaskSource{TResult}"/>.</summary>
         /// <param name="continuation">The continuation to invoke when the operation has completed.</param>
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
+        /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        void OnCompleted(Action<object> continuation, object state, ValueTaskSourceOnCompletedFlags flags);
+        void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags);
 
         /// <summary>Gets the result of the <see cref="IValueTaskSource{TResult}"/>.</summary>
-        TResult GetResult();
+        /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+        TResult GetResult(short token);
     }
 }
