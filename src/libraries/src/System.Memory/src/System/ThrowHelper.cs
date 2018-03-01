@@ -128,10 +128,10 @@ namespace System
         //
         // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
         //
-        public static void ThrowArgumentValidationException<T>(IMemoryList<T> startSegment, int startIndex, IMemoryList<T> endSegment)
+        public static void ThrowArgumentValidationException<T>(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment)
             => throw CreateArgumentValidationException(startSegment, startIndex, endSegment);
 
-        private static Exception CreateArgumentValidationException<T>(IMemoryList<T> startSegment, int startIndex, IMemoryList<T> endSegment)
+        private static Exception CreateArgumentValidationException<T>(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment)
         {
             if (startSegment == null)
                 return CreateArgumentNullException(ExceptionArgument.startSegment);
