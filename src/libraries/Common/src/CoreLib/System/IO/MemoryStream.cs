@@ -448,7 +448,7 @@ namespace System.IO
                 // something other than an array and this is a MemoryStream-derived type that doesn't override Read(Span<byte>) will
                 // it then fall back to doing the ArrayPool/copy behavior.
                 return new ValueTask<int>(
-                    destination.TryGetArray(out ArraySegment<byte> destinationArray) ?
+                    MemoryMarshal.TryGetArray(destination, out ArraySegment<byte> destinationArray) ?
                         Read(destinationArray.Array, destinationArray.Offset, destinationArray.Count) :
                         Read(destination.Span));
             }
