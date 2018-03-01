@@ -48,6 +48,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(System.Reflection.Emit.OpCode opcode, System.Type cls) { }
         public virtual void EmitCall(System.Reflection.Emit.OpCode opcode, System.Reflection.MethodInfo methodInfo, System.Type[] optionalParameterTypes) { }
         public virtual void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] parameterTypes, System.Type[] optionalParameterTypes) { }
+        public virtual void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Runtime.InteropServices.CallingConvention unmanagedCallConv, Type returnType, Type[] parameterTypes) { }
         public virtual void EmitWriteLine(System.Reflection.Emit.LocalBuilder localBuilder) { }
         public virtual void EmitWriteLine(System.Reflection.FieldInfo fld) { }
         public virtual void EmitWriteLine(string value) { }
