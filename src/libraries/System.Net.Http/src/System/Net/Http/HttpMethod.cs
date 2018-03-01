@@ -166,5 +166,16 @@ namespace System.Net.Http
                 normalized :
                 method;
         }
+
+        internal bool HasBody
+        {
+            get
+            {
+                // Normalize before calling this
+                Debug.Assert(ReferenceEquals(this, Normalize(this)));
+
+                return !ReferenceEquals(this, HttpMethod.Get) && !ReferenceEquals(this, HttpMethod.Head) && !ReferenceEquals(this, HttpMethod.Connect);
+            }
+        }
     }
 }

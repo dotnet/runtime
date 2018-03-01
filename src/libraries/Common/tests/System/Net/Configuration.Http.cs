@@ -68,6 +68,7 @@ namespace System.Net.Test.Common
             public static readonly object[][] EchoServers = { new object[] { RemoteEchoServer }, new object[] { SecureRemoteEchoServer }, new object[] { Http2RemoteEchoServer } };
             public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
             public static readonly object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer }, new object[] { Http2RemoteDeflateServer }, new object[] { Http2RemoteGZipServer } };
+
             public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
 
