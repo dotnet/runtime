@@ -119,6 +119,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (Compiler::isImmHWIntrinsic(intrinsicID, op2))
                 {
+                    if (intrinsicID == NI_SSE2_Extract)
+                    {
+                        // extract instructions return to GP-registers, so it needs int size as the emitsize
+                        simdSize = emitTypeSize(TYP_INT);
+                    }
                     auto emitSwCase = [&](unsigned i) {
                         emit->emitIns_SIMD_R_R_I(ins, simdSize, targetReg, op1Reg, (int)i);
                     };
@@ -1113,6 +1118,44 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
             emit->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
             emit->emitIns_R_R(INS_ptest, emitTypeSize(TYP_SIMD16), op1Reg, op2->gtRegNum);
             emit->emitIns_R(INS_seta, EA_1BYTE, targetReg);
+            break;
+        }
+
+        case NI_SSE41_Extract:
+        {
+            regNumber   tmpTargetReg = REG_NA;
+            instruction ins          = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+            if (baseType == TYP_FLOAT)
+            {
+                tmpTargetReg = node->ExtractTempReg();
+            }
+            auto emitSwCase = [&](unsigned i) {
+                if (baseType == TYP_FLOAT)
+                {
+                    // extract instructions return to GP-registers, so it needs int size as the emitsize
+                    emit->emitIns_SIMD_R_R_I(ins, emitTypeSize(TYP_INT), op1Reg, tmpTargetReg, (int)i);
+                    emit->emitIns_R_R(INS_mov_i2xmm, EA_4BYTE, targetReg, tmpTargetReg);
+                }
+                else
+                {
+                    emit->emitIns_SIMD_R_R_I(ins, emitTypeSize(TYP_INT), targetReg, op1Reg, (int)i);
+                }
+            };
+
+            if (op2->IsCnsIntOrI())
+            {
+                ssize_t ival = op2->AsIntCon()->IconValue();
+                emitSwCase((unsigned)ival);
+            }
+            else
+            {
+                // We emit a fallback case for the scenario when the imm-op is not a constant. This should
+                // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
+                // can also occur if the consumer calls it directly and just doesn't pass a constant value.
+                regNumber baseReg = node->ExtractTempReg();
+                regNumber offsReg = node->GetSingleTempReg();
+                genHWIntrinsicJumpTableFallback(intrinsicID, op2->gtRegNum, baseReg, offsReg, emitSwCase);
+            }
             break;
         }
 
