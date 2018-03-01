@@ -191,7 +191,7 @@ public:
         {
             hi.fx_name = m_fx_names_cstr[1];
             hi.fx_dir = m_fx_dirs_cstr[1];
-            hi.fx_ver = m_fx_found_versions_cstr[1];
+            hi.fx_ver = m_fx_requested_versions_cstr[1];
         }
         else
         {
