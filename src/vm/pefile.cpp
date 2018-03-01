@@ -286,7 +286,7 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
         RETURN;
     }
 
-#if !defined(_WIN64)
+#if !defined(_TARGET_64BIT_)
     if (!HasNativeImage() && (!GetILimage()->Has32BitNTHeaders()) && !IsIntrospectionOnly())
     {
         // Tried to load 64-bit assembly on 32-bit platform.
