@@ -918,6 +918,8 @@ lookup_unmanaged_binary (uintptr_t addr)
 
 // For backwards compatibility.
 enum {
+	TYPE_SAMPLE_UBIN = 2 << 4,
+
 	TYPE_COVERAGE = 9,
 
 	TYPE_COVERAGE_ASSEMBLY = 0 << 4,
@@ -2427,6 +2429,10 @@ decode_buffer (ProfContext *ctx)
 					add_image (ptr_base + ptrdiff, (char*)p);
 				while (*p) p++;
 				p++;
+				if (ctx->data_version >= 16) {
+					while (*p) p++; // mvid
+					p++;
+				}
 			} else if (mtype == TYPE_ASSEMBLY) {
 				if (ctx->data_version > 13)
 					decode_sleb128 (p, &p); // image
@@ -2589,6 +2595,8 @@ decode_buffer (ProfContext *ctx)
 					objdiff = decode_sleb128 (p + 1, &p);
 				intptr_t ptrdiff = decode_sleb128 (p, &p);
 				uint64_t size = decode_uleb128 (p, &p);
+				if (ctx->data_version >= 16)
+					p++; // generation
 				uintptr_t num = decode_uleb128 (p, &p);
 				uintptr_t ref_offset = 0;
 				uintptr_t last_obj_offset = 0;
@@ -3174,6 +3182,11 @@ decode_buffer (ProfContext *ctx)
 				int type = *p++;
 				if (debug)
 					fprintf (outfile, "sync point %i (%s)\n", type, sync_point_name (type));
+			} else if (subtype == TYPE_AOT_ID) {
+				if (debug)
+					fprintf (outfile, "aot id %s\n", p);
+				while (*p) p++; // aot id
+				p++;
 			}
 			break;
 		}
@@ -3220,23 +3233,38 @@ load_file (char *name)
 	if (ctx->file != stdin)
 		ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
 #endif
-	if (!load_data (ctx, 30))
+	if (!load_data (ctx, 16))
 		return NULL;
 	p = ctx->buf;
-	if (read_int32 (p) != LOG_HEADER_ID || p [6] > LOG_DATA_VERSION)
+	if (read_int32 (p) != LOG_HEADER_ID)
 		return NULL;
-	ctx->version_major = p [4];
-	ctx->version_minor = p [5];
-	ctx->data_version = p [6];
+	p += 4;
+	ctx->version_major = *p++;
+	ctx->version_minor = *p++;
+	ctx->data_version = *p++;
+	if (ctx->data_version > LOG_DATA_VERSION)
+		return NULL;
 	/* reading 64 bit files on 32 bit systems not supported yet */
-	if (p [7] > sizeof (void*))
+	if (*p++ > sizeof (void*))
 		return NULL;
-	if (read_int32 (p + 20)) /* flags must be 0 */
+	ctx->startup_time = read_int64 (p);
+	p += 8;
+	// nanoseconds startup time
+	if (ctx->version_major >= 3)
+		if (!load_data (ctx, 8))
+			return NULL;
+	if (!load_data (ctx, 14))
 		return NULL;
-	ctx->startup_time = read_int64 (p + 8);
-	ctx->timer_overhead = read_int32 (p + 16);
-	ctx->pid = read_int32 (p + 24);
-	ctx->port = read_int16 (p + 28);
+	p = ctx->buf;
+	ctx->timer_overhead = read_int32 (p);
+	p += 4;
+	if (read_int32 (p)) /* flags must be 0 */
+		return NULL;
+	p += 4;
+	ctx->pid = read_int32 (p);
+	p += 4;
+	ctx->port = read_int16 (p);
+	p += 2;
 	if (ctx->version_major >= 1) {
 		if (!read_header_string (ctx, &ctx->args))
 			return NULL;
@@ -3814,6 +3842,7 @@ dump_stats (void)
 	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_CLASS);
 
 	DUMP_EVENT_STAT (TYPE_META, TYPE_SYNC_POINT);
+	DUMP_EVENT_STAT (TYPE_META, TYPE_AOT_ID);
 }
 
 

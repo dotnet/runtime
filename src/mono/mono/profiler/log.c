@@ -20,6 +20,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/runtime.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -71,6 +72,7 @@ static gint32 sample_allocations_ctr,
 
 // Statistics for profiler events.
 static gint32 sync_points_ctr,
+              aot_ids_ctr,
               heap_objects_ctr,
               heap_starts_ctr,
               heap_ends_ctr,
@@ -972,6 +974,7 @@ dump_header (void)
 		sizeof (gint8) /* data version */ +
 		sizeof (gint8) /* word size */ +
 		sizeof (gint64) /* startup time */ +
+		sizeof (gint64) /* startup time (nanoseconds) */ +
 		sizeof (gint32) /* timer overhead */ +
 		sizeof (gint32) /* flags */ +
 		sizeof (gint32) /* process id */ +
@@ -988,6 +991,7 @@ dump_header (void)
 	*p++ = LOG_DATA_VERSION;
 	*p++ = sizeof (void *);
 	p = write_int64 (p, ((uint64_t) time (NULL)) * 1000);
+	p = write_int64 (p, current_time ());
 	p = write_int32 (p, log_profiler.timer_overhead);
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, process_id ());
@@ -1115,6 +1119,28 @@ send_log_unsafe (gboolean if_needed)
 	}
 }
 
+static void
+dump_aot_id (void)
+{
+	const char *aotid = mono_runtime_get_aotid ();
+
+	if (!aotid)
+		return;
+
+	int alen = strlen (aotid) + 1;
+
+	ENTER_LOG (&aot_ids_ctr, logbuffer,
+		EVENT_SIZE /* event */ +
+		alen /* aot id */
+	);
+
+	emit_event (logbuffer, TYPE_META | TYPE_AOT_ID);
+	memcpy (logbuffer->cursor, aotid, alen);
+	logbuffer->cursor += alen;
+
+	EXIT_LOG;
+}
+
 // Assumes that the exclusive lock is held.
 static void
 sync_point_flush (void)
@@ -1168,6 +1194,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 		LEB128_SIZE /* obj */ +
 		LEB128_SIZE /* vtable */ +
 		LEB128_SIZE /* size */ +
+		BYTE_SIZE /* generation */ +
 		LEB128_SIZE /* num */ +
 		num * (
 			LEB128_SIZE /* offset */ +
@@ -1179,6 +1206,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	emit_obj (logbuffer, obj);
 	emit_ptr (logbuffer, mono_object_get_vtable (obj));
 	emit_value (logbuffer, size);
+	emit_byte (logbuffer, mono_gc_get_generation (obj));
 	emit_value (logbuffer, num);
 
 	uintptr_t last_offset = 0;
@@ -1688,12 +1716,20 @@ image_loaded (MonoProfiler *prof, MonoImage *image)
 {
 	const char *name = mono_image_get_filename (image);
 	int nlen = strlen (name) + 1;
+	const char *guid = mono_image_get_guid (image);
+
+	// Dynamic images don't have a GUID set.
+	if (!guid)
+		guid = "";
+
+	int glen = strlen (guid) + 1;
 
 	ENTER_LOG (&image_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* image */ +
-		nlen /* name */
+		nlen /* name */ +
+		glen /* guid */
 	);
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
@@ -1701,6 +1737,8 @@ image_loaded (MonoProfiler *prof, MonoImage *image)
 	emit_ptr (logbuffer, image);
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
+	memcpy (logbuffer->cursor, guid, glen);
+	logbuffer->cursor += glen;
 
 	EXIT_LOG;
 }
@@ -2345,33 +2383,6 @@ add_code_pointer (uintptr_t ip)
 	num_code_pages += add_code_page (code_pages, size_code_pages, ip & CPAGE_MASK);
 }
 
-/* ELF code crashes on some systems. */
-//#if defined(HAVE_DL_ITERATE_PHDR) && defined(ELFMAG0)
-#if 0
-static void
-dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t size)
-{
-	int len = strlen (filename) + 1;
-
-	ENTER_LOG (&sample_ubins_ctr, logbuffer,
-		EVENT_SIZE /* event */ +
-		LEB128_SIZE /* load address */ +
-		LEB128_SIZE /* offset */ +
-		LEB128_SIZE /* size */ +
-		len /* file name */
-	);
-
-	emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_UBIN);
-	emit_ptr (logbuffer, load_addr);
-	emit_uvalue (logbuffer, offset);
-	emit_uvalue (logbuffer, size);
-	memcpy (logbuffer->cursor, filename, len);
-	logbuffer->cursor += len;
-
-	EXIT_LOG;
-}
-#endif
-
 static void
 dump_usym (const char *name, uintptr_t value, uintptr_t size)
 {
@@ -2385,7 +2396,7 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	);
 
 	emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_USYM);
-	emit_ptr (logbuffer, (void*)value);
+	emit_ptr (logbuffer, (void *) value);
 	emit_value (logbuffer, size);
 	memcpy (logbuffer->cursor, name, len);
 	logbuffer->cursor += len;
@@ -2393,8 +2404,6 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	EXIT_LOG;
 }
 
-/* ELF code crashes on some systems. */
-//#if defined(ELFMAG0)
 static const char*
 symbol_for (uintptr_t code)
 {
@@ -2868,6 +2877,8 @@ signal_helper_thread (char c)
 static void
 log_early_shutdown (MonoProfiler *prof)
 {
+	dump_aot_id ();
+
 	if (log_config.hs_on_shutdown) {
 		mono_atomic_store_i32 (&log_profiler.heapshot_requested, 1);
 		mono_gc_collect (mono_gc_max_generation ());
@@ -3863,6 +3874,7 @@ runtime_initialized (MonoProfiler *profiler)
 	register_counter ("Log buffers allocated", &buffer_allocations_ctr);
 
 	register_counter ("Event: Sync points", &sync_points_ctr);
+	register_counter ("Event: AOT IDs", &aot_ids_ctr);
 	register_counter ("Event: Heap objects", &heap_objects_ctr);
 	register_counter ("Event: Heap starts", &heap_starts_ctr);
 	register_counter ("Event: Heap ends", &heap_ends_ctr);

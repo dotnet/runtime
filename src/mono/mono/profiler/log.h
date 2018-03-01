@@ -7,7 +7,7 @@
 
 #define BUF_ID 0x4D504C01
 #define LOG_HEADER_ID 0x4D505A01
-#define LOG_VERSION_MAJOR 2
+#define LOG_VERSION_MAJOR 3
 #define LOG_VERSION_MINOR 0
 #define LOG_DATA_VERSION 16
 
@@ -15,6 +15,7 @@
  * Changes in major/minor versions:
  * version 1.0: removed sysid field from header
  *              added args, arch, os fields to header
+ * version 3.0: added nanoseconds startup time to header
  *
  * Changes in data versions:
  * version 2: added offsets in heap walk
@@ -80,6 +81,10 @@
                changed TYPE_ALLOC and TYPE_HEAP_OBJECT to include a vtable pointer instead of a class pointer
                added MONO_ROOT_SOURCE_EPHEMERON
  * version 16: removed TYPE_COVERAGE
+               added mvid to image load events
+               added generation field to TYPE_HEAO_OBJECT
+               added TYPE_AOT_ID
+               removed TYPE_SAMPLE_UBIN
  */
 
 /*
@@ -95,10 +100,12 @@
  *
  * header format:
  * [id: 4 bytes] constant value: LOG_HEADER_ID
- * [major: 1 byte] [minor: 1 byte] major and minor version of the log profiler
+ * [major: 1 byte] major version of the log profiler
+ * [minor: 1 byte] minor version of the log profiler
  * [format: 1 byte] version of the data format for the rest of the file
  * [ptrsize: 1 byte] size in bytes of a pointer in the profiled program
  * [startup time: 8 bytes] time in milliseconds since the unix epoch when the program started
+ * [ns startup time: 8 bytes] time in nanoseconds since an unspecified epoch when the program started
  * [timer overhead: 4 bytes] approximate overhead in nanoseconds of the timer
  * [flags: 4 bytes] file format flags, should be 0 for now
  * [pid: 4 bytes] pid of the profiled process
@@ -206,6 +213,7 @@
  * 	[name: string] full class name
  * if mtype == TYPE_IMAGE
  * 	[name: string] image file name
+ * 	[mvid: string] image mvid, can be empty for dynamic images
  * if mtype == TYPE_ASSEMBLY
  *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
  * 	[name: string] assembly name
@@ -266,6 +274,7 @@
  * 	[object: sleb128] the object as a difference from obj_base
  * 	[vtable: sleb128] MonoVTable* as a pointer difference from ptr_base
  * 	[size: uleb128] size of the object on the heap
+ * 	[generation: byte] generation the object is in
  * 	[num_refs: uleb128] number of object references
  * 	each referenced objref is preceded by a uleb128 encoded offset: the
  * 	first offset is from the object address and each next offset is relative
@@ -290,7 +299,7 @@
  *
  * type sample format
  * type: TYPE_SAMPLE
- * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
+ * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
  * if exinfo == TYPE_SAMPLE_HIT
  * 	[thread: sleb128] thread id as difference from ptr_base
  * 	[count: uleb128] number of following instruction addresses
@@ -302,11 +311,6 @@
  * 	[address: sleb128] symbol address as a difference from ptr_base
  * 	[size: uleb128] symbol size (may be 0 if unknown)
  * 	[name: string] symbol name
- * if exinfo == TYPE_SAMPLE_UBIN
- * 	[address: sleb128] address where binary has been loaded as a difference from ptr_base
- * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
- * 	[size: uleb128] memory size
- * 	[name: string] binary name
  * if exinfo == TYPE_SAMPLE_COUNTERS_DESC
  * 	[len: uleb128] number of counters
  * 	for i = 0 to len
@@ -335,9 +339,11 @@
  *
  * type meta format:
  * type: TYPE_META
- * exinfo: one of: TYPE_SYNC_POINT
+ * exinfo: one of: TYPE_SYNC_POINT, TYPE_AOT_ID
  * if exinfo == TYPE_SYNC_POINT
  *	[type: byte] MonoProfilerSyncPointType enum value
+ * if exinfo == TYPE_AOT_ID
+ * 	[aot id: string] current runtime's AOT ID
  */
 
 enum {
@@ -391,13 +397,13 @@ enum {
 	/* extended type for TYPE_SAMPLE */
 	TYPE_SAMPLE_HIT           = 0 << 4,
 	TYPE_SAMPLE_USYM          = 1 << 4,
-	TYPE_SAMPLE_UBIN          = 2 << 4,
 	TYPE_SAMPLE_COUNTERS_DESC = 3 << 4,
 	TYPE_SAMPLE_COUNTERS      = 4 << 4,
 	/* extended type for TYPE_RUNTIME */
 	TYPE_JITHELPER = 1 << 4,
 	/* extended type for TYPE_META */
 	TYPE_SYNC_POINT = 0 << 4,
+	TYPE_AOT_ID     = 1 << 4,
 };
 
 enum {
