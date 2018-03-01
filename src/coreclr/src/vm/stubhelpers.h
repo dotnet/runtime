@@ -115,9 +115,9 @@ public:
     static FCDECL2(void,            MarshalToManagedVaListInternal, va_list va, VARARGS* pArgIterator);
     static FCDECL0(void*,           GetStubContext);
     static FCDECL2(void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
     static FCDECL0(void*,           GetStubContextAddr);
-#endif // _WIN64
+#endif // _TARGET_64BIT_
     static FCDECL1(DWORD,           CalcVaListSize, VARARGS *varargs);
     static FCDECL3(void,            ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, Object *pThisUNSAFE);
     static FCDECL3(void,            ValidateByref, void *pByref, MethodDesc *pMD, Object *pThisUNSAFE);
