@@ -138,7 +138,7 @@ namespace System.IO
                     n = buffer.Length;
                 }
 
-                _s.AsReadOnlySpan().Slice(_pos, n).CopyTo(buffer);
+                _s.AsSpan().Slice(_pos, n).CopyTo(buffer);
                 _pos += n;
             }
 

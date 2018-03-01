@@ -353,30 +353,6 @@ namespace System
             return new ReadOnlyMemory<char>(text, start, length);
         }
 
-        /// <summary>Attempts to get the underlying <see cref="string"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
-        /// <param name="readOnlyMemory">The memory that may be wrapping a <see cref="string"/> object.</param>
-        /// <param name="text">The string.</param>
-        /// <param name="start">The starting location in <paramref name="text"/>.</param>
-        /// <param name="length">The number of items in <paramref name="text"/>.</param>
-        /// <returns></returns>
-        public static bool TryGetString(this ReadOnlyMemory<char> readOnlyMemory, out string text, out int start, out int length)
-        {
-            if (readOnlyMemory.GetObjectStartLength(out int offset, out int count) is string s)
-            {
-                text = s;
-                start = offset;
-                length = count;
-                return true;
-            }
-            else
-            {
-                text = null;
-                start = 0;
-                length = 0;
-                return false;
-            }
-        }
-
         internal static readonly IntPtr StringAdjustment = MeasureStringAdjustment();
 
         private static IntPtr MeasureStringAdjustment()
