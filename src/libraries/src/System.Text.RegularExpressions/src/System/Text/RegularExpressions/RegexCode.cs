@@ -94,14 +94,14 @@ namespace System.Text.RegularExpressions
         public readonly int TrackCount;                  // how many instructions use backtracking
         public readonly Hashtable Caps;                  // mapping of user group numbers -> impl group slots
         public readonly int CapSize;                     // number of impl group slots
-        public readonly RegexPrefix FCPrefix;            // the set of candidate first characters (may be null)
+        public readonly RegexPrefix? FCPrefix;           // the set of candidate first characters (may be null)
         public readonly RegexBoyerMoore BMPrefix;        // the fixed prefix string as a Boyer-Moore machine (may be null)
         public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         public readonly bool RightToLeft;                // true if right to left
 
         public RegexCode(int[] codes, List<string> stringlist, int trackcount,
                            Hashtable caps, int capsize,
-                           RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
+                           RegexBoyerMoore bmPrefix, RegexPrefix? fcPrefix,
                            int anchors, bool rightToLeft)
         {
             Debug.Assert(codes != null, "codes cannot be null.");
@@ -352,7 +352,7 @@ namespace System.Text.RegularExpressions
             int i;
 
             Debug.WriteLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            Debug.WriteLine("Firstchars: " + (FCPrefix == null ? "n/a" : RegexCharClass.SetDescription(FCPrefix.Prefix)));
+            Debug.WriteLine("Firstchars: " + (FCPrefix == null ? "n/a" : RegexCharClass.SetDescription(FCPrefix.GetValueOrDefault().Prefix)));
             Debug.WriteLine("Prefix:     " + (BMPrefix == null ? "n/a" : Regex.Escape(BMPrefix.ToString())));
             Debug.WriteLine("Anchors:    " + RegexFCD.AnchorDescription(Anchors));
             Debug.WriteLine("");

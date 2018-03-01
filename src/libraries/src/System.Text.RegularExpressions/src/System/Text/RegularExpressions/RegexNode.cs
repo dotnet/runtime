@@ -91,13 +91,13 @@ namespace System.Text.RegularExpressions
         public const int Loop = 26;                                   // m,x      * + ? {,}
         public const int Lazyloop = 27;                               // m,x      *? +? ?? {,}?
 
-        public const int Capture = 28;                                // n        ()
-        public const int Group = 29;                                  //          (?:)
-        public const int Require = 30;                                //          (?=) (?<=)
-        public const int Prevent = 31;                                //          (?!) (?<!)
-        public const int Greedy = 32;                                 //          (?>) (?<)
-        public const int Testref = 33;                                //          (?(n) | )
-        public const int Testgroup = 34;                              //          (?(...) | )
+        public const int Capture = 28;                                // n        ()         - capturing group
+        public const int Group = 29;                                  //          (?:)       - noncapturing group
+        public const int Require = 30;                                //          (?=) (?<=) - lookahead and lookbehind assertions
+        public const int Prevent = 31;                                //          (?!) (?<!) - negative lookahead and lookbehind assertions
+        public const int Greedy = 32;                                 //          (?>)       - greedy subexpression
+        public const int Testref = 33;                                //          (?(n) | )  - alternation, reference
+        public const int Testgroup = 34;                              //          (?(...) | )- alternation, expression
 
         public int NType;
         public List<RegexNode> Children;
