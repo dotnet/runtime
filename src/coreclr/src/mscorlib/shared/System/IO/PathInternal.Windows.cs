@@ -188,64 +188,57 @@ namespace System.IO
         {
             int pathLength = path.Length;
             int i = 0;
-            int volumeSeparatorLength = 2;  // Length to the colon "C:"
-            int uncRootLength = 2;          // Length to the start of the server name "\\"
-            int devicePrefixLength = PathInternal.ExtendedPathPrefix.Length;
 
             bool deviceSyntax = IsDevice(path);
             bool deviceUnc = deviceSyntax && IsDeviceUNC(path);
-            if (deviceSyntax)
-            {
-                // Shift the position we look for the root from to account for the extended prefix
-                if (deviceUnc)
-                {
-                    // "\\" -> "\\?\UNC\"
-                    uncRootLength = UncExtendedPathPrefix.Length;
-                }
-                else if (devicePrefixLength + 1 < pathLength && path[devicePrefixLength + 1] == VolumeSeparatorChar && IsValidDriveChar(path[devicePrefixLength]))
-                {
-                    // "C:" -> "\\?\C:"
-                    volumeSeparatorLength += devicePrefixLength;
-                }
-            }
 
             if ((!deviceSyntax || deviceUnc) && pathLength > 0 && IsDirectorySeparator(path[0]))
             {
                 // UNC or simple rooted path (e.g. "\foo", NOT "\\?\C:\foo")
-
-                i = 1; //  Drive rooted (\foo) is one character
                 if (deviceUnc || (pathLength > 1 && IsDirectorySeparator(path[1])))
                 {
-                    // UNC (\\?\UNC\ or \\), scan past the next two directory separators at most
-                    // (e.g. to \\?\UNC\Server\Share or \\Server\Share\)
-                    i = uncRootLength;
-                    int n = 2; // Maximum separators to skip
+                    // UNC (\\?\UNC\ or \\), scan past server\share
+
+                    // Start past the prefix ("\\" or "\\?\UNC\")
+                    i = deviceUnc ? UncExtendedPrefixLength : UncPrefixLength;
+
+                    // Skip two separators at most
+                    int n = 2;
                     while (i < pathLength && (!IsDirectorySeparator(path[i]) || --n > 0))
                         i++;
                 }
+                else
+                {
+                    // Current drive rooted (e.g. "\foo")
+                    i = 1;
+                }
             }
-            else if (pathLength >= volumeSeparatorLength
-                && path[volumeSeparatorLength - 1] == VolumeSeparatorChar
-                && IsValidDriveChar(path[volumeSeparatorLength - 2]))
+            else if (deviceSyntax)
             {
-                // Path is at least longer than where we expect a colon, and has a colon (\\?\A:, A:)
-                // If the colon is followed by a directory separator, move past it
-                i = volumeSeparatorLength;
-                if (pathLength >= volumeSeparatorLength + 1 && IsDirectorySeparator(path[volumeSeparatorLength]))
-                    i++;
-            }
-            else if (deviceSyntax && ((devicePrefixLength + 1 >= pathLength) || !(path[devicePrefixLength + 1] == VolumeSeparatorChar)))
-            {
-                i = devicePrefixLength;
-                int n = 1; // Maximum separators to skip
-                while (i < pathLength && (!IsDirectorySeparator(path[i]) || --n > 0))
+                // Device path (e.g. "\\?\.", "\\.\")
+                // Skip any characters following the prefix that aren't a separator
+                i = DevicePrefixLength;
+                while (i < pathLength && !IsDirectorySeparator(path[i]))
                     i++;
 
-                if (i == devicePrefixLength)
-                    i--;
+                // If there is another separator take it, as long as we have had at least one
+                // non-separator after the prefix (e.g. don't take "\\?\\", but take "\\?\a\")
+                if (i < pathLength && i > DevicePrefixLength && IsDirectorySeparator(path[i]))
+                    i++;
+            }
+            else if (pathLength >= 2
+                && path[1] == VolumeSeparatorChar
+                && IsValidDriveChar(path[0]))
+            {
+                // Valid drive specified path ("C:", "D:", etc.)
+                i = 2;
+
+                // If the colon is followed by a directory separator, move past it (e.g "C:\")
+                if (pathLength > 2 && IsDirectorySeparator(path[2]))
+                    i++;
             }
 
-            return (i < pathLength && IsDirectorySeparator(path[i])) ? i + 1 : i;
+            return i;
         }
 
         private static bool StartsWithOrdinal(ReadOnlySpan<char> source, string value)
