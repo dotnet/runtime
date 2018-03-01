@@ -85,7 +85,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
         /// <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
-        /// <param name="awaiter">the awaiter</param>
+        /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : INotifyCompletion
@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
         /// <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
-        /// <param name="awaiter">the awaiter</param>
+        /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
         [SecuritySafeCritical]
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
