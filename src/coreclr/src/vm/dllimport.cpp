@@ -1373,7 +1373,7 @@ public:
         // convert 'this' to COM IP and the target method entry point
         m_slIL.EmitLoadRCWThis(pcsDispatch, m_dwStubFlags);
 
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
         if (SF_IsWinRTDelegateStub(m_dwStubFlags))
         {
             // write the stub context (EEImplMethodDesc representing the Invoke)
@@ -1386,7 +1386,7 @@ public:
             pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT, 0, 1);
         }
         else
-#endif // _WIN64
+#endif // _TARGET_64BIT_
         {
             m_slIL.EmitLoadStubContext(pcsDispatch, dwStubFlags);
         }
@@ -2235,15 +2235,15 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             // get the delegate unmanaged target - we call a helper instead of just grabbing
             // the _methodPtrAux field because we may need to intercept the call for host, MDA, etc.
             pcsEmit->EmitLoadThis();
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
             // on AMD64 GetDelegateTarget will return address of the generic stub for host when we are hosted
             // and update the secret argument with real target - the secret arg will be embedded in the
             // InlinedCallFrame by the JIT and fetched via TLS->Thread->Frame->Datum by the stub for host
             pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT_ADDR, 0, 1);
-#else // _WIN64
+#else // !_TARGET_64BIT_
             // we don't need to do this on x86 because stub for host is generated dynamically per target
             pcsEmit->EmitLDNULL();
-#endif // _WIN64
+#endif // !_TARGET_64BIT_
             pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 2, 1);
         }
         else // direct invocation

@@ -991,9 +991,9 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
 
     if (pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()
         || pMT->GetNumInstanceFieldBytes() == 4
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
         || pMT->GetNumInstanceFieldBytes() == 8
-#endif // _WIN64
+#endif // _TARGET_64BIT_
         )) // Don't do the optimization if we're getting specified anything but the trivial layout.
     {
         FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
@@ -1025,10 +1025,10 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
-#ifdef _WIN64 
+#ifdef _TARGET_64BIT_
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
-#endif // _WIN64
+#endif // _TARGET_64BIT_
             
             {
                 return type;

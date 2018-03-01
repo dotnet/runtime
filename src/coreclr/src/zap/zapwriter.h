@@ -312,11 +312,11 @@ class ZapWriter : public IStream
 
     BOOL Is64Bit()
     {
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
         return TRUE;
-#else
+#else // !_TARGET_64BIT_
         return FALSE;
-#endif
+#endif // !_TARGET_64BIT_
     }
 
     USHORT GetMachine()

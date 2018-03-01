@@ -601,9 +601,9 @@ private:
     // Object::GetSize() looks at m_NumComponents even though it may not be an array (the
     // values is shifted out if not an array, so it's ok). 
     DWORD       m_NumComponents;
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
     DWORD       pad;
-#endif // _WIN64
+#endif // _TARGET_64BIT_
 
     SVAL_DECL(INT32, s_arrayBoundsZero); // = 0
 

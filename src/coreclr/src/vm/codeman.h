@@ -1277,7 +1277,7 @@ public:
         BOOL Acquired();
     };
 
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1285,7 +1285,7 @@ public:
             (size_t)((ULONG)offsetof(HeapList, CLRPersonalityRoutine)));
         return offsetof(HeapList, CLRPersonalityRoutine);
     }
-#endif // _WIN64
+#endif // _TARGET_64BIT_
 
     static EEJitManager * GetEEJitManager()
     {
