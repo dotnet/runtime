@@ -59,6 +59,7 @@ namespace System.Net.Http
         private int _readOffset;
         private int _readLength;
 
+        private bool _inUse;
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
         private int _disposed; // 1 yes, 0 no
@@ -150,6 +151,8 @@ namespace System.Net.Http
         }
 
         public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
+
+        public TransportContext TransportContext => _transportContext;
 
         private int ReadBufferSize => _readBuffer.Length;
 
@@ -250,10 +253,12 @@ namespace System.Net.Http
             return WriteAsciiStringAsync(value.ToString("X", CultureInfo.InvariantCulture));
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             TaskCompletionSource<bool> allowExpect100ToContinue = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
+            Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
+
             _currentRequest = request;
             bool isConnectMethod = (request.Method == HttpMethod.Connect);
 
@@ -484,7 +489,7 @@ namespace System.Net.Http
                 if (request.Method == HttpMethod.Head || response.StatusCode == HttpStatusCode.NoContent || response.StatusCode == HttpStatusCode.NotModified)
                 {
                     responseStream = EmptyReadStream.Instance;
-                    ReturnConnectionToPool();
+                    CompleteResponse();
                 }
                 else if (isConnectMethod && response.StatusCode == HttpStatusCode.OK)
                 {
@@ -502,7 +507,7 @@ namespace System.Net.Http
                     if (contentLength <= 0)
                     {
                         responseStream = EmptyReadStream.Instance;
-                        ReturnConnectionToPool();
+                        CompleteResponse();
                     }
                     else
                     {
@@ -574,8 +579,28 @@ namespace System.Net.Http
             }
         }
 
-        private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
+        public Task<HttpResponseMessage> SendWithNtProxyAuthAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (_pool.UsingProxy && _pool.ProxyCredentials != null)
+            {
+                return AuthenticationHelper.SendWithNtProxyAuthAsync(request, _pool.ProxyUri, _pool.ProxyCredentials, this, cancellationToken);
+            }
+
+            return SendAsyncCore(request, cancellationToken);
+        }
+
+        public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
+        {
+            if (doRequestAuth && _pool.Settings._credentials != null)
+            {
+                return AuthenticationHelper.SendWithNtConnectionAuthAsync(request, _pool.Settings._credentials, this, cancellationToken);
+            }
+
+            return SendWithNtProxyAuthAsync(request, cancellationToken);
+        }
+
+        private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
+    {
             bool requestTransferEncodingChunked = request.HasHeaders && request.Headers.TransferEncodingChunked == true;
             HttpContentWriteStream requestContentStream = requestTransferEncodingChunked ? (HttpContentWriteStream)
                 new ChunkedEncodingWriteStream(this) :
@@ -1233,33 +1258,107 @@ namespace System.Net.Http
             }
         }
 
-        private void ReturnConnectionToPool()
+        public void Acquire()
         {
-            Debug.Assert(_readAheadTask == null, "Expected a previous initial read to already be consumed.");
+            Debug.Assert(_currentRequest == null);
+            Debug.Assert(!_inUse);
+
+            _inUse = true;
+        }
+
+        public void Release()
+        {
+            Debug.Assert(_inUse);
+
+            _inUse = false;
+
+            // If the last request already completed (because the response had no content), return the connection to the pool now.
+            // Otherwise, it will be returned when the response has been consumed and CompleteResponse below is called.
+            if (_currentRequest == null)
+            {
+                ReturnConnectionToPool();
+            }
+        }
+
+        private void CompleteResponse()
+        {
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
 
-            if (NetEventSource.IsEnabled && _connectionClose)
-            {
-                Trace("Server requested connection be closed.");
-            }
+            // Disassociate the connection from a request.
+            _currentRequest = null;
 
             // If we have extraneous data in the read buffer, don't reuse the connection;
             // otherwise we'd interpret this as part of the next response.
-            if (_readOffset != _readLength)
+            if (RemainingBuffer.Length != 0)
             {
+                if (NetEventSource.IsEnabled)
+                {
+                    Trace("Unexpected data on connection after response read.");
+                }
+
+                ConsumeFromRemainingBuffer(RemainingBuffer.Length);
                 _connectionClose = true;
             }
 
-            // If server told us it's closing the connection, don't put this back in the pool.
-            // And if we incurred an error while transferring request content, also skip the pool.
-            if (!_connectionClose)
+            // If the connection is no longer in use (i.e. for NT authentication), then we can return it to the pool now.
+            // Otherwise, it will be returned when the connection is no longer in use (i.e. Release above is called).
+            if (!_inUse)
+            {
+                ReturnConnectionToPool();
+            }
+        }
+
+        public async Task DrainResponseAsync(HttpResponseMessage response)
+        {
+            Debug.Assert(_inUse);
+
+            if (_connectionClose)
+            {
+                throw new HttpRequestException(SR.net_http_authconnectionfailure);
+            }
+
+            HttpContentReadStream responseStream = (HttpContentReadStream)await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+
+            if (responseStream.NeedsDrain)
+            {
+                Debug.Assert(response.RequestMessage == _currentRequest);
+
+                if (!await responseStream.DrainAsync(_pool.Settings._maxResponseDrainSize).ConfigureAwait(false) ||
+                    _connectionClose)       // Draining may have set this
+                {
+                    throw new HttpRequestException(SR.net_http_authconnectionfailure);
+                }
+            }
+
+            Debug.Assert(_currentRequest == null);
+
+            response.Dispose();
+        }
+
+        private void ReturnConnectionToPool()
+        {
+            Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
+            Debug.Assert(_readAheadTask == null, "Expected a previous initial read to already be consumed.");
+            Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in connection read buffer.");
+
+            // If we decided not to reuse the connection (either because the server sent Connection: close,
+            // or there was some other problem while processing the request that makes the connection unusable),
+            // don't put the connection back in the pool.
+            if (_connectionClose)
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    Trace("Connection will not be reused.");
+                }
+
+                // We're not putting the connection back in the pool. Dispose it.
+                Dispose();
+            }
+            else
             {
                 try
                 {
-                    // Disassociate the connection from a request.
-                    _currentRequest = null;
-
                     // When putting a connection back into the pool, we initiate a pre-emptive
                     // read on the stream.  When the connection is subsequently taken out of the
                     // pool, this can be used in place of the first read on the stream that would
@@ -1268,20 +1367,19 @@ namespace System.Net.Http
                     // has been sent on the connection by the server, either of which would mean we
                     // should close the connection and not use it for subsequent requests.
                     _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
-
-                    // Put connection back in the pool.
-                    _pool.ReturnConnection(this);
-                    return;
                 }
                 catch (Exception error)
                 {
                     // If reading throws, eat the error and don't pool the connection.
                     if (NetEventSource.IsEnabled) Trace($"Error performing read ahead when returning connection to pool: {error}");
-                }
-            }
 
-            // We're not putting the connection back in the pool. Dispose it.
-            Dispose();
+                    Dispose();
+                    return;
+                }
+
+                // Put connection back in the pool.
+                _pool.ReturnConnection(this);
+            }
         }
 
         private static bool EqualsOrdinal(string left, Span<byte> right)

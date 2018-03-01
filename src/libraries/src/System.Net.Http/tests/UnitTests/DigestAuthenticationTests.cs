@@ -52,8 +52,9 @@ namespace System.Net.Http.Tests
             NetworkCredential credential = new NetworkCredential("foo","bar");
             AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
+            string parameter = await AuthenticationHelper.GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
 
-            Assert.Equal(expectedResult, await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false));
+            Assert.Equal(expectedResult, parameter != null);
         }
     }
 }

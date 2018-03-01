@@ -276,18 +276,15 @@ namespace System.Net.Http
 
             HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
 
-            HttpMessageHandler handler = new HttpConnectionHandler(poolManager);
+            HttpMessageHandler handler;
 
-            if (settings._useProxy && (settings._proxy != null || HttpProxyConnectionHandler.DefaultProxyConfigured))
+            if (settings._credentials == null)
             {
-                handler = new HttpProxyConnectionHandler(poolManager, settings._proxy, settings._defaultProxyCredentials, handler);
+                handler = new HttpConnectionHandler(poolManager);
             }
-
-            HttpMessageHandler unauthenticatedHandler = handler;
-
-            if (settings._credentials != null)
+            else
             {
-                handler = new AuthenticationHandler(settings._preAuthenticate, settings._credentials, handler);
+                handler = new HttpAuthenticatedConnectionHandler(poolManager);
             }
 
             if (settings._allowAutoRedirect)
@@ -295,7 +292,11 @@ namespace System.Net.Http
                 // Just as with WinHttpHandler and CurlHandler, for security reasons, we do not support authentication on redirects
                 // if the credential is anything other than a CredentialCache.
                 // We allow credentials in a CredentialCache since they are specifically tied to URIs.
-                HttpMessageHandler redirectHandler = (settings._credentials is CredentialCache ? handler : unauthenticatedHandler);
+                HttpMessageHandler redirectHandler = 
+                    (settings._credentials == null || settings._credentials is CredentialCache) ? 
+                    handler : 
+                    new HttpConnectionHandler(poolManager);        // will not authenticate
+
                 handler = new RedirectHandler(settings._maxAutomaticRedirections, handler, redirectHandler);
             }
 
