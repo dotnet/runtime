@@ -23,8 +23,7 @@ namespace System.Threading.Tasks.Sources
         /// </summary>
         UseSchedulingContext = 0x1,
         /// <summary>
-        /// Set if OnCompleted should capture the current <see cref="ExecutionContext"/> and use it to
-        /// <see cref="ExecutionContext.Run"/> the continuation.
+        /// Set if OnCompleted should capture the current ExecutionContext and use it to run the continuation.
         /// </summary>
         FlowExecutionContext = 0x2,
     }
