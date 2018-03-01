@@ -11,12 +11,14 @@
 // This step is as simple as walking the tree and emitting
 // sequences of codes.
 
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
-    internal sealed class RegexFCD
+    internal ref struct RegexFCD
     {
+        private const int StackBufferSize = 32;
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
 
@@ -31,34 +33,40 @@ namespace System.Text.RegularExpressions
         public const int Boundary = 0x0040;
         public const int ECMABoundary = 0x0080;
 
-        private int[] _intStack;
-        private int _intDepth;
-        private RegexFC[] _fcStack;
-        private int _fcDepth;
-        private bool _skipAllChildren;      // don't process any more children at the current level
-        private bool _skipchild;            // don't process the current child.
-        private bool _failed = false;
+        private readonly List<RegexFC> _fcStack;
+        private ValueListBuilder<int> _intStack;    // must not be readonly
+        private bool _skipAllChildren;              // don't process any more children at the current level
+        private bool _skipchild;                    // don't process the current child.
+        private bool _failed;
 
-        private RegexFCD()
+        private RegexFCD(Span<int> intStack)
         {
-            _fcStack = new RegexFC[32];
-            _intStack = new int[32];
+            _fcStack = new List<RegexFC>(StackBufferSize);
+            _intStack = new ValueListBuilder<int>(intStack);
+            _failed = false;
+            _skipchild = false;
+            _skipAllChildren = false;
         }
 
         /// <summary>
-        /// Takes a RegexTree and computes the set of chars that can start it.
+        /// This is the one of the only two functions that should be called from outside.
+        /// It takes a RegexTree and computes the set of chars that can start it.
         /// </summary>
-        public static RegexPrefix FirstChars(RegexTree t)
+        public static RegexPrefix? FirstChars(RegexTree t)
         {
-            RegexFCD s = new RegexFCD();
+            // Create/rent buffers
+            Span<int> intSpan = stackalloc int[StackBufferSize];
+
+            RegexFCD s = new RegexFCD(intSpan);
             RegexFC fc = s.RegexFCFromRegexTree(t);
+            s.Dispose();
 
             if (fc == null || fc._nullable)
                 return null;
 
             CultureInfo culture = ((t.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
-            return new RegexPrefix(fc.GetFirstChars(culture), fc.IsCaseInsensitive());
+            return new RegexPrefix(fc.GetFirstChars(culture), fc.CaseInsensitive);
         }
 
         /// <summary>
@@ -210,14 +218,22 @@ namespace System.Text.RegularExpressions
         {
             StringBuilder sb = new StringBuilder();
 
-            if (0 != (anchors & Beginning)) sb.Append(", Beginning");
-            if (0 != (anchors & Start)) sb.Append(", Start");
-            if (0 != (anchors & Bol)) sb.Append(", Bol");
-            if (0 != (anchors & Boundary)) sb.Append(", Boundary");
-            if (0 != (anchors & ECMABoundary)) sb.Append(", ECMABoundary");
-            if (0 != (anchors & Eol)) sb.Append(", Eol");
-            if (0 != (anchors & End)) sb.Append(", End");
-            if (0 != (anchors & EndZ)) sb.Append(", EndZ");
+            if (0 != (anchors & Beginning))
+                sb.Append(", Beginning");
+            if (0 != (anchors & Start))
+                sb.Append(", Start");
+            if (0 != (anchors & Bol))
+                sb.Append(", Bol");
+            if (0 != (anchors & Boundary))
+                sb.Append(", Boundary");
+            if (0 != (anchors & ECMABoundary))
+                sb.Append(", ECMABoundary");
+            if (0 != (anchors & Eol))
+                sb.Append(", Eol");
+            if (0 != (anchors & End))
+                sb.Append(", End");
+            if (0 != (anchors & EndZ))
+                sb.Append(", EndZ");
 
             if (sb.Length >= 2)
                 return (sb.ToString(2, sb.Length - 2));
@@ -226,79 +242,56 @@ namespace System.Text.RegularExpressions
         }
 #endif
 
-        /*
-         * To avoid recursion, we use a simple integer stack.
-         * This is the push.
-         */
-        private void PushInt(int I)
+        /// <summary>
+        /// To avoid recursion, we use a simple integer stack.
+        /// </summary>
+        private void PushInt(int i)
         {
-            if (_intDepth >= _intStack.Length)
-            {
-                int[] expanded = new int[_intDepth * 2];
-
-                Array.Copy(_intStack, 0, expanded, 0, _intDepth);
-
-                _intStack = expanded;
-            }
-
-            _intStack[_intDepth++] = I;
+            _intStack.Append(i);
         }
 
-        /*
-         * True if the stack is empty.
-         */
         private bool IntIsEmpty()
         {
-            return _intDepth == 0;
+            return _intStack.Length == 0;
         }
 
-        /*
-         * This is the pop.
-         */
         private int PopInt()
         {
-            return _intStack[--_intDepth];
+            return _intStack.Pop();
         }
 
-        /*
-          * We also use a stack of RegexFC objects.
-          * This is the push.
-          */
+        /// <summary>
+        /// We also use a stack of RegexFC objects.
+        /// </summary>
         private void PushFC(RegexFC fc)
         {
-            if (_fcDepth >= _fcStack.Length)
-            {
-                RegexFC[] expanded = new RegexFC[_fcDepth * 2];
-
-                Array.Copy(_fcStack, 0, expanded, 0, _fcDepth);
-                _fcStack = expanded;
-            }
-
-            _fcStack[_fcDepth++] = fc;
+            _fcStack.Add(fc);
         }
 
-        /*
-         * True if the stack is empty.
-         */
         private bool FCIsEmpty()
         {
-            return _fcDepth == 0;
+            return _fcStack.Count == 0;
         }
 
-        /*
-         * This is the pop.
-         */
         private RegexFC PopFC()
         {
-            return _fcStack[--_fcDepth];
+            RegexFC item = TopFC();
+            _fcStack.RemoveAt(_fcStack.Count - 1);
+
+            return item;
         }
 
-        /*
-         * This is the top.
-         */
         private RegexFC TopFC()
         {
-            return _fcStack[_fcDepth - 1];
+            return _fcStack[_fcStack.Count - 1];
+        }
+
+        /// <summary>
+        /// Return rented buffers.
+        /// </summary>
+        public void Dispose()
+        {
+            _intStack.Dispose();
         }
 
         /// <summary>
@@ -520,9 +513,8 @@ namespace System.Text.RegularExpressions
 
     internal sealed class RegexFC
     {
-        public RegexCharClass _cc;
+        private RegexCharClass _cc;
         public bool _nullable;
-        public bool _caseInsensitive;
 
         public RegexFC(bool nullable)
         {
@@ -546,7 +538,7 @@ namespace System.Text.RegularExpressions
                 _cc.AddRange(ch, ch);
             }
 
-            _caseInsensitive = caseInsensitive;
+            CaseInsensitive = caseInsensitive;
             _nullable = nullable;
         }
 
@@ -555,7 +547,7 @@ namespace System.Text.RegularExpressions
             _cc = RegexCharClass.Parse(charClass);
 
             _nullable = nullable;
-            _caseInsensitive = caseInsensitive;
+            CaseInsensitive = caseInsensitive;
         }
 
         public bool AddFC(RegexFC fc, bool concatenate)
@@ -579,59 +571,19 @@ namespace System.Text.RegularExpressions
                     _nullable = true;
             }
 
-            _caseInsensitive |= fc._caseInsensitive;
+            CaseInsensitive |= fc.CaseInsensitive;
             _cc.AddCharClass(fc._cc);
             return true;
         }
 
-        public String GetFirstChars(CultureInfo culture)
+        public bool CaseInsensitive { get; private set; }
+
+        public string GetFirstChars(CultureInfo culture)
         {
-            if (_caseInsensitive)
+            if (CaseInsensitive)
                 _cc.AddLowercase(culture);
 
             return _cc.ToStringClass();
-        }
-
-        public bool IsCaseInsensitive()
-        {
-            return _caseInsensitive;
-        }
-    }
-
-    internal sealed class RegexPrefix
-    {
-        public string _prefix;
-        public bool _caseInsensitive;
-
-        private static RegexPrefix _empty = new RegexPrefix(string.Empty, false);
-
-        public RegexPrefix(string prefix, bool ci)
-        {
-            _prefix = prefix;
-            _caseInsensitive = ci;
-        }
-
-        public string Prefix
-        {
-            get
-            {
-                return _prefix;
-            }
-        }
-
-        public bool CaseInsensitive
-        {
-            get
-            {
-                return _caseInsensitive;
-            }
-        }
-        public static RegexPrefix Empty
-        {
-            get
-            {
-                return _empty;
-            }
         }
     }
 }

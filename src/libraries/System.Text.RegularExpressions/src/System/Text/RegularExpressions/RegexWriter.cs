@@ -47,21 +47,33 @@ namespace System.Text.RegularExpressions
         /// This is the only function that should be called from outside.
         /// It takes a RegexTree and creates a corresponding RegexCode.
         /// </summary>
-        public static RegexCode Write(RegexTree t)
+        public static RegexCode Write(RegexTree tree)
         {
             Span<int> emittedSpan = stackalloc int[EmittedSize];
             Span<int> intStackSpan = stackalloc int[IntStackSize];
-            var w = new RegexWriter(emittedSpan, intStackSpan);
 
-            RegexCode retval = w.RegexCodeFromRegexTree(t);
+            var writer = new RegexWriter(emittedSpan, intStackSpan);
+            RegexCode code = writer.RegexCodeFromRegexTree(tree);
+            writer.Dispose();
+
 #if DEBUG
-            if (t.Debug)
+            if (tree.Debug)
             {
-                t.Dump();
-                retval.Dump();
+                tree.Dump();
+                code.Dump();
             }
 #endif
-            return retval;
+
+            return code;
+        }
+
+        /// <summary>
+        /// Return rented buffers.
+        /// </summary>
+        public void Dispose()
+        {
+            _emitted.Dispose();
+            _intStack.Dispose();
         }
 
         /// <summary>
@@ -69,7 +81,7 @@ namespace System.Text.RegularExpressions
         /// through the tree and calls EmitFragment to emits code before
         /// and after each child of an interior node, and at each leaf.
         /// </summary>
-        private RegexCode RegexCodeFromRegexTree(RegexTree tree)
+        public RegexCode RegexCodeFromRegexTree(RegexTree tree)
         {
             // construct sparse capnum mapping if some numbers are unused
             int capsize;
@@ -120,24 +132,20 @@ namespace System.Text.RegularExpressions
             PatchJump(0, _emitted.Length);
             Emit(RegexCode.Stop);
 
-            RegexPrefix fcPrefix = RegexFCD.FirstChars(tree);
+            RegexPrefix? fcPrefix = RegexFCD.FirstChars(tree);
             RegexPrefix prefix = RegexFCD.Prefix(tree);
             bool rtl = ((tree.Options & RegexOptions.RightToLeft) != 0);
 
             CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
             RegexBoyerMoore bmPrefix;
 
-            if (prefix != null && prefix.Prefix.Length > 0)
+            if (prefix.Prefix.Length > 0)
                 bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
             else
                 bmPrefix = null;
 
             int anchors = RegexFCD.Anchors(tree);
             int[] emitted = _emitted.AsSpan().ToArray();
-
-            // Cleaning up and returning the borrowed arrays
-            _emitted.Dispose();
-            _intStack.Dispose();
 
             return new RegexCode(emitted, _stringTable, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
         }
