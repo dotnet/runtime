@@ -77,12 +77,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
-#if defined(_WIN64) && !defined(DACCESS_COMPILE)
-    bool ConvertILOnlyPE32ToPE64();
-private:
-    bool ConvertILOnlyPE32ToPE64Worker();
-#endif // defined(_WIN64) && !defined(DACCESS_COMPILE)
-    
 private:
     Volatile<LONG> m_refCount;
 public:    
