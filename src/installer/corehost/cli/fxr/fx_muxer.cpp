@@ -1098,7 +1098,7 @@ int read_config(
         get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
     }
 
-    app.parse_runtime_config(config_file, dev_config_file, nullptr);
+    app.parse_runtime_config(config_file, dev_config_file, nullptr, nullptr);
     if (!app.get_runtime_config().is_valid())
     {
         trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
@@ -1151,18 +1151,21 @@ int fx_muxer_t::read_config_and_execute(
         return rc;
     }
 
-    auto config = app->get_runtime_config();
+    auto app_config = app->get_runtime_config();
 
     // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
-    // 1. Command line argument (--roll-forward-on-no-candidate-fx). Only defaults the app's config.
-    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property), which is used as a default for lower level frameworks if they don't specify a value.
-    // 3. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var. Only defaults the app's config.
-    // The conflicts will be resolved by following the priority rank described above (from 1 to 3).
+    // 1. Command line argument (--roll-forward-on-no-candidate-fx).
+    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in "framework" section:).
+    // 3. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property), which is used as a default for lower level frameworks if they don't specify a value.
+    // 4. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var. Only defaults the app's config.
+    // The conflicts will be resolved by following the priority rank described above (from 1 to 4).
     // The env var condition is verified in the config file processing
     if (!roll_fwd_on_no_candidate_fx.empty())
     {
-        config.set_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
+        app_config.force_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
     }
+
+    auto config = app_config;
 
     // Determine additional deps
     pal::string_t additional_deps_serialized;
@@ -1193,7 +1196,7 @@ int fx_muxer_t::read_config_and_execute(
             pal::string_t config_file;
             pal::string_t dev_config_file;
             get_runtime_config_paths(fx->get_dir(), config.get_fx_name(), &config_file, &dev_config_file);
-            fx->parse_runtime_config(config_file, dev_config_file, &config);
+            fx->parse_runtime_config(config_file, dev_config_file, &config, &app_config);
 
             config = fx->get_runtime_config();
             if (!config.is_valid())
