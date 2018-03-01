@@ -334,17 +334,17 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
         // by LoadAssembly then we can blame it on bitness mismatch.  We do the check here
         // and not in the CATCH to distinguish between the COR_IMAGE_ERROR that can be thrown by
         // VerifyIsAssembly (not necessarily a bitness mismatch) and that from LoadAssembly
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
         if (pImage->Has32BitNTHeaders())
         {
             hrProcessLibraryBitnessMismatch = PEFMT_E_32BIT;
         }
-#else
+#else // !_TARGET_64BIT_
         if (!pImage->Has32BitNTHeaders())
         {
             hrProcessLibraryBitnessMismatch = PEFMT_E_64BIT;
         }
-#endif
+#endif // !_TARGET_64BIT_
         
         AssemblySpec spec;
         spec.InitializeSpec(TokenFromRid(1, mdtAssembly), pImage->GetMDImport(), NULL, FALSE);
