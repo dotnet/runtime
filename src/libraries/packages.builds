@@ -15,6 +15,41 @@
     </Project>
   </ItemGroup>
 
+  <!-- Need the PackageIndexFile file property from baseline.props -->
+  <Import Project="../pkg/baseline/baseline.props" />
+
+  <UsingTask TaskName="UpdatePackageIndex" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll"/>
+
+  <!--
+    Updates the package index to mark all packages we are building that can go stable as stable.
+    this will allow for a kicked off build to control package stability at queue time. This does edit
+    the package index in-place but that shouldn't cause any problems for official builds are the only
+    ones that might do this. After we ship a stable set of packages this target should be ran and the
+    changes to the package index should be commited to the repo.
+  -->
+  <Target Name="UpdatePackageIndexWithStableVersions"
+          BeforeTargets="BuildAllProjects"
+          Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">
+    <ItemGroup>
+      <PkgProjects Include="$(MSBuildThisFileDirectory)..\pkg\*\*.pkgproj" />
+      <PkgProjects Include="*\pkg\**\*.pkgproj" />
+    </ItemGroup>
+
+    <MSBuild Targets="GetPackageIdentityIfStable"
+             BuildInParallel="$(BuildInParallel)"
+             Projects="@(PkgProjects)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="_StablePackages" />
+    </MSBuild>
+
+    <Message Text="Marking package '%(_StablePackages.Identity)' stable with version '%(_StablePackages.Version)'" />
+
+    <UpdatePackageIndex
+      PackageIndexFile="$(PackageIndexFile)"
+      StablePackages="@(_StablePackages)" />
+
+  </Target>
+
   <UsingTask TaskName="GenerateNetStandardSupportTable" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
   <Target Name="GenerateNETStandardDocs">
     <Error Condition="'$(WcfPackageReportDir)' == ''"
