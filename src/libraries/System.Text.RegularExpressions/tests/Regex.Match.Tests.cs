@@ -14,6 +14,8 @@ namespace System.Text.RegularExpressions.Tests
     {
         public static IEnumerable<object[]> Match_Basic_TestData()
         {
+            // pattern, input, options, beginning, length, expectedSuccess, expectedValue
+
             // Testing octal sequence matches: "\\060(\\061)?\\061"
             // Octal \061 is ASCII 49 ('1')
             yield return new object[] { @"\060(\061)?\061", "011", RegexOptions.None, 0, 3, true, "011" };
@@ -27,6 +29,28 @@ namespace System.Text.RegularExpressions.Tests
 
             // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
             yield return new object[] { @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
+
+            // Using long loop prefix
+            yield return new object[] { @"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10) };
+            yield return new object[] { @"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100) };
+
+            yield return new object[] { @"a{10}b", new string('a', 10) + "bc", RegexOptions.None, 0, 12, true, new string('a', 10) + "b" };
+            yield return new object[] { @"a{100}b", new string('a', 100) + "bc", RegexOptions.None, 0, 102, true, new string('a', 100) + "b" };
+
+            yield return new object[] { @"a{11}b", new string('a', 10) + "bc", RegexOptions.None, 0, 12, false, string.Empty };
+            yield return new object[] { @"a{101}b", new string('a', 100) + "bc", RegexOptions.None, 0, 102, false, string.Empty };
+
+            yield return new object[] { @"a{1,3}b", "bc", RegexOptions.None, 0, 2, false, string.Empty };
+            yield return new object[] { @"a{1,3}b", "abc", RegexOptions.None, 0, 3, true, "ab" };
+            yield return new object[] { @"a{1,3}b", "aaabc", RegexOptions.None, 0, 5, true, "aaab" };
+            yield return new object[] { @"a{1,3}b", "aaaabc", RegexOptions.None, 0, 6, true, "aaab" };
+
+            yield return new object[] { @"a{2,}b", "abc", RegexOptions.None, 0, 3, false, string.Empty };
+            yield return new object[] { @"a{2,}b", "aabc", RegexOptions.None, 0, 4, true, "aab" };
+
+            // {,n} is treated as a literal rather than {0,n} as it should be
+            yield return new object[] { @"a{,3}b", "a{,3}bc", RegexOptions.None, 0, 6, true, "a{,3}b" };
+            yield return new object[] { @"a{,3}b", "aaabc", RegexOptions.None, 0, 5, false, String.Empty };
 
             // Using [a-z], \s, \w: Actual - "([a-zA-Z]+)\\s(\\w+)"
             yield return new object[] { @"([a-zA-Z]+)\s(\w+)", "David Bau", RegexOptions.None, 0, 9, true, "David Bau" };
@@ -736,6 +760,20 @@ namespace System.Text.RegularExpressions.Tests
                 Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
 
                 return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework needs fix for #26484")]
+        public void Match_ExcessPrefix()
+        {
+            RemoteInvoke(() =>
+            {
+                // Should not throw out of memory
+                Assert.False(Regex.IsMatch("a", @"a{2147483647,}"));
+                Assert.False(Regex.IsMatch("a", @"a{1000001,}")); // 1 over the cutoff for Boyer-Moore prefix
+
+                Assert.False(Regex.IsMatch("a", @"a{50000}")); // creates string for Boyer-Moore but not so large that tests fail and start paging
             }).Dispose();
         }
 
