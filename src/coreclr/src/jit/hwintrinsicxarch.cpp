@@ -200,12 +200,22 @@ unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_I
         return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].simdSize;
     }
 
-    CORINFO_CLASS_HANDLE typeHnd =
-        ((flags & HW_Flag_BaseTypeFromArg) == 0) ? sig->retTypeSigClass : info.compCompHnd->getArgClass(sig, sig->args);
+    CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
-    int simdSize = getSIMDTypeSizeInBytes(typeHnd);
-    assert(simdSize > 0);
-    return (unsigned)simdSize;
+    if (JITtype2varType(sig->retType) == TYP_STRUCT)
+    {
+        typeHnd = sig->retTypeSigClass;
+    }
+    else
+    {
+        assert((flags & HW_Flag_BaseTypeFromFirstArg) != 0);
+        typeHnd = info.compCompHnd->getArgClass(sig, sig->args);
+    }
+
+    unsigned  simdSize = 0;
+    var_types baseType = getBaseTypeAndSizeOfSIMDType(typeHnd, &simdSize);
+    assert(simdSize > 0 && baseType != TYP_UNKNOWN);
+    return simdSize;
 }
 
 //------------------------------------------------------------------------
@@ -486,7 +496,6 @@ bool Compiler::isFullyImplmentedISAClass(InstructionSet isa)
     switch (isa)
     {
         case InstructionSet_SSE2:
-        case InstructionSet_SSE41:
         case InstructionSet_SSE42:
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
@@ -500,6 +509,7 @@ bool Compiler::isFullyImplmentedISAClass(InstructionSet isa)
         case InstructionSet_SSE:
         case InstructionSet_SSE3:
         case InstructionSet_SSSE3:
+        case InstructionSet_SSE41:
         case InstructionSet_LZCNT:
         case InstructionSet_POPCNT:
             return true;
@@ -560,13 +570,16 @@ bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
 //    flags   - flags of the intrinsics
 //
 // Return Value:
-//    On 32-bit platforms, return true if the intrinsic does not use any 64-bit registers (r64)
+//    Returns true iff the given type signature is supported
+// Notes:
+//    - This is only used on 32-bit systems to determine whether the signature uses no 64-bit registers.
+//    - The `retType` is passed to avoid another call to the type system, as it has already been retrieved.
 bool Compiler::hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_INFO* sig, HWIntrinsicFlag flags)
 {
 #ifdef _TARGET_X86_
     CORINFO_CLASS_HANDLE argClass;
 
-    if (((flags & HW_Flag_64BitOnly) != 0))
+    if ((flags & HW_Flag_64BitOnly) != 0)
     {
         return false;
     }
@@ -681,7 +694,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     bool isTableDriven = impIsTableDrivenHWIntrinsic(category, flags);
 
-    if (isTableDriven && (category == HW_Category_MemoryStore ||
+    if (isTableDriven && ((category == HW_Category_MemoryStore) ||
                           ((flags & (HW_Flag_BaseTypeFromFirstArg | HW_Flag_BaseTypeFromSecondArg)) != 0)))
     {
         if ((flags & HW_Flag_BaseTypeFromFirstArg) != 0)
@@ -690,7 +703,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
         else
         {
-            assert(category == HW_Category_MemoryStore || ((flags & HW_Flag_BaseTypeFromSecondArg) != 0));
+            assert((category == HW_Category_MemoryStore) || ((flags & HW_Flag_BaseTypeFromSecondArg) != 0));
             CORINFO_ARG_LIST_HANDLE secondArg      = info.compCompHnd->getArgNext(sig->args);
             CORINFO_CLASS_HANDLE    secondArgClass = info.compCompHnd->getArgClass(sig, secondArg);
             baseType                               = getBaseTypeOfSIMDType(secondArgClass);

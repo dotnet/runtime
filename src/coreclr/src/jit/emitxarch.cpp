@@ -155,7 +155,10 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_phsubd:
         case INS_phsubsw:
         case INS_phsubw:
+        case INS_pinsrb:
         case INS_pinsrw:
+        case INS_pinsrd:
+        case INS_pinsrq:
         case INS_pmaddubsw:
         case INS_pmaddwd:
         case INS_pmaxsb:
@@ -383,9 +386,16 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
     // required, the instruction must be created with the register size attribute (EA_16BYTE or EA_32BYTE),
     // and here we must special case these by the opcode.
-    if (ins == INS_vpermq || ins == INS_vpsrlvq || ins == INS_vpsllvq)
+    switch (ins)
     {
-        return true;
+        case INS_vpermq:
+        case INS_vpsrlvq:
+        case INS_vpsllvq:
+        case INS_pinsrq:
+        case INS_pextrq:
+            return true;
+        default:
+            break;
     }
 #endif // !LEGACY_BACKEND
 #ifdef _TARGET_AMD64_
@@ -1084,7 +1094,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
     if (!IsSSEOrAVXInstruction(ins) || ins == INS_mov_xmm2i || ins == INS_cvttsd2si
 #ifndef LEGACY_BACKEND
         || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si || ins == INS_pmovmskb ||
-        ins == INS_pextrw
+        ins == INS_pextrw || ins == INS_pextrb || ins == INS_pextrd || ins == INS_pextrq || ins == INS_extractps
 #endif // !LEGACY_BACKEND
         )
     {
@@ -4034,6 +4044,12 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         sz += emitGetRexPrefixSize(ins);
     }
 
+    if ((ins == INS_pextrq || ins == INS_pinsrq) && !UseVEXEncoding())
+    {
+        assert(UseSSE4());
+        sz += 1;
+    }
+
     id->idIns(ins);
     id->idInsFmt(IF_RRW_RRW_CNS);
     id->idReg1(reg1);
@@ -5519,11 +5535,26 @@ static bool isSseShift(instruction ins)
     }
 }
 
+static bool isSSEExtract(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_pextrb:
+        case INS_pextrw:
+        case INS_pextrd:
+        case INS_pextrq:
+        case INS_extractps:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber reg, regNumber reg1, int ival)
 {
     // TODO-XARCH refactoring emitIns_R_R_I to handle SSE2/AVX2 shift as well as emitIns_R_I
     bool isShift = isSseShift(ins);
-    if (UseVEXEncoding() && !isShift)
+    if (isSSEExtract(ins) || (UseVEXEncoding() && !isShift))
     {
         emitIns_R_R_I(ins, attr, reg, reg1, ival);
     }
