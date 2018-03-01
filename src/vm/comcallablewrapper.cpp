@@ -5398,7 +5398,7 @@ void ComCallWrapperTemplate::Cleanup()
     if (m_pIIDToInterfaceTemplateCache)
         delete m_pIIDToInterfaceTemplateCache;
 
-    delete[] this;
+    delete[] (BYTE*)this;
 }
 
 
