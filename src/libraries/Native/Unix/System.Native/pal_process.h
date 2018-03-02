@@ -74,15 +74,6 @@ enum Signals : int32_t
 };
 
 /**
- * Constants for passing to waitpid determining how waitpid behaves
- */
-enum WaitPidOptions : int32_t
-{
-    PAL_WNOHANG = 1,   /* don't block waiting */
-    PAL_WUNTRACED = 2, /* report status of stopped children */
-};
-
-/**
  * Constants for passing to the first parameter of syslog.
  * These are a combination of flags where the lower bits are
  * the priority and the higher bits are the facility. The lower
@@ -215,26 +206,13 @@ extern "C" int32_t SystemNative_GetSid(int32_t pid);
 extern "C" void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1);
 
 /**
- * Waits for child process(s) or gathers resource utilization information about child processes
+ * Waits for terminated child processes.
  *
- * The return value from WaitPid can very greatly.
- * 1) returns the process id of a terminating or stopped child process
- * 2) if no children are waiting, -1 is returned and errno is set to ECHILD
- * 3) if WNOHANG is specified and there are no stopped or exited children, 0 is returned
- * 4) on error, -1 is returned and errno is set
+ * 1) returns the process id of a terminated child process
+ * 2) if no children are waiting, 0 is returned
+ * 3) on error, -1 is returned
  */
-extern "C" int32_t SystemNative_WaitPid(int32_t pid, int32_t* status, WaitPidOptions options);
-
-/**
- * The four functions below are wrappers around the platform-specific macros of the same name.
- */
-extern "C" int32_t SystemNative_WExitStatus(int32_t status);
-
-extern "C" int32_t SystemNative_WIfExited(int32_t status);
-
-extern "C" int32_t SystemNative_WIfSignaled(int32_t status);
-
-extern "C" int32_t SystemNative_WTermSig(int32_t status);
+extern "C" int32_t SystemNative_WaitIdExitedNoHang(int32_t pid, int32_t* exitCode, int32_t keepWaitable);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.

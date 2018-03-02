@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -666,7 +667,7 @@ namespace System
                     // signal handlers, etc.
                     if (!Interop.Sys.InitializeConsole())
                     {
-                        throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                        throw new Win32Exception();
                     }
 
                     // Provide the native lib with the correct code from the terminfo to transition us into
@@ -1115,6 +1116,5 @@ namespace System
                 Interop.Sys.UnregisterForCtrl();
             }
         }
-
     }
 }

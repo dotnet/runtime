@@ -35,9 +35,9 @@ namespace System.Diagnostics.Tests
             return SuccessExitCode;
         }
 
-        public static int LongWait()
+        public static int Sleep(string duration)
         {
-            Thread.Sleep(WaitInMS);
+            Thread.Sleep(int.Parse(duration));
             return SuccessExitCode;
         }
 
