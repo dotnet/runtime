@@ -190,7 +190,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
+    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
+    <UseSourceLink>true</UseSourceLink>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
