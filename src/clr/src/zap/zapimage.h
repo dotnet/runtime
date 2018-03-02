@@ -54,7 +54,7 @@ class ZapperStats;
 #define DEFAULT_CODE_BUFFER_INIT 0
 #endif
 
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
 // Optimize for speed
 #define DEFAULT_CODE_ALIGN  16
 #else

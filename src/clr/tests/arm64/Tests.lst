@@ -10556,14 +10556,6 @@ MaxAllowedDurationSeconds=600
 Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
-[DoubleGetHashCode.cmd_1368]
-RelativePath=CoreMangLib\cti\system\double\DoubleGetHashCode\DoubleGetHashCode.cmd
-WorkingDir=CoreMangLib\cti\system\double\DoubleGetHashCode
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
-HostStyle=0
-
 [DoubleIConvertibleToBoolean.cmd_1369]
 RelativePath=CoreMangLib\cti\system\double\DoubleIConvertibleToBoolean\DoubleIConvertibleToBoolean.cmd
 WorkingDir=CoreMangLib\cti\system\double\DoubleIConvertibleToBoolean
@@ -17836,14 +17828,6 @@ MaxAllowedDurationSeconds=600
 Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
-[SingleGetHashCode.cmd_2434]
-RelativePath=CoreMangLib\cti\system\single\SingleGetHashCode\SingleGetHashCode.cmd
-WorkingDir=CoreMangLib\cti\system\single\SingleGetHashCode
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
-HostStyle=0
-
 [SingleIsInfinity.cmd_2435]
 RelativePath=CoreMangLib\cti\system\single\SingleIsInfinity\SingleIsInfinity.cmd
 WorkingDir=CoreMangLib\cti\system\single\SingleIsInfinity
@@ -18015,30 +17999,6 @@ HostStyle=0
 [StringChars.cmd_2459]
 RelativePath=CoreMangLib\cti\system\string\StringChars\StringChars.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringChars
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
-HostStyle=0
-
-[StringCompare1.cmd_2460]
-RelativePath=CoreMangLib\cti\system\string\StringCompare1\StringCompare1.cmd
-WorkingDir=CoreMangLib\cti\system\string\StringCompare1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
-HostStyle=0
-
-[StringCompare15.cmd_2461]
-RelativePath=CoreMangLib\cti\system\string\StringCompare15\StringCompare15.cmd
-WorkingDir=CoreMangLib\cti\system\string\StringCompare15
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
-HostStyle=0
-
-[StringCompare2.cmd_2462]
-RelativePath=CoreMangLib\cti\system\string\StringCompare2\StringCompare2.cmd
-WorkingDir=CoreMangLib\cti\system\string\StringCompare2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=Pri1;RT;EXPECTED_PASS
@@ -61697,7 +61657,7 @@ RelativePath=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel\Consol
 WorkingDir=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;R2R_FAIL
 HostStyle=0
 
 [RayTracer.cmd_8031]
@@ -71545,7 +71505,7 @@ RelativePath=JIT\SIMD\VectorReturn_r\VectorReturn_r.cmd
 WorkingDir=JIT\SIMD\VectorReturn_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;R2R_FAIL
 HostStyle=0
 
 [VectorReturn_ro.cmd_9293]
@@ -71553,7 +71513,7 @@ RelativePath=JIT\SIMD\VectorReturn_ro\VectorReturn_ro.cmd
 WorkingDir=JIT\SIMD\VectorReturn_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;ISSUE_5642
+Categories=EXPECTED_PASS;ISSUE_5642;R2R_FAIL
 HostStyle=0
 
 [VectorSet_r.cmd_9294]

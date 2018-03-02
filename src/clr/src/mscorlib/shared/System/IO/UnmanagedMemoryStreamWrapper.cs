@@ -217,7 +217,7 @@ namespace System.IO
             return _unmanagedStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             return _unmanagedStream.WriteAsync(source, cancellationToken);
         }

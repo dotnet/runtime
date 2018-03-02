@@ -36,7 +36,7 @@ namespace System
                 }
 
                 if (typeof(T) == typeof(char) &&
-                    ((ReadOnlyMemory<char>)(object)_memory).TryGetString(out string text, out int start, out int length))
+                    MemoryMarshal.TryGetString((ReadOnlyMemory<char>)(object)_memory, out string text, out int start, out int length))
                 {
                     return (T[])(object)text.Substring(start, length).ToCharArray();
                 }
