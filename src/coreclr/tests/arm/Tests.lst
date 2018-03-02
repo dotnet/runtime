@@ -58068,14 +58068,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[StringCompare2.cmd_7287]
-RelativePath=CoreMangLib\cti\system\string\StringCompare2\StringCompare2.cmd
-WorkingDir=CoreMangLib\cti\system\string\StringCompare2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1350.cmd_7288]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1350\Generated1350\Generated1350.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1350\Generated1350
@@ -61892,14 +61884,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[StringCompare15.cmd_7766]
-RelativePath=CoreMangLib\cti\system\string\StringCompare15\StringCompare15.cmd
-WorkingDir=CoreMangLib\cti\system\string\StringCompare15
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [CharMaxValue.cmd_7767]
 RelativePath=CoreMangLib\cti\system\char\CharMaxValue\CharMaxValue.cmd
 WorkingDir=CoreMangLib\cti\system\char\CharMaxValue
@@ -63618,14 +63602,6 @@ WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b16198\b16198
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[DoubleGetHashCode.cmd_7983]
-RelativePath=CoreMangLib\cti\system\double\DoubleGetHashCode\DoubleGetHashCode.cmd
-WorkingDir=CoreMangLib\cti\system\double\DoubleGetHashCode
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [ActionCtor.cmd_7984]
@@ -79204,14 +79180,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[SingleGetHashCode.cmd_9941]
-RelativePath=CoreMangLib\cti\system\single\SingleGetHashCode\SingleGetHashCode.cmd
-WorkingDir=CoreMangLib\cti\system\single\SingleGetHashCode
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [TestCase4.cmd_9942]
 RelativePath=Loader\classloader\InterfaceFolding\TestCase4\TestCase4.cmd
 WorkingDir=Loader\classloader\InterfaceFolding\TestCase4
@@ -88607,14 +88575,6 @@ HostStyle=0
 [xaddmuly_cs_d.cmd_11124]
 RelativePath=JIT\Directed\coverage\flowgraph\xaddmuly_cs_d\xaddmuly_cs_d.cmd
 WorkingDir=JIT\Directed\coverage\flowgraph\xaddmuly_cs_d
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[StringCompare1.cmd_11125]
-RelativePath=CoreMangLib\cti\system\string\StringCompare1\StringCompare1.cmd
-WorkingDir=CoreMangLib\cti\system\string\StringCompare1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1

@@ -1912,7 +1912,7 @@ FCIMPL2(void, StubHelpers::LogPinnedArgument, MethodDesc *target, Object *pinned
 }
 FCIMPLEND
 
-#ifdef _WIN64
+#ifdef _TARGET_64BIT_
 FCIMPL0(void*, StubHelpers::GetStubContextAddr)
 {
     FCALL_CONTRACT;
@@ -1921,7 +1921,7 @@ FCIMPL0(void*, StubHelpers::GetStubContextAddr)
     UNREACHABLE_MSG("This is a JIT intrinsic!");
 }
 FCIMPLEND
-#endif // _WIN64
+#endif // _TARGET_64BIT_
 
 #ifdef MDA_SUPPORTED    
 FCIMPL0(void, StubHelpers::TriggerGCForMDA)

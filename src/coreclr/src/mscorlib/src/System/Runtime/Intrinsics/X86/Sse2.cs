@@ -1073,7 +1073,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<T> SetZeroVector128<T>() where T : struct
         {
-            ThrowHelper.ThrowNotSupportedExceptionIfNonNumericType<T>();
             return SetZeroVector128<T>();
         }
 

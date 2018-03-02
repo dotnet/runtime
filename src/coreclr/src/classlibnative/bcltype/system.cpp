@@ -100,15 +100,6 @@ FCIMPLEND;
 
 
 
-FCIMPL0(UINT32, SystemNative::GetCurrentProcessorNumber)
-{
-    FCALL_CONTRACT;
-
-    return ::GetCurrentProcessorNumber();
-}
-FCIMPLEND;
-
-
 
 FCIMPL0(UINT32, SystemNative::GetTickCount)
 {

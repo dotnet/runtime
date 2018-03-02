@@ -72,10 +72,14 @@ namespace System.Collections.Generic
         {
             if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             if (capacity > 0) Initialize(capacity);
-            _comparer = comparer ?? EqualityComparer<TKey>.Default;
-
-            if (_comparer == EqualityComparer<string>.Default)
+            if (comparer != EqualityComparer<TKey>.Default)
             {
+                _comparer = comparer;
+            }
+
+            if (typeof(TKey) == typeof(string) && _comparer == null)
+            {
+                // To start, move off default comparer for string which is randomised
                 _comparer = (IEqualityComparer<TKey>)NonRandomizedStringEqualityComparer.Default;
             }
         }
@@ -143,7 +147,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                return (_comparer is NonRandomizedStringEqualityComparer) ? (IEqualityComparer<TKey>)EqualityComparer<string>.Default : _comparer;
+                return (_comparer == null || _comparer is NonRandomizedStringEqualityComparer) ? EqualityComparer<TKey>.Default : _comparer;
             }
         }
 
@@ -259,11 +263,7 @@ namespace System.Collections.Generic
             int count = _count;
             if (count > 0)
             {
-                int[] buckets = _buckets;
-                for (int i = 0; i < buckets.Length; i++)
-                {
-                    buckets[i] = -1;
-                }
+                Array.Clear(_buckets, 0, _buckets.Length);
 
                 _count = 0;
                 _freeList = -1;
@@ -289,10 +289,9 @@ namespace System.Collections.Generic
             }
             else
             {
-                EqualityComparer<TValue> c = EqualityComparer<TValue>.Default;
                 for (int i = 0; i < _count; i++)
                 {
-                    if (_entries[i].hashCode >= 0 && c.Equals(_entries[i].value, value)) return true;
+                    if (_entries[i].hashCode >= 0 && EqualityComparer<TValue>.Default.Equals(_entries[i].value, value)) return true;
                 }
             }
             return false;
@@ -344,7 +343,7 @@ namespace System.Collections.Generic
             }
 
             info.AddValue(VersionName, _version);
-            info.AddValue(ComparerName, _comparer, typeof(IEqualityComparer<TKey>));
+            info.AddValue(ComparerName, _comparer ?? EqualityComparer<TKey>.Default, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
             if (_buckets != null)
@@ -362,28 +361,58 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets != null)
+            int i = -1;
+            int[] buckets = _buckets;
+            Entry[] entries = _entries;
+            if (buckets != null)
             {
-                int hashCode = _comparer.GetHashCode(key) & 0x7FFFFFFF;
-                for (int i = _buckets[hashCode % _buckets.Length]; i >= 0; i = _entries[i].next)
+                IEqualityComparer<TKey> comparer = _comparer;
+                if (comparer == null)
                 {
-                    if (_entries[i].hashCode == hashCode && _comparer.Equals(_entries[i].key, key)) return i;
+                    int hashCode = key.GetHashCode() & 0x7FFFFFFF;
+                    // Value in _buckets is 1-based
+                    i = buckets[hashCode % buckets.Length] - 1;
+                    do
+                    {
+                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Test in if to drop range check for following array access
+                        if ((uint)i >= (uint)entries.Length || (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key)))
+                        {
+                            break;
+                        }
+
+                        i = entries[i].next;
+                    } while (true);
+                }
+                else
+                {
+                    int hashCode = comparer.GetHashCode(key) & 0x7FFFFFFF;
+                    // Value in _buckets is 1-based
+                    i = buckets[hashCode % buckets.Length] - 1;
+                    do
+                    {
+                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Test in if to drop range check for following array access
+                        if ((uint)i >= (uint)entries.Length ||
+                            (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key)))
+                        {
+                            break;
+                        }
+
+                        i = entries[i].next;
+                    } while (true);
                 }
             }
-            return -1;
+
+            return i;
         }
 
         private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
-            int[] buckets = new int[size];
-            for (int i = 0; i < buckets.Length; i++)
-            {
-                buckets[i] = -1;
-            }
 
             _freeList = -1;
-            _buckets = buckets;
+            _buckets = new int[size];
             _entries = new Entry[size];
 
             return size;
@@ -396,64 +425,134 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            if (_buckets == null) Initialize(0);
-            int hashCode = _comparer.GetHashCode(key) & 0x7FFFFFFF;
-            int targetBucket = hashCode % _buckets.Length;
-            int collisionCount = 0;
-
-            for (int i = _buckets[targetBucket]; i >= 0; i = _entries[i].next)
+            if (_buckets == null)
             {
-                if (_entries[i].hashCode == hashCode && _comparer.Equals(_entries[i].key, key))
-                {
-                    if (behavior == InsertionBehavior.OverwriteExisting)
-                    {
-                        _entries[i].value = value;
-                        _version++;
-                        return true;
-                    }
-
-                    if (behavior == InsertionBehavior.ThrowOnExisting)
-                    {
-                        ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
-                    }
-
-                    return false;
-                }
-                collisionCount++;
+                Initialize(0);
             }
 
+            Entry[] entries = _entries;
+            IEqualityComparer<TKey> comparer = _comparer;
+
+            int hashCode = ((comparer == null) ? key.GetHashCode() : comparer.GetHashCode(key)) & 0x7FFFFFFF;
+
+            int collisionCount = 0;
+            ref int bucket = ref _buckets[hashCode % _buckets.Length];
+            // Value in _buckets is 1-based
+            int i = bucket - 1;
+
+            if (comparer == null)
+            {
+                do
+                {
+                    // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                    // Test uint in if rather than loop condition to drop range check for following array access
+                    if ((uint)i >= (uint)entries.Length)
+                    {
+                        break;
+                    }
+
+                    if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
+                    {
+                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        {
+                            entries[i].value = value;
+                            _version++;
+                            return true;
+                        }
+
+                        if (behavior == InsertionBehavior.ThrowOnExisting)
+                        {
+                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                        }
+
+                        return false;
+                    }
+
+                    i = entries[i].next;
+                    collisionCount++;
+                } while (true);
+            }
+            else
+            {
+                do
+                {
+                    // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                    // Test uint in if rather than loop condition to drop range check for following array access
+                    if ((uint)i >= (uint)entries.Length)
+                    {
+                        break;
+                    }
+
+                    if (entries[i].hashCode == hashCode && comparer.Equals(entries[i].key, key))
+                    {
+                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        {
+                            entries[i].value = value;
+                            _version++;
+                            return true;
+                        }
+
+                        if (behavior == InsertionBehavior.ThrowOnExisting)
+                        {
+                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                        }
+
+                        return false;
+                    }
+
+                    i = entries[i].next;
+                    collisionCount++;
+                } while (true);
+
+            }
+
+            // Can be improved with "Ref Local Reassignment"
+            // https://github.com/dotnet/csharplang/blob/master/proposals/ref-local-reassignment.md
+            bool resized = false;
+            bool updateFreeList = false;
             int index;
             if (_freeCount > 0)
             {
                 index = _freeList;
-                _freeList = _entries[index].next;
+                updateFreeList = true;
                 _freeCount--;
             }
             else
             {
-                if (_count == _entries.Length)
+                int count = _count;
+                if (count == entries.Length)
                 {
                     Resize();
-                    targetBucket = hashCode % _buckets.Length;
+                    resized = true;
                 }
-                index = _count;
-                _count++;
+                index = count;
+                _count = count + 1;
+                entries = _entries;
             }
 
-            _entries[index].hashCode = hashCode;
-            _entries[index].next = _buckets[targetBucket];
-            _entries[index].key = key;
-            _entries[index].value = value;
-            _buckets[targetBucket] = index;
+            ref int targetBucket = ref resized ? ref _buckets[hashCode % _buckets.Length] : ref bucket;
+            ref Entry entry = ref entries[index];
+
+            if (updateFreeList)
+            {
+                _freeList = entry.next;
+            }
+            entry.hashCode = hashCode;
+            // Value in _buckets is 1-based
+            entry.next = targetBucket - 1;
+            entry.key = key;
+            entry.value = value;
+            // Value in _buckets is 1-based
+            targetBucket = index + 1;
             _version++;
 
-            // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
-            // i.e. EqualityComparer<string>.Default.
-
-            if (collisionCount > HashHelpers.HashCollisionThreshold && _comparer is NonRandomizedStringEqualityComparer)
+            // Value types never rehash
+            if (default(TKey) == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
             {
-                _comparer = (IEqualityComparer<TKey>)EqualityComparer<string>.Default;
-                Resize(_entries.Length, true);
+                // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
+                // i.e. EqualityComparer<string>.Default.
+                _comparer = null;
+                Resize(entries.Length, true);
             }
 
             return true;
@@ -512,25 +611,24 @@ namespace System.Collections.Generic
 
         private void Resize(int newSize, bool forceNewHashCodes)
         {
+            // Value types never rehash
+            Debug.Assert(!forceNewHashCodes || default(TKey) == null);
             Debug.Assert(newSize >= _entries.Length);
 
             int[] buckets = new int[newSize];
-            for (int i = 0; i < buckets.Length; i++)
-            {
-                buckets[i] = -1;
-            }
             Entry[] entries = new Entry[newSize];
 
             int count = _count;
             Array.Copy(_entries, 0, entries, 0, count);
 
-            if (forceNewHashCodes)
+            if (default(TKey) == null && forceNewHashCodes)
             {
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].hashCode != -1)
+                    if (entries[i].hashCode >= 0)
                     {
-                        entries[i].hashCode = (_comparer.GetHashCode(entries[i].key) & 0x7FFFFFFF);
+                        Debug.Assert(_comparer == null);
+                        entries[i].hashCode = (entries[i].key.GetHashCode() & 0x7FFFFFFF);
                     }
                 }
             }
@@ -540,8 +638,10 @@ namespace System.Collections.Generic
                 if (entries[i].hashCode >= 0)
                 {
                     int bucket = entries[i].hashCode % newSize;
-                    entries[i].next = buckets[bucket];
-                    buckets[bucket] = i;
+                    // Value in _buckets is 1-based
+                    entries[i].next = buckets[bucket] - 1;
+                    // Value in _buckets is 1-based
+                    buckets[bucket] = i + 1;
                 }
             }
 
@@ -561,19 +661,21 @@ namespace System.Collections.Generic
 
             if (_buckets != null)
             {
-                int hashCode = _comparer.GetHashCode(key) & 0x7FFFFFFF;
+                int hashCode = (_comparer?.GetHashCode(key) ?? key.GetHashCode()) & 0x7FFFFFFF;
                 int bucket = hashCode % _buckets.Length;
                 int last = -1;
-                int i = _buckets[bucket];
+                // Value in _buckets is 1-based
+                int i = _buckets[bucket] - 1;
                 while (i >= 0)
                 {
                     ref Entry entry = ref _entries[i];
 
-                    if (entry.hashCode == hashCode && _comparer.Equals(entry.key, key))
+                    if (entry.hashCode == hashCode && (_comparer?.Equals(entry.key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.key, key)))
                     {
                         if (last < 0)
                         {
-                            _buckets[bucket] = entry.next;
+                            // Value in _buckets is 1-based
+                            _buckets[bucket] = entry.next + 1;
                         }
                         else
                         {
@@ -615,19 +717,21 @@ namespace System.Collections.Generic
 
             if (_buckets != null)
             {
-                int hashCode = _comparer.GetHashCode(key) & 0x7FFFFFFF;
+                int hashCode = (_comparer?.GetHashCode(key) ?? key.GetHashCode()) & 0x7FFFFFFF;
                 int bucket = hashCode % _buckets.Length;
                 int last = -1;
-                int i = _buckets[bucket];
+                // Value in _buckets is 1-based
+                int i = _buckets[bucket] - 1;
                 while (i >= 0)
                 {
                     ref Entry entry = ref _entries[i];
 
-                    if (entry.hashCode == hashCode && _comparer.Equals(entry.key, key))
+                    if (entry.hashCode == hashCode && (_comparer?.Equals(entry.key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.key, key)))
                     {
                         if (last < 0)
                         {
-                            _buckets[bucket] = entry.next;
+                            // Value in _buckets is 1-based
+                            _buckets[bucket] = entry.next + 1;
                         }
                         else
                         {
@@ -824,8 +928,10 @@ namespace System.Collections.Generic
                     ref Entry entry = ref entries[count];
                     entry = oldEntries[i];
                     int bucket = hashCode % newSize;
-                    entry.next = buckets[bucket];
-                    buckets[bucket] = count;
+                    // Value in _buckets is 1-based
+                    entry.next = buckets[bucket] - 1;
+                    // Value in _buckets is 1-based
+                    buckets[bucket] = count + 1;
                     count++;
                 }
             }

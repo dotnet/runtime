@@ -782,10 +782,10 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
  *  Returns the specific encoding of the given CPU instruction and format
  */
 
-size_t emitter::emitInsCode(instruction ins, insFormat fmt)
+emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
     // clang-format off
-    const static size_t insCodes1[] =
+    const static code_t insCodes1[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                ) e1,
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) e1,
@@ -797,7 +797,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e1,
         #include "instrs.h"
     };
-    const static size_t insCodes2[] =
+    const static code_t insCodes2[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            ) e2,
@@ -809,7 +809,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e2,
         #include "instrs.h"
     };
-    const static size_t insCodes3[] =
+    const static code_t insCodes3[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -821,7 +821,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e3,
         #include "instrs.h"
     };
-    const static size_t insCodes4[] =
+    const static code_t insCodes4[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -833,7 +833,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e4,
         #include "instrs.h"
     };
-    const static size_t insCodes5[] =
+    const static code_t insCodes5[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -845,7 +845,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e5,
         #include "instrs.h"
     };
-    const static size_t insCodes6[] =
+    const static code_t insCodes6[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -857,7 +857,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e6,
         #include "instrs.h"
     };
-    const static size_t insCodes7[] =
+    const static code_t insCodes7[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -869,7 +869,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e7,
         #include "instrs.h"
     };
-    const static size_t insCodes8[] =
+    const static code_t insCodes8[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -881,7 +881,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
         #define INST9(id, nm, fp, ldst, fmt, e1, e2, e3, e4, e5, e6, e7, e8, e9) e8,
         #include "instrs.h"
     };
-    const static size_t insCodes9[] =
+    const static code_t insCodes9[] =
     {
         #define INST1(id, nm, fp, ldst, fmt, e1                                )
         #define INST2(id, nm, fp, ldst, fmt, e1, e2                            )
@@ -916,7 +916,7 @@ size_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2G[2] = { IF_T1_J3, IF_T2_M1 };
     // clang-format on
 
-    size_t    code   = BAD_CODE;
+    code_t    code   = BAD_CODE;
     insFormat insFmt = emitInsFormat(ins);
     bool      found  = false;
     int       index  = 0;
@@ -5001,7 +5001,7 @@ inline unsigned insEncodeBitFieldImm(int imm)
  *  Emit a Thumb-1 instruction (a 16-bit integer as code)
  */
 
-/*static*/ unsigned emitter::emitOutput_Thumb1Instr(BYTE* dst, ssize_t code)
+/*static*/ unsigned emitter::emitOutput_Thumb1Instr(BYTE* dst, code_t code)
 {
     unsigned short word1 = code & 0xffff;
     assert(word1 == code);
@@ -5020,11 +5020,11 @@ inline unsigned insEncodeBitFieldImm(int imm)
  *  Emit a Thumb-2 instruction (two 16-bit integers as code)
  */
 
-/*static*/ unsigned emitter::emitOutput_Thumb2Instr(BYTE* dst, ssize_t code)
+/*static*/ unsigned emitter::emitOutput_Thumb2Instr(BYTE* dst, code_t code)
 {
     unsigned short word1 = (code >> 16) & 0xffff;
     unsigned short word2 = (code)&0xffff;
-    assert(((word1 << 16) | word2) == code);
+    assert((code_t)((word1 << 16) | word2) == code);
 
 #ifdef DEBUG
     unsigned short top5bits = (word1 & 0xf800) >> 11;
@@ -5053,7 +5053,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
     instrDescJmp* id  = (instrDescJmp*)i;
     instruction   ins = id->idIns();
-    ssize_t       code;
+    code_t        code;
 
     bool loadLabel = false;
     bool isJump    = false;
@@ -5428,7 +5428,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
 BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id)
 {
-    size_t code;
+    code_t code;
 
     code = emitInsCode(ins, fmt);
 
@@ -5486,10 +5486,10 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
  *  Output an IT instruction.
  */
 
-BYTE* emitter::emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, ssize_t condcode)
+BYTE* emitter::emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, code_t condcode)
 {
-    ssize_t imm0;
-    size_t  code, mask, bit;
+    code_t imm0;
+    code_t code, mask, bit;
 
     code = emitInsCode(ins, fmt);
     code |= (condcode << 4);        // encode firstcond
@@ -5523,7 +5523,7 @@ BYTE* emitter::emitOutputIT(BYTE* dst, instruction ins, insFormat fmt, ssize_t c
 
 BYTE* emitter::emitOutputNOP(BYTE* dst, instruction ins, insFormat fmt)
 {
-    size_t code = emitInsCode(ins, fmt);
+    code_t code = emitInsCode(ins, fmt);
 
     dst += emitOutput_Thumb2Instr(dst, code);
 
@@ -5543,7 +5543,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*         dst           = *dp;
     BYTE*         odst          = dst;
-    size_t        code          = 0;
+    code_t        code          = 0;
     size_t        sz            = 0;
     instruction   ins           = id->idIns();
     insFormat     fmt           = id->idInsFmt();

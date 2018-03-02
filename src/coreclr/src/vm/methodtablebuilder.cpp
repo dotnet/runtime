@@ -8087,17 +8087,17 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // value classes could have GC pointers in them, which need to be pointer-size aligned
                     // so do this if it has not been done already
 
-#if !defined(_WIN64) && (DATA_ALIGNMENT > 4) 
+#if !defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4) 
                 dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos,
                     (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : TARGET_POINTER_SIZE);
-#else // !(!defined(_WIN64) && (DATA_ALIGNMENT > 4))
+#else // !(!defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4))
 #ifdef FEATURE_64BIT_ALIGNMENT
                 if (pByValueMT->RequiresAlign8())
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-#endif // !(!defined(_WIN64) && (DATA_ALIGNMENT > 4))
+#endif // !(!defined(_TARGET_64BIT_) && (DATA_ALIGNMENT > 4))
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
                 dwCumulativeInstanceFieldPos += pByValueMT->GetAlignedNumInstanceFieldBytes();

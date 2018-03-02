@@ -68,7 +68,7 @@ FCIMPL11(void, MetaDataImport::GetMarshalAs,
         *safeArrayUserDefinedSubType = info.m_strSafeArrayUserDefTypeName == NULL ? NULL :
             StringObject::NewString(info.m_strSafeArrayUserDefTypeName, info.m_cSafeArrayUserDefTypeNameBytes);
 #else
-        *iidParamIndex = -1;
+        *iidParamIndex = 0;
 
         *safeArraySubType = VT_EMPTY;
 

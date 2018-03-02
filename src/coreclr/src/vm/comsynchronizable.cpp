@@ -399,20 +399,20 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
 }
 
 
-FCIMPL2(void, ThreadNative::Start, ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark)
+FCIMPL1(void, ThreadNative::Start, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
 
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
 
-    StartInner(pThisUNSAFE, pStackMark);
+    StartInner(pThisUNSAFE);
 
     HELPER_METHOD_FRAME_END_POLL();
 }
 FCIMPLEND
 
 // Start up a thread, which by now should be in the ThreadStore's Unstarted list.
-void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE, StackCrawlMark* pStackMark)
+void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
 {
     CONTRACTL
     {
@@ -1768,3 +1768,10 @@ FCIMPL1(void, ThreadNative::ClearAbortReason, ThreadBaseObject* pThisUNSAFE)
 FCIMPLEND
 
 
+FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
+{
+    FCALL_CONTRACT;
+
+    return ::GetCurrentProcessorNumber();
+}
+FCIMPLEND;

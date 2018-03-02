@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Buffers;
 
 namespace System.IO
@@ -251,7 +252,7 @@ namespace System.IO
         }
 
         public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
-            new ValueTask<int>(buffer.TryGetArray(out ArraySegment<char> array) ?
+            new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 ReadAsync(array.Array, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(state =>
                 {
@@ -289,7 +290,7 @@ namespace System.IO
         }
 
         public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
-            new ValueTask<int>(buffer.TryGetArray(out ArraySegment<char> array) ?
+            new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
                 ReadBlockAsync(array.Array, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(state =>
                 {

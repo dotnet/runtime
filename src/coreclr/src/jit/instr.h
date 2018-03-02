@@ -314,7 +314,7 @@ enum InstructionSet
     InstructionSet_Lrcpc,     // ID_AA64ISAR1_EL1.LRCPC is 1 or better
     InstructionSet_Pmull,     // ID_AA64ISAR0_EL1.AES is 2 or better
     InstructionSet_Sha1,      // ID_AA64ISAR0_EL1.SHA1 is 1 or better
-    InstructionSet_Sha2,      // ID_AA64ISAR0_EL1.SHA2 is 1 or better
+    InstructionSet_Sha256,    // ID_AA64ISAR0_EL1.SHA2 is 1 or better
     InstructionSet_Sha512,    // ID_AA64ISAR0_EL1.SHA2 is 2 or better
     InstructionSet_Sha3,      // ID_AA64ISAR0_EL1.SHA3 is 1 or better
     InstructionSet_Simd,      // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
