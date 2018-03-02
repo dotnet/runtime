@@ -457,15 +457,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\runtime\interopservices\marshal\MarshalGetLastWin32Error_PSC\MarshalGetLastWin32Error_PSC.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare15\StringCompare15.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare1\StringCompare1.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare2\StringCompare2.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\uint16\UInt16ToString3\UInt16ToString3.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
