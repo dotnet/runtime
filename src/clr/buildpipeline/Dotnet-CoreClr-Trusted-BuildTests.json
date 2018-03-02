@@ -43,9 +43,7 @@
         "failOnStandardError": "false"
       }
     },
-    {"PB_FeedReadAccessToken": {
-      "value": "$(PB_FeedReadAccessToken)"
-    },
+    {
       "environment": {},
       "enabled": true,
       "continueOnError": false,
