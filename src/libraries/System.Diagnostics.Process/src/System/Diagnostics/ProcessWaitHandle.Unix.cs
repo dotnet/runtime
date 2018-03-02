@@ -34,6 +34,8 @@ namespace System.Diagnostics
 
         protected override void Dispose(bool explicitDisposing)
         {
+            // ProcessWaitState will dispose the handle
+            this.SafeWaitHandle = null;
             if (explicitDisposing)
             {
                 if (_waitStateHolder != null)

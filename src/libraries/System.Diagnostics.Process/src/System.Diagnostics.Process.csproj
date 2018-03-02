@@ -333,6 +333,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadLink.cs">
       <Link>Common\Interop\Unix\Interop.ReadLink.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RegisterForSigChld.cs">
+      <Link>Common\Interop\Unix\Interop.RegisterForRegisterForSigChld.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ResourceLimits.cs">
       <Link>Common\Interop\Unix\Interop.ResourceLimits.cs</Link>
     </Compile>
@@ -342,8 +345,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.POpen.cs">
       <Link>Common\Interop\Unix\Interop.POpen.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.WaitPid.cs">
-      <Link>Common\Interop\Unix\Interop.WaitPid.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.WaitId.cs">
+      <Link>Common\Interop\Unix\Interop.WaitId.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">

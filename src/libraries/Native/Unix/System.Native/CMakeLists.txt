@@ -14,6 +14,7 @@ set(NATIVE_SOURCES
     pal_random.cpp
     pal_runtimeinformation.cpp
     pal_runtimeextensions.cpp
+    pal_signal.c
     pal_string.cpp
     pal_tcpstate.c
     pal_time.cpp
