@@ -16,7 +16,12 @@ namespace System.Diagnostics.Tests
 
         protected Process CreateProcessLong()
         {
-            return CreateProcessForUap(RemotelyInvokable.LongWait);
+            return CreateSleepProcess(RemotelyInvokable.WaitInMS);
+        }
+
+        protected Process CreateSleepProcess(int durationMs)
+        {
+            return CreateProcessForUap(RemotelyInvokable.Sleep, durationMs.ToString());
         }
 
         protected Process CreateProcessPortable(Func<int> func)

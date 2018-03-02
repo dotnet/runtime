@@ -18,6 +18,10 @@ namespace System.Diagnostics
     {
         private static readonly UTF8Encoding s_utf8NoBom =
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        private static volatile bool s_sigchildHandlerRegistered = false;
+        private static readonly object s_sigchildGate = new object();
+        private static readonly Interop.Sys.SigChldCallback s_sigChildHandler = OnSigChild;
+        private static readonly ReaderWriterLockSlim s_processStartLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Puts a Process component in state to interact with operating system processes that run in a 
@@ -106,6 +110,8 @@ namespace System.Diagnostics
                         }
                         catch
                         {
+                            _waitHandle?.Dispose();
+                            _waitHandle = null;
                             _watchingForExit = false;
                             throw;
                         }
@@ -257,6 +263,8 @@ namespace System.Diagnostics
         /// <param name="startInfo">The start info with which to start the process.</param>
         private bool StartCore(ProcessStartInfo startInfo)
         {
+            EnsureSigChildHandler();
+
             string filename;
             string[] argv;
 
@@ -301,22 +309,36 @@ namespace System.Diagnostics
                 (userId, groupId) = GetUserAndGroupIds(startInfo);
             }
 
-            // Invoke the shim fork/execve routine.  It will create pipes for all requested
-            // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
-            // descriptors, and execve to execute the requested process.  The shim implementation
-            // is used to fork/execve as executing managed code in a forked process is not safe (only
-            // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-            Interop.Sys.ForkAndExecProcess(
+            // Lock to avoid races with OnSigChild
+            // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+            s_processStartLock.EnterReadLock();
+            try
+            {
+                // Invoke the shim fork/execve routine.  It will create pipes for all requested
+                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+                // descriptors, and execve to execute the requested process.  The shim implementation
+                // is used to fork/execve as executing managed code in a forked process is not safe (only
+                // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
+                Interop.Sys.ForkAndExecProcess(
                     filename, argv, envp, cwd,
                     startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
                     setCredentials, userId, groupId, 
                     out childPid,
                     out stdinFd, out stdoutFd, out stderrFd);
 
-            // Store the child's information into this Process object.
-            Debug.Assert(childPid >= 0);
-            SetProcessId(childPid);
-            SetProcessHandle(new SafeProcessHandle(childPid));
+                // Ensure we'll reap this process.
+                // note: SetProcessId will set this if we don't set it first.
+                _waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true);
+
+                // Store the child's information into this Process object.
+                Debug.Assert(childPid >= 0);
+                SetProcessId(childPid);
+                SetProcessHandle(new SafeProcessHandle(childPid));
+            }
+            finally
+            {
+                s_processStartLock.ExitReadLock();
+            }
 
             // Configure the parent's ends of the redirection streams.
             // We use UTF8 encoding without BOM by-default(instead of Console encoding as on Windows)
@@ -703,5 +725,41 @@ namespace System.Diagnostics
         public bool Responding => true;
 
         private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
+
+        private static void EnsureSigChildHandler()
+        {
+            if (s_sigchildHandlerRegistered)
+            {
+                return;
+            }
+
+            lock (s_sigchildGate)
+            {
+                if (!s_sigchildHandlerRegistered)
+                {
+                    // Ensure signal handling is setup and register our callback.
+                    if (!Interop.Sys.RegisterForSigChld(s_sigChildHandler))
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    s_sigchildHandlerRegistered = true;
+                }
+            }
+        }
+
+        private static void OnSigChild(bool reapAll)
+        {
+            // Lock to avoid races with Process.Start
+            s_processStartLock.EnterWriteLock();
+            try
+            {
+                ProcessWaitState.CheckChildren(reapAll);
+            }
+            finally
+            {
+                s_processStartLock.ExitWriteLock();
+            }
+        }
     }
 }
