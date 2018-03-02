@@ -13,7 +13,7 @@ using ProtocolFamily = System.Net.Internals.ProtocolFamily;
 
 namespace System.Net
 {
-    internal static class NameResolutionPal
+    internal static partial class NameResolutionPal
     {
         //
         // used by GetHostName() to preallocate a buffer for the call to gethostname.
@@ -336,19 +336,6 @@ namespace System.Net
                         Volatile.Write(ref s_initialized, true);
                     }
                 }
-            }
-        }
-
-        private static bool GetAddrInfoExSupportsOverlapped()
-        {
-            using (SafeLibraryHandle libHandle = Interop.Kernel32.LoadLibraryExW(Interop.Libraries.Ws2_32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32))
-            {
-                if (libHandle.IsInvalid)
-                    return false;
-
-                // We can't just check that 'GetAddrInfoEx' exists, because it existed before supporting overlapped.
-                // The existance of 'GetAddrInfoExCancel' indicates that overlapped is supported.
-                return Interop.Kernel32.GetProcAddress(libHandle, Interop.Winsock.GetAddrInfoExCancelFunctionName) != IntPtr.Zero;
             }
         }
 

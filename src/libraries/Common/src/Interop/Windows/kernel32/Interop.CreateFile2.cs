@@ -92,7 +92,7 @@ internal partial class Interop
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes)
         {
-            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
+            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
             return CreateFile(lpFileName, dwDesiredAccess, dwShareMode, null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
         }
     }
