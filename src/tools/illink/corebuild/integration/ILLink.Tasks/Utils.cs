@@ -1,7 +1,8 @@
 using System;
 using Mono.Cecil;
+using Mono.Linker;
 
-public class Utils
+public static class Utils
 {
 	public static bool IsManagedAssembly (string fileName)
 	{
@@ -13,12 +14,11 @@ public class Utils
 		}
 	}
 
-	public static bool IsReadyToRunAssembly (string fileName)
+	public static bool IsCrossgenedAssembly (string fileName)
 	{
 		try {
 			ModuleDefinition module = ModuleDefinition.ReadModule (fileName);
-			return (module.Attributes & ModuleAttributes.ILOnly) == 0 &&
-				(module.Attributes & (ModuleAttributes) 0x04) != 0;
+			return module.IsCrossgened ();
 		} catch (BadImageFormatException) {
 			return false;
 		}
