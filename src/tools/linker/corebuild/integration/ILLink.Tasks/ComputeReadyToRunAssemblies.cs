@@ -23,7 +23,7 @@ namespace ILLink.Tasks
 		public override bool Execute()
 		{
 			ReadyToRunAssemblies = Assemblies
-				.Where(f => Utils.IsReadyToRunAssembly(f.ItemSpec))
+				.Where(f => Utils.IsCrossgenedAssembly(f.ItemSpec))
 				.ToArray();
 			return true;
 		}

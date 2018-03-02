@@ -81,6 +81,7 @@
     <Compile Include="Linker\AssemblyAction.cs" />
     <Compile Include="Linker\AssemblyInfo.cs" />
     <Compile Include="Linker\AssemblyResolver.cs" />
+    <Compile Include="Linker\AssemblyUtilities.cs" />
     <Compile Include="Linker\DirectoryAssemblyResolver.cs" />
     <Compile Include="Linker\Driver.cs" />
     <Compile Include="Linker\LinkContext.cs" />
