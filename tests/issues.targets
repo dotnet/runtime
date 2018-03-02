@@ -187,9 +187,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventsourcetrace\**">
-            <Issue>15919</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
@@ -458,15 +455,6 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\runtime\interopservices\marshal\MarshalGetLastWin32Error_PSC\MarshalGetLastWin32Error_PSC.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare15\StringCompare15.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare1\StringCompare1.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\string\StringCompare2\StringCompare2.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\CoreMangLib\cti\system\uint16\UInt16ToString3\UInt16ToString3.cmd">
@@ -1728,7 +1716,7 @@
     <!-- The following are tests that fail on Windows -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true'">
-        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventsource**">
+        <ExcludeList Include="$(XunitTestBinBase)\tracing\eventsourcetrace\eventsourcetrace\eventsourcetrace.cmd">
             <Issue>15494</Issue>
         </ExcludeList>
     </ItemGroup>

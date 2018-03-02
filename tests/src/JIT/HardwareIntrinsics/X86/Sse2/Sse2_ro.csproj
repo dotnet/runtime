@@ -79,6 +79,14 @@
     <Compile Include="CompareOrdered.Double.cs" />
     <Compile Include="CompareUnordered.Double.cs" />
     <Compile Include="Divide.Double.cs" />
+    <Compile Include="Extract.Int16.1.cs" />
+    <Compile Include="Extract.UInt16.1.cs" />
+    <Compile Include="Extract.Int16.129.cs" />
+    <Compile Include="Extract.UInt16.129.cs" />
+    <Compile Include="Insert.Int16.1.cs" />
+    <Compile Include="Insert.UInt16.1.cs" />
+    <Compile Include="Insert.Int16.129.cs" />
+    <Compile Include="Insert.UInt16.129.cs" />
     <Compile Include="Max.Double.cs" />
     <Compile Include="Max.Byte.cs" />
     <Compile Include="Max.Int16.cs" />

@@ -1243,7 +1243,7 @@ void ZapImage::CalculateZapBaseAddress()
 #if defined(_TARGET_X86_)
                 // We use 30000000 for an exe
                 baseAddress = 0x30000000;
-#elif defined(_WIN64)
+#elif defined(_TARGET_64BIT_)
                 // We use 04000000 for an exe
                 // which is remapped to 0x642`88000000 on x64
                 baseAddress = 0x04000000;
@@ -1254,7 +1254,7 @@ void ZapImage::CalculateZapBaseAddress()
 #if defined(_TARGET_X86_)
                 // We start a 31000000 for the main assembly with the manifest
                 baseAddress = 0x31000000;
-#elif defined(_WIN64)
+#elif defined(_TARGET_64BIT_)
                 // We start a 05000000 for the main assembly with the manifest
                 // which is remapped to 0x642`8A000000 on x64
                 baseAddress = 0x05000000;
@@ -1306,7 +1306,7 @@ void ZapImage::CalculateZapBaseAddress()
     // upper address range used on 64-bit platforms
     //
 #if USE_UPPER_ADDRESS
-#if defined(_WIN64)
+#if defined(_TARGET_64BIT_)
     if (baseAddress < 0x80000000)
     {
         if (baseAddress < 0x40000000)
@@ -1520,7 +1520,7 @@ void ZapImage::OutputTables()
     {
         USHORT dllCharacteristics = 0;
 
-#ifndef _WIN64
+#ifndef _TARGET_64BIT_
         dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_NO_SEH;
 #endif
 
@@ -1550,7 +1550,7 @@ void ZapImage::OutputTables()
         SetSizeOfStackCommit(m_ModuleDecoder.GetSizeOfStackCommit());
     }
 
-#if defined(FEATURE_PAL) && !defined(BIT64)
+#if defined(FEATURE_PAL) && !defined(_TARGET_64BIT_)
     // To minimize wasted VA space on 32 bit systems align file to page bounaries (presumed to be 4K).
     SetFileAlignment(0x1000);
 #elif defined(_TARGET_ARM_) && defined(FEATURE_CORESYSTEM)

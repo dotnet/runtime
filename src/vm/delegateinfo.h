@@ -25,21 +25,6 @@ struct DelegateInfo
     OBJECTHANDLE    m_stateHandle;
     OBJECTHANDLE    m_eventHandle;
     OBJECTHANDLE    m_registeredWaitHandle;
-    DWORD           m_overridesCount;
-    BOOL            m_hasSecurityInfo;
-
-    void SetThreadSecurityInfo( Thread* thread, StackCrawlMark* stackMark )
-    {
-        CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE; 
-            INJECT_FAULT(COMPlusThrowOM());
-        }
-        CONTRACTL_END;
-
-
-    }
 
 #ifndef DACCESS_COMPILE
     void Release()

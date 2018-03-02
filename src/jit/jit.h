@@ -161,8 +161,19 @@
 #endif
 
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#ifndef _TARGET_64BIT_
 #define _TARGET_64BIT_
-#endif
+#endif // _TARGET_64BIT_
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
+#ifdef _TARGET_64BIT_
+#ifdef _TARGET_X86_
+#error Cannot define both _TARGET_X86_ and _TARGET_64BIT_
+#endif // _TARGET_X86_
+#ifdef _TARGET_ARM_
+#error Cannot define both _TARGET_ARM_ and _TARGET_64BIT_
+#endif // _TARGET_ARM_
+#endif // _TARGET_64BIT_
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 #define _TARGET_XARCH_
