@@ -88,6 +88,82 @@
     {
       "environment": {},
       "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Install Microsoft.DotNet.Build.Tasks.ScepOps",
+      "timeoutInMinutes": 0,
+      "condition": "always()",
+      "task": {
+        "id": "333b11bd-d341-40d9-afcf-b32d5ce6f23b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "command": "custom",
+        "solution": "**/*.sln",
+        "selectOrConfig": "select",
+        "feedRestore": "",
+        "includeNuGetOrg": "true",
+        "nugetConfigPath": "",
+        "externalEndpoints": "",
+        "noCache": "false",
+        "packagesDirectory": "",
+        "verbosityRestore": "Detailed",
+        "searchPatternPush": "$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg",
+        "nuGetFeedType": "internal",
+        "feedPublish": "",
+        "allowPackageConflicts": "false",
+        "externalEndpoint": "",
+        "verbosityPush": "Detailed",
+        "searchPatternPack": "**/*.csproj",
+        "configurationToPack": "$(BuildConfiguration)",
+        "outputDir": "$(Build.ArtifactStagingDirectory)",
+        "versioningScheme": "off",
+        "includeReferencedProjects": "false",
+        "versionEnvVar": "",
+        "requestedMajorVersion": "1",
+        "requestedMinorVersion": "0",
+        "requestedPatchVersion": "0",
+        "packTimezone": "utc",
+        "includeSymbols": "false",
+        "toolPackage": "false",
+        "buildProperties": "",
+        "verbosityPack": "Detailed",
+        "arguments": "install Microsoft.DotNet.Build.Tasks.ScepOps -source https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json -ConfigFile $(Build.StagingDirectory)\\VstsAuthed.NuGet.Config -OutputDirectory $(Build.StagingDirectory)"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Uninstall SCEP",
+      "timeoutInMinutes": 0,
+      "refName": "Task52",
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "$(Build.StagingDirectory)\\Microsoft.DotNet.Build.Tasks.ScepOps.1.0.0\\build\\Microsoft.DotNet.Build.Tasks.ScepOps.targets",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": "",
+        "platform": "",
+        "configuration": "",
+        "msbuildArguments": "/t:UninstallSCEP",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-test.cmd",
@@ -104,6 +180,35 @@
         "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg)$(CrossgenArg)-OfficialBuildId=$(OfficialBuildId) -OverwriteCoreClrPackageVersion -Priority=$(Priority) -- /p:IntermediateAzureFeed=$(IntermediateAzureFeed)",
         "workingFolder": "",
         "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Install SCEP",
+      "timeoutInMinutes": 0,
+      "refName": "Task53",
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "$(Build.StagingDirectory)\\Microsoft.DotNet.Build.Tasks.ScepOps.1.0.0\\build\\Microsoft.DotNet.Build.Tasks.ScepOps.targets",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": "",
+        "platform": "",
+        "configuration": "",
+        "msbuildArguments": "/t:InstallSCEP",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false"
       }
     },
     {
