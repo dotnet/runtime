@@ -53,7 +53,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks" Condition="'$(TargetGroup)' == 'netstandard1.1'" />
     <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetGroup)' != 'netstandard1.1'" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
