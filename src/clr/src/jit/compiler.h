@@ -3059,14 +3059,6 @@ protected:
                               CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               bool                  mustExpand);
-    GenTree* impSSE3Intrinsic(NamedIntrinsic        intrinsic,
-                              CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              bool                  mustExpand);
-    GenTree* impSSSE3Intrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
     GenTree* impSSE41Intrinsic(NamedIntrinsic        intrinsic,
                                CORINFO_METHOD_HANDLE method,
                                CORINFO_SIG_INFO*     sig,
@@ -3125,6 +3117,7 @@ protected:
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types baseType);
     static bool isImmHWIntrinsic(NamedIntrinsic intrinsic, GenTree* lastOp);
     GenTree* addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* lastOp, bool mustExpand);
+    bool hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_INFO* sig, HWIntrinsicFlag flags);
 #endif // _TARGET_XARCH_
 #ifdef _TARGET_ARM64_
     InstructionSet lookupHWIntrinsicISA(const char* className);
