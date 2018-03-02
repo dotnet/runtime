@@ -100,6 +100,12 @@ countSkippedTests=0
 xunitOutputPath=
 xunitTestOutputPath=
 
+# Variables for text file output. These can be passed back to runtest.sh using the "--playlist" argument
+# to rerun specific tests.
+testsPassOutputPath=
+testsFailOutputPath=
+testsSkipOutputPath=
+
 # libExtension determines extension for dynamic library files
 # runtimeName determines where CoreFX Runtime files will be located
 OSName=$(uname -s)
@@ -299,6 +305,49 @@ function xunit_output_end {
 
     # </assemblies>
     echo '</assemblies>' >>"$xunitOutputPath"
+}
+
+function text_file_output_begin {
+    if [ -z "$testsPassOutputPath" ]; then
+        testsPassOutputPath=$testRootDir/coreclrtests.pass.txt
+    fi
+    if ! [ -e $(basename "$testsPassOutputPath") ]; then
+        testsPassOutputPath=$testRootDir/coreclrtests.pass.txt
+    fi
+    if [ -e "$testsPassOutputPath" ]; then
+        rm -f "$testsPassOutputPath"
+    fi
+    if [ -z "$testsFailOutputPath" ]; then
+        testsFailOutputPath=$testRootDir/coreclrtests.fail.txt
+    fi
+    if ! [ -e $(basename "$testsFailOutputPath") ]; then
+        testsFailOutputPath=$testRootDir/coreclrtests.fail.txt
+    fi
+    if [ -e "$testsFailOutputPath" ]; then
+        rm -f "$testsFailOutputPath"
+    fi
+    if [ -z "$testsSkipOutputPath" ]; then
+        testsSkipOutputPath=$testRootDir/coreclrtests.skip.txt
+    fi
+    if ! [ -e $(basename "$testsSkipOutputPath") ]; then
+        testsSkipOutputPath=$testRootDir/coreclrtests.skip.txt
+    fi
+    if [ -e "$testsSkipOutputPath" ]; then
+        rm -f "$testsSkipOutputPath"
+    fi
+}
+
+function text_file_output_add_test {
+    local scriptFilePath=$1
+    local testResult=$2 # Pass, Fail, or Skip
+
+    if [ "$testResult" == "Pass" ]; then
+        echo "$scriptFilePath" >>"$testsPassOutputPath"
+    elif [ "$testResult" == "Skip" ]; then
+        echo "$scriptFilePath" >>"$testsSkipOutputPath"
+    else
+        echo "$scriptFilePath" >>"$testsFailOutputPath"
+    fi
 }
 
 function exit_with_error {
@@ -820,11 +869,11 @@ function finish_test {
         header=$header$(printf "[%4ds]" $testRunningTime)
     fi
 
-    local xunitTestResult
+    local testResult
     case $testScriptExitCode in
         0)
             let countPassedTests++
-            xunitTestResult='Pass'
+            testResult='Pass'
             if ((verbose == 1 || runFailingTestsOnly == 1)); then
                 echo "PASSED   - ${header}${scriptFilePath}"
             else
@@ -833,12 +882,12 @@ function finish_test {
             ;;
         2)
             let countSkippedTests++
-            xunitTestResult='Skip'
+            testResult='Skip'
             echo "SKIPPED  - ${header}${scriptFilePath}"
             ;;
         *)
             let countFailedTests++
-            xunitTestResult='Fail'
+            testResult='Fail'
             echo "FAILED   - ${header}${scriptFilePath}"
             ;;
     esac
@@ -850,7 +899,8 @@ function finish_test {
         done <"$outputFilePath"
     fi
 
-    xunit_output_add_test "$scriptFilePath" "$outputFilePath" "$xunitTestResult" "$testScriptExitCode" "$testRunningTime"
+    xunit_output_add_test "$scriptFilePath" "$outputFilePath" "$testResult" "$testScriptExitCode" "$testRunningTime"
+    text_file_output_add_test "$scriptFilePath" "$testResult"
 }
 
 function finish_remaining_tests {
@@ -1258,6 +1308,7 @@ then
 fi
 
 xunit_output_begin
+text_file_output_begin
 create_core_overlay
 precompile_overlay_assemblies
 
