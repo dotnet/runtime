@@ -272,7 +272,15 @@ namespace System.Threading
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
+#if uapaot
+        //
+        // Todo: Remove when we update System.Private.CoreLib for uapaot
+        // https://github.com/dotnet/corefx/issues/27619
+        //
+        public static int GetCurrentProcessorId() => 0;
+#else
         public static int GetCurrentProcessorId() => RuntimeThread.GetCurrentProcessorId();
+#endif
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
         public static int GetDomainID() => GetDomain().Id;
         public override int GetHashCode() => ManagedThreadId;

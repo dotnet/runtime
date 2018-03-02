@@ -1,0 +1,5 @@
+TypesMustExist : Type 'System.Globalization.GlobalizationExtensions' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Path.Join(System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Path.Join(System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Path.TryJoin(System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>, System.Span<System.Char>, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.Path.TryJoin(System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>, System.Span<System.Char>, System.Int32)' does not exist in the implementation but it does exist in the contract.
