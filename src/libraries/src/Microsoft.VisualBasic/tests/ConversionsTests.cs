@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Microsoft.VisualBasic.CompilerServices;
 using Xunit;
 
@@ -11,17 +12,22 @@ namespace Microsoft.VisualBasic.Tests
 {
     public class ConversionsTests
     {
+        public static IEnumerable<object[]> ToBoolean_String_ReturnsExpected_TestData()
+        {
+            yield return new object[] { 5.5.ToString(CultureInfo.CurrentCulture), true };
+            yield return new object[] { 0.0.ToString(CultureInfo.CurrentCulture), false };
+        }
+
         [Theory]
         [InlineData("true", true)]
         [InlineData("false", false)]
         [InlineData("5", true)]
         [InlineData("0", false)]
-        [InlineData("5.5", true)]
-        [InlineData("0.0", false)]
         [InlineData("&h5", true)]
         [InlineData("&h0", false)]
         [InlineData("&o5", true)]
         [InlineData("&o0", false)]
+        [MemberData(nameof(ToBoolean_String_ReturnsExpected_TestData))]
         public void ToBoolean_String_ReturnsExpected(string str, bool expected)
         {
             Assert.Equal(expected, Conversions.ToBoolean(str));
