@@ -1901,11 +1901,6 @@ private:
 
 #endif // _TARGET_ARMARCH_
 
-#if defined(_TARGET_ARM_)
-    emitter::insFormat emitInsFormat(instruction ins);
-    size_t emitInsCode(instruction ins, insFormat fmt);
-#endif
-
 #ifdef _TARGET_X86_
     void emitMarkStackLvl(unsigned stackLevel);
 #endif
