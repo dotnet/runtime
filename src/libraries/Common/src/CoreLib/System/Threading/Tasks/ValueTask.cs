@@ -293,7 +293,7 @@ namespace System.Threading.Tasks
                 _obj == null ||
                 (ObjectIsTask ?
 #if netstandard
-                    UnsafeTask.Status == TaskStatus.RanToCompletion :
+                    UnsafeGetTask().Status == TaskStatus.RanToCompletion :
 #else
                     UnsafeGetTask().IsCompletedSuccessfully :
 #endif
@@ -331,7 +331,7 @@ namespace System.Threading.Tasks
                 if (ObjectIsTask)
                 {
 #if netstandard
-                    UnsafeTask.GetAwaiter().GetResult();
+                    UnsafeGetTask().GetAwaiter().GetResult();
 #else
                     TaskAwaiter.ValidateEnd(UnsafeGetTask());
 #endif
@@ -665,7 +665,7 @@ namespace System.Threading.Tasks
                 _obj == null ||
                 (ObjectIsTask ?
 #if netstandard
-                    UnsafeTask.Status == TaskStatus.RanToCompletion :
+                    UnsafeGetTask().Status == TaskStatus.RanToCompletion :
 #else
                     UnsafeGetTask().IsCompletedSuccessfully :
 #endif
@@ -707,7 +707,7 @@ namespace System.Threading.Tasks
                 if (ObjectIsTask)
                 {
 #if netstandard
-                    return UnsafeTask.GetAwaiter().GetResult();
+                    return UnsafeGetTask().GetAwaiter().GetResult();
 #else
                     Task<TResult> t = UnsafeGetTask();
                     TaskAwaiter.ValidateEnd(t);
