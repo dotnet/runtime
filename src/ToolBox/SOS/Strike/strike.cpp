@@ -166,8 +166,10 @@ HMODULE g_hInstance = NULL;
 
 #ifdef FEATURE_PAL
 #define SOSPrefix ""
+#define SOSThreads "clrthreads"
 #else
 #define SOSPrefix "!"
+#define SOSThreads "!threads"
 #endif
 
 #if defined _X86_ && !defined FEATURE_PAL
@@ -5779,8 +5781,12 @@ HRESULT PrintSpecialThreads()
             continue;
         }
 
-        TADDR moduleTlsDataAddr = 0;
+        if (tlsArrayAddr == NULL)
+        {
+            continue;
+        }
 
+        TADDR moduleTlsDataAddr = 0;
         if (!SafeReadMemory (tlsArrayAddr + sizeof (void*) * (dwCLRTLSDataIndex & 0xFFFF), &moduleTlsDataAddr, sizeof (void**), NULL))
         {
             PrintLn("Failed to get Tls expansion slots for thread ", ThreadID(SysId));        
@@ -7670,8 +7676,8 @@ DECLARE_API(FindAppDomain)
         if (IsDMLEnabled())
             DMLOut("<exec cmd=\"!gcroot /d %p\">!gcroot %p</exec>, and if you find a root on a\n", p_Object, p_Object);
         else
-            ExtOut("!gcroot %p, and if you find a root on a\n", p_Object);
-        ExtOut("stack, check the AppDomain of that stack with !threads.\n");
+            ExtOut(SOSPrefix "gcroot %p, and if you find a root on a\n", p_Object);
+        ExtOut("stack, check the AppDomain of that stack with " SOSThreads ".\n");
         ExtOut("Note that the Thread could have transitioned between\n");
         ExtOut("multiple AppDomains.\n");
     }
@@ -9646,7 +9652,7 @@ DECLARE_API(GCRoot)
     if (all)
         ExtOut("Found %d roots.\n", i);
     else
-        ExtOut("Found %d unique roots (run '!GCRoot -all' to see all roots).\n", i);
+        ExtOut("Found %d unique roots (run '" SOSPrefix "gcroot -all' to see all roots).\n", i);
 
     return Status;
 }
@@ -12348,7 +12354,7 @@ private:
         if ((hr = g_clrData->GetTaskByOSThreadID(osID, &pTask)) != S_OK)
         {
             ExtOut("Unable to walk the managed stack. The current thread is likely not a \n");
-            ExtOut("managed thread. You can run !threads to get a list of managed threads in\n");
+            ExtOut("managed thread. You can run " SOSThreads " to get a list of managed threads in\n");
             ExtOut("the process\n");
             return hr;
         }
