@@ -29,11 +29,10 @@
   <!-- Configuration specific properties -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
     <DefineConstants>_DEBUG;DEBUG;TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
+  <PropertyGroup>
     <DebugType>portable</DebugType>
   </PropertyGroup>
 
