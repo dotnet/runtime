@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Tracing.Tests.Common;
 using System.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
@@ -77,7 +78,7 @@ namespace Tracing.Tests
 
                 Console.WriteLine("\tStart: Processing events from file.");
                 int msgCount = 0;
-                using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(netPerfFile.Path))
+                using (var trace = new TraceLog(TraceLog.CreateFromEventPipeDataFile(netPerfFile.Path)).Events.GetSource())
                 {
                     var names = new HashSet<string>();
 

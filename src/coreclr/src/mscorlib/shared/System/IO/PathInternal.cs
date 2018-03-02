@@ -10,8 +10,29 @@ namespace System.IO
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        internal static bool EndsInDirectorySeparator(string path) =>
-            !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[path.Length - 1]);
+        internal static bool EndsInDirectorySeparator(ReadOnlySpan<char> path)
+            => path.Length > 0 && IsDirectorySeparator(path[path.Length - 1]);
+
+        /// <summary>
+        /// Returns true if the path starts in a directory separator.
+        /// </summary>
+        internal static bool StartsWithDirectorySeparator(ReadOnlySpan<char> path) => path.Length > 0 && IsDirectorySeparator(path[0]);
+
+        internal static string EnsureTrailingSeparator(string path)
+            => EndsInDirectorySeparator(path) ? path : path + DirectorySeparatorCharAsString;
+
+        internal static string TrimEndingDirectorySeparator(string path) =>
+            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+                path.Substring(0, path.Length - 1) :
+                path;
+
+        internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
+            EndsInDirectorySeparator(path) && !IsRoot(path) ?
+                path.Slice(0, path.Length - 1) :
+                path;
+
+        internal static bool IsRoot(ReadOnlySpan<char> path)
+            => path.Length == GetRootLength(path);
 
         /// <summary>
         /// Get the common path length from the start of the string.

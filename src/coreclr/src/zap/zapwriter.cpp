@@ -55,7 +55,7 @@ void ZapWriter::Initialize()
     m_FileAlignment = 0x200;
 }
 
-#if defined(FEATURE_PAL) && defined(BIT64)
+#if defined(FEATURE_PAL) && defined(_TARGET_64BIT_)
 #define SECTION_ALIGNMENT   m_FileAlignment
 #define PAL_MAX_PAGE_SIZE   0x10000
 #else

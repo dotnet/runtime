@@ -1149,7 +1149,6 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod            
         public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1158,12 +1157,10 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
         [CLSCompliant(false)]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1172,8 +1169,7 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
 
@@ -1183,7 +1179,6 @@ namespace System.Threading
              Object state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,   // NOTE: we do not allow other options that allow the callback to be queued as an APC
-             ref StackCrawlMark stackMark,
              bool compressStack
              )
         {
@@ -1200,9 +1195,7 @@ namespace System.Threading
                                                                                state,
                                                                                millisecondsTimeOutInterval,
                                                                                executeOnlyOnce,
-                                                                               registeredWaitHandle,
-                                                                               ref stackMark,
-                                                                               compressStack);
+                                                                               registeredWaitHandle);
                 registeredWaitHandle.SetHandle(nativeRegisteredWaitHandle);
             }
             else
@@ -1213,7 +1206,6 @@ namespace System.Threading
         }
 
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1224,11 +1216,9 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod            
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1239,11 +1229,9 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1254,11 +1242,9 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(  // throws RegisterWaitException
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1269,11 +1255,9 @@ namespace System.Threading
         {
             if (millisecondsTimeOutInterval < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, ref stackMark, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1287,11 +1271,9 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (tm > (long)Int32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, ref stackMark, true);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, true);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1305,8 +1287,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (tm > (long)Int32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, ref stackMark, false);
+            return RegisterWaitForSingleObject(waitObject, callBack, state, (UInt32)tm, executeOnlyOnce, false);
         }
 
         public static bool QueueUserWorkItem(WaitCallback callBack) =>
@@ -1529,9 +1510,7 @@ namespace System.Threading
              Object state,
              uint timeOutInterval,
              bool executeOnlyOnce,
-             RegisteredWaitHandle registeredWaitHandle,
-             ref StackCrawlMark stackMark,
-             bool compressStack
+             RegisteredWaitHandle registeredWaitHandle
              );
 
 

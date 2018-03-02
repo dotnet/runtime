@@ -303,11 +303,11 @@ namespace JIT.HardwareIntrinsics.X86
         {{
             for (var outer = 0; outer < (VectorSize / 16); outer++)
             {{
-                for (var inner = 0; inner < (8 / sizeof({6})); inner++)
+                for (var inner = 0; inner < (8 / sizeof({4})); inner++)
                 {{
-                    var i1 = (outer * (16 / sizeof({6}))) + inner;
-                    var i2 = i1 + (8 / sizeof({6}));
-                    var i3 = (outer * (16 / sizeof({6}))) + (inner * 2);
+                    var i1 = (outer * (16 / sizeof({4}))) + inner;
+                    var i2 = i1 + (8 / sizeof({4}));
+                    var i3 = (outer * (16 / sizeof({4}))) + (inner * 2);
 
                     if ({12})
                     {{

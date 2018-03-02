@@ -61,7 +61,7 @@ namespace System.IO
             if (IsPathFullyQualified(path))
                 return GetFullPath(path);
 
-            return GetFullPath(CombineNoChecks(basePath, path));
+            return GetFullPath(CombineInternal(basePath, path));
         }
 
         private static string RemoveLongPathPrefix(string path)
