@@ -91,7 +91,7 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Create Auth'd NuGet.config",
       "timeoutInMinutes": 0,
       "condition": "succeeded()",
