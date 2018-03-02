@@ -210,7 +210,7 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Install SCEP",
       "timeoutInMinutes": 0,
       "refName": "Task53",
