@@ -124,6 +124,10 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public class NamedPipeTest_CurrentUserOnly_Windows : NamedPipeTestBase, IClassFixture<TestAccountImpersonator>
     {
+        public static bool IsAdminOnSupportedWindowsVersions => PlatformDetection.IsWindowsAndElevated
+            && !PlatformDetection.IsWindows7
+            && !PlatformDetection.IsWindowsNanoServer;
+
         private TestAccountImpersonator _testAccountImpersonator;
 
         public NamedPipeTest_CurrentUserOnly_Windows(TestAccountImpersonator testAccountImpersonator)
@@ -132,7 +136,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndElevated))]
+        [ConditionalTheory(nameof(IsAdminOnSupportedWindowsVersions))]
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
         public void Connection_UnderDifferentUser_SingleSide_CurrentUserOnly_Fails(PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
