@@ -9505,12 +9505,21 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         // Check to ensure we don't have a reducible *(& ... )
         if (dest->OperIsIndir() && dest->AsIndir()->Addr()->OperGet() == GT_ADDR)
         {
-            GenTree* addrOp = dest->AsIndir()->Addr()->gtGetOp1();
-            // Ignore reinterpret casts between int/gc
-            if ((addrOp->TypeGet() == asgType) || (varTypeIsIntegralOrI(addrOp) && (genTypeSize(asgType) == size)))
+            // If dest is an Indir or Block, and it has a child that is a Addr node
+            //
+            GenTree* addrNode = dest->AsIndir()->Addr();  // known to be a GT_ADDR 
+
+            // Can we just remove the Ind(Addr(destOp)) and operate directly on 'destOp'?
+            //
+            GenTree*  destOp     = addrNode->gtGetOp1();
+            var_types destOpType = destOp->TypeGet();
+
+            // We can if we have a primitive integer type and the sizes are exactly the same.
+            //
+            if ((varTypeIsIntegralOrI(destOp) && (size == genTypeSize(destOpType))))
             {
-                dest    = addrOp;
-                asgType = addrOp->TypeGet();
+                dest    = destOp;
+                asgType = destOpType;
             }
         }
 
