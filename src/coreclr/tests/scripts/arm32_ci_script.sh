@@ -183,21 +183,21 @@ function mount_emulator {
     fi
 
     if [ ! -d "$__ARMEmulRootfs" ]; then
-		sudo mkdir "$__ARMEmulRootfs"
-	fi
+        sudo mkdir "$__ARMEmulRootfs"
+    fi
 
-	if [ ! -f "$__ARMEmulRootfs/arm-emulator-rootfs.tar" ]; then
-	    if mountpoint -q -- "$__ARMRootfsMountPath"; then
-	        sudo umount -l $__ARMRootfsMountPath
+    if [ ! -f "$__ARMEmulRootfs/arm-emulator-rootfs.tar" ]; then
+        if mountpoint -q -- "$__ARMRootfsMountPath"; then
+            sudo umount -l $__ARMRootfsMountPath
         fi
-		mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
-		
-		cd $__ARMRootfsMountPath
-		sudo tar -cf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" *
-		cd -
-	fi
+        mount_with_checking "" "$__ARMEmulPath/platform/rootfs-t30.ext4" "$__ARMRootfsMountPath"
+        
+        cd $__ARMRootfsMountPath
+        sudo tar -cf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" *
+        cd -
+    fi
 
-	sudo tar -xf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" -C "$__ARMEmulRootfs"
+    sudo tar -xf "$__ARMEmulRootfs/arm-emulator-rootfs.tar" -C "$__ARMEmulRootfs"
 
     mount_with_checking "-t proc" "/proc"    "$__ARMEmulRootfs/proc"
     mount_with_checking "-o bind" "/dev/"    "$__ARMEmulRootfs/dev"
@@ -209,9 +209,9 @@ function mount_emulator {
     fi
     mount_with_checking "-o bind" "/mnt"     "$__ARMEmulRootfs/bindings/tmp"
 
-	if [ ! -d "$__ARMEmulRootfs/$__TempFolder" ]; then
+    if [ ! -d "$__ARMEmulRootfs/$__TempFolder" ]; then
         sudo mkdir "$__ARMEmulRootfs/$__TempFolder"
-	fi
+    fi
 }
 
 #Cross builds coreclr
@@ -354,7 +354,7 @@ function run_tests {
     sudo chroot $__ARMEmulRootfs /bin/bash -x <<EOF
         cd "$__ARMEmulCoreclr"
         ./tests/runtest.sh --sequential\
-		           --testRootDir=$__testRootDirBase \
+                           --testRootDir=$__testRootDirBase \
                            --mscorlibDir=$__mscorlibDirBase \
                            --coreFxNativeBinDir=$__coreFxNativeBinDirBase \
                            --coreFxBinDir="$__coreFxBinDirBase" \
@@ -509,7 +509,7 @@ if [ "$__ciMode" == "emulator" ]; then
     __skipTests=1
 fi
 
-__coreFxBinDir="./bin/CoreFxBinDir" # TODO-clenup: Just for testing.... 
+__coreFxBinDir="./bin/CoreFxBinDir" # TODO-cleanup: Just for testing.... 
 #Check if the optional arguments are present in the case that testing is to be done
 if [ $__skipTests == 0 ]; then
     exit_if_empty "$__testRootDir" "Testing requested, but --testRootDir not provided" true
