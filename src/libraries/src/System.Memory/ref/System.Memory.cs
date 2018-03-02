@@ -318,7 +318,8 @@ namespace System.Buffers
         public long Length { get { throw null; } }
         public System.SequencePosition Start { get { throw null; } }
         public System.Buffers.ReadOnlySequence<T>.Enumerator GetEnumerator() { throw null; }
-        public System.SequencePosition GetPosition(System.SequencePosition origin, long offset) { throw null; }
+        public System.SequencePosition GetPosition(long offset) { throw null; }
+        public System.SequencePosition GetPosition(long offset, System.SequencePosition origin) { throw null; }
         public System.Buffers.ReadOnlySequence<T> Slice(int start, int length) { throw null; }
         public System.Buffers.ReadOnlySequence<T> Slice(int start, System.SequencePosition end) { throw null; }
         public System.Buffers.ReadOnlySequence<T> Slice(long start) { throw null; }

@@ -311,9 +311,14 @@ namespace System.Buffers
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>
+        /// Returns a new <see cref="SequencePosition"/> at an <paramref name="offset"/> from the start of the sequence.
+        /// </summary>
+        public SequencePosition GetPosition(long offset) => GetPosition(offset, _sequenceStart);
+
+        /// <summary>
         /// Returns a new <see cref="SequencePosition"/> at an <paramref name="offset"/> from the <paramref name="origin"/>
         /// </summary>
-        public SequencePosition GetPosition(SequencePosition origin, long offset)
+        public SequencePosition GetPosition(long offset, SequencePosition origin)
         {
             if (offset < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
