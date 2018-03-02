@@ -471,10 +471,17 @@ declare -a playlistTests
 function read_array {
     local theArray=()
 
+    if [ ! -f "$1" ]; then
+        return
+    fi
+
     # bash in Mac OS X doesn't support 'readarray', so using alternate way instead.
     # readarray -t theArray < "$1"
+    # Any line that starts with '#' is ignored.
     while IFS='' read -r line || [ -n "$line" ]; do
-        theArray[${#theArray[@]}]=$line
+        if [[ $line != "#"* ]]; then
+            theArray[${#theArray[@]}]=$line
+        fi
     done < "$1"
     echo ${theArray[@]}
 }
@@ -482,18 +489,13 @@ function read_array {
 function load_unsupported_tests {
     # Load the list of tests that are not supported on this platform. These tests are disabled (skipped) permanently.
     unsupportedTests=($(read_array "$(dirname "$0")/testsUnsupportedOutsideWindows.txt"))
-    if [ "$ARCH" == "arm" ]; then
-        unsupportedTests+=($(read_array "$(dirname "$0")/testsUnsupportedOnARM32.txt"))
-    fi
+    unsupportedTests+=($(read_array "$(dirname "$0")/testsUnsupported.$ARCH.txt"))
 }
 
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
     failingTests=($(read_array "$(dirname "$0")/testsFailingOutsideWindows.txt"))
-   
-    if [ "$ARCH" == "arm64" ]; then
-        failingTests+=($(read_array "$(dirname "$0")/testsFailingOnArm64.txt"))
-    fi
+    failingTests+=($(read_array "$(dirname "$0")/testsFailing.$ARCH.txt"))
 }
 
 function load_playlist_tests {
