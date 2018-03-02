@@ -9,7 +9,6 @@
     <BuildConfigurations>
       netcoreapp;
       uap;
-      uapaot;
       netfx;
       $(PackageConfigurations);
     </BuildConfigurations>
