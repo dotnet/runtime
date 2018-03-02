@@ -9507,7 +9507,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         {
             // If dest is an Indir or Block, and it has a child that is a Addr node
             //
-            GenTree* addrNode = dest->AsIndir()->Addr();  // known to be a GT_ADDR 
+            GenTree* addrNode = dest->AsIndir()->Addr(); // known to be a GT_ADDR
 
             // Can we just remove the Ind(Addr(destOp)) and operate directly on 'destOp'?
             //
