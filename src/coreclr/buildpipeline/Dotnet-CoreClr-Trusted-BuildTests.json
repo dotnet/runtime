@@ -92,28 +92,6 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
-      "displayName": "Create Auth'd NuGet.config",
-      "timeoutInMinutes": 0,
-      "condition": "succeeded()",
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "$(Build.StagingDirectory)\\VstsAuthed.NuGet.Config  https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json $(PB_FeedReadAccessToken)",
-        "workingFolder": "",
-        "inlineScript": "param($path, $url, $pat)\n\nSet-Content $path @\"\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<configuration>\n  <packageSources>\n    <add key=\"vsts-packages\" value=\"$url\" />\n  </packageSources>\n  <packageSourceCredentials>\n    <vsts-packages>\n      <add key=\"Username\" value=\"VssSessionToken\" />\n      <add key=\"ClearTextPassword\" value=\"$pat\" />\n    </vsts-packages>\n  </packageSourceCredentials>\n</configuration>\n\"@",
-        "failOnStandardError": "true"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
       "displayName": "Install Microsoft.DotNet.Build.Tasks.ScepOps",
       "timeoutInMinutes": 0,
       "condition": "always()",
@@ -153,7 +131,7 @@
         "toolPackage": "false",
         "buildProperties": "",
         "verbosityPack": "Detailed",
-        "arguments": "install Microsoft.DotNet.Build.Tasks.ScepOps -source vsts-packages -ConfigFile $(Build.StagingDirectory)\\VstsAuthed.NuGet.Config -OutputDirectory $(Build.StagingDirectory) -NonInteractive"
+        "arguments": "install Microsoft.DotNet.Build.Tasks.ScepOps -source https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json -ConfigFile $(Build.StagingDirectory)\\VstsAuthed.NuGet.Config -OutputDirectory $(Build.StagingDirectory)"
       }
     },
     {
@@ -407,9 +385,6 @@
     },
     "PB_ContainerName": {
       "value": "$(Label)-$(TestContainerSuffix)-test"
-    },
-    "PB_FeedReadAccessToken": {
-      "value": "$(PB_FeedReadAccessToken)"
     },
     "TestContainerSuffix": {
       "value": "linux"
