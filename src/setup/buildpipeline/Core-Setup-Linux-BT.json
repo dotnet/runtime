@@ -7,7 +7,6 @@
       "alwaysRun": false,
       "displayName": "Cleanup previous build",
       "timeoutInMinutes": 0,
-      "refName": "Task1",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -27,7 +26,6 @@
       "alwaysRun": false,
       "displayName": "Clone repo",
       "timeoutInMinutes": 0,
-      "refName": "Task2",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -47,7 +45,6 @@
       "alwaysRun": false,
       "displayName": "git checkout",
       "timeoutInMinutes": 0,
-      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -67,7 +64,6 @@
       "alwaysRun": false,
       "displayName": "Create host machine tools sandbox",
       "timeoutInMinutes": 0,
-      "refName": "Task4",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -89,7 +85,6 @@
       "alwaysRun": false,
       "displayName": "Initialize tools in sandbox for host machine",
       "timeoutInMinutes": 0,
-      "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -109,7 +104,6 @@
       "alwaysRun": false,
       "displayName": "Initialize docker",
       "timeoutInMinutes": 0,
-      "refName": "Task6",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -129,7 +123,6 @@
       "alwaysRun": false,
       "displayName": "Build",
       "timeoutInMinutes": 0,
-      "refName": "Task7",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -149,7 +142,6 @@
       "alwaysRun": false,
       "displayName": "Publish",
       "timeoutInMinutes": 0,
-      "refName": "Task8",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -169,7 +161,6 @@
       "alwaysRun": false,
       "displayName": "Copy built Portable binaries to staging directory",
       "timeoutInMinutes": 0,
-      "refName": "Task9",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -191,7 +182,6 @@
       "alwaysRun": false,
       "displayName": "Initialize docker - Ubuntu14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -211,7 +201,6 @@
       "alwaysRun": false,
       "displayName": "Clean - Ubuntu14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task11",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -231,7 +220,6 @@
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Ubuntu 14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task12",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -251,7 +239,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime packages and Runtime Dep - Ubuntu 14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task13",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -271,7 +258,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 14.04 ",
       "timeoutInMinutes": 0,
-      "refName": "Task14",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -291,7 +277,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Ubuntu 16.04",
       "timeoutInMinutes": 0,
-      "refName": "Task18",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -311,7 +296,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 16.04 ",
       "timeoutInMinutes": 0,
-      "refName": "Task19",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -331,7 +315,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Ubuntu 17.10",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1844",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -351,7 +334,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 17.10",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1955",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -371,7 +353,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Ubuntu 18.04",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1845",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -391,7 +372,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 18.04",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1956",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -411,7 +391,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - LinuxMint 7",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1846",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -431,7 +410,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - LinuxMint 7",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1957",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -451,7 +429,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - LinuxMint 8",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1847",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -471,7 +448,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - LinuxMint 8",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1958",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -491,7 +467,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Debian 8",
       "timeoutInMinutes": 0,
-      "refName": "Task28",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -511,7 +486,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Debian 8",
       "timeoutInMinutes": 0,
-      "refName": "Task29",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -531,7 +505,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Debian 9",
       "timeoutInMinutes": 0,
-      "refName": "Task33",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -551,7 +524,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Debian 9",
       "timeoutInMinutes": 0,
-      "refName": "Task34",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -571,7 +543,6 @@
       "alwaysRun": false,
       "displayName": "Initialize docker - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task35",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -591,7 +562,6 @@
       "alwaysRun": false,
       "displayName": "Clean - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task36",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -611,7 +581,6 @@
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task37",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -631,7 +600,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task38",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -651,7 +619,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task39",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -671,7 +638,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - OpenSuse",
       "timeoutInMinutes": 0,
-      "refName": "Task40",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -691,7 +657,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - OpenSuse",
       "timeoutInMinutes": 0,
-      "refName": "Task41",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -711,7 +676,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Fedora 26",
       "timeoutInMinutes": 0,
-      "refName": "Task43",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -731,7 +695,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Fedora 26",
       "timeoutInMinutes": 0,
-      "refName": "Task44",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -751,7 +714,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Fedora 27",
       "timeoutInMinutes": 0,
-      "refName": "Task45",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -771,7 +733,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Fedora 27",
       "timeoutInMinutes": 0,
-      "refName": "Task46",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -791,7 +752,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Centos 7",
       "timeoutInMinutes": 0,
-      "refName": "Task47",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -811,7 +771,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Centos 7",
       "timeoutInMinutes": 0,
-      "refName": "Task48",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -831,7 +790,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Oracle Linux 7",
       "timeoutInMinutes": 0,
-      "refName": "Task49",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -851,7 +809,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Oracle Linux 7",
       "timeoutInMinutes": 0,
-      "refName": "Task50",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -871,7 +828,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - SLES",
       "timeoutInMinutes": 0,
-      "refName": "Task51",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -891,7 +847,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - SLES",
       "timeoutInMinutes": 0,
-      "refName": "Task52",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -912,7 +867,6 @@
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task42",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -933,7 +887,6 @@
       "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
-      "refName": "CopyFiles1",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -956,7 +909,6 @@
       "displayName": "Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
-      "refName": "PublishBuildArtifacts2",
       "task": {
         "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
@@ -979,7 +931,6 @@
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task43",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
