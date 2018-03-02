@@ -36,7 +36,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// The original string
         /// </summary>
-        public string Text { get; private protected set; }
+        internal string Text { get; private protected set; }
 
         /// <summary>
         /// Returns the value of this Regex Capture.
