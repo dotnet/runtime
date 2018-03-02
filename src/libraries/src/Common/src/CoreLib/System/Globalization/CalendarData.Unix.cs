@@ -54,6 +54,13 @@ namespace System.Globalization
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
                 saLeapYearMonthNames = (string[]) saMonthNames.Clone();
                 saLeapYearMonthNames[6] = leapHebrewMonthName;
+
+                // The returned data from ICU has 6th month name as 'Adar I' and 7th month name as 'Adar'
+                // We need to adjust that in the list used with non-leap year to have 6th month as 'Adar' and 7th month as 'Adar II'
+                // note that when formatting non-leap year dates, 7th month shouldn't get used at all.
+                saMonthNames[5] = saMonthNames[6];
+                saMonthNames[6] = leapHebrewMonthName;
+
             }
             result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames, ref leapHebrewMonthName);
             result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames, ref leapHebrewMonthName);
