@@ -7,7 +7,7 @@
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTargetingNetFx Condition="'$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='net46'">true</IsTargetingNetFx>
-    <IsTargetingNetCoreApp Condition="'$(TargetGroup)'=='netcoreapp'">true</IsTargetingNetCoreApp>
+    <IsTargetingNetCoreApp Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='uapaot'">true</IsTargetingNetCoreApp>
     <IsPartialFacadeAssembly Condition="'$(IsTargetingNetFx)'=='true' OR '$(IsTargetingNetCoreApp)'=='true'">true</IsPartialFacadeAssembly>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
@@ -25,6 +25,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <!-- Shared -->
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">

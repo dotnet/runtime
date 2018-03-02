@@ -6,7 +6,7 @@
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowReferenceFromRuntime>true</AllowReferenceFromRuntime>
     <RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
-    <PackageTargetFramework>netstandard2.0</PackageTargetFramework> 
+    <PackageTargetFramework>netstandard2.0;$(UAPvNextTFM)</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
