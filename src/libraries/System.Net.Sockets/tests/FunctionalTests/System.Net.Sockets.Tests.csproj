@@ -48,7 +48,6 @@
     <Compile Include="SocketOptionNameTest.cs" />
     <Compile Include="MulticastOptionTest.cs" />
     <Compile Include="UdpClientTest.cs" />
-    <Compile Include="UnixDomainSocketTest.cs" />
     <Compile Include="UnixDomainSocketTest.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <!-- Common Sockets files -->
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
