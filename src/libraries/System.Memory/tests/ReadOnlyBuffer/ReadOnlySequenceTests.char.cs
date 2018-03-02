@@ -104,7 +104,9 @@ namespace System.Memory.Tests
         public void ReadOnlyBufferGetPosition_MovesPosition()
         {
             ReadOnlySequence<char> buffer = Factory.CreateOfSize(100);
-            SequencePosition position = buffer.GetPosition(buffer.Start, 65);
+            SequencePosition position = buffer.GetPosition(65);
+            Assert.Equal(buffer.Slice(position).Length, 35);
+            position = buffer.GetPosition(65, buffer.Start);
             Assert.Equal(buffer.Slice(position).Length, 35);
         }
 
@@ -112,14 +114,16 @@ namespace System.Memory.Tests
         public void ReadOnlyBufferGetPosition_ChecksBounds()
         {
             ReadOnlySequence<char> buffer = Factory.CreateOfSize(100);
-            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(buffer.Start, 101));
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(101));
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(101, buffer.Start));
         }
 
         [Fact]
         public void ReadOnlyBufferGetPosition_DoesNotAlowNegative()
         {
             ReadOnlySequence<char> buffer = Factory.CreateOfSize(20);
-            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(buffer.Start, -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(-1, buffer.Start));
         }
 
         public void ReadOnlyBufferSlice_ChecksEnd()
@@ -139,10 +143,16 @@ namespace System.Memory.Tests
 
             var buffer = new ReadOnlySequence<char>(bufferSegment1, 0, bufferSegment2, 50);
 
-            SequencePosition c1 = buffer.GetPosition(buffer.Start, 25); // segment 1 index 75
-            SequencePosition c2 = buffer.GetPosition(buffer.Start, 55); // segment 2 index 5
+            SequencePosition c1 = buffer.GetPosition(25); // segment 1 index 75
+            SequencePosition c2 = buffer.GetPosition(55); // segment 2 index 5
 
             ReadOnlySequence<char> sliced = buffer.Slice(c1, c2);
+            Assert.Equal(30, sliced.Length);
+
+            c1 = buffer.GetPosition(25, buffer.Start); // segment 1 index 75
+            c2 = buffer.GetPosition(55, buffer.Start); // segment 2 index 5
+
+            sliced = buffer.Slice(c1, c2);
             Assert.Equal(30, sliced.Length);
         }
 
@@ -154,7 +164,12 @@ namespace System.Memory.Tests
 
             ReadOnlySequence<char> buffer = new ReadOnlySequence<char>(bufferSegment1, 0, bufferSegment2, 0);
 
-            SequencePosition c1 = buffer.GetPosition(buffer.Start, 50);
+            SequencePosition c1 = buffer.GetPosition(50);
+
+            Assert.Equal(0, c1.GetInteger());
+            Assert.Equal(bufferSegment2, c1.GetObject());
+
+            c1 = buffer.GetPosition(50, buffer.Start);
 
             Assert.Equal(0, c1.GetInteger());
             Assert.Equal(bufferSegment2, c1.GetObject());
@@ -169,7 +184,12 @@ namespace System.Memory.Tests
 
             var buffer = new ReadOnlySequence<char>(bufferSegment1, 0, bufferSegment2, 100);
 
-            SequencePosition c1 = buffer.GetPosition(buffer.Start, 200);
+            SequencePosition c1 = buffer.GetPosition(200);
+
+            Assert.Equal(100, c1.GetInteger());
+            Assert.Equal(bufferSegment2, c1.GetObject());
+
+            c1 = buffer.GetPosition(200, buffer.Start);
 
             Assert.Equal(100, c1.GetInteger());
             Assert.Equal(bufferSegment2, c1.GetObject());
@@ -270,14 +290,19 @@ namespace System.Memory.Tests
             b => b.Slice(5),
             b => b.Slice(0).Slice(5),
             b => b.Slice(5, 5),
-            b => b.Slice(b.GetPosition(b.Start, 5), 5),
-            b => b.Slice(5, b.GetPosition(b.Start, 10)),
-            b => b.Slice(b.GetPosition(b.Start, 5), b.GetPosition(b.Start, 10)),
+            b => b.Slice(b.GetPosition(5), 5),
+            b => b.Slice(5, b.GetPosition(10)),
+            b => b.Slice(b.GetPosition(5), b.GetPosition(10)),
+            b => b.Slice(b.GetPosition(5, b.Start), 5),
+            b => b.Slice(5, b.GetPosition(10, b.Start)),
+            b => b.Slice(b.GetPosition(5, b.Start), b.GetPosition(10, b.Start)),
 
             b => b.Slice((long)5),
             b => b.Slice((long)5, 5),
-            b => b.Slice(b.GetPosition(b.Start, 5), (long)5),
-            b => b.Slice((long)5, b.GetPosition(b.Start, 10)),
+            b => b.Slice(b.GetPosition(5), (long)5),
+            b => b.Slice((long)5, b.GetPosition(10)),
+            b => b.Slice(b.GetPosition(5, b.Start), (long)5),
+            b => b.Slice((long)5, b.GetPosition(10, b.Start)),
         };
 
         public static TheoryData<Action<ReadOnlySequence<char>>> OutOfRangeSliceCases => new TheoryData<Action<ReadOnlySequence<char>>>

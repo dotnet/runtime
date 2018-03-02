@@ -140,7 +140,7 @@ namespace System.IO.Pipelines.Tests
 
             // Create position that would cross into write head
             ReadOnlySequence<byte> buffer = readResult.Buffer;
-            SequencePosition position = buffer.GetPosition(buffer.Start, buffer.Length);
+            SequencePosition position = buffer.GetPosition(buffer.Length);
 
             // Return everything
             _pipe.Reader.AdvanceTo(position);
@@ -512,7 +512,7 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Equal("Hello World", Encoding.ASCII.GetString(result.Buffer.ToArray()));
 
-            _pipe.Reader.AdvanceTo(result.Buffer.GetPosition(result.Buffer.Start, 6));
+            _pipe.Reader.AdvanceTo(result.Buffer.GetPosition(6));
 
             result = await _pipe.Reader.ReadAsync();
 
