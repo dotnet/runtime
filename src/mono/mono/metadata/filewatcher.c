@@ -295,7 +295,7 @@ ves_icall_CoreFX_Interop_RunLoop_CFRunLoopRun (void)
 
 MONO_API char* SystemNative_RealPath(const char* path)
 {
-    assert(path != NULL);
+    g_assert(path != NULL);
     return realpath(path, NULL);
 }
 
