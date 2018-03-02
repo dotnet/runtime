@@ -80,8 +80,8 @@ namespace System.IO.Pipelines
         public abstract void CancelPendingFlush();
         public abstract void Complete(System.Exception exception = null);
         public abstract System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-        public abstract System.Memory<byte> GetMemory(int minimumLength = 0);
-        public abstract System.Span<byte> GetSpan(int minimumLength = 0);
+        public abstract System.Memory<byte> GetMemory(int sizeHint = 0);
+        public abstract System.Span<byte> GetSpan(int sizeHint = 0);
         public abstract void OnReaderCompleted(System.Action<System.Exception, object> callback, object state);
         public virtual System.IO.Pipelines.PipeAwaiter<System.IO.Pipelines.FlushResult> WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
