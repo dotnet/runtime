@@ -452,6 +452,13 @@ INST3( movsldup,     "movsldup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( movshdup,     "movshdup"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSEFLT(0x16))  // Replicate odd-indexed Single FP Values
 INST3( phminposuw,   "phminposuw"  , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x41))   // Packed Horizontal Word Minimum
 INST3( mpsadbw,      "mpsadbw"     , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x42))   // Compute Multiple Packed Sums of Absolute Difference
+INST3( pinsrb,       "pinsrb"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x20))   // Insert Byte
+INST3( pinsrd,       "pinsrd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x22))   // Insert Dword
+INST3( pinsrq,       "pinsrq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x22))   // Insert Qword
+INST3( pextrb,       "pextrb"      , 0, IUM_WR, 0, 0, SSE3A(0x14),  BAD_CODE, BAD_CODE)      // Extract Byte
+INST3( pextrd,       "pextrd"      , 0, IUM_WR, 0, 0, SSE3A(0x16),  BAD_CODE, BAD_CODE)      // Extract Dword
+INST3( pextrq,       "pextrq"      , 0, IUM_WR, 0, 0, SSE3A(0x16),  BAD_CODE, BAD_CODE)      // Extract Qword
+INST3( extractps,    "extractps"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x17))   // Extract Packed Floating-Point Values
 
 INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
