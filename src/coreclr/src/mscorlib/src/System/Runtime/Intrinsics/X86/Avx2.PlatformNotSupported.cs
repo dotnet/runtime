@@ -246,7 +246,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_broadcastss_ps (__m128 a)
         ///   VBROADCASTSS xmm, xmm
         /// __m128d _mm_broadcastsd_pd (__m128d a)
-        ///   VBROADCASTSD xmm, xmm
+        ///   VMOVDDUP xmm, xmm
         /// </summary>
         public static Vector128<T> BroadcastScalarToVector128<T>(Vector128<T> value) where T : struct { throw new PlatformNotSupportedException(); }
 
