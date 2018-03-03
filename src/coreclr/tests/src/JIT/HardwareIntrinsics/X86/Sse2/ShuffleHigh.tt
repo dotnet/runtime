@@ -1,0 +1,190 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ output extension=".cs"  encoding="utf-8" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+//
+
+using System;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace IntelHardwareIntrinsicTest
+{
+    internal static partial class Program
+    {
+        const short Pass = 100;
+        const short Fail = 0;
+
+        static unsafe int Main(string[] args)
+        {
+            short testResult = Pass;
+            short testsCount = 16;
+            string methodUnderTestName = nameof(Sse2.ShuffleHigh);
+
+<#
+            string[] permuteData = new string[]
+            {
+                "0b11100100",         // identity
+                "0b00011011",         // invert
+                "0b00000000",         // broadcast element 0
+                "0b11111111",         // broadcast element 3
+                "0b01010101",         // broadcast element 1
+                "0b10101010",         // broadcast element 2
+                "0b11011000",         // swap middle elements
+                "0b00100111",         // swap external elements
+                "0b10110001",         // swap internal with external elements
+                "0b11110000",         // divide everything between external elements
+                "0b10100101",         // divide everything between internal elements
+                "0b00010100",         // pattern (0, 1, 1, 0)
+                "0b10000010",         // pattern (2, 0, 0, 2)
+                "0b11001100",         // pattern (3, 0, 3, 0)
+                "0b01100110",         // pattern (1, 2, 1, 2)
+                "0b10011001"          // pattern (2, 1, 2, 1)
+            };
+
+#>
+
+
+            if (Sse2.IsSupported)
+            {
+                string[] permuteData = new string[]
+                {
+                    "0b11100100",         // identity
+                    "0b00011011",         // invert
+                    "0b00000000",         // broadcast element 0
+                    "0b11111111",         // broadcast element 3
+                    "0b01010101",         // broadcast element 1
+                    "0b10101010",         // broadcast element 2
+                    "0b11011000",         // swap middle elements
+                    "0b00100111",         // swap external elements
+                    "0b10110001",         // swap internal with external elements
+                    "0b11110000",         // divide everything between external elements
+                    "0b10100101",         // divide everything between internal elements
+                    "0b00010100",         // pattern (0, 1, 1, 0)
+                    "0b10000010",         // pattern (2, 0, 0, 2)
+                    "0b11001100",         // pattern (3, 0, 3, 0)
+                    "0b01100110",         // pattern (1, 2, 1, 2)
+                    "0b10011001"          // pattern (2, 1, 2, 1)
+                };
+
+                using (var shortTable = TestTableTuvImmSse2<short, short, byte>.Create(testsCount))
+                using (var ushortTable = TestTableTuvImmSse2<ushort, ushort, byte>.Create(testsCount))
+                {
+
+                    // Vector128<short> tests
+
+                    TestUtilities.InitializeWithElementNumberingModuloVectorLength<short>(
+                        shortTable.inArray1, 16, (int i, int elNo) =>
+                        {
+                            return (short)(i % 8);
+                        });
+
+                    TestUtilities.InitializeWithConstValue<short>(0, shortTable.inArray2);
+
+<#
+       for (int i = 0; i < permuteData.Length; i++)
+       {
+#>
+                    (Vector128<short>, Vector128<short>) valueInt16_<#= i #> = shortTable[<#= i #>];
+                    Vector128<short> resultInt16_<#= i #> = Sse2.ShuffleHigh(valueInt16_<#= i #>.Item1, (byte) <#= permuteData[i] #>);
+                    shortTable.SetOutArray(resultInt16_<#= i #>, <#= i #>, (byte) <#= permuteData[i] #>);
+
+<#
+
+       }
+#>
+
+                    // Vector128<ushort> tests
+
+                    TestUtilities.InitializeWithElementNumberingModuloVectorLength<ushort>(
+                        ushortTable.inArray1, 16, (int i, int elNo) =>
+                        {
+                            return (ushort)(i % 8);
+                        });
+
+                    TestUtilities.InitializeWithConstValue<ushort>(0, ushortTable.inArray2);
+
+
+<#
+       for (int i = 0; i < permuteData.Length; i++)
+       {
+#>
+                    (Vector128<ushort>, Vector128<ushort>) valueUInt16_<#= i #> = ushortTable[<#= i #>];
+                    Vector128<ushort> resultUInt16_<#= i #> = Sse2.ShuffleHigh(valueUInt16_<#= i #>.Item1, (byte) <#= permuteData[i] #>);
+                    ushortTable.SetOutArray(resultUInt16_<#= i #>, <#= i #>, (byte) <#= permuteData[i] #>);
+
+<#
+
+       }
+#>
+
+                    CheckMethodFive<short, short, byte> checkInt16 = (Span<short> x, byte imm, Span<short> z, Span<short> a) =>
+                    {
+                        bool result = true;
+                        int halfLength = x.Length/2;
+                        for (int i = 0; i < x.Length; i++)
+                        {
+                            if  (i < halfLength)
+                            {
+                                a[i] = x[i];
+                            }
+                            else
+                            {
+                                a[i] = x[(imm & 0x03) + 4];
+                                imm = (byte) (imm >> 2);
+                            }
+
+                            if (z[i] != a[i])
+                                result = false;
+                        }
+                        return result;
+                    };
+
+                    if (!shortTable.CheckResultShuffle(checkInt16))
+                    {
+                        PrintError8(shortTable, methodUnderTestName, "CheckResultShuffleHigh", checkInt16);
+                        testResult = Fail;
+                    }
+
+                   CheckMethodFive<ushort, ushort, byte> checkUInt16 = (Span<ushort> x, byte imm, Span<ushort> z, Span<ushort> a) =>
+                    {
+                        bool result = true;
+                        int halfLength = x.Length/2;
+                        for (int i = 0; i < x.Length; i++)
+                        {
+                            if  (i < halfLength)
+                            {
+                                a[i] = x[i];
+                            }
+                            else
+                            {
+                                a[i] = x[(imm & 0x03) + 4];
+                                imm = (byte) (imm >> 2);
+                            }
+
+                            if (z[i] != a[i])
+                                result = false;
+                        }
+                        return result;
+                    };
+
+                    if (!ushortTable.CheckResultShuffle(checkUInt16))
+                    {
+                        PrintError8(ushortTable, methodUnderTestName, "CheckResultShuffleHigh", checkUInt16);
+                        testResult = Fail;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Sse2.IsSupported: {Sse2.IsSupported}, skipped tests of {typeof(Sse2)}.{methodUnderTestName}");
+            }
+            return testResult;
+        }
+    }
+}
