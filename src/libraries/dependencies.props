@@ -57,6 +57,12 @@
     <FeedTasksPackageVersion>2.1.0-preview2-02612-03</FeedTasksPackageVersion>
   </PropertyGroup>
 
+  <!-- Publish symbol build task package -->
+  <PropertyGroup>
+    <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
+    <PublishSymbolsPackageVersion>1.0.0-beta-62709-01</PublishSymbolsPackageVersion>
+  </PropertyGroup>
+
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
     <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
