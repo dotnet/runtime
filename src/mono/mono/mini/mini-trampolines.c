@@ -656,8 +656,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 		vtable_slot = NULL;
 		generic_shared = TRUE;
 
-		g_assert (code);
-
 		/*
 		 * The caller is gshared code, compute the actual method to call from M and this/rgctx.
 		 */
@@ -768,6 +766,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 	/* the method was jumped to */
 	if (!code) {
 		MonoDomain *domain = mono_domain_get ();
+
+		mini_patch_jump_sites (domain, m, addr);
 
 		/* Patch the got entries pointing to this method */
 		/* 

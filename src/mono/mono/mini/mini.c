@@ -2165,18 +2165,9 @@ mono_postprocess_patches (MonoCompile *cfg)
 			break;
 		}
 		case MONO_PATCH_INFO_METHOD_JUMP: {
-			MonoJumpList *jlist;
-			MonoDomain *domain = cfg->domain;
 			unsigned char *ip = cfg->native_code + patch_info->ip.i;
 
-			mono_domain_lock (domain);
-			jlist = (MonoJumpList *)g_hash_table_lookup (domain_jit_info (domain)->jump_target_hash, patch_info->data.method);
-			if (!jlist) {
-				jlist = (MonoJumpList *)mono_domain_alloc0 (domain, sizeof (MonoJumpList));
-				g_hash_table_insert (domain_jit_info (domain)->jump_target_hash, patch_info->data.method, jlist);
-			}
-			jlist->list = g_slist_prepend (jlist->list, ip);
-			mono_domain_unlock (domain);
+			mini_register_jump_site (cfg->domain, patch_info->data.method, ip);
 			break;
 		}
 		default:
@@ -4269,35 +4260,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	mono_destroy_compile (cfg);
 
 #ifndef DISABLE_JIT
-	if (domain_jit_info (target_domain)->jump_target_hash) {
-		MonoJumpInfo patch_info;
-		MonoJumpList *jlist;
-		GSList *tmp;
-		jlist = (MonoJumpList *)g_hash_table_lookup (domain_jit_info (target_domain)->jump_target_hash, method);
-		if (jlist) {
-			patch_info.next = NULL;
-			patch_info.ip.i = 0;
-			patch_info.type = MONO_PATCH_INFO_METHOD_JUMP;
-			patch_info.data.method = method;
-			g_hash_table_remove (domain_jit_info (target_domain)->jump_target_hash, method);
-
-#ifdef MONO_ARCH_HAVE_PATCH_CODE_NEW
-			for (tmp = jlist->list; tmp; tmp = tmp->next) {
-				gpointer target = mono_resolve_patch_target (NULL, target_domain, (guint8 *)tmp->data, &patch_info, TRUE, error);
-				if (!mono_error_ok (error))
-					break;
-				mono_arch_patch_code_new (NULL, target_domain, (guint8 *)tmp->data, &patch_info, target);
-			}
-#else
-			for (tmp = jlist->list; tmp; tmp = tmp->next) {
-				mono_arch_patch_code (NULL, NULL, target_domain, tmp->data, &patch_info, TRUE, error);
-				if (!is_ok (error))
-					break;
-			}
-#endif
-		}
-	}
-
 	/* Update llvm callees */
 	if (domain_jit_info (target_domain)->llvm_jit_callees) {
 		GSList *callees = g_hash_table_lookup (domain_jit_info (target_domain)->llvm_jit_callees, method);
