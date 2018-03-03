@@ -5,7 +5,7 @@
 <#@ import namespace="System" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Runtime.InteropServices" #>
-<#@ include file="..\src\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+<#@ include file="..\..\common\src\corelib\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
 
 using System;
 using System.Globalization;
@@ -19,7 +19,7 @@ namespace System.Numerics.Tests
     /// <summary>
     ///  Vector{T} tests that use random number generation and a unified generic test structure
     /// </summary>
-    public class GenericVectorTests
+    public partial class GenericVectorTests
     {
         // Static constructor in top-level class\
         static System.Numerics.Vector<float> dummy;
@@ -116,7 +116,7 @@ namespace System.Numerics.Tests
                 });
         }
 
-<# 
+<#
     foreach (var type in supportedTypes)
     {
 #>
@@ -1792,11 +1792,11 @@ namespace System.Numerics.Tests
             }
         }
 
-        internal static T[] GenerateRandomValuesForVector<T>() where T : struct
+        internal static T[] GenerateRandomValuesForVector<T>(int? numValues = null) where T : struct
         {
             int minValue = GetMinValue<T>();
             int maxValue = GetMaxValue<T>();
-            return Util.GenerateRandomValues<T>(Vector<T>.Count, minValue, maxValue);
+            return Util.GenerateRandomValues<T>(numValues ?? Vector<T>.Count, minValue, maxValue);
         }
 
         internal static int GetMinValue<T>() where T : struct

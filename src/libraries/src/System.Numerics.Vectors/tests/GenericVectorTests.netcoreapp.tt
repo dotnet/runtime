@@ -1,0 +1,174 @@
+<#@ template debug="true" hostSpecific="true" #>
+<#@ output extension=".cs" #>
+<#@ Assembly Name="System.Core.dll" #>
+<#@ Assembly Name="System.Xml.dll" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Runtime.InteropServices" #>
+<#@ include file="..\..\Common\src\CoreLib\System\Numerics\GenerationConfig.ttinclude" #><# GenerateCopyrightHeader(); #>
+
+using System;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using Xunit;
+using Xunit.Sdk;
+
+namespace System.Numerics.Tests
+{
+    /// <summary>
+    ///  Vector{T} tests that use random number generation and a unified generic test structure
+    /// </summary>
+    public partial class GenericVectorTests
+    {
+        #region Constructor Tests
+
+        #region Tests for Span based constructor
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorWithSpan<#=type.Name#>() => TestConstructorWithSpan<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestConstructorWithSpan<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>().ToArray();
+            var valueSpan = new Span<T>(values);
+
+            var vector = new Vector<T>(valueSpan);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void SpanBasedConstructorWithLessElements_<#=type.Name#>() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<<#=type.Name#>>());
+<#
+    }
+#>
+
+        private void TestSpanBasedConstructorWithLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
+            var vector = new Vector<T>(new Span<T>(values));
+        }
+
+        #endregion Tests for Span based constructor
+
+        #region Tests for Array based constructor
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayBasedConstructor_<#=type.Name#>() => TestArrayBasedConstructor<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestArrayBasedConstructor<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count).ToArray();
+            var vector = new Vector<T>(values);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayIndexBasedConstructor_<#=type.Name#>() => TestArrayIndexBasedConstructor<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestArrayIndexBasedConstructor<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
+            int offset = Vector<T>.Count - 1;
+            var vector = new Vector<T>(values, offset);
+            ValidateVector(vector,
+                (index, val) =>
+                {
+                    Assert.Equal(values[offset + index], val);
+                });
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayBasedConstructorWithLessElements_<#=type.Name#>() => TestArrayBasedConstructorWithLessElements<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestArrayBasedConstructorWithLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
+            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values));
+        }
+
+<# 
+    foreach (var type in supportedTypes)
+    {
+#>
+        [Fact]
+        public void ArrayIndexBasedConstructorLessElements_<#=type.Name#>() => TestArrayIndexBasedConstructorLessElements<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestArrayIndexBasedConstructorLessElements<T>() where T : struct
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
+            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
+        }
+
+        #endregion Tests for Array based constructor
+
+        #region Tests for constructors using unsupported types
+
+<#
+    Type[] unsupportedTypes = new[]
+    {
+        typeof(Guid), typeof(DateTime), typeof(char)
+    };
+
+
+    foreach (var type in unsupportedTypes)
+    {
+#>
+        [Fact]
+        public void ConstructorWithUnsupportedTypes_<#=type.Name#>() => TestConstructorWithUnsupportedTypes<<#=type.Name#>>();
+<#
+    }
+#>
+
+        private void TestConstructorWithUnsupportedTypes<T>() where T : struct
+        {
+            Assert.Throws<NotSupportedException>(() => new Vector<T>(new Span<T>(new T[4])));
+        }
+
+        #endregion Tests for constructors using unsupported types
+
+        #endregion Constructor Tests
+    }
+}

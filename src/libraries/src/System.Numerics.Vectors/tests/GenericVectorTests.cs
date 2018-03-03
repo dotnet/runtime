@@ -14,7 +14,7 @@ namespace System.Numerics.Tests
     /// <summary>
     ///  Vector{T} tests that use random number generation and a unified generic test structure
     /// </summary>
-    public class GenericVectorTests
+    public partial class GenericVectorTests
     {
         // Static constructor in top-level class\
         static System.Numerics.Vector<float> dummy;
@@ -2699,11 +2699,11 @@ namespace System.Numerics.Tests
             }
         }
 
-        internal static T[] GenerateRandomValuesForVector<T>() where T : struct
+        internal static T[] GenerateRandomValuesForVector<T>(int? numValues = null) where T : struct
         {
             int minValue = GetMinValue<T>();
             int maxValue = GetMaxValue<T>();
-            return Util.GenerateRandomValues<T>(Vector<T>.Count, minValue, maxValue);
+            return Util.GenerateRandomValues<T>(numValues ?? Vector<T>.Count, minValue, maxValue);
         }
 
         internal static int GetMinValue<T>() where T : struct
