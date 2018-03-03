@@ -63,7 +63,29 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Constructor\GenericVectorConstructorTests.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>GenericVectorConstructorTests.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Util.cs">
+      <Link>Util.cs</Link>
+    </Compile>
+    <Compile Include="Constructor\GenericVectorConstructorTests.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GenericVectorConstructorTests.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Common\src\CoreLib\System\Numerics\GenerationConfig.ttinclude">
+      <Link>GenerationConfig.ttinclude</Link>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

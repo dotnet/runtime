@@ -35,6 +35,13 @@
       <Link>System\MathF.netstandard.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
+    <Compile Include="GenericVectorTests.netcoreapp.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GenericVectorTests.netcoreapp.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
   <ItemGroup>
     <None Include="$(CommonPath)\CoreLib\System\Numerics\ConstantHelper.tt">
       <Link>ConstantHelper.tt</Link>
@@ -50,7 +57,14 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Content Include="GenericVectorTests.netcoreapp.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>GenericVectorTests.netcoreapp.cs</LastGenOutput>
+    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
