@@ -22,6 +22,9 @@
     <PackageReference Include="System.Security.Permissions">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="System.Runtime.Intrinsics.Experimental">
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
