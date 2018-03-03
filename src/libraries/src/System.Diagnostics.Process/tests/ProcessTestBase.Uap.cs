@@ -65,9 +65,9 @@ namespace System.Diagnostics.Tests
                 throw new Exception($"Method needs to be defined in {nameof(RemotelyInvokable)} class.");
             }
 
-            if (method.Name == nameof(RemotelyInvokable.LongWait))
+            if (method.Name == nameof(RemotelyInvokable.Sleep))
             {
-                return CreateLongWaitingProcess();
+                return CreateSleepProcess(int.Parse(args[0]));
             }
 
             MethodInfo uapMethod = GetMethodForUap(method);
@@ -79,22 +79,6 @@ namespace System.Diagnostics.Tests
                 {
                     FileName = RunnerName,
                     Arguments = $"/C {PasteArguments.Paste(new string[] { cmdArgs }, false)}"
-                }
-            };
-
-            AddProcessForDispose(p);
-            return p;
-        }
-
-        private Process CreateLongWaitingProcess()
-        {
-            // timeout.exe does not work as expected on uap
-            var p = new Process()
-            {
-                StartInfo = new ProcessStartInfo()
-                {
-                    FileName = RunnerName,
-                    Arguments = "/K"
                 }
             };
 
