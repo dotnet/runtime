@@ -219,19 +219,64 @@ unsigned Compiler::simdSizeOfHWIntrinsic(NamedIntrinsic intrinsic, CORINFO_SIG_I
 }
 
 //------------------------------------------------------------------------
-// numArgsOfHWIntrinsic: get the number of arguments
+// numArgsOfHWIntrinsic: get the number of arguments based on table and
+// if numArgs is -1 check number of arguments using GenTreeHWIntrinsic
+// node unless it is nullptr
 //
 // Arguments:
-//    intrinsic -- id of the intrinsic function.
+//    intrinsic -- id of the intrinsic function
+//    node      -- GenTreeHWIntrinsic* node with nullptr default value
 //
 // Return Value:
 //     number of arguments
 //
-int Compiler::numArgsOfHWIntrinsic(NamedIntrinsic intrinsic)
+int Compiler::numArgsOfHWIntrinsic(NamedIntrinsic intrinsic, GenTreeHWIntrinsic* node)
 {
     assert(intrinsic != NI_Illegal);
     assert(intrinsic > NI_HW_INTRINSIC_START && intrinsic < NI_HW_INTRINSIC_END);
-    return hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].numArgs;
+
+    int numArgs = hwIntrinsicInfoArray[intrinsic - NI_HW_INTRINSIC_START - 1].numArgs;
+    if (numArgs >= 0)
+    {
+        return numArgs;
+    }
+
+    noway_assert(node != nullptr);
+    assert(numArgs == -1);
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (op2 != nullptr)
+    {
+        return 2;
+    }
+
+    if (op1 != nullptr)
+    {
+        if (op1->OperIsList())
+        {
+            numArgs              = 0;
+            GenTreeArgList* list = op1->AsArgList();
+
+            while (list != nullptr)
+            {
+                numArgs++;
+                list = list->Rest();
+            }
+
+            assert(numArgs > 0);
+            return numArgs;
+        }
+        else
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 //------------------------------------------------------------------------
