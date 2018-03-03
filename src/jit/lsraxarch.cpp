@@ -2259,7 +2259,7 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     InstructionSet      isa         = Compiler::isaOfHWIntrinsic(intrinsicID);
     HWIntrinsicCategory category    = Compiler::categoryOfHWIntrinsic(intrinsicID);
     HWIntrinsicFlag     flags       = Compiler::flagsOfHWIntrinsic(intrinsicID);
-    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID);
+    int                 numArgs     = Compiler::numArgsOfHWIntrinsic(intrinsicID, intrinsicTree);
 
     if (isa == InstructionSet_AVX || isa == InstructionSet_AVX2)
     {
@@ -2321,11 +2321,9 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
             assert((flags & HW_Flag_NoCodeGen) == 0);
 
-            assert(numArgs != 0);
-            assert(numArgs != 1);
-
             if (info->srcCount >= 2)
             {
+                assert(numArgs >= 2);
                 LocationInfoListNode* op2Info = useList.Begin()->Next();
                 op2Info->info.isDelayFree     = true;
                 info->hasDelayFreeSrc         = true;
