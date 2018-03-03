@@ -50,15 +50,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(SerializableObjects_MemberData))]
-        public void ValidateAgainstBlobs(object obj, string[] blobs) 
+        public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs) 
             => ValidateAndRoundtrip(obj, blobs, false);
 
         [Theory]
         [MemberData(nameof(SerializableEqualityComparers_MemberData))]
-        public void ValidateEqualityComparersAgainstBlobs(object obj, string[] blobs)
+        public void ValidateEqualityComparersAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, true);
 
-        private static void ValidateAndRoundtrip(object obj, string[] blobs, bool isEqualityComparer)
+        private static void ValidateAndRoundtrip(object obj, TypeSerializableValue[] blobs, bool isEqualityComparer)
         {
             if (obj == null)
             {
@@ -77,13 +77,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Therefore we remove the second blob which is the one from Desktop.
             if (!PlatformDetection.IsFullFramework && (obj is SqlException || obj is ReflectionTypeLoadException || obj is LicenseException))
             {
-                var tmpList = new List<string>(blobs);
+                var tmpList = new List<TypeSerializableValue>(blobs);
                 tmpList.RemoveAt(1);
+
+                int index = tmpList.FindIndex(b => b.Platform == TargetFrameworkMoniker.netfx461 || b.Platform == TargetFrameworkMoniker.netfx471);
+                if (index >= 0)
+                    tmpList.RemoveAt(index);
+
                 blobs = tmpList.ToArray();
             }
 
             // We store our framework blobs in index 1
-            int platformBlobIndex = PlatformDetection.IsFullFramework ? 1 : 0;
+            int platformBlobIndex = TypeSerializableValue.GetPlatformIndex(blobs);
             for (int i = 0; i < blobs.Length; i++)
             {
                 // Check if the current blob is from the current running platform.
@@ -91,13 +96,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
                 if (isEqualityComparer)
                 {
-                    ValidateEqualityComparer(BinaryFormatterHelpers.FromBase64String(blobs[i], FormatterAssemblyStyle.Simple));
-                    ValidateEqualityComparer(BinaryFormatterHelpers.FromBase64String(blobs[i], FormatterAssemblyStyle.Full));
+                    ValidateEqualityComparer(BinaryFormatterHelpers.FromBase64String(blobs[i].Base64Blob, FormatterAssemblyStyle.Simple));
+                    ValidateEqualityComparer(BinaryFormatterHelpers.FromBase64String(blobs[i].Base64Blob, FormatterAssemblyStyle.Full));
                 }
                 else
                 {
-                    EqualityExtensions.CheckEquals(obj, BinaryFormatterHelpers.FromBase64String(blobs[i], FormatterAssemblyStyle.Simple), isSamePlatform);
-                    EqualityExtensions.CheckEquals(obj, BinaryFormatterHelpers.FromBase64String(blobs[i], FormatterAssemblyStyle.Full), isSamePlatform);
+                    EqualityExtensions.CheckEquals(obj, BinaryFormatterHelpers.FromBase64String(blobs[i].Base64Blob, FormatterAssemblyStyle.Simple), isSamePlatform);
+                    EqualityExtensions.CheckEquals(obj, BinaryFormatterHelpers.FromBase64String(blobs[i].Base64Blob, FormatterAssemblyStyle.Full), isSamePlatform);
                 }
             }
         }
@@ -486,7 +491,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
         }
 
-        private static void SanityCheckBlob(object obj, string[] blobs)
+        private static void SanityCheckBlob(object obj, TypeSerializableValue[] blobs)
         {
             // These types are unstable during serialization and produce different blobs.
             if (obj is WeakReference<Point> ||
@@ -503,18 +508,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
 
             // Check if runtime generated blob is the same as the stored one
-            int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
+            int frameworkBlobNumber = TypeSerializableValue.GetPlatformIndex(blobs);
             if (frameworkBlobNumber < blobs.Length)
             {
                 string runtimeBlob = BinaryFormatterHelpers.ToBase64String(obj, FormatterAssemblyStyle.Full);
 
-                string storedComparableBlob = CreateComparableBlobInfo(blobs[frameworkBlobNumber]);
+                string storedComparableBlob = CreateComparableBlobInfo(blobs[frameworkBlobNumber].Base64Blob);
                 string runtimeComparableBlob = CreateComparableBlobInfo(runtimeBlob);
 
                 Assert.True(storedComparableBlob == runtimeComparableBlob,
                     $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}{Environment.NewLine}" +
                     $"-------------------- Stored blob ---------------------{Environment.NewLine}" +
-                    $"Encoded: {blobs[frameworkBlobNumber]}{Environment.NewLine}" +
+                    $"Encoded: {blobs[frameworkBlobNumber].Base64Blob}{Environment.NewLine}" +
                     $"Decoded: {storedComparableBlob}{Environment.NewLine}{Environment.NewLine}" +
                     $"--------------- Runtime generated blob ---------------{Environment.NewLine}" +
                     $"Encoded: {runtimeBlob}{Environment.NewLine}" +
