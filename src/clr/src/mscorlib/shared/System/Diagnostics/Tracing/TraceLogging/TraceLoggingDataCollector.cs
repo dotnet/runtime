@@ -85,6 +85,17 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// Adds a null-terminated String value to the event payload.
+        /// </summary>
+        /// <param name="value">
+        /// Value to be added. A null value is treated as a zero-length string.
+        /// </param>
+        public void AddNullTerminatedString(string value)
+        {
+            DataCollector.ThreadInstance.AddNullTerminatedString(value);
+        }
+
+        /// <summary>
         /// Adds a counted String value to the event payload.
         /// </summary>
         /// <param name="value">
