@@ -274,83 +274,83 @@ namespace System.Globalization
             internal bool FullAppCompatMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 5
                 && _numCount == 4
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.DayHourSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals3, pattern.AppCompatLiteral)
-                && StringSpanHelpers.Equals(_literals4, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.DayHourSep)
+                && _literals2.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals3.EqualsOrdinal(pattern.AppCompatLiteral)
+                && _literals4.EqualsOrdinal(pattern.End);
 
             internal bool PartialAppCompatMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 4
                 && _numCount == 3
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.AppCompatLiteral)
-                && StringSpanHelpers.Equals(_literals3, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals2.EqualsOrdinal(pattern.AppCompatLiteral)
+                && _literals3.EqualsOrdinal(pattern.End);
 
             /// <summary>DHMSF (all values matched)</summary>
             internal bool FullMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == MaxLiteralTokens
                 && _numCount == MaxNumericTokens
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.DayHourSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals3, pattern.MinuteSecondSep)
-                && StringSpanHelpers.Equals(_literals4, pattern.SecondFractionSep)
-                && StringSpanHelpers.Equals(_literals5, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.DayHourSep)
+                && _literals2.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals3.EqualsOrdinal(pattern.MinuteSecondSep)
+                && _literals4.EqualsOrdinal(pattern.SecondFractionSep)
+                && _literals5.EqualsOrdinal(pattern.End);
 
             /// <summary>D (no hours, minutes, seconds, or fractions)</summary>
             internal bool FullDMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 2
                 && _numCount == 1
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.End);
 
             /// <summary>HM (no days, seconds, or fractions)</summary>
             internal bool FullHMMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 3
                 && _numCount == 2
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals2.EqualsOrdinal(pattern.End);
 
             /// <summary>DHM (no seconds or fraction)</summary>
             internal bool FullDHMMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 4
                 && _numCount == 3
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.DayHourSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals3, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.DayHourSep)
+                && _literals2.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals3.EqualsOrdinal(pattern.End);
 
             /// <summary>HMS (no days or fraction)</summary>
             internal bool FullHMSMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 4
                 && _numCount == 3
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.MinuteSecondSep)
-                && StringSpanHelpers.Equals(_literals3, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals2.EqualsOrdinal(pattern.MinuteSecondSep)
+                && _literals3.EqualsOrdinal(pattern.End);
 
             /// <summary>DHMS (no fraction)</summary>
             internal bool FullDHMSMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 5
                 && _numCount == 4
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.DayHourSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals3, pattern.MinuteSecondSep)
-                && StringSpanHelpers.Equals(_literals4, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.DayHourSep)
+                && _literals2.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals3.EqualsOrdinal(pattern.MinuteSecondSep)
+                && _literals4.EqualsOrdinal(pattern.End);
 
             /// <summary>HMSF (no days)</summary>
             internal bool FullHMSFMatch(TimeSpanFormat.FormatLiterals pattern) =>
                 _sepCount == 5
                 && _numCount == 4
-                && StringSpanHelpers.Equals(_literals0, pattern.Start)
-                && StringSpanHelpers.Equals(_literals1, pattern.HourMinuteSep)
-                && StringSpanHelpers.Equals(_literals2, pattern.MinuteSecondSep)
-                && StringSpanHelpers.Equals(_literals3, pattern.SecondFractionSep)
-                && StringSpanHelpers.Equals(_literals4, pattern.End);
+                && _literals0.EqualsOrdinal(pattern.Start)
+                && _literals1.EqualsOrdinal(pattern.HourMinuteSep)
+                && _literals2.EqualsOrdinal(pattern.MinuteSecondSep)
+                && _literals3.EqualsOrdinal(pattern.SecondFractionSep)
+                && _literals4.EqualsOrdinal(pattern.End);
 
             internal TTT _lastSeenTTT;
             internal int _tokenCount;
