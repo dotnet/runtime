@@ -237,7 +237,10 @@ void EventPipe::Shutdown()
     }
     CONTRACTL_END;
 
-    // We are shutting down, so if diasabling EventPipe throws, we need to move along anyway
+    // Mark tracing as no longer initialized.
+    s_tracingInitialized = false;
+
+    // We are shutting down, so if disabling EventPipe throws, we need to move along anyway.
     EX_TRY
     {
         Disable();
@@ -245,16 +248,19 @@ void EventPipe::Shutdown()
     EX_CATCH { }
     EX_END_CATCH(SwallowAllExceptions);
 
-    if(s_pConfig != NULL)
-    {
-        delete(s_pConfig);
-        s_pConfig = NULL;
-    }
-    if(s_pBufferManager != NULL)
-    {
-        delete(s_pBufferManager);
-        s_pBufferManager = NULL;
-    }
+    // Save pointers to the configuration and buffer manager.
+    EventPipeConfiguration *pConfig = s_pConfig;
+    EventPipeBufferManager *pBufferManager = s_pBufferManager;
+
+    // Set the static pointers to NULL so that the rest of the EventPipe knows that they are no longer available.
+    // Flush process write buffers to make sure other threads can see the change.
+    s_pConfig = NULL;
+    s_pBufferManager = NULL;
+    FlushProcessWriteBuffers();
+
+    // Free the configuration and buffer manager.
+    delete(pConfig);
+    delete(pBufferManager);
 }
 
 void EventPipe::Enable(
