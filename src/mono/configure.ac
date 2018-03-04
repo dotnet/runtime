@@ -3453,13 +3453,17 @@ case "$host" in
 		arch_target=ppc;
 		case $host_os in
 		  aix*|os400*)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=powerpc
 			dnl on AIX/PASE, shared libraries can be inside archives
 			dnl if they are, we specify them by lib.a(lib.so)
 			dnl we may hardcode 64-bit names at times, but we don't do 32-bit AIX, so
 			LIBC="libc.a(shr_64.o)"
 			INTL="libintl.a(libintl.so.9)"
 			;;
-		  linux*|darwin*)
+		  linux*)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=powerpc
 			;;
 		esac
 		;;
@@ -4538,6 +4542,14 @@ if test "x$enable_btls" = "xyes"; then
 		;;
 	aarch64)
 		btls_arch=aarch64
+		;;
+	powerpc)
+		btls_arch=powerpc
+		case $host_os in
+			aix*|os400*)
+				btls_cflags="$btls_cflags -maix64 -D_ALL_SOURCE -D_THREAD_SAFE -D_REENTRANT"
+				BTLS_CMAKE_ARGS="-DCMAKE_AR=/usr/bin/ar -DCMAKE_C_ARCHIVE_CREATE=\"<CMAKE_AR> -X64 cr <TARGET> <LINK_FLAGS> <OBJECTS>\""
+		esac
 		;;
 	android-armv5)
 		BTLS_CMAKE_ARGS="-DANDROID_ABI=\"armeabi\" -DANDROID_NATIVE_API_LEVEL=14"
