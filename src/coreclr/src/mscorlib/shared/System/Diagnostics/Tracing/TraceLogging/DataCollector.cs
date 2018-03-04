@@ -143,6 +143,45 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        internal unsafe void AddNullTerminatedString(string value)
+        {
+            // Treat null strings as empty strings.
+            if (value == null)
+            {
+                value = string.Empty;
+            }
+
+            // Calculate the size of the string including the trailing NULL char.
+            // Don't use value.Length here because string allows for embedded NULL characters.
+            int nullCharIndex = value.IndexOf((char)0);
+            if (nullCharIndex < 0)
+            {
+                nullCharIndex = value.Length;
+            }
+            int size = (nullCharIndex + 1) * 2;
+
+            if (this.bufferNesting != 0)
+            {
+                this.EnsureBuffer(size);
+            }
+
+            if (this.bufferNesting == 0)
+            {
+                this.ScalarsEnd();
+                this.PinArray(value, size);
+            }
+            else
+            {
+                var oldPos = this.bufferPos;
+                this.bufferPos = checked(this.bufferPos + size);
+                this.EnsureBuffer();
+                fixed (void* p = value)
+                {
+                    Marshal.Copy((IntPtr)p, buffer, oldPos, size);
+                }
+            }
+        }
+
         internal void AddBinary(Array value, int size)
         {
             this.AddArray(value, size, 1);

@@ -192,22 +192,43 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// Adds a null-terminated string field to an event.
+        /// Compatible with core types: Utf16String, MbcsString.
+        /// Compatible with dataCollector method: AddNullTerminatedString(string).
+        /// </summary>
+        /// <param name="name">
+        /// The name to use for the added field. This value must not be null.
+        /// </param>
+        /// <param name="type">
+        /// The type code for the added field. This must be a null-terminated string type.
+        /// </param>
+        public void AddNullTerminatedString(string name, TraceLoggingDataType type)
+        {
+            switch ((TraceLoggingDataType)((int)type & Statics.InTypeMask))
+            {
+                case TraceLoggingDataType.Utf16String:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type));
+            }
+
+            this.impl.AddNonscalar();
+            this.AddField(new FieldMetadata(name, type, this.Tags, this.BeginningBufferedArray));
+        }
+
+        /// <summary>
         /// Adds an array field to an event.
         /// </summary>
         /// <param name="name">
         /// The name to use for the added field. This value must not be null.
         /// </param>
         /// <param name="type">
-        /// The type code for the added field. This must be a fixed-size type
-        /// or a string type. In the case of a string type, this adds an array
-        /// of characters, not an array of strings.
+        /// The type code for the added field. This must be a fixed-size type.
         /// </param>
         public void AddArray(string name, TraceLoggingDataType type)
         {
             switch ((TraceLoggingDataType)((int)type & Statics.InTypeMask))
             {
-                case TraceLoggingDataType.Utf16String:
-                case TraceLoggingDataType.MbcsString:
                 case TraceLoggingDataType.Int8:
                 case TraceLoggingDataType.UInt8:
                 case TraceLoggingDataType.Int16:

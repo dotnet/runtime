@@ -557,30 +557,14 @@ namespace System.Diagnostics.Tracing
 
                     for (int i = 0; i < eventTypes.typeInfos.Length; i++)
                     {
-                        // Until M3, we need to morph strings to a counted representation
-                        // When TDH supports null terminated strings, we can remove this.  
-                        if (eventTypes.typeInfos[i].DataType == typeof(string))
-                        {
-                            // Write out the size of the string 
-                            descriptors[numDescrs].DataPointer = (IntPtr) (&descriptors[numDescrs + 1].m_Size);
-                            descriptors[numDescrs].m_Size = 2;
-                            numDescrs++;
+                        descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
+                        descriptors[numDescrs].m_Size = data[i].m_Size;
 
-                            descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
-                            descriptors[numDescrs].m_Size = data[i].m_Size - 2;   // Remove the null terminator
-                            numDescrs++;
-                        }
-                        else
-                        {
-                            descriptors[numDescrs].m_Ptr = data[i].m_Ptr;
-                            descriptors[numDescrs].m_Size = data[i].m_Size;
+                        // old conventions for bool is 4 bytes, but meta-data assumes 1.
+                        if (data[i].m_Size == 4 && eventTypes.typeInfos[i].DataType == typeof(bool))
+                            descriptors[numDescrs].m_Size = 1;
 
-                            // old conventions for bool is 4 bytes, but meta-data assumes 1.  
-                            if (data[i].m_Size == 4 && eventTypes.typeInfos[i].DataType == typeof(bool))
-                                descriptors[numDescrs].m_Size = 1;
-
-                            numDescrs++;
-                        }
+                        numDescrs++;
                     }
 
                     this.WriteEventRaw(
