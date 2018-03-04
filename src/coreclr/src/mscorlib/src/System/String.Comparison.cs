@@ -387,19 +387,19 @@ namespace System
         {
             if (object.ReferenceEquals(strA, strB))
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return 0;
             }
 
             // They can't both be null at this point.
             if (strA == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return -1;
             }
             if (strB == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return 1;
             }
 
@@ -559,7 +559,7 @@ namespace System
 
         public static int Compare(String strA, int indexA, String strB, int indexB, int length, StringComparison comparisonType)
         {
-            StringSpanHelpers.CheckStringComparison(comparisonType);
+            CheckStringComparison(comparisonType);
 
             if (strA == null || strB == null)
             {
@@ -652,7 +652,6 @@ namespace System
             return CompareOrdinalHelper(strA, strB);
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/21395: Expose this publicly?
         internal static int CompareOrdinal(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB)
         {
             // TODO: Add a vectorized code path, similar to SequenceEqual
@@ -781,13 +780,13 @@ namespace System
             
             if ((Object)this == (Object)value)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if (value.Length == 0)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
@@ -877,13 +876,13 @@ namespace System
         {
             if ((Object)this == (Object)value)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if ((Object)value == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return false;
             }
 
@@ -944,13 +943,13 @@ namespace System
         {
             if ((Object)a == (Object)b)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if ((Object)a == null || (Object)b == null)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return false;
             }
 
@@ -1096,13 +1095,13 @@ namespace System
 
             if ((Object)this == (Object)value)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
             if (value.Length == 0)
             {
-                StringSpanHelpers.CheckStringComparison(comparisonType);
+                CheckStringComparison(comparisonType);
                 return true;
             }
 
@@ -1158,5 +1157,14 @@ namespace System
         }
 
         public bool StartsWith(char value) => Length != 0 && _firstChar == value;
+
+        internal static void CheckStringComparison(StringComparison comparisonType)
+        {
+            // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
+            if ((uint)(comparisonType - StringComparison.CurrentCulture) > (StringComparison.OrdinalIgnoreCase - StringComparison.CurrentCulture))
+            {
+                ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+            }
+        }
     }
 }

@@ -12,7 +12,6 @@
 ** 
 ===========================================================*/
 
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -203,14 +202,14 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
             ReadOnlySpan<char> trueSpan = TrueLiteral.AsSpan();
-            if (StringSpanHelpers.Equals(trueSpan, value, StringComparison.OrdinalIgnoreCase))
+            if (trueSpan.EqualsOrdinalIgnoreCase(value))
             {
                 result = true;
                 return true;
             }
 
             ReadOnlySpan<char> falseSpan = FalseLiteral.AsSpan();
-            if (StringSpanHelpers.Equals(falseSpan, value, StringComparison.OrdinalIgnoreCase))
+            if (falseSpan.EqualsOrdinalIgnoreCase(value))
             {
                 result = false;
                 return true;
@@ -219,13 +218,13 @@ namespace System
             // Special case: Trim whitespace as well as null characters.
             value = TrimWhiteSpaceAndNull(value);
 
-            if (StringSpanHelpers.Equals(trueSpan, value, StringComparison.OrdinalIgnoreCase))
+            if (trueSpan.EqualsOrdinalIgnoreCase(value))
             {
                 result = true;
                 return true;
             }
 
-            if (StringSpanHelpers.Equals(falseSpan, value, StringComparison.OrdinalIgnoreCase))
+            if (falseSpan.EqualsOrdinalIgnoreCase(value))
             {
                 result = false;
                 return true;
