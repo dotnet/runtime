@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -18,7 +19,7 @@ namespace System.IO.Pipelines.Tests
         public PipelineReaderWriterFacts()
         {
             _pool = new TestMemoryPool();
-            _pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            _pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
         }
 
         public void Dispose()
@@ -54,7 +55,7 @@ namespace System.IO.Pipelines.Tests
             result = await _pipe.Reader.ReadAsync();
             _pipe.Reader.AdvanceTo(result.Buffer.End);
 
-            PipeAwaiter<ReadResult> awaitable = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
             Assert.False(awaitable.IsCompleted);
         }
 
@@ -70,7 +71,7 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(readResult.Buffer.End);
 
             // Try reading, it should block
-            PipeAwaiter<ReadResult> awaitable = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
             Assert.False(awaitable.IsCompleted);
 
             // Unblock without writing anything
@@ -101,7 +102,7 @@ namespace System.IO.Pipelines.Tests
             Assert.True(result.IsCanceled);
             Assert.True(buffer.IsEmpty);
 
-            PipeAwaiter<ReadResult> awaitable = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
             Assert.False(awaitable.IsCompleted);
         }
 
@@ -231,7 +232,7 @@ namespace System.IO.Pipelines.Tests
 
             _pipe.Writer.GetMemory();
             _pipe.Reader.AdvanceTo(result.Buffer.Start);
-            PipeAwaiter<ReadResult> awaitable = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
             Assert.False(awaitable.IsCompleted);
         }
 
@@ -239,7 +240,7 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsync_ReturnsCompletedTaskWhenMaxSizeIfZero()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(1);
-            PipeAwaiter<FlushResult> flushTask = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushTask = writableBuffer.FlushAsync();
             Assert.True(flushTask.IsCompleted);
 
             writableBuffer = _pipe.Writer.WriteEmpty(1);
@@ -479,6 +480,111 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(reader.Start, reader.Start);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsyncOnCompletedCapturesTheExecutionContext(bool useSynchronizationContext)
+        {
+            var pipe = new Pipe(new PipeOptions(useSynchronizationContext: useSynchronizationContext));
+
+            SynchronizationContext previous = SynchronizationContext.Current;
+            var sc = new CustomSynchronizationContext();
+
+            if (useSynchronizationContext)
+            {
+                SynchronizationContext.SetSynchronizationContext(sc);
+            }
+
+            try
+            {
+                AsyncLocal<int> val = new AsyncLocal<int>();
+                var tcs = new TaskCompletionSource<int>();
+                val.Value = 10;
+
+                pipe.Reader.ReadAsync().GetAwaiter().OnCompleted(() =>
+                {
+                    tcs.TrySetResult(val.Value);
+                });
+
+                val.Value = 20;
+
+                pipe.Writer.WriteEmpty(100);
+                await pipe.Writer.FlushAsync();
+
+                if (useSynchronizationContext)
+                {
+                    Assert.Equal(1, sc.Callbacks.Count);
+                    sc.Callbacks[0].Item1(sc.Callbacks[0].Item2);
+                }
+
+                int value = await tcs.Task;
+                Assert.Equal(10, value);
+            }
+            finally
+            {
+                if (useSynchronizationContext)
+                {
+                    SynchronizationContext.SetSynchronizationContext(previous);
+                }
+
+                pipe.Reader.Complete();
+                pipe.Writer.Complete();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task FlushAsyncOnCompletedCapturesTheExecutionContextAndSyncContext(bool useSynchronizationContext)
+        {
+            var pipe = new Pipe(new PipeOptions(useSynchronizationContext: useSynchronizationContext, pauseWriterThreshold: 20, resumeWriterThreshold: 10));
+
+            SynchronizationContext previous = SynchronizationContext.Current;
+            var sc = new CustomSynchronizationContext();
+
+            if (useSynchronizationContext)
+            {
+                SynchronizationContext.SetSynchronizationContext(sc);
+            }
+
+            try
+            {
+                AsyncLocal<int> val = new AsyncLocal<int>();
+                var tcs = new TaskCompletionSource<int>();
+                val.Value = 10;
+
+                pipe.Writer.WriteEmpty(20);
+                pipe.Writer.FlushAsync().GetAwaiter().OnCompleted(() =>
+                {
+                    tcs.TrySetResult(val.Value);
+                });
+
+                val.Value = 20;
+
+                ReadResult result = await pipe.Reader.ReadAsync();
+                pipe.Reader.AdvanceTo(result.Buffer.End);
+
+                if (useSynchronizationContext)
+                {
+                    Assert.Equal(1, sc.Callbacks.Count);
+                    sc.Callbacks[0].Item1(sc.Callbacks[0].Item2);
+                }
+
+                int value = await tcs.Task;
+                Assert.Equal(10, value);
+            }
+            finally
+            {
+                if (useSynchronizationContext)
+                {
+                    SynchronizationContext.SetSynchronizationContext(previous);
+                }
+
+                pipe.Reader.Complete();
+                pipe.Writer.Complete();
+            }
+        }
+
         [Fact]
         public async Task ReadingCanBeCanceled()
         {
@@ -608,7 +714,7 @@ namespace System.IO.Pipelines.Tests
         public async Task DoubleReadThrows()
         {
             await _pipe.Writer.WriteAsync(new byte[1]);
-            PipeAwaiter<ReadResult> awaiter = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaiter = _pipe.Reader.ReadAsync();
             ReadResult result = awaiter.GetAwaiter().GetResult();
 
             Assert.Throws<InvalidOperationException>(() => awaiter.GetAwaiter().GetResult());
@@ -619,7 +725,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void GetResultBeforeCompletedThrows()
         {
-            PipeAwaiter<ReadResult> awaiter = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaiter = _pipe.Reader.ReadAsync();
 
             Assert.Throws<InvalidOperationException>(() => awaiter.GetAwaiter().GetResult());
         }
@@ -661,6 +767,16 @@ namespace System.IO.Pipelines.Tests
         public void GetMemoryZeroReturnsNonEmpty()
         {
             Assert.True(_pipe.Writer.GetMemory(0).Length > 0);
+        }
+
+        private sealed class CustomSynchronizationContext : SynchronizationContext
+        {
+            public List<Tuple<SendOrPostCallback, object>> Callbacks = new List<Tuple<SendOrPostCallback, object>>();
+
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                Callbacks.Add(Tuple.Create(d, state));
+            }
         }
     }
 }

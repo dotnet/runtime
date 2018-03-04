@@ -6,12 +6,7 @@ namespace System.IO.Pipelines
 {
     internal sealed class InlineScheduler : PipeScheduler
     {
-        public override void Schedule(Action action)
-        {
-            action();
-        }
-
-        public override void Schedule(Action<object> action, object state)
+        public override void Schedule<TState>(Action<TState> action, TState state)
         {
             action(state);
         }

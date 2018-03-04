@@ -24,6 +24,8 @@ namespace System.IO.Pipelines
 
         public bool IsCompleted => _exception != null;
 
+        public bool IsFaulted => IsCompleted && _exception != s_completedNoException;
+
         public PipeCompletionCallbacks TryComplete(Exception exception = null)
         {
             if (_exception == null)

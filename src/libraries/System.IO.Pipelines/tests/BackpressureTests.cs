@@ -12,7 +12,7 @@ namespace System.IO.Pipelines.Tests
         public BackpressureTests()
         {
             _pool = new TestMemoryPool();
-            _pipe = new Pipe(new PipeOptions(_pool, resumeWriterThreshold: 32, pauseWriterThreshold: 64, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            _pipe = new Pipe(new PipeOptions(_pool, resumeWriterThreshold: 32, pauseWriterThreshold: 64, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
         }
 
         public void Dispose()
@@ -30,7 +30,7 @@ namespace System.IO.Pipelines.Tests
         public void AdvanceThrowsIfFlushActiveAndNotConsumedPastThreshold()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
             Assert.False(flushAsync.IsCompleted);
 
             ReadResult result = _pipe.Reader.ReadAsync().GetAwaiter().GetResult();
@@ -44,7 +44,7 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncAwaitableCompletesWhenReaderAdvancesUnderLow()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.False(flushAsync.IsCompleted);
 
@@ -53,7 +53,7 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(consumed, consumed);
 
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.False(flushResult.IsCompleted);
         }
 
@@ -61,7 +61,7 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncAwaitableDoesNotCompletesWhenReaderAdvancesUnderHight()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.False(flushAsync.IsCompleted);
 
@@ -76,7 +76,7 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncAwaitableResetsOnCommit()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.False(flushAsync.IsCompleted);
 
@@ -85,7 +85,7 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.AdvanceTo(consumed, consumed);
 
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.False(flushResult.IsCompleted);
 
             writableBuffer = _pipe.Writer.WriteEmpty(64);
@@ -98,19 +98,19 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncReturnsCompletedIfReaderCompletes()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.False(flushAsync.IsCompleted);
 
             _pipe.Reader.Complete();
 
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.True(flushResult.IsCompleted);
 
             writableBuffer = _pipe.Writer.WriteEmpty(64);
             flushAsync = writableBuffer.FlushAsync();
-            flushResult = flushAsync.GetResult();
+            flushResult = flushAsync.GetAwaiter().GetResult();
 
             Assert.True(flushResult.IsCompleted);
             Assert.True(flushAsync.IsCompleted);
@@ -120,7 +120,7 @@ namespace System.IO.Pipelines.Tests
         public async Task FlushAsyncReturnsCompletedIfReaderCompletesWithoutAdvance()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.False(flushAsync.IsCompleted);
 
@@ -128,12 +128,12 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.Complete();
 
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.True(flushResult.IsCompleted);
 
             writableBuffer = _pipe.Writer.WriteEmpty(64);
             flushAsync = writableBuffer.FlushAsync();
-            flushResult = flushAsync.GetResult();
+            flushResult = flushAsync.GetAwaiter().GetResult();
 
             Assert.True(flushResult.IsCompleted);
             Assert.True(flushAsync.IsCompleted);
@@ -143,9 +143,9 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncReturnsCompletedTaskWhenSizeLessThenLimit()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(32);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.False(flushResult.IsCompleted);
         }
 
@@ -153,7 +153,7 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncReturnsNonCompletedSizeWhenCommitOverTheLimit()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(64);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
             Assert.False(flushAsync.IsCompleted);
         }
 

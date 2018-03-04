@@ -23,13 +23,8 @@ namespace System.IO.Pipelines
         public static PipeScheduler Inline => s_inlineScheduler;
 
         /// <summary>
-        /// Requests <paramref name="action"/> to be run on scheduler
-        /// </summary>
-        public abstract void Schedule(Action action);
-
-        /// <summary>
         /// Requests <paramref name="action"/> to be run on scheduler with <paramref name="state"/> being passed in
         /// </summary>
-        public abstract void Schedule(Action<object> action, object state);
+        public abstract void Schedule<TState>(Action<TState> action, TState state);
     }
 }

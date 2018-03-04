@@ -13,14 +13,14 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void AwaitingFlushAsyncAwaitableTwiceCompletesReaderWithException()
         {
-            async Task Await(PipeAwaiter<FlushResult> a)
+            async Task Await(ValueTask<FlushResult> a)
             {
                 await a;
             }
 
             PipeWriter writeBuffer = Pipe.Writer;
             writeBuffer.Write(new byte[MaximumSizeHigh]);
-            PipeAwaiter<FlushResult> awaitable = writeBuffer.FlushAsync();
+            ValueTask<FlushResult> awaitable = writeBuffer.FlushAsync();
 
             Task task1 = Await(awaitable);
             Task task2 = Await(awaitable);

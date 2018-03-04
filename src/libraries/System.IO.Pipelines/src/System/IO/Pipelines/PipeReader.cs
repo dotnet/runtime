@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
@@ -22,8 +23,8 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Asynchronously reads a sequence of bytes from the current <see cref="PipeReader"/>.
         /// </summary>
-        /// <returns>A <see cref="PipeAwaiter{T}"/> representing the asynchronous read operation.</returns>
-        public abstract PipeAwaiter<ReadResult> ReadAsync(CancellationToken cancellationToken = default);
+        /// <returns>A <see cref="ValueTask{T}"/> representing the asynchronous read operation.</returns>
+        public abstract ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Moves forward the pipeline's read cursor to after the consumed data.

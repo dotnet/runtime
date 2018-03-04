@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Threading;
 
 namespace System.IO.Pipelines
 {
@@ -25,7 +26,8 @@ namespace System.IO.Pipelines
             PipeScheduler writerScheduler = null,
             long pauseWriterThreshold = 0,
             long resumeWriterThreshold = 0,
-            int minimumSegmentSize = 2048)
+            int minimumSegmentSize = 2048,
+            bool useSynchronizationContext = true)
         {
             if (pauseWriterThreshold < 0)
             {
@@ -43,7 +45,14 @@ namespace System.IO.Pipelines
             PauseWriterThreshold = pauseWriterThreshold;
             ResumeWriterThreshold = resumeWriterThreshold;
             MinimumSegmentSize = minimumSegmentSize;
+            UseSynchronizationContext = useSynchronizationContext;
         }
+
+        /// <summary>
+        /// Gets a value that determines if asynchronous callbacks should be executed on the <see cref="SynchronizationContext" /> they were captured on.
+        /// This takes precedence over the schedulers specified in <see cref="ReaderScheduler"/> and <see cref="WriterScheduler"/>.
+        /// </summary>
+        public bool UseSynchronizationContext { get; }
 
         /// <summary>
         /// Gets amount of bytes in <see cref="Pipe"/> when <see cref="PipeWriter.FlushAsync"/> starts blocking

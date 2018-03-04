@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Pipelines.Tests
@@ -26,12 +28,7 @@ namespace System.IO.Pipelines.Tests
 
             public Exception LastException { get; set; }
 
-            public override void Schedule(Action action)
-            {
-                Schedule(o => ((Action)o)(), action);
-            }
-
-            public override void Schedule(Action<object> action, object state)
+            public override void Schedule<TState>(Action<TState> action, TState state)
             {
                 CallCount++;
                 try
@@ -49,7 +46,7 @@ namespace System.IO.Pipelines.Tests
         public void CompletingReaderFromWriterCallbackWorks()
         {
             var callbackRan = false;
-            var pipe = new Pipe(new PipeOptions(_pool, pauseWriterThreshold: 5, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, pauseWriterThreshold: 5, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             pipe.Writer.OnReaderCompleted((exception, state) => { pipe.Writer.Complete(); }, null);
 
@@ -63,7 +60,7 @@ namespace System.IO.Pipelines.Tests
         public void CompletingWriterFromReaderCallbackWorks()
         {
             var callbackRan = false;
-            var pipe = new Pipe(new PipeOptions(_pool, pauseWriterThreshold: 5, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, pauseWriterThreshold: 5, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             pipe.Reader.OnWriterCompleted((exception, state) => { pipe.Reader.Complete(); }, null);
 
@@ -83,7 +80,7 @@ namespace System.IO.Pipelines.Tests
 
             var counter = 0;
 
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.OnReaderCompleted(
                 (exception, state) =>
                 {
@@ -113,7 +110,7 @@ namespace System.IO.Pipelines.Tests
         {
             var exception = new Exception();
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.OnReaderCompleted((e, state) => throw exception, null);
             pipe.Reader.Complete();
 
@@ -127,7 +124,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.Complete();
 
             pipe.Writer.OnReaderCompleted(
@@ -146,7 +143,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.OnReaderCompleted((exception, state) => { callbackRan = true; }, null);
 
             pipe.Reader.Complete();
@@ -167,7 +164,7 @@ namespace System.IO.Pipelines.Tests
         public void OnReaderCompletedPassesException()
         {
             var callbackRan = false;
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             var readerException = new Exception();
 
             pipe.Writer.OnReaderCompleted(
@@ -186,7 +183,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var callbackState = new object();
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.OnReaderCompleted(
                 (exception, state) =>
                 {
@@ -203,7 +200,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var continuationRan = false;
-            var pipe = new Pipe(new PipeOptions(_pool, pauseWriterThreshold: 5, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, pauseWriterThreshold: 5, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             pipe.Writer.OnReaderCompleted(
                 (exception, state) =>
@@ -213,7 +210,7 @@ namespace System.IO.Pipelines.Tests
                 }, null);
 
             PipeWriter buffer = pipe.Writer.WriteEmpty(10);
-            PipeAwaiter<FlushResult> awaiter = buffer.FlushAsync();
+            ValueTaskAwaiter<FlushResult> awaiter = buffer.FlushAsync().GetAwaiter();
 
             Assert.False(awaiter.IsCompleted);
             awaiter.OnCompleted(() => { continuationRan = true; });
@@ -231,7 +228,7 @@ namespace System.IO.Pipelines.Tests
             var callbackState3 = new object();
             var counter = 0;
 
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.OnReaderCompleted(
                 (exception, state) =>
                 {
@@ -264,7 +261,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void OnReaderCompletedThrowsWithNullCallback()
         {
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             Assert.Throws<ArgumentNullException>(() => pipe.Writer.OnReaderCompleted(null, null));
         }
@@ -274,7 +271,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, writerScheduler: scheduler, readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.OnReaderCompleted((exception, state) => { callbackRan = true; }, null);
             pipe.Reader.Complete();
 
@@ -292,7 +289,7 @@ namespace System.IO.Pipelines.Tests
 
             var counter = 0;
 
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.OnWriterCompleted(
                 (exception, state) =>
                 {
@@ -322,7 +319,7 @@ namespace System.IO.Pipelines.Tests
         {
             var exception = new Exception();
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.OnWriterCompleted((e, state) => throw exception, null);
             pipe.Writer.Complete();
 
@@ -336,7 +333,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Writer.Complete();
 
             pipe.Reader.OnWriterCompleted(
@@ -355,7 +352,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.OnWriterCompleted((exception, state) => { callbackRan = true; }, null);
             pipe.Reader.Complete();
             pipe.Writer.Complete();
@@ -375,7 +372,7 @@ namespace System.IO.Pipelines.Tests
         public void OnWriterCompletedPassesException()
         {
             var callbackRan = false;
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             var readerException = new Exception();
 
             pipe.Reader.OnWriterCompleted(
@@ -394,7 +391,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var callbackState = new object();
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.OnWriterCompleted(
                 (exception, state) =>
                 {
@@ -411,7 +408,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var continuationRan = false;
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             pipe.Reader.OnWriterCompleted(
                 (exception, state) =>
@@ -420,9 +417,9 @@ namespace System.IO.Pipelines.Tests
                     Assert.False(continuationRan);
                 }, null);
 
-            PipeAwaiter<ReadResult> awaiter = pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> awaiter = pipe.Reader.ReadAsync();
             Assert.False(awaiter.IsCompleted);
-            awaiter.OnCompleted(() => { continuationRan = true; });
+            awaiter.GetAwaiter().OnCompleted(() => { continuationRan = true; });
             pipe.Writer.Complete();
 
             Assert.True(callbackRan);
@@ -436,7 +433,7 @@ namespace System.IO.Pipelines.Tests
             var callbackState3 = new object();
             var counter = 0;
 
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.OnWriterCompleted(
                 (exception, state) =>
                 {
@@ -469,7 +466,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void OnWriterCompletedThrowsWithNullCallback()
         {
-            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             Assert.Throws<ArgumentNullException>(() => pipe.Reader.OnWriterCompleted(null, null));
         }
@@ -479,7 +476,7 @@ namespace System.IO.Pipelines.Tests
         {
             var callbackRan = false;
             var scheduler = new TestScheduler();
-            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(_pool, scheduler, PipeScheduler.Inline, useSynchronizationContext: false));
             pipe.Reader.OnWriterCompleted((exception, state) => { callbackRan = true; }, null);
             pipe.Writer.Complete();
 
