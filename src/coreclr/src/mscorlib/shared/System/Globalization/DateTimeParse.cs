@@ -5045,7 +5045,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             return false;
                         }
-                        if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
+                        if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength)) != 0)
                         {
                             return false;
                         }
@@ -5071,7 +5071,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         return false;
                     }
-                    if (m_info.Compare(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength), CompareOptions.IgnoreCase) != 0)
+                    if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength)) != 0)
                     {
                         return false;
                     }
@@ -5286,14 +5286,17 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // Check if the last character is a quote.
             if (ch == '\'' || ch == '\"')
             {
-                if (Char.IsWhiteSpace(Value[i - 1]))
+                if (char.IsWhiteSpace(Value[i - 1]))
                 {
                     i--;
-                    while (i >= 1 && Char.IsWhiteSpace(Value[i - 1]))
+                    while (i >= 1 && char.IsWhiteSpace(Value[i - 1]))
                     {
                         i--;
                     }
-                    Value = Value.Remove(i, Value.Length - 1 - i);
+                    Span<char> result = new char[i + 1];
+                    result[i] = ch;
+                    Value.Slice(0, i).CopyTo(result);
+                    Value = result.AsReadOnlySpan();
                 }
             }
         }
@@ -5311,13 +5314,16 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             // Check if the last character is a quote.
             if (ch == '\'' || ch == '\"')
             {
-                while ((i + 1) < Length && Char.IsWhiteSpace(Value[i + 1]))
+                while ((i + 1) < Length && char.IsWhiteSpace(Value[i + 1]))
                 {
                     i++;
                 }
                 if (i != 0)
                 {
-                    Value = Value.Remove(1, i);
+                    Span<char> result = new char[Value.Length - i];
+                    result[0] = ch;
+                    Value.Slice(i + 1).CopyTo(result.Slice(1));
+                    Value = result.AsReadOnlySpan();
                 }
             }
         }

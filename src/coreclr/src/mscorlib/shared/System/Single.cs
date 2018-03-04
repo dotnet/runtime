@@ -335,15 +335,15 @@ namespace System
             if (!success)
             {
                 ReadOnlySpan<char> sTrim = s.Trim();
-                if (StringSpanHelpers.Equals(sTrim, info.PositiveInfinitySymbol))
+                if (sTrim.EqualsOrdinal(info.PositiveInfinitySymbol))
                 {
                     result = PositiveInfinity;
                 }
-                else if (StringSpanHelpers.Equals(sTrim, info.NegativeInfinitySymbol))
+                else if (sTrim.EqualsOrdinal(info.NegativeInfinitySymbol))
                 {
                     result = NegativeInfinity;
                 }
-                else if (StringSpanHelpers.Equals(sTrim, info.NaNSymbol))
+                else if (sTrim.EqualsOrdinal(info.NaNSymbol))
                 {
                     result = NaN;
                 }

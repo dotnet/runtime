@@ -479,7 +479,8 @@ namespace System
         culture,
         comparable,
         source,
-        state
+        state,
+        comparisonType
     }
 
     //
@@ -589,6 +590,7 @@ namespace System
         InvalidOperation_HandleIsNotInitialized,
         AsyncMethodBuilder_InstanceNotInitialized,
         ArgumentNull_SafeHandle,
+        NotSupported_StringComparison,
     }
 }
 

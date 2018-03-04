@@ -90,7 +90,7 @@ namespace System.IO
                 // Drive relative paths
                 Debug.Assert(length == 2 || !PathInternal.IsDirectorySeparator(path[2]));
 
-                if (StringSpanHelpers.Equals(GetVolumeName(path), GetVolumeName(basePath)))
+                if (GetVolumeName(path).EqualsOrdinal(GetVolumeName(basePath)))
                 {
                     // Matching root
                     // "C:Foo" and "C:\Bar" => "C:\Bar\Foo"
@@ -241,11 +241,11 @@ namespace System.IO
         {
             bool isDevice = PathInternal.IsDevice(path);
 
-            if (!isDevice && StringSpanHelpers.Equals(path.Slice(0, 2), @"\\") )
+            if (!isDevice && path.Slice(0, 2).EqualsOrdinal(@"\\") )
                 return 2;
             else if (isDevice && path.Length >= 8
-                && (StringSpanHelpers.Equals(path.Slice(0, 8), PathInternal.UncExtendedPathPrefix)
-                || StringSpanHelpers.Equals(path.Slice(5, 4), @"UNC\")))
+                && (path.Slice(0, 8).EqualsOrdinal(PathInternal.UncExtendedPathPrefix)
+                || path.Slice(5, 4).EqualsOrdinal(@"UNC\")))
                 return 8;
 
             return -1;

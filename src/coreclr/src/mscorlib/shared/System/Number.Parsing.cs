@@ -734,15 +734,15 @@ namespace System
                 //Check the three with which we're concerned and rethrow if it's not one of
                 //those strings.
                 ReadOnlySpan<char> sTrim = value.Trim();
-                if (StringSpanHelpers.Equals(sTrim, numfmt.PositiveInfinitySymbol))
+                if (sTrim.EqualsOrdinal(numfmt.PositiveInfinitySymbol))
                 {
                     return double.PositiveInfinity;
                 }
-                if (StringSpanHelpers.Equals(sTrim, numfmt.NegativeInfinitySymbol))
+                if (sTrim.EqualsOrdinal(numfmt.NegativeInfinitySymbol))
                 {
                     return double.NegativeInfinity;
                 }
-                if (StringSpanHelpers.Equals(sTrim, numfmt.NaNSymbol))
+                if (sTrim.EqualsOrdinal(numfmt.NaNSymbol))
                 {
                     return double.NaN;
                 }
@@ -768,15 +768,15 @@ namespace System
                 //Check the three with which we're concerned and rethrow if it's not one of
                 //those strings.
                 ReadOnlySpan<char> sTrim = value.Trim();
-                if (StringSpanHelpers.Equals(sTrim, numfmt.PositiveInfinitySymbol))
+                if (sTrim.EqualsOrdinal(numfmt.PositiveInfinitySymbol))
                 {
                     return float.PositiveInfinity;
                 }
-                if (StringSpanHelpers.Equals(sTrim, numfmt.NegativeInfinitySymbol))
+                if (sTrim.EqualsOrdinal(numfmt.NegativeInfinitySymbol))
                 {
                     return float.NegativeInfinity;
                 }
-                if (StringSpanHelpers.Equals(sTrim, numfmt.NaNSymbol))
+                if (sTrim.EqualsOrdinal(numfmt.NaNSymbol))
                 {
                     return float.NaN;
                 }
