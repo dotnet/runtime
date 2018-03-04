@@ -813,13 +813,12 @@ struct cmsghdr* GET_CMSG_NXTHDR(struct msghdr* mhdr, struct cmsghdr* cmsg)
 #ifndef __GLIBC__
 // Tracking issue: #6312
 // In musl-libc, CMSG_NXTHDR typecasts char* to struct cmsghdr* which causes
-// clang to throw cast-align warning. This is to suppress the warning
+// clang to throw sign-compare warning. This is to suppress the warning
 // inline.
 // There is also a problem in the CMSG_NXTHDR macro in musl-libc.
 // It compares signed and unsigned value and clang warns about that.
 // So we suppress the warning inline too.
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-align"
 #pragma clang diagnostic ignored "-Wsign-compare"
 #endif
     return CMSG_NXTHDR(mhdr, cmsg);
