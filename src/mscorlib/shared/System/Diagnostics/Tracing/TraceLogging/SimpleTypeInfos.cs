@@ -151,12 +151,12 @@ namespace System.Diagnostics.Tracing
             string name,
             EventFieldFormat format)
         {
-            collector.AddBinary(name, Statics.MakeDataType(TraceLoggingDataType.CountedUtf16String, format));
+            collector.AddNullTerminatedString(name, Statics.MakeDataType(TraceLoggingDataType.Utf16String, format));
         }
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            collector.AddBinary((string)value.ReferenceValue);
+            collector.AddNullTerminatedString((string)value.ReferenceValue);
         }
         
         public override object GetData(object value)

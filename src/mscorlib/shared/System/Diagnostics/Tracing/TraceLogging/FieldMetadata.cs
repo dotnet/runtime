@@ -135,13 +135,11 @@ namespace System.Diagnostics.Tracing
                 {
                     throw new NotSupportedException(SR.EventSource_NotSupportedArrayOfBinary);
                 }
-#if !BROKEN_UNTIL_M3
                 if (coreType == (int)TraceLoggingDataType.Utf16String ||
                     coreType == (int)TraceLoggingDataType.MbcsString)
                 {
                     throw new NotSupportedException(SR.EventSource_NotSupportedArrayOfNullTerminatedString);
                 }
-#endif
             }
 
             if (((int)this.tags & 0xfffffff) != 0)
