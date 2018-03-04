@@ -252,6 +252,13 @@ There may be multiple projects in some directories so you may need to specify th
 
 Tests participate in the incremental build.  This means that if tests have already been run, and inputs to the incremental build have not changed, rerunning the tests target will not execute the test runner again.  To force re-executing tests in this situation, use `/p:ForceRunTests=true`.
 
+#### Running a single test on the command line
+
+To quickly run or debug a single test from the command line, set the XunitMethodName property (found in Tools\tests.targets) to the full method name (including namespace), e.g.:
+```cmd
+msbuild /t:RebuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{ClassName}.{MethodName}
+```
+
 #### Running tests in a different target framework
 
 Each test project can potentially have multiple build configurations. There are some tests that might be OS-specific, or might be testing an API that is available only on some target frameworks, so the `BuildConfigurations` property specifies the valid configurations. By default we will build and run only the default build configuration which is `netcoreapp`. The rest of the configurations will need to be built and ran by specifying the configuration options.
