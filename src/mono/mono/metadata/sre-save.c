@@ -223,7 +223,7 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 		if (mono_is_sre_ctor_builder (mono_object_class (cattr->ctor))) {
 			MonoReflectionCtorBuilder *ctor = (MonoReflectionCtorBuilder*)cattr->ctor;
 			MonoMethod *method = ctor->mhandle;
-			if (method->klass->image == &assembly->image)
+			if (m_class_get_image (method->klass) == &assembly->image)
 				token = MONO_TOKEN_METHOD_DEF | ((MonoReflectionCtorBuilder*)cattr->ctor)->table_idx;
 			else
 				token = mono_image_get_methodref_token (assembly, method, FALSE);
@@ -1235,13 +1235,13 @@ mono_image_fill_export_table_from_class (MonoDomain *domain, MonoClass *klass,
 	values = table->values + table->next_idx * MONO_EXP_TYPE_SIZE;
 
 	values [MONO_EXP_TYPE_FLAGS] = mono_class_get_flags (klass);
-	values [MONO_EXP_TYPE_TYPEDEF] = klass->type_token;
-	if (klass->nested_in)
+	values [MONO_EXP_TYPE_TYPEDEF] = m_class_get_type_token (klass);
+	if (m_class_get_nested_in (klass))
 		values [MONO_EXP_TYPE_IMPLEMENTATION] = (parent_index << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_EXP_TYPE;
 	else
 		values [MONO_EXP_TYPE_IMPLEMENTATION] = (module_index << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_FILE;
-	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
-	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, m_class_get_name (klass));
+	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, m_class_get_name_space (klass));
 
 	res = table->next_idx;
 
@@ -1271,7 +1271,11 @@ mono_image_fill_export_table (MonoDomain *domain, MonoReflectionTypeBuilder *tb,
 
 	klass = mono_class_from_mono_type (t);
 
-	klass->type_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, tb->table_idx);
+	guint32 tb_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, tb->table_idx);
+	if (m_class_get_type_token (klass) != tb_token) {
+		g_error ("TypeBuilder token %08x does not match klass token %08x", tb_token, m_class_get_type_token (klass));
+	}
+	klass->type_token = tb_token; /* FIXME: shouldn't this already be set? Why is this assignment here? */
 
 	idx = mono_image_fill_export_table_from_class (domain, klass, module_index, 
 												   parent_index, assembly);
@@ -1318,11 +1322,11 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 	gpointer iter = NULL;
 	MonoClass *nested;
 
-	if (klass->nested_in) {
+	if (m_class_get_nested_in (klass)) {
 		impl = (parent_index << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_EXP_TYPE;
 		forwarder = FALSE;
 	} else {
-		scope = mono_reflection_resolution_scope_from_image (assembly, klass->image);
+		scope = mono_reflection_resolution_scope_from_image (assembly, m_class_get_image (klass));
 		g_assert ((scope & MONO_RESOLUTION_SCOPE_MASK) == MONO_RESOLUTION_SCOPE_ASSEMBLYREF);
 		scope_idx = scope >> MONO_RESOLUTION_SCOPE_BITS;
 		impl = (scope_idx << MONO_IMPLEMENTATION_BITS) + MONO_IMPLEMENTATION_ASSEMBLYREF;
@@ -1338,8 +1342,8 @@ add_exported_type (MonoReflectionAssemblyBuilder *assemblyb, MonoDynamicImage *a
 	values [MONO_EXP_TYPE_FLAGS] = forwarder ? TYPE_ATTRIBUTE_FORWARDER : 0;
 	values [MONO_EXP_TYPE_TYPEDEF] = 0;
 	values [MONO_EXP_TYPE_IMPLEMENTATION] = impl;
-	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, klass->name);
-	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, klass->name_space);
+	values [MONO_EXP_TYPE_NAME] = string_heap_insert (&assembly->sheap, m_class_get_name (klass));
+	values [MONO_EXP_TYPE_NAMESPACE] = string_heap_insert (&assembly->sheap, m_class_get_name_space (klass));
 
 	table->next_idx++;
 
@@ -1727,11 +1731,13 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 	for (i = 0; i < ilgen->num_token_fixups; ++i) {
 		iltoken = (MonoReflectionILTokenInfo *)mono_array_addr_with_size (ilgen->token_fixups, sizeof (MonoReflectionILTokenInfo), i);
 		target = (guchar*)assembly->code.data + code_idx + iltoken->code_pos;
+		MonoClass *iltoken_member_class = mono_object_class (iltoken->member);
+		const char *iltoken_member_class_name = m_class_get_name (iltoken_member_class);
 		switch (target [3]) {
 		case MONO_TABLE_FIELD:
-			if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
+			if (!strcmp (iltoken_member_class_name, "FieldBuilder")) {
 				g_assert_not_reached ();
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
+			} else if (!strcmp (iltoken_member_class_name, "MonoField")) {
 				MonoClassField *f = ((MonoReflectionField*)iltoken->member)->field;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->field_to_table_idx, f));
 			} else {
@@ -1739,12 +1745,12 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_METHOD:
-			if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+			if (!strcmp (iltoken_member_class_name, "MethodBuilder")) {
 				g_assert_not_reached ();
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
+			} else if (!strcmp (iltoken_member_class_name, "ConstructorBuilder")) {
 				g_assert_not_reached ();
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") || 
-					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
+			} else if (!strcmp (iltoken_member_class_name, "MonoMethod") || 
+					   !strcmp (iltoken_member_class_name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 			} else {
@@ -1752,13 +1758,13 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_TYPEDEF:
-			if (!strcmp (iltoken->member->vtable->klass->name, "TypeBuilder")) {
+			if (!strcmp (iltoken_member_class_name, "TypeBuilder")) {
 				g_assert_not_reached ();
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "RuntimeType")) {
+			} else if (!strcmp (iltoken_member_class_name, "RuntimeType")) {
 				MonoClass *k = mono_class_from_mono_type (((MonoReflectionType*)iltoken->member)->type);
 				MonoObject *obj = mono_class_get_ref_info_raw (k); /* FIXME use handles */
 				g_assert (obj);
-				g_assert (!strcmp (mono_object_class (obj)->name, "TypeBuilder"));
+				g_assert (!strcmp (m_class_get_name (mono_object_class (obj)), "TypeBuilder"));
 				tb = (MonoReflectionTypeBuilder*)obj;
 				idx = tb->table_idx;
 			} else {
@@ -1766,38 +1772,38 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_TYPEREF:
-			g_assert (!strcmp (iltoken->member->vtable->klass->name, "RuntimeType"));
+			g_assert (!strcmp (iltoken_member_class_name, "RuntimeType"));
 			MonoClass *k = mono_class_from_mono_type (((MonoReflectionType*)iltoken->member)->type);
 			MonoObject *obj = mono_class_get_ref_info_raw (k); /* FIXME use handles */
 			g_assert (obj);
-			g_assert (!strcmp (mono_object_class (obj)->name, "TypeBuilder"));
+			g_assert (!strcmp (m_class_get_name (mono_object_class (obj)), "TypeBuilder"));
 			g_assert (((MonoReflectionTypeBuilder*)obj)->module->dynamic_image != assembly);
 			continue;
 		case MONO_TABLE_MEMBERREF:
-			if (!strcmp (iltoken->member->vtable->klass->name, "MonoArrayMethod")) {
+			if (!strcmp (iltoken_member_class_name, "MonoArrayMethod")) {
 				am = (MonoReflectionArrayMethod*)iltoken->member;
 				idx = am->table_idx;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod") ||
-					   !strcmp (iltoken->member->vtable->klass->name, "MonoCMethod")) {
+			} else if (!strcmp (iltoken_member_class_name, "MonoMethod") ||
+					   !strcmp (iltoken_member_class_name, "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (mono_class_is_ginst (m->klass) || mono_class_is_gtd (m->klass));
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldBuilder")) {
+			} else if (!strcmp (iltoken_member_class_name, "FieldBuilder")) {
 				g_assert_not_reached ();
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MonoField")) {
+			} else if (!strcmp (iltoken_member_class_name, "MonoField")) {
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder") ||
-					!strcmp (iltoken->member->vtable->klass->name, "ConstructorBuilder")) {
+			} else if (!strcmp (iltoken_member_class_name, "MethodBuilder") ||
+					!strcmp (iltoken_member_class_name, "ConstructorBuilder")) {
 				g_assert_not_reached ();
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "FieldOnTypeBuilderInst")) {
+			} else if (!strcmp (iltoken_member_class_name, "FieldOnTypeBuilderInst")) {
 				g_assert_not_reached ();
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodOnTypeBuilderInst")) {
+			} else if (!strcmp (iltoken_member_class_name, "MethodOnTypeBuilderInst")) {
 				g_assert_not_reached ();
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "ConstructorOnTypeBuilderInst")) {
+			} else if (!strcmp (iltoken_member_class_name, "ConstructorOnTypeBuilderInst")) {
 				g_assert_not_reached ();
 				continue;
 			} else {
@@ -1805,14 +1811,14 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_METHODSPEC:
-			if (!strcmp (iltoken->member->vtable->klass->name, "MonoMethod")) {
+			if (!strcmp (iltoken_member_class_name, "MonoMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
 				g_assert (mono_method_signature (m)->generic_param_count);
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodBuilder")) {
+			} else if (!strcmp (iltoken_member_class_name, "MethodBuilder")) {
 				g_assert_not_reached ();
 				continue;
-			} else if (!strcmp (iltoken->member->vtable->klass->name, "MethodOnTypeBuilderInst")) {
+			} else if (!strcmp (iltoken_member_class_name, "MethodOnTypeBuilderInst")) {
 				g_assert_not_reached ();
 				continue;
 			} else {
@@ -1820,7 +1826,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			}
 			break;
 		case MONO_TABLE_TYPESPEC:
-			if (!strcmp (iltoken->member->vtable->klass->name, "RuntimeType")) {
+			if (!strcmp (iltoken_member_class_name, "RuntimeType")) {
 				continue;
 			} else {
 				g_assert_not_reached ();
@@ -1861,11 +1867,11 @@ fixup_cattrs (MonoDynamicImage *assembly)
 			ctor = (MonoObject *)mono_g_hash_table_lookup (assembly->remapped_tokens, GUINT_TO_POINTER (token));
 			g_assert (ctor);
 
-			if (!strcmp (ctor->vtable->klass->name, "MonoCMethod")) {
+			if (!strcmp (m_class_get_name (mono_object_class (ctor)), "MonoCMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)ctor)->method;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
-			} else if (!strcmp (ctor->vtable->klass->name, "ConstructorBuilder")) {
+			} else if (!strcmp (m_class_get_name (mono_object_class (ctor)), "ConstructorBuilder")) {
 				MonoMethod *m = ((MonoReflectionCtorBuilder*)ctor)->mhandle;
 				idx = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->method_to_table_idx, m));
 				values [MONO_CUSTOM_ATTR_TYPE] = (idx << MONO_CUSTOM_ATTR_TYPE_BITS) | MONO_CUSTOM_ATTR_TYPE_METHODDEF;
@@ -3003,7 +3009,7 @@ mono_image_create_pefile (MonoReflectionModuleBuilder *mb, HANDLE file, MonoErro
 	cli_header->ch_flags = GUINT32_FROM_LE (assemblyb->pe_kind);
 	if (assemblyb->entry_point) {
 		guint32 table_idx = 0;
-		if (!strcmp (assemblyb->entry_point->object.vtable->klass->name, "MethodBuilder")) {
+		if (!strcmp (m_class_get_name (mono_object_class (&assemblyb->entry_point->object)), "MethodBuilder")) {
 			MonoReflectionMethodBuilder *methodb = (MonoReflectionMethodBuilder*)assemblyb->entry_point;
 			table_idx = methodb->table_idx;
 		} else {
