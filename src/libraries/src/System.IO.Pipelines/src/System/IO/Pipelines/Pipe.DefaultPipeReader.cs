@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
@@ -11,7 +13,7 @@ namespace System.IO.Pipelines
     /// </summary>
     public sealed partial class Pipe
     {
-        private sealed class DefaultPipeReader : PipeReader, IPipeAwaiter<ReadResult>
+        private sealed class DefaultPipeReader : PipeReader, IValueTaskSource<ReadResult>
         {
             private readonly Pipe _pipe;
 
@@ -22,7 +24,7 @@ namespace System.IO.Pipelines
 
             public override bool TryRead(out ReadResult result) => _pipe.TryRead(out result);
 
-            public override PipeAwaiter<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => _pipe.ReadAsync(cancellationToken);
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => _pipe.ReadAsync(cancellationToken);
 
             public override void AdvanceTo(SequencePosition consumed) => _pipe.AdvanceReader(consumed);
 
@@ -34,11 +36,11 @@ namespace System.IO.Pipelines
 
             public override void OnWriterCompleted(Action<Exception, object> callback, object state) => _pipe.OnWriterCompleted(callback, state);
 
-            public bool IsCompleted => _pipe.IsReadAsyncCompleted;
+            public ValueTaskSourceStatus GetStatus(short token) => _pipe.GetReadAsyncStatus();
 
-            public ReadResult GetResult() => _pipe.GetReadAsyncResult();
+            public ReadResult GetResult(short token) => _pipe.GetReadAsyncResult();
 
-            public void OnCompleted(Action continuation) => _pipe.OnReadAsyncCompleted(continuation);
+            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnReadAsyncCompleted(continuation, state, flags);
         }
     }
 }

@@ -9,20 +9,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
     <Compile Include="System\IO\Pipelines\FlushResult.cs" />
     <Compile Include="System\IO\Pipelines\InlineScheduler.cs" />
-    <Compile Include="System\IO\Pipelines\IPipeAwaiter.cs" />
     <Compile Include="System\IO\Pipelines\IDuplexPipe.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeReader.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.DefaultPipeWriter.cs" />
     <Compile Include="System\IO\Pipelines\Pipe.cs" />
     <Compile Include="System\IO\Pipelines\PipeAwaitable.cs" />
-    <Compile Include="System\IO\Pipelines\PipeAwaiter.cs" />
     <Compile Include="System\IO\Pipelines\PipeCompletion.cs" />
     <Compile Include="System\IO\Pipelines\PipeCompletionCallback.cs" />
     <Compile Include="System\IO\Pipelines\PipeCompletionCallbacks.cs" />
@@ -38,11 +36,11 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetCoreApp21.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.1'">
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard.cs" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard13.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard20.cs" />
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
@@ -53,8 +51,9 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" Condition="'$(TargetGroup)' == 'netstandard1.1'" />
-    <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetGroup)' != 'netstandard1.1'" />
+    <Reference Include="System.Threading.Tasks" Condition="'$(TargetGroup)' == 'netstandard1.3'" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetGroup)' != 'netstandard1.3'" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

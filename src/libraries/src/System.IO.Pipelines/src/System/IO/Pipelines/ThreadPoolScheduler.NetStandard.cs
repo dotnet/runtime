@@ -9,14 +9,14 @@ namespace System.IO.Pipelines
 {
     internal sealed class ThreadPoolScheduler : PipeScheduler
     {
-        public override void Schedule(Action action)
+        public override void Schedule<TState>(Action<TState> action, TState state)
         {
-            Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-        }
-
-        public override void Schedule(Action<object> action, object state)
-        {
-            Task.Factory.StartNew(action, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            System.Threading.ThreadPool.QueueUserWorkItem(s =>
+            {
+                var tuple = (Tuple<Action<TState>, TState>)s;
+                tuple.Item1(tuple.Item2);
+            },
+            Tuple.Create(action, state));
         }
     }
 }

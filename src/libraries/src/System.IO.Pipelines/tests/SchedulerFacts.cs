@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,12 +31,7 @@ namespace System.IO.Pipelines.Tests
                 _work.CompleteAdding();
             }
 
-            public override void Schedule(Action action)
-            {
-                Schedule(o => ((Action)o)(), action);
-            }
-
-            public override void Schedule(Action<object> action, object state)
+            public override void Schedule<TState>(Action<TState> action, TState state)
             {
                 _work.Add(() => action(state));
             }
@@ -50,11 +46,48 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task DefaultReaderSchedulerRunsOnSynchronizationContext()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            var sc = new CustomSynchronizationContext();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(sc);
+
+                var pipe = new Pipe();
+
+                Func<Task> doRead = async () =>
+                {
+                    ReadResult result = await pipe.Reader.ReadAsync();
+
+                    pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
+
+                    pipe.Reader.Complete();
+                };
+
+                Task reading = doRead();
+
+                PipeWriter buffer = pipe.Writer;
+                buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
+                await buffer.FlushAsync();
+
+                Assert.Equal(1, sc.Callbacks.Count);
+                sc.Callbacks[0].Item1(sc.Callbacks[0].Item2);
+
+                pipe.Writer.Complete();
+
+                await reading;
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        [Fact]
         public async Task DefaultReaderSchedulerRunsOnThreadPool()
         {
-            var pipe = new Pipe();
-
-            var id = 0;
+            var pipe = new Pipe(new PipeOptions(useSynchronizationContext: false));
 
             Func<Task> doRead = async () =>
             {
@@ -68,8 +101,6 @@ namespace System.IO.Pipelines.Tests
             };
 
             Task reading = doRead();
-
-            id = Thread.CurrentThread.ManagedThreadId;
 
             PipeWriter buffer = pipe.Writer;
             buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
@@ -89,15 +120,14 @@ namespace System.IO.Pipelines.Tests
                     new PipeOptions(
                         pool,
                         resumeWriterThreshold: 32,
-                        pauseWriterThreshold: 64
+                        pauseWriterThreshold: 64,
+                        useSynchronizationContext: false
                     ));
 
                 PipeWriter writableBuffer = pipe.Writer.WriteEmpty(64);
-                PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+                ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
                 Assert.False(flushAsync.IsCompleted);
-
-                var id = 0;
 
                 Func<Task> doWrite = async () =>
                 {
@@ -112,13 +142,63 @@ namespace System.IO.Pipelines.Tests
 
                 ReadResult result = await pipe.Reader.ReadAsync();
 
-                id = Thread.CurrentThread.ManagedThreadId;
-
                 pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
 
                 pipe.Reader.Complete();
 
                 await writing;
+            }
+        }
+
+        [Fact]
+        public async Task DefaultWriterSchedulerRunsOnSynchronizationContext()
+        {
+            SynchronizationContext previous = SynchronizationContext.Current;
+            var sc = new CustomSynchronizationContext();
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(sc);
+
+                using (var pool = new TestMemoryPool())
+                {
+                    var pipe = new Pipe(
+                        new PipeOptions(
+                            pool,
+                            resumeWriterThreshold: 32,
+                            pauseWriterThreshold: 64
+                        ));
+
+                    PipeWriter writableBuffer = pipe.Writer.WriteEmpty(64);
+                    ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
+
+                    Assert.False(flushAsync.IsCompleted);
+
+                    Func<Task> doWrite = async () =>
+                    {
+                        await flushAsync;
+
+                        pipe.Writer.Complete();
+
+                        Assert.Same(SynchronizationContext.Current, sc);
+                    };
+
+                    Task writing = doWrite();
+
+                    ReadResult result = await pipe.Reader.ReadAsync();
+
+                    pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.End);
+
+                    Assert.Equal(1, sc.Callbacks.Count);
+                    sc.Callbacks[0].Item1(sc.Callbacks[0].Item2);
+
+                    pipe.Reader.Complete();
+
+                    await writing;
+                }
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
             }
         }
 
@@ -135,10 +215,11 @@ namespace System.IO.Pipelines.Tests
                             resumeWriterThreshold: 32,
                             pauseWriterThreshold: 64,
                             readerScheduler: PipeScheduler.Inline,
-                            writerScheduler: scheduler));
+                            writerScheduler: scheduler,
+                            useSynchronizationContext: false));
 
                     PipeWriter writableBuffer = pipe.Writer.WriteEmpty(64);
-                    PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+                    ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
                     Assert.False(flushAsync.IsCompleted);
 
@@ -175,7 +256,7 @@ namespace System.IO.Pipelines.Tests
             {
                 using (var scheduler = new ThreadScheduler())
                 {
-                    var pipe = new Pipe(new PipeOptions(pool, scheduler, writerScheduler: PipeScheduler.Inline));
+                    var pipe = new Pipe(new PipeOptions(pool, scheduler, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
                     Func<Task> doRead = async () =>
                     {
@@ -206,7 +287,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task ThreadPoolScheduler_SchedulesOnThreadPool()
         {
-            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool, writerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.ThreadPool, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
 
             async Task DoRead()
             {
@@ -235,6 +316,16 @@ namespace System.IO.Pipelines.Tests
             await reading;
 
             Assert.True(callbackRan);
+        }
+
+        private sealed class CustomSynchronizationContext : SynchronizationContext
+        {
+            public List<Tuple<SendOrPostCallback, object>> Callbacks = new List<Tuple<SendOrPostCallback, object>>();
+
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                Callbacks.Add(Tuple.Create(d, state));
+            }
         }
     }
 }

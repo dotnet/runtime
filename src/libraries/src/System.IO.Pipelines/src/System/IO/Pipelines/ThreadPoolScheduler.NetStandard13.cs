@@ -11,7 +11,15 @@ namespace System.IO.Pipelines
     {
         public override void Schedule<TState>(Action<TState> action, TState state)
         {
-            System.Threading.ThreadPool.QueueUserWorkItem(action, state, preferLocal: false);
+            Task.Factory.StartNew(s =>
+            {
+                var tuple = (Tuple<Action<TState>, TState>)s;
+                tuple.Item1(tuple.Item2);
+            }, 
+            Tuple.Create(action, state), 
+            CancellationToken.None, 
+            TaskCreationOptions.DenyChildAttach, 
+            TaskScheduler.Default);
         }
     }
 }

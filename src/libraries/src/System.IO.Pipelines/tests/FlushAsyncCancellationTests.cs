@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,7 +22,7 @@ namespace System.IO.Pipelines.Tests
 
             var e = new ManualResetEventSlim();
 
-            PipeAwaiter<FlushResult> awaiter = buffer.FlushAsync(cts.Token);
+            ValueTaskAwaiter<FlushResult> awaiter = buffer.FlushAsync(cts.Token).GetAwaiter();
             awaiter.OnCompleted(
                 () => {
                     // We are on cancellation thread and need to wait untill another FlushAsync call
@@ -86,11 +87,11 @@ namespace System.IO.Pipelines.Tests
 
             Pipe.Writer.CancelPendingFlush();
 
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.True(flushAsync.IsCompleted);
 
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
 
             Assert.True(flushResult.IsCanceled);
 
@@ -105,7 +106,7 @@ namespace System.IO.Pipelines.Tests
             var onCompletedCalled = false;
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
 
-            PipeAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync();
+            ValueTaskAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync().GetAwaiter();
 
             Assert.False(awaitable.IsCompleted);
             awaitable.OnCompleted(
@@ -117,7 +118,7 @@ namespace System.IO.Pipelines.Tests
 
                     Assert.True(flushResult.IsCanceled);
 
-                    awaitable = writableBuffer.FlushAsync();
+                    awaitable = writableBuffer.FlushAsync().GetAwaiter();
                     Assert.False(awaitable.IsCompleted);
                 });
 
@@ -132,7 +133,7 @@ namespace System.IO.Pipelines.Tests
             var cts = new CancellationTokenSource();
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
 
-            PipeAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync(cts.Token);
+            ValueTaskAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync(cts.Token).GetAwaiter();
 
             Assert.False(awaitable.IsCompleted);
             awaitable.OnCompleted(
@@ -142,7 +143,7 @@ namespace System.IO.Pipelines.Tests
 
                     Assert.Throws<OperationCanceledException>(() => awaitable.GetResult());
 
-                    awaitable = writableBuffer.FlushAsync();
+                    awaitable = writableBuffer.FlushAsync().GetAwaiter();
                     Assert.False(awaitable.IsCompleted);
                 });
 
@@ -157,10 +158,10 @@ namespace System.IO.Pipelines.Tests
 
             Pipe.Writer.CancelPendingFlush();
 
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.True(flushResult.IsCanceled);
         }
 
@@ -168,14 +169,14 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncReturnsCanceledIfFlushCanceled()
         {
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
-            PipeAwaiter<FlushResult> flushAsync = writableBuffer.FlushAsync();
+            ValueTask<FlushResult> flushAsync = writableBuffer.FlushAsync();
 
             Assert.False(flushAsync.IsCompleted);
 
             Pipe.Writer.CancelPendingFlush();
 
             Assert.True(flushAsync.IsCompleted);
-            FlushResult flushResult = flushAsync.GetResult();
+            FlushResult flushResult = flushAsync.GetAwaiter().GetResult();
             Assert.True(flushResult.IsCanceled);
         }
 
@@ -183,13 +184,13 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncReturnsIsCancelOnCancelPendingFlushAfterGetResult()
         {
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
-            PipeAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync();
+            ValueTaskAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync().GetAwaiter();
 
             Assert.False(awaitable.IsCompleted);
             awaitable.OnCompleted(() => { });
 
             Pipe.Writer.CancelPendingFlush();
-            Pipe.Reader.AdvanceTo(Pipe.Reader.ReadAsync().GetResult().Buffer.End);
+            Pipe.Reader.AdvanceTo(Pipe.Reader.ReadAsync().GetAwaiter().GetResult().Buffer.End);
 
             Assert.True(awaitable.IsCompleted);
 
@@ -201,12 +202,12 @@ namespace System.IO.Pipelines.Tests
         public void FlushAsyncReturnsIsCancelOnCancelPendingFlushBeforeGetResult()
         {
             PipeWriter writableBuffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
-            PipeAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync();
+            ValueTaskAwaiter<FlushResult> awaitable = writableBuffer.FlushAsync().GetAwaiter();
 
             Assert.False(awaitable.IsCompleted);
             awaitable.OnCompleted(() => { });
 
-            Pipe.Reader.AdvanceTo(Pipe.Reader.ReadAsync().GetResult().Buffer.End);
+            Pipe.Reader.AdvanceTo(Pipe.Reader.ReadAsync().GetAwaiter().GetResult().Buffer.End);
             Pipe.Writer.CancelPendingFlush();
 
             Assert.True(awaitable.IsCompleted);
@@ -246,7 +247,7 @@ namespace System.IO.Pipelines.Tests
             var cancellationTokenSource = new CancellationTokenSource();
             PipeWriter buffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
 
-            PipeAwaiter<FlushResult> awaiter = buffer.FlushAsync(cancellationTokenSource.Token);
+            ValueTaskAwaiter<FlushResult> awaiter = buffer.FlushAsync(cancellationTokenSource.Token).GetAwaiter();
 
             awaiter.OnCompleted(
                 () => {
@@ -269,7 +270,7 @@ namespace System.IO.Pipelines.Tests
             var cancellationTokenSource = new CancellationTokenSource();
             PipeWriter buffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
 
-            PipeAwaiter<FlushResult> awaiter = buffer.FlushAsync(cancellationTokenSource.Token);
+            ValueTaskAwaiter<FlushResult> awaiter = buffer.FlushAsync(cancellationTokenSource.Token).GetAwaiter();
             bool awaiterIsCompleted = awaiter.IsCompleted;
 
             cancellationTokenSource.Cancel();
@@ -291,7 +292,7 @@ namespace System.IO.Pipelines.Tests
             var cancellationTokenSource = new CancellationTokenSource();
             PipeWriter buffer = Pipe.Writer.WriteEmpty(MaximumSizeHigh);
 
-            PipeAwaiter<FlushResult> awaiter = buffer.FlushAsync(cancellationTokenSource.Token);
+            ValueTaskAwaiter<FlushResult> awaiter = buffer.FlushAsync(cancellationTokenSource.Token).GetAwaiter();
             bool awaiterIsCompleted = awaiter.IsCompleted;
 
             Pipe.Writer.CancelPendingFlush();

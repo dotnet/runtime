@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Pipelines
 {
@@ -31,7 +32,7 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Makes bytes written available to <see cref="PipeReader"/> and runs <see cref="PipeReader.ReadAsync"/> continuation.
         /// </summary>
-        public abstract PipeAwaiter<FlushResult> FlushAsync(CancellationToken cancellationToken = default);
+        public abstract ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default);
 
         /// <inheritdoc />
         public abstract void Advance(int bytes);
@@ -45,7 +46,7 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Writes <paramref name="source"/> to the pipe and makes data accessible to <see cref="PipeReader"/>
         /// </summary>
-        public virtual PipeAwaiter<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        public virtual ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             this.Write(source.Span);
             return FlushAsync(cancellationToken);
