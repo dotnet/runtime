@@ -184,7 +184,7 @@ namespace System.Net.Security.Tests
                 Assert.Equal(false, clientIdentity.IsAuthenticated);
                 // On .Net Desktop: Assert.Equal(true, clientIdentity.IsAuthenticated);
 
-                IdentityValidator.AssertHasName(clientIdentity, @"NT AUTHORITY\ANONYMOUS LOGON");
+                IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
             }
         }
 
