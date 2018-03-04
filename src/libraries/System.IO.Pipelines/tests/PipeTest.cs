@@ -23,7 +23,8 @@ namespace System.IO.Pipelines.Tests
                     pauseWriterThreshold: pauseWriterThreshold,
                     resumeWriterThreshold: resumeWriterThreshold,
                     readerScheduler: PipeScheduler.Inline,
-                    writerScheduler: PipeScheduler.Inline
+                    writerScheduler: PipeScheduler.Inline,
+                    useSynchronizationContext: false
                 ));
         }
 

@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
@@ -11,7 +13,7 @@ namespace System.IO.Pipelines
     /// </summary>
     public sealed partial class Pipe
     {
-        private sealed class DefaultPipeWriter : PipeWriter, IPipeAwaiter<FlushResult>
+        private sealed class DefaultPipeWriter : PipeWriter, IValueTaskSource<FlushResult>
         {
             private readonly Pipe _pipe;
 
@@ -26,7 +28,7 @@ namespace System.IO.Pipelines
 
             public override void OnReaderCompleted(Action<Exception, object> callback, object state) => _pipe.OnReaderCompleted(callback, state);
 
-            public override PipeAwaiter<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => _pipe.FlushAsync(cancellationToken);
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => _pipe.FlushAsync(cancellationToken);
 
             public override void Advance(int bytes) => _pipe.Advance(bytes);
 
@@ -34,11 +36,11 @@ namespace System.IO.Pipelines
 
             public override Span<byte> GetSpan(int sizeHint = 0) => _pipe.GetMemory(sizeHint).Span;
 
-            public bool IsCompleted => _pipe.IsFlushAsyncCompleted;
+            public ValueTaskSourceStatus GetStatus(short token) => _pipe.GetFlushAsyncStatus();
 
-            public FlushResult GetResult() => _pipe.GetFlushAsyncResult();
+            public FlushResult GetResult(short token) => _pipe.GetFlushAsyncResult();
 
-            public void OnCompleted(Action continuation) => _pipe.OnFlushAsyncCompleted(continuation);
+            public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnFlushAsyncCompleted(continuation, state, flags);
         }
     }
 }
