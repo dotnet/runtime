@@ -509,7 +509,8 @@ namespace System.IO.Pipelines.Tests
                 val.Value = 20;
 
                 pipe.Writer.WriteEmpty(100);
-                await pipe.Writer.FlushAsync();
+                // Don't run any code on our fake sync context
+                await pipe.Writer.FlushAsync().ConfigureAwait(false);
 
                 if (useSynchronizationContext)
                 {
@@ -517,7 +518,7 @@ namespace System.IO.Pipelines.Tests
                     sc.Callbacks[0].Item1(sc.Callbacks[0].Item2);
                 }
 
-                int value = await tcs.Task;
+                int value = await tcs.Task.ConfigureAwait(false);
                 Assert.Equal(10, value);
             }
             finally
@@ -561,7 +562,8 @@ namespace System.IO.Pipelines.Tests
 
                 val.Value = 20;
 
-                ReadResult result = await pipe.Reader.ReadAsync();
+                // Don't run any code on our fake sync context
+                ReadResult result = await pipe.Reader.ReadAsync().ConfigureAwait(false);
                 pipe.Reader.AdvanceTo(result.Buffer.End);
 
                 if (useSynchronizationContext)
@@ -570,7 +572,7 @@ namespace System.IO.Pipelines.Tests
                     sc.Callbacks[0].Item1(sc.Callbacks[0].Item2);
                 }
 
-                int value = await tcs.Task;
+                int value = await tcs.Task.ConfigureAwait(false);
                 Assert.Equal(10, value);
             }
             finally
@@ -711,15 +713,19 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task DoubleReadThrows()
+        public async Task DoubleAsyncReadThrows()
         {
-            await _pipe.Writer.WriteAsync(new byte[1]);
-            ValueTask<ReadResult> awaiter = _pipe.Reader.ReadAsync();
-            ReadResult result = awaiter.GetAwaiter().GetResult();
+            ValueTask<ReadResult> readTask1 = _pipe.Reader.ReadAsync();
+            ValueTask<ReadResult> readTask2 = _pipe.Reader.ReadAsync();
 
-            Assert.Throws<InvalidOperationException>(() => awaiter.GetAwaiter().GetResult());
+            var task1 = Assert.ThrowsAsync<InvalidOperationException>(async () => await readTask1);
+            var task2 = Assert.ThrowsAsync<InvalidOperationException>(async () => await readTask2);
 
-            _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.Start);
+            var exception1 = await task1;
+            var exception2 = await task2;
+
+            Assert.Equal("Concurrent reads or writes are not supported.", exception1.Message);
+            Assert.Equal("Concurrent reads or writes are not supported.", exception2.Message);
         }
 
         [Fact]
