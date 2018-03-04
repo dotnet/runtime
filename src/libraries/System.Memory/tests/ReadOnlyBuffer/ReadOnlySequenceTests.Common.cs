@@ -104,6 +104,44 @@ namespace System.Memory.Tests
         }
 
         [Fact]
+        public void CanGetFirst()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[200]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment4, 200);
+
+            Assert.Equal(500, buffer.Length);
+            int length = 500;
+
+            for (int s = 0; s < 3; s++)
+            {
+                for (int i = 100; i > 0; i--)
+                {
+                    Assert.Equal(i, buffer.First.Length);
+                    buffer = buffer.Slice(1);
+                    length--;
+                    Assert.Equal(length, buffer.Length);
+                }
+            }
+
+            Assert.Equal(200, buffer.Length);
+
+            for (int i = 200; i > 0; i--)
+            {
+                Assert.Equal(i, buffer.First.Length);
+                buffer = buffer.Slice(1);
+                length--;
+                Assert.Equal(length, buffer.Length);
+            }
+
+            Assert.Equal(0, buffer.Length);
+            Assert.Equal(0, buffer.First.Length);
+        }
+
+        [Fact]
         public void SeekSkipsEmptySegments()
         {
             var bufferSegment1 = new BufferSegment<byte>(new byte[100]);

@@ -20,7 +20,7 @@ namespace System.Memory.Tests
             Assert.Equal(2, array.Offset);
             Assert.Equal(3, array.Count);
 
-            Assert.False(SequenceMarshal.TryGetMemoryList(buffer, out _, out _, out _, out _));
+            Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out _, out _, out _, out _));
             Assert.False(SequenceMarshal.TryGetOwnedMemory(buffer, out _, out _, out _));
 
             // Array can be retrieved with TryGetReadOnlyMemory
@@ -37,7 +37,7 @@ namespace System.Memory.Tests
             Assert.True(SequenceMarshal.TryGetReadOnlyMemory(buffer, out ReadOnlyMemory<byte> newMemory));
             Assert.Equal(new byte[] { 3, 4, 5 }, newMemory.ToArray());
 
-            Assert.False(SequenceMarshal.TryGetMemoryList(buffer, out IMemoryList<byte> startSegment, out int startIndex, out IMemoryList<byte> endSegment, out int endIndex));
+            Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out ReadOnlySequenceSegment<byte> startSegment, out int startIndex, out ReadOnlySequenceSegment<byte> endSegment, out int endIndex));
             Assert.False(SequenceMarshal.TryGetOwnedMemory(buffer, out _, out _, out _));
 
             // Memory is internally decomposed to its container so it would be accessible via TryGetArray
@@ -57,7 +57,7 @@ namespace System.Memory.Tests
             Assert.True(SequenceMarshal.TryGetReadOnlyMemory(buffer, out ReadOnlyMemory<char> newMemory));
             Assert.Equal(text.Substring(2, 3).ToCharArray(), newMemory.ToArray());
 
-            Assert.False(SequenceMarshal.TryGetMemoryList(buffer, out IMemoryList<char> startSegment, out int startIndex, out IMemoryList<char> endSegment, out int endIndex));
+            Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out ReadOnlySequenceSegment<char> startSegment, out int startIndex, out ReadOnlySequenceSegment<char> endSegment, out int endIndex));
             Assert.False(SequenceMarshal.TryGetOwnedMemory(buffer, out _, out _, out _));
             Assert.False(SequenceMarshal.TryGetArray(buffer, out _));
         }
@@ -73,7 +73,7 @@ namespace System.Memory.Tests
             Assert.Equal(2, start);
             Assert.Equal(3, length);
 
-            Assert.False(SequenceMarshal.TryGetMemoryList(buffer, out _, out _, out _, out _));
+            Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out _, out _, out _, out _));
             Assert.False(SequenceMarshal.TryGetArray(buffer, out _));
 
             // OwnedMemory can be retrieved with TryGetReadOnlyMemory
@@ -88,7 +88,7 @@ namespace System.Memory.Tests
 
             var buffer = new ReadOnlySequence<byte>(memoryListSegment, 2, memoryListSegment, 5);
 
-            Assert.True(SequenceMarshal.TryGetMemoryList(buffer, out IMemoryList<byte> startSegment, out int startIndex, out IMemoryList<byte> endSegment, out int endIndex));
+            Assert.True(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out ReadOnlySequenceSegment<byte> startSegment, out int startIndex, out ReadOnlySequenceSegment<byte> endSegment, out int endIndex));
             Assert.Equal(startSegment, memoryListSegment);
             Assert.Equal(endSegment, memoryListSegment);
 
@@ -111,7 +111,7 @@ namespace System.Memory.Tests
 
             var buffer = new ReadOnlySequence<byte>(memoryListSegment1, 2, memoryListSegment2, 1);
 
-            Assert.True(SequenceMarshal.TryGetMemoryList(buffer, out IMemoryList<byte> startSegment, out int startIndex, out IMemoryList<byte> endSegment, out int endIndex));
+            Assert.True(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out ReadOnlySequenceSegment<byte> startSegment, out int startIndex, out ReadOnlySequenceSegment<byte> endSegment, out int endIndex));
             Assert.Equal(startSegment, memoryListSegment1);
             Assert.Equal(endSegment, memoryListSegment2);
 
