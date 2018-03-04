@@ -4044,11 +4044,13 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
         sz += emitGetRexPrefixSize(ins);
     }
 
+#ifndef LEGACY_BACKEND
     if ((ins == INS_pextrq || ins == INS_pinsrq) && !UseVEXEncoding())
     {
         assert(UseSSE4());
         sz += 1;
     }
+#endif // !LEGACY_BACKEND
 
     id->idIns(ins);
     id->idInsFmt(IF_RRW_RRW_CNS);
