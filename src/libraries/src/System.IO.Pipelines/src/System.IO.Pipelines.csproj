@@ -14,6 +14,7 @@
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
+    <Compile Include="System\IO\Pipelines\CompletionData.cs" />
     <Compile Include="System\IO\Pipelines\FlushResult.cs" />
     <Compile Include="System\IO\Pipelines\InlineScheduler.cs" />
     <Compile Include="System\IO\Pipelines\IDuplexPipe.cs" />
@@ -34,13 +35,13 @@
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetCoreApp21.cs" />
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard13.cs" />
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard1.3.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.NetStandard.cs" />
+    <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
