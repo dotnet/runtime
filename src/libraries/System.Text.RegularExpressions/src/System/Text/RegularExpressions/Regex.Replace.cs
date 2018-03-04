@@ -21,11 +21,6 @@ namespace System.Text.RegularExpressions
             return Replace(input, pattern, replacement, RegexOptions.None, s_defaultMatchTimeout);
         }
 
-        public static int Replace(ReadOnlySpan<char> input, Span<char> buffer, string pattern, string replacement, RegexOptions options = RegexOptions.None, TimeSpan matchTimeout = default)
-        {
-            return Replace(input, buffer, pattern, replacement, options, matchTimeout == default ? s_defaultMatchTimeout : matchTimeout);
-        }
-
         /// <summary>
         /// Replaces all occurrences of
         /// the <paramref name="pattern "/>with the <paramref name="replacement "/>
