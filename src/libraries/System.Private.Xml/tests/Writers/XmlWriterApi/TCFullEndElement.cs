@@ -4251,7 +4251,6 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(2, "XmlQualifiedName", "XmlQualifiedName", true, null )]
             public void writeValue_27(XmlWriterUtils utils, int param, string sourceStr, string destStr, bool isValid, object expVal)
             {
-                Type source = typeMapper[sourceStr];
                 Type dest = typeMapper[destStr];
                 CultureInfo origCulture = null;
 
@@ -4270,7 +4269,8 @@ namespace System.Xml.Tests
                     if (param == 1)
                         w.WriteValue(value[sourceStr]);
                     else
-                        w.WriteAttributeString("a", value[sourceStr].ToString());
+                        w.WriteAttributeString("a",
+                            string.Format(CultureInfo.InvariantCulture, "{0}", value[sourceStr]));
                     w.WriteEndElement();
                 }
                 try
