@@ -44,7 +44,7 @@ def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubun
                                         'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux']]
 
 def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1',
-                                        'RHEL7.2', 'Fedora24', 'Debian8.4', /*'OSX10.12', */ 'PortableLinux']]
+                                        'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux']]
 
 // **************************
 // Define code coverage build
