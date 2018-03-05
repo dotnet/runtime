@@ -132,7 +132,7 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
             if (name == null)
-                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
+                throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name.Length > Interop.Kernel32.MAX_PATH)

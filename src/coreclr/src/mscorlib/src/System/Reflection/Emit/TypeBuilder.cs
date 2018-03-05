@@ -1971,7 +1971,7 @@ namespace System.Reflection.Emit
                     //((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
 
                     if (body != null)
-                        throw new InvalidOperationException(SR.InvalidOperation_BadMethodBody);
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, meth.Name));
                 }
                 else if (body == null || body.Length == 0)
                 {
