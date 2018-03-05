@@ -9,7 +9,10 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32)]
+        [DllImport(Libraries.User32, ExactSpelling = true)]
         public static extern int GetWindowThreadProcessId(IntPtr handle, out int processId);
+
+        [DllImport(Libraries.User32, ExactSpelling = true)]
+        public static extern int GetWindowThreadProcessId(HandleRef handle, out int processId);
     }
 }

@@ -7,7 +7,14 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
+#if FEATURE_SYSTEM_EVENTS
+    using System.Drawing.Internal;
+#endif
+
     public sealed class SolidBrush : Brush
+#if FEATURE_SYSTEM_EVENTS
+        , ISystemColorTracker
+#endif
     {
         // GDI+ doesn't understand system colors, so we need to cache the value here.
         private Color _color = Color.Empty;
@@ -22,6 +29,13 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetNativeBrushInternal(nativeBrush);
+
+#if FEATURE_SYSTEM_EVENTS
+            if (ColorUtil.IsSystemColor(_color))
+            {
+                SystemColorTracker.Add(this);
+            }
+#endif
         }
 
         internal SolidBrush(Color color, bool immutable) : this(color)
@@ -87,6 +101,15 @@ namespace System.Drawing
                 {
                     Color oldColor = _color;
                     InternalSetColor(value);
+
+#if FEATURE_SYSTEM_EVENTS
+                    // NOTE: We never remove brushes from the active list, so if someone is
+                    // changing their brush colors a lot, this could be a problem.
+                    if (ColorUtil.IsSystemColor(value) && !ColorUtil.IsSystemColor(oldColor))
+                    {
+                        SystemColorTracker.Add(this);
+                    }
+#endif
                 }
             }
         }
@@ -99,6 +122,16 @@ namespace System.Drawing
 
             _color = value;
         }
+
+#if FEATURE_SYSTEM_EVENTS
+        void ISystemColorTracker.OnSystemColorChanged()
+        {
+            if (NativeBrush != IntPtr.Zero)
+            {
+                InternalSetColor(_color);
+            }
+        }
+#endif
     }
 }
 
