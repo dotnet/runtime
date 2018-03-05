@@ -160,9 +160,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
-        [ActiveIssue(9228, TestPlatforms.Windows)]
         public async Task PostNonRewindableContentUsingAuth_PreAuthenticate_Success(Uri serverUri)
         {
+            if (IsWinHttpHandler)
+            {
+                // Issue #9228
+                return;
+            }
+
             HttpContent content = CustomContent.Create(ExpectedContent, false);
             var credential = new NetworkCredential(UserName, Password);
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: true);
