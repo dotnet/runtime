@@ -1293,12 +1293,16 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_DEBUGGER_INVOKE:
 			case FRAME_TYPE_TRAMPOLINE:
+				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:
+				if (!ji) {
+					/* gsharedvt_out_sig_wrapper from interp2jit transition */
+					skip--;
+					break;
+				}
 				continue;
 			case FRAME_TYPE_INTERP:
-				skip--;
-				break;
-			default:
+			case FRAME_TYPE_MANAGED:
 				ji = frame.ji;
 				*native_offset = frame.native_offset;
 
@@ -1308,13 +1312,14 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 					continue;
 				skip--;
 				break;
+			default:
+				g_assert_not_reached ();
 			}
 		} while (skip >= 0);
 
 		if (frame.type == FRAME_TYPE_INTERP) {
 			jmethod = frame.method;
 			actual_method = frame.actual_method;
-			*native_offset = frame.native_offset;
 		} else {
 			actual_method = get_method_from_stack_frame (ji, get_generic_info_from_stack_frame (ji, &ctx));
 		}
