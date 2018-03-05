@@ -153,7 +153,6 @@ set(SOURCES
   file/filetime.cpp
   file/find.cpp
   file/path.cpp
-  file/shmfilelockmgr.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
   init/pal.cpp
