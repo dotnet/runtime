@@ -1297,6 +1297,32 @@ void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX_ExtendToVector256:
+        {
+            // ExtendToVector256 has zero-extend semantics in order to ensure it is deterministic
+            // We always emit a move to the target register, even when op1Reg == targetReg, in order
+            // to ensure that Bits MAXVL-1:128 are zeroed.
+
+            assert(op2 == nullptr);
+            regNumber op1Reg = op1->gtRegNum;
+            emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg);
+            break;
+        }
+
+        case NI_AVX_GetLowerHalf:
+        case NI_AVX_StaticCast:
+        {
+            assert(op2 == nullptr);
+            regNumber op1Reg = op1->gtRegNum;
+
+            if (op1Reg != targetReg)
+            {
+                instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
+                emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD32), targetReg, op1Reg);
+            }
+            break;
+        }
+
         case NI_AVX_TestC:
         {
             emit->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
