@@ -1602,7 +1602,7 @@ namespace System.Globalization
                     result = this.AllYearMonthPatterns;
                     break;
                 default:
-                    throw new ArgumentException(SR.Format_BadFormatSpecifier, nameof(format));
+                    throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
             }
             return (result);
         }
@@ -1950,7 +1950,7 @@ namespace System.Globalization
                     break;
 
                 default:
-                    throw new ArgumentException(SR.Format_BadFormatSpecifier, nameof(format));
+                    throw new ArgumentException(SR.Format(SR.Format_BadFormatSpecifier, format), nameof(format));
             }
 
             // Clear the token hash table, note that even short dates could require this
