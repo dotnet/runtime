@@ -12,6 +12,8 @@ else()
     add_compile_options(-fPIC)
 endif()
 
+add_compile_options(-fvisibility=hidden)
+
 include(../setup.cmake)
 
 # Include directories
