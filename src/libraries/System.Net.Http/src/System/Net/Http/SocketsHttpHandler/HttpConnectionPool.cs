@@ -29,7 +29,7 @@ namespace System.Net.Http
         private readonly int _maxConnections;
 
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
-        private readonly byte[] _idnHostAsciiBytes;
+        private readonly byte[] _hostHeaderValueBytes;
         /// <summary>Options specialized and cached for this pool and its <see cref="_key"/>.</summary>
         private readonly SslClientAuthenticationOptions _sslOptions;
 
@@ -44,6 +44,9 @@ namespace System.Net.Http
         private bool _usedSinceLastCleanup = true;
         /// <summary>Whether the pool has been disposed.</summary>
         private bool _disposed;
+
+        private const int DefaultHttpPort = 80;
+        private const int DefaultHttpsPort = 443;
 
         /// <summary>Initializes the pool.</summary>
         /// <param name="maxConnections">The maximum number of connections allowed to be associated with the pool at any given time.</param>
@@ -106,13 +109,16 @@ namespace System.Net.Http
 
             if (_host != null)
             {
-                // Precalculate ASCII bytes for header name
+                // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
-                // CONSIDER: Cache more than just host name -- port, header name, etc
+                string hostHeader =
+                    ((_sslOptions == null) ? _port != DefaultHttpPort : _port != DefaultHttpsPort) ?
+                    $"{_host}:{_port}" :
+                    _host;
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
-                _idnHostAsciiBytes = Encoding.ASCII.GetBytes(_host);
-                Debug.Assert(Encoding.ASCII.GetString(_idnHostAsciiBytes) == _host);
+                _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
+                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
             }
         }
 
@@ -132,7 +138,7 @@ namespace System.Net.Http
         public bool UsingProxy => _kind == HttpConnectionKind.Proxy;        // Tunnel doesn't count, only direct proxy usage
         public Uri ProxyUri => _proxyUri;
         public ICredentials ProxyCredentials => _poolManager.ProxyCredentials;
-        public byte[] IdnHostAsciiBytes => _idnHostAsciiBytes;
+        public byte[] HostHeaderValueBytes => _hostHeaderValueBytes;
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
