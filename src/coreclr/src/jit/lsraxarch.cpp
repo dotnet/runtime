@@ -2353,10 +2353,15 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         case NI_SSE_ConvertToSingle:
         case NI_SSE_StaticCast:
         case NI_SSE2_ConvertToDouble:
+        case NI_AVX_ExtendToVector256:
+        case NI_AVX_GetLowerHalf:
+        case NI_AVX_StaticCast:
+        {
             assert(info->srcCount == 1);
             assert(info->dstCount == 1);
             useList.Last()->info.isTgtPref = true;
             break;
+        }
 
         case NI_SSE2_MaskMove:
         {
