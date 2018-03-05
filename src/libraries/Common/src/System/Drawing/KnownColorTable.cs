@@ -6,6 +6,11 @@ using System.Diagnostics;
 
 namespace System.Drawing
 {
+#if FEATURE_SYSTEM_EVENTS
+    using Microsoft.Win32;
+    using System.Drawing.Internal;
+#endif
+
     static internal class KnownColorTable
     {
         private static int[] s_colorTable;
@@ -53,6 +58,10 @@ namespace System.Drawing
         private static void InitColorTable()
         {
             int[] values = new int[(unchecked((int)KnownColor.MenuHighlight)) + 1];
+
+#if FEATURE_SYSTEM_EVENTS
+            SystemEvents.UserPreferenceChanging += new UserPreferenceChangingEventHandler(OnUserPreferenceChanging);
+#endif
             UpdateSystemColors(values);
 
             // just consts...
@@ -426,6 +435,16 @@ namespace System.Drawing
                           (value >> Win32RedShift) & 0xFF,
                           (value >> Win32GreenShift) & 0xFF,
                           (value >> Win32BlueShift) & 0xFF);
+        }
+#endif
+
+#if FEATURE_SYSTEM_EVENTS
+        private static void OnUserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
+        {
+            if (e.Category == UserPreferenceCategory.Color && s_colorTable != null)
+            {
+                UpdateSystemColors(s_colorTable);
+            }
         }
 #endif
 
