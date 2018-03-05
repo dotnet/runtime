@@ -490,7 +490,6 @@ CorUnix::InternalCreateFile(
     int   filed = -1;
     int   create_flags = (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     int   open_flags = 0;
-    int   lock_mode = LOCK_SH;
 
     // track whether we've created the file with the intended name,
     // so that it can be removed on failure exit
@@ -700,29 +699,6 @@ CorUnix::InternalCreateFile(
                     dwCreationDisposition == CREATE_NEW ||
                     dwCreationDisposition == OPEN_ALWAYS) &&
         !fFileExists;
-
-
-    // While the lock manager is able to provide support for share modes within an instance of
-    // the PAL, other PALs will ignore these locks.  In order to support a basic level of cross
-    // process locking, we'll use advisory locks.  FILE_SHARE_NONE implies a exclusive lock on the
-    // file and all other modes use a shared lock.  While this is not as granular as Windows,
-    // you can atleast implement a lock file using this.
-    lock_mode = (dwShareMode == 0 /* FILE_SHARE_NONE */) ? LOCK_EX : LOCK_SH;
-
-    if(flock(filed, lock_mode | LOCK_NB) != 0) 
-    {
-        TRACE("flock() failed; error is %s (%d)\n", strerror(errno), errno);
-        if (errno == EWOULDBLOCK) 
-        {
-            palError = ERROR_SHARING_VIOLATION;
-        }
-        else
-        {
-            palError = FILEGetLastErrorFromErrno();
-        }
-
-        goto done;
-    }
 
 #ifndef O_DIRECT
     if ( dwFlagsAndAttributes & FILE_FLAG_NO_BUFFERING )
