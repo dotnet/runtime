@@ -26,7 +26,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
+      "displayName": "Setup vs dev env",
       "timeoutInMinutes": 0,
       "refName": "Task2",
       "task": {
@@ -35,7 +35,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(VS140COMNTOOLS)\\VsDevCmd.bat",
+        "filename": "setup_vs_tools.cmd",
         "arguments": "",
         "modifyEnvironment": "true",
         "workingFolder": "",
