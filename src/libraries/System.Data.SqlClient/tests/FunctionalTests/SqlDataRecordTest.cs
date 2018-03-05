@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Data.SqlTypes;
 using Microsoft.SqlServer.Server;
 using Xunit;
@@ -136,6 +138,260 @@ namespace System.Data.SqlClient.Tests
                 Assert.Equal(DBNull.Value, record.GetValue(i));
             }
         }
+        [Fact]
+        public void GetDataTypeName_ReturnsMetaDataTypeIfUdtType()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.Udt, typeof(TestUdt), "sql_TestUdt")
+            };
+
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Equal("System.Data.SqlClient.Tests.TestUdt", record.GetDataTypeName(0));
+        }
+
+        [Fact]
+        public void GetDataTypeName_ReturnsTypeFromMetaTypeIfNotUdt()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50)
+            };
+
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Equal("nvarchar", record.GetDataTypeName(0));
+        }
+        [Fact]
+        public void GetFieldType_ReturnMetaTypeClassType()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50)
+            };
+
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Equal(typeof(string), record.GetFieldType(0));
+        }
+
+        [Fact]
+        public void GetValues_ThrowsIfNull()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50)
+            };
+
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Throws<ArgumentNullException>(() => record.GetValues(null));
+        }
+
+        [Fact]
+        public void GetValues_IfValuesBiggerThanColumnCount_LastArrayItemKeptEmpty()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+            record.SetString(0, "test");
+            record.SetSqlInt32(1, 2);
+
+            object[] values = new object[5];
+            int columnCount = record.GetValues(values);
+
+            for (int i = 2; i < 5; i++)
+            {
+                Assert.Null(values[i]);
+            }
+            Assert.Equal(2, columnCount);
+        }
+
+        [Fact]
+        public void GetValues_IfValuesShorterThanColumnCount_FillOnlyFirstColumn()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+            record.SetString(0, "test");
+            record.SetSqlInt32(1, 2);
+
+            object[] values = new object[1];
+            int columnCount = record.GetValues(values);
+
+            Assert.Equal("test", values[0]);
+            Assert.Equal(1, columnCount);
+        }
+
+        [Fact]
+        public void GetValues_FillsArrayAndRespectColumnOrder()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+            record.SetString(0, "test");
+            record.SetSqlInt32(1, 2);
+
+            object[] values = new object[2];
+            int columnCount = record.GetValues(values);
+
+            Assert.Equal("test", values[0]);
+            Assert.Equal(2, values[1]);
+            Assert.Equal(2, columnCount);
+        }
+
+        [Fact]
+        public void GetOrdinal_ThrowsAgumentNull_IfNameIsNull()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+           {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+           };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Throws<ArgumentNullException>(() => record.GetOrdinal(null));
+        }
+
+        [Fact]
+        public void GetOrdinal_ThrowsOutOfRange_IfNameIsNotAColumn()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+
+            Assert.Throws<IndexOutOfRangeException>(() => record.GetOrdinal("outofrange"));
+
+            Assert.Throws<IndexOutOfRangeException>(() => record.GetOrdinal("col1 "));
+
+        }
+
+        [Fact]
+        public void GetOrdinal_ReturnsIndexOfColumn()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Equal(1, record.GetOrdinal("col2"));
+        }
+        [Fact]
+        public void GetOrdinal_ReturnsIndexOfColumn_CaseInsensitive()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 50),
+                new SqlMetaData("col2", SqlDbType.Int)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+
+            Assert.Equal(1, record.GetOrdinal("Col2"));
+        }
+
+        [Fact]
+        public void GetChar_ThrowsNotSupported()
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.Char, 100)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+            record.SetValue(0, 'c');
+            Assert.Throws<NotSupportedException>(() => record.GetChar(0));
+        }
+
+        [Theory]
+        [ClassData(typeof(GetXXXBadTypeTestData))]
+        public void GetXXX_ThrowsIfBadType(Func<SqlDataRecord, object> getXXX)
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", SqlDbType.NVarChar, 1)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+            record.SetValue(0, "a");
+            Assert.Throws<InvalidCastException>(() => getXXX(record));
+
+        }
+
+        [Theory]
+        [ClassData(typeof(GetXXXCheckValueTestData))]
+        public void GetXXX_ReturnValue(SqlDbType dbType, object value, Func<SqlDataRecord, object> getXXX)
+        {
+            SqlMetaData[] metaData = new SqlMetaData[]
+            {
+                new SqlMetaData("col1", dbType)
+            };
+            SqlDataRecord record = new SqlDataRecord(metaData);
+            record.SetValue(0, value);
+            Assert.Equal(value, getXXX(record));
+
+        }
+    }
+
+    public class GetXXXBadTypeTestData : IEnumerable<object[]>
+    {
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetGuid(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetInt16(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetInt32(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetInt64(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetFloat(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetDouble(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetDecimal(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetDateTime(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetDateTimeOffset(0)) };
+            yield return new object[] { new Func<SqlDataRecord, object>(r => r.GetTimeSpan(0)) };
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    public class GetXXXCheckValueTestData : IEnumerable<object[]>
+    {
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            yield return new object[] { SqlDbType.UniqueIdentifier, Guid.NewGuid(), new Func<SqlDataRecord, object>(r => r.GetGuid(0)) };
+            yield return new object[] { SqlDbType.SmallInt, (Int16)123, new Func<SqlDataRecord, object>(r => r.GetInt16(0)) };
+            yield return new object[] { SqlDbType.Int, 123456, new Func<SqlDataRecord, object>(r => r.GetInt32(0)) };
+            yield return new object[] { SqlDbType.BigInt, (Int64)123456789, new Func<SqlDataRecord, object>(r => r.GetInt64(0)) };
+            yield return new object[] { SqlDbType.Float, (Double)1.2, new Func<SqlDataRecord, object>(r => r.GetDouble(0)) };
+            yield return new object[] { SqlDbType.Real, (Single)1.2, new Func<SqlDataRecord, object>(r => r.GetFloat(0)) };
+            yield return new object[] { SqlDbType.Decimal, 1.2m, new Func<SqlDataRecord, object>(r => r.GetDecimal(0)) };
+            yield return new object[] { SqlDbType.DateTime, DateTime.Now, new Func<SqlDataRecord, object>(r => r.GetDateTime(0)) };
+            yield return new object[] { SqlDbType.DateTimeOffset, new DateTimeOffset(DateTime.Now), new Func<SqlDataRecord, object>(r => r.GetDateTimeOffset(0)) };
+            yield return new object[] { SqlDbType.Time, TimeSpan.FromHours(1), new Func<SqlDataRecord, object>(r => r.GetTimeSpan(0)) };
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+    [SqlUserDefinedType(Format.UserDefined)]
+    public class TestUdt
+    {
 
     }
 }
