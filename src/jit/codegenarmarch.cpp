@@ -73,7 +73,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             getEmitter()->emitDisableGC();
             break;
 
-#ifdef _TARGET_ARM64_
         case GT_PROF_HOOK:
             // We should be seeing this only if profiler hook is needed
             noway_assert(compiler->compIsProfilerHookNeeded());
@@ -86,8 +85,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
 #endif // PROFILING_SUPPORTED
             break;
-
-#endif // _TARGET_ARM64_
 
         case GT_LCLHEAP:
             genLclHeap(treeNode);
