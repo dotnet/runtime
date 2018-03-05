@@ -887,42 +887,6 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 	return mono_array_addr_with_size (ao, esize, pos);
 }
 
-static void
-interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-
-	if (!context)
-		return;
-
-	InterpFrame *frame = context->current_frame;
-
-	while (frame) {
-		MonoStackFrameInfo fi;
-		memset (&fi, 0, sizeof (MonoStackFrameInfo));
-
-		/* TODO: hack to make some asserts happy. */
-		fi.ji = (MonoJitInfo *) frame->imethod;
-
-		if (frame->imethod)
-			fi.method = fi.actual_method = frame->imethod->method;
-
-		if (!fi.method || (fi.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (fi.method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))) {
-			fi.native_offset = -1;
-			fi.type = FRAME_TYPE_MANAGED_TO_NATIVE;
-		} else {
-			fi.type = FRAME_TYPE_MANAGED;
-			fi.native_offset = frame->ip - frame->imethod->code;
-			if (!fi.method->wrapper_type)
-				fi.managed = TRUE;
-		}
-
-		if (func (&fi, ctx, user_data))
-			return;
-		frame = frame->parent;
-	}
-}
-
 static MonoPIFunc mono_interp_to_native_trampoline = NULL;
 
 #ifndef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
@@ -5328,15 +5292,22 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 	if (!iframe)
 		return FALSE;
 
-	frame->type = FRAME_TYPE_INTERP;
+	MonoMethod *method = iframe->imethod->method;
 	frame->domain = iframe->domain;
 	frame->interp_frame = iframe;
-	frame->method = iframe->imethod->method;
-	frame->actual_method = iframe->imethod->method;
-	/* This is the offset in the interpreter IR */
-	frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->imethod->code;
+	frame->method = method;
+	frame->actual_method = method;
+	if (method && ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))) {
+		frame->native_offset = -1;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
+	} else {
+		frame->type = FRAME_TYPE_INTERP;
+		/* This is the offset in the interpreter IR */
+		frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->imethod->code;
+		if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+			frame->managed = TRUE;
+	}
 	frame->ji = iframe->imethod->jinfo;
-	frame->managed = TRUE;
 	frame->frame_addr = iframe;
 
 	stack_iter->current = iframe->parent;
@@ -5464,7 +5435,6 @@ mono_ee_interp_init (const char *opts)
 	c.init_delegate = interp_init_delegate;
 	c.get_remoting_invoke = interp_get_remoting_invoke;
 	c.create_trampoline = interp_create_trampoline;
-	c.walk_stack_with_ctx = interp_walk_stack_with_ctx;
 	c.set_resume_state = interp_set_resume_state;
 	c.run_finally = interp_run_finally;
 	c.run_filter = interp_run_filter;

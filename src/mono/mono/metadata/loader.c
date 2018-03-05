@@ -2237,8 +2237,10 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	case FRAME_TYPE_DEBUGGER_INVOKE:
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
 	case FRAME_TYPE_TRAMPOLINE:
+	case FRAME_TYPE_INTERP_TO_MANAGED:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_INTERP:
 		g_assert (frame->ji);
 		return d->func (frame->actual_method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
 		break;

@@ -218,11 +218,7 @@ mono_exceptions_init (void)
 
 	mono_arch_exceptions_init ();
 
-	if (mono_use_interpreter)
-		cbs.mono_walk_stack_with_ctx = mini_get_interp_callbacks ()->walk_stack_with_ctx;
-	else
-		cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
-
+	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 
 	if (mono_llvm_only) {

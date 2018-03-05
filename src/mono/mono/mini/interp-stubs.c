@@ -159,7 +159,6 @@ mono_interp_stub_init (void)
 	c.init_delegate = stub_init_delegate;
 	c.get_remoting_invoke = stub_get_remoting_invoke;
 	c.create_trampoline = stub_create_trampoline;
-	c.walk_stack_with_ctx = stub_walk_stack_with_ctx;
 	c.set_resume_state = stub_set_resume_state;
 	c.run_finally = stub_run_finally;
 	c.run_filter = stub_run_filter;
