@@ -62,7 +62,7 @@ namespace System.Buffers.Text.Tests
 
                 string sign = isNegative ? "-" : "+";
 
-                return "[" + sign + dec.ToString("G") + ", scale=" + scale + "]";
+                return "[" + sign + dec.ToString("G", CultureInfo.InvariantCulture) + ", scale=" + scale + "]";
             }
             else if (value is TimeSpan timeSpan)
             {

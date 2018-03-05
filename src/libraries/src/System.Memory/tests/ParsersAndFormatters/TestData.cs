@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace System.Buffers.Text.Tests
@@ -397,16 +398,16 @@ namespace System.Buffers.Text.Tests
                 yield return "0.000045";
                 yield return "000000123.000045";
 
-                yield return decimal.MinValue.ToString("G");
-                yield return decimal.MaxValue.ToString("G");
+                yield return decimal.MinValue.ToString("G", CultureInfo.InvariantCulture);
+                yield return decimal.MaxValue.ToString("G", CultureInfo.InvariantCulture);
 
-                yield return float.MinValue.ToString("G9");
-                yield return float.MaxValue.ToString("G9");
-                yield return float.Epsilon.ToString("G9");
+                yield return float.MinValue.ToString("G9", CultureInfo.InvariantCulture);
+                yield return float.MaxValue.ToString("G9", CultureInfo.InvariantCulture);
+                yield return float.Epsilon.ToString("G9", CultureInfo.InvariantCulture);
 
-                yield return double.MinValue.ToString("G17");
-                yield return double.MaxValue.ToString("G17");
-                yield return double.Epsilon.ToString("G9");
+                yield return double.MinValue.ToString("G17", CultureInfo.InvariantCulture);
+                yield return double.MaxValue.ToString("G17", CultureInfo.InvariantCulture);
+                yield return double.Epsilon.ToString("G9", CultureInfo.InvariantCulture);
 
                 yield return "1e";
                 yield return "1e+";

@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Linq;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace System.Buffers.Text.Tests
@@ -45,7 +46,7 @@ namespace System.Buffers.Text.Tests
                         StringBuilder sb = new StringBuilder();
                         for (int i = 0; i < numComponents; i++)
                         {
-                            sb.Append((20 + i).ToString());
+                            sb.Append((20 + i).ToString("D", CultureInfo.InvariantCulture));
                             if (i != numComponents - 1)
                             {
                                 char separator = ((separatorMask & (1 << i)) != 0) ? '.' : ':';
