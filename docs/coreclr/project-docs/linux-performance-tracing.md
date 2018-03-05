@@ -120,7 +120,7 @@ Filtering is implemented on Windows through the latest mechanisms provided with 
 On Linux those mechanisms are not available yet. Instead, there are two environment variables that exist just on linux to do some basic filtering. 
 
 * COMPlus_EventSourceFilter – filter event sources by name
-* COMPLus_EventNameFilter – filter events by name
+* COMPlus_EventNameFilter – filter events by name
 
 Setting one or both of these variables will only enable collecting events that contain the name you specify as a substring. Strings are treated as case insensitive. 
 
