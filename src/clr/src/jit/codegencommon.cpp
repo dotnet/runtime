@@ -7891,7 +7891,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
 #endif // !defined(UNIX_AMD64_ABI)
 
-#elif defined(_TARGET_X86_) || (defined(_TARGET_ARM_) && defined(LEGACY_BACKEND))
+#elif defined(_TARGET_X86_) || defined(_TARGET_ARM_)
 
     unsigned saveStackLvl2 = genStackLevel;
 
@@ -7909,12 +7909,19 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         inst_IV(INS_push, (size_t)compiler->compProfilerMethHnd);
     }
 #elif defined(_TARGET_ARM_)
-    // On Arm arguments are prespilled on stack, which frees r0-r3.
-    // For generating Enter callout we would need two registers and one of them has to be r0 to pass profiler handle.
-    // The call target register could be any free register.
+// On Arm arguments are prespilled on stack, which frees r0-r3.
+// For generating Enter callout we would need two registers and one of them has to be r0 to pass profiler handle.
+// The call target register could be any free register.
+#ifdef LEGACY_BACKEND
     regNumber argReg = regSet.rsGrabReg(RBM_PROFILER_ENTER_ARG);
     noway_assert(argReg == REG_PROFILER_ENTER_ARG);
     regSet.rsLockReg(RBM_PROFILER_ENTER_ARG);
+#else  // !LEGACY_BACKEND
+    regNumber argReg = REG_PROFILER_ENTER_ARG;
+#endif // !LEGACY_BACKEND
+
+    regMaskTP argRegMask = genRegMask(argReg);
+    assert((regSet.rsMaskPreSpillRegArg & argRegMask) != 0);
 
     if (compiler->compProfilerMethHndIndirected)
     {
@@ -7951,8 +7958,10 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         compiler->fgPtrArgCntMax = 1;
     }
 #elif defined(_TARGET_ARM_)
+#ifdef LEGACY_BACKEND
     // Unlock registers
     regSet.rsUnlockReg(RBM_PROFILER_ENTER_ARG);
+#endif // LEGACY_BACKEND
 
     if (initReg == argReg)
     {
@@ -8154,17 +8163,18 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
         compiler->fgPtrArgCntMax = 1;
     }
 
-#elif defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#elif defined(_TARGET_ARM_)
+//
+// Push the profilerHandle
+//
 
-    //
-    // Push the profilerHandle
-    //
-
-    // We could optimize register usage based on return value is int/long/void. But to keep it simple we will lock
-    // RBM_PROFILER_RET_USED always.
+// We could optimize register usage based on return value is int/long/void. But to keep it simple we will lock
+// RBM_PROFILER_RET_USED always.
+#ifdef LEGACY_BACKEND
     regNumber scratchReg = regSet.rsGrabReg(RBM_PROFILER_RET_SCRATCH);
     noway_assert(scratchReg == REG_PROFILER_RET_SCRATCH);
     regSet.rsLockReg(RBM_PROFILER_RET_USED);
+#endif // LEGACY_BACKEND
 
     // Contract between JIT and Profiler Leave callout on arm:
     // Return size <= 4 bytes: REG_PROFILER_RET_SCRATCH will contain return value
@@ -8230,7 +8240,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
         gcInfo.gcMarkRegSetNpt(RBM_PROFILER_RET_SCRATCH);
     }
 
+#ifdef LEGACY_BACKEND
     regSet.rsUnlockReg(RBM_PROFILER_RET_USED);
+#endif // LEGACY_BACKEND
 
 #else  // target
     NYI("Emit Profiler Leave callback");
