@@ -8,7 +8,6 @@ namespace System.IO.Tests
 {
     public partial class PathTests_Windows : PathTestsBase
     {
-        [ActiveIssue(27552)]
         [Theory,
             MemberData(nameof(TestData_GetPathRoot_Windows)),
             MemberData(nameof(TestData_GetPathRoot_Unc)),
