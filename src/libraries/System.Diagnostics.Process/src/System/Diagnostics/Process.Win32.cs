@@ -258,7 +258,7 @@ namespace System.Diagnostics
                 return false;
             }
 
-            Interop.User32.PostMessage(mainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            Interop.User32.PostMessageW(mainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
             return true;
         }
 

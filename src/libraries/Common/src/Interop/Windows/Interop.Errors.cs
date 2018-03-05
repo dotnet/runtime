@@ -72,6 +72,7 @@ internal partial class Interop
         internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         internal const int ERROR_CANT_OPEN_ANONYMOUS = 0x543;
         internal const int ERROR_NO_SECURITY_ON_OBJECT = 0x546;
+        internal const int ERROR_CLASS_ALREADY_EXISTS = 0x582;
         internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
         internal const int EFail = unchecked((int)0x80004005);
