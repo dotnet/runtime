@@ -713,13 +713,12 @@ namespace System.IO
             Debug.Assert(encoding != null);
 
             char[] buffer = null;
-            StringBuilder sb = null;
             StreamReader sr = AsyncStreamReader(path, encoding);
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                sb = StringBuilderCache.Acquire();
                 buffer = ArrayPool<char>.Shared.Rent(sr.CurrentEncoding.GetMaxCharCount(DefaultBufferSize));
+                StringBuilder sb = new StringBuilder();
                 for (;;)
                 {
                     int read = await sr.ReadAsync(new Memory<char>(buffer), cancellationToken).ConfigureAwait(false);
@@ -737,11 +736,6 @@ namespace System.IO
                 if (buffer != null)
                 {
                     ArrayPool<char>.Shared.Return(buffer);
-                }
-
-                if (sb != null)
-                {
-                    StringBuilderCache.Release(sb);
                 }
             }
         }
