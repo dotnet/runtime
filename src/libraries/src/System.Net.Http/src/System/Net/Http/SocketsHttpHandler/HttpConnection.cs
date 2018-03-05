@@ -46,7 +46,6 @@ namespace System.Net.Http
         private readonly Stream _stream;
         private readonly TransportContext _transportContext;
         private readonly bool _usingProxy;
-        private readonly byte[] _idnHostAsciiBytes;
         private readonly WeakReference<HttpConnection> _weakThisRef;
 
         private HttpRequestMessage _currentRequest;
@@ -76,7 +75,6 @@ namespace System.Net.Http
             _stream = stream;
             _transportContext = transportContext;
             _usingProxy = pool.UsingProxy;
-            _idnHostAsciiBytes = pool.IdnHostAsciiBytes;
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _readBuffer = new byte[InitialReadBufferSize];
@@ -214,14 +212,21 @@ namespace System.Net.Http
         {
             await WriteBytesAsync(KnownHeaders.Host.AsciiBytesWithColonSpace).ConfigureAwait(false);
 
-            await (_idnHostAsciiBytes != null ?
-                WriteBytesAsync(_idnHostAsciiBytes) :
-                WriteAsciiStringAsync(uri.IdnHost)).ConfigureAwait(false);
-
-            if (!uri.IsDefaultPort)
+            if (_pool.HostHeaderValueBytes != null)
             {
-                await WriteByteAsync((byte)':').ConfigureAwait(false);
-                await WriteDecimalInt32Async(uri.Port).ConfigureAwait(false);
+                Debug.Assert(!_pool.UsingProxy);
+                await WriteBytesAsync(_pool.HostHeaderValueBytes).ConfigureAwait(false);
+            }
+            else
+            {
+                Debug.Assert(_pool.UsingProxy);
+                await WriteAsciiStringAsync(uri.IdnHost).ConfigureAwait(false);
+
+                if (!uri.IsDefaultPort)
+                {
+                    await WriteByteAsync((byte)':').ConfigureAwait(false);
+                    await WriteDecimalInt32Async(uri.Port).ConfigureAwait(false);
+                }
             }
 
             await WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
