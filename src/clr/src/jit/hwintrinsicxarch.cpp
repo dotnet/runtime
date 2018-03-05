@@ -860,8 +860,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return impSSEIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE2:
             return impSSE2Intrinsic(intrinsic, method, sig, mustExpand);
-        case InstructionSet_SSE41:
-            return impSSE41Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE42:
             return impSSE42Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_AVX:
@@ -921,23 +919,6 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* control = gtNewIconNode(68, TYP_UBYTE);
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, simdSize);
-            break;
-        }
-
-        case NI_SSE_ReciprocalScalar:
-        case NI_SSE_ReciprocalSqrtScalar:
-        case NI_SSE_SqrtScalar:
-        {
-            assert((sig->numArgs == 1) || (sig->numArgs == 2));
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-
-            if (sig->numArgs == 2)
-            {
-                op2 = impSIMDPopStack(TYP_SIMD16);
-            }
-
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, TYP_FLOAT, simdSize);
             break;
         }
 
@@ -1041,51 +1022,6 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
             op1      = impSIMDPopStack(TYP_SIMD16);
             baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
             retNode  = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
-            break;
-        }
-
-        default:
-            JITDUMP("Not implemented hardware intrinsic");
-            break;
-    }
-    return retNode;
-}
-
-GenTree* Compiler::impSSE41Intrinsic(NamedIntrinsic        intrinsic,
-                                     CORINFO_METHOD_HANDLE method,
-                                     CORINFO_SIG_INFO*     sig,
-                                     bool                  mustExpand)
-{
-    GenTree* retNode  = nullptr;
-    GenTree* op1      = nullptr;
-    GenTree* op2      = nullptr;
-    GenTree* op3      = nullptr;
-    GenTree* op4      = nullptr;
-    int      simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
-
-    assert(simdSize == 16);
-
-    switch (intrinsic)
-    {
-        case NI_SSE41_CeilingScalar:
-        case NI_SSE41_FloorScalar:
-        case NI_SSE41_RoundCurrentDirectionScalar:
-        case NI_SSE41_RoundToNearestIntegerScalar:
-        case NI_SSE41_RoundToNegativeInfinityScalar:
-        case NI_SSE41_RoundToPositiveInfinityScalar:
-        case NI_SSE41_RoundToZeroScalar:
-        {
-            assert((sig->numArgs == 1) || (sig->numArgs == 2));
-            var_types baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
-            assert((baseType == TYP_FLOAT) || (baseType == TYP_DOUBLE));
-
-            if (sig->numArgs == 2)
-            {
-                op2 = impSIMDPopStack(TYP_SIMD16);
-            }
-
-            op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, intrinsic, baseType, simdSize);
             break;
         }
 
