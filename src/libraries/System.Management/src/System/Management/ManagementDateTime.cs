@@ -117,113 +117,94 @@ namespace System.Management
             int hour = DateTime.MinValue.Hour;
             int minute = DateTime.MinValue.Minute;
             int second = DateTime.MinValue.Second;
-            int millisec = 0;
             string dmtf = dmtfDate;
-            DateTime datetime = DateTime.MinValue;
-            
+
             // If the string passed is empty or null then throw
             // an exception
             if(dmtf == null)
             {
-                throw new System.ArgumentOutOfRangeException("dmtfDate");
+                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
             if (dmtf.Length == 0) 
             {
-                throw new System.ArgumentOutOfRangeException("dmtfDate");
+                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
             
             // if the length of the string is not equal to the 
             // standard length of the DMTF datetime then throw an exception
             if(dmtf.Length != SIZEOFDMTFDATETIME)
             {
-                throw new System.ArgumentOutOfRangeException("dmtfDate");
+                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
 
-            IFormatProvider frmInt32 = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(System.Int32));
-            System.Int64 ticks = 0;
+            IFormatProvider frmInt32 = (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int));
+            long ticks = 0;
+            int utcOffset = 0;
             try
             {
-                
-                string tempString = System.String.Empty;
-                tempString = dmtf.Substring(0, 4);
+                var tempString = dmtf.Substring(0, 4);
                 if (("****" != tempString)) 
                 {
-                    year = System.Int32.Parse(tempString,frmInt32);
+                    year = int.Parse(tempString,frmInt32);
                 }
                 tempString = dmtf.Substring(4, 2);
                 if (("**" != tempString)) 
                 {
-                    month = System.Int32.Parse(tempString,frmInt32);
+                    month = int.Parse(tempString,frmInt32);
                 }
                 tempString = dmtf.Substring(6, 2);
                 if (("**" != tempString)) 
                 {
-                    day = System.Int32.Parse(tempString,frmInt32);
+                    day = int.Parse(tempString,frmInt32);
                 }
                 tempString = dmtf.Substring(8, 2);
                 if (("**" != tempString)) 
                 {
-                    hour = System.Int32.Parse(tempString,frmInt32);
+                    hour = int.Parse(tempString,frmInt32);
                 }
                 tempString = dmtf.Substring(10, 2);
                 if (("**" != tempString)) 
                 {
-                    minute = System.Int32.Parse(tempString,frmInt32);
+                    minute = int.Parse(tempString,frmInt32);
                 }
                 tempString = dmtf.Substring(12, 2);
                 if (("**" != tempString)) 
                 {
-                    second = System.Int32.Parse(tempString,frmInt32);
+                    second = int.Parse(tempString,frmInt32);
                 }
                 tempString = dmtf.Substring(15, 6);
                 if (("******" != tempString)) 
                 {
-                    ticks = (System.Int64.Parse(tempString,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(System.Int64)))) * (System.TimeSpan.TicksPerMillisecond/1000);
+                    ticks = (long.Parse(tempString,(IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(Int64)))) * (TimeSpan.TicksPerMillisecond/1000);
                 }
-                if( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
+                tempString = dmtf.Substring(22, 3);
+                if (("***" != tempString)) 
                 {
-                    throw new System.ArgumentOutOfRangeException("dmtfDate");
+                    tempString = dmtf.Substring(21, 4);
+                    utcOffset = int.Parse(tempString,frmInt32);
                 }
 
+                if( year < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0 || ticks < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(dmtfDate));
+                }
             }
             catch
             {
-                throw new System.ArgumentOutOfRangeException("dmtfDate");
+                throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
 
 
             // Construct a new System.DateTime object
-            datetime = new System.DateTime(year, month, day, hour, minute, second, millisec);
+            var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Utc);
             // Then add the ticks calculated from the microseconds
             datetime = datetime.AddTicks(ticks);
-            
-            // Adjust the UTC time to reflect the current zone time
-            System.TimeZone curZone = System.TimeZone.CurrentTimeZone;
-            System.TimeSpan tickOffset = curZone.GetUtcOffset(datetime);
-            long OffsetMins = tickOffset.Ticks / System.TimeSpan.TicksPerMinute;
-            
-            // Adjusting the DateTime for the current UTC
-            int UTCOffset =  0;
-            string tempString1 = dmtf.Substring(22, 3);
-            long OffsetToBeAdjusted = 0;
-            if (("***" != tempString1)) 
-            {
-                tempString1 = dmtf.Substring(21, 4);
-                try
-                {
-                    UTCOffset = System.Int32.Parse(tempString1,frmInt32);
-                }
-                catch
-                {
-                    throw new System.ArgumentOutOfRangeException();
-                }
+            // Then subtruct offset in minutes
+            datetime = datetime.AddMinutes(-utcOffset);
 
-                OffsetToBeAdjusted = UTCOffset-OffsetMins;
-                
-                // We have to substract the minutes from the time
-                datetime = datetime.AddMinutes(OffsetToBeAdjusted * -1);
-
-            }
+            // Convert to local Time
+            datetime = datetime.ToLocalTime();
+            
             return datetime;
         }
 
