@@ -112,7 +112,7 @@ namespace System.Net.Http
                 // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
                 string hostHeader =
-                    ((_sslOptions == null) ? _port != DefaultHttpPort : _port != DefaultHttpsPort) ?
+                    (_port != (_sslOptions == null ? DefaultHttpPort : DefaultHttpsPort)) ?
                     $"{_host}:{_port}" :
                     _host;
 
