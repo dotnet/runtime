@@ -1069,7 +1069,7 @@ with_wasm_default=no
 with_bitcode_default=no
 with_cooperative_gc_default=no
 
-INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=9000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=4000
+INVARIANT_AOT_OPTIONS=nimt-trampolines=2000,ntrampolines=10000,nrgctx-fetch-trampolines=256,ngsharedvt-trampolines=4000
 
 AOT_BUILD_ATTRS=$INVARIANT_AOT_OPTIONS
 
