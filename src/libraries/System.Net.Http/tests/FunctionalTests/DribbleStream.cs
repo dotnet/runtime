@@ -26,6 +26,7 @@ namespace System.Net.Http.Functional.Tests
                 for (int i = 0; i < count; i++)
                 {
                     await _wrapped.WriteAsync(buffer, offset + i, 1);
+                    await _wrapped.FlushAsync();
                     await Task.Yield(); // introduce short delays, enough to send packets individually but not so long as to extend test duration significantly
                 }
             }
@@ -41,6 +42,7 @@ namespace System.Net.Http.Functional.Tests
                 for (int i = 0; i < count; i++)
                 {
                     _wrapped.Write(buffer, offset + i, 1);
+                    _wrapped.Flush();
                 }
             }
             catch (IOException) when (_clientDisconnectAllowed)
