@@ -301,7 +301,7 @@ namespace System.Reflection.Emit
             }
             if (passedType == typeof(IntPtr) || passedType == typeof(UIntPtr))
             {
-                throw new ArgumentException(SR.Argument_BadParameterTypeForCAB, paramName);
+                throw new ArgumentException(SR.Format(SR.Argument_BadParameterTypeForCAB, passedType.ToString()), paramName);
             }
         }
 

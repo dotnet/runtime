@@ -1660,9 +1660,6 @@
   <data name="ArgumentNull_Waithandles" xml:space="preserve">
     <value>The waitHandles parameter cannot be null.</value>
   </data>
-  <data name="ArgumentNull_WithParamName" xml:space="preserve">
-    <value>Parameter '{0}' cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_ActualValue" xml:space="preserve">
     <value>Actual value was {0}.</value>
   </data>
