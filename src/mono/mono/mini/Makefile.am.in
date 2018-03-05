@@ -918,7 +918,11 @@ version.h: Makefile
 			echo "#define FULL_VERSION \"$$branch/$$version\""; \
 		); \
 	else \
-		echo "#define FULL_VERSION \"tarball\""; \
+		if test -z "$$MONO_BRANCH" -o -z "$$MONO_BUILD_REVISION"; then \
+			echo "#define FULL_VERSION \"tarball\""; \
+		else \
+			echo "#define FULL_VERSION \"$$MONO_BRANCH/$$MONO_BUILD_REVISION\""; \
+		fi \
 	fi > version.h
 
 # Utility target for patching libtool to speed up linking
