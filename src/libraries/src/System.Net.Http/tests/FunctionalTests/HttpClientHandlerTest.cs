@@ -1136,7 +1136,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData(":")]
-        [InlineData("  :  ")]
         [InlineData("\x1234: \x5678")]
         [InlineData("nocolon")]
         [InlineData("no colon")]
@@ -1156,7 +1155,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
                 }
-            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\nContent-Length: 11\r\n{invalidHeader}\r\n\r\nhello world"));
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{invalidHeader}\r\nContent-Length: 11\r\n\r\nhello world"));
         }
 
         [Fact]
@@ -1314,9 +1313,28 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Fact]
-        public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly()
+        public static IEnumerable<object[]> GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData() =>
+            from newline in new[] { "\n", "\r\n" }
+            from fold in new[] { "", newline + " ", newline + "\t", newline + "    " }
+            from dribble in new[] { false, true }
+            select new object[] { newline, fold, dribble };
+
+        [Theory]
+        [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
+        public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
+            if (IsCurlHandler && !string.IsNullOrEmpty(fold))
+            {
+                // CurlHandler doesn't currently support folded headers.
+                return;
+            }
+
+            if (IsNetfxHandler && newline == "\n")
+            {
+                // NetFxHandler doesn't allow LF-only line endings.
+                return;
+            }
+
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
             // Exercises all exposed response.Headers and response.Content.Headers strongly-typed properties
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1385,56 +1403,57 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("1; mode=block", resp.Headers.GetValues("X-XSS-Protection"));
                 }
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                "HTTP/1.1 200 OK\r\n" +
-                "Access-Control-Allow-Origin: *\r\n" +
-                "Accept-Patch: text/example;charset=utf-8\r\n" +
-                "Accept-Ranges: bytes\r\n" +
-                "Age: 12\r\n" +
-                "Allow: GET, HEAD\r\n" +
-                "Alt-Svc: http/1.1=\"http2.example.com:8001\"; ma=7200\r\n" +
-                "Cache-Control: max-age=3600\r\n" +
-                "Connection: close\r\n" +
-                "Content-Disposition: attachment; filename=\"fname.ext\"\r\n" +
-                "Content-Encoding: gzip\r\n" +
-                "Content-Language: da\r\n" +
-                "Content-Location: /index.htm\r\n" +
-                "Content-MD5: Q2hlY2sgSW50ZWdyaXR5IQ==\r\n" +
-                "Content-Range: bytes 21010-47021/47022\r\n" +
-                "Content-Type: text/html; charset=utf-8\r\n" +
-                "Date: Tue, 15 Nov 1994 08:12:31 GMT\r\n" +
-                "ETag: \"737060cd8c284d8af7ad3082f209582d\"\r\n" +
-                "Expires: Thu, 01 Dec 1994 16:00:00 GMT\r\n" +
-                "Last-Modified: Tue, 15 Nov 1994 12:45:26 GMT\r\n" +
-                "Link: </feed>; rel=\"alternate\"\r\n" +
-                "Location: http://www.w3.org/pub/WWW/People.html\r\n" +
-                "P3P: CP=\"This is not a P3P policy!\"\r\n" +
-                "Pragma: no-cache\r\n" +
-                "Proxy-Authenticate: Basic\r\n" +
-                "Public-Key-Pins: max-age=2592000; pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"\r\n" +
-                "Retry-After: 120\r\n" +
-                "Server: Apache/2.4.1 (Unix)\r\n" +
-                "Set-Cookie: UserID=JohnDoe; Max-Age=3600; Version=1\r\n" +
-                "Strict-Transport-Security: max-age=16070400; includeSubDomains\r\n" +
-                "Trailer: Max-Forwards\r\n" +
-                "Tk: ?\r\n" +
-                "Upgrade: HTTPS/1.3, IRC/6.9, RTA/x11, websocket\r\n" +
-                "Vary: Accept-Language\r\n" +
-                "Via: 1.0 fred, 1.1 example.com (Apache/1.1)\r\n" +
-                "Warning: 199 - \"Miscellaneous warning\" \"Wed, 21 Oct 2015 07:28:00 GMT\"\r\n" +
-                "WWW-Authenticate: Basic\r\n" +
-                "X-Frame-Options: deny\r\n" +
-                "X-WebKit-CSP: default-src 'self'\r\n" +
-                "Refresh: 5; url=http://www.w3.org/pub/WWW/People.html\r\n" +
-                "Status: 200 OK\r\n" +
-                "Timing-Allow-Origin: <origin>[, <origin>]*\r\n" +
-                "Upgrade-Insecure-Requests: 1\r\n" +
-                "X-Content-Duration: 42.666\r\n" +
-                "X-Content-Type-Options: nosniff\r\n" +
-                "X-Powered-By: PHP/5.4.0\r\n" +
-                "X-Request-ID: f058ebd6-02f7-4d3f-942e-904344e8cde5\r\n" +
-                "X-UA-Compatible: IE=EmulateIE7\r\n" +
-                "X-XSS-Protection: 1; mode=block\r\n" +
-                "\r\n"));
+                $"HTTP/1.1 200 OK{newline}" +
+                $"Access-Control-Allow-Origin:{fold} *{newline}" +
+                $"Accept-Patch:{fold} text/example;charset=utf-8{newline}" +
+                $"Accept-Ranges:{fold} bytes{newline}" +
+                $"Age: {fold}12{newline}" +
+                $"Allow: {fold}GET, HEAD{newline}" +
+                $"Alt-Svc:{fold} http/1.1=\"http2.example.com:8001\"; ma=7200{newline}" +
+                $"Cache-Control: {fold}max-age=3600{newline}" +
+                $"Connection:{fold} close{newline}" +
+                $"Content-Disposition: {fold}attachment;{fold} filename=\"fname.ext\"{newline}" +
+                $"Content-Encoding: {fold}gzip{newline}" +
+                $"Content-Language:{fold} da{newline}" +
+                $"Content-Location: {fold}/index.htm{newline}" +
+                $"Content-MD5:{fold} Q2hlY2sgSW50ZWdyaXR5IQ=={newline}" +
+                $"Content-Range: {fold}bytes {fold}21010-47021/47022{newline}" +
+                $"Content-Type: text/html;{fold} charset=utf-8{newline}" +
+                $"Date: Tue, 15 Nov 1994{fold} 08:12:31 GMT{newline}" +
+                $"ETag: {fold}\"737060cd8c284d8af7ad3082f209582d\"{newline}" +
+                $"Expires: Thu,{fold} 01 Dec 1994 16:00:00 GMT{newline}" +
+                $"Last-Modified:{fold} Tue, 15 Nov 1994 12:45:26 GMT{newline}" +
+                $"Link:{fold} </feed>; rel=\"alternate\"{newline}" +
+                $"Location:{fold} http://www.w3.org/pub/WWW/People.html{newline}" +
+                $"P3P: {fold}CP=\"This is not a P3P policy!\"{newline}" +
+                $"Pragma: {fold}no-cache{newline}" +
+                $"Proxy-Authenticate:{fold} Basic{newline}" +
+                $"Public-Key-Pins:{fold} max-age=2592000; pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"{newline}" +
+                $"Retry-After: {fold}120{newline}" +
+                $"Server: {fold}Apache/2.4.1{fold} (Unix){newline}" +
+                $"Set-Cookie: {fold}UserID=JohnDoe; Max-Age=3600; Version=1{newline}" +
+                $"Strict-Transport-Security: {fold}max-age=16070400; includeSubDomains{newline}" +
+                $"Trailer: {fold}Max-Forwards{newline}" +
+                $"Tk: {fold}?{newline}" +
+                $"Upgrade: HTTPS/1.3,{fold} IRC/6.9,{fold} RTA/x11, {fold}websocket{newline}" +
+                $"Vary:{fold} Accept-Language{newline}" +
+                $"Via:{fold} 1.0 fred, 1.1 example.com{fold} (Apache/1.1){newline}" +
+                $"Warning:{fold} 199 - \"Miscellaneous warning\" \"Wed, 21 Oct 2015 07:28:00 GMT\"{newline}" +
+                $"WWW-Authenticate: {fold}Basic{newline}" +
+                $"X-Frame-Options: {fold}deny{newline}" +
+                $"X-WebKit-CSP: default-src 'self'{newline}" +
+                $"Refresh: {fold}5; url=http://www.w3.org/pub/WWW/People.html{newline}" +
+                $"Status: {fold}200 OK{newline}" +
+                $"Timing-Allow-Origin: {fold}<origin>[, <origin>]*{newline}" +
+                $"Upgrade-Insecure-Requests:{fold} 1{newline}" +
+                $"X-Content-Duration:{fold} 42.666{newline}" +
+                $"X-Content-Type-Options: {fold}nosniff{newline}" +
+                $"X-Powered-By: {fold}PHP/5.4.0{newline}" +
+                $"X-Request-ID:{fold} f058ebd6-02f7-4d3f-942e-904344e8cde5{newline}" +
+                $"X-UA-Compatible: {fold}IE=EmulateIE7{newline}" +
+                $"X-XSS-Protection:{fold} 1; mode=block{newline}" +
+                $"{newline}"),
+                dribble ? new LoopbackServer.Options { StreamWrapper = s => new DribbleStream(s) } : null);
         }
 
         [OuterLoop] // TODO: Issue #11345
