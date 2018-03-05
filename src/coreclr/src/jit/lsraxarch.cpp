@@ -754,7 +754,9 @@ void LinearScan::BuildCheckByteable(GenTree* tree)
         if (tree->OperIsSimple())
         {
             GenTree* op = tree->gtOp.gtOp1;
-            if (op != nullptr)
+            // We need byte registers on the operands of most simple operators that produce a byte result.
+            // However, indirections are simple operators but do not require their address in a byte register.
+            if ((op != nullptr) && !tree->OperIsIndir())
             {
                 // No need to set src candidates on a contained child operand.
                 if (!op->isContained())
