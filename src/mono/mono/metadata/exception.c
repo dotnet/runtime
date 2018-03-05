@@ -683,6 +683,23 @@ mono_get_exception_argument (const char *arg, const char *msg)
 	return ex;
 }
 
+TYPED_HANDLE_DECL (MonoArgumentException);
+
+MonoExceptionHandle
+mono_exception_new_argument (const char *arg, const char *msg, MonoError *error)
+{
+	MonoExceptionHandle ex;
+	ex = mono_exception_new_by_name_msg (mono_get_corlib (), "System", "ArgumentException", msg, error);
+
+	if (arg && !MONO_HANDLE_IS_NULL (ex)) {
+		MonoArgumentExceptionHandle argex = (MonoArgumentExceptionHandle)ex;
+		MonoStringHandle arg_str = mono_string_new_handle (MONO_HANDLE_DOMAIN (ex), arg, error);
+		MONO_HANDLE_SET (argex, param_name, arg_str);
+	}
+
+	return ex;
+}
+
 /**
  * mono_get_exception_argument_out_of_range:
  * \param arg the name of the out of range argument.

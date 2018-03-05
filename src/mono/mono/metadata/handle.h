@@ -544,6 +544,13 @@ mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);
 gpointer
 mono_object_handle_pin_unbox (MonoObjectHandle boxed_valuetype_obj, uint32_t *gchandle_out);
 
+static inline gpointer
+mono_handle_unbox_unsafe (MonoObjectHandle handle)
+{
+	g_assert (MONO_HANDLE_GETVAL (handle, vtable)->klass->valuetype);
+	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle) + 1);
+}
+
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
 

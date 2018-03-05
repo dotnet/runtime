@@ -4717,7 +4717,27 @@ mono_set_pending_exception (MonoException *exc)
 
 	MONO_OBJECT_SETREF (thread, pending_exception, exc);
 
-    mono_thread_request_interruption (FALSE);
+	mono_thread_request_interruption (FALSE);
+}
+
+/*
+ * mono_set_pending_exception_handle:
+ *
+ *   Set the pending exception of the current thread to EXC.
+ * The exception will be thrown when execution returns to managed code.
+ */
+void
+mono_set_pending_exception_handle (MonoExceptionHandle exc)
+{
+	MonoThread *thread = mono_thread_current ();
+
+	/* The thread may already be stopping */
+	if (thread == NULL)
+		return;
+
+	MONO_OBJECT_SETREF (thread, pending_exception, MONO_HANDLE_RAW (exc));
+
+	mono_thread_request_interruption (FALSE);
 }
 
 /**
