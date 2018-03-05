@@ -129,7 +129,7 @@
         "toolPackage": "false",
         "buildProperties": "",
         "verbosityPack": "Detailed",
-        "arguments": "install Microsoft.DotNet.Build.Tasks.ScepOps -source https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json -ConfigFile $(Build.StagingDirectory)\\VstsAuthed.NuGet.Config -OutputDirectory $(Build.StagingDirectory)"
+        "arguments": "install Microsoft.DotNet.Build.Tasks.ScepOps -source https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json -OutputDirectory $(Build.StagingDirectory)"
       }
     },
     {
