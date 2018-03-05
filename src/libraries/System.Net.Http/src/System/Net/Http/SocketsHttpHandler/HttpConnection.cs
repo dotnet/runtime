@@ -66,7 +66,7 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
-            Stream stream, 
+            Stream stream,
             TransportContext transportContext)
         {
             Debug.Assert(pool != null);
@@ -413,7 +413,7 @@ namespace System.Net.Http
 
                 // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionResponseContent() };
-                ParseStatusLine(await ReadNextLineAsync().ConfigureAwait(false), response);
+                ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
 
                 // If we sent an Expect: 100-continue header, handle the response accordingly.
                 if (allowExpect100ToContinue != null)
@@ -441,12 +441,12 @@ namespace System.Net.Http
                         if (response.StatusCode == HttpStatusCode.Continue)
                         {
                             // We got our continue header.  Read the subsequent empty line and parse the additional status line.
-                            if (!LineIsEmpty(await ReadNextLineAsync().ConfigureAwait(false)))
+                            if (!LineIsEmpty(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false)))
                             {
                                 ThrowInvalidHttpResponse();
                             }
 
-                            ParseStatusLine(await ReadNextLineAsync().ConfigureAwait(false), response);
+                            ParseStatusLine(await ReadNextResponseHeaderLineAsync().ConfigureAwait(false), response);
                         }
                     }
                 }
@@ -463,7 +463,7 @@ namespace System.Net.Http
                 // Parse the response headers.
                 while (true)
                 {
-                    ArraySegment<byte> line = await ReadNextLineAsync().ConfigureAwait(false);
+                    ArraySegment<byte> line = await ReadNextResponseHeaderLineAsync(foldedHeadersAllowed: true).ConfigureAwait(false);
                     if (LineIsEmpty(line))
                     {
                         break;
@@ -600,7 +600,7 @@ namespace System.Net.Http
         }
 
         private HttpContentWriteStream CreateRequestContentStream(HttpRequestMessage request)
-    {
+        {
             bool requestTransferEncodingChunked = request.HasHeaders && request.Headers.TransferEncodingChunked == true;
             HttpContentWriteStream requestContentStream = requestTransferEncodingChunked ? (HttpContentWriteStream)
                 new ChunkedEncodingWriteStream(this) :
@@ -1060,16 +1060,13 @@ namespace System.Net.Http
             int bytesConsumed = length + 1;
             _readOffset += bytesConsumed;
             _allowedReadLineBytes -= bytesConsumed;
-            if (_allowedReadLineBytes < 0)
-            {
-                ThrowInvalidHttpResponse();
-            }
+            ThrowIfExceededAllowedReadLineBytes();
 
             line = buffer.Slice(0, length > 0 && buffer[length - 1] == '\r' ? length - 1 : length);
             return true;
         }
 
-        private async ValueTask<ArraySegment<byte>> ReadNextLineAsync()
+        private async ValueTask<ArraySegment<byte>> ReadNextResponseHeaderLineAsync(bool foldedHeadersAllowed = false)
         {
             int previouslyScannedBytes = 0;
             while (true)
@@ -1080,31 +1077,91 @@ namespace System.Net.Http
                 {
                     int startIndex = _readOffset;
                     int length = lfIndex - startIndex;
-                    if (length > 0 && _readBuffer[startIndex + length - 1] == '\r')
+                    if (lfIndex > 0 && _readBuffer[lfIndex - 1] == '\r')
                     {
                         length--;
                     }
 
+                    // If this isn't the ending header, we need to account for the possibility
+                    // of folded headers, which per RFC2616 are headers split across multiple
+                    // lines, where the continuation line begins with a space or horizontal tab.
+                    // The feature was deprecated in RFC 7230 3.2.4, but some servers still use it.
+                    if (foldedHeadersAllowed && length > 0)
+                    {
+                        // If the newline is the last character we've buffered, we need at least
+                        // one more character in order to see whether it's space/tab, in which
+                        // case it's a folded header.
+                        if (lfIndex + 1 == _readLength)
+                        {
+                            // The LF is at the end of the buffer, so we need to read more
+                            // to determine whether there's a continuation.  We'll read
+                            // and then loop back around again, but to avoid needing to
+                            // rescan the whole header, reposition to one character before
+                            // the newline so that we'll find it quickly.
+                            int backPos = _readBuffer[lfIndex - 1] == '\r' ? lfIndex - 2 : lfIndex - 1;
+                            Debug.Assert(backPos >= 0);
+                            previouslyScannedBytes = backPos - _readOffset;
+                            _allowedReadLineBytes -= backPos - scanOffset;
+                            ThrowIfExceededAllowedReadLineBytes();
+                            await FillAsync().ConfigureAwait(false);
+                            continue;
+                        }
+
+                        // We have at least one more character we can look at.
+                        Debug.Assert(lfIndex + 1 < _readLength);
+                        char nextChar = (char)_readBuffer[lfIndex + 1];
+                        if (nextChar == ' ' || nextChar == '\t')
+                        {
+                            // The next header is a continuation.
+
+                            // Folded headers are only allowed within header field values, not within header field names,
+                            // so if we haven't seen a colon, this is invalid.
+                            if (Array.IndexOf(_readBuffer, (byte)':', _readOffset, lfIndex - _readOffset) == -1)
+                            {
+                                ThrowInvalidHttpResponse();
+                            }
+
+                            // When we return the line, we need the interim newlines filtered out. According
+                            // to RFC 7230 3.2.4, a valid approach to dealing with them is to "replace each
+                            // received obs-fold with one or more SP octets prior to interpreting the field
+                            // value or forwarding the message downstream", so that's what we do.
+                            _readBuffer[lfIndex] = (byte)' ';
+                            if (_readBuffer[lfIndex - 1] == '\r')
+                            {
+                                _readBuffer[lfIndex - 1] = (byte)' ';
+                            }
+
+                            // Update how much we've read, and simply go back to search for the next newline.
+                            previouslyScannedBytes = (lfIndex + 1 - _readOffset);
+                            _allowedReadLineBytes -= (lfIndex + 1 - scanOffset);
+                            ThrowIfExceededAllowedReadLineBytes();
+                            continue;
+                        }
+
+                        // Not at the end of a header with a continuation.
+                    }
+
                     // Advance read position past the LF
                     _allowedReadLineBytes -= lfIndex + 1 - scanOffset;
-                    if (_allowedReadLineBytes < 0)
-                    {
-                        ThrowInvalidHttpResponse();
-                    }
+                    ThrowIfExceededAllowedReadLineBytes();
                     _readOffset = lfIndex + 1;
 
                     return new ArraySegment<byte>(_readBuffer, startIndex, length);
                 }
 
-                // Couldn't find LF.  Read more.
-                // Note this may cause _readOffset to change.
+                // Couldn't find LF.  Read more. Note this may cause _readOffset to change.
                 previouslyScannedBytes = _readLength - _readOffset;
                 _allowedReadLineBytes -= _readLength - scanOffset;
-                if (_allowedReadLineBytes < 0)
-                {
-                    ThrowInvalidHttpResponse();
-                }
+                ThrowIfExceededAllowedReadLineBytes();
                 await FillAsync().ConfigureAwait(false);
+            }
+        }
+
+        private void ThrowIfExceededAllowedReadLineBytes()
+        {
+            if (_allowedReadLineBytes < 0)
+            {
+                ThrowInvalidHttpResponse();
             }
         }
 
