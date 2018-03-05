@@ -34,6 +34,12 @@ namespace ILLink.Tasks
 		public ITaskItem RexcepFilePath { get; set; }
 
 		/// <summary>
+		///   The path to ILLinkTrim.xml.
+		/// </summary>
+		[Required]
+		public ITaskItem ILLinkTrimXmlFilePath { get; set; }
+
+		/// <summary>
 		///   The path to the file to generate.
 		/// </summary>
 		[Required]
@@ -76,6 +82,12 @@ namespace ILLink.Tasks
 				return false;
 			}
 
+			var iLLinkTrimXmlFilePath = ILLinkTrimXmlFilePath.ItemSpec;
+			if (!File.Exists (iLLinkTrimXmlFilePath)) {
+				Log.LogError ("File " + iLLinkTrimXmlFilePath + " doesn't exist.");
+				return false;
+			}
+
 			ProcessNamespaces (namespaceFilePath);
 
 			ProcessMscorlib (mscorlibFilePath);
@@ -84,7 +96,7 @@ namespace ILLink.Tasks
 
 			ProcessExceptionTypes (rexcepFilePath);
 
-			OutputXml (RuntimeRootDescriptorFilePath.ItemSpec);
+			OutputXml (iLLinkTrimXmlFilePath, RuntimeRootDescriptorFilePath.ItemSpec);
 
 			return true;
 		}
@@ -206,22 +218,17 @@ namespace ILLink.Tasks
 					string classNamespace = defElements [1]; // g_InteropNS
 					string className = defElements [2];      // MarshalDirectiveException
 					AddClass (classNamespace, className, classId);
+					AddMethod (".ctor", classId, classNamespace, className);
 				}
 			}
 		}
 
-		void OutputXml (string outputFileName)
+		void OutputXml (string iLLinkTrimXmlFilePath, string outputFileName)
 		{
 			XmlDocument doc = new XmlDocument ();
-
-			XmlNode linkerNode = doc.CreateElement ("linker");
-			doc.AppendChild (linkerNode);
-
-			XmlNode assemblyNode = doc.CreateElement ("assembly");
-			XmlAttribute assemblyFullName = doc.CreateAttribute ("fullname");
-			assemblyFullName.Value = "System.Private.CoreLib";
-			assemblyNode.Attributes.Append (assemblyFullName);
-			linkerNode.AppendChild (assemblyNode);
+			doc.Load (iLLinkTrimXmlFilePath);
+			XmlNode linkerNode = doc ["linker"];
+			XmlNode assemblyNode = linkerNode ["assembly"];
 
 			foreach (string typeName in classNamesToClassMembers.Keys) {
 				XmlNode typeNode = doc.CreateElement ("type");
@@ -273,20 +280,8 @@ namespace ILLink.Tasks
 
 		void AddClass (string classNamespace, string className, string classId, bool keepAllFields = false)
 		{
-			string prefixToRemove = "g_";
-			if (classNamespace.StartsWith (prefixToRemove)) {
-				classNamespace = classNamespace.Substring (prefixToRemove.Length);
-			}
-			string suffixToRemove = "NS";
-			if (classNamespace.EndsWith (suffixToRemove)) {
-				classNamespace = classNamespace.Substring (0, classNamespace.Length - suffixToRemove.Length);
-			}
-			string fullClassName = null;
-			if ((classNamespace != "NULL") && (className != "NULL")) {
-				if (!namespaceDictionary.ContainsKey (classNamespace)) {
-					Log.LogError ("Unknown namespace: " + classNamespace);
-				}
-				fullClassName = namespaceDictionary [classNamespace] + "." + className;
+			string fullClassName = GetFullClassName (classNamespace, className);
+			if (fullClassName != null) {
 				if ((classId != null) && (classId != "NoClass")) {
 					classIdsToClassNames [classId] = fullClassName;
 				}
@@ -311,16 +306,44 @@ namespace ILLink.Tasks
 			members.fields.Add (fieldName);
 		}
 
-		void AddMethod (string methodName, string classId)
+		void AddMethod (string methodName, string classId, string classNamespace = null, string className = null)
 		{
-			string className = classIdsToClassNames [classId];
+			string fullClassName;
+			if (classId != null) {
+				fullClassName = classIdsToClassNames [classId];
+			}
+			else {
+				fullClassName = GetFullClassName (classNamespace, className);
+			}
 
-			ClassMembers members = classNamesToClassMembers [className];
+			ClassMembers members = classNamesToClassMembers [fullClassName];
 
 			if (members.methods == null) {
 				members.methods = new HashSet<string> ();
 			}
 			members.methods.Add (methodName);
+		}
+
+		string GetFullClassName (string classNamespace, string className)
+		{
+			string prefixToRemove = "g_";
+			if (classNamespace.StartsWith (prefixToRemove)) {
+				classNamespace = classNamespace.Substring (prefixToRemove.Length);
+			}
+			string suffixToRemove = "NS";
+			if (classNamespace.EndsWith (suffixToRemove)) {
+				classNamespace = classNamespace.Substring (0, classNamespace.Length - suffixToRemove.Length);
+			}
+
+			if ((classNamespace == "NULL") && (className == "NULL")) {
+				return null;
+			}
+
+			if (!namespaceDictionary.ContainsKey (classNamespace)) {
+				Log.LogError ("Unknown namespace: " + classNamespace);
+			}
+
+			return namespaceDictionary [classNamespace] + "." + className;
 		}
 	}
 }
