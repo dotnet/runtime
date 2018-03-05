@@ -121,7 +121,6 @@
     <Compile Include="Reflection\UsedViaReflectionIntegrationTest.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
-    <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessedAndKept.cs" />
     <Compile Include="Resources\NonLinkerEmbeddedResourceHasNoImpact.cs" />
@@ -273,7 +272,6 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.xml" />
-    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessedAndKept.xml" />
     <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
