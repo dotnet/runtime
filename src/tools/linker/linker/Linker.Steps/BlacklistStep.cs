@@ -39,15 +39,10 @@ namespace Mono.Linker.Steps {
 
 	public class BlacklistStep : BaseStep {
 
-		protected override bool ConditionToProcess()
-		{
-			return Context.CoreAction == AssemblyAction.Link;
-		}
-
 		protected override void Process ()
 		{
 			foreach (string name in Assembly.GetExecutingAssembly ().GetManifestResourceNames ()) {
-				if (!name.EndsWith (".xml", StringComparison.OrdinalIgnoreCase) || !IsReferenced (GetAssemblyName (name)))
+				if (!name.EndsWith (".xml", StringComparison.OrdinalIgnoreCase) || !ShouldProcessAssemblyResource (GetAssemblyName (name)))
 					continue;
 
 				try {
@@ -64,7 +59,7 @@ namespace Mono.Linker.Steps {
 									.SelectMany (mod => mod.Resources)
 									.Where (res => res.ResourceType == ResourceType.Embedded)
 									.Where (res => res.Name.EndsWith (".xml", StringComparison.OrdinalIgnoreCase))
-									.Where (res => IsReferenced (GetAssemblyName (res.Name)))
+									.Where (res => ShouldProcessAssemblyResource (GetAssemblyName (res.Name)))
 									.Cast<EmbeddedResource> ()) {
 					try {
 						Context.LogMessage ("Processing embedded resource linker descriptor: {0}", rsc.Name);
@@ -87,13 +82,30 @@ namespace Mono.Linker.Steps {
 			return descriptor.Substring (0, pos);
 		}
 
-		bool IsReferenced (string name)
+		bool ShouldProcessAssemblyResource (string name)
+		{
+			AssemblyDefinition assembly = GetAssemblyIfReferenced (name);
+
+			if (assembly == null)
+				return false;
+
+			switch (Annotations.GetAction (assembly)) {
+			case AssemblyAction.Link:
+			case AssemblyAction.AddBypassNGen:
+			case AssemblyAction.AddBypassNGenUsed:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		AssemblyDefinition GetAssemblyIfReferenced (string name)
 		{
 			foreach (AssemblyDefinition assembly in Context.GetAssemblies ())
 				if (assembly.Name.Name == name)
-					return true;
+					return assembly;
 
-			return false;
+			return null;
 		}
 
 		protected virtual IStep GetExternalResolveStep (EmbeddedResource resource, AssemblyDefinition assembly)
