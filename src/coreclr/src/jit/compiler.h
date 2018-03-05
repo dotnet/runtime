@@ -3059,10 +3059,6 @@ protected:
                               CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
                               bool                  mustExpand);
-    GenTree* impSSE41Intrinsic(NamedIntrinsic        intrinsic,
-                               CORINFO_METHOD_HANDLE method,
-                               CORINFO_SIG_INFO*     sig,
-                               bool                  mustExpand);
     GenTree* impSSE42Intrinsic(NamedIntrinsic        intrinsic,
                                CORINFO_METHOD_HANDLE method,
                                CORINFO_SIG_INFO*     sig,

@@ -735,24 +735,6 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_ReciprocalScalar:
-        case NI_SSE_ReciprocalSqrtScalar:
-        case NI_SSE_SqrtScalar:
-        {
-            assert(baseType == TYP_FLOAT);
-            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
-
-            if (op2 == nullptr)
-            {
-                emit->emitIns_SIMD_R_R_R(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op1Reg);
-            }
-            else
-            {
-                genHWIntrinsic_R_R_RM(node, ins);
-            }
-            break;
-        }
-
         case NI_SSE_SetScalarVector128:
         {
             assert(baseType == TYP_FLOAT);
@@ -1066,29 +1048,6 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicID)
     {
-        case NI_SSE41_CeilingScalar:
-        case NI_SSE41_FloorScalar:
-        case NI_SSE41_RoundCurrentDirectionScalar:
-        case NI_SSE41_RoundToNearestIntegerScalar:
-        case NI_SSE41_RoundToNegativeInfinityScalar:
-        case NI_SSE41_RoundToPositiveInfinityScalar:
-        case NI_SSE41_RoundToZeroScalar:
-        {
-            assert((baseType == TYP_FLOAT) || (baseType == TYP_DOUBLE));
-            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, node->gtSIMDBaseType);
-
-            if (op2 == nullptr)
-            {
-                int ival = Compiler::ivalOfHWIntrinsic(intrinsicID);
-                emit->emitIns_SIMD_R_R_R_I(ins, emitTypeSize(TYP_SIMD16), targetReg, op1Reg, op1Reg, ival);
-            }
-            else
-            {
-                genHWIntrinsic_R_R_RM_I(node, ins);
-            }
-            break;
-        }
-
         case NI_SSE41_TestAllOnes:
         {
             regNumber tmpReg = node->GetSingleTempReg();
