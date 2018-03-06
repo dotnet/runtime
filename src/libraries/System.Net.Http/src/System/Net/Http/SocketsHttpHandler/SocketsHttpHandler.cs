@@ -167,6 +167,22 @@ namespace System.Net.Http
             }
         }
 
+        internal TimeSpan MaxResponseDrainTime // TODO #27685: Expose publicly.
+        {
+            get => _settings._maxResponseDrainTime;
+            set
+            {
+                if ((value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan) ||
+                    (value.TotalMilliseconds > int.MaxValue))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                CheckDisposedOrStarted();
+                _settings._maxResponseDrainTime = value;
+            }
+        }
+
         public int MaxResponseHeadersLength
         {
             get => _settings._maxResponseHeadersLength;

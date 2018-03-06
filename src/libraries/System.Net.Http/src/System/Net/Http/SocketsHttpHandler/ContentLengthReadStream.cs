@@ -174,15 +174,41 @@ namespace System.Net.Http
                     return false;
                 }
 
-                while (true)
+                CancellationTokenSource cts = null;
+                CancellationTokenRegistration ctr = default;
+                TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+                if (drainTime != Timeout.InfiniteTimeSpan)
                 {
-                    await _connection.FillAsync().ConfigureAwait(false);
-                    ReadFromConnectionBuffer(int.MaxValue);
-                    if (_contentBytesRemaining == 0)
+                    cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
+                    ctr = cts.Token.Register(s => ((HttpConnection)s).Dispose(), _connection);
+                }
+                try
+                {
+                    while (true)
                     {
-                        Finish();
-                        return true;
+                        await _connection.FillAsync().ConfigureAwait(false);
+                        ReadFromConnectionBuffer(int.MaxValue);
+                        if (_contentBytesRemaining == 0)
+                        {
+                            // Dispose of the registration and then check whether cancellation has been
+                            // requested. This is necessary to make determinstic a race condition between
+                            // cancellation being requested and unregistering from the token.  Otherwise,
+                            // it's possible cancellation could be requested just before we unregister and
+                            // we then return a connection to the pool that has been or will be disposed
+                            // (e.g. if a timer is used and has already queued its callback but the
+                            // callback hasn't yet run).
+                            ctr.Dispose();
+                            ctr.Token.ThrowIfCancellationRequested();
+
+                            Finish();
+                            return true;
+                        }
                     }
+                }
+                finally
+                {
+                    ctr.Dispose();
+                    cts?.Dispose();
                 }
             }
         }
