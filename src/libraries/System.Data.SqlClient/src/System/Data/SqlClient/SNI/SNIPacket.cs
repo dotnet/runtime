@@ -249,7 +249,7 @@ namespace System.Data.SqlClient.SNI
                 options |= TaskContinuationOptions.LongRunning;
             }
 
-            stream.ReadAsync(_data, 0, _capacity).ContinueWith(t =>
+            stream.ReadAsync(_data, 0, _capacity, CancellationToken.None).ContinueWith(t =>
             {
                 Exception e = t.Exception != null ? t.Exception.InnerException : null;
                 if (e != null)
@@ -296,6 +296,25 @@ namespace System.Data.SqlClient.SNI
         public void WriteToStream(Stream stream)
         {
             stream.Write(_data, 0, _length);
+        }
+
+        /// <summary>
+        /// Write data to a stream asynchronously
+        /// </summary>
+        /// <param name="stream">Stream to write to</param>
+        public async void WriteToStreamAsync(Stream stream, SNIAsyncCallback callback, SNIProviders provider)
+        {
+            uint status = TdsEnums.SNI_SUCCESS;
+            try
+            {
+                await stream.WriteAsync(_data, 0, _length, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(provider, SNICommon.InternalExceptionError, e);
+                status = TdsEnums.SNI_ERROR;
+            }
+            callback(this, status);
         }
 
         /// <summary>
