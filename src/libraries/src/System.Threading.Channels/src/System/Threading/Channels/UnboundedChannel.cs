@@ -48,8 +48,8 @@ namespace System.Threading.Channels
             internal UnboundedChannelReader(UnboundedChannel<T> parent)
             {
                 _parent = parent;
-                _readerSingleton = new AsyncOperation<T>(parent._runContinuationsAsynchronously) { UnsafeState = ResettableValueTaskSource.States.Released };
-                _waiterSingleton = new AsyncOperation<bool>(parent._runContinuationsAsynchronously) { UnsafeState = ResettableValueTaskSource.States.Released };
+                _readerSingleton = new AsyncOperation<T>(parent._runContinuationsAsynchronously, pooled: true);
+                _waiterSingleton = new AsyncOperation<bool>(parent._runContinuationsAsynchronously, pooled: true);
             }
 
             public override Task Completion => _parent._completion.Task;
@@ -274,7 +274,7 @@ namespace System.Threading.Channels
                     {
                         // Complete the reader.  It's possible the reader was canceled, in which
                         // case we loop around to try everything again.
-                        if (blockedReader.Success(item))
+                        if (blockedReader.TrySetResult(item))
                         {
                             return true;
                         }

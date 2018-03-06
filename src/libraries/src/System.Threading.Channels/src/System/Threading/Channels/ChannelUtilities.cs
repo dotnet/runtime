@@ -90,7 +90,7 @@ namespace System.Threading.Channels
                     AsyncOperation<bool> next = c.Next;
                     c.Next = null;
 
-                    bool completed = error != null ? c.Fail(error) : c.Success(result);
+                    bool completed = error != null ? c.TrySetException(error) : c.TrySetResult(result);
                     Debug.Assert(completed || c.CancellationToken.CanBeCanceled);
 
                     c = next;
@@ -107,7 +107,7 @@ namespace System.Threading.Channels
             Debug.Assert(error != null);
             while (!operations.IsEmpty)
             {
-                operations.DequeueHead().Fail(error);
+                operations.DequeueHead().TrySetException(error);
             }
         }
 
