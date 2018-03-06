@@ -767,7 +767,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 	if (!code) {
 		MonoDomain *domain = mono_domain_get ();
 
-		mini_patch_jump_sites (domain, m, addr);
+		mini_patch_jump_sites (domain, m, mono_get_addr_from_ftnptr (addr));
 
 		/* Patch the got entries pointing to this method */
 		/* 
