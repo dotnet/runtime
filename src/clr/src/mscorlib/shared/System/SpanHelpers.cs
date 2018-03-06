@@ -455,49 +455,84 @@ namespace System
             return;
 #endif
 
-        PInvoke:
+PInvoke:
             RuntimeImports.RhZeroMemory(ref b, byteLength);
         }
 
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)
         {
-            if (pointerSizeLength == 0)
-                return;
+            Debug.Assert((int)Unsafe.AsPointer(ref ip) % sizeof(IntPtr) == 0, "Should've been aligned on natural word boundary.");
 
-            // TODO: Perhaps do switch casing to improve small size perf
+            // First write backward 8 natural words at a time.
+            // Writing backward allows us to get away with only simple modifications to the
+            // mov instruction's base and index registers between loop iterations.
 
-            nuint i = 0;
-            nuint n = 0;
-            while ((n = i + 8) <= (pointerSizeLength))
+            for (; pointerSizeLength >= 8; pointerSizeLength -= 8)
             {
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 1) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 2) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 3) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 4) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 5) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 6) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 7) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                i = n;
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -4) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -5) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -6) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -7) = default(IntPtr);
+                Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -8) = default(IntPtr);
             }
-            if ((n = i + 4) <= (pointerSizeLength))
+
+            Debug.Assert(pointerSizeLength <= 7);
+
+            // The logic below works by trying to minimize the number of branches taken for any
+            // given range of lengths. For example, the lengths [ 4 .. 7 ] are handled by a single
+            // branch, [ 2 .. 3 ] are handled by a single branch, and [ 1 ] is handled by a single
+            // branch.
+            // 
+            // We can write both forward and backward as a perf improvement. For example,
+            // the lengths [ 4 .. 7 ] can be handled by zeroing out the first four natural
+            // words and the last 3 natural words. In the best case (length = 7), there are
+            // no overlapping writes. In the worst case (length = 4), there are three
+            // overlapping writes near the middle of the buffer. In perf testing, the
+            // penalty for performing duplicate writes is less expensive than the penalty
+            // for complex branching.
+
+            if (pointerSizeLength >= 4)
             {
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 1) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 2) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 3) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                i = n;
+                goto Write4To7;
             }
-            if ((n = i + 2) <= (pointerSizeLength))
+            else if (pointerSizeLength >= 2)
             {
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 1) * (nuint)sizeof(IntPtr)) = default(IntPtr);
-                i = n;
+                goto Write2To3;
             }
-            if ((i + 1) <= (pointerSizeLength))
+            else if (pointerSizeLength > 0)
             {
-                Unsafe.AddByteOffset<IntPtr>(ref ip, (i + 0) * (nuint)sizeof(IntPtr)) = default(IntPtr);
+                goto Write1;
             }
+            else
+            {
+                return; // nothing to write
+            }
+
+Write4To7:
+            Debug.Assert(pointerSizeLength >= 4);
+
+            // Write first four and last three.
+            Unsafe.Add(ref ip, 2) = default(IntPtr);
+            Unsafe.Add(ref ip, 3) = default(IntPtr);
+            Unsafe.Add(ref ip, 4) = default(IntPtr);
+            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default(IntPtr);
+            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default(IntPtr);
+
+Write2To3:
+            Debug.Assert(pointerSizeLength >= 2);
+
+            // Write first two and last one.
+            Unsafe.Add(ref ip, 1) = default(IntPtr);
+            Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default(IntPtr);
+
+Write1:
+            Debug.Assert(pointerSizeLength >= 1);
+
+            // Write only element.
+            ip = default(IntPtr);
         }
     }
 }
