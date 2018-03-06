@@ -2632,8 +2632,23 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (csignature->hasthis)
 				--sp;
 			child_frame.stack_args = sp;
-			ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context);
+			if (frame->imethod->method->dynamic && csignature->pinvoke) {
+				MonoMarshalSpec **mspecs;
+				MonoMethodPInvoke piinfo;
+				MonoMethod *m;
 
+				/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
+				mspecs = alloca (sizeof (MonoMarshalSpec*) * (csignature->param_count + 1));
+				memset (&piinfo, 0, sizeof (piinfo));
+
+				m = mono_marshal_get_native_func_wrapper (frame->imethod->method->klass->image, csignature, &piinfo, mspecs, code);
+				child_frame.imethod = mono_interp_get_imethod (rtm->domain, m, error);
+				mono_error_cleanup (error); /* FIXME: don't swallow the error */
+
+				interp_exec_method (&child_frame, context);
+			} else {
+				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context);
+			}
 			context->current_frame = frame;
 
 			if (context->has_resume_state) {
