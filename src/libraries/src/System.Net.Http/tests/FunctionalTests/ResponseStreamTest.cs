@@ -182,9 +182,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(task.IsCompleted, "Task was not yet completed");
 
                 // Verify that the task completed successfully or is canceled.
-                if (PlatformDetection.IsWindows)
+                if (IsWinHttpHandler)
                 {
-                    // On Windows, we may fault because canceling the task destroys the request handle
+                    // With WinHttpHandler, we may fault because canceling the task destroys the request handle
                     // which may randomly cause an ObjectDisposedException (or other exception).
                     Assert.True(
                         task.Status == TaskStatus.RanToCompletion ||
