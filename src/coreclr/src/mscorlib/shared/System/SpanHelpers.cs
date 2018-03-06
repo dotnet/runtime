@@ -511,7 +511,7 @@ namespace System
                 return; // nothing to write
             }
 
-Write4To7:
+        Write4To7:
             Debug.Assert(pointerSizeLength >= 4);
 
             // Write first four and last three.
@@ -521,14 +521,14 @@ Write4To7:
             Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default(IntPtr);
             Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default(IntPtr);
 
-Write2To3:
+        Write2To3:
             Debug.Assert(pointerSizeLength >= 2);
 
             // Write first two and last one.
             Unsafe.Add(ref ip, 1) = default(IntPtr);
             Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -1) = default(IntPtr);
 
-Write1:
+        Write1:
             Debug.Assert(pointerSizeLength >= 1);
 
             // Write only element.
