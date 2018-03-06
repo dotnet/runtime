@@ -139,11 +139,6 @@ if(FEATURE_EVENT_TRACE)
             eventprovider # On Windows this library contains only macros
         )
     endif(CLR_CMAKE_PLATFORM_UNIX)
-    if(CLR_CMAKE_PLATFORM_LINUX)
-        list(APPEND CORECLR_LIBRARIES
-            tracepointprovider
-        )
-    endif(CLR_CMAKE_PLATFORM_LINUX)
 endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
