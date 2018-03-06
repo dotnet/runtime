@@ -143,6 +143,11 @@ namespace Mono.Linker {
 							continue;
 						}
 
+						if (token == "--strip-resources") {
+							context.StripResources = bool.Parse (GetParam ());
+							continue;
+						}
+
 						switch (token [2]) {
 						case 'v':
 							Version ();
@@ -316,6 +321,7 @@ namespace Mono.Linker {
 			return assemblies;
 		}
 
+
 		AssemblyAction ParseAssemblyAction (string s)
 		{
 			var assemblyAction = (AssemblyAction)Enum.Parse(typeof(AssemblyAction), s, true);
@@ -362,6 +368,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --reduced-tracing   Reduces dependency output related to assemblies that will not be modified");
 			Console.WriteLine ("   --used-attrs-only   Attributes on types, methods, etc will be removed if the attribute type is not used");
 			Console.WriteLine ("   --strip-security    In linked assemblies, attributes on assemblies, types, and methods related to security will be removed");
+			Console.WriteLine ("   --strip-resources   Remove link xml resources that were processed (true or false), default to true");
 			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
 			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
 			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");

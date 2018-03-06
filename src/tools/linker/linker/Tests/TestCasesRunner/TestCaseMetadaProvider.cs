@@ -32,7 +32,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
 				LinkSymbols = GetOptionAttributeValue (nameof (SetupLinkerLinkSymbolsAttribute), string.Empty),
 				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null),
-				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false)
+				SkipUnresolved = GetOptionAttributeValue (nameof (SkipUnresolvedAttribute), false),
+				StripResources = GetOptionAttributeValue (nameof (StripResourcesAttribute), true)
 			};
 
 			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute)))

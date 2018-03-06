@@ -111,6 +111,8 @@ namespace Mono.Linker {
 
 		public bool KeepUsedAttributeTypesOnly { get; set; }
 
+		public bool StripResources { get; set; }
+
 		public System.Collections.IDictionary Actions {
 			get { return _actions; }
 		}
@@ -171,6 +173,7 @@ namespace Mono.Linker {
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			Tracer = factory.CreateTracer (this);
+			StripResources = true;
 		}
 
 		public TypeDefinition GetType (string fullName)

@@ -123,6 +123,7 @@
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessedAndKept.cs" />
     <Compile Include="Resources\NonLinkerEmbeddedResourceHasNoImpact.cs" />
     <Compile Include="Symbols\Dependencies\LibraryWithEmbeddedPdbSymbols.cs" />
     <Compile Include="Symbols\Dependencies\LibraryWithPortablePdbSymbols.cs" />
@@ -274,6 +275,7 @@
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenCoreLinkActionIsSkip.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessedAndKept.xml" />
     <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
