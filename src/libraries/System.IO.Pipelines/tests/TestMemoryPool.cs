@@ -53,6 +53,7 @@ namespace System.IO.Pipelines
                 _ownedMemory = ownedMemory;
                 _pool = pool;
                 _leaser = Environment.StackTrace;
+                _referenceCount = 1;
             }
 
             ~PooledMemory()
@@ -75,12 +76,15 @@ namespace System.IO.Pipelines
             public override void Retain()
             {
                 _pool.CheckDisposed();
+                _ownedMemory.Retain();
                 Interlocked.Increment(ref _referenceCount);
             }
 
             public override bool Release()
             {
                 _pool.CheckDisposed();
+                _ownedMemory.Release();
+
                 int newRefCount = Interlocked.Decrement(ref _referenceCount);
 
                 if (newRefCount < 0)
