@@ -380,9 +380,6 @@ namespace Microsoft.Win32
         internal static extern uint GetCurrentProcessId();
 
         [DllImport(Interop.Libraries.Ole32)]
-        internal extern static int CoCreateGuid(out Guid guid);
-
-        [DllImport(Interop.Libraries.Ole32)]
         internal static extern IntPtr CoTaskMemAlloc(UIntPtr cb);
 
         [DllImport(Interop.Libraries.Ole32)]
