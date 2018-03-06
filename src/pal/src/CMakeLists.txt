@@ -345,7 +345,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
   target_link_libraries(coreclrpal
     dl
-    uuid
   )
 
   if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)

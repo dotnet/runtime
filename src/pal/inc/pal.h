@@ -526,10 +526,9 @@ PAL_GetPALDirectoryW(
 #endif
 
 PALIMPORT
-BOOL
+VOID
 PALAPI
 PAL_Random(
-    IN BOOL bStrong,
     IN OUT LPVOID lpBuffer,
     IN DWORD dwLength);
 
@@ -4875,11 +4874,6 @@ SetThreadIdealProcessorEx(
 #define EVENTLOG_INFORMATION_TYPE       0x0004
 #define EVENTLOG_AUDIT_SUCCESS          0x0008
 #define EVENTLOG_AUDIT_FAILURE          0x0010
-
-PALIMPORT
-HRESULT
-PALAPI
-CoCreateGuid(OUT GUID * pguid);
 
 #if defined FEATURE_PAL_ANSI
 #include "palprivate.h"
