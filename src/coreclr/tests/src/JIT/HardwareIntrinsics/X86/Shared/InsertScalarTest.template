@@ -16,40 +16,40 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
 namespace JIT.HardwareIntrinsics.X86
-{{
+{
     public static partial class Program
-    {{
-        private static void {2}{4}{7}()
-        {{
-            var test = new SimpleUnaryOpTest__{2}{4}{7}();
+    {
+        private static void {Method}{RetBaseType}{Imm}()
+        {
+            var test = new SimpleUnaryOpTest__{Method}{RetBaseType}{Imm}();
             
             try
-            {{
+            {
             if (test.IsSupported)
-            {{
+            {
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                if ({1}.IsSupported)
-                {{
+                if ({LoadIsa}.IsSupported)
+                {
                     // Validates basic functionality works, using Load
                     test.RunBasicScenario_Load();
 
                     // Validates basic functionality works, using LoadAligned
                     test.RunBasicScenario_LoadAligned();
-                }}
+                }
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                if ({1}.IsSupported)
-                {{
+                if ({LoadIsa}.IsSupported)
+                {
                     // Validates calling via reflection works, using Load
                     test.RunReflectionScenario_Load();
 
                     // Validates calling via reflection works, using LoadAligned
                     test.RunReflectionScenario_LoadAligned();
-                }}
+                }
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
@@ -57,265 +57,265 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                if ({1}.IsSupported)
-                {{
+                if ({LoadIsa}.IsSupported)
+                {
                     // Validates passing a local works, using Load
                     test.RunLclVarScenario_Load();
 
                     // Validates passing a local works, using LoadAligned
                     test.RunLclVarScenario_LoadAligned();
-                }}
+                }
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
 
                 // Validates passing an instance member works
                 test.RunFldScenario();
-            }}
+            }
             else
-            {{
+            {
                 // Validates we throw on unsupported hardware
                 test.RunUnsupportedScenario();
-            }}
-            }}
+            }
+            }
             catch (PlatformNotSupportedException)
-            {{
+            {
                 test.Succeeded = true;
-            }}
+            }
 
             if (!test.Succeeded)
-            {{
+            {
                 throw new Exception("One or more scenarios did not complete as expected.");
-            }}
-        }}
-    }}
+            }
+        }
+    }
 
-    public sealed unsafe class SimpleUnaryOpTest__{2}{4}{7}
-    {{
-        private const int VectorSize = {9};
+    public sealed unsafe class SimpleUnaryOpTest__{Method}{RetBaseType}{Imm}
+    {
+        private const int VectorSize = {VectorSize};
 
-        private const int Op1ElementCount = VectorSize / sizeof({6});
-        private const int RetElementCount = VectorSize / sizeof({4});
+        private const int Op1ElementCount = VectorSize / sizeof({Op1BaseType});
+        private const int RetElementCount = VectorSize / sizeof({RetBaseType});
 
-        private static {6}[] _data = new {6}[Op1ElementCount];
+        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
 
-        private static {5}<{6}> _clsVar;
+        private static {Op1VectorType}<{Op1BaseType}> _clsVar;
 
-        private {5}<{6}> _fld;
+        private {Op1VectorType}<{Op1BaseType}> _fld;
 
-        private SimpleUnaryOpTest__DataTable<{4}, {6}> _dataTable;
+        private SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
 
-        static SimpleUnaryOpTest__{2}{4}{7}()
-        {{
+        static SimpleUnaryOpTest__{Method}{RetBaseType}{Imm}()
+        {
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) {{ _data[i] = {10}; }}
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{5}<{6}>, byte>(ref _clsVar), ref Unsafe.As<{6}, byte>(ref _data[0]), VectorSize);
-        }}
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), VectorSize);
+        }
 
-        public SimpleUnaryOpTest__{2}{4}{7}()
-        {{
+        public SimpleUnaryOpTest__{Method}{RetBaseType}{Imm}()
+        {
             Succeeded = true;
 
             var random = new Random();
 
-            for (var i = 0; i < Op1ElementCount; i++) {{ _data[i] = {10}; }}
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{5}<{6}>, byte>(ref _fld), ref Unsafe.As<{6}, byte>(ref _data[0]), VectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), VectorSize);
 
-            for (var i = 0; i < Op1ElementCount; i++) {{ _data[i] = {10}; }}
-            _dataTable = new SimpleUnaryOpTest__DataTable<{4}, {6}>(_data, new {4}[RetElementCount], VectorSize);
-        }}
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            _dataTable = new SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data, new {RetBaseType}[RetElementCount], VectorSize);
+        }
 
-        public bool IsSupported => {0}.IsSupported;
+        public bool IsSupported => {Isa}.IsSupported;
 
-        public bool Succeeded {{ get; set; }}
+        public bool Succeeded { get; set; }
 
         public void RunBasicScenario_UnsafeRead()
-        {{
-            var result = {0}.{2}(
-                Unsafe.Read<{5}<{6}>>(_dataTable.inArrayPtr),
-                {8},
-                {7}
+        {
+            var result = {Isa}.{Method}(
+                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                {Data},
+                {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunBasicScenario_Load()
-        {{
-            var result = {0}.{2}(
-                {1}.Load{5}(({6}*)(_dataTable.inArrayPtr)),
-                {8},
-                {7}
+        {
+            var result = {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                {Data},
+                {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunBasicScenario_LoadAligned()
-        {{
-            var result = {0}.{2}(
-                {1}.LoadAligned{5}(({6}*)(_dataTable.inArrayPtr)),
-                {8},
-                {7}
+        {
+            var result = {Isa}.{Method}(
+                {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                {Data},
+                {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunReflectionScenario_UnsafeRead()
-        {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({4}), typeof(byte) }})
-                                     .Invoke(null, new object[] {{
-                                        Unsafe.Read<{5}<{6}>>(_dataTable.inArrayPtr),
-                                        {8},
-                                        (byte){7}
-                                     }});
+        {
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
+                                        {Data},
+                                        (byte){Imm}
+                                     });
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunReflectionScenario_Load()
-        {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({4}), typeof(byte) }})
-                                     .Invoke(null, new object[] {{
-                                        {1}.Load{5}(({6}*)(_dataTable.inArrayPtr)),
-                                        {8},
-                                        (byte){7}
-                                     }});
+        {
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
+                                     .Invoke(null, new object[] {
+                                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                                        {Data},
+                                        (byte){Imm}
+                                     });
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunReflectionScenario_LoadAligned()
-        {{
-            var result = typeof({0}).GetMethod(nameof({0}.{2}), new Type[] {{ typeof({5}<{6}>), typeof({4}), typeof(byte) }})
-                                     .Invoke(null, new object[] {{
-                                        {1}.LoadAligned{5}(({6}*)(_dataTable.inArrayPtr)),
-                                        {8},
-                                        (byte){7}
-                                     }});
+        {
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof({RetBaseType}), typeof(byte) })
+                                     .Invoke(null, new object[] {
+                                        {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr)),
+                                        {Data},
+                                        (byte){Imm}
+                                     });
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({3}<{4}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunClsVarScenario()
-        {{
-            var result = {0}.{2}(
+        {
+            var result = {Isa}.{Method}(
                 _clsVar,
-                {8},
-                {7}
+                {Data},
+                {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_clsVar, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunLclVarScenario_UnsafeRead()
-        {{
-            var firstOp = Unsafe.Read<{5}<{6}>>(_dataTable.inArrayPtr);
-            var result = {0}.{2}(firstOp, {8}, {7});
+        {
+            var firstOp = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
+            var result = {Isa}.{Method}(firstOp, {Data}, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunLclVarScenario_Load()
-        {{
-            var firstOp = {1}.Load{5}(({6}*)(_dataTable.inArrayPtr));
-            var result = {0}.{2}(firstOp, {8}, {7});
+        {
+            var firstOp = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+            var result = {Isa}.{Method}(firstOp, {Data}, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunLclVarScenario_LoadAligned()
-        {{
-            var firstOp = {1}.LoadAligned{5}(({6}*)(_dataTable.inArrayPtr));
-            var result = {0}.{2}(firstOp, {8}, {7});
+        {
+            var firstOp = {LoadIsa}.LoadAligned{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+            var result = {Isa}.{Method}(firstOp, {Data}, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(firstOp, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunLclFldScenario()
-        {{
-            var test = new SimpleUnaryOpTest__{2}{4}{7}();
-            var result = {0}.{2}(test._fld, {8}, {7});
+        {
+            var test = new SimpleUnaryOpTest__{Method}{RetBaseType}{Imm}();
+            var result = {Isa}.{Method}(test._fld, {Data}, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunFldScenario()
-        {{
-            var result = {0}.{2}(_fld, {8}, {7});
+        {
+            var result = {Isa}.{Method}(_fld, {Data}, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld, _dataTable.outArrayPtr);
-        }}
+        }
 
         public void RunUnsupportedScenario()
-        {{
+        {
             Succeeded = false;
 
             try
-            {{
+            {
                 RunBasicScenario_UnsafeRead();
-            }}
+            }
             catch (PlatformNotSupportedException)
-            {{
+            {
                 Succeeded = true;
-            }}
-        }}
+            }
+        }
 
-        private void ValidateResult({5}<{6}> firstOp, void* result, [CallerMemberName] string method = "")
-        {{
-            {6}[] inArray = new {6}[Op1ElementCount];
-            {4}[] outArray = new {4}[RetElementCount];
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> firstOp, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray, outArray, method);
-        }}
+        }
 
         private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
-        {{
-            {6}[] inArray = new {6}[Op1ElementCount];
-            {4}[] outArray = new {4}[RetElementCount];
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{6}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{4}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray, outArray, method);
-        }}
+        }
 
-        private void ValidateResult({6}[] firstOp, {4}[] result, [CallerMemberName] string method = "")
-        {{
+        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
 
             for (var i = 0; i < RetElementCount; i++)
-            {{
-                if ({11})
-                {{
+            {
+                if ({ValidateFirstResult})
+                {
                     Succeeded = false;
                     break;
-                }}
-            }}
+                }
+            }
 
             if (!Succeeded)
-            {{
-                Console.WriteLine($"{{nameof({0})}}.{{nameof({0}.{2})}}<{4}>({5}<{6}><9>): {{method}} failed:");
-                Console.WriteLine($"  firstOp: ({{string.Join(", ", firstOp)}})");
-                Console.WriteLine($"   result: ({{string.Join(", ", result)}})");
+            {
+                Console.WriteLine($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}><9>): {method} failed:");
+                Console.WriteLine($"  firstOp: ({string.Join(", ", firstOp)})");
+                Console.WriteLine($"   result: ({string.Join(", ", result)})");
                 Console.WriteLine();
-            }}
-        }}
-    }}
-}}
+            }
+        }
+    }
+}
