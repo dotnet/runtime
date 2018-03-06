@@ -42,21 +42,13 @@ namespace System.Net.Http.Functional.Tests
             return handler;
         }
 
-        protected static bool IsSocketsHttpHandler(HttpClientHandler handler)
+        protected static bool IsSocketsHttpHandler(HttpClientHandler handler) =>
+            GetUnderlyingSocketsHttpHandler(handler) != null;
+
+        protected static object GetUnderlyingSocketsHttpHandler(HttpClientHandler handler)
         {
             FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (field == null)
-            {
-                return false;
-            }
-
-            object socketsHttpHandler = field.GetValue(handler);
-            if (socketsHttpHandler == null)
-            {
-                return false;
-            }
-
-            return true;
+            return field?.GetValue(handler);
         }
     }
 }

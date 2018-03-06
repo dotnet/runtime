@@ -77,6 +77,13 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
+        protected override void SetMaxResponseDrainTime(HttpClientHandler handler, TimeSpan time)
+        {
+            SocketsHttpHandler s = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+            Assert.NotNull(s);
+            SetMaxResponseDrainTime(s, time);
+        }
+
         [Fact]
         public void MaxResponseDrainSize_Roundtrips()
         {
@@ -119,6 +126,64 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        // TODO #27685: Remove once MaxResponseDrainTime is public.
+        private TimeSpan GetMaxResponseDrainTime(SocketsHttpHandler handler) =>
+            (TimeSpan)handler.GetType().GetProperty("MaxResponseDrainTime", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(handler);
+        private void SetMaxResponseDrainTime(SocketsHttpHandler handler, TimeSpan value)
+        {
+            try
+            {
+                handler.GetType().GetProperty("MaxResponseDrainTime", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(handler, value);
+            }
+            catch (TargetInvocationException tie)
+            {
+                throw tie.InnerException;
+            }
+        }
+
+        [Fact]
+        public void MaxResponseDrainTime_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(TimeSpan.FromSeconds(2), GetMaxResponseDrainTime(handler));
+
+                SetMaxResponseDrainTime(handler, TimeSpan.Zero);
+                Assert.Equal(TimeSpan.Zero, GetMaxResponseDrainTime(handler));
+
+                SetMaxResponseDrainTime(handler, TimeSpan.FromTicks(int.MaxValue));
+                Assert.Equal(TimeSpan.FromTicks(int.MaxValue), GetMaxResponseDrainTime(handler));
+            }
+        }
+
+        [Fact]
+        public void MaxResponseDraiTime_InvalidArgument_Throws()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Equal(TimeSpan.FromSeconds(2), GetMaxResponseDrainTime(handler));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(-1)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainTime(handler, TimeSpan.MaxValue));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(int.MaxValue)));
+
+                Assert.Equal(TimeSpan.FromSeconds(2), GetMaxResponseDrainTime(handler));
+            }
+        }
+
+        [Fact]
+        public void MaxResponseDrainTime_SetAfterUse_Throws()
+        {
+            using (var handler = new SocketsHttpHandler())
+            using (var client = new HttpClient(handler))
+            {
+                SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(42));
+                client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
+                Assert.Equal(TimeSpan.FromSeconds(42), GetMaxResponseDrainTime(handler));
+                Assert.Throws<InvalidOperationException>(() => SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(42)));
+            }
+        }
+
         [OuterLoop]
         [Theory]
         [InlineData(1024 * 1024 * 2, 9_500, 1024 * 1024 * 3, ContentMode.ContentLength)]
@@ -131,6 +196,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var handler = new SocketsHttpHandler();
                     handler.MaxResponseDrainSize = maxDrainSize;
+                    SetMaxResponseDrainTime(handler, Timeout.InfiniteTimeSpan);
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
@@ -176,6 +242,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var handler = new SocketsHttpHandler();
                     handler.MaxResponseDrainSize = maxDrainSize;
+                    SetMaxResponseDrainTime(handler, Timeout.InfiniteTimeSpan);
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
@@ -202,6 +269,58 @@ namespace System.Net.Http.Functional.Tests
                         try
                         {
                             await connection.Writer.WriteAsync(response);
+                        }
+                        catch (Exception) { }     // Eat errors from client disconnect.
+
+                        await server.AcceptConnectionSendCustomResponseAndCloseAsync(response);
+                    });
+                });
+        }
+
+        [OuterLoop]
+        [Theory]
+        [InlineData(ContentMode.ContentLength)]
+        [InlineData(ContentMode.SingleChunk)]
+        [InlineData(ContentMode.BytePerChunk)]
+        public async Task GetAsyncWithMaxConnections_DrainTakesLongerThanTimeout_KillsConnection(ContentMode mode)
+        {
+            const int ContentLength = 10_000;
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async url =>
+                {
+                    var handler = new SocketsHttpHandler();
+                    handler.MaxResponseDrainSize = int.MaxValue;
+                    SetMaxResponseDrainTime(handler, TimeSpan.FromMilliseconds(1));
+
+                    // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
+                    handler.MaxConnectionsPerServer = 1;
+
+                    using (var client = new HttpClient(handler))
+                    {
+                        client.Timeout = Timeout.InfiniteTimeSpan;
+
+                        HttpResponseMessage response1 = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                        ValidateResponseHeaders(response1, ContentLength, mode);
+                        response1.Dispose();
+
+                        // Issue another request.  We'll confirm that it comes on a new connection.
+                        HttpResponseMessage response2 = await client.GetAsync(url);
+                        ValidateResponseHeaders(response2, ContentLength, mode);
+                        Assert.Equal(ContentLength, (await response2.Content.ReadAsStringAsync()).Length);
+                    }
+                },
+                async server =>
+                {
+                    string content = new string('a', ContentLength);
+                    string response = GetResponseForContentMode(content, mode);
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        try
+                        {
+                            // Write out only part of the response
+                            await connection.Writer.WriteAsync(response.Substring(0, response.Length / 2));
                         }
                         catch (Exception) { }     // Eat errors from client disconnect.
 

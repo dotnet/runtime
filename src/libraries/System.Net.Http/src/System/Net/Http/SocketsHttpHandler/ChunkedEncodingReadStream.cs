@@ -45,7 +45,7 @@ namespace System.Net.Http
                 }
 
                 // Try to consume from data we already have in the buffer.
-                int bytesRead = ReadChunksFromConnectionBuffer(destination.Span);
+                int bytesRead = ReadChunksFromConnectionBuffer(destination.Span, cancellationRegistration: default);
                 if (bytesRead > 0)
                 {
                     return new ValueTask<int>(bytesRead);
@@ -108,7 +108,7 @@ namespace System.Net.Http
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
-                        int bytesCopied = ReadChunksFromConnectionBuffer(destination.Span);
+                        int bytesCopied = ReadChunksFromConnectionBuffer(destination.Span, ctr);
                         if (bytesCopied > 0)
                         {
                             return bytesCopied;
@@ -144,7 +144,7 @@ namespace System.Net.Http
                     {
                         while (true)
                         {
-                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue);
+                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
                             if (bytesRead.Length == 0)
                             {
                                 break;
@@ -171,12 +171,12 @@ namespace System.Net.Http
                 }
             }
 
-            private int ReadChunksFromConnectionBuffer(Span<byte> destination)
+            private int ReadChunksFromConnectionBuffer(Span<byte> destination, CancellationTokenRegistration cancellationRegistration)
             {
                 int totalBytesRead = 0;
                 while (destination.Length > 0)
                 {
-                    ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(destination.Length);
+                    ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(destination.Length, cancellationRegistration);
                     Debug.Assert(bytesRead.Length <= destination.Length);
                     if (bytesRead.Length == 0)
                     {
@@ -190,7 +190,7 @@ namespace System.Net.Http
                 return totalBytesRead;
             }
 
-            private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead)
+            private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
                 Debug.Assert(maxBytesToRead > 0);
 
@@ -287,6 +287,16 @@ namespace System.Net.Http
 
                                 if (currentLine.IsEmpty)
                                 {
+                                    // Dispose of the registration and then check whether cancellation has been
+                                    // requested. This is necessary to make determinstic a race condition between
+                                    // cancellation being requested and unregistering from the token.  Otherwise,
+                                    // it's possible cancellation could be requested just before we unregister and
+                                    // we then return a connection to the pool that has been or will be disposed
+                                    // (e.g. if a timer is used and has already queued its callback but the
+                                    // callback hasn't yet run).
+                                    cancellationRegistration.Dispose();
+                                    cancellationRegistration.Token.ThrowIfCancellationRequested();
+
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
@@ -344,32 +354,52 @@ namespace System.Net.Http
             {
                 Debug.Assert(_connection != null);
 
-                int drainedBytes = 0;
-                while (true)
+                CancellationTokenSource cts = null;
+                CancellationTokenRegistration ctr = default;
+                try
                 {
-                    drainedBytes += _connection.RemainingBuffer.Length;
+                    int drainedBytes = 0;
                     while (true)
                     {
-                        ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue);
-                        if (bytesRead.Length == 0)
+                        drainedBytes += _connection.RemainingBuffer.Length;
+                        while (true)
                         {
-                            break;
+                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
+                            if (bytesRead.Length == 0)
+                            {
+                                break;
+                            }
                         }
-                    }
 
-                    // When ReadChunkFromConnectionBuffer reads the final chunk, it will clear out _connection
-                    // and return the connection to the pool.
-                    if (_connection == null)
-                    {
-                        return true;
-                    }
+                        // When ReadChunkFromConnectionBuffer reads the final chunk, it will clear out _connection
+                        // and return the connection to the pool.
+                        if (_connection == null)
+                        {
+                            return true;
+                        }
 
-                    if (drainedBytes >= maxDrainBytes)
-                    {
-                        return false;
-                    }
+                        if (drainedBytes >= maxDrainBytes)
+                        {
+                            return false;
+                        }
 
-                    await _connection.FillAsync().ConfigureAwait(false);
+                        if (cts == null) // only create the drain timer if we have to go async
+                        {
+                            TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
+                            if (drainTime != Timeout.InfiniteTimeSpan)
+                            {
+                                cts = new CancellationTokenSource((int)drainTime.TotalMilliseconds);
+                                ctr = cts.Token.Register(s => ((HttpConnection)s).Dispose(), _connection);
+                            }
+                        }
+
+                        await _connection.FillAsync().ConfigureAwait(false);
+                    }
+                }
+                finally
+                {
+                    ctr.Dispose();
+                    cts?.Dispose();
                 }
             }
         }
