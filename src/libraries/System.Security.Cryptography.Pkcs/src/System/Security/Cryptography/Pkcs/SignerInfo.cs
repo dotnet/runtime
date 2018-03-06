@@ -513,7 +513,7 @@ namespace System.Security.Cryptography.Pkcs
 
                             var digestAttr = (Pkcs9MessageDigest)obj.Values[0];
 
-                            if (!contentDigest.AsSpan().SequenceEqual(digestAttr.MessageDigest.AsReadOnlySpan()))
+                            if (!contentDigest.AsSpan().SequenceEqual(digestAttr.MessageDigest))
                             {
                                 throw new CryptographicException(SR.Cryptography_BadHashValue);
                             }

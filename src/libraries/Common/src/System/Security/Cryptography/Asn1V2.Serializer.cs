@@ -881,7 +881,7 @@ namespace System.Security.Cryptography.Asn1
                         {
                             if (reader.TryCopyBitStringBytes(rented, out _, out int bytesWritten))
                             {
-                                return new ReadOnlyMemory<byte>(rented.AsReadOnlySpan().Slice(0, bytesWritten).ToArray());
+                                return new ReadOnlyMemory<byte>(rented.AsSpan().Slice(0, bytesWritten).ToArray());
                             }
 
                             Debug.Fail("TryCopyBitStringBytes produced more data than the encoded size");
@@ -912,7 +912,7 @@ namespace System.Security.Cryptography.Asn1
                         {
                             if (reader.TryCopyOctetStringBytes(rented, out int bytesWritten))
                             {
-                                return new ReadOnlyMemory<byte>(rented.AsReadOnlySpan().Slice(0, bytesWritten).ToArray());
+                                return new ReadOnlyMemory<byte>(rented.AsSpan().Slice(0, bytesWritten).ToArray());
                             }
 
                             Debug.Fail("TryCopyOctetStringBytes produced more data than the encoded size");

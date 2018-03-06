@@ -37,7 +37,7 @@ namespace Test.Cryptography
 
         internal static string ByteArrayToHex(this byte[] bytes)
         {
-            return ByteArrayToHex(bytes.AsReadOnlySpan());
+            return ByteArrayToHex((ReadOnlySpan<byte>)bytes);
         }
 
         internal static string ByteArrayToHex(this Span<byte> bytes)

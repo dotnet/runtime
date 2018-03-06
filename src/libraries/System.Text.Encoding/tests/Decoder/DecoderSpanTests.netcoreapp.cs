@@ -26,7 +26,7 @@ namespace System.Text.Encodings.Tests
             byte[] textBytes = e.GetBytes(TextString);
 
             char[] chars = new char[TextString.Length];
-            Assert.Equal(chars.Length, e.GetDecoder().GetChars(textBytes.AsReadOnlySpan(), chars.AsSpan(), flush: true));
+            Assert.Equal(chars.Length, e.GetDecoder().GetChars(textBytes, chars.AsSpan(), flush: true));
             Assert.Equal(TextString, new string(chars));
         }
 
