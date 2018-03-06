@@ -517,7 +517,6 @@ namespace System
             // Write first four and last three.
             Unsafe.Add(ref ip, 2) = default(IntPtr);
             Unsafe.Add(ref ip, 3) = default(IntPtr);
-            Unsafe.Add(ref ip, 4) = default(IntPtr);
             Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -3) = default(IntPtr);
             Unsafe.Add(ref Unsafe.Add(ref ip, (IntPtr)pointerSizeLength), -2) = default(IntPtr);
 
