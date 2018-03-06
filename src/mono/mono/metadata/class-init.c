@@ -5408,7 +5408,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 			for (int pos = 0; pos < weak_bitmap_nbits; ++pos) {
 				if (weak_bitmap [pos / BITMAP_EL_SIZE] & ((gsize)1) << (pos % BITMAP_EL_SIZE)) {
 					/* Clear the normal bitmap so these refs don't keep an object alive */
-					bitmap [pos / BITMAP_EL_SIZE] &= ~((gsize)1) << (pos % BITMAP_EL_SIZE);
+					bitmap [pos / BITMAP_EL_SIZE] &= ~(((gsize)1) << (pos % BITMAP_EL_SIZE));
 				}
 			}
 
