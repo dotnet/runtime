@@ -4,6 +4,8 @@
 
 using System.IO;
 using System.IO.Pipes;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -47,7 +49,44 @@ namespace System.Data.SqlClient.SNI
         /// <param name="offset">Offset</param>
         /// <param name="count">Byte count</param>
         /// <returns>Bytes read</returns>
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count) =>
+            ReadInternal(buffer, offset, count, CancellationToken.None, async: false).GetAwaiter().GetResult();
+
+        /// <summary>
+        /// Write Buffer
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        public override void Write(byte[] buffer, int offset, int count)
+            => WriteInternal(buffer, offset, count, CancellationToken.None, async: false).Wait();
+
+        /// <summary>
+        /// Write Buffer Asynchronosly
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
+            => WriteInternal(buffer, offset, count, token, async: true);
+
+        /// <summary>
+        /// Read Buffer Asynchronosly
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="count"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
+            => ReadInternal(buffer, offset, count, token, async: true);
+
+        /// <summary>
+        /// Read Internal is called synchronosly when async is false
+        /// </summary>
+        private async Task<int> ReadInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
             int readBytes = 0;
             byte[] packetData = new byte[count < TdsEnums.HEADER_LEN ? TdsEnums.HEADER_LEN : count];
@@ -59,7 +98,9 @@ namespace System.Data.SqlClient.SNI
                     // Account for split packets
                     while (readBytes < TdsEnums.HEADER_LEN)
                     {
-                        readBytes += _stream.Read(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes);
+                        readBytes += async ?
+                            await _stream.ReadAsync(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes, token).ConfigureAwait(false) :
+                            _stream.Read(packetData, readBytes, TdsEnums.HEADER_LEN - readBytes);
                     }
 
                     _packetBytes = (packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET] << 8) | packetData[TdsEnums.HEADER_LEN_FIELD_OFFSET + 1];
@@ -72,7 +113,9 @@ namespace System.Data.SqlClient.SNI
                 }
             }
 
-            readBytes = _stream.Read(packetData, 0, count);
+            readBytes = async ?
+                await _stream.ReadAsync(packetData, 0, count, token).ConfigureAwait(false) :
+                _stream.Read(packetData, 0, count);
 
             if (_encapsulate)
             {
@@ -84,12 +127,9 @@ namespace System.Data.SqlClient.SNI
         }
 
         /// <summary>
-        /// Write buffer
+        /// The internal write method calls Sync APIs when Async flag is false
         /// </summary>
-        /// <param name="buffer">Buffer</param>
-        /// <param name="offset">Offset</param>
-        /// <param name="count">Byte count</param>
-        public override void Write(byte[] buffer, int offset, int count)
+        private async Task WriteInternal(byte[] buffer, int offset, int count, CancellationToken token, bool async)
         {
             int currentCount = 0;
             int currentOffset = offset;
@@ -127,22 +167,44 @@ namespace System.Data.SqlClient.SNI
                     combinedBuffer[6] = 0;
                     combinedBuffer[7] = 0;
 
-                    for(int i = TdsEnums.HEADER_LEN; i < combinedBuffer.Length; i++)
+                    for (int i = TdsEnums.HEADER_LEN; i < combinedBuffer.Length; i++)
                     {
                         combinedBuffer[i] = buffer[currentOffset + (i - TdsEnums.HEADER_LEN)];
                     }
 
-                    _stream.Write(combinedBuffer, 0, combinedBuffer.Length);
+                    if (async)
+                    {
+                        await _stream.WriteAsync(combinedBuffer, 0, combinedBuffer.Length, token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        _stream.Write(combinedBuffer, 0, combinedBuffer.Length);
+                    }
                 }
                 else
                 {
                     currentCount = count;
                     count = 0;
 
-                    _stream.Write(buffer, currentOffset, currentCount);
+                    if (async)
+                    {
+                        await _stream.WriteAsync(buffer, currentOffset, currentCount, token).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        _stream.Write(buffer, currentOffset, currentCount);
+                    }
                 }
 
-                _stream.Flush();
+                if (async)
+                {
+                    await _stream.FlushAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _stream.Flush();
+                }
+
                 currentOffset += currentCount;
             }
         }
