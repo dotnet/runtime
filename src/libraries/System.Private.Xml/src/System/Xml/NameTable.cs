@@ -240,7 +240,7 @@ namespace System.Xml
 
         private static int ComputeHash32(char[] key, int start, int len)
         {
-            ReadOnlySpan<byte> bytes = key.AsReadOnlySpan().Slice(start, len).AsBytes();
+            ReadOnlySpan<byte> bytes = key.AsSpan().Slice(start, len).AsBytes();
             return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
         }
     }
