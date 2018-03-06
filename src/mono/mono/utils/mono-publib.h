@@ -120,19 +120,33 @@ mono_set_allocator_vtable (MonoAllocatorVTable* vtable);
 #endif
 
 #if defined (__clang__) || defined (__GNUC__)
+// attribute(deprecated(message)) was introduced in gcc 4.5.
+// attribute(deprecated))         was introduced in gcc 4.0.
+// Compare: https://gcc.gnu.org/onlinedocs/gcc-3.4.6/gcc/Function-Attributes.html
+//          https://gcc.gnu.org/onlinedocs/gcc-4.4.0/gcc/Function-Attributes.html
+//          https://gcc.gnu.org/onlinedocs/gcc-4.5.0/gcc/Function-Attributes.html
+#if defined (__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
 #define MONO_RT_EXTERNAL_ONLY \
 	__attribute__ ((__deprecated__ ("The mono runtime must not call this function."))) \
 	MONO_RT_CENTRINEL_SUPPRESS
+#elif __GNUC__ >= 4
+#define MONO_RT_EXTERNAL_ONLY __attribute__ ((__deprecated__)) MONO_RT_CENTRINEL_SUPPRESS
+#else
+#define MONO_RT_EXTERNAL_ONLY MONO_RT_CENTRINEL_SUPPRESS
+#endif
 
+#if defined (__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2)
+// Pragmas for controlling diagnostics appear to be from gcc 4.2.
 // This is used in place of configure gcc -Werror=deprecated-declarations:
 // 1. To be portable across build systems.
 // 2. configure is very sensitive to compiler flags; they break autoconf's probes.
-// Though #2 can be mitigted by being late in configure.
-#pragma GCC diagnostic error "-Wdeprecated-declarations" // Works with clang too.
+// Though #2 can be mitigated by being late in configure.
+#pragma GCC diagnostic error "-Wdeprecated-declarations"
+#endif
 
 #else
 #define MONO_RT_EXTERNAL_ONLY MONO_RT_CENTRINEL_SUPPRESS
-#endif /// clang or gcc
+#endif // clang or gcc
 
 #else
 #define MONO_RT_EXTERNAL_ONLY
