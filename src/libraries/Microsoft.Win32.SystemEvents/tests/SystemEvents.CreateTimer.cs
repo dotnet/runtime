@@ -27,6 +27,7 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(int.MinValue));
         }
         
+        [ActiveIssue(27771)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TimerElapsedSignaled()
         {
