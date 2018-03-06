@@ -1641,13 +1641,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         g_fEEShutDown |= ShutDown_Start;
 
-#ifdef FEATURE_TIERED_COMPILATION
-        {
-            GCX_PREEMP();
-            TieredCompilationManager::ShutdownAllDomains();
-        }
-#endif
-
         fFinalizeOK = TRUE;
 
         // Terminate the BBSweep thread

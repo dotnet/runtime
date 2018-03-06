@@ -8026,7 +8026,7 @@ void AppDomain::Exit(BOOL fRunFinalizers, BOOL fAsyncExit)
     // have exited the domain.
     //
 #ifdef FEATURE_TIERED_COMPILATION
-    m_tieredCompilationManager.Shutdown(FALSE);
+    m_tieredCompilationManager.Shutdown();
 #endif
 
     //
