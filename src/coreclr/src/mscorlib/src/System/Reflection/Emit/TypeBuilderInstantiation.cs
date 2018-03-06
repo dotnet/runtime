@@ -220,7 +220,7 @@ namespace System.Reflection.Emit
         }
         public override MethodBase DeclaringMethod { get { return null; } }
         public override Type GetGenericTypeDefinition() { return m_type; }
-        public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this.GetType().ToString())); }
+        public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
         public override bool IsAssignableFrom(Type c) { throw new NotSupportedException(); }
 
         public override bool IsSubclassOf(Type c)
