@@ -313,7 +313,7 @@ namespace System.IO.Pipelines.Tests
     {
         public static PipeWriter WriteEmpty(this PipeWriter writer, int count)
         {
-            writer.GetMemory(count);
+            writer.GetSpan(count).Slice(0, count).Fill(0);
             writer.Advance(count);
             return writer;
         }
