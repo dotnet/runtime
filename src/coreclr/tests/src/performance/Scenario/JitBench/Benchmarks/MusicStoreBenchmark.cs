@@ -26,7 +26,7 @@ namespace JitBench
             string musicStoreSrcDirectory = GetMusicStoreSrcDirectory(outputDir);
             string tfm = DotNetSetup.GetTargetFrameworkMonikerForFrameworkVersion(dotNetInstall.FrameworkVersion);
             ExePath = "MusicStore.dll";
-            WorkingDirPath = GetMusicStorePublishDirectory(outputDir, tfm);
+            WorkingDirPath = GetMusicStorePublishDirectory(dotNetInstall, outputDir, tfm);
             EnvironmentVariables.Add("DOTNET_SHARED_STORE", GetMusicStoreStoreDir(outputDir));
         }
 
@@ -72,9 +72,12 @@ namespace JitBench
         private static async Task<string> Publish(DotNetInstallation dotNetInstall, string outputDir, ITestOutputHelper output)
         {
             string tfm = DotNetSetup.GetTargetFrameworkMonikerForFrameworkVersion(dotNetInstall.FrameworkVersion);
-            string publishDir = GetMusicStorePublishDirectory(outputDir, tfm);
+            string publishDir = GetMusicStorePublishDirectory(dotNetInstall, outputDir, tfm);
             string manifestPath = Path.Combine(GetMusicStoreStoreDir(outputDir), dotNetInstall.Architecture, tfm, "artifact.xml");
-            FileTasks.DeleteDirectory(publishDir, output);
+            if (publishDir != null)
+            {
+                FileTasks.DeleteDirectory(publishDir, output);
+            }
             string dotNetExePath = dotNetInstall.DotNetExe;
             await new ProcessRunner(dotNetExePath, $"publish -c Release -f {tfm} --manifest {manifestPath}")
                 .WithWorkingDirectory(GetMusicStoreSrcDirectory(outputDir))
@@ -85,6 +88,12 @@ namespace JitBench
                 .WithEnvironmentVariable("UseSharedCompilation", "false")
                 .WithLog(output)
                 .Run();
+
+            publishDir = GetMusicStorePublishDirectory(dotNetInstall, outputDir, tfm);
+            if (publishDir == null)
+            {
+                throw new DirectoryNotFoundException("Could not find 'publish' directory");
+            }
             return publishDir;
         }
 
@@ -205,9 +214,21 @@ namespace JitBench
             return Path.Combine(GetJitBenchRepoRootDir(outputDir), "src", "MusicStore");
         }
 
-        static string GetMusicStorePublishDirectory(string outputDir, string tfm)
+        static string GetMusicStorePublishDirectory(DotNetInstallation dotNetInstall, string outputDir, string tfm)
         {
-            return Path.Combine(GetMusicStoreSrcDirectory(outputDir), "bin", "Release", tfm, "publish");
+            string dir = Path.Combine(GetMusicStoreSrcDirectory(outputDir), "bin", dotNetInstall.Architecture, "Release", tfm, "publish");
+            if (Directory.Exists(dir))
+            {
+                return dir;
+            }
+
+            dir = Path.Combine(GetMusicStoreSrcDirectory(outputDir), "bin", "Release", tfm, "publish");
+            if (Directory.Exists(dir))
+            {
+                return dir;
+            }
+
+            return null;
         }
 
         static string GetMusicStoreStoreDir(string outputDir)
