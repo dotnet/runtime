@@ -3575,8 +3575,7 @@ mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 
 	if ((desc = g_hash_table_lookup (domain->ftnptrs_hash, addr)))
 		return desc;
-#	if defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_PPC64)
-
+#if defined(__mono_ppc64__)
 	desc = mono_domain_alloc0 (domain, 3 * sizeof (gpointer));
 
 	desc [0] = addr;
@@ -3593,7 +3592,7 @@ mini_create_ftnptr (MonoDomain *domain, gpointer addr)
 static gpointer
 mini_get_addr_from_ftnptr (gpointer descr)
 {
-#if ((defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_PPC64)) && _CALL_ELF != 2)
+#if defined(PPC_USES_FUNCTION_DESCRIPTOR)
 	return *(gpointer*)descr;
 #else
 	return descr;
