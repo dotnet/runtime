@@ -1224,7 +1224,7 @@ no_intrinsic:
 		PUSH_VT (td, vararg_stack);
 	}
 
-	g_assert (csignature->call_convention != MONO_CALL_THISCALL && csignature->call_convention != MONO_CALL_FASTCALL);
+	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
 	td->sp -= csignature->param_count + !!csignature->hasthis;
 	for (i = 0; i < csignature->param_count; ++i) {
 		if (td->sp [i + !!csignature->hasthis].type == STACK_TYPE_VT) {
