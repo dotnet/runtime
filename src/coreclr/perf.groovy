@@ -133,15 +133,15 @@ def static getOSGroup(def os) {
                         builder.triggerForBranch(branch)
                         builder.emitTrigger(newJob)
                     }
-                    else if (opt_level == 'full_opt') {
+                    //else if (opt_level == 'full_opt') {
                         // Set a push trigger
-                        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                        builder.emitTrigger(newJob)
-                    }
-                    else {
+                    //    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                    //    builder.emitTrigger(newJob)
+                    //}
+                    //else {
                         // Set periodic trigger
-                        Utilities.addPeriodicTrigger(newJob, '@daily')
-                    }
+                    //    Utilities.addPeriodicTrigger(newJob, '@daily')
+                    //}
                 }
             }
         }
@@ -237,15 +237,15 @@ def static getOSGroup(def os) {
                             builder.triggerForBranch(branch)
                             builder.emitTrigger(newJob)
                         }
-                        else if (opt_level == 'full_opt' && pgo_optimized) {
+                        //else if (opt_level == 'full_opt' && pgo_optimized) {
                             // Set a push trigger
-                            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                            builder.emitTrigger(newJob)
-                        }
-                        else {
-                            // Set periodic trigger
-                            Utilities.addPeriodicTrigger(newJob, '@daily')
-                        }
+                        //    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                        //    builder.emitTrigger(newJob)
+                        //}
+                        //else {
+                        //    // Set periodic trigger
+                        //    Utilities.addPeriodicTrigger(newJob, '@daily')
+                        //}
                     }
                 }
             }
@@ -381,11 +381,11 @@ parallel(
         builder.triggerForBranch(branch)
         builder.emitTrigger(newFlowJob)
     }
-    else {
+    //else {
         // Set a push trigger
-        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-        builder.emitTrigger(newFlowJob)
-    }
+    //    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+    //    builder.emitTrigger(newFlowJob)
+    //}
 
 } // isPR
 
@@ -525,11 +525,11 @@ parallel(
         builder.triggerForBranch(branch)
         builder.emitTrigger(newFlowJob)
     }
-    else {
+    //else {
         // Set a push trigger
-        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-        builder.emitTrigger(newFlowJob)
-    }
+    //    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+    //    builder.emitTrigger(newFlowJob)
+    //}
 
 } // isPR
 
@@ -637,15 +637,15 @@ parallel(
                         builder.triggerForBranch(branch)
                         builder.emitTrigger(newJob)
                     }
-                    else if (opt_level == 'full_opt') {
+                    //else if (opt_level == 'full_opt') {
                         // Set a push trigger
-                        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                        builder.emitTrigger(newJob)
-                    }
-                    else {
+                    //    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                    //    builder.emitTrigger(newJob)
+                    //}
+                    //else {
                         // Set periodic trigger
-                        Utilities.addPeriodicTrigger(newJob, '@daily')
-                    }
+                    //    Utilities.addPeriodicTrigger(newJob, '@daily')
+                    //}
                 }
             }
         }
@@ -717,7 +717,7 @@ parallel(
         Utilities.standardJobSetup(newJob, project, false, "*/${branch}")
 
         // Set the cron job here.  We run nightly on each flavor, regardless of code changes
-        Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
+        //Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
 
         newJob.with {
             logRotator {
@@ -825,11 +825,11 @@ parallel(
                         builder.triggerForBranch(branch)
                         builder.emitTrigger(newJob)
                     }
-                    else {
+                    //else {
                         // Set a push trigger
-                        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                        builder.emitTrigger(newJob)
-                    }
+                    //    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                    //    builder.emitTrigger(newJob)
+                    //}
                 }
             }
         }
