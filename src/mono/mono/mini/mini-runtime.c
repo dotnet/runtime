@@ -1715,9 +1715,9 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 		// FIXME: This won't work since it ends up calling mono_create_jump_trampoline () which returns a trampoline
 		// for gshared methods
 		for (tmp = jlist->list; tmp; tmp = tmp->next) {
+			ERROR_DECL (error);
 			mono_arch_patch_code (NULL, NULL, domain, tmp->data, &patch_info, TRUE, error);
-			if (!is_ok (error))
-				break;
+			mono_error_assert_ok (error);
 		}
 #endif
 	}
