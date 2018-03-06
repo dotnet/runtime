@@ -12,6 +12,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public string KeepTypeForwarderOnlyAssemblies;
 		public string LinkSymbols;
 		public bool SkipUnresolved;
+		public bool StripResources;
 
 		public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>> ();
 	}

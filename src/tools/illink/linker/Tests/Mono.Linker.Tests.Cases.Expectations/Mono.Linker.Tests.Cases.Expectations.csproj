@@ -73,6 +73,7 @@
     <Compile Include="Metadata\ReferenceAttribute.cs" />
     <Compile Include="Metadata\SandboxDependencyAttribute.cs" />
     <Compile Include="Metadata\SkipUnresolvedAttribute.cs" />
+    <Compile Include="Metadata\StripResourcesAttribute.cs" />
     <Compile Include="Assertions\KeptBaseTypeAttribute.cs" />
     <Compile Include="Assertions\KeptInterfaceAttribute.cs" />
     <Compile Include="Assertions\KeptAttributeAttribute.cs" />
