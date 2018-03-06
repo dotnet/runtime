@@ -378,6 +378,12 @@ namespace System
                 }
             }
         }
+
+        // @todo: https://github.com/dotnet/corefx/issues/26894 - these emulate MemoryExtension apis that we removed. Clean up the callsites and remove this class.
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this Span<T> span) => span;
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => new ReadOnlySpan<T>(array);
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> segment) => new ReadOnlySpan<T>(segment.Array, segment.Offset, segment.Count);
+        public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this Memory<T> memory) => memory;
     }
 }
 

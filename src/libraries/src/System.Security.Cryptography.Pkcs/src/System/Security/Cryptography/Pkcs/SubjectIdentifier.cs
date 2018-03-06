@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Pkcs
                 // If the serial number is zero and the subject is exactly "CN=Dummy Signer"
                 // then this is the special "NoSignature" signer.
                 if (!nonZero &&
-                    DummySignerEncodedValue.AsReadOnlySpan().SequenceEqual(issuerNameSpan))
+                    DummySignerEncodedValue.AsSpan().SequenceEqual(issuerNameSpan))
                 {
                     Type = SubjectIdentifierType.NoSignature;
                     Value = null;

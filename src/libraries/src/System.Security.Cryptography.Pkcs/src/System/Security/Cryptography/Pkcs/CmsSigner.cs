@@ -255,7 +255,7 @@ namespace System.Security.Cryptography.Pkcs
 
                         if (i == last &&
                             IncludeOption == X509IncludeOption.ExcludeRoot &&
-                            cert.SubjectName.RawData.AsReadOnlySpan().SequenceEqual(cert.IssuerName.RawData))
+                            cert.SubjectName.RawData.AsSpan().SequenceEqual(cert.IssuerName.RawData))
                         {
                             break;
                         }
