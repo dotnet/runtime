@@ -253,6 +253,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 #endif
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
+#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 
 #if defined(_AIX)
 /*
