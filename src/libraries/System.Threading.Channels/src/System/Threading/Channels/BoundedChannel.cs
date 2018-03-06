@@ -56,7 +56,15 @@ namespace System.Threading.Channels
         private sealed class BoundedChannelReader : ChannelReader<T>, IDebugEnumerable<T>
         {
             internal readonly BoundedChannel<T> _parent;
-            internal BoundedChannelReader(BoundedChannel<T> parent) => _parent = parent;
+            private readonly AsyncOperation<T> _readerSingleton;
+            private readonly AsyncOperation<bool> _waiterSingleton;
+
+            internal BoundedChannelReader(BoundedChannel<T> parent)
+            {
+                _parent = parent;
+                _readerSingleton = new AsyncOperation<T>(parent._runContinuationsAsynchronously, pooled: true);
+                _waiterSingleton = new AsyncOperation<bool>(parent._runContinuationsAsynchronously, pooled: true);
+            }
 
             public override Task Completion => _parent._completion.Task;
 
@@ -104,6 +112,17 @@ namespace System.Threading.Channels
                         return ChannelUtilities.GetInvalidCompletionValueTask<T>(parent._doneWriting);
                     }
 
+                    // If we're able to use the singleton reader, do so.
+                    if (!cancellationToken.CanBeCanceled)
+                    {
+                        AsyncOperation<T> singleton = _readerSingleton;
+                        if (singleton.TryOwnAndReset())
+                        {
+                            parent._blockedReaders.EnqueueTail(singleton);
+                            return singleton.ValueTaskOfT;
+                        }
+                    }
+
                     // Otherwise, queue the reader.
                     var reader = new AsyncOperation<T>(parent._runContinuationsAsynchronously, cancellationToken);
                     parent._blockedReaders.EnqueueTail(reader);
@@ -139,6 +158,19 @@ namespace System.Threading.Channels
 
                     // There were no items available, but there could be in the future, so ensure
                     // there's a blocked reader task and return it.
+
+                    // If we're able to use the singleton waiter, do so.
+                    if (!cancellationToken.CanBeCanceled)
+                    {
+                        AsyncOperation<bool> singleton = _waiterSingleton;
+                        if (singleton.TryOwnAndReset())
+                        {
+                            ChannelUtilities.QueueWaiter(ref parent._waitingReadersTail, singleton);
+                            return singleton.ValueTaskOfT;
+                        }
+                    }
+
+                    // Otherwise, queue a reader.
                     var waiter = new AsyncOperation<bool>(parent._runContinuationsAsynchronously, cancellationToken);
                     ChannelUtilities.QueueWaiter(ref _parent._waitingReadersTail, waiter);
                     return waiter.ValueTaskOfT;
@@ -180,7 +212,7 @@ namespace System.Threading.Channels
                     while (!parent._blockedWriters.IsEmpty)
                     {
                         VoidAsyncOperationWithData<T> w = parent._blockedWriters.DequeueHead();
-                        if (w.Success(default))
+                        if (w.TrySetResult(default))
                         {
                             parent._items.EnqueueTail(w.Item);
                             return item;
@@ -208,7 +240,15 @@ namespace System.Threading.Channels
         private sealed class BoundedChannelWriter : ChannelWriter<T>, IDebugEnumerable<T>
         {
             internal readonly BoundedChannel<T> _parent;
-            internal BoundedChannelWriter(BoundedChannel<T> parent) => _parent = parent;
+            private readonly VoidAsyncOperationWithData<T> _writerSingleton;
+            private readonly AsyncOperation<bool> _waiterSingleton;
+
+            internal BoundedChannelWriter(BoundedChannel<T> parent)
+            {
+                _parent = parent;
+                _writerSingleton = new VoidAsyncOperationWithData<T>(runContinuationsAsynchronously: true, pooled: true);
+                _waiterSingleton = new AsyncOperation<bool>(runContinuationsAsynchronously: true, pooled: true);
+            }
 
             public override bool TryComplete(Exception error)
             {
@@ -338,8 +378,10 @@ namespace System.Threading.Channels
                 // We either wrote the item already, or we're transferring it to the blocked reader we grabbed.
                 if (blockedReader != null)
                 {
+                    Debug.Assert(waitingReadersTail == null, "Shouldn't have any waiters to wake up");
+
                     // Transfer the written item to the blocked reader.
-                    bool success = blockedReader.Success(item);
+                    bool success = blockedReader.TrySetResult(item);
                     Debug.Assert(success, "We should always be able to complete the reader.");
                 }
                 else
@@ -383,6 +425,19 @@ namespace System.Threading.Channels
                     }
 
                     // We're still allowed to write, but there's no space, so ensure a waiter is queued and return it.
+
+                    // If we're able to use the singleton waiter, do so.
+                    if (!cancellationToken.CanBeCanceled)
+                    {
+                        AsyncOperation<bool> singleton = _waiterSingleton;
+                        if (singleton.TryOwnAndReset())
+                        {
+                            ChannelUtilities.QueueWaiter(ref parent._waitingWritersTail, singleton);
+                            return singleton.ValueTaskOfT;
+                        }
+                    }
+
+                    // Otherwise, queue a waiter.
                     var waiter = new AsyncOperation<bool>(runContinuationsAsynchronously: true, cancellationToken);
                     ChannelUtilities.QueueWaiter(ref parent._waitingWritersTail, waiter);
                     return waiter.ValueTaskOfT;
@@ -454,8 +509,21 @@ namespace System.Threading.Channels
                     }
                     else if (parent._mode == BoundedChannelFullMode.Wait)
                     {
-                        // The channel is full and we're in a wait mode.
-                        // Queue the writer.
+                        // The channel is full and we're in a wait mode.  We need to queue a writer.
+
+                        // If we're able to use the singleton writer, do so.
+                        if (!cancellationToken.CanBeCanceled)
+                        {
+                            VoidAsyncOperationWithData<T> singleton = _writerSingleton;
+                            if (singleton.TryOwnAndReset())
+                            {
+                                singleton.Item = item;
+                                parent._blockedWriters.EnqueueTail(singleton);
+                                return singleton.ValueTask;
+                            }
+                        }
+
+                        // Otherwise, queue a new writer.
                         var writer = new VoidAsyncOperationWithData<T>(runContinuationsAsynchronously: true, cancellationToken);
                         writer.Item = item;
                         parent._blockedWriters.EnqueueTail(writer);
@@ -483,7 +551,7 @@ namespace System.Threading.Channels
                 if (blockedReader != null)
                 {
                     // Transfer the written item to the blocked reader.
-                    bool success = blockedReader.Success(item);
+                    bool success = blockedReader.TrySetResult(item);
                     Debug.Assert(success, "We should always be able to complete the reader.");
                 }
                 else
