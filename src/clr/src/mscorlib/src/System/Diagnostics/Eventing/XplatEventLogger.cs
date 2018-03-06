@@ -109,22 +109,49 @@ namespace System.Diagnostics.Tracing
                 sb.Append("\\\"");
                 sb.Append(':');
 
-                var valuestr = payload[i] as string;
-
-                if( valuestr != null)
+                switch(payload[i])
                 {
-                    sb.Append("\\\"");
-                    minimalJsonserializer(valuestr,sb);
-                    sb.Append("\\\"");
+                    case string str:
+                    {
+                        sb.Append("\\\"");
+                        minimalJsonserializer(str, sb);
+                        sb.Append("\\\"");
+                        break;
+                    }
+                    case byte[] byteArr:
+                    {
+                        sb.Append("\\\"");
+                        AppendByteArrayAsHexString(sb, byteArr);
+                        sb.Append("\\\"");
+                        break;
+                    }
+                    default:
+                    {
+                        if(payload[i] != null)
+                        {
+                            sb.Append(payload[i].ToString());
+                        }
+                        break;
+                    }
                 }
-                else
-                {
-                    sb.Append(payload[i].ToString());
-                }
-
             }
             sb.Append('}');
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        private static void AppendByteArrayAsHexString(StringBuilder builder, byte[] byteArray)
+        {
+            Debug.Assert(builder != null);
+            Debug.Assert(byteArray != null);
+
+            ReadOnlySpan<char> hexFormat = "X2";
+            Span<char> hex = stackalloc char[2];
+            for(int i=0; i<byteArray.Length; i++)
+            {
+                byteArray[i].TryFormat(hex, out int charsWritten, hexFormat);
+                Debug.Assert(charsWritten == 2);
+                builder.Append(hex);
+            }
         }
 
         internal protected  override void OnEventSourceCreated(EventSource eventSource)
