@@ -107,7 +107,7 @@ void SetLogPathName()
     unsigned __int64 randNumber       = 0;
     const size_t     RandNumberLength = sizeof(randNumber) * 2 + 1; // 16 hex digits + null
     WCHAR            RandNumberString[RandNumberLength];
-    PAL_Random(/* bStrong */ FALSE, &randNumber, sizeof(randNumber));
+    PAL_Random(&randNumber, sizeof(randNumber));
     swprintf_s(RandNumberString, RandNumberLength, W("%016llX"), randNumber);
 #else  // !FEATURE_PAL
     unsigned int randNumber       = 0;
