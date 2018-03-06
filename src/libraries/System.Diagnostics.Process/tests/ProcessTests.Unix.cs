@@ -103,6 +103,25 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop]
+        public void ProcessStart_UseShellExecute_OnUnix_OpenMissingFile_DoesNotThrow()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && 
+                s_allowedProgramsToRun.FirstOrDefault(program => IsProgramInstalled(program)) == null)
+            {
+                return;
+            }
+            string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
+            {
+                Assert.NotNull(px);
+                px.Kill();
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+            }
+        }
+
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
