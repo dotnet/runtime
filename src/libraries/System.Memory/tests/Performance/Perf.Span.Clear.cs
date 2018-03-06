@@ -9,7 +9,9 @@ namespace System.Memory.Tests
 {
     public class Perf_Span_Clear
     {
-        [Benchmark]
+        private const int NumIters = 10000;
+
+        [Benchmark(InnerIterationCount = NumIters)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -41,7 +43,7 @@ namespace System.Memory.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < 10000; i++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         span.Clear();
                     }
@@ -49,7 +51,7 @@ namespace System.Memory.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = NumIters)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -81,7 +83,7 @@ namespace System.Memory.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < 10000; i++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
                         span.Clear();
                     }
