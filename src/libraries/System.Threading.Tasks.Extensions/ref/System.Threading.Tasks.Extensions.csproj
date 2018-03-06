@@ -4,12 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{0DF7FA9A-E7D3-4CEF-862B-A37F5BBBB54C}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">true</IsPartialFacadeAssembly>
-    <!--
-      Netstandard assembly version is frozen and thus cannot adde any more APIs to it because
-      the types have been moved inbox and type-forwarded into CoreLib. The only way to add more
-      APIs is to add them directly to the particular platform.
-    -->
-    <AssemblyVersion Condition="$(TargetGroup.StartsWith('netstandard'))">4.1.1.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
