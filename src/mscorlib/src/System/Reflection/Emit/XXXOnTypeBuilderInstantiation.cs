@@ -70,7 +70,7 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this.GetType().ToString()));
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
             return MethodBuilderInstantiation.MakeGenericMethod(this, typeArgs);
         }
