@@ -330,7 +330,7 @@ add_class (MonoProfiler *prof, MonoClass *klass)
 	if (id)
 		return id - 1;
 
-	image_id = add_image (prof, klass->image);
+	image_id = add_image (prof, mono_class_get_image (klass));
 
 	if (mono_class_is_ginst (klass)) {
 		MonoGenericContext *ctx = mono_class_get_context (klass);
@@ -339,10 +339,11 @@ add_class (MonoProfiler *prof, MonoClass *klass)
 			return -1;
 	}
 
-	if (klass->nested_in)
-		name = g_strdup_printf ("%s.%s/%s", klass->nested_in->name_space, klass->nested_in->name, klass->name);
+	MonoClass *klass_nested_in = mono_class_get_nesting_type (klass);
+	if (klass_nested_in)
+		name = g_strdup_printf ("%s.%s/%s", mono_class_get_namespace (klass_nested_in), mono_class_get_name (klass_nested_in), mono_class_get_name (klass));
 	else
-		name = g_strdup_printf ("%s.%s", klass->name_space, klass->name);
+		name = g_strdup_printf ("%s.%s", mono_class_get_namespace (klass), mono_class_get_name (klass));
 
 	id = prof->id ++;
 	emit_record (prof, AOTPROF_RECORD_TYPE, id);
