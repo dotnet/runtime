@@ -4494,6 +4494,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_ICALL_PPI_V)
 		MINT_IN_CASE(MINT_ICALL_PII_P)
 		MINT_IN_CASE(MINT_ICALL_PPII_V)
+			frame->ip = ip;
 			sp = do_icall (context, *ip, sp, rtm->data_items [*(guint16 *)(ip + 1)]);
 			EXCEPTION_CHECKPOINT;
 			if (context->has_resume_state) {
