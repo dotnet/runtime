@@ -61,7 +61,6 @@ namespace System.Net.Sockets
             Debug.Assert(_operating == InProgress, $"Expected {nameof(_operating)} == {nameof(InProgress)}, got {_operating}");
             Debug.Assert(_currentSocket != null, "_currentSocket is null");
             Debug.Assert(_currentSocket.SafeHandle != null, "_currentSocket.SafeHandle is null");
-            Debug.Assert(!_currentSocket.SafeHandle.IsInvalid, "_currentSocket.SafeHandle is invalid");
             Debug.Assert(_preAllocatedOverlapped != null, "_preAllocatedOverlapped is null");
 
             ThreadPoolBoundHandle boundHandle = _currentSocket.GetOrAllocateThreadPoolBoundHandle();
