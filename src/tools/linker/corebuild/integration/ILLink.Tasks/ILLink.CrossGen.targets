@@ -28,8 +28,7 @@
     <ItemGroup>
       <_CrossGenResolvedAssembliesToPublishCandidates Include="@(ResolvedAssembliesToPublish->'$(IntermediateOptimizedDir)/%(Filename)%(Extension)')" />
       <_CrossGenResolvedAssembliesToPublish Include="@(_CrossGenResolvedAssembliesToPublishCandidates)" Condition="Exists('%(Identity)')" />
-      <!-- FilesToCrossGen doesn't contain System.Private.CoreLib, so
-           it will still be published. -->
+
       <ResolvedAssembliesToPublish Remove="@(FilesToCrossGen)" />
       <ResolvedAssembliesToPublish Include="@(_CrossGenResolvedAssembliesToPublish)" />
     </ItemGroup>
@@ -188,9 +187,9 @@
 
   <UsingTask TaskName="FilterByMetadata" AssemblyFile="$(LinkTaskDllPath)" />
   <!-- This computes the default set of files that we want to be
-       crossgen'd. Some of these may already be R2R images, and these
-       will not be crossgen'd again. The default is to crossgen the
-       app and platform libraries. Defaults will be used only if
+       crossgen'd. Some of these may already be crossgen images, and
+       these will not be crossgen'd again. The default is to crossgen
+       the app and platform libraries. Defaults will be used only if
        FilesToCrossGen hasn't been set elsewhere, allowing users and
        other props/targets to select what will be crossgen'd. -->
   <Target Name="_ComputeDefaultFilesToCrossGen"
@@ -208,21 +207,20 @@
       <FilesToCrossGen Include="@(_PlatformLibrariesForCrossGen)" />
     </ItemGroup>
 
-    <Error Text="System.Private.CoreLib should already be crossgen compiled."
-           Condition=" '%(FilesToCrossGen.Filename)' == 'System.Private.CoreLib' " />
   </Target>
 
-  <UsingTask TaskName="ComputeReadyToRunAssemblies" AssemblyFile="$(LinkTaskDllPath)" />
+  <UsingTask TaskName="ComputeCrossgenedAssemblies" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_ComputeFilesToCrossGen"
           DependsOnTargets="_ComputeDefaultFilesToCrossGen">
 
-    <ComputeReadyToRunAssemblies Assemblies="@(FilesToCrossGen)">
-      <Output TaskParameter="ReadyToRunAssemblies" ItemName="_ReadyToRunFiles" />
-    </ComputeReadyToRunAssemblies>
+    <ComputeCrossgenedAssemblies Assemblies="@(FilesToCrossGen)">
+      <Output TaskParameter="CrossgenedAssemblies" ItemName="_CrossgenedFiles" />
+    </ComputeCrossgenedAssemblies>
 
-    <!-- Don't try to run crossgen on assemblies that are already R2R. -->
+    <!-- Don't try to run crossgen on assemblies that are already
+         crossgen'd. -->
     <ItemGroup>
-      <FilesToCrossGen Remove="@(_ReadyToRunFiles)" />
+      <FilesToCrossGen Remove="@(_CrossgenedFiles)" />
     </ItemGroup>
 
     <Message Text="files to crossgen: @(FilesToCrossGen)" />

@@ -101,7 +101,7 @@
     <Compile Include="LinkTask.cs" />
     <Compile Include="CompareSizes.cs" />
     <Compile Include="ComputeManagedAssemblies.cs" />
-    <Compile Include="ComputeReadyToRunAssemblies.cs" />
+    <Compile Include="ComputeCrossgenedAssemblies.cs" />
     <Compile Include="GetRuntimeLibraries.cs" />
     <Compile Include="CreateRootDescriptorFile.cs" />
     <Compile Include="CreateRuntimeRootDescriptorFile.cs" />
