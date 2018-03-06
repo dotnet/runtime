@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace JIT.HardwareIntrinsics.X86
@@ -42,14 +43,14 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < args.Length; i++)
             {
-                var testName = args[i].ToLowerInvariant();
+                var testName = args[i];
 
-                if (testName == "all")
+                if (testName.Equals("all", StringComparison.OrdinalIgnoreCase))
                 {
                     break;
                 }
 
-                if (!TestList.ContainsKey(testName))
+                if (!TestList.Keys.Contains(testName, StringComparer.OrdinalIgnoreCase))
                 {
                     PrintUsage();
                 }
