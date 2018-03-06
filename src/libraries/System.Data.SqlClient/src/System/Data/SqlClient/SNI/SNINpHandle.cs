@@ -22,9 +22,7 @@ namespace System.Data.SqlClient.SNI
 
         private readonly string _targetServer;
         private readonly object _callbackObject;
-        private readonly TaskScheduler _writeScheduler;
-        private readonly TaskFactory _writeTaskFactory;
-
+        
         private Stream _stream;
         private NamedPipeClientStream _pipeStream;
         private SslOverTdsStream _sslOverTdsStream;
@@ -41,8 +39,6 @@ namespace System.Data.SqlClient.SNI
         {
             _targetServer = serverName;
             _callbackObject = callbackObject;
-            _writeScheduler = new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
-            _writeTaskFactory = new TaskFactory(_writeScheduler);
 
             try
             {
@@ -179,24 +175,21 @@ namespace System.Data.SqlClient.SNI
 
         public override uint ReceiveAsync(ref SNIPacket packet, bool isMars = false)
         {
-            lock (this)
-            {
-                packet = new SNIPacket(null);
-                packet.Allocate(_bufferSize);
+            packet = new SNIPacket(null);
+            packet.Allocate(_bufferSize);
 
-                try
-                {
-                    packet.ReadFromStreamAsync(_stream, _receiveCallback, isMars);
-                    return TdsEnums.SNI_SUCCESS_IO_PENDING;
-                }
-                catch (ObjectDisposedException ode)
-                {
-                    return ReportErrorAndReleasePacket(packet, ode);
-                }
-                catch (IOException ioe)
-                {
-                    return ReportErrorAndReleasePacket(packet, ioe);
-                }
+            try
+            {
+                packet.ReadFromStreamAsync(_stream, _receiveCallback, isMars);
+                return TdsEnums.SNI_SUCCESS_IO_PENDING;
+            }
+            catch (ObjectDisposedException ode)
+            {
+                return ReportErrorAndReleasePacket(packet, ode);
+            }
+            catch (IOException ioe)
+            {
+                return ReportErrorAndReleasePacket(packet, ioe);
             }
         }
 
@@ -222,43 +215,8 @@ namespace System.Data.SqlClient.SNI
 
         public override uint SendAsync(SNIPacket packet, SNIAsyncCallback callback = null)
         {
-            SNIPacket newPacket = packet;
-
-            _writeTaskFactory.StartNew(() =>
-            {
-                try
-                {
-                    lock (this)
-                    {
-                        packet.WriteToStream(_stream);
-                    }
-                }
-                catch (Exception e)
-                {
-                    SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.InternalExceptionError, e);
-
-                    if (callback != null)
-                    {
-                        callback(packet, TdsEnums.SNI_ERROR);
-                    }
-                    else
-                    {
-                        _sendCallback(packet, TdsEnums.SNI_ERROR);
-                    }
-
-                    return;
-                }
-
-                if (callback != null)
-                {
-                    callback(packet, TdsEnums.SNI_SUCCESS);
-                }
-                else
-                {
-                    _sendCallback(packet, TdsEnums.SNI_SUCCESS);
-                }
-            });
-
+            SNIAsyncCallback cb = callback ?? _sendCallback;
+            packet.WriteToStreamAsync(_stream, cb, SNIProviders.NP_PROV);
             return TdsEnums.SNI_SUCCESS_IO_PENDING;
         }
 
