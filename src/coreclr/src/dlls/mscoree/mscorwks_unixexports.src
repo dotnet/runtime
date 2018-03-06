@@ -22,7 +22,6 @@ GetCLRRuntimeHost
 
 ; Win32 API and other PAL functions used by the mscorlib
 CloseHandle
-CoCreateGuid
 CoTaskMemAlloc
 CoTaskMemRealloc
 CoTaskMemFree

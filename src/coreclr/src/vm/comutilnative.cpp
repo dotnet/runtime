@@ -2337,7 +2337,7 @@ PCBYTE COMNlsHashProvider::GetEntropy()
         AllocMemHolder<BYTE> pNewEntropy(GetAppDomain()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SYMCRYPT_MARVIN32_SEED_SIZE))));
 
 #ifdef FEATURE_PAL
-        PAL_Random(TRUE, pNewEntropy, SYMCRYPT_MARVIN32_SEED_SIZE);
+        PAL_Random(pNewEntropy, SYMCRYPT_MARVIN32_SEED_SIZE);
 #else
         HCRYPTPROV hCryptProv;
         WszCryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT);

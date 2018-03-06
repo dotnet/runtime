@@ -29,6 +29,7 @@ PAL_InitializeDLL
 PAL_TerminateEx
 PAL_IsDebuggerPresent
 PAL_ProbeMemory
+PAL_Random
 PAL_iswspace
 PAL_memcpy
 PAL_malloc
@@ -65,7 +66,6 @@ _i64tow_s
 memcpy_s
 sscanf_s
 
-CoCreateGuid
 CopyFileW
 CreateDirectoryW
 CreateFileMappingA

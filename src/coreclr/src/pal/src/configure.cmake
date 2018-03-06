@@ -48,7 +48,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL Net
   unset(CMAKE_REQUIRED_FLAGS)
 endif()
 
-check_include_files(uuid/uuid.h HAVE_LIBUUID_H)
 check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
@@ -168,16 +167,6 @@ check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
-
-check_cxx_source_runs("
-#include <uuid.h>
-
-int main(void) {
-  uuid_t uuid;
-  uint32_t status;
-  uuid_create(&uuid, &status);
-  return 0;
-}" HAVE_BSD_UUID_H)
 
 check_cxx_source_runs("
 #include <sys/param.h>
@@ -1271,10 +1260,6 @@ if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  if(NOT HAVE_LIBUUID_H)
-    unset(HAVE_LIBUUID_H CACHE)
-    message(FATAL_ERROR "Cannot find libuuid. Try installing uuid-dev or the appropriate packages for your platform")
-  endif()
   set(HAVE_COREFOUNDATION 1)
   set(HAVE__NSGETENVIRON 1)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
@@ -1291,10 +1276,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
     unset(HAVE_LIBUNWIND_H CACHE)
     message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
   endif()
-  if(NOT HAVE_BSD_UUID_H)
-    unset(HAVE_BSD_UUID_H CACHE)
-    message(FATAL_ERROR "Cannot find uuid.h")
-  endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1308,10 +1289,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   if(NOT HAVE_LIBUNWIND_H)
     unset(HAVE_LIBUNWIND_H CACHE)
     message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
-  endif()
-  if(NOT HAVE_BSD_UUID_H)
-    unset(HAVE_BSD_UUID_H CACHE)
-    message(FATAL_ERROR "Cannot find uuid.h")
   endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
@@ -1328,10 +1305,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
     unset(HAVE_LIBUNWIND_H CACHE)
     message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
   endif()
-  if(NOT HAVE_LIBUUID_H)
-    unset(HAVE_LIBUUID_H CACHE)
-    message(FATAL_ERROR "Cannot find libuuid. Try installing uuid-dev or the appropriate packages for your platform")
-  endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1347,10 +1320,6 @@ else() # Anything else is Linux
   if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
-  endif()
-  if(NOT HAVE_LIBUUID_H)
-    unset(HAVE_LIBUUID_H CACHE)
-    message(FATAL_ERROR "Cannot find libuuid. Try installing uuid-dev or the appropriate packages for your platform")
   endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")

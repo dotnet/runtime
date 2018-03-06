@@ -471,7 +471,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
     // Add a random number to the temporary file names to allow multiple parallel SuperPMI to happen at once.
     unsigned int randNumber = 0;
 #ifdef FEATURE_PAL
-    PAL_Random(/* bStrong */ FALSE, &randNumber, sizeof(randNumber));
+    PAL_Random(&randNumber, sizeof(randNumber));
 #else  // !FEATURE_PAL
     rand_s(&randNumber);
 #endif // !FEATURE_PAL
