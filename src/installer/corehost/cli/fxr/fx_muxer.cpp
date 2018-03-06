@@ -882,7 +882,7 @@ void muxer_info(pal::string_t own_dir)
     }
 
     trace::println();
-    trace::println(_X("The.NET Core runtimes installed:"));
+    trace::println(_X(".NET Core runtimes installed:"));
     if (!framework_info::print_all_frameworks(own_dir, _X("  ")))
     {
         trace::println(_X("  No runtimes were found."));
