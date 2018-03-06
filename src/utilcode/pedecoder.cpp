@@ -445,6 +445,7 @@ BOOL PEDecoder::HasWriteableSections() const
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
+        PRECONDITION(CheckNTHeaders());
         PRECONDITION(CheckFormat());
         NOTHROW;
         GC_NOTRIGGER;
@@ -453,7 +454,7 @@ BOOL PEDecoder::HasWriteableSections() const
     }
     CONTRACT_CHECK_END;
 
-    PTR_IMAGE_SECTION_HEADER pSection = FindFirstSection(FindNTHeaders());
+    PTR_IMAGE_SECTION_HEADER pSection = FindFirstSection();
     _ASSERTE(pSection != NULL);
 
     PTR_IMAGE_SECTION_HEADER pSectionEnd = pSection + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
