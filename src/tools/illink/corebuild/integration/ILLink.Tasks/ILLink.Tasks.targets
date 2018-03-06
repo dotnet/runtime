@@ -186,33 +186,62 @@
       <_LinkedDebugSymbols Include="@(__LinkedDebugSymbols)"
                            Condition="Exists('%(Identity)') And '$(_DebugSymbolsProduced)' == 'true' " />
     </ItemGroup>
+
+  </Target>
+
+  <!-- Compute the default set of assemblies to crossgen after
+       linking. This will include any assemblies modified by the
+       linker that were crossgen'd before linking. -->
+  <Target Name="_ComputeLinkedAssembliesToCrossgen"
+          AfterTargets="_ComputeLinkedAssemblies"
+          Condition=" '$(CrossGenDuringPublish)' == 'true' ">
+    <FilterByMetadata Items="@(_ManagedResolvedAssembliesToPublish);@(IntermediateAssembly)"
+                      MetadataName="Filename"
+                      MetadataValues="@(_LinkedResolvedAssemblies->'%(Filename)');@(_LinkedIntermediateAssembly->'%(Filename)')">
+      <Output TaskParameter="FilteredItems" ItemName="_OriginalLinkedAssemblies" />
+    </FilterByMetadata>
+
+    <ComputeCrossgenedAssemblies Assemblies="@(_OriginalLinkedAssemblies)">
+      <Output TaskParameter="CrossgenedAssemblies" ItemName="_OriginalLinkedAssembliesThatWereCrossgened" />
+    </ComputeCrossgenedAssemblies>
+
+    <!-- Ideally, we would remember which assemblies were R2R and
+         which were fragile crossgen-ed, and do the same after
+         linking. Currently this makes no difference because
+         System.Private.CoreLib is the only fragile image, and it
+         can't be ready-to-run crossgen-ed. -->
+    <ItemGroup>
+      <_LinkedAssembliesToCrossgen Include="@(_OriginalLinkedAssembliesThatWereCrossgened->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
+      <FilesToCrossgen Include="@(_LinkedAssembliesToCrossgen)" />
+    </ItemGroup>
+
   </Target>
 
   <UsingTask TaskName="SetAssemblyActions" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_SetAssemblyActions"
           DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputePlatformLibraries">
 
-      <ItemGroup>
-          <_PlatformAssembliesToLink Include="@(PlatformLibraries->'%(Filename)')" />
-          <_PlatformAssembliesToLink Include="System.Private.CoreLib" />
-          <_ApplicationAssembliesToLink Include="@(_ManagedAssembliesToLink->'%(Filename)')" />
-          <_ApplicationAssembliesToLink Remove="@(_PlatformAssembliesToLink)" />
-      </ItemGroup>
+    <ItemGroup>
+      <_PlatformAssembliesToLink Include="@(PlatformLibraries->'%(Filename)')" />
+      <_ApplicationAssembliesToLink Include="@(_ManagedAssembliesToLink->'%(Filename)')" />
+      <_ApplicationAssembliesToLink Remove="@(_PlatformAssembliesToLink)" />
+    </ItemGroup>
 
-      <SetAssemblyActions AssemblyPaths="@(_ManagedAssembliesToLink)"
-                          ApplicationAssemblyNames="@(_ApplicationAssembliesToLink)"
-                          PlatformAssemblyNames="@(_PlatformAssembliesToLink)"
-                          UsedApplicationAssemblyAction="$(UsedApplicationAssemblyAction)"
-                          UnusedApplicationAssemblyAction="$(UnusedApplicationAssemblyAction)"
-                          UsedPlatformAssemblyAction="$(UsedPlatformAssemblyAction)"
-                          UnusedPlatformAssemblyAction="$(UnusedPlatformAssemblyAction)">
-        <Output TaskParameter="AssemblyPathsWithActions" ItemName="_ManagedAssembliesToLinkWithActions" />
-      </SetAssemblyActions>
+    <SetAssemblyActions AssemblyPaths="@(_ManagedAssembliesToLink)"
+                        ApplicationAssemblyNames="@(_ApplicationAssembliesToLink)"
+                        PlatformAssemblyNames="@(_PlatformAssembliesToLink)"
+                        UsedApplicationAssemblyAction="$(UsedApplicationAssemblyAction)"
+                        UnusedApplicationAssemblyAction="$(UnusedApplicationAssemblyAction)"
+                        UsedPlatformAssemblyAction="$(UsedPlatformAssemblyAction)"
+                        UnusedPlatformAssemblyAction="$(UnusedPlatformAssemblyAction)">
+      <Output TaskParameter="AssemblyPathsWithActions" ItemName="_ManagedAssembliesToLinkWithActions" />
+    </SetAssemblyActions>
 
-      <ItemGroup>
-          <_ManagedAssembliesToLink Remove="@(_ManagedAssembliesToLink)" />
-          <_ManagedAssembliesToLink Include="@(_ManagedAssembliesToLinkWithActions)" />
-      </ItemGroup>
+    <ItemGroup>
+      <_ManagedAssembliesToLink Remove="@(_ManagedAssembliesToLink)" />
+      <_ManagedAssembliesToLink Include="@(_ManagedAssembliesToLinkWithActions)" />
+    </ItemGroup>
+
   </Target>
 
   <!-- This calls the linker. Inputs are the managed assemblies to
@@ -382,14 +411,17 @@
     <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
       <_LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
       <_LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
-      <_LinkerRootAssemblies Remove="System.Private.CoreLib" Condition=" '$(_SPCHasEmbeddedRootDescriptor)' == 'true' "/>
       <LinkerRootAssemblies Include="@(_LinkerRootAssemblies)" />
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'false' ">
       <LinkerRootAssemblies Include="@(IntermediateAssembly)" />
-      <LinkerRootAssemblies Include="System.Private.CoreLib" Condition=" '$(_SPCHasEmbeddedRootDescriptor)' == 'false' "/>
     </ItemGroup>
+
+    <ItemGroup Condition=" '$(_SPCHasEmbeddedRootDescriptor)' != 'true' ">
+      <LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" Condition=" '%(Filename)' == 'System.Private.CoreLib' " />
+    </ItemGroup>
+
   </Target>
 
   <UsingTask TaskName="CheckEmbeddedRootDescriptor" AssemblyFile="$(LinkTaskDllPath)" />
@@ -412,6 +444,11 @@
                          PackageNames="$(MicrosoftNETPlatformLibrary)">
       <Output TaskParameter="RuntimeLibraries" ItemName="PlatformLibraries" />
     </GetRuntimeLibraries>
+
+    <ItemGroup>
+      <PlatformLibraries Include="@(_ManagedAssembliesToLink)" Condition=" '%(Filename)' == 'System.Private.CoreLib' " />
+    </ItemGroup>
+
     <ItemGroup Condition=" '$(SelfContained)' != 'true' ">
       <!-- Portable publish: computed referenced-not-published set in _ComputeManagedAssembliesToLink -->
       <PlatformLibraries Include="@(_ReferencedLibraries)" />
