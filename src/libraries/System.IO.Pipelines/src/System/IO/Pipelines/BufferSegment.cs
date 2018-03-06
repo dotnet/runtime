@@ -61,7 +61,6 @@ namespace System.IO.Pipelines
         public void SetMemory(OwnedMemory<byte> ownedMemory, int start, int end, bool readOnly = false)
         {
             _ownedMemory = ownedMemory;
-            _ownedMemory.Retain();
 
             AvailableMemory = _ownedMemory.Memory;
 
