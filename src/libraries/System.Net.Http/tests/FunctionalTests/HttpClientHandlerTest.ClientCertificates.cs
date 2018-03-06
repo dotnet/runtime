@@ -142,12 +142,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden()
         {
-            if (UseSocketsHttpHandler)
-            {
-                // TODO #23128: SocketsHttpHandler is currently sending out client certificates when it shouldn't.
-                return;
-            }
-
             if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler
             {
                 _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden)}()");
