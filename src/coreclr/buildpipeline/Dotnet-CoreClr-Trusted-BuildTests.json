@@ -196,7 +196,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(Build.StagingDirectory)\\Microsoft.DotNet.Build.Tasks.ScepOps.1.0.0\\build\\Microsoft.DotNet.Build.Tasks.ScepOps.targets",
+        "solution": "$(Build.StagingDirectory)\\Microsoft.DotNet.Build.Tasks.ScepOps.1.0.1\\build\\Microsoft.DotNet.Build.Tasks.ScepOps.targets",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "14.0",
         "msbuildArchitecture": "x64",
