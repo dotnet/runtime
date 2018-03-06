@@ -592,6 +592,6 @@ namespace System.Diagnostics.Tests
         [DllImport("libc")]
         private static extern int seteuid(uint euid);
 
-        private readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
+        private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
     }
 }

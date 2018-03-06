@@ -923,10 +923,10 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [ActiveIssue(26720, TargetFrameworkMonikers.Uap)]
-        [ActiveIssue(27459)]
         public void GetProcesses_InvalidMachineName_ThrowsInvalidOperationException()
         {
-            Assert.Throws<InvalidOperationException>(() => Process.GetProcesses(Guid.NewGuid().ToString()));
+            Type exceptionType = PlatformDetection.IsWindows ? typeof(InvalidOperationException) : typeof(PlatformNotSupportedException);
+            var exception = Assert.Throws(exceptionType, () => Process.GetProcesses(Guid.NewGuid().ToString()));
         }
 
         [Fact]
@@ -1285,7 +1285,6 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Handle count change is not reliable, but seems less robust on NETFX")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
-        [ActiveIssue(27459)]
         public void HandleCountChanges()
         {
             RemoteInvoke(() =>
