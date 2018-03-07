@@ -5296,7 +5296,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     Span<char> result = new char[i + 1];
                     result[i] = ch;
                     Value.Slice(0, i).CopyTo(result);
-                    Value = result.AsReadOnlySpan();
+                    Value = result;
                 }
             }
         }
@@ -5323,7 +5323,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     Span<char> result = new char[Value.Length - i];
                     result[0] = ch;
                     Value.Slice(i + 1).CopyTo(result.Slice(1));
-                    Value = result.AsReadOnlySpan();
+                    Value = result;
                 }
             }
         }
