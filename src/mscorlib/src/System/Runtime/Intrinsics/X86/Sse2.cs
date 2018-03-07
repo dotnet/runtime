@@ -969,6 +969,149 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<byte> PackUnsignedSaturate(Vector128<short> left, Vector128<short> right) => PackUnsignedSaturate(left, right);
 
         /// <summary>
+        /// __m128i _mm_set1_epi8 (char a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<byte> SetAllVector128(byte value)
+        {
+            // Zero vector and load value et index 0
+            Vector128<byte> vector1 = Sse.StaticCast<uint, byte>(ConvertScalarToVector128UInt32(value));
+            // Create { -- -- -- -- -- -- -- --  -- -- -- -- -- -- vl vl }
+            Vector128<ushort> tmpVector1 = Sse.StaticCast<byte, ushort>(UnpackLow(vector1, vector1));
+            // Create { -- -- -- -- -- -- -- --  -- -- -- -- vl vl vl vl }
+            Vector128<uint> tmpVector2 = Sse.StaticCast<ushort, uint>(UnpackLow(tmpVector1, tmpVector1));
+            // Create { vl vl vl vl vl vl vl vl vl vl vl vl vl vl vl vl } and return result
+            return Sse.StaticCast<uint, byte>(Shuffle(tmpVector2, 0));
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi8 (char a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<sbyte> SetAllVector128(sbyte value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<sbyte> vector = Sse.StaticCast<int, sbyte>(ConvertScalarToVector128Int32(value));
+            // Create { -- -- -- -- -- -- -- --  -- -- -- -- -- -- vl vl }
+            Vector128<short> tmpVector1 = Sse.StaticCast<sbyte, short>(UnpackLow(vector, vector));
+            // Create { -- -- -- -- -- -- -- --  -- -- -- -- vl vl vl vl }
+            Vector128<int> tmpVector2 = Sse.StaticCast<short, int>(UnpackLow(tmpVector1, tmpVector1));
+            // Create { vl vl vl vl vl vl vl vl vl vl vl vl vl vl vl vl } and return result
+            return Sse.StaticCast<int, sbyte>(Shuffle(tmpVector2, 0));
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi16 (short a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<short> SetAllVector128(short value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<short> vector = Sse.StaticCast<int, short>(ConvertScalarToVector128Int32(value));
+            // Create { -- -- -- -- -- -- vl vl }
+            Vector128<int> tmpVector = Sse.StaticCast<short, int>(UnpackLow(vector, vector));
+            // Create { vl vl vl vl vl vl vl vl } and return result
+            return Sse.StaticCast<int, short>(Shuffle(tmpVector, (byte)0));
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi16 (short a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<ushort> SetAllVector128(ushort value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<ushort> vector = Sse.StaticCast<uint, ushort>(ConvertScalarToVector128UInt32(value));
+            // Create { -- -- -- -- -- -- vl vl }
+            Vector128<uint> tmpVector = Sse.StaticCast<ushort, uint>(UnpackLow(vector, vector));
+            // Create { vl vl vl vl vl vl vl vl } and return result
+            return Sse.StaticCast<uint, ushort>(Shuffle(tmpVector, (byte)0));
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi32 (int a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<int> SetAllVector128(int value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<int> vector = ConvertScalarToVector128Int32(value);
+            // Create { vl vl vl vl } and return result
+            return Shuffle(vector, 0);
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi32 (int a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<uint> SetAllVector128(uint value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<uint> vector = ConvertScalarToVector128UInt32(value);
+            // Create { vl vl vl vl } and return result
+            return Shuffle(vector, 0);
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi64x (long long a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<long> SetAllVector128(long value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<long> vector = ConvertScalarToVector128Int64(value);
+            // Create { vl vl } and return result
+            return UnpackLow(vector, vector);
+        }
+        /// <summary>
+        /// __m128i _mm_set1_epi64x (long long a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<ulong> SetAllVector128(ulong value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<ulong> vector = ConvertScalarToVector128UInt64(value);
+            // Create { vl vl } and return result
+            return UnpackLow(vector, vector);
+        }
+        /// <summary>
+        /// __m128d _mm_set1_pd (double a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> SetAllVector128(double value)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load value et index 0
+            Vector128<double> vector = SetScalarVector128(value);
+            // Create { vl vl } and return result
+            return UnpackLow(vector, vector);
+        }
+
+        /// <summary>
+        /// __m128d _mm_set_sd (double a)
+        ///   HELPER
+        /// </summary>
+        public static Vector128<double> SetScalarVector128(double value) => SetScalarVector128(value);
+
+        /// <summary>
         /// ___m128i _mm_set_epi8 (char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
         ///   HELPER
         /// </summary>
@@ -1157,58 +1300,6 @@ namespace System.Runtime.Intrinsics.X86
             // Create { e1 e0 } and return result
             return UnpackLow(e0Vector, e1Vector);
         }
-
-        /// <summary>
-        /// __m128d _mm_set_sd (double a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<double> SetScalarVector128(double value) => SetScalarVector128(value);
-
-        /// <summary>
-        /// __m128i _mm_set1_epi8 (char a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<byte> SetAllVector128(byte value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi8 (char a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<sbyte> SetAllVector128(sbyte value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi16 (short a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<short> SetAllVector128(short value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi16 (short a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<ushort> SetAllVector128(ushort value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi32 (int a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<int> SetAllVector128(int value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi32 (int a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<uint> SetAllVector128(uint value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi64x (long long a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<long> SetAllVector128(long value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128i _mm_set1_epi64x (long long a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<ulong> SetAllVector128(ulong value) => SetAllVector128(value);
-        /// <summary>
-        /// __m128d _mm_set1_pd (double a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<double> SetAllVector128(double value) => SetAllVector128(value);
 
         /// <summary>
         /// __m128i _mm_setzero_si128 ()
