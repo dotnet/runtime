@@ -124,7 +124,7 @@ InstructionSet Compiler::lookupHWIntrinsicISA(const char* className)
 //    isa        -- instruction set of the intrinsic.
 //
 // Return Value:
-//    Id for the hardware intrinsic.
+//    Id for the hardware intrinsic
 //
 // TODO-Throughput: replace sequential search by binary search
 NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSet isa)
@@ -137,6 +137,7 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSe
             if (isa == hwIntrinsicInfoArray[i].isa && strcmp(methodName, hwIntrinsicInfoArray[i].intrinsicName) == 0)
             {
                 result = hwIntrinsicInfoArray[i].intrinsicID;
+                break;
             }
         }
     }
