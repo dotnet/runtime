@@ -17,8 +17,8 @@ namespace System.Net.Sockets.Tests
         {
             await OpenLoopbackConnectionAsync(async (client, server) =>
             {
-                byte[] clientBuffer = new byte[1];
-                byte[] serverBuffer = new byte[1];
+                ReadOnlyMemory<byte> clientBuffer = new byte[1];
+                Memory<byte> serverBuffer = new byte[1];
                 foreach (BenchmarkIteration iteration in Benchmark.Iterations)
                 {
                     long iters = Benchmark.InnerIterationCount;
@@ -39,8 +39,8 @@ namespace System.Net.Sockets.Tests
         {
             await OpenLoopbackConnectionAsync(async (client, server) =>
             {
-                byte[] clientBuffer = new byte[1];
-                byte[] serverBuffer = new byte[1];
+                ReadOnlyMemory<byte> clientBuffer = new byte[1];
+                Memory<byte> serverBuffer = new byte[1];
                 foreach (BenchmarkIteration iteration in Benchmark.Iterations)
                 {
                     long iters = Benchmark.InnerIterationCount;
@@ -48,7 +48,7 @@ namespace System.Net.Sockets.Tests
                     {
                         for (int i = 0; i < iters; i++)
                         {
-                            Task r = server.ReceiveAsync(serverBuffer, SocketFlags.None);
+                            ValueTask<int> r = server.ReceiveAsync(serverBuffer, SocketFlags.None);
                             await client.SendAsync(clientBuffer, SocketFlags.None);
                             await r;
                         }
@@ -61,8 +61,8 @@ namespace System.Net.Sockets.Tests
         [InlineData(16)]
         public async Task ReceiveAsyncThenSendAsync_Task_Parallel(int numConnections)
         {
-            byte[] clientBuffer = new byte[1];
-            byte[] serverBuffer = new byte[1];
+            ReadOnlyMemory<byte> clientBuffer = new byte[1];
+            Memory<byte> serverBuffer = new byte[1];
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 await OpenLoopbackConnectionAsync(async (client, server) =>
@@ -72,7 +72,7 @@ namespace System.Net.Sockets.Tests
                     {
                         for (int i = 0; i < iters; i++)
                         {
-                            Task r = server.ReceiveAsync(serverBuffer, SocketFlags.None);
+                            ValueTask<int> r = server.ReceiveAsync(serverBuffer, SocketFlags.None);
                             await client.SendAsync(clientBuffer, SocketFlags.None);
                             await r;
                         }
