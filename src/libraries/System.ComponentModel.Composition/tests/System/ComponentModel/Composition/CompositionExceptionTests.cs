@@ -400,6 +400,10 @@ namespace System.ComponentModel.Composition
 
         private void AssertMessage(CompositionException exception, int rootCauseCount, CultureInfo culture)
         {
+            if (PlatformDetection.IsNetNative)
+            {
+                return;
+            }
             using (StringReader reader = new StringReader(exception.Message))
             {
                 string line = reader.ReadLine();
@@ -420,6 +424,10 @@ namespace System.ComponentModel.Composition
 
         private void AssertMessage(CompositionException exception, string[] expected)
         {
+            if (PlatformDetection.IsNetNative)
+            {
+                return;
+            }
             using (StringReader reader = new StringReader(exception.Message))
             {
                 // Skip header
