@@ -547,7 +547,7 @@ mono_object_handle_pin_unbox (MonoObjectHandle boxed_valuetype_obj, uint32_t *gc
 static inline gpointer
 mono_handle_unbox_unsafe (MonoObjectHandle handle)
 {
-	g_assert (MONO_HANDLE_GETVAL (handle, vtable)->klass->valuetype);
+	g_assert (m_class_is_valuetype (MONO_HANDLE_GETVAL (handle, vtable)->klass));
 	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle) + 1);
 }
 

@@ -15,6 +15,13 @@
 #ifdef HAVE_SGEN_GC
 #include <mono/sgen/sgen-gc.h>
 #endif
+#ifdef MONO_CLASS_DEF_PRIVATE
+/* Rationale: MonoClass field offsets are computed here.  Need to see the definition.
+ */
+#define REALLY_INCLUDE_CLASS_DEF 1
+#include <mono/metadata/class-private-definition.h>
+#undef REALLY_INCLUDE_CLASS_DEF
+#endif
 
 static int
 dump_arch (void)

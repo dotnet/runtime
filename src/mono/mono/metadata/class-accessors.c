@@ -5,7 +5,9 @@
  */
 #include <config.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
+#include <mono/metadata/class-abi-details.h>
 #ifdef MONO_CLASS_DEF_PRIVATE
 #include <mono/metadata/abi-details.h>
 #define REALLY_INCLUDE_CLASS_DEF 1
@@ -511,6 +513,13 @@ mono_class_set_nonblittable (MonoClass *klass) {
 	klass->blittable = FALSE;
 	mono_loader_unlock ();
 }
+
+#ifndef DISABLE_REMOTING
+void
+mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out) {
+	mono_marshal_find_bitfield_offset (MonoClass, contextbound, byte_offset_out, mask_out);
+}
+#endif
 
 #ifdef MONO_CLASS_DEF_PRIVATE
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass) { return optref klass-> fieldname ; }

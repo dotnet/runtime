@@ -516,7 +516,7 @@ static const char *bridge_class;
 static MonoGCBridgeObjectKind
 bridge_test_bridge_class_kind (MonoClass *klass)
 {
-	if (!strcmp (bridge_class, klass->name))
+	if (!strcmp (bridge_class, m_class_get_name (klass)))
 		return GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS;
 	return GC_BRIDGE_TRANSPARENT_CLASS;
 }

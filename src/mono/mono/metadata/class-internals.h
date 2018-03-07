@@ -1416,6 +1416,11 @@ mono_class_set_nonblittable (MonoClass *klass);
 void
 mono_class_compute_gc_descriptor (MonoClass *klass);
 
+#ifndef DISABLE_REMOTING
+void
+mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
+#endif
+
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
 

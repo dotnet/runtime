@@ -538,7 +538,7 @@ mono_object_handle_pin_unbox (MonoObjectHandle obj, uint32_t *gchandle)
 {
 	g_assert (!MONO_HANDLE_IS_NULL (obj));
 	MonoClass *klass = mono_handle_class (obj);
-	g_assert (klass->valuetype);
+	g_assert (m_class_is_valuetype (klass));
 	*gchandle = mono_gchandle_from_handle (obj, TRUE);
 	return mono_object_unbox (MONO_HANDLE_RAW (obj));
 }

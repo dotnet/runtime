@@ -140,8 +140,8 @@ encode_generic_class (MonoDynamicImage *assembly, MonoGenericClass *gclass, SigB
 
 	sigbuffer_add_value (buf, MONO_TYPE_GENERICINST);
 	klass = gclass->container_class;
-	sigbuffer_add_value (buf, klass->byval_arg.type);
-	sigbuffer_add_value (buf, mono_dynimage_encode_typedef_or_ref_full (assembly, &klass->byval_arg, FALSE));
+	sigbuffer_add_value (buf, m_class_get_byval_arg (klass)->type);
+	sigbuffer_add_value (buf, mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (klass), FALSE));
 
 	sigbuffer_add_value (buf, class_inst->type_argc);
 	for (i = 0; i < class_inst->type_argc; ++i)
@@ -189,7 +189,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		break;
 	case MONO_TYPE_SZARRAY:
 		sigbuffer_add_value (buf, type->type);
-		encode_type (assembly, &type->data.klass->byval_arg, buf);
+		encode_type (assembly, m_class_get_byval_arg (type->data.klass), buf);
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
@@ -202,19 +202,19 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 			/*
 			 * Make sure we use the correct type.
 			 */
-			sigbuffer_add_value (buf, k->byval_arg.type);
+			sigbuffer_add_value (buf, m_class_get_byval_arg (k)->type);
 			/*
 			 * ensure only non-byref gets passed to mono_image_typedef_or_ref(),
 			 * otherwise two typerefs could point to the same type, leading to
 			 * verification errors.
 			 */
-			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, &k->byval_arg));
+			sigbuffer_add_value (buf, mono_image_typedef_or_ref (assembly, m_class_get_byval_arg (k)));
 		}
 		break;
 	}
 	case MONO_TYPE_ARRAY:
 		sigbuffer_add_value (buf, type->type);
-		encode_type (assembly, &type->data.array->eklass->byval_arg, buf);
+		encode_type (assembly, m_class_get_byval_arg (type->data.array->eklass), buf);
 		sigbuffer_add_value (buf, type->data.array->rank);
 		sigbuffer_add_value (buf, 0); /* FIXME: set to 0 for now */
 		sigbuffer_add_value (buf, 0);
@@ -530,7 +530,7 @@ mono_dynimage_encode_constant (MonoDynamicImage *assembly, MonoObject *val, Mono
 		box_val = (char*)&dummy;
 	} else {
 		box_val = ((char*)val) + sizeof (MonoObject);
-		*ret_type = val->vtable->klass->byval_arg.type;
+		*ret_type = m_class_get_byval_arg (val->vtable->klass)->type;
 	}
 handle_enum:
 	switch (*ret_type) {
@@ -559,10 +559,10 @@ handle_enum:
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *klass = val->vtable->klass;
 		
-		if (klass->enumtype) {
+		if (m_class_is_enumtype (klass)) {
 			*ret_type = mono_class_enum_basetype (klass)->type;
 			goto handle_enum;
-		} else if (mono_is_corlib_image (klass->image) && strcmp (klass->name_space, "System") == 0 && strcmp (klass->name, "DateTime") == 0) {
+		} else if (mono_is_corlib_image (m_class_get_image (klass)) && strcmp (m_class_get_name_space (klass), "System") == 0 && strcmp (m_class_get_name (klass), "DateTime") == 0) {
 			len = 8;
 		} else 
 			g_error ("we can't encode valuetypes, we should have never reached this line");
@@ -592,7 +592,7 @@ handle_enum:
 		return idx;
 	}
 	case MONO_TYPE_GENERICINST:
-		*ret_type = mono_class_get_generic_class (val->vtable->klass)->container_class->byval_arg.type;
+		*ret_type = m_class_get_byval_arg (mono_class_get_generic_class (val->vtable->klass)->container_class)->type;
 		goto handle_enum;
 	default:
 		g_error ("we don't encode constant type 0x%02x yet", *ret_type);
@@ -678,7 +678,7 @@ mono_dynimage_encode_fieldref_signature (MonoDynamicImage *assembly, MonoImage *
 				MonoClass *klass = mono_class_get_checked (field_image, type->modifiers [i].token, error);
 				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 
-				token = mono_image_typedef_or_ref (assembly, &klass->byval_arg);
+				token = mono_image_typedef_or_ref (assembly, m_class_get_byval_arg (klass));
 			} else {
 				token = type->modifiers [i].token;
 			}
@@ -782,7 +782,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	/*
 	 * If it's in the same module and not a generic type parameter:
 	 */
-	if ((klass->image == &assembly->image) && (type->type != MONO_TYPE_VAR) && 
+	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) && 
 			(type->type != MONO_TYPE_MVAR)) {
 		token = MONO_TYPEDEFORREF_TYPEDEF | (MONO_HANDLE_GETVAL (tb, table_idx) << MONO_TYPEDEFORREF_BITS);
 		/* This function is called multiple times from sre and sre-save, so same object is okay */
@@ -790,21 +790,21 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 		goto leave;
 	}
 
-	if (klass->nested_in) {
-		enclosing = mono_dynimage_encode_typedef_or_ref_full (assembly, &klass->nested_in->byval_arg, FALSE);
+	if (m_class_get_nested_in (klass)) {
+		enclosing = mono_dynimage_encode_typedef_or_ref_full (assembly, m_class_get_byval_arg (m_class_get_nested_in (klass)), FALSE);
 		/* get the typeref idx of the enclosing type */
 		enclosing >>= MONO_TYPEDEFORREF_BITS;
 		scope = (enclosing << MONO_RESOLUTION_SCOPE_BITS) | MONO_RESOLUTION_SCOPE_TYPEREF;
 	} else {
-		scope = mono_reflection_resolution_scope_from_image (assembly, klass->image);
+		scope = mono_reflection_resolution_scope_from_image (assembly, m_class_get_image (klass));
 	}
 	table = &assembly->tables [MONO_TABLE_TYPEREF];
 	if (assembly->save) {
 		alloc_table (table, table->rows + 1);
 		values = table->values + table->next_idx * MONO_TYPEREF_SIZE;
 		values [MONO_TYPEREF_SCOPE] = scope;
-		values [MONO_TYPEREF_NAME] = mono_dynstream_insert_string (&assembly->sheap, klass->name);
-		values [MONO_TYPEREF_NAMESPACE] = mono_dynstream_insert_string (&assembly->sheap, klass->name_space);
+		values [MONO_TYPEREF_NAME] = mono_dynstream_insert_string (&assembly->sheap, m_class_get_name (klass));
+		values [MONO_TYPEREF_NAMESPACE] = mono_dynstream_insert_string (&assembly->sheap, m_class_get_name_space (klass));
 	}
 	token = MONO_TYPEDEFORREF_TYPEREF | (table->next_idx << MONO_TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));

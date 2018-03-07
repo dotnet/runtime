@@ -994,7 +994,7 @@ mono_debug_print_stack_frame (MonoMethod *method, guint32 native_offset, MonoDom
 		if (offset < 0)
 			res = g_strdup_printf ("at %s <0x%05x>", fname, native_offset);
 		else {
-			char *mvid = mono_guid_to_string_minimal ((uint8_t*)method->klass->image->heap_guid.data);
+			char *mvid = mono_guid_to_string_minimal ((uint8_t*)m_class_get_image (method->klass)->heap_guid.data);
 			char *aotid = mono_runtime_get_aotid ();
 			if (aotid)
 				res = g_strdup_printf ("at %s [0x%05x] in <%s#%s>:0" , fname, offset, mvid, aotid);

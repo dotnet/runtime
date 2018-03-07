@@ -145,7 +145,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	g_assert (mb != NULL);
 
-	image = mb->method->klass->image;
+	image = m_class_get_image (mb->method->klass);
 
 #ifdef ENABLE_ILGEN
 	if (mb->dynamic) {

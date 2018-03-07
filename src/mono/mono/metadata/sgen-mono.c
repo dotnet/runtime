@@ -18,9 +18,11 @@
 #include "sgen/sgen-cardtable.h"
 #include "sgen/sgen-pinning.h"
 #include "sgen/sgen-workers.h"
+#include "metadata/class-init.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
+#include "metadata/class-abi-details.h"
 #include "metadata/mono-gc.h"
 #include "metadata/runtime.h"
 #include "metadata/sgen-bridge-internals.h"
@@ -97,11 +99,11 @@ void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	HEAVY_STAT (++stat_wbarrier_value_copy);
-	g_assert (klass->valuetype);
+	g_assert (m_class_is_valuetype (klass));
 
-	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, (gpointer)klass->gc_descr, klass->name, klass);
+	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, (gpointer)m_class_get_gc_descr (klass), m_class_get_name (klass), klass);
 
-	if (sgen_ptr_in_nursery (dest) || ptr_on_stack (dest) || !sgen_gc_descr_has_references ((mword)klass->gc_descr)) {
+	if (sgen_ptr_in_nursery (dest) || ptr_on_stack (dest) || !sgen_gc_descr_has_references ((mword)m_class_get_gc_descr (klass))) {
 		size_t element_size = mono_class_value_size (klass, NULL);
 		size_t size = count * element_size;
 		mono_gc_memmove_atomic (dest, src, size);		
@@ -137,7 +139,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 
 	SGEN_ASSERT (6, !ptr_on_stack (obj), "Why is this called for a non-reference type?");
 	if (sgen_ptr_in_nursery (obj) || !SGEN_OBJECT_HAS_REFERENCES (src)) {
-		size = mono_object_class (obj)->instance_size;
+		size = m_class_get_instance_size (mono_object_class (obj));
 		mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 				size - sizeof (MonoObject));
 		return;	
@@ -228,7 +230,7 @@ mono_gc_is_critical_method (MonoMethod *method)
 static void
 emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gboolean is_concurrent)
 {
-	int shifted_nursery_start = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	int shifted_nursery_start = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 
 	memset (nursery_check_return_labels, 0, sizeof (int) * 2);
 	// if (ptr_in_nursery (ptr)) return;
@@ -287,8 +289,8 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 
 	/* Create the IL version of mono_gc_barrier_generic_store () */
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 1);
-	sig->ret = &mono_defaults.void_class->byval_arg;
-	sig->params [0] = &mono_defaults.int_class->byval_arg;
+	sig->ret = m_class_get_byval_arg (mono_defaults.void_class);
+	sig->params [0] = m_class_get_byval_arg (mono_defaults.int_class);
 
 	if (is_concurrent)
 		mb = mono_mb_new (mono_defaults.object_class, "wbarrier_conc", MONO_WRAPPER_WRITE_BARRIER);
@@ -384,22 +386,15 @@ static GCVTable
 get_array_fill_vtable (void)
 {
 	if (!array_fill_vtable) {
-		static MonoClass klass;
 		static char _vtable[sizeof(MonoVTable)+8];
 		MonoVTable* vtable = (MonoVTable*) ALIGN_TO((mword)_vtable, 8);
 		gsize bmap;
 
+		MonoClass *klass = mono_class_create_array_fill_type ();
 		MonoDomain *domain = mono_get_root_domain ();
 		g_assert (domain);
 
-		klass.element_class = mono_defaults.byte_class;
-		klass.rank = 1;
-		klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
-		klass.sizes.element_size = 1;
-		klass.size_inited = 1;
-		klass.name = "array_filler_type";
-
-		vtable->klass = &klass;
+		vtable->klass = klass;
 		bmap = 0;
 		vtable->gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 1);
 		vtable->rank = 1;
@@ -789,7 +784,7 @@ process_object_for_domain_clearing (GCObject *start, MonoDomain *domain)
 	/* The object could be a proxy for an object in the domain
 	   we're deleting. */
 #ifndef DISABLE_REMOTING
-	if (mono_defaults.real_proxy_class->supertypes && mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
+	if (m_class_get_supertypes (mono_defaults.real_proxy_class) && mono_class_has_parent_fast (vt->klass, mono_defaults.real_proxy_class)) {
 		MonoObject *server = ((MonoRealProxy*)start)->unwrapped_server;
 
 		/* The server could already have been zeroed out, so
@@ -1020,7 +1015,7 @@ static gboolean use_managed_allocator = TRUE;
 // Cache the SgenThreadInfo pointer in a local 'var'.
 #define EMIT_TLS_ACCESS_VAR(mb, var) \
 	do { \
-		var = mono_mb_add_local ((mb), &mono_defaults.int_class->byval_arg); \
+		var = mono_mb_add_local ((mb), m_class_get_byval_arg (mono_defaults.int_class)); \
 		mono_mb_emit_byte ((mb), MONO_CUSTOM_PREFIX); \
 		mono_mb_emit_byte ((mb), CEE_MONO_TLS); \
 		mono_mb_emit_i4 ((mb), TLS_KEY_SGEN_THREAD_INFO); \
@@ -1096,15 +1091,16 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	else
 		num_params = 2;
 
+	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, num_params);
 	if (atype == ATYPE_STRING) {
-		csig->ret = &mono_defaults.string_class->byval_arg;
-		csig->params [0] = &mono_defaults.int_class->byval_arg;
-		csig->params [1] = &mono_defaults.int32_class->byval_arg;
+		csig->ret = m_class_get_byval_arg (mono_defaults.string_class);
+		csig->params [0] = int_type;
+		csig->params [1] = m_class_get_byval_arg (mono_defaults.int32_class);
 	} else {
-		csig->ret = &mono_defaults.object_class->byval_arg;
+		csig->ret = m_class_get_byval_arg (mono_defaults.object_class);
 		for (i = 0; i < num_params; i++)
-			csig->params [i] = &mono_defaults.int_class->byval_arg;
+			csig->params [i] = int_type;
 	}
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
@@ -1139,7 +1135,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	 */
 	EMIT_TLS_ACCESS_VAR (mb, thread_var);
 
-	size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	size_var = mono_mb_add_local (mb, int_type);
 	if (atype == ATYPE_SMALL) {
 		/* size_var = size_arg */
 		mono_mb_emit_ldarg (mb, 1);
@@ -1150,7 +1146,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoClass, instance_size));
+		mono_mb_emit_icon (mb, m_class_offsetof_instance_size ());
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
@@ -1193,7 +1189,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoClass, sizes));
+		mono_mb_emit_icon (mb, m_class_offsetof_sizes ());
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
 		mono_mb_emit_byte (mb, CEE_CONV_I);
@@ -1274,7 +1270,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 #endif
 
 	if (nursery_canaries_enabled ()) {
-		real_size_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		real_size_var = mono_mb_add_local (mb, int_type);
 		mono_mb_emit_ldloc (mb, size_var);
 		mono_mb_emit_stloc(mb, real_size_var);
 	}
@@ -1303,18 +1299,18 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	 */
 
 	/* tlab_next_addr (local) = tlab_next_addr (TLS var) */
-	tlab_next_addr_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	tlab_next_addr_var = mono_mb_add_local (mb, int_type);
 	EMIT_TLS_ACCESS_NEXT_ADDR (mb, thread_var);
 	mono_mb_emit_stloc (mb, tlab_next_addr_var);
 
 	/* p = (void**)tlab_next; */
-	p_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	p_var = mono_mb_add_local (mb, int_type);
 	mono_mb_emit_ldloc (mb, tlab_next_addr_var);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_stloc (mb, p_var);
 	
 	/* new_next = (char*)p + size; */
-	new_next_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	new_next_var = mono_mb_add_local (mb, int_type);
 	mono_mb_emit_ldloc (mb, p_var);
 	mono_mb_emit_ldloc (mb, size_var);
 	mono_mb_emit_byte (mb, CEE_CONV_I);
@@ -1502,15 +1498,15 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 
 	if (collect_before_allocs)
 		return NULL;
-	if (klass->instance_size > tlab_size)
+	if (m_class_get_instance_size (klass) > tlab_size)
 		return NULL;
-	if (known_instance_size && ALIGN_TO (klass->instance_size, SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
+	if (known_instance_size && ALIGN_TO (m_class_get_instance_size (klass), SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
-	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || klass->has_weak_fields)
+	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || m_class_has_weak_fields (klass))
 		return NULL;
-	if (klass->rank)
+	if (m_class_get_rank (klass))
 		return NULL;
-	if (klass->byval_arg.type == MONO_TYPE_STRING)
+	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_STRING)
 		return mono_gc_get_managed_allocator_by_type (ATYPE_STRING, variant);
 	/* Generic classes have dynamic field and can go above MAX_SMALL_OBJ_SIZE. */
 	if (known_instance_size)
@@ -1526,7 +1522,7 @@ MonoMethod*
 mono_gc_get_managed_array_allocator (MonoClass *klass)
 {
 #ifdef MANAGED_ALLOCATION
-	if (klass->rank != 1)
+	if (m_class_get_rank (klass) != 1)
 		return NULL;
 	if (has_per_allocation_action)
 		return NULL;
@@ -1633,7 +1629,7 @@ sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext
 		size_t card_count;
 		size_t extra_idx = 0;
 
-		mword desc = (mword)klass->element_class->gc_descr;
+		mword desc = (mword)m_class_get_gc_descr (m_class_get_element_class (klass));
 		int elem_size = mono_array_element_size (klass);
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
@@ -1641,7 +1637,7 @@ sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext
 #endif
 
 #ifdef SGEN_OBJECT_LAYOUT_STATISTICS
-		if (klass->element_class->valuetype)
+		if (m_class_is_valuetype (m_class_get_element_class (klass)))
 			sgen_object_layout_scanned_vtype_array ();
 		else
 			sgen_object_layout_scanned_ref_array ();
@@ -1688,7 +1684,7 @@ LOOP_HEAD:
 				index = ARRAY_OBJ_INDEX (start, obj, elem_size);
 
 			elem = first_elem = (char*)mono_array_addr_with_size_fast ((MonoArray*)obj, elem_size, index);
-			if (klass->element_class->valuetype) {
+			if (m_class_is_valuetype (m_class_get_element_class (klass))) {
 				ScanVTypeFunc scan_vtype_func = ctx.ops->scan_vtype;
 
 				for (; elem < card_end; elem += elem_size)
@@ -3179,19 +3175,19 @@ sgen_client_pre_collection_checks (void)
 gboolean
 sgen_client_vtable_is_inited (MonoVTable *vt)
 {
-	return vt->klass->inited;
+	return m_class_is_inited (vt->klass);
 }
 
 const char*
 sgen_client_vtable_get_namespace (MonoVTable *vt)
 {
-	return vt->klass->name_space;
+	return m_class_get_name_space (vt->klass);
 }
 
 const char*
 sgen_client_vtable_get_name (MonoVTable *vt)
 {
-	return vt->klass->name;
+	return m_class_get_name (vt->klass);
 }
 
 /*

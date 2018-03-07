@@ -1734,7 +1734,7 @@ is_valid_cattr_type (MonoType *type)
 
 	if (type->type == MONO_TYPE_VALUETYPE) {
 		klass = mono_class_from_mono_type (type);
-		return klass && klass->enumtype;
+		return klass && m_class_is_enumtype (klass);
 	}
 
 	if (type->type == MONO_TYPE_CLASS)
@@ -1814,8 +1814,8 @@ get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end
 	g_free (enum_name);
 
 	klass = mono_class_from_mono_type (type);
-	if (!klass || !klass->enumtype) {
-		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute:Class %s::%s is not an enum", klass->name_space, klass->name));
+	if (!klass || !m_class_is_enumtype (klass)) {
+		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute:Class %s::%s is not an enum", m_class_get_name_space (klass), m_class_get_name (klass)));
 		return NULL;
 	}
 
@@ -1876,8 +1876,8 @@ handle_enum:
 			if (!klass)
 				return FALSE;
 
-			klass = klass->element_class;
-			type = klass->byval_arg.type;
+			klass = m_class_get_element_class (klass);
+			type = m_class_get_byval_arg (klass)->type;
 			goto handle_enum;
 		}
 		if (sub_type == 0x50) { /*Type*/
@@ -1909,31 +1909,31 @@ handle_enum:
 	}
 
 	case MONO_TYPE_CLASS:
-		if (klass && klass->enumtype) {
-			klass = klass->element_class;
-			type = klass->byval_arg.type;
+		if (klass && m_class_is_enumtype (klass)) {
+			klass = m_class_get_element_class (klass);
+			type = m_class_get_byval_arg (klass)->type;
 			goto handle_enum;
 		}
 
 		if (klass != mono_defaults.systemtype_class)
-			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",klass->name_space, klass->name));
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",m_class_get_name_space (klass), m_class_get_name (klass)));
 		*_ptr = ptr;
 		return is_valid_ser_string (ctx, _ptr, end);
 
 	case MONO_TYPE_VALUETYPE:
-		if (!klass || !klass->enumtype)
-			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid valuetype parameter expected enum %s:%s ",klass->name_space, klass->name));
+		if (!klass || !m_class_is_enumtype (klass))
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid valuetype parameter expected enum %s:%s ",m_class_get_name_space (klass), m_class_get_name (klass)));
 
-		klass = klass->element_class;
-		type = klass->byval_arg.type;
+		klass = m_class_get_element_class (klass);
+		type = m_class_get_byval_arg (klass)->type;
 		goto handle_enum;
 
 	case MONO_TYPE_SZARRAY:
-		mono_type = &klass->byval_arg;
+		mono_type = m_class_get_byval_arg (klass);
 		if (!is_valid_cattr_type (mono_type))
-			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %s:%s ",klass->name_space, klass->name));
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %s:%s ",m_class_get_name_space (klass), m_class_get_name (klass)));
 		if (!safe_read32 (element_count, ptr, end))
-			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",klass->name_space, klass->name));
+			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",m_class_get_name_space (klass), m_class_get_name (klass)));
 		if (element_count == 0xFFFFFFFFu) {
 			*_ptr = ptr;
 			return TRUE;
@@ -2013,11 +2013,11 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 			MonoClass *klass = get_enum_by_encoded_name (ctx, &ptr, end);
 			if (!klass)
 				return FALSE;
-			type = &klass->byval_arg;
+			type = m_class_get_byval_arg (klass);
 		} else if (kind == 0x50) {
-			type = &mono_defaults.systemtype_class->byval_arg;
+			type = m_class_get_byval_arg (mono_defaults.systemtype_class);
 		} else if (kind == 0x51) {
-			type = &mono_defaults.object_class->byval_arg;
+			type = m_class_get_byval_arg (mono_defaults.object_class);
 		} else if (kind == MONO_TYPE_SZARRAY) {
 			MonoClass *klass;
 			unsigned etype = 0;
@@ -2036,7 +2036,7 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 			} else
 				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
 
-			type = &mono_class_create_array (klass, 1)->byval_arg;
+			type = m_class_get_byval_arg (mono_class_create_array (klass, 1));
 		} else {
 			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid named parameter type %x", kind));
 		}

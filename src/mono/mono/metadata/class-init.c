@@ -5478,6 +5478,30 @@ mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable 
 }
 
 /**
+ * mono_class_create_array_fill_type:
+ *
+ * Returns a \c MonoClass that is used by SGen to fill out nursery fragments before a collection.
+ */
+MonoClass *
+mono_class_create_array_fill_type (void)
+{
+	static MonoClass klass;
+	static gboolean inited = FALSE;
+
+	if (!inited) {
+		klass.element_class = mono_defaults.byte_class;
+		klass.rank = 1;
+		klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
+		klass.sizes.element_size = 1;
+		klass.size_inited = 1;
+		klass.name = "array_filler_type";
+
+		inited = TRUE;
+	}
+	return &klass;
+}
+
+/**
  * mono_classes_init:
  *
  * Initialize the resources used by this module.

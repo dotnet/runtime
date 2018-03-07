@@ -376,8 +376,9 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	/* Search directly in the metadata to avoid calling setup_methods () */
 	error_init (error);
 
+	MonoImage *klass_image = m_class_get_image (klass);
 	/* FIXME: !mono_class_is_ginst (from_class) condition causes test failures. */
-	if (klass->type_token && !image_is_dynamic (klass->image) && !klass->methods && !klass->rank && klass == from_class && !mono_class_is_ginst (from_class)) {
+	if (m_class_get_type_token (klass) && !image_is_dynamic (klass_image) && !m_class_get_methods (klass) && !m_class_get_rank (klass) && klass == from_class && !mono_class_is_ginst (from_class)) {
 		int first_idx = mono_class_get_first_method_idx (klass);
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
@@ -386,16 +387,16 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 			const char *m_name;
 			MonoMethodSignature *other_sig;
 
-			mono_metadata_decode_table_row (klass->image, MONO_TABLE_METHOD, first_idx + i, cols, MONO_METHOD_SIZE);
+			mono_metadata_decode_table_row (klass_image, MONO_TABLE_METHOD, first_idx + i, cols, MONO_METHOD_SIZE);
 
-			m_name = mono_metadata_string_heap (klass->image, cols [MONO_METHOD_NAME]);
+			m_name = mono_metadata_string_heap (klass_image, cols [MONO_METHOD_NAME]);
 
 			if (!((fqname && !strcmp (m_name, fqname)) ||
 				  (qname && !strcmp (m_name, qname)) ||
 				  (name && !strcmp (m_name, name))))
 				continue;
 
-			method = mono_get_method_checked (klass->image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, error);
+			method = mono_get_method_checked (klass_image, MONO_TOKEN_METHOD_DEF | (first_idx + i + 1), klass, NULL, error);
 			if (!mono_error_ok (error)) //bail out if we hit a loader error
 				return NULL;
 			if (method) {
@@ -414,14 +415,15 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 	See mono/tests/generic-type-load-exception.2.il
 	FIXME we should better report this error to the caller
 	 */
-	if (!klass->methods || mono_class_has_failure (klass)) {
+	if (!m_class_get_methods (klass) || mono_class_has_failure (klass)) {
 		mono_error_set_type_load_class (error, klass, "Could not find method due to a type load error"); //FIXME get the error from the class 
 
 		return NULL;
 	}
 	int mcount = mono_class_get_method_count (klass);
+	MonoMethod **klass_methods = m_class_get_methods (klass);
 	for (i = 0; i < mcount; ++i) {
-		MonoMethod *m = klass->methods [i];
+		MonoMethod *m = klass_methods [i];
 		MonoMethodSignature *msig;
 
 		/* We must cope with failing to load some of the types. */
@@ -433,7 +435,7 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 		      (name && !strcmp (m->name, name))))
 			continue;
 		msig = mono_method_signature_checked (m, error);
-		if (!mono_error_ok (error)) //bail out if we hit a loader error
+		if (!mono_error_ok (error)) //bail out if we hit a loader error 
 			return NULL;
 
 		if (!msig)
@@ -466,11 +468,12 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	is_interface = MONO_CLASS_IS_INTERFACE (in_class);
 
 	if (ic) {
-		class_name = mono_type_get_name_full (&ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
+		class_name = mono_type_get_name_full (m_class_get_byval_arg (ic), MONO_TYPE_NAME_FORMAT_IL);
 
-		qname = g_strconcat (class_name, ".", name, NULL); 
-		if (ic->name_space && ic->name_space [0])
-			fqname = g_strconcat (ic->name_space, ".", class_name, ".", name, NULL);
+		qname = g_strconcat (class_name, ".", name, NULL);
+		const char *ic_name_space = m_class_get_name_space (ic);
+		if (ic_name_space && ic_name_space [0])
+			fqname = g_strconcat (ic_name_space, ".", class_name, ".", name, NULL);
 		else
 			fqname = NULL;
 	} else
@@ -489,21 +492,25 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 		 * This happens when we fail to lazily load the interfaces of one of the types.
 		 * On such case we can't just bail out since user code depends on us trying harder.
 		 */
-		if (from_class->interface_offsets_count != in_class->interface_offsets_count) {
-			in_class = in_class->parent;
-			from_class = from_class->parent;
+		if (m_class_get_interface_offsets_count (from_class) != m_class_get_interface_offsets_count (in_class)) {
+			in_class = m_class_get_parent (in_class);
+			from_class = m_class_get_parent (from_class);
 			continue;
 		}
 
-		for (i = 0; i < in_class->interface_offsets_count; i++) {
-			MonoClass *in_ic = in_class->interfaces_packed [i];
-			MonoClass *from_ic = from_class->interfaces_packed [i];
+		int in_class_interface_offsets_count = m_class_get_interface_offsets_count (in_class);
+		MonoClass **in_class_interfaces_packed = m_class_get_interfaces_packed (in_class);
+		MonoClass **from_class_interfaces_packed = m_class_get_interfaces_packed (from_class);
+		for (i = 0; i < in_class_interface_offsets_count; i++) {
+			MonoClass *in_ic = in_class_interfaces_packed [i];
+			MonoClass *from_ic = from_class_interfaces_packed [i];
 			char *ic_qname, *ic_fqname, *ic_class_name;
 			
-			ic_class_name = mono_type_get_name_full (&in_ic->byval_arg, MONO_TYPE_NAME_FORMAT_IL);
+			ic_class_name = mono_type_get_name_full (m_class_get_byval_arg (in_ic), MONO_TYPE_NAME_FORMAT_IL);
 			ic_qname = g_strconcat (ic_class_name, ".", name, NULL); 
-			if (in_ic->name_space && in_ic->name_space [0])
-				ic_fqname = g_strconcat (in_ic->name_space, ".", ic_class_name, ".", name, NULL);
+			const char *in_ic_name_space = m_class_get_name_space (in_ic);
+			if (in_ic_name_space && in_ic_name_space [0])
+				ic_fqname = g_strconcat (in_ic_name_space, ".", ic_class_name, ".", name, NULL);
 			else
 				ic_fqname = NULL;
 
@@ -515,8 +522,8 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 				goto out;
 		}
 
-		in_class = in_class->parent;
-		from_class = from_class->parent;
+		in_class = m_class_get_parent (in_class);
+		from_class = m_class_get_parent (from_class);
 	}
 	g_assert (!in_class == !from_class);
 
@@ -766,8 +773,9 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 	mono_class_setup_methods (klass);
 	g_assert (!mono_class_has_failure (klass)); /*FIXME this should not fail, right?*/
 	int mcount = mono_class_get_method_count (klass);
+	MonoMethod **klass_methods = m_class_get_methods (klass);
 	for (i = 0; i < mcount; ++i) {
-		MonoMethod *method = klass->methods [i];
+		MonoMethod *method = klass_methods [i];
 		if (strcmp (method->name, name) == 0 && sig->param_count == method->signature->param_count)
 			return method;
 	}
@@ -866,7 +874,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	case MONO_MEMBERREF_PARENT_TYPESPEC: {
 		MonoType *type;
 
-		type = &klass->byval_arg;
+		type = m_class_get_byval_arg (klass);
 
 		if (type->type != MONO_TYPE_ARRAY && type->type != MONO_TYPE_SZARRAY) {
 			MonoClass *in_class = mono_class_is_ginst (klass) ? mono_class_get_generic_class (klass)->container_class : klass;
@@ -1172,7 +1180,7 @@ is_absolute_path (const char *path)
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
 {
-	MonoImage *image = method->klass->image;
+	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
@@ -1199,10 +1207,10 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	if (piinfo->addr)
 		return piinfo->addr;
 
-	if (image_is_dynamic (method->klass->image)) {
+	if (image_is_dynamic (m_class_get_image (method->klass))) {
 		MonoReflectionMethodAux *method_aux = 
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
-				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (!method_aux)
 			return NULL;
 
@@ -1967,7 +1975,7 @@ mono_free_method  (MonoMethod *method)
 
 		mono_marshal_free_dynamic_wrappers (method);
 
-		mono_image_property_remove (method->klass->image, method);
+		mono_image_property_remove (m_class_get_image (method->klass), method);
 
 		g_free ((char*)method->name);
 		if (mw->header) {
@@ -2012,15 +2020,16 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		names [i] = "";
 
 	klass = method->klass;
-	if (klass->rank)
+	if (m_class_get_rank (klass))
 		return;
 
 	mono_class_init (klass);
 
-	if (image_is_dynamic (klass->image)) {
+	MonoImage *klass_image = m_class_get_image (klass);
+	if (image_is_dynamic (klass_image)) {
 		MonoReflectionMethodAux *method_aux = 
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
-				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
 			for (i = 0; i < mono_method_signature (method)->param_count; ++i)
 				if (method_aux->param_names [i + 1])
@@ -2032,10 +2041,10 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (method->wrapper_type) {
 		char **pnames = NULL;
 
-		mono_image_lock (klass->image);
-		if (klass->image->wrapper_param_names)
-			pnames = (char **)g_hash_table_lookup (klass->image->wrapper_param_names, method);
-		mono_image_unlock (klass->image);
+		mono_image_lock (klass_image);
+		if (klass_image->wrapper_param_names)
+			pnames = (char **)g_hash_table_lookup (klass_image->wrapper_param_names, method);
+		mono_image_unlock (klass_image);
 
 		if (pnames) {
 			for (i = 0; i < signature->param_count; ++i)
@@ -2044,8 +2053,8 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		return;
 	}
 
-	methodt = &klass->image->tables [MONO_TABLE_METHOD];
-	paramt = &klass->image->tables [MONO_TABLE_PARAM];
+	methodt = &klass_image->tables [MONO_TABLE_METHOD];
+	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
@@ -2060,7 +2069,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 		for (i = param_index; i < lastp; ++i) {
 			mono_metadata_decode_row (paramt, i -1, cols, MONO_PARAM_SIZE);
 			if (cols [MONO_PARAM_SEQUENCE] && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) /* skip return param spec and bounds check*/
-				names [cols [MONO_PARAM_SEQUENCE] - 1] = mono_metadata_string_heap (klass->image, cols [MONO_PARAM_NAME]);
+				names [cols [MONO_PARAM_SEQUENCE] - 1] = mono_metadata_string_heap (klass_image, cols [MONO_PARAM_NAME]);
 		}
 	}
 }
@@ -2077,10 +2086,10 @@ mono_method_get_param_token (MonoMethod *method, int index)
 
 	mono_class_init (klass);
 
-	if (image_is_dynamic (klass->image))
-		g_assert_not_reached ();
+	MonoImage *klass_image = m_class_get_image (klass);
+	g_assert (!image_is_dynamic (klass_image));
 
-	methodt = &klass->image->tables [MONO_TABLE_METHOD];
+	methodt = &klass_image->tables [MONO_TABLE_METHOD];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint param_index = mono_metadata_decode_row_col (methodt, idx - 1, MONO_METHOD_PARAMLIST);
@@ -2114,10 +2123,10 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	for (i = 0; i < signature->param_count + 1; ++i)
 		mspecs [i] = NULL;
 
-	if (image_is_dynamic (method->klass->image)) {
+	if (image_is_dynamic (m_class_get_image (method->klass))) {
 		MonoReflectionMethodAux *method_aux = 
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
-				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (method_aux && method_aux->param_marshall) {
 			MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 			for (i = 0; i < signature->param_count + 1; ++i)
@@ -2133,8 +2142,9 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 
 	mono_class_init (klass);
 
-	methodt = &klass->image->tables [MONO_TABLE_METHOD];
-	paramt = &klass->image->tables [MONO_TABLE_PARAM];
+	MonoImage *klass_image = m_class_get_image (klass);
+	methodt = &klass_image->tables [MONO_TABLE_METHOD];
+	paramt = &klass_image->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
@@ -2150,9 +2160,9 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 
 			if (cols [MONO_PARAM_FLAGS] & PARAM_ATTRIBUTE_HAS_FIELD_MARSHAL && cols [MONO_PARAM_SEQUENCE] <= signature->param_count) {
 				const char *tp;
-				tp = mono_metadata_get_marshal_info (klass->image, i - 1, FALSE);
+				tp = mono_metadata_get_marshal_info (klass_image, i - 1, FALSE);
 				g_assert (tp);
-				mspecs [cols [MONO_PARAM_SEQUENCE]]= mono_metadata_parse_marshal_spec (klass->image, tp);
+				mspecs [cols [MONO_PARAM_SEQUENCE]]= mono_metadata_parse_marshal_spec (klass_image, tp);
 			}
 		}
 
@@ -2172,10 +2182,10 @@ mono_method_has_marshal_info (MonoMethod *method)
 	MonoTableInfo *paramt;
 	guint32 idx;
 
-	if (image_is_dynamic (method->klass->image)) {
+	if (image_is_dynamic (m_class_get_image (method->klass))) {
 		MonoReflectionMethodAux *method_aux = 
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
-				((MonoDynamicImage*)method->klass->image)->method_aux_hash, method);
+				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {
 			for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
@@ -2187,8 +2197,8 @@ mono_method_has_marshal_info (MonoMethod *method)
 
 	mono_class_init (klass);
 
-	methodt = &klass->image->tables [MONO_TABLE_METHOD];
-	paramt = &klass->image->tables [MONO_TABLE_PARAM];
+	methodt = &m_class_get_image (klass)->tables [MONO_TABLE_METHOD];
+	paramt = &m_class_get_image (klass)->tables [MONO_TABLE_PARAM];
 	idx = mono_method_get_index (method);
 	if (idx > 0) {
 		guint32 cols [MONO_PARAM_SIZE];
@@ -2432,13 +2442,13 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (m->signature)
 		return m->signature;
 
-	img = m->klass->image;
+	img = m_class_get_image (m->klass);
 
 	if (m->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 		/* the lock is recursive */
 		signature = mono_method_signature (imethod->declaring);
-		signature = inflate_generic_signature_checked (imethod->declaring->klass->image, signature, mono_method_get_context (m), error);
+		signature = inflate_generic_signature_checked (m_class_get_image (imethod->declaring->klass), signature, mono_method_get_context (m), error);
 		if (!mono_error_ok (error))
 			return NULL;
 
@@ -2637,7 +2647,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	MonoGenericContainer *container;
 
 	error_init (error);
-	img = method->klass->image;
+	img = m_class_get_image (method->klass);
 
 	// FIXME: for internal callers maybe it makes sense to do this check at the call site, not
 	// here?
@@ -2739,7 +2749,7 @@ mono_method_get_index (MonoMethod *method)
 	MonoClass *klass = method->klass;
 	int i;
 
-	if (klass->rank)
+	if (m_class_get_rank (klass))
 		/* constructed array methods are not in the MethodDef table */
 		return 0;
 
@@ -2751,10 +2761,11 @@ mono_method_get_index (MonoMethod *method)
 		return 0;
 	int first_idx = mono_class_get_first_method_idx (klass);
 	int mcount = mono_class_get_method_count (klass);
+	MonoMethod **klass_methods = m_class_get_methods (klass);
 	for (i = 0; i < mcount; ++i) {
-		if (method == klass->methods [i]) {
-			if (klass->image->uncompressed_metadata)
-				return mono_metadata_translate_token_index (klass->image, MONO_TABLE_METHOD, first_idx + i + 1);
+		if (method == klass_methods [i]) {
+			if (m_class_get_image (klass)->uncompressed_metadata)
+				return mono_metadata_translate_token_index (m_class_get_image (klass), MONO_TABLE_METHOD, first_idx + i + 1);
 			else
 				return first_idx + i + 1;
 		}

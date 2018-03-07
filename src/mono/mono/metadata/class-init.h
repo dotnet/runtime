@@ -84,6 +84,9 @@ mono_class_setup_nested_types (MonoClass *klass);
 void
 mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable *vtable);
 
+MonoClass *
+mono_class_create_array_fill_type (void);
+
 MONO_END_DECLS
 
 #endif

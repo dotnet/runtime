@@ -718,7 +718,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 {
 	MonoObject *obj;
 
-	if (!vtable->klass->has_references) {
+	if (!m_class_has_references (vtable->klass)) {
 		obj = (MonoObject *)GC_MALLOC_ATOMIC (size);
 		if (G_UNLIKELY (!obj))
 			return NULL;
@@ -750,7 +750,7 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 {
 	MonoArray *obj;
 
-	if (!vtable->klass->has_references) {
+	if (!m_class_has_references (vtable->klass)) {
 		obj = (MonoArray *)GC_MALLOC_ATOMIC (size);
 		if (G_UNLIKELY (!obj))
 			return NULL;
@@ -784,7 +784,7 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 {
 	MonoArray *obj;
 
-	if (!vtable->klass->has_references) {
+	if (!m_class_has_references (vtable->klass)) {
 		obj = (MonoArray *)GC_MALLOC_ATOMIC (size);
 		if (G_UNLIKELY (!obj))
 			return NULL;
@@ -911,7 +911,7 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	/* do not copy the sync state */
 	mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
-			mono_object_class (obj)->instance_size - sizeof (MonoObject));
+				m_class_get_instance_size (mono_object_class (obj)) - sizeof (MonoObject));
 }
 
 void

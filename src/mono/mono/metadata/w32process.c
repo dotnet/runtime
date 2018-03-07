@@ -430,7 +430,7 @@ ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject
 {
 	ERROR_DECL (error);
 
-	stash_system_image (mono_object_class (this_obj)->image);
+	stash_system_image (m_class_get_image (mono_object_class (this_obj)));
 
 	mono_w32process_get_fileversion (this_obj, mono_string_chars (filename), error);
 	if (!mono_error_ok (error)) {
@@ -573,7 +573,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 	guint32 i, num_added = 0;
 	GPtrArray *assemblies = NULL;
 
-	stash_system_image (mono_object_class (this_obj)->image);
+	stash_system_image (m_class_get_image (mono_object_class (this_obj)));
 
 	if (mono_w32process_get_pid (process) == mono_process_current_pid ()) {
 		assemblies = get_domain_assemblies (mono_domain_get ());

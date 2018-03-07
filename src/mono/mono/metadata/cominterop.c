@@ -221,7 +221,7 @@ static MonoMethodSignature*
 cominterop_method_signature (MonoMethod* method)
 {
 	MonoMethodSignature *res;
-	MonoImage *image = method->klass->image;
+	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodSignature *sig = mono_method_signature (method);
 	gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 	int sigsize;
@@ -240,7 +240,7 @@ cominterop_method_signature (MonoMethod* method)
 		res->params[i+1] = sig->params[i];
 
 	// first arg is interface pointer
-	res->params[0] = &mono_defaults.int_class->byval_arg;
+	res->params[0] = m_class_get_byval_arg (mono_defaults.int_class);
 
 	if (preserve_sig) {
 		res->ret = sig->ret;
@@ -254,7 +254,7 @@ cominterop_method_signature (MonoMethod* method)
 		}
 
 		// return type is always int32 (HRESULT)
-		res->ret = &mono_defaults.int32_class->byval_arg;
+		res->ret = m_class_get_byval_arg (mono_defaults.int32_class);
 	}
 
 	// no pinvoke
@@ -365,8 +365,9 @@ cominterop_get_method_interface (MonoMethod* method)
 				ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 				offset = mono_class_interface_offset (method->klass, ic);
 				int mcount = mono_class_get_method_count (ic);
+				MonoMethod **method_klass_vtable = m_class_get_vtable (method->klass);
 				for (j = 0; j < mcount; ++j) {
-					if (method->klass->vtable [j + offset] == method) {
+					if (method_klass_vtable [j + offset] == method) {
 						found = TRUE;
 						break;
 					}
@@ -385,7 +386,7 @@ cominterop_get_method_interface (MonoMethod* method)
 static void
 mono_cominterop_get_interface_missing_error (MonoError* error, MonoMethod* method)
 {
-	mono_error_set_invalid_operation (error, "Method '%s' in ComImport class '%s' must implement an interface method.", method->name, method->klass->name);
+	mono_error_set_invalid_operation (error, "Method '%s' in ComImport class '%s' must implement an interface method.", method->name, m_class_get_name (method->klass));
 }
 
 /**
@@ -415,10 +416,12 @@ cominterop_get_com_slot_for_method (MonoMethod* method, MonoError* error)
 		offset = mono_class_interface_offset (method->klass, ic);
 		g_assert(offset >= 0);
 		int mcount = mono_class_get_method_count (ic);
+		MonoMethod **ic_methods = m_class_get_methods (ic);
+		MonoMethod **method_klass_vtable = m_class_get_vtable (method->klass);
 		for(i = 0; i < mcount; ++i) {
-			if (method->klass->vtable [i + offset] == method)
+			if (method_klass_vtable [i + offset] == method)
 			{
-				slot = ic->methods[i]->slot;
+				slot = ic_methods[i]->slot;
 				break;
 			}
 		}
@@ -532,7 +535,7 @@ cominterop_get_interface_checked (MonoComObject* obj, MonoClass* ic, MonoError *
 
 	mono_cominterop_lock ();
 	if (obj->itf_hash)
-		itf = g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER ((guint)ic->interface_id));
+		itf = g_hash_table_lookup (obj->itf_hash, GUINT_TO_POINTER ((guint)m_class_get_interface_id (ic)));
 	mono_cominterop_unlock ();
 
 	if (!itf) {
@@ -549,7 +552,7 @@ cominterop_get_interface_checked (MonoComObject* obj, MonoClass* ic, MonoError *
 			mono_cominterop_lock ();
 			if (!obj->itf_hash)
 				obj->itf_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-			g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER ((guint)ic->interface_id), itf);
+			g_hash_table_insert (obj->itf_hash, GUINT_TO_POINTER ((guint)m_class_get_interface_id (ic)), itf);
 			mono_cominterop_unlock ();
 		}
 
@@ -731,11 +734,11 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 			get_transparent_proxy = mono_class_get_method_from_name (mono_defaults.real_proxy_class, "GetTransparentProxy", 0);
 #endif
 
-		mono_mb_add_local (mb, &mono_class_get_interop_proxy_class ()->byval_arg);
+		mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_interop_proxy_class ()));
 
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_ptr (mb, &mono_class_get_com_object_class ()->byval_arg);
+		mono_mb_emit_ptr (mb, m_class_get_byval_arg (mono_class_get_com_object_class ()));
 		mono_mb_emit_icall (mb, cominterop_type_from_handle);
 		mono_mb_emit_managed_call (mb, com_interop_proxy_get_proxy, NULL);
 		mono_mb_emit_managed_call (mb, get_transparent_proxy, NULL);
@@ -953,7 +956,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		}
 	}
 
-	mono_marshal_emit_native_wrapper (method->klass->image, mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE, FALSE);
+	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, FALSE, TRUE, FALSE);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 
@@ -987,10 +990,10 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
-	if (!method->klass->vtable)
+	if (!m_class_get_vtable (method->klass))
 		mono_class_setup_vtable (method->klass);
 	
-	if (!method->klass->methods)
+	if (!m_class_get_methods (method->klass))
 		mono_class_setup_methods (method->klass);
 	g_assert (!mono_class_has_failure (method->klass)); /*FIXME do proper error handling*/
 
@@ -1035,7 +1038,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 
 			// add local variables
-			ptr_this = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			ptr_this = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 			if (!MONO_TYPE_IS_VOID (sig->ret))
 				retval =  mono_mb_add_local (mb, sig->ret);
 
@@ -1085,7 +1088,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 	}
 #endif /* DISABLE_JIT */
 
-	csig = mono_metadata_signature_dup_full (method->klass->image, sig);
+	csig = mono_metadata_signature_dup_full (m_class_get_image (method->klass), sig);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache (cache, method,
 									mb, csig, csig->param_count + 16);
@@ -1125,7 +1128,7 @@ mono_cominterop_get_invoke (MonoMethod *method)
 
 #ifndef DISABLE_JIT
 	/* get real proxy object, which is a ComInteropProxy in this case*/
-	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+	mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
 	mono_mb_emit_byte (mb, CEE_LDIND_REF);
@@ -1235,8 +1238,9 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_CONV_IN: {
 		guint32 pos_null = 0;
 
-		*conv_arg_type = &mono_defaults.int_class->byval_arg;
-		conv_arg = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+		*conv_arg_type = int_type;
+		conv_arg = mono_mb_add_local (mb, int_type);
 
 		mono_mb_emit_ptr (mb, NULL);
 		mono_mb_emit_stloc (mb, conv_arg);	
@@ -1277,7 +1281,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			int ccw_obj;
 			guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
-			ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+			ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
 
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -1334,8 +1338,8 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_CONV_RESULT: {
 		int ccw_obj, ret_ptr;
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
-		ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-		ret_ptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+		ret_ptr = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 
 		/* store return value */
 		mono_mb_emit_stloc (mb, ret_ptr);
@@ -1382,11 +1386,11 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		int ccw_obj;
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
-		ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+		ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
 
 		klass = mono_class_from_mono_type (t);
-		conv_arg = mono_mb_add_local (mb, &klass->byval_arg);
-		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		conv_arg = mono_mb_add_local (mb, m_class_get_byval_arg (klass));
+		*conv_arg_type = m_class_get_byval_arg (mono_defaults.int_class);
 
 		mono_mb_emit_byte (mb, CEE_LDNULL);
 		mono_mb_emit_stloc (mb, conv_arg);
@@ -1476,7 +1480,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
 		guint32 pos_null = 0;
 		int ccw_obj;
-		ccw_obj = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+		ccw_obj = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
 
 		if (!AddRef)
 			AddRef = mono_class_get_method_from_name (mono_defaults.marshal_class, "AddRef", 1);
@@ -1945,10 +1949,11 @@ static void
 cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig;
+	MonoImage *method_klass_image = m_class_get_image (method->klass);
 	sig = mono_method_signature (method);
 	/* we copy the signature, so that we can modify it */
 	/* FIXME: which to use? */
-	csig = mono_metadata_signature_dup_full (method->klass->image, sig);
+	csig = mono_metadata_signature_dup_full (method_klass_image, sig);
 	/* csig = mono_metadata_signature_dup (sig); */
 	
 	/* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
@@ -1960,7 +1965,7 @@ cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
-	m->image = method->klass->image;
+	m->image = method_klass_image;
 	m->piinfo = NULL;
 	m->retobj_var = 0;
 	m->sig = sig;
@@ -2048,8 +2053,8 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 		if (!coclass_attribute)
 			coclass_attribute = mono_class_load_from_name (mono_defaults.corlib, "System.Runtime.InteropServices", "CoClassAttribute");
 		if (mono_custom_attrs_has_attr (cinfo, coclass_attribute)) {
-			g_assert(itf->interface_count && itf->interfaces[0]);
-			itf = itf->interfaces[0];
+			g_assert(m_class_get_interface_count (itf) && m_class_get_interfaces (itf)[0]);
+			itf = m_class_get_interfaces (itf)[0];
 		}
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
@@ -2072,7 +2077,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 
 	if (!ccw_entry) {
 		int vtable_index = method_count-1+start_slot;
-		vtable = (void **)mono_image_alloc0 (klass->image, sizeof (gpointer)*(method_count+start_slot));
+		vtable = (void **)mono_image_alloc0 (m_class_get_image (klass), sizeof (gpointer)*(method_count+start_slot));
 		vtable [0] = (gpointer)cominterop_ccw_queryinterface;
 		vtable [1] = (gpointer)cominterop_ccw_addref;
 		vtable [2] = (gpointer)cominterop_ccw_release;
@@ -2089,7 +2094,7 @@ cominterop_get_ccw_checked (MonoObject* object, MonoClass* itf, MonoError *error
 			MonoMethodBuilder *mb;
 			MonoMarshalSpec ** mspecs;
 			MonoMethod *wrapper_method, *adjust_method;
-			MonoMethod *method = iface->methods [i];
+			MonoMethod *method = m_class_get_methods (iface) [i];
 			MonoMethodSignature* sig_adjusted;
 			MonoMethodSignature* sig = mono_method_signature (method);
 			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
@@ -2338,7 +2343,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 #ifndef DISABLE_JIT
 	if (!preserve_sig)
-		hr = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+		hr = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
 	else if (!MONO_TYPE_IS_VOID (sig->ret))
 		hr = mono_mb_add_local (mb, sig->ret);
 
@@ -2363,7 +2368,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		if (!preserve_sig) {
 			MonoClass *rclass = mono_class_from_mono_type (sig->ret);
-			if (rclass->valuetype) {
+			if (m_class_is_valuetype (rclass)) {
 				mono_mb_emit_op (mb, CEE_STOBJ, rclass);
 			} else {
 				mono_mb_emit_byte (mb, mono_type_to_stind (sig->ret));
@@ -2577,7 +2582,7 @@ cominterop_ccw_queryinterface (MonoCCWInterface* ccwe, guint8* riid, gpointer* p
 		if (itf)
 			break;
 
-		klass_iter = klass_iter->parent;
+		klass_iter = m_class_get_parent (klass_iter);
 	}
 	if (itf) {
 		*ppv = cominterop_get_ccw_checked (object, itf, error);
@@ -2944,9 +2949,10 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 			static MonoMethod *get_value_impl = NULL;
 			static MonoMethod *variant_clear = NULL;
 
-			conv_arg = safearray_var = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-			indices_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-			empty_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+			conv_arg = safearray_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.object_class));
+			indices_var = mono_mb_add_local (mb, int_type);
+			empty_var = mono_mb_add_local (mb, int_type);
 
 			if (t->byref) {
 				mono_mb_emit_ldarg (mb, argnum);
@@ -2965,7 +2971,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			label2 = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-			index_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+			index_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
 			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 			mono_mb_emit_stloc (mb, index_var);
 
@@ -2989,7 +2995,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 				get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
 			g_assert (get_native_variant_for_object);
 
-			elem_var =  mono_mb_add_local (mb, &mono_class_get_variant_class ()->byval_arg);
+			elem_var =  mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_get_variant_class ()));
 			mono_mb_emit_ldloc_addr (mb, elem_var);
 
 			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
@@ -3061,9 +3067,11 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 			static MonoMethod *set_value_impl = NULL;
 			gboolean byValue = !t->byref && (t->attrs & PARAM_ATTRIBUTE_IN);
 
-			result_var = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-			indices_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-			empty_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			MonoType *object_type = m_class_get_byval_arg (mono_defaults.object_class);
+			MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+			result_var = mono_mb_add_local (mb, object_type);
+			indices_var = mono_mb_add_local (mb, int_type);
+			empty_var = mono_mb_add_local (mb, int_type);
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_ldloc_addr (mb, result_var);
@@ -3082,7 +3090,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			label2 = mono_mb_emit_short_branch (mb, CEE_BRTRUE_S);
 
-			index_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+			index_var = mono_mb_add_local (mb, int_type);
 			mono_mb_emit_byte (mb, CEE_LDC_I4_0);
 			mono_mb_emit_stloc (mb, index_var);
 
@@ -3107,7 +3115,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 				set_value_impl = mono_class_get_method_from_name (mono_defaults.array_class, "SetValueImpl", 2);
 			g_assert (set_value_impl);
 
-			elem_var = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+			elem_var = mono_mb_add_local (mb, object_type);
 
 			mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
 			mono_mb_emit_stloc (mb, elem_var);
@@ -3486,7 +3494,7 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 #endif
 
 	max_array_length = mono_array_length (input);
-	dim = ((MonoObject *)input)->vtable->klass->rank;
+	dim = m_class_get_rank (mono_object_class (input));
 
 	*indices = g_malloc (dim * sizeof (int));
 	bounds = (SAFEARRAYBOUND *)alloca (dim * sizeof (SAFEARRAYBOUND));

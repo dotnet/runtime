@@ -43,7 +43,7 @@ mono_security_manager_get_methods (void)
 
 	/* Initialize */
 	secman.securitymanager = mono_class_get_security_manager_class ();
-	if (!secman.securitymanager->inited)
+	if (!m_class_is_inited (secman.securitymanager))
 		mono_class_init (secman.securitymanager);
 
 	return &secman;
