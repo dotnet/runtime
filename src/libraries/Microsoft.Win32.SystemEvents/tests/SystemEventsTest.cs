@@ -27,16 +27,10 @@ namespace Microsoft.Win32.SystemEventsTests
         {
             if (s_hwnd == IntPtr.Zero)
             {
-                // wait for the window to be created
-                var windowReadyField = typeof(SystemEvents).GetField("s_eventWindowReady", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic) ??  // corefx
-                                       typeof(SystemEvents).GetField("eventWindowReady", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);      // desktop
-                Assert.NotNull(windowReadyField);
-                var windowReadyEvent = windowReadyField.GetValue(null) as ManualResetEvent;
-                if (windowReadyEvent != null)
+                if (PlatformDetection.IsFullFramework)
                 {
-                    // on an STA thread the HWND is created in the same thread synchronously when attaching to an event handler
-                    // if we're on an MTA thread, a new thread is created to handle events and that thread creates the window, wait for it to complete.
-                    Assert.True(windowReadyEvent.WaitOne(PostMessageWait * ExpectedEventMultiplier));
+                    // desktop has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    WaitForSystemEventsWindow();
                 }
 
                 // locate the hwnd used by SystemEvents in this domain
@@ -48,6 +42,21 @@ namespace Microsoft.Win32.SystemEventsTests
 
                 s_hwnd = User32.FindWindowW(windowClassName, null);
                 Assert.NotEqual(s_hwnd, IntPtr.Zero);
+            }
+        }
+
+        internal static void WaitForSystemEventsWindow()
+        {
+            // wait for the window to be created
+            var windowReadyField = typeof(SystemEvents).GetField("s_eventWindowReady", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic) ??  // corefx
+                                   typeof(SystemEvents).GetField("eventWindowReady", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);      // desktop
+            Assert.NotNull(windowReadyField);
+            var windowReadyEvent = windowReadyField.GetValue(null) as ManualResetEvent;
+            if (windowReadyEvent != null)
+            {
+                // on an STA thread the HWND is created in the same thread synchronously when attaching to an event handler
+                // if we're on an MTA thread, a new thread is created to handle events and that thread creates the window, wait for it to complete.
+                Assert.True(windowReadyEvent.WaitOne(PostMessageWait * ExpectedEventMultiplier));
             }
         }
     }
