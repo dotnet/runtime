@@ -2,9 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if netcoreapp
+using Internal.Runtime.CompilerServices;
+#endif
 using System.Globalization;
 using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Numerics
@@ -386,7 +390,7 @@ namespace System.Numerics
             }
             if (index < 0 || (values.Length - index) < Count)
             {
-                throw new IndexOutOfRangeException();
+                throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, Vector<T>.Count, nameof(values)));
             }
 
             if (Vector.IsHardwareAccelerated)
@@ -763,6 +767,37 @@ namespace System.Numerics
         {
             this.register = existingRegister;
         }
+
+#if netcoreapp
+        /// <summary>
+        /// Constructs a vector from the given span. The span must contain at least Vector'T.Count elements.
+        /// </summary>
+        public Vector(Span<T> values)
+            : this()
+        {
+            if ((typeof(T) == typeof(Byte))
+                || (typeof(T) == typeof(SByte))
+                || (typeof(T) == typeof(UInt16))
+                || (typeof(T) == typeof(Int16))
+                || (typeof(T) == typeof(UInt32))
+                || (typeof(T) == typeof(Int32))
+                || (typeof(T) == typeof(UInt64))
+                || (typeof(T) == typeof(Int64))
+                || (typeof(T) == typeof(Single))
+                || (typeof(T) == typeof(Double)))
+            {
+                if (values.Length < Count)
+                {
+                    throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, Vector<T>.Count, nameof(values)));
+                }
+                this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
+#endif
         #endregion Constructors
 
         #region Public Instance Methods
