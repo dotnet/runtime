@@ -507,8 +507,8 @@ namespace System.Threading.Channels.Tests
                 Assert.True(c.Writer.TryWrite(42));
             }
 
-            ValueTask<bool> writeTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
-            Assert.True(writeTask.IsCanceled);
+            ValueTask<bool> waitTask = c.Reader.WaitToReadAsync(new CancellationToken(true));
+            Assert.True(waitTask.IsCanceled);
         }
 
         [Theory]
@@ -566,13 +566,19 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(42, await r);
         }
 
-        [Fact]
-        public void ReadAsync_Precanceled_CanceledSynchronously()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Precancellation_ReadAsync_ReturnsImmediately(bool dataAvailable)
         {
             Channel<int> c = CreateChannel();
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-            AssertSynchronouslyCanceled(c.Reader.ReadAsync(cts.Token).AsTask(), cts.Token);
+            if (dataAvailable)
+            {
+                Assert.True(c.Writer.TryWrite(42));
+            }
+
+            ValueTask<int> readTask = c.Reader.ReadAsync(new CancellationToken(true));
+            Assert.True(readTask.IsCanceled);
         }
 
         [Fact]
