@@ -3,10 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Security;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using Microsoft.Win32;
 
 namespace Microsoft.Win32.SafeHandles
 {

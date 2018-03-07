@@ -78,5 +78,8 @@ namespace System.IO
             bool directoryError = !Directory.Exists(Path.GetDirectoryName(PathInternal.TrimEndingDirectorySeparator(path)));
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), path, directoryError);
         }
+
+        // There is no special handling for Unix- see Windows code for the reason we do this
+        internal string NormalizedPath => FullPath;
     }
 }
