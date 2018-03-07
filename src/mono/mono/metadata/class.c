@@ -3506,6 +3506,14 @@ mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 				 */
 				return FALSE;
 			}
+			// FIXME: IEnumerator`1 should not be an array special interface.
+			// The correct fix is to make
+			// ((IEnumerable<U>) (new T[] {...})).GetEnumerator()
+			// return an IEnumerator<U> (like .NET does) instead of IEnumerator<T>
+			// and to stop marking IEnumerable`1 as an array_special_interface.
+			if (mono_class_get_generic_type_definition (klass) == mono_defaults.generic_ienumerator_class)
+				return FALSE;
+
 			//XXX we could offset this by having the cast target computed at JIT time
 			//XXX we could go even further and emit a wrapper that would do the extra type check
 			MonoClass *iface_klass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
