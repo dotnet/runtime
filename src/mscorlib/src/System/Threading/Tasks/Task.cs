@@ -6192,6 +6192,7 @@ namespace System.Threading.Tasks
             return null;
         }
 
+        //Do not remove: VS debugger calls this API directly using func-eval to populate data in the tasks window
         private static Task GetActiveTaskFromId(int taskId)
         {
             Task task = null;
