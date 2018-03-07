@@ -105,14 +105,6 @@ mkdir -p $__Android_Cross_Dir/tmp/$arch/
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu_60.2_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu_60.2_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu-dev_60.2_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu-dev_60.2_$__AndroidArch.deb
 
-if [ "$__AndroidArch" == "arm" ]; then
-    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-dev-1.0.3-1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid-dev_1.0.3-1_$__AndroidArch.deb
-    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-1.0.3-1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid_1.0.3-1_$__AndroidArch.deb
-else
-    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-dev_1.0.3-1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid-dev_1.0.3-1_$__AndroidArch.deb
-    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid_1.0.3-1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid_1.0.3-1_$__AndroidArch.deb
-fi
-
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob-dev_0.4_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob-dev_0.4_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob_0.4_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob_0.4_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support-dev_22_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support-dev_22_$__AndroidArch.deb
@@ -125,8 +117,6 @@ wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libunwind
 echo Unpacking Termux packages
 dpkg -x $__Android_Cross_Dir/deb/libicu_60.2_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libicu-dev_60.2_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libuuid-dev_1.0.3-1_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libuuid_1.0.3-1_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libandroid-glob-dev_0.4_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libandroid-glob_0.4_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libandroid-support-dev_22_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/

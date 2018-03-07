@@ -32,7 +32,6 @@ ca-certificates
 
 ### Core FX
 libicu
-libuuid
 libunwind
 iputils
 zlib

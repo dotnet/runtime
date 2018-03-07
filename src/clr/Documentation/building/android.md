@@ -43,7 +43,6 @@ You can run the PAL tests on an Android device. To run the tests, you first copy
 To copy the PAL tests over to an Android phone:
 ```
 adb push bin/obj/Linux.arm64.Debug/src/pal/tests/palsuite/ /data/local/tmp/coreclr/src/pal/tests/palsuite
-adb push cross/android/toolchain/arm64/sysroot/usr/lib/libuuid.so.1 /data/local/tmp/coreclr/lib
 adb push cross/android/toolchain/arm64/sysroot/usr/lib/libintl.so /data/local/tmp/coreclr/lib
 adb push cross/android/toolchain/arm64/sysroot/usr/lib/libandroid-support.so /data/local/tmp/coreclr/lib/
 adb push cross/android/toolchain/arm64/sysroot/usr/lib/libandroid-glob.so /data/local/tmp/coreclr/lib/
