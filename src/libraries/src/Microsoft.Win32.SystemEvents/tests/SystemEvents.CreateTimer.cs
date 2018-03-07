@@ -26,8 +26,7 @@ namespace Microsoft.Win32.SystemEventsTests
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(-1));
             Assert.Throws<ArgumentException>(() => SystemEvents.CreateTimer(int.MinValue));
         }
-        
-        [ActiveIssue(27771)]
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TimerElapsedSignaled()
         {
@@ -48,6 +47,12 @@ namespace Microsoft.Win32.SystemEventsTests
             SystemEvents.TimerElapsed += handler;
             try
             {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // desktop has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    SystemEventsTest.WaitForSystemEventsWindow();
+                }
+
                 timer = SystemEvents.CreateTimer(TimerInterval);
 
                 Assert.True(elapsed.WaitOne(TimerInterval * SystemEventsTest.ExpectedEventMultiplier));
@@ -94,6 +99,12 @@ namespace Microsoft.Win32.SystemEventsTests
             SystemEvents.TimerElapsed += handler;
             try
             {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // desktop has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    SystemEventsTest.WaitForSystemEventsWindow();
+                }
+
                 for (int i = 0; i < NumConcurrentTimers; i++)
                 {
                     timersSignalled[SystemEvents.CreateTimer(TimerInterval)] = false;

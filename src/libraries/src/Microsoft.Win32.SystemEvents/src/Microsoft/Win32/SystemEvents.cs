@@ -615,18 +615,26 @@ namespace Microsoft.Win32
                         // just share the thread.
                         if (!UserInteractive || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
                         {
-                            s_systemEvents = new SystemEvents();
-                            s_systemEvents.Initialize();
+                            SystemEvents systemEvents = new SystemEvents();
+                            systemEvents.Initialize();
+
+                            // ensure this is initialized last as that will force concurrent threads calling
+                            // this method to block until after we've initialized.
+                            s_systemEvents = systemEvents;
                         }
                         else
                         {
                             s_eventWindowReady = new ManualResetEvent(false);
-                            s_systemEvents = new SystemEvents();
-                            s_windowThread = new Thread(new ThreadStart(s_systemEvents.WindowThreadProc));
+                            SystemEvents systemEvents = new SystemEvents();
+                            s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc));
                             s_windowThread.IsBackground = true;
                             s_windowThread.Name = ".NET SystemEvents";
                             s_windowThread.Start();
                             s_eventWindowReady.WaitOne();
+
+                            // ensure this is initialized last as that will force concurrent threads calling
+                            // this method to block until after we've initialized.
+                            s_systemEvents = systemEvents;
                         }
 
                         if (requireHandle && s_systemEvents._windowHandle == IntPtr.Zero)
