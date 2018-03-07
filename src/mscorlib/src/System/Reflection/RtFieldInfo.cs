@@ -67,8 +67,6 @@ namespace System.Reflection
         }
         #endregion
 
-        private RuntimeAssembly GetRuntimeAssembly() { return m_declaringType.GetRuntimeAssembly(); }
-
         #region Constructor
         internal RtFieldInfo(
             RuntimeFieldHandleInternal handle, RuntimeType declaringType, RuntimeTypeCache reflectedTypeCache, BindingFlags bindingFlags)

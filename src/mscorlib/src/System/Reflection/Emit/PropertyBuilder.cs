@@ -26,9 +26,6 @@ namespace System.Reflection.Emit
     // 
     public sealed class PropertyBuilder : PropertyInfo
     {
-        // Make a private constructor so these cannot be constructed externally.
-        private PropertyBuilder() { }
-
         // Constructs a PropertyBuilder.  
         //
         internal PropertyBuilder(

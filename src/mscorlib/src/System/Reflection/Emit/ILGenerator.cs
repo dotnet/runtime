@@ -1403,22 +1403,6 @@ namespace System.Reflection.Emit
 
         private int m_currentState;
 
-
-        //This will never get called.  The values exist merely to keep the
-        //compiler happy.
-        private __ExceptionInfo()
-        {
-            m_startAddr = 0;
-            m_filterAddr = null;
-            m_catchAddr = null;
-            m_catchEndAddr = null;
-            m_endAddr = 0;
-            m_currentCatch = 0;
-            m_type = null;
-            m_endFinally = -1;
-            m_currentState = State_Try;
-        }
-
         internal __ExceptionInfo(int startAddr, Label endLabel)
         {
             m_startAddr = startAddr;

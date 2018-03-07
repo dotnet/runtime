@@ -58,12 +58,6 @@ namespace System.Reflection.Emit
             customBuilder.CreateCustomAttribute((ModuleBuilder)(m_methodBuilder.GetModule()), m_pdToken.Token);
         }
 
-        //*******************************
-        // Make a private constructor so these cannot be constructed externally.
-        //*******************************
-        private ParameterBuilder() { }
-
-
         internal ParameterBuilder(
             MethodBuilder methodBuilder,
             int sequence,

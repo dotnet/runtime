@@ -745,17 +745,5 @@ namespace System.Reflection.Emit
                 m_assemblyData.AddCustomAttribute(customBuilder);
             }
         }
-
-        /**********************************************
-         * 
-         * Private methods
-         * 
-         **********************************************/
-
-        /**********************************************
-         * Make a private constructor so these cannot be constructed externally.
-         * @internonly
-         **********************************************/
-        private AssemblyBuilder() { }
     }
 }

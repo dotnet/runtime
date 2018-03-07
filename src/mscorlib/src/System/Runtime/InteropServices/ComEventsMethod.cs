@@ -35,10 +35,6 @@ namespace System.Runtime.InteropServices
         {
             private Delegate _d;
 
-            private bool _once = false;
-            private int _expectedParamsCount;
-            private Type[] _cachedTargetTypes;
-
             public DelegateWrapper(Delegate d)
             {
                 _d = d;

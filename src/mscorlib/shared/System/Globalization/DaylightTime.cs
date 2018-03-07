@@ -11,10 +11,6 @@ namespace System.Globalization
         private readonly DateTime _end;
         private readonly TimeSpan _delta;
 
-        private DaylightTime()
-        {
-        }
-
         public DaylightTime(DateTime start, DateTime end, TimeSpan delta)
         {
             _start = start;

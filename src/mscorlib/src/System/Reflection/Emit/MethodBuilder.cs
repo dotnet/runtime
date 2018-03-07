@@ -49,7 +49,6 @@ namespace System.Reflection.Emit
         // Parameters
         private SignatureHelper m_signature;
         internal Type[] m_parameterTypes;
-        private ParameterBuilder m_retParam;
         private Type m_returnType;
         private Type[] m_returnTypeRequiredCustomModifiers;
         private Type[] m_returnTypeOptionalCustomModifiers;

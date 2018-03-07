@@ -353,11 +353,6 @@ namespace System.Reflection.Emit
          * 
          */
 
-        //*******************************
-        // Make a private constructor so these cannot be constructed externally.
-        //*******************************
-        private EnumBuilder() { }
-
         public override Type MakePointerType()
         {
             return SymbolType.FormCompoundType("*", this, 0);

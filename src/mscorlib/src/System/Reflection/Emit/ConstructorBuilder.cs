@@ -21,10 +21,6 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        private ConstructorBuilder()
-        {
-        }
-
         internal ConstructorBuilder(String name, MethodAttributes attributes, CallingConventions callingConvention,
             Type[] parameterTypes, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers, ModuleBuilder mod, TypeBuilder type)
         {

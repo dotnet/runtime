@@ -248,11 +248,6 @@ namespace System.Diagnostics.Tracing
         #region private
 
         /// <summary>
-        /// The current activity ID.  Use this to log normal events.  
-        /// </summary>
-        private Guid CurrentActivityId { get { return m_current.Value.ActivityId; } }
-
-        /// <summary>
         /// Searched for a active (nonstopped) activity with the given name.  Returns null if not found.  
         /// </summary>
         private ActivityInfo FindActiveActivity(string name, ActivityInfo startLocation)

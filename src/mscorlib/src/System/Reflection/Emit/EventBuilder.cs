@@ -25,9 +25,6 @@ namespace System.Reflection.Emit
     // 
     public sealed class EventBuilder
     {
-        // Make a private constructor so these cannot be constructed externally.
-        private EventBuilder() { }
-
         // Constructs a EventBuilder.  
         //
         internal EventBuilder(
