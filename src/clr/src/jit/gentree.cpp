@@ -8699,7 +8699,7 @@ bool GenTree::gtSetFlags() const
     //
     // Precondition we have a GTK_SMPOP
     //
-    if (!varTypeIsIntegralOrI(TypeGet()))
+    if (!varTypeIsIntegralOrI(TypeGet()) && (TypeGet() != TYP_VOID))
     {
         return false;
     }
@@ -8722,7 +8722,7 @@ bool GenTree::gtSetFlags() const
     }
 #else // !(defined(LEGACY_BACKEND) && !FEATURE_SET_FLAGS && defined(_TARGET_XARCH_))
 
-#if FEATURE_SET_FLAGS
+#if FEATURE_SET_FLAGS && defined(LEGACY_BACKEND)
     assert(OperIsSimple());
 #endif
     if (((gtFlags & GTF_SET_FLAGS) != 0) && (gtOper != GT_IND))
