@@ -2,22 +2,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.Tests", "tests\System.IO.Compression.Tests.csproj", "{BC2E1649-291D-412E-9529-EDDA94FA7AD6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.Tests", "tests\System.IO.Compression.Tests.csproj", "{17DA7FB5-4370-4385-9A02-FFEF9F482903}"
 	ProjectSection(ProjectDependencies) = postProject
-		{5471BFE8-8071-466F-838E-5ADAA779E742} = {5471BFE8-8071-466F-838E-5ADAA779E742}
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870} = {E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.Performance.Tests", "tests\Performance\System.IO.Compression.Performance.Tests.csproj", "{1341F8C8-637A-49A1-BE0F-13867A634929}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression.Performance.Tests", "tests\Performance\System.IO.Compression.Performance.Tests.csproj", "{13C0F956-FB7B-4882-A411-39B8E22463D2}"
 	ProjectSection(ProjectDependencies) = postProject
-		{5471BFE8-8071-466F-838E-5ADAA779E742} = {5471BFE8-8071-466F-838E-5ADAA779E742}
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870} = {E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression", "src\System.IO.Compression.csproj", "{5471BFE8-8071-466F-838E-5ADAA779E742}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression", "src\System.IO.Compression.csproj", "{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}"
 	ProjectSection(ProjectDependencies) = postProject
-		{4ADD9456-A929-4254-B8A2-16FC628ABFDA} = {4ADD9456-A929-4254-B8A2-16FC628ABFDA}
+		{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43} = {7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression", "ref\System.IO.Compression.csproj", "{4ADD9456-A929-4254-B8A2-16FC628ABFDA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.IO.Compression", "ref\System.IO.Compression.csproj", "{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
@@ -31,30 +31,30 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BC2E1649-291D-412E-9529-EDDA94FA7AD6}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{BC2E1649-291D-412E-9529-EDDA94FA7AD6}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{BC2E1649-291D-412E-9529-EDDA94FA7AD6}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{BC2E1649-291D-412E-9529-EDDA94FA7AD6}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{1341F8C8-637A-49A1-BE0F-13867A634929}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{1341F8C8-637A-49A1-BE0F-13867A634929}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{1341F8C8-637A-49A1-BE0F-13867A634929}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{1341F8C8-637A-49A1-BE0F-13867A634929}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{5471BFE8-8071-466F-838E-5ADAA779E742}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{5471BFE8-8071-466F-838E-5ADAA779E742}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{5471BFE8-8071-466F-838E-5ADAA779E742}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{5471BFE8-8071-466F-838E-5ADAA779E742}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{4ADD9456-A929-4254-B8A2-16FC628ABFDA}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{4ADD9456-A929-4254-B8A2-16FC628ABFDA}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{4ADD9456-A929-4254-B8A2-16FC628ABFDA}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{4ADD9456-A929-4254-B8A2-16FC628ABFDA}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{17DA7FB5-4370-4385-9A02-FFEF9F482903}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{17DA7FB5-4370-4385-9A02-FFEF9F482903}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{17DA7FB5-4370-4385-9A02-FFEF9F482903}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{17DA7FB5-4370-4385-9A02-FFEF9F482903}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{13C0F956-FB7B-4882-A411-39B8E22463D2}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{13C0F956-FB7B-4882-A411-39B8E22463D2}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{13C0F956-FB7B-4882-A411-39B8E22463D2}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{13C0F956-FB7B-4882-A411-39B8E22463D2}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{BC2E1649-291D-412E-9529-EDDA94FA7AD6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{1341F8C8-637A-49A1-BE0F-13867A634929} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{5471BFE8-8071-466F-838E-5ADAA779E742} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
-		{4ADD9456-A929-4254-B8A2-16FC628ABFDA} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+		{17DA7FB5-4370-4385-9A02-FFEF9F482903} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{13C0F956-FB7B-4882-A411-39B8E22463D2} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{E9ED0A04-23A8-4F8B-82C1-2B18AF74C870} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{7CBACE0E-E07C-4ADB-A413-ADEC0CACBD43} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 EndGlobal
