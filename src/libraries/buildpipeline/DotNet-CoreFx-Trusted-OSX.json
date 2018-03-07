@@ -291,7 +291,7 @@
       "value": null,
       "isSecret": true
     },
-    "CloudResultsAccessToken": {
+    "OutputCloudResultsAccessToken": {
       "value": null,
       "isSecret": true
     },
