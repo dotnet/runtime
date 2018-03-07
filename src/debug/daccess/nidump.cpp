@@ -720,7 +720,7 @@ NativeImageDumper::DumpNativeImage()
 
     for (COUNT_T i = 0; i < m_decoder.GetNumberOfSections(); i++)
     {
-        PTR_IMAGE_SECTION_HEADER section = m_decoder.FindFirstSection() + i;
+        PTR_IMAGE_SECTION_HEADER section = dptr_add(m_decoder.FindFirstSection(), i);
         m_display->Section(reinterpret_cast<char *>(section->Name),
                            section->VirtualAddress,
                            section->SizeOfRawData);
