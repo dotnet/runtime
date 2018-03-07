@@ -160,7 +160,7 @@ namespace System.Threading.Channels
                     {
                         return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
                             new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
-                            new ValueTask<bool>(false);
+                            default;
                     }
 
                     // Try to use the singleton waiter.  If it's currently being used, then the channel
@@ -339,7 +339,7 @@ namespace System.Threading.Channels
                     cancellationToken.IsCancellationRequested ? new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken)) :
                     doneWriting == null ? new ValueTask<bool>(true) :
                     doneWriting != ChannelUtilities.s_doneWritingSentinel ? new ValueTask<bool>(Task.FromException<bool>(doneWriting)) :
-                    new ValueTask<bool>(false);
+                    default;
             }
 
             public override ValueTask WriteAsync(T item, CancellationToken cancellationToken) =>

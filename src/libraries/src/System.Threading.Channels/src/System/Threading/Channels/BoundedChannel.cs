@@ -153,7 +153,7 @@ namespace System.Threading.Channels
                     {
                         return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
                             new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
-                            new ValueTask<bool>(false);
+                            default;
                     }
 
                     // There were no items available, but there could be in the future, so ensure
@@ -413,7 +413,7 @@ namespace System.Threading.Channels
                     {
                         return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
                             new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
-                            new ValueTask<bool>(false);
+                            default;
                     }
 
                     // If there's space to write, a write is possible.

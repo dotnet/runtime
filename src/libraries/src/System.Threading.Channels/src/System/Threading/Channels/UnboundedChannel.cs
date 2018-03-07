@@ -54,33 +54,29 @@ namespace System.Threading.Channels
 
             public override Task Completion => _parent._completion.Task;
 
-            public override ValueTask<T> ReadAsync(CancellationToken cancellationToken) =>
-                TryRead(out T item) ?
-                    new ValueTask<T>(item) :
-                    ReadAsyncCore(cancellationToken);
-
-            private ValueTask<T> ReadAsyncCore(CancellationToken cancellationToken)
+            public override ValueTask<T> ReadAsync(CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
                     return new ValueTask<T>(Task.FromCanceled<T>(cancellationToken));
                 }
 
+                // Dequeue an item if we can.
                 UnboundedChannel<T> parent = _parent;
+                if (parent._items.TryDequeue(out T item))
+                {
+                    CompleteIfDone(parent);
+                    return new ValueTask<T>(item);
+                }
+
                 lock (parent.SyncObj)
                 {
                     parent.AssertInvariants();
 
-                    // If there are any items, return one.
-                    if (parent._items.TryDequeue(out T item))
+                    // Try to dequeue again, now that we hold the lock.
+                    if (parent._items.TryDequeue(out item))
                     {
-                        // Dequeue an item
-                        if (parent._doneWriting != null && parent._items.IsEmpty)
-                        {
-                            // If we've now emptied the items queue and we're not getting any more, complete.
-                            ChannelUtilities.Complete(parent._completion, parent._doneWriting);
-                        }
-
+                        CompleteIfDone(parent);
                         return new ValueTask<T>(item);
                     }
 
@@ -115,16 +111,21 @@ namespace System.Threading.Channels
                 // Dequeue an item if we can
                 if (parent._items.TryDequeue(out item))
                 {
-                    if (parent._doneWriting != null && parent._items.IsEmpty)
-                    {
-                        // If we've now emptied the items queue and we're not getting any more, complete.
-                        ChannelUtilities.Complete(parent._completion, parent._doneWriting);
-                    }
+                    CompleteIfDone(parent);
                     return true;
                 }
 
                 item = default;
                 return false;
+            }
+
+            private void CompleteIfDone(UnboundedChannel<T> parent)
+            {
+                if (parent._doneWriting != null && parent._items.IsEmpty)
+                {
+                    // If we've now emptied the items queue and we're not getting any more, complete.
+                    ChannelUtilities.Complete(parent._completion, parent._doneWriting);
+                }
             }
 
             public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
@@ -156,7 +157,7 @@ namespace System.Threading.Channels
                     {
                         return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
                             new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
-                            new ValueTask<bool>(false);
+                            default;
                     }
 
                     // If we're able to use the singleton waiter, do so.
@@ -298,7 +299,7 @@ namespace System.Threading.Channels
                     cancellationToken.IsCancellationRequested ? new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken)) :
                     doneWriting == null ? new ValueTask<bool>(true) : // unbounded writing can always be done if we haven't completed
                     doneWriting != ChannelUtilities.s_doneWritingSentinel ? new ValueTask<bool>(Task.FromException<bool>(doneWriting)) :
-                    new ValueTask<bool>(false);
+                    default;
             }
 
             public override ValueTask WriteAsync(T item, CancellationToken cancellationToken) =>
