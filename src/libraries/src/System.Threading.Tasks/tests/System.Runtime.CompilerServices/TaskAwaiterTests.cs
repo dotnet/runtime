@@ -123,6 +123,55 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [ActiveIssue(27675, ~TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public async Task Await_TaskCompletesOnNonDefaultSyncCtx_ContinuesOnDefaultSyncCtx()
+        {
+            await Task.Run(async delegate // escape xunit's sync context
+            {
+                Assert.Null(SynchronizationContext.Current);
+                Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+
+                var ctx = new ValidateCorrectContextSynchronizationContext();
+                var tcs = new TaskCompletionSource<bool>();
+                var ignored = Task.Delay(1).ContinueWith(_ =>
+                {
+                    SynchronizationContext orig = SynchronizationContext.Current;
+                    SynchronizationContext.SetSynchronizationContext(ctx);
+                    try
+                    {
+                        tcs.SetResult(true);
+                    }
+                    finally
+                    {
+                        SynchronizationContext.SetSynchronizationContext(orig);
+                    }
+                }, TaskScheduler.Default);
+                await tcs.Task;
+
+                Assert.Null(SynchronizationContext.Current);
+                Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+            });
+        }
+
+        [ActiveIssue(27675, ~TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public async Task Await_TaskCompletesOnNonDefaultScheduler_ContinuesOnDefaultScheduler()
+        {
+            await Task.Run(async delegate // escape xunit's sync context
+            {
+                Assert.Null(SynchronizationContext.Current);
+                Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+
+                var tcs = new TaskCompletionSource<bool>();
+                var ignored = Task.Delay(1).ContinueWith(_ => tcs.SetResult(true), new QUWITaskScheduler());
+                await tcs.Task;
+
+                Assert.Null(SynchronizationContext.Current);
+                Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+            });
+        }
+
         [Fact]
         public static void GetResult_Completed_Success()
         {
