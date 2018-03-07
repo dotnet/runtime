@@ -416,6 +416,10 @@
       "value": null,
       "isSecret": true
     },
+    "HelixApiAccessKey": {
+      "value": null,
+      "isSecret": true
+    },
     "PB_CloudResultsAccountName": {
       "value": "dotnetjobresult"
     },
