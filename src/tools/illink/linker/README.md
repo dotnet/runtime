@@ -48,11 +48,16 @@ the info file.
 
 You can specify what the linker should do exactly per assembly.
 
-The linker can do 3 things:
+The linker can do the following things:
 
-- skip them, and do nothing with them,
-- copy them to the output directory,
-- link them, to reduce their size.
+- Skip: skip them, and do nothing with them,
+- Copy: copy them to the output directory,
+- CopyUsed: copy used assemblies to the output directory,
+- Link: link them, to reduce their size,
+- Delete: remove them from the output,
+- Save: save them in memory without linking
+- AddBypassNGen: add BypassNGenAttribute to unmarked methods,
+- AddBypassNgenUsed: add BypassNGenAttribute to unmarked methods in used assemblies.
 
 You can specify an action per assembly like this:
 

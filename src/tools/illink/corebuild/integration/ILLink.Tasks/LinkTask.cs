@@ -16,6 +16,9 @@ namespace ILLink.Tasks
 		///   behavior should not be relied upon. Instead, work under
 		///   the assumption that only the AssemblyPaths given will be
 		///   resolved.
+		///   Each path can also have an "action" metadata,
+		///   which will set the illink action to take for
+		///   that assembly.
 		/// </summary>
 		[Required]
 		public ITaskItem [] AssemblyPaths { get; set; }
