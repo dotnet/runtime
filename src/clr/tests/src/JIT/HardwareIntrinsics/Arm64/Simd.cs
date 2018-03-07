@@ -3,9 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
 using System.Runtime.Intrinsics.Arm.Arm64;
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
 
 namespace Arm64intrisicsTest
 {
@@ -448,7 +446,6 @@ namespace Arm64intrisicsTest
 
         static void TestAbs()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Abs";
 
             if (Simd.IsSupported)
@@ -479,12 +476,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestAdd()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Add";
 
             if (Simd.IsSupported)
@@ -538,12 +533,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestAnd()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "And";
 
             if (Simd.IsSupported)
@@ -597,12 +590,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestAndNot()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "AndNot";
 
             if (Simd.IsSupported)
@@ -656,12 +647,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestBitwiseSelect()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "BitwiseSelect";
 
             if (Simd.IsSupported)
@@ -715,12 +704,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareEqual()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareEqual";
 
             if (Simd.IsSupported)
@@ -774,12 +761,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareEqualZero()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareEqualZero";
 
             if (Simd.IsSupported)
@@ -833,12 +818,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareGreaterThan()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareGreaterThan";
 
             if (Simd.IsSupported)
@@ -892,12 +875,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareGreaterThanZero()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareGreaterThanZero";
 
             if (Simd.IsSupported)
@@ -951,12 +932,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareGreaterThanOrEqual()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareGreaterThanOrEqual";
 
             if (Simd.IsSupported)
@@ -1010,12 +989,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareGreaterThanOrEqualZero()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareGreaterThanOrEqualZero";
 
             if (Simd.IsSupported)
@@ -1069,12 +1046,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareLessThanZero()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareLessThanZero";
 
             if (Simd.IsSupported)
@@ -1128,12 +1103,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareLessThanOrEqualZero()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareLessThanOrEqualZero";
 
             if (Simd.IsSupported)
@@ -1187,12 +1160,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestCompareTest()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "CompareTest";
 
             if (Simd.IsSupported)
@@ -1246,12 +1217,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestDivide()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Divide";
 
             if (Simd.IsSupported)
@@ -1268,10 +1237,8 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         static T simdExtract<T>(Vector64<T> vector, byte index)
             where T : struct
@@ -1285,11 +1252,9 @@ namespace Arm64intrisicsTest
         {
             return Simd.Extract<T>(vector, index);
         }
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
 
         static void TestExtract()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Extract";
 
             if (Simd.IsSupported)
@@ -1536,12 +1501,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestInsert()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Insert";
 
             if (Simd.IsSupported)
@@ -1630,12 +1593,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestLeadingSignCount()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "LeadingSignCount";
 
             if (Simd.IsSupported)
@@ -1658,12 +1619,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestLeadingZeroCount()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "LeadingZeroCount";
 
             if (Simd.IsSupported)
@@ -1698,12 +1657,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestMax()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Max";
 
             if (Simd.IsSupported)
@@ -1744,12 +1701,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestMin()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Min";
 
             if (Simd.IsSupported)
@@ -1790,12 +1745,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestMultiply()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Multiply";
 
             if (Simd.IsSupported)
@@ -1836,12 +1789,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestNegate()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Negate";
 
             if (Simd.IsSupported)
@@ -1872,12 +1823,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestNot()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Not";
 
             if (Simd.IsSupported)
@@ -1931,12 +1880,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestOr()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Or";
 
             if (Simd.IsSupported)
@@ -1990,12 +1937,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestOrNot()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "OrNot";
 
             if (Simd.IsSupported)
@@ -2049,12 +1994,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestPopCount()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "PopCount";
 
             if (Simd.IsSupported)
@@ -2073,12 +2016,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestSetAllVector()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "SetAllVector";
 
             if (Simd.IsSupported)
@@ -2133,12 +2074,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestSqrt()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Sqrt";
 
             if (Simd.IsSupported)
@@ -2155,12 +2094,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestSubtract()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Subtract";
 
             if (Simd.IsSupported)
@@ -2215,12 +2152,10 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestXor()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Xor";
 
             if (Simd.IsSupported)
@@ -2274,7 +2209,6 @@ namespace Arm64intrisicsTest
             }
 
             Console.WriteLine($"Test{name} passed");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void initializeDataSetDefault()
@@ -2360,7 +2294,6 @@ namespace Arm64intrisicsTest
 
         static int Main(string[] args)
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             Console.WriteLine($"System.Runtime.Intrinsics.Arm.Arm64.Simd.IsSupported = {Simd.IsSupported}");
 
             // Reflection call
@@ -2368,7 +2301,6 @@ namespace Arm64intrisicsTest
             bool reflectedIsSupported = Convert.ToBoolean(typeof(Simd).GetMethod(issupported).Invoke(null, null));
 
             Debug.Assert(reflectedIsSupported == Simd.IsSupported, "Reflection result does not match");
-#endif // ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
 
             initializeDataSetDefault();
 
