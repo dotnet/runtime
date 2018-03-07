@@ -289,17 +289,17 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<uint> Insert(Vector256<uint> value, uint data, byte index) { throw null; }
         public static Vector256<long> Insert(Vector256<long> value, long data, byte index) { throw null; }
         public static Vector256<ulong> Insert(Vector256<ulong> value, ulong data, byte index) { throw null; }
-        public static Vector256<T> Insert<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct { throw null; }
-        public static unsafe Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte* address, byte index) { throw null; }
-        public static unsafe Vector256<byte> Insert(Vector256<byte> value, byte* address, byte index) { throw null; }
-        public static unsafe Vector256<short> Insert(Vector256<short> value, short* address, byte index) { throw null; }
-        public static unsafe Vector256<ushort> Insert(Vector256<ushort> value, ushort* address, byte index) { throw null; }
-        public static unsafe Vector256<int> Insert(Vector256<int> value, int* address, byte index) { throw null; }
-        public static unsafe Vector256<uint> Insert(Vector256<uint> value, uint* address, byte index) { throw null; }
-        public static unsafe Vector256<long> Insert(Vector256<long> value, long* address, byte index) { throw null; }
-        public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address, byte index) { throw null; }
-        public static unsafe Vector256<float> Insert(Vector256<float> value, float* address, byte index) { throw null; }
-        public static unsafe Vector256<double> Insert(Vector256<double> value, double* address, byte index) { throw null; }
+        public static Vector256<T> InsertVector128<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct { throw null; }
+        public static unsafe Vector256<sbyte> InsertVector128(Vector256<sbyte> value, sbyte* address, byte index) { throw null; }
+        public static unsafe Vector256<byte> InsertVector128(Vector256<byte> value, byte* address, byte index) { throw null; }
+        public static unsafe Vector256<short> InsertVector128(Vector256<short> value, short* address, byte index) { throw null; }
+        public static unsafe Vector256<ushort> InsertVector128(Vector256<ushort> value, ushort* address, byte index) { throw null; }
+        public static unsafe Vector256<int> InsertVector128(Vector256<int> value, int* address, byte index) { throw null; }
+        public static unsafe Vector256<uint> InsertVector128(Vector256<uint> value, uint* address, byte index) { throw null; }
+        public static unsafe Vector256<long> InsertVector128(Vector256<long> value, long* address, byte index) { throw null; }
+        public static unsafe Vector256<ulong> InsertVector128(Vector256<ulong> value, ulong* address, byte index) { throw null; }
+        public static unsafe Vector256<float> InsertVector128(Vector256<float> value, float* address, byte index) { throw null; }
+        public static unsafe Vector256<double> InsertVector128(Vector256<double> value, double* address, byte index) { throw null; }
         public static unsafe Vector256<sbyte> LoadVector256(sbyte* address) { throw null; }
         public static unsafe Vector256<byte> LoadVector256(byte* address) { throw null; }
         public static unsafe Vector256<short> LoadVector256(short* address) { throw null; }
@@ -588,22 +588,22 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<short> HorizontalSubtract(Vector256<short> left, Vector256<short> right) { throw null; }
         public static Vector256<int> HorizontalSubtract(Vector256<int> left, Vector256<int> right) { throw null; }
         public static Vector256<short> HorizontalSubtractSaturate(Vector256<short> left, Vector256<short> right) { throw null; }
-        public static Vector256<sbyte> Insert(Vector256<sbyte> value, Vector128<sbyte> data, byte index) { throw null; }
-        public static unsafe Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte* address, byte index) { throw null; }
-        public static Vector256<byte> Insert(Vector256<byte> value, Vector128<byte> data, byte index) { throw null; }
-        public static unsafe Vector256<byte> Insert(Vector256<byte> value, byte* address, byte index) { throw null; }
-        public static Vector256<short> Insert(Vector256<short> value, Vector128<short> data, byte index) { throw null; }
-        public static unsafe Vector256<short> Insert(Vector256<short> value, short* address, byte index) { throw null; }
-        public static Vector256<ushort> Insert(Vector256<ushort> value, Vector128<ushort> data, byte index) { throw null; }
-        public static unsafe Vector256<ushort> Insert(Vector256<ushort> value, ushort* address, byte index) { throw null; }
-        public static Vector256<int> Insert(Vector256<int> value, Vector128<int> data, byte index) { throw null; }
-        public static unsafe Vector256<int> Insert(Vector256<int> value, int* address, byte index) { throw null; }
-        public static Vector256<uint> Insert(Vector256<uint> value, Vector128<uint> data, byte index) { throw null; }
-        public static unsafe Vector256<uint> Insert(Vector256<uint> value, uint* address, byte index) { throw null; }
-        public static Vector256<long> Insert(Vector256<long> value, Vector128<long> data, byte index) { throw null; }
-        public static unsafe Vector256<long> Insert(Vector256<long> value, long* address, byte index) { throw null; }
-        public static Vector256<ulong> Insert(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw null; }
-        public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address, byte index) { throw null; }
+        public static Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index) { throw null; }
+        public static unsafe Vector256<sbyte> InsertVector128(Vector256<sbyte> value, sbyte* address, byte index) { throw null; }
+        public static Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, byte index) { throw null; }
+        public static unsafe Vector256<byte> InsertVector128(Vector256<byte> value, byte* address, byte index) { throw null; }
+        public static Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, byte index) { throw null; }
+        public static unsafe Vector256<short> InsertVector128(Vector256<short> value, short* address, byte index) { throw null; }
+        public static Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, byte index) { throw null; }
+        public static unsafe Vector256<ushort> InsertVector128(Vector256<ushort> value, ushort* address, byte index) { throw null; }
+        public static Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, byte index) { throw null; }
+        public static unsafe Vector256<int> InsertVector128(Vector256<int> value, int* address, byte index) { throw null; }
+        public static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) { throw null; }
+        public static unsafe Vector256<uint> InsertVector128(Vector256<uint> value, uint* address, byte index) { throw null; }
+        public static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) { throw null; }
+        public static unsafe Vector256<long> InsertVector128(Vector256<long> value, long* address, byte index) { throw null; }
+        public static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw null; }
+        public static unsafe Vector256<ulong> InsertVector128(Vector256<ulong> value, ulong* address, byte index) { throw null; }
         public static unsafe Vector128<int> MaskLoad(int* address, Vector128<int> mask) { throw null; }
         public static unsafe Vector256<sbyte> LoadAlignedVector256NonTemporal(sbyte* address) { throw null; }
         public static unsafe Vector256<byte> LoadAlignedVector256NonTemporal(byte* address) { throw null; }
