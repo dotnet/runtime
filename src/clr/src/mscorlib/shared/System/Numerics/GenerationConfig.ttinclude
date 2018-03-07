@@ -1,5 +1,6 @@
 ﻿<#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Text" #>
 <#+ 
     /*    This file includes static data used as compilation configuration for the rest of the code generation. 
         It is shared here to ensure that all generated code compiles with the same constants and configurations.    */
@@ -143,5 +144,30 @@
     {
         string keyword = (type == allTypes.ToArray()[0]) ? "if" : "else if";
         return string.Format("{0} (typeof(T) == typeof({1}))", keyword, type.Name);
+    }
+
+    public string MakeTypeComparisonCondition(Type type)
+    {
+        return string.Format("(typeof(T) == typeof({0}))", type.Name);
+    }
+
+    public string GenerateIfConditionAllTypes(IEnumerable<Type> allTypes)
+    {
+        StringBuilder sbuilder = new StringBuilder();
+        bool firstTime = true;
+        foreach (var type in allTypes)
+        {
+            if (firstTime)
+            {
+                sbuilder.Append("if (").Append(MakeTypeComparisonCondition(type));
+                firstTime = false;
+            }
+            else
+            {
+                sbuilder.AppendLine().Append("                || ").Append(MakeTypeComparisonCondition(type));
+            }
+        }
+        sbuilder.Append(")");
+        return sbuilder.ToString();
     }
 #>
