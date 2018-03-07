@@ -270,19 +270,6 @@ namespace System.IO
             return i;
         }
 
-        private static bool StartsWithOrdinal(ReadOnlySpan<char> source, string value)
-        {
-            if (source.Length < value.Length)
-                return false;
-
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (value[i] != source[i])
-                    return false;
-            }
-            return true;
-        }
-
         /// <summary>
         /// Returns true if the path specified is relative to the current drive or working directory.
         /// Returns false if the path is fixed to a specific drive or UNC path.  This method does no
