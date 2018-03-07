@@ -56,7 +56,7 @@ namespace IntelHardwareIntrinsicTest
                     {
                         try
                         {
-                            var vd = Sse2.Sse2.SetAllVector128((long)0xffffl);
+                            var vd = Sse2.SetAllVector128((long)0xffffl);
                             testResult = Fail;
                             Console.WriteLine($"{nameof(Sse2)}.{nameof(Sse2.SetAllVector128)} failed for long: expected PlatformNotSupportedException exception.");
                         }
@@ -67,7 +67,7 @@ namespace IntelHardwareIntrinsicTest
 
                         try
                         {
-                            var vd = Sse2.Sse2.SetAllVector128((ulong)0xfffful);
+                            var vd = Sse2.SetAllVector128((ulong)0xfffful);
                             testResult = Fail;
                             Console.WriteLine($"{nameof(Sse2)}.{nameof(Sse2.SetAllVector128)} failed for ulong: expected PlatformNotSupportedException exception.");
                         }
