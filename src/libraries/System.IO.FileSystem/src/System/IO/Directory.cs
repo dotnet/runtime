@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.IO.Enumeration;
 using System.Linq;
-using System.Security;
 
 namespace System.IO
 {
@@ -42,9 +41,6 @@ namespace System.IO
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
-        // 
-        // Your application must have Read permission to the directory's
-        // contents.
         public static bool Exists(string path)
         {
             try
@@ -59,8 +55,6 @@ namespace System.IO
                 return FileSystem.DirectoryExists(fullPath);
             }
             catch (ArgumentException) { }
-            catch (NotSupportedException) { }  // Security can throw this on ":"
-            catch (SecurityException) { }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
 
