@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,8 +93,13 @@ namespace System.Net.WebSockets
                 handler.Credentials = options.Credentials;
                 handler.Proxy = options.Proxy;
                 handler.CookieContainer = options.Cookies;
+                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
                 if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
                 {
+                    if (handler.SslOptions.ClientCertificates == null)
+                    {
+                        handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
+                    }
                     handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
                 }
 

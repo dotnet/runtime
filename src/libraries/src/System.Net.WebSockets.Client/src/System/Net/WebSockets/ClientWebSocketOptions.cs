@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 
@@ -21,6 +22,7 @@ namespace System.Net.WebSockets
         private int _receiveBufferSize = 0x1000;
         private int _sendBufferSize = 0x1000;
         private ArraySegment<byte>? _buffer;
+        private RemoteCertificateValidationCallback _remoteCertificateValidationCallback;
 
         internal X509CertificateCollection _clientCertificates;
         internal WebHeaderCollection _requestHeaders;
@@ -104,6 +106,16 @@ namespace System.Net.WebSockets
                     throw new ArgumentNullException(nameof(value));
                 }
                 _clientCertificates = value;
+            }
+        }
+
+        internal RemoteCertificateValidationCallback RemoteCertificateValidationCallback // TODO #12038: Expose publicly.
+        {
+            get => _remoteCertificateValidationCallback;
+            set
+            {
+                ThrowIfReadOnly();
+                _remoteCertificateValidationCallback = value;
             }
         }
 

@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System.Net.WebSockets.Client">
+    <!-- TODO #12038: Remove once exposed publicly. -->
+    <type fullname="System.Net.WebSockets.ClientWebSocketOptions">
+      <method name="get_RemoteCertificateValidationCallback" />
+      <method name="set_RemoteCertificateValidationCallback" />
+    </type>
+  </assembly>
+</linker>
