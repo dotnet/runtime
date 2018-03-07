@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.CSharp.Tests", "tests\Microsoft.CSharp.Tests.csproj", "{82B54697-0251-47A1-8546-FC507D0F3B08}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -46,8 +46,5 @@ Global
 		{82B54697-0251-47A1-8546-FC507D0F3B08} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{96AA2060-C846-4E56-9509-E8CB9C114C8F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{1427906B-FF3D-422A-8278-F2B7E89DE12A} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {699239FB-3677-4369-9E97-09ED5E232491}
 	EndGlobalSection
 EndGlobal
