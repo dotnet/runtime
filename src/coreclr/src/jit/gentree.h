@@ -1471,6 +1471,27 @@ public:
     }
 #endif // FEATURE_SIMD
 
+#ifdef FEATURE_HW_INTRINSICS
+    bool isCommutativeHWIntrinsic() const;
+    bool isContainableHWIntrinsic() const;
+    bool isRMWHWIntrinsic(Compiler* comp);
+#else
+    bool isCommutativeHWIntrinsic() const
+    {
+        return false;
+    }
+
+    bool isContainableHWIntrinsic() const
+    {
+        return false;
+    }
+
+    bool isRMWHWIntrinsic(Compiler* comp)
+    {
+        return false;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     static bool OperIsCommutative(genTreeOps gtOper)
     {
         return (OperKind(gtOper) & GTK_COMMUTE) != 0;
@@ -1478,7 +1499,8 @@ public:
 
     bool OperIsCommutative()
     {
-        return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic());
+        return OperIsCommutative(gtOper) || (OperIsSIMD(gtOper) && isCommutativeSIMDIntrinsic()) ||
+               (OperIsHWIntrinsic(gtOper) && isCommutativeHWIntrinsic());
     }
 
     static bool OperIsAssignment(genTreeOps gtOper)
