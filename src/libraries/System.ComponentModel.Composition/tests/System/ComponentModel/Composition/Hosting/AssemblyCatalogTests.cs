@@ -163,6 +163,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't (and doesn't need) to check for locking
         [Fact]
         public void Constructor1_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
@@ -273,6 +274,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't (and doesn't need) to check for locking
         [Fact]
         public void Constructor2_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
@@ -382,6 +384,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't (and doesn't need) to check for locking
         [Fact]
         public void Constructor3_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
@@ -490,6 +493,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't (and doesn't need) to check for locking
         [Fact]
         public void Constructor4_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad()
         {
