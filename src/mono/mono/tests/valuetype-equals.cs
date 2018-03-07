@@ -61,6 +61,10 @@ struct DoubleStruct {
 	public DoubleStruct (double x) { this.x = x; }
 }
 
+unsafe struct PointerStruct {
+	int* x;
+	public PointerStruct (int* x) { this.x = x; }
+}
 
 public class Driver {
 	static void AssertEqual (object a, object b) {
@@ -73,7 +77,7 @@ public class Driver {
 			throw new Exception (String.Format ("must not be equal {0} {1}", a, b));
 	}
 
-	public static int Main () {
+	public static unsafe int Main () {
 		AssertEqual (new BoolStruct (true), new BoolStruct (true));
 		AssertNotEqual (new BoolStruct (false), new BoolStruct (true));
 
@@ -129,6 +133,11 @@ public class Driver {
 		AssertEqual (new DoubleStruct (0), new DoubleStruct (0));
 		AssertNotEqual (new DoubleStruct (44), new DoubleStruct (1));
 		AssertNotEqual (new DoubleStruct (0), new DoubleStruct (55));
+
+		AssertEqual (new PointerStruct ((int*)(IntPtr)13), new PointerStruct ((int*)(IntPtr)13));
+		AssertEqual (new PointerStruct ((int*)(IntPtr)0), new PointerStruct ((int*)(IntPtr)0));
+		AssertNotEqual (new PointerStruct ((int*)(IntPtr)44), new PointerStruct ((int*)(IntPtr)1));
+		AssertNotEqual (new PointerStruct ((int*)(IntPtr)0), new PointerStruct ((int*)(IntPtr)55));
 
 		return 0;
 	}
