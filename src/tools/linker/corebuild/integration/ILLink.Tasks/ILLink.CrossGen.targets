@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <CrossGenDuringPublish Condition=" '$(CrossGenDuringPublish)' == '' And '$(RuntimeIdentifier)' != '' ">true</CrossGenDuringPublish>
+    <CrossGenDuringPublish Condition=" '$(CrossGenDuringPublish)' == '' And '$(RuntimeIdentifier)' != '' And '$(LinkDuringPublish)' == 'true' ">true</CrossGenDuringPublish>
   </PropertyGroup>
 
   <PropertyGroup>
