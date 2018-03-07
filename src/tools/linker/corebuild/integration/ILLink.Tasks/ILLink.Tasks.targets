@@ -279,7 +279,8 @@
        dependencies, and these are prevented from being published. -->
   <UsingTask TaskName="FindNativeDeps" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_FindNativeDeps"
-          DependsOnTargets="_ComputeLinkedAssemblies">
+          DependsOnTargets="_ComputeLinkedAssemblies"
+          Condition=" '$(LinkerTrimNativeDeps)' == 'true' ">
     <ItemGroup>
       <_NativeResolvedDepsToPublish Include="@(ResolvedAssembliesToPublish)" />
       <_NativeResolvedDepsToPublish Remove="@(_ManagedResolvedAssembliesToPublish)" />
@@ -298,15 +299,11 @@
       <_NativeDepsToAlwaysKeep Include="hostpolicy.dll;libhostpolicy.dylib;libhostpolicy.so" />
     </ItemGroup>
 
-    <FindNativeDeps Condition=" '$(LinkerTrimNativeDeps)' == 'true' "
-                    ManagedAssemblyPaths="@(_ManagedLinkedAssemblies)"
+    <FindNativeDeps ManagedAssemblyPaths="@(_ManagedLinkedAssemblies)"
                     NativeDepsPaths="@(_NativeResolvedDepsToPublish)"
                     NativeDepsToKeep="@(_NativeDepsToAlwaysKeep)">
       <Output TaskParameter="KeptNativeDepsPaths" ItemName="_NativeKeptDepsToPublish" />
     </FindNativeDeps>
-    <PropertyGroup>
-      <_NativeKeptDepsToPublish Condition=" '$(LinkerTrimNativeDeps)' != 'true' ">"@(_NativeResolvedDepsToPublish)"</_NativeKeptDepsToPublish>
-    </PropertyGroup>
 
   </Target>
 
