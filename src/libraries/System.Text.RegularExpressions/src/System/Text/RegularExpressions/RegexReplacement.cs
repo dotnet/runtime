@@ -86,6 +86,24 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
+        /// Either returns a weakly cached RegexReplacement helper or creates one and caches it.
+        /// </summary>
+        /// <returns></returns>
+        public static RegexReplacement GetOrCreate(WeakReference<RegexReplacement> replRef, string replacement, Hashtable caps,
+            int capsize, Hashtable capnames, RegexOptions roptions)
+        {
+            RegexReplacement repl;
+
+            if (!replRef.TryGetTarget(out repl) || !repl.Pattern.Equals(replacement))
+            {
+                repl = RegexParser.ParseReplacement(replacement, caps, capsize, capnames, roptions);
+                replRef.SetTarget(repl);
+            }
+
+            return repl;
+        }
+
+        /// <summary>
         /// The original pattern string
         /// </summary>
         public string Pattern { get; }

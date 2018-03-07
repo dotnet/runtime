@@ -12,7 +12,7 @@ namespace System.Text.RegularExpressions
     internal sealed class ExclusiveReference
     {
         private RegexRunner _ref;
-        private object _obj;
+        private RegexRunner _obj;
         private volatile int _locked;
 
         /// <summary>
@@ -21,14 +21,14 @@ namespace System.Text.RegularExpressions
         /// If the exclusive lock can't be obtained, null is returned;
         /// if the object can't be returned, the lock is released.
         /// </summary>
-        public object Get()
+        public RegexRunner Get()
         {
             // try to obtain the lock
 
             if (0 == Interlocked.Exchange(ref _locked, 1))
             {
                 // grab reference
-                object obj = _ref;
+                RegexRunner obj = _ref;
 
                 // release the lock and return null if no reference
                 if (obj == null)
@@ -53,7 +53,7 @@ namespace System.Text.RegularExpressions
         /// If the object is the one that's under lock, the lock is released.
         /// If there is no cached object, then the lock is obtained and the object is placed in the cache.
         /// </summary>
-        public void Release(object obj)
+        public void Release(RegexRunner obj)
         {
             if (obj == null)
                 throw new ArgumentNullException(nameof(obj));
@@ -75,54 +75,13 @@ namespace System.Text.RegularExpressions
                 {
                     // if there's really no reference, cache this reference
                     if (_ref == null)
-                        _ref = (RegexRunner)obj;
+                        _ref = obj;
 
                     // release the lock
                     _locked = 0;
 
                     return;
                 }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Used to cache a weak reference in a threadsafe way
-    /// </summary>
-    internal sealed class SharedReference
-    {
-        private readonly WeakReference _ref = new WeakReference(null);
-        private volatile int _locked;
-
-        /// <summary>
-        /// Return an object from a weakref, protected by a lock.
-        /// 
-        /// If the exclusive lock can't be obtained, null is returned;
-        /// Note that _ref.Target is referenced only under the protection of the lock. (Is this necessary?)
-        /// </summary>
-        public object Get()
-        {
-            if (0 == Interlocked.Exchange(ref _locked, 1))
-            {
-                object obj = _ref.Target;
-                _locked = 0;
-                return obj;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Suggest an object into a weakref, protected by a lock.
-        /// 
-        /// Note that _ref.Target is referenced only under the protection of the lock. (Is this necessary?)
-        /// </summary>
-        public void Cache(object obj)
-        {
-            if (0 == Interlocked.Exchange(ref _locked, 1))
-            {
-                _ref.Target = obj;
-                _locked = 0;
             }
         }
     }

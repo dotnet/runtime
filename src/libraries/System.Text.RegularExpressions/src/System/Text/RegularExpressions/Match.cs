@@ -119,21 +119,15 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public virtual string Result(string replacement)
         {
-            RegexReplacement repl;
-
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
             if (_regex == null)
                 throw new NotSupportedException(SR.NoResultOnFailed);
 
-            repl = (RegexReplacement)_regex._replref.Get();
-
-            if (repl == null || !repl.Pattern.Equals(replacement))
-            {
-                repl = RegexParser.ParseReplacement(replacement, _regex.caps, _regex.capsize, _regex.capnames, _regex.roptions);
-                _regex._replref.Cache(repl);
-            }
+            // Gets the weakly cached replacement helper or creates one if there isn't one already.
+            RegexReplacement repl = RegexReplacement.GetOrCreate(_regex._replref, replacement, _regex.caps, _regex.capsize,
+                _regex.capnames, _regex.roptions);
 
             return repl.Replacement(this);
         }
