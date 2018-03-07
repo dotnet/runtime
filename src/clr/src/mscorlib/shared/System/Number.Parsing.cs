@@ -956,6 +956,9 @@ namespace System
 
             public static unsafe ulong Mantissa(double d) =>
                 *((ulong*)&d) & 0x000fffffffffffff;
+
+            public static unsafe bool Sign(double d) =>
+                (*((uint*)&d + 1) >> 31) != 0;
         }
     }
 }
