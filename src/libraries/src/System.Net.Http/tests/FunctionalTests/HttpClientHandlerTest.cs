@@ -2920,9 +2920,9 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Proxy_UseSecureProxyTunnel_Success()
         {
-            if (IsWinHttpHandler)
+            if (IsWinHttpHandler || IsNetfxHandler)
             {
-                // Issue #27746: WinHttpHandler hangs on this test
+                // Issue #27746: WinHttpHandler and netfx hang on this test
                 return;
             }
 
