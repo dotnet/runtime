@@ -225,5 +225,60 @@ namespace System.IO.Tests.Enumeration
                 }
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void TrimmedPathsMoveTo_Windows()
+        {
+            // Trailing spaces and periods are eaten when normalizing in Windows, making them impossible
+            // to access without using the \\?\ device syntax. We should, however, be able to move them 
+            // without the special syntax from the info class when enumerating.
+
+            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo spaceDirectory = Directory.CreateDirectory(Path.Join(@"\\?\", directory.FullName, "Trailing space "));
+            DirectoryInfo periodDirectory = Directory.CreateDirectory(Path.Join(@"\\?\", directory.FullName, "Trailing period."));
+            string spaceFile = Path.Join(spaceDirectory.FullName, "space");
+            string periodFile = Path.Join(periodDirectory.FullName, "period");
+            File.Create(spaceFile).Dispose();
+            File.Create(periodFile).Dispose();
+
+            DirectoryInfo[] directories = directory.GetDirectories();
+            Assert.Equal(2, directories.Length);
+            foreach (DirectoryInfo di in directories)
+            {
+                if (di.Name == "Trailing space ")
+                {
+                    di.MoveTo(Path.Join(directory.FullName, "WasSpace"));
+                }
+                else if (di.Name == "Trailing period.")
+                {
+                    di.MoveTo(Path.Join(directory.FullName, "WasPeriod"));
+                }
+                else
+                {
+                    Assert.False(true, $"Found unexpected name '{di.Name}'");
+                }
+            }
+
+            directories = directory.GetDirectories();
+            Assert.Equal(2, directories.Length);
+            foreach (DirectoryInfo di in directories)
+            {
+                if (di.Name == "WasSpace")
+                {
+                    FileInfo fi = di.GetFiles().Single();
+                    Assert.Equal("space", fi.Name);
+                }
+                else if (di.Name == "WasPeriod")
+                {
+                    FileInfo fi = di.GetFiles().Single();
+                    Assert.Equal("period", fi.Name);
+                }
+                else
+                {
+                    Assert.False(true, $"Found unexpected name '{di.Name}'");
+                }
+            }
+        }
     }
 }
