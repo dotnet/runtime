@@ -477,22 +477,6 @@ namespace System.IO
             return true;
         }
 
-        private static string CombineInternal(ReadOnlySpan<char> first, ReadOnlySpan<char> second)
-        {
-            if (first.Length == 0)
-                return second.Length == 0
-                    ? string.Empty
-                    : new string(second);
-
-            if (second.Length == 0)
-                return new string(first);
-
-            if (IsPathRooted(second))
-                return new string(second);
-
-            return JoinInternal(first, second);
-        }
-
         private static string CombineInternal(string first, string second)
         {
             if (string.IsNullOrEmpty(first))
