@@ -432,9 +432,6 @@ namespace System.Reflection
         static internal extern AssemblyName nGetFileInformation(String s);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern String nToString();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern byte[] nGetPublicKeyToken();
 
         static internal String EscapeCodeBase(String codebase)

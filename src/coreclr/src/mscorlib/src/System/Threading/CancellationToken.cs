@@ -313,8 +313,5 @@ namespace System.Threading
         // Throws an OCE; separated out to enable better inlining of ThrowIfCancellationRequested
         private void ThrowOperationCanceledException() =>
             throw new OperationCanceledException(SR.OperationCanceled, this);
-
-        private static void ThrowObjectDisposedException() =>
-            throw new ObjectDisposedException(null, SR.CancellationToken_SourceDisposed);
     }
 }

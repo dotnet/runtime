@@ -141,9 +141,6 @@ namespace System.Runtime.InteropServices
             _isClosed = false;
         }
 
-        // Adding an empty default constructor for annotation purposes
-        private CriticalHandle() { }
-
         ~CriticalHandle()
         {
             Dispose(false);
