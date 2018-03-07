@@ -71,23 +71,15 @@ namespace System.IO
         }
 
         public StreamReader OpenText()
-            => new StreamReader(FullPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            => new StreamReader(NormalizedPath, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
         public StreamWriter CreateText()
-            => new StreamWriter(FullPath, append: false);
+            => new StreamWriter(NormalizedPath, append: false);
 
         public StreamWriter AppendText()
-            => new StreamWriter(FullPath, append: true);
+            => new StreamWriter(NormalizedPath, append: true);
 
-        public FileInfo CopyTo(string destFileName)
-        {
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
-
-            return new FileInfo(File.InternalCopy(FullPath, destFileName, false), isNormalized: true);
-        }
+        public FileInfo CopyTo(string destFileName) => CopyTo(destFileName, overwrite: false);
 
         public FileInfo CopyTo(string destFileName, bool overwrite)
         {
@@ -96,10 +88,12 @@ namespace System.IO
             if (destFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
 
-            return new FileInfo(File.InternalCopy(FullPath, destFileName, overwrite), isNormalized: true);
+            string destinationPath = Path.GetFullPath(destFileName);
+            FileSystem.CopyFile(FullPath, destinationPath, overwrite);
+            return new FileInfo(destinationPath, isNormalized: true);
         }
 
-        public FileStream Create() => File.Create(FullPath);
+        public FileStream Create() => File.Create(NormalizedPath);
 
         public override void Delete() => FileSystem.DeleteFile(FullPath);
 
@@ -110,13 +104,13 @@ namespace System.IO
             => Open(mode, access, FileShare.None);
 
         public FileStream Open(FileMode mode, FileAccess access, FileShare share)
-            => new FileStream(FullPath, mode, access, share);
+            => new FileStream(NormalizedPath, mode, access, share);
 
         public FileStream OpenRead()
-            => new FileStream(FullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+            => new FileStream(NormalizedPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
 
         public FileStream OpenWrite()
-            => new FileStream(FullPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+            => new FileStream(NormalizedPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
 
         // Moves a given file to a new location and potentially a new file name.
         // This method does work across volumes.
@@ -153,7 +147,15 @@ namespace System.IO
 
         public FileInfo Replace(string destinationFileName, string destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            File.Replace(FullPath, destinationFileName, destinationBackupFileName, ignoreMetadataErrors);
+            if (destinationFileName == null)
+                throw new ArgumentNullException(nameof(destinationFileName));
+
+            FileSystem.ReplaceFile(
+                FullPath,
+                Path.GetFullPath(destinationFileName),
+                destinationBackupFileName != null ? Path.GetFullPath(destinationBackupFileName) : null,
+                ignoreMetadataErrors);
+
             return new FileInfo(destinationFileName);
         }
 

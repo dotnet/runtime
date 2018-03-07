@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,39 +43,18 @@ namespace System.IO
             return new StreamWriter(path, append: true);
         }
 
-
-        // Copies an existing file to a new file. An exception is raised if the
-        // destination file already exists. Use the 
-        // Copy(string, string, boolean) method to allow 
-        // overwriting an existing file.
-        //
-        // The caller must have certain FileIOPermissions.  The caller must have
-        // Read permission to sourceFileName and Create
-        // and Write permissions to destFileName.
-        // 
+        /// <summary>
+        /// Copies an existing file to a new file.
+        /// An exception is raised if the destination file already exists.
+        /// </summary>
         public static void Copy(string sourceFileName, string destFileName)
-        {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
-                throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
-            if (sourceFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
-            if (destFileName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
+            => Copy(sourceFileName, destFileName, overwrite: false);
 
-            InternalCopy(sourceFileName, destFileName, false);
-        }
-
-        // Copies an existing file to a new file. If overwrite is 
-        // false, then an IOException is thrown if the destination file 
-        // already exists.  If overwrite is true, the file is 
-        // overwritten.
-        //
-        // The caller must have certain FileIOPermissions.  The caller must have
-        // Read permission to sourceFileName 
-        // and Write permissions to destFileName.
-        // 
+        /// <summary>
+        /// Copies an existing file to a new file.
+        /// If <paramref name="overwrite"/> is false, an exception will be
+        /// raised if the destination exists. Otherwise it will be overwritten.
+        /// </summary>
         public static void Copy(string sourceFileName, string destFileName, bool overwrite)
         {
             if (sourceFileName == null)
@@ -88,36 +66,13 @@ namespace System.IO
             if (destFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destFileName));
 
-            InternalCopy(sourceFileName, destFileName, overwrite);
+            FileSystem.CopyFile(Path.GetFullPath(sourceFileName), Path.GetFullPath(destFileName), overwrite);
         }
-
-        /// <devdoc>
-        ///    Note: This returns the fully qualified name of the destination file.
-        /// </devdoc>
-        internal static string InternalCopy(string sourceFileName, string destFileName, bool overwrite)
-        {
-            Debug.Assert(sourceFileName != null);
-            Debug.Assert(destFileName != null);
-            Debug.Assert(sourceFileName.Length > 0);
-            Debug.Assert(destFileName.Length > 0);
-
-            string fullSourceFileName = Path.GetFullPath(sourceFileName);
-            string fullDestFileName = Path.GetFullPath(destFileName);
-
-            FileSystem.CopyFile(fullSourceFileName, fullDestFileName, overwrite);
-
-            return fullDestFileName;
-        }
-
 
         // Creates a file in a particular path.  If the file exists, it is replaced.
         // The file is opened with ReadWrite access and cannot be opened by another 
         // application until it has been closed.  An IOException is thrown if the 
         // directory specified doesn't exist.
-        //
-        // Your application must have Create, Read, and Write permissions to
-        // the file.
-        // 
         public static FileStream Create(string path)
         {
             return Create(path, DefaultBufferSize);
@@ -127,48 +82,30 @@ namespace System.IO
         // The file is opened with ReadWrite access and cannot be opened by another 
         // application until it has been closed.  An IOException is thrown if the 
         // directory specified doesn't exist.
-        //
-        // Your application must have Create, Read, and Write permissions to
-        // the file.
-        // 
         public static FileStream Create(string path, int bufferSize)
-        {
-            return new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize);
-        }
+            => new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize);
 
         public static FileStream Create(string path, int bufferSize, FileOptions options)
-        {
-            return new FileStream(path, FileMode.Create, FileAccess.ReadWrite,
-                                  FileShare.None, bufferSize, options);
-        }
+            => new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, options);
  
         // Deletes a file. The file specified by the designated path is deleted.
         // If the file does not exist, Delete succeeds without throwing
         // an exception.
         // 
-        // On NT, Delete will fail for a file that is open for normal I/O
-        // or a file that is memory mapped.  
-        // 
-        // Your application must have Delete permission to the target file.
-        // 
+        // On Windows, Delete will fail for a file that is open for normal I/O
+        // or a file that is memory mapped.
         public static void Delete(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            string fullPath = Path.GetFullPath(path);
-
-            FileSystem.DeleteFile(fullPath);
+            FileSystem.DeleteFile(Path.GetFullPath(path));
         }
 
-
-        // Tests if a file exists. The result is true if the file
+        // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
         // false.  Note that if path describes a directory,
         // Exists will return true.
-        //
-        // Your application must have Read permission for the target directory.
-        // 
         public static bool Exists(string path)
         {
             try
@@ -179,6 +116,7 @@ namespace System.IO
                     return false;
 
                 path = Path.GetFullPath(path);
+
                 // After normalizing, check whether path ends in directory separator.
                 // Otherwise, FillAttributeInfo removes it and we may return a false positive.
                 // GetFullPath should never return null
@@ -191,8 +129,6 @@ namespace System.IO
                 return FileSystem.FileExists(path);
             }
             catch (ArgumentException) { }
-            catch (NotSupportedException) { } // Security can throw this on ":"
-            catch (SecurityException) { }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
 

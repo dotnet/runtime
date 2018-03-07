@@ -150,5 +150,9 @@ namespace System.IO
             // when someone actually accesses a property
             _dataInitialized = FileSystem.FillAttributeInfo(FullPath, ref _data, returnErrorOnNotFound: false);
         }
+
+        // If we're opened around a enumerated path that ends in a period or space we need to be able to
+        // act on the path normally (open streams/writers/etc.)
+        internal string NormalizedPath => PathInternal.EnsureExtendedPrefixIfNeeded(FullPath);
     }
 }
