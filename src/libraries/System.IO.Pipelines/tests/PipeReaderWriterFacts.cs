@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -118,7 +119,6 @@ namespace System.IO.Pipelines.Tests
 
             _pipe.Reader.CancelPendingRead();
             result = await _pipe.Reader.ReadAsync();
-
             Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(buffer.End));
             _pipe.Reader.AdvanceTo(result.Buffer.End);
         }
@@ -773,6 +773,44 @@ namespace System.IO.Pipelines.Tests
         public void GetMemoryZeroReturnsNonEmpty()
         {
             Assert.True(_pipe.Writer.GetMemory(0).Length > 0);
+        }
+
+        [Fact]
+        public async Task ReadAsyncWithDataReadyReturnsTaskWithValue()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+            var task = _pipe.Reader.ReadAsync();
+            Assert.True(IsTaskWithResult(task));
+        }
+
+        [Fact]
+        public void CancelledReadAsyncReturnsTaskWithValue()
+        {
+            _pipe.Reader.CancelPendingRead();
+            var task = _pipe.Reader.ReadAsync();
+            Assert.True(IsTaskWithResult(task));
+        }
+
+        [Fact]
+        public void FlushAsyncWithoutBackpressureReturnsTaskWithValue()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            var task = _pipe.Writer.FlushAsync();
+            Assert.True(IsTaskWithResult(task));
+        }
+
+        [Fact]
+        public void CancelledFlushAsyncReturnsTaskWithValue()
+        {
+            _pipe.Writer.CancelPendingFlush();
+            var task = _pipe.Writer.FlushAsync();
+            Assert.True(IsTaskWithResult(task));
+        }
+
+        private bool IsTaskWithResult<T>(ValueTask<T> task)
+        {
+            return task == new ValueTask<T>(task.Result);
         }
 
         private sealed class CustomSynchronizationContext : SynchronizationContext

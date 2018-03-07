@@ -17,6 +17,7 @@
     <Compile Include="FlushResultTests.cs" />
     <Compile Include="PipeCompletionCallbacksTests.cs" />
     <Compile Include="PipeLengthTests.cs" />
+    <Compile Include="PipeOptionsTests.cs" />
     <Compile Include="PipeReaderWriterFacts.cs" />
     <Compile Include="PipePoolTests.cs" />
     <Compile Include="PipeResetTests.cs" />

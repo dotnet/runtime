@@ -16,7 +16,7 @@ namespace System.IO.Pipelines
     /// </summary>
     public sealed partial class Pipe
     {
-        private const int SegmentPoolSize = 16;
+        internal const int SegmentPoolSize = 16;
 
         private static readonly Action<object> s_signalReaderAwaitable = state => ((Pipe)state).ReaderCancellationRequested();
         private static readonly Action<object> s_signalWriterAwaitable = state => ((Pipe)state).WriterCancellationRequested();
