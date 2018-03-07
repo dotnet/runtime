@@ -82,7 +82,7 @@ Options:
 Now download the coreclr armhf dependencies.
 
 ```
-sudo apt-get install libunwind8:armhf libunwind8-dev:armhf libicu-dev:armhf liblttng-ust-dev:armhf libcurl4-openssl-dev:armhf libicu-dev:armhf libssl-dev uuid-dev:armhf libkrb5-dev:armhf
+sudo apt-get install libunwind8:armhf libunwind8-dev:armhf libicu-dev:armhf liblttng-ust-dev:armhf libcurl4-openssl-dev:armhf libicu-dev:armhf libssl-dev libkrb5-dev:armhf
 ```
 
 **Running tests**

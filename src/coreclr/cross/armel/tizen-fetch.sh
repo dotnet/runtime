@@ -160,7 +160,7 @@ Inform "fetch common packages"
 fetch_tizen_pkgs armv7l gcc glibc glibc-devel
 fetch_tizen_pkgs noarch linux-glibc-devel
 Inform "fetch coreclr packages"
-fetch_tizen_pkgs armv7l lldb lldb-devel libuuid libuuid-devel libgcc libstdc++ libstdc++-devel libunwind libunwind-devel
+fetch_tizen_pkgs armv7l lldb lldb-devel libgcc libstdc++ libstdc++-devel libunwind libunwind-devel
 Inform "fetch corefx packages"
 fetch_tizen_pkgs armv7l libcom_err libcom_err-devel zlib zlib-devel libopenssl libopenssl-devel
 
