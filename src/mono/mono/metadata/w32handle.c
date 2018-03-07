@@ -24,10 +24,10 @@
 
 #undef DEBUG_REFS
 
-#define SLOT_MAX		(1024 * 32)
+#define SLOT_MAX		(2048)
 
 /* must be a power of 2 */
-#define HANDLE_PER_SLOT	(256)
+#define HANDLE_PER_SLOT	(4096)
 
 static MonoW32HandleCapability handle_caps [MONO_W32TYPE_COUNT];
 static MonoW32HandleOps *handle_ops [MONO_W32TYPE_COUNT];
