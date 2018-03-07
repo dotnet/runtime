@@ -6199,11 +6199,6 @@ namespace System.Threading.Tasks
             s_currentActiveTasks.TryGetValue(taskId, out task);
             return task;
         }
-
-        private static Task[] GetActiveTasks()
-        {
-            return new List<Task>(s_currentActiveTasks.Values).ToArray();
-        }
     }
 
     internal sealed class CompletionActionInvoker : IThreadPoolWorkItem

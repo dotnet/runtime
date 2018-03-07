@@ -18,7 +18,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Constructor
-        private LocalBuilder() { }
         internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder)
             : this(localIndex, localType, methodBuilder, false) { }
         internal LocalBuilder(int localIndex, Type localType, MethodInfo methodBuilder, bool isPinned)
