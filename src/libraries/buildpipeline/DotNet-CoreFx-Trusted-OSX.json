@@ -291,6 +291,14 @@
       "value": null,
       "isSecret": true
     },
+    "OutputCloudResultsAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "HelixApiAccessKey": {
+      "value": null,
+      "isSecret": true
+    },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
