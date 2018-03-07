@@ -55,8 +55,6 @@ namespace System.Reflection.Emit
         // class initialization (ctor and init)
         //
 
-        private DynamicMethod() { }
-
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes)
@@ -582,11 +580,6 @@ namespace System.Reflection.Emit
             private String m_name;
             private MethodAttributes m_attributes;
             private CallingConventions m_callingConvention;
-
-            //
-            // ctors
-            //
-            private RTDynamicMethod() { }
 
             internal RTDynamicMethod(DynamicMethod owner, String name, MethodAttributes attributes, CallingConventions callingConvention)
             {
