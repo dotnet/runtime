@@ -438,58 +438,58 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<T> Insert<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
+        public static Vector256<T> InsertVector128<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<sbyte> InsertVector128(Vector256<sbyte> value, sbyte* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<byte> Insert(Vector256<byte> value, byte* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<byte> InsertVector128(Vector256<byte> value, byte* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<short> Insert(Vector256<short> value, short* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<short> InsertVector128(Vector256<short> value, short* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<ushort> Insert(Vector256<ushort> value, ushort* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<ushort> InsertVector128(Vector256<ushort> value, ushort* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<int> Insert(Vector256<int> value, int* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<int> InsertVector128(Vector256<int> value, int* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<uint> Insert(Vector256<uint> value, uint* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<uint> InsertVector128(Vector256<uint> value, uint* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<long> Insert(Vector256<long> value, long* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<long> InsertVector128(Vector256<long> value, long* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<ulong> Insert(Vector256<ulong> value, ulong* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<ulong> InsertVector128(Vector256<ulong> value, ulong* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<float> Insert(Vector256<float> value, float* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<float> InsertVector128(Vector256<float> value, float* address, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
         ///   VINSERTF128 ymm, ymm, m128, imm8
         /// </summary>
-        public static unsafe Vector256<double> Insert(Vector256<double> value, double* address, byte index) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector256<double> InsertVector128(Vector256<double> value, double* address, byte index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
