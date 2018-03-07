@@ -821,6 +821,11 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_MUL:
             return (!tree->gtOp.gtOp2->isContainedIntOrIImmed() && !tree->gtOp.gtOp1->isContainedIntOrIImmed());
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+            return tree->isRMWHWIntrinsic(compiler);
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             return true;
     }
@@ -2306,30 +2311,6 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
             info->internalIntCount = 2;
             info->setInternalCandidates(this, allRegs(TYP_INT));
-        }
-    }
-
-    if (!compiler->canUseVexEncoding())
-    {
-        // On machines without VEX support, we sometimes have to inject an intermediate
-        // `movaps targetReg, op1Reg` in order to maintain the correct behavior. This
-        // becomes a problem if `op2Reg == targetReg` since that means we will overwrite
-        // op2. In order to resolve this, we currently mark the second operand as delay free.
-
-        if ((flags & HW_Flag_NoRMWSemantics) == 0)
-        {
-            assert(category != HW_Category_MemoryLoad);
-            assert(category != HW_Category_MemoryStore);
-
-            assert((flags & HW_Flag_NoCodeGen) == 0);
-
-            if (info->srcCount >= 2)
-            {
-                assert(numArgs >= 2);
-                LocationInfoListNode* op2Info = useList.Begin()->Next();
-                op2Info->info.isDelayFree     = true;
-                info->hasDelayFreeSrc         = true;
-            }
         }
     }
 

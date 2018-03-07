@@ -1529,6 +1529,7 @@ class Compiler
     friend class TempDsc;
     friend class LIR;
     friend class ObjectAllocator;
+    friend struct GenTree;
 
 #ifndef _TARGET_64BIT_
     friend class DecomposeLongs;

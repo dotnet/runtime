@@ -16640,7 +16640,7 @@ bool GenTree::canBeContained() const
 
     // It is not possible for nodes that do not produce values or that are not containable values
     // to be contained.
-    if ((OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) != 0)
+    if (((OperKind() & (GTK_NOVALUE | GTK_NOCONTAIN)) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
     {
         return false;
     }
@@ -17982,6 +17982,46 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+bool GenTree::isCommutativeHWIntrinsic() const
+{
+    assert(gtOper == GT_HWIntrinsic);
+
+#ifdef _TARGET_XARCH_
+    HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
+    return ((flags & HW_Flag_Commutative) != 0);
+#else
+    return false;
+#endif // _TARGET_XARCH_
+}
+
+bool GenTree::isContainableHWIntrinsic() const
+{
+    assert(gtOper == GT_HWIntrinsic);
+
+#ifdef _TARGET_XARCH_
+    HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
+    return ((flags & HW_Flag_NoContainment) == 0);
+#else
+    return false;
+#endif // _TARGET_XARCH_
+}
+
+bool GenTree::isRMWHWIntrinsic(Compiler* comp)
+{
+    assert(gtOper == GT_HWIntrinsic);
+    assert(comp != nullptr);
+
+#ifdef _TARGET_XARCH_
+    if (!comp->canUseVexEncoding())
+    {
+        HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
+        return ((flags & HW_Flag_NoRMWSemantics) == 0);
+    }
+#endif // _TARGET_XARCH_
+
+    return false;
+}
+
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        NamedIntrinsic hwIntrinsicID,
                                                        var_types      baseType,
