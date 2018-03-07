@@ -14,7 +14,7 @@ namespace System.IO
 
         // Cache any error retrieving the file/directory information
         // We use this field in conjunction with the Refresh method which should never throw.
-        // If we succeed we store a zero, on failure we store the HResult so that we can
+        // If we succeed we store a zero, on failure we store the error code so that we can
         // throw an appropriate error when attempting to access the cached info.
         private int _dataInitialized = -1;
 
@@ -153,6 +153,7 @@ namespace System.IO
 
         // If we're opened around a enumerated path that ends in a period or space we need to be able to
         // act on the path normally (open streams/writers/etc.)
-        internal string NormalizedPath => PathInternal.EnsureExtendedPrefixIfNeeded(FullPath);
+        internal string NormalizedPath
+            => PathInternal.EndsWithPeriodOrSpace(FullPath) ? PathInternal.EnsureExtendedPrefix(FullPath) : FullPath;
     }
 }
