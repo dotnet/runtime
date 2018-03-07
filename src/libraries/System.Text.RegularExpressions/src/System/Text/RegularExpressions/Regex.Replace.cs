@@ -75,14 +75,8 @@ namespace System.Text.RegularExpressions
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
 
-            // a little code to grab a cached parsed replacement object
-            RegexReplacement repl = (RegexReplacement)_replref.Get();
-
-            if (repl == null || !repl.Pattern.Equals(replacement))
-            {
-                repl = RegexParser.ParseReplacement(replacement, caps, capsize, capnames, roptions);
-                _replref.Cache(repl);
-            }
+            // Gets the weakly cached replacement helper or creates one if there isn't one already.
+            RegexReplacement repl = RegexReplacement.GetOrCreate(_replref, replacement, caps, capsize, capnames, roptions);
 
             return repl.Replace(this, input, count, startat);
         }
