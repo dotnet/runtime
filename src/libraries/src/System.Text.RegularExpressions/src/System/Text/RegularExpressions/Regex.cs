@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions
         protected internal int capsize;                      // the size of the capture array
         
         internal ExclusiveReference _runnerref;              // cached runner
-        internal SharedReference _replref;                   // cached parsed replacement pattern
+        internal WeakReference<RegexReplacement> _replref; // cached parsed replacement pattern
         internal RegexCode _code;                            // if interpreted, this is the code for RegexInterpreter
         internal bool _refsInitialized = false;
 
@@ -430,7 +430,7 @@ namespace System.Text.RegularExpressions
 
             _refsInitialized = true;
             _runnerref = new ExclusiveReference();
-            _replref = new SharedReference();
+            _replref = new WeakReference<RegexReplacement>(null);
         }
 
         /// <summary>
@@ -446,7 +446,7 @@ namespace System.Text.RegularExpressions
                 throw new ArgumentOutOfRangeException(nameof(length), SR.LengthNotNegative);
 
             // There may be a cached runner; grab ownership of it if we can.
-            RegexRunner runner = (RegexRunner)_runnerref.Get();
+            RegexRunner runner = _runnerref.Get();
 
             // Create a RegexRunner instance if we need to
             if (runner == null)
