@@ -12,6 +12,12 @@ namespace System.IO.Pipelines
     /// </summary>
     public class PipeOptions
     {
+        private const int DefaultMinimumSegmentSize = 2048;
+
+        private const int DefaultResumeWriterThreshold = DefaultMinimumSegmentSize * Pipe.SegmentPoolSize / 2;
+
+        private const int DefaultPauseWriterThreshold = DefaultMinimumSegmentSize * Pipe.SegmentPoolSize;
+
         /// <summary>
         /// Default instance of <see cref="PipeOptions"/>
         /// </summary>
@@ -24,9 +30,9 @@ namespace System.IO.Pipelines
             MemoryPool<byte> pool = null,
             PipeScheduler readerScheduler = null,
             PipeScheduler writerScheduler = null,
-            long pauseWriterThreshold = 0,
-            long resumeWriterThreshold = 0,
-            int minimumSegmentSize = 2048,
+            long pauseWriterThreshold = DefaultPauseWriterThreshold,
+            long resumeWriterThreshold = DefaultResumeWriterThreshold,
+            int minimumSegmentSize = DefaultMinimumSegmentSize,
             bool useSynchronizationContext = true)
         {
             if (pauseWriterThreshold < 0)
