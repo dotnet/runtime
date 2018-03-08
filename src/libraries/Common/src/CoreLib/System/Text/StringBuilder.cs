@@ -2044,7 +2044,7 @@ namespace System.Text
         /// </param>
         /// <param name="value">The pointer to the start of the character buffer.</param>
         /// <param name="count">The number of characters in the buffer.</param>
-        unsafe private void ReplaceInPlaceAtChunk(ref StringBuilder chunk, ref int indexInChunk, char* value, int count)
+        private unsafe void ReplaceInPlaceAtChunk(ref StringBuilder chunk, ref int indexInChunk, char* value, int count)
         {
             if (count != 0)
             {

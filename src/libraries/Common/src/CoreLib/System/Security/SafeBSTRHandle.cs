@@ -50,7 +50,7 @@ namespace System.Security
 
         internal unsafe uint Length => Interop.OleAut32.SysStringLen(this);
 
-        internal unsafe static void Copy(SafeBSTRHandle source, SafeBSTRHandle target, uint bytesToCopy)
+        internal static unsafe void Copy(SafeBSTRHandle source, SafeBSTRHandle target, uint bytesToCopy)
         {
             if (bytesToCopy == 0)
             {
