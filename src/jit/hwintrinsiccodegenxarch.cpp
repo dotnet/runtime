@@ -81,6 +81,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         switch (numArgs)
         {
             case 1:
+            {
                 genConsumeOperands(node);
                 op1Reg = op1->gtRegNum;
                 if (category == HW_Category_MemoryLoad)
@@ -100,11 +101,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     emit->emitIns_R_R(ins, simdSize, targetReg, op1Reg);
                 }
                 break;
+            }
 
             case 2:
+            {
                 genConsumeOperands(node);
+
                 op1Reg = op1->gtRegNum;
                 op2Reg = op2->gtRegNum;
+
+                if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
+                {
+                    // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
+                    //
+                    // For non-commutative intrinsics, we should have ensured that op2 was marked
+                    // delay free in order to prevent it from getting assigned the same register
+                    // as target. However, for commutative intrinsics, we can just swap the operands
+                    // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+                    noway_assert(node->OperIsCommutative());
+                    op2Reg = op1Reg;
+                    op1Reg = targetReg;
+                }
+
                 if (category == HW_Category_MemoryStore)
                 {
                     emit->emitIns_AR_R(ins, simdSize, op2Reg, op1Reg, 0);
@@ -148,6 +167,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     genHWIntrinsic_R_R_RM(node, ins);
                 }
                 break;
+            }
+
             case 3:
             {
                 assert(op1->OperIsList());
@@ -382,7 +403,23 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins)
     }
     else
     {
-        emit->emitIns_SIMD_R_R_R(ins, simdSize, targetReg, op1Reg, op2->gtRegNum);
+        regNumber op2Reg = op2->gtRegNum;
+
+        if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
+        {
+            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
+            //
+            // For non-commutative intrinsics, we should have ensured that op2 was marked
+            // delay free in order to prevent it from getting assigned the same register
+            // as target. However, for commutative intrinsics, we can just swap the operands
+            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+            noway_assert(node->OperIsCommutative());
+            op2Reg = op1Reg;
+            op1Reg = targetReg;
+        }
+
+        emit->emitIns_SIMD_R_R_R(ins, simdSize, targetReg, op1Reg, op2Reg);
     }
 }
 
@@ -507,7 +544,23 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins)
     }
     else
     {
-        emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op2->gtRegNum, ival);
+        regNumber op2Reg = op2->gtRegNum;
+
+        if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
+        {
+            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
+            //
+            // For non-commutative intrinsics, we should have ensured that op2 was marked
+            // delay free in order to prevent it from getting assigned the same register
+            // as target. However, for commutative intrinsics, we can just swap the operands
+            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+            noway_assert(node->OperIsCommutative());
+            op2Reg = op1Reg;
+            op1Reg = targetReg;
+        }
+
+        emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op2Reg, ival);
     }
 }
 
@@ -1181,6 +1234,7 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE42_Crc32:
             if (op1Reg != targetReg)
             {
+                assert(op2Reg != targetReg);
                 inst_RV_RV(INS_mov, targetReg, op1Reg, targetType, emitTypeSize(targetType));
             }
 
