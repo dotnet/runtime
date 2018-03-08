@@ -7,6 +7,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\DomainControllerTests.cs" />
@@ -21,7 +23,6 @@
     <Compile Include="System\DirectoryServices\ActiveDirectory\DirectoryContextTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryTests.cs" />
-
     <Compile Include="$(CommonTestPath)\System\DirectoryServices\LdapConfiguration.cs">
       <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>
     </Compile>
@@ -31,11 +32,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
   </ItemGroup>
-
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
