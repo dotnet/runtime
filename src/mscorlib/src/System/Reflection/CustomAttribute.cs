@@ -294,7 +294,7 @@ namespace System.Reflection
         #endregion
 
         #region Internal Static Members
-        internal unsafe static CustomAttributeRecord[] GetCustomAttributeRecords(RuntimeModule module, int targetToken)
+        internal static unsafe CustomAttributeRecord[] GetCustomAttributeRecords(RuntimeModule module, int targetToken)
         {
             MetadataImport scope = module.MetadataImport;
 
@@ -1112,7 +1112,7 @@ namespace System.Reflection
         #endregion
     }
 
-    internal unsafe static class CustomAttribute
+    internal static unsafe class CustomAttribute
     {
         #region Private Data Members
         private static RuntimeType Type_RuntimeType = (RuntimeType)typeof(RuntimeType);
@@ -1480,13 +1480,13 @@ namespace System.Reflection
             return false;
         }
 
-        private unsafe static object[] GetCustomAttributes(
+        private static unsafe object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
             return GetCustomAttributes(decoratedModule, decoratedMetadataToken, pcaCount, attributeFilterType, false, null);
         }
 
-        private unsafe static object[] GetCustomAttributes(
+        private static unsafe object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount,
             RuntimeType attributeFilterType, bool mustBeInheritable, IList derivedAttributes)
         {
@@ -1644,7 +1644,7 @@ namespace System.Reflection
             return result;
         }
 
-        private unsafe static bool FilterCustomAttributeRecord(
+        private static unsafe bool FilterCustomAttributeRecord(
             CustomAttributeRecord caRecord,
             MetadataImport scope,
             ref Assembly lastAptcaOkAssembly,
@@ -1826,7 +1826,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern Object _CreateCaObject(RuntimeModule pModule, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
+        private static extern unsafe Object _CreateCaObject(RuntimeModule pModule, IRuntimeMethodInfo pCtor, byte** ppBlob, byte* pEndBlob, int* pcNamedArgs);
         private static unsafe Object CreateCaObject(RuntimeModule module, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
             byte* pBlob = (byte*)blob;
@@ -1839,9 +1839,9 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe extern static void _GetPropertyOrFieldData(
+        private static extern unsafe void _GetPropertyOrFieldData(
             RuntimeModule pModule, byte** ppBlobStart, byte* pBlobEnd, out string name, out bool bIsProperty, out RuntimeType type, out object value);
-        private unsafe static void GetPropertyOrFieldData(
+        private static unsafe void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType type, out object value)
         {
             byte* pBlobStart = (byte*)blobStart;

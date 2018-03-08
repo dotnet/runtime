@@ -1116,7 +1116,7 @@ namespace System.Threading
     }
 
     [CLSCompliant(false)]
-    unsafe public delegate void IOCompletionCallback(uint errorCode, // Error code
+    public unsafe delegate void IOCompletionCallback(uint errorCode, // Error code
                                        uint numBytes, // No. of bytes transferred 
                                        NativeOverlapped* pOVERLAP // ptr to OVERLAP structure
                                        );
@@ -1444,10 +1444,10 @@ namespace System.Threading
         internal static extern bool RequestWorkerThread();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        unsafe private static extern bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
+        private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 
         [CLSCompliant(false)]
-        unsafe public static bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
         // The thread pool maintains a per-appdomain managed work queue.

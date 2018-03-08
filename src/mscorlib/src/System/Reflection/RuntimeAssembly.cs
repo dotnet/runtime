@@ -117,7 +117,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetFullName(RuntimeAssembly assembly, StringHandleOnStack retString);
+        private static extern void GetFullName(RuntimeAssembly assembly, StringHandleOnStack retString);
 
         public override String FullName
         {
@@ -175,7 +175,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetExportedTypes(RuntimeAssembly assembly, ObjectHandleOnStack retTypes);
+        private static extern void GetExportedTypes(RuntimeAssembly assembly, ObjectHandleOnStack retTypes);
 
         public override Type[] GetExportedTypes()
         {
@@ -423,7 +423,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetExecutingAssembly(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
+        private static extern void GetExecutingAssembly(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
@@ -482,7 +482,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetImageRuntimeVersion(RuntimeAssembly assembly, StringHandleOnStack retString);
+        private static extern void GetImageRuntimeVersion(RuntimeAssembly assembly, StringHandleOnStack retString);
 
         public override String ImageRuntimeVersion
         {
@@ -569,7 +569,7 @@ namespace System.Reflection
 
         // GetResource will return a pointer to the resources in memory.
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static unsafe extern byte* GetResource(RuntimeAssembly assembly,
+        private static extern unsafe byte* GetResource(RuntimeAssembly assembly,
                                                        String resourceName,
                                                        out ulong length,
                                                        StackCrawlMarkHandle stackMark,
@@ -644,7 +644,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static AssemblyHashAlgorithm GetHashAlgorithm(RuntimeAssembly assembly);
+        private static extern AssemblyHashAlgorithm GetHashAlgorithm(RuntimeAssembly assembly);
 
         private AssemblyHashAlgorithm GetHashAlgorithm()
         {
@@ -652,7 +652,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static AssemblyNameFlags GetFlags(RuntimeAssembly assembly);
+        private static extern AssemblyNameFlags GetFlags(RuntimeAssembly assembly);
 
         private AssemblyNameFlags GetFlags()
         {
@@ -747,7 +747,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetModules(RuntimeAssembly assembly,
+        private static extern void GetModules(RuntimeAssembly assembly,
                                               bool loadIfNotFound,
                                               bool getResourceModules,
                                               ObjectHandleOnStack retModuleHandles);

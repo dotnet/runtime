@@ -210,9 +210,9 @@ namespace System.Reflection.Emit
 
         // helpers for intialization
 
-        static private void CheckConsistency(MethodAttributes attributes, CallingConventions callingConvention)
+        private static void CheckConsistency(MethodAttributes attributes, CallingConventions callingConvention)
         {
-            // only static public for method attributes
+            // only public static for method attributes
             if ((attributes & ~MethodAttributes.MemberAccessMask) != MethodAttributes.Static)
                 throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
             if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)

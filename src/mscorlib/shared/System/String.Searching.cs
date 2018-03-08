@@ -374,12 +374,12 @@ namespace System
             return false;
         }
 
-        private unsafe static bool IsCharBitSet(uint* charMap, byte value)
+        private static unsafe bool IsCharBitSet(uint* charMap, byte value)
         {
             return (charMap[value & PROBABILISTICMAP_BLOCK_INDEX_MASK] & (1u << (value >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT))) != 0;
         }
 
-        private unsafe static void SetCharBit(uint* charMap, byte value)
+        private static unsafe void SetCharBit(uint* charMap, byte value)
         {
             charMap[value & PROBABILISTICMAP_BLOCK_INDEX_MASK] |= 1u << (value >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
         }

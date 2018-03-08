@@ -26,14 +26,14 @@ namespace System.Globalization
         internal String m_bodyName;
         internal uint m_flags;
 
-        unsafe internal CodePageDataItem(int dataIndex)
+        internal unsafe CodePageDataItem(int dataIndex)
         {
             m_dataIndex = dataIndex;
             m_uiFamilyCodePage = EncodingTable.codePageDataPtr[dataIndex].uiFamilyCodePage;
             m_flags = EncodingTable.codePageDataPtr[dataIndex].flags;
         }
 
-        unsafe internal static String CreateString(sbyte* pStrings, uint index)
+        internal static unsafe String CreateString(sbyte* pStrings, uint index)
         {
             if (pStrings[0] == '|') // |str1|str2|str3
             {
@@ -68,7 +68,7 @@ namespace System.Globalization
             }
         }
 
-        unsafe public String WebName
+        public unsafe String WebName
         {
             get
             {
@@ -88,7 +88,7 @@ namespace System.Globalization
             }
         }
 
-        unsafe public String HeaderName
+        public unsafe String HeaderName
         {
             get
             {
@@ -100,7 +100,7 @@ namespace System.Globalization
             }
         }
 
-        unsafe public String BodyName
+        public unsafe String BodyName
         {
             get
             {
@@ -112,7 +112,7 @@ namespace System.Globalization
             }
         }
 
-        unsafe public uint Flags
+        public unsafe uint Flags
         {
             get
             {

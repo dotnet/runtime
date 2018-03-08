@@ -1105,7 +1105,7 @@ namespace Microsoft.Win32
             }
         }
 
-        static private void ValidateKeyName(string name)
+        private static void ValidateKeyName(string name)
         {
             if (name == null)
             {
@@ -1127,7 +1127,7 @@ namespace Microsoft.Win32
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegKeyStrLenBug);
         }
 
-        static private void ValidateKeyView(RegistryView view)
+        private static void ValidateKeyView(RegistryView view)
         {
             if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64)
             {

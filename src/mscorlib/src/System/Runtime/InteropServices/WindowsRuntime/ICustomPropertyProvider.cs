@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Creates a ICustomProperty implementation for Jupiter
         // Called from ICustomPropertyProvider_GetProperty from within runtime
         //
-        static internal ICustomProperty CreateProperty(object target, string propertyName)
+        internal static ICustomProperty CreateProperty(object target, string propertyName)
         {
             Debug.Assert(target != null);
             Debug.Assert(propertyName != null);
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Creates a ICustomProperty implementation for Jupiter
         // Called from ICustomPropertyProvider_GetIndexedProperty from within runtime
         //               
-        static internal unsafe ICustomProperty CreateIndexedProperty(object target, string propertyName, TypeNameNative* pIndexedParamType)
+        internal static unsafe ICustomProperty CreateIndexedProperty(object target, string propertyName, TypeNameNative* pIndexedParamType)
         {
             Debug.Assert(target != null);
             Debug.Assert(propertyName != null);
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return CreateIndexedProperty(target, propertyName, indexedParamType);
         }
 
-        static internal ICustomProperty CreateIndexedProperty(object target, string propertyName, Type indexedParamType)
+        internal static ICustomProperty CreateIndexedProperty(object target, string propertyName, Type indexedParamType)
         {
             Debug.Assert(target != null);
             Debug.Assert(propertyName != null);
@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return new CustomPropertyImpl(propertyInfo);
         }
 
-        static internal unsafe void GetType(object target, TypeNameNative* pIndexedParamType)
+        internal static unsafe void GetType(object target, TypeNameNative* pIndexedParamType)
         {
             IGetProxyTarget proxy = target as IGetProxyTarget;
             if (proxy != null)

@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int GetSystemMaxDBCSCharSize();
 
-        unsafe public static String PtrToStringAnsi(IntPtr ptr)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        unsafe public static String PtrToStringAnsi(IntPtr ptr, int len)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices
             return new String((sbyte*)ptr, 0, len);
         }
 
-        unsafe public static String PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices
             return PtrToStringUni(ptr, len);
         }
 
-        unsafe public static String PtrToStringUni(IntPtr ptr)
+        public static unsafe String PtrToStringUni(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices
             return PtrToStringUni(ptr);
         }
 
-        unsafe public static String PtrToStringUTF8(IntPtr ptr)
+        public static unsafe String PtrToStringUTF8(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -197,7 +197,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        unsafe public static String PtrToStringUTF8(IntPtr ptr, int byteLen)
+        public static unsafe String PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             if (byteLen < 0)
             {
@@ -971,7 +971,7 @@ namespace System.Runtime.InteropServices
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static IntPtr GetHINSTANCE(RuntimeModule m);
+        private static extern IntPtr GetHINSTANCE(RuntimeModule m);
 
 #endif // FEATURE_COMINTEROP
         //====================================================================
@@ -1071,7 +1071,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // String convertions.
         //====================================================================          
-        unsafe public static IntPtr StringToHGlobalAnsi(String s)
+        public static unsafe IntPtr StringToHGlobalAnsi(String s)
         {
             if (s == null)
             {
@@ -1100,7 +1100,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        unsafe public static IntPtr StringToHGlobalUni(String s)
+        public static unsafe IntPtr StringToHGlobalUni(String s)
         {
             if (s == null)
             {
@@ -1300,7 +1300,7 @@ namespace System.Runtime.InteropServices
             return pNewMem;
         }
 
-        unsafe public static IntPtr StringToCoTaskMemUni(String s)
+        public static unsafe IntPtr StringToCoTaskMemUni(String s)
         {
             if (s == null)
             {
@@ -1331,7 +1331,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        unsafe public static IntPtr StringToCoTaskMemUTF8(String s)
+        public static unsafe IntPtr StringToCoTaskMemUTF8(String s)
         {
             const int MAX_UTF8_CHAR_SIZE = 3;
             if (s == null)
@@ -1368,7 +1368,7 @@ namespace System.Runtime.InteropServices
             return StringToCoTaskMemUni(s);
         }
 
-        unsafe public static IntPtr StringToCoTaskMemAnsi(String s)
+        public static unsafe IntPtr StringToCoTaskMemAnsi(String s)
         {
             if (s == null)
             {
@@ -1839,7 +1839,7 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
-        unsafe public static void ZeroFreeCoTaskMemUTF8(IntPtr s)
+        public static unsafe void ZeroFreeCoTaskMemUTF8(IntPtr s)
         {
             RuntimeImports.RhZeroMemory(s, (UIntPtr)System.StubHelpers.StubHelpers.strlen((sbyte*)s));
             FreeCoTaskMem(s);

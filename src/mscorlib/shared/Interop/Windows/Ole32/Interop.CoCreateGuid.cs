@@ -10,6 +10,6 @@ internal static partial class Interop
     internal static partial class Ole32
     {
         [DllImport(Interop.Libraries.Ole32)]
-        internal extern static int CoCreateGuid(out Guid guid);
+        internal static extern int CoCreateGuid(out Guid guid);
     }
 }

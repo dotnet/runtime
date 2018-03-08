@@ -203,7 +203,7 @@ namespace System
             s_CommandLineArgs = cmdLineArgs;
         }
 
-        private unsafe static char[] GetEnvironmentCharArray()
+        private static unsafe char[] GetEnvironmentCharArray()
         {
             char[] block = null;
 

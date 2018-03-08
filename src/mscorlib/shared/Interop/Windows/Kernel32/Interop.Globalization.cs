@@ -18,13 +18,13 @@ internal static partial class Interop
         internal const int  COMPARE_STRING              = 0x0001;
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static unsafe int LCIDToLocaleName(int locale, char *pLocaleName, int cchName, uint dwFlags);
+        internal static extern unsafe int LCIDToLocaleName(int locale, char *pLocaleName, int cchName, uint dwFlags);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int LocaleNameToLCID(string lpName, uint dwFlags);
+        internal static extern int LocaleNameToLCID(string lpName, uint dwFlags);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static unsafe int LCMapStringEx(
+        internal static extern unsafe int LCMapStringEx(
                     string lpLocaleName,
                     uint dwMapFlags,
                     char* lpSrcStr,
@@ -36,7 +36,7 @@ internal static partial class Interop
                     IntPtr sortHandle);
 
         [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx")]
-        internal extern static unsafe int FindNLSStringEx(
+        internal static extern unsafe int FindNLSStringEx(
                     char* lpLocaleName,
                     uint dwFindNLSStringFlags,
                     char* lpStringSource,
@@ -49,7 +49,7 @@ internal static partial class Interop
                     IntPtr sortHandle);
 
         [DllImport("kernel32.dll", EntryPoint = "CompareStringEx")]
-        internal extern static unsafe int CompareStringEx(
+        internal static extern unsafe int CompareStringEx(
                     char* lpLocaleName,
                     uint dwCmpFlags,
                     char* lpString1,
@@ -61,7 +61,7 @@ internal static partial class Interop
                     IntPtr lParam);
 
         [DllImport("kernel32.dll", EntryPoint = "CompareStringOrdinal")]
-        internal extern static unsafe int CompareStringOrdinal(
+        internal static extern unsafe int CompareStringOrdinal(
                     char* lpString1,
                     int cchCount1,
                     char* lpString2,
@@ -69,7 +69,7 @@ internal static partial class Interop
                     bool bIgnoreCase);
 
         [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal")]
-        internal extern static unsafe int FindStringOrdinal(
+        internal static extern unsafe int FindStringOrdinal(
                     uint dwFindStringOrdinalFlags,
                     char* lpStringSource,
                     int cchSource,
@@ -78,7 +78,7 @@ internal static partial class Interop
                     int bIgnoreCase);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static unsafe bool IsNLSDefinedString(
+        internal static extern unsafe bool IsNLSDefinedString(
                     int  Function,
                     uint dwFlags,
                     IntPtr lpVersionInformation,
@@ -94,26 +94,26 @@ internal static partial class Interop
         internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, void* lpLCData, int cchData);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
+        internal static extern bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
 
         internal delegate BOOL EnumLocalesProcEx(char* lpLocaleString, uint dwFlags, void* lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int ResolveLocaleName(string lpNameToResolve, char* lpLocaleName, int cchLocaleName);
+        internal static extern int ResolveLocaleName(string lpNameToResolve, char* lpLocaleName, int cchLocaleName);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
+        internal static extern bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
   
         internal delegate BOOL EnumTimeFormatsProcEx(char* lpTimeFormatString, void* lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int GetCalendarInfoEx(string lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, out int lpValue);
+        internal static extern int GetCalendarInfoEx(string lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, out int lpValue);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static int GetCalendarInfoEx(string lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
+        internal static extern int GetCalendarInfoEx(string lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, IntPtr lpValue);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, void* lParam);
+        internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string lpReserved, uint CalType, void* lParam);
         
         internal delegate BOOL EnumCalendarInfoProcExEx(char* lpCalendarInfoString, uint Calendar, IntPtr lpReserved, void* lParam);
 
@@ -128,6 +128,6 @@ internal static partial class Interop
         }
         
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal extern static unsafe bool GetNLSVersionEx(int function, string localeName, NlsVersionInfoEx* lpVersionInformation);
+        internal static extern unsafe bool GetNLSVersionEx(int function, string localeName, NlsVersionInfoEx* lpVersionInformation);
     }
 }

@@ -187,7 +187,7 @@ namespace System.Reflection
          * if the file contains an assembly manifest. This method causes
          * the file to be opened and closed.
          */
-        static public AssemblyName GetAssemblyName(String assemblyFile)
+        public static AssemblyName GetAssemblyName(String assemblyFile)
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
@@ -429,12 +429,12 @@ namespace System.Reflection
         // This call opens and closes the file, but does not add the
         // assembly to the domain.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern AssemblyName nGetFileInformation(String s);
+        internal static extern AssemblyName nGetFileInformation(String s);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern byte[] nGetPublicKeyToken();
 
-        static internal String EscapeCodeBase(String codebase)
+        internal static String EscapeCodeBase(String codebase)
         {
             if (codebase == null)
                 return string.Empty;
@@ -459,7 +459,7 @@ namespace System.Reflection
         //
         // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
         //
-        internal unsafe static char[] EscapeString(string input, int start, int end, char[] dest, ref int destPos,
+        internal static unsafe char[] EscapeString(string input, int start, int end, char[] dest, ref int destPos,
             bool isUriString, char force1, char force2, char rsvd)
         {
             int i = start;
@@ -560,7 +560,7 @@ namespace System.Reflection
         //
         // ensure destination array has enough space and contains all the needed input stuff
         //
-        private unsafe static char[] EnsureDestinationSize(char* pStr, char[] dest, int currentInputPos,
+        private static unsafe char[] EnsureDestinationSize(char* pStr, char[] dest, int currentInputPos,
             short charsToAdd, short minReallocateChars, ref int destPos, int prevInputPos)
         {
             if ((object)dest == null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
