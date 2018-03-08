@@ -212,7 +212,7 @@ namespace System.Reflection.Metadata
     }
     public partial class BlobBuilder
     {
-        public BlobBuilder(int capacity=256) { }
+        public BlobBuilder(int capacity = 256) { }
         protected internal int ChunkCapacity { get { throw null; } }
         public int Count { get { throw null; } }
         protected int FreeBytes { get { throw null; } }
@@ -267,7 +267,7 @@ namespace System.Reflection.Metadata
         public void WriteUserString(string value) { }
         public void WriteUTF16(char[] value) { }
         public void WriteUTF16(string value) { }
-        public void WriteUTF8(string value, bool allowUnpairedSurrogates=true) { }
+        public void WriteUTF8(string value, bool allowUnpairedSurrogates = true) { }
         public partial struct Blobs : System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Collections.Generic.IEnumerator<System.Reflection.Metadata.Blob>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -558,6 +558,7 @@ namespace System.Reflection.Metadata
         internal DebugMetadataHeader() { }
         public System.Reflection.Metadata.MethodDefinitionHandle EntryPoint { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<byte> Id { get { throw null; } }
+        public int IdStartOffset { get { throw null; } }
     }
     public readonly partial struct DeclarativeSecurityAttribute
     {
@@ -1674,11 +1675,11 @@ namespace System.Reflection.Metadata
         public void Dispose() { }
         public unsafe static System.Reflection.Metadata.MetadataReaderProvider FromMetadataImage(byte* start, int size) { throw null; }
         public static System.Reflection.Metadata.MetadataReaderProvider FromMetadataImage(System.Collections.Immutable.ImmutableArray<byte> image) { throw null; }
-        public static System.Reflection.Metadata.MetadataReaderProvider FromMetadataStream(System.IO.Stream stream, System.Reflection.Metadata.MetadataStreamOptions options=(System.Reflection.Metadata.MetadataStreamOptions)(0), int size=0) { throw null; }
+        public static System.Reflection.Metadata.MetadataReaderProvider FromMetadataStream(System.IO.Stream stream, System.Reflection.Metadata.MetadataStreamOptions options = (System.Reflection.Metadata.MetadataStreamOptions)(0), int size = 0) { throw null; }
         public unsafe static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbImage(byte* start, int size) { throw null; }
         public static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbImage(System.Collections.Immutable.ImmutableArray<byte> image) { throw null; }
-        public static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbStream(System.IO.Stream stream, System.Reflection.Metadata.MetadataStreamOptions options=(System.Reflection.Metadata.MetadataStreamOptions)(0), int size=0) { throw null; }
-        public System.Reflection.Metadata.MetadataReader GetMetadataReader(System.Reflection.Metadata.MetadataReaderOptions options=(System.Reflection.Metadata.MetadataReaderOptions)(1), System.Reflection.Metadata.MetadataStringDecoder utf8Decoder=null) { throw null; }
+        public static System.Reflection.Metadata.MetadataReaderProvider FromPortablePdbStream(System.IO.Stream stream, System.Reflection.Metadata.MetadataStreamOptions options = (System.Reflection.Metadata.MetadataStreamOptions)(0), int size = 0) { throw null; }
+        public System.Reflection.Metadata.MetadataReader GetMetadataReader(System.Reflection.Metadata.MetadataReaderOptions options = (System.Reflection.Metadata.MetadataReaderOptions)(1), System.Reflection.Metadata.MetadataStringDecoder utf8Decoder = null) { throw null; }
     }
     [System.FlagsAttribute]
     public enum MetadataStreamOptions
@@ -2274,9 +2275,9 @@ namespace System.Reflection.Metadata
     public readonly partial struct TypeDefinition
     {
         private readonly object _dummy;
-        public bool IsNested { get { throw null; } }
         public System.Reflection.TypeAttributes Attributes { get { throw null; } }
         public System.Reflection.Metadata.EntityHandle BaseType { get { throw null; } }
+        public bool IsNested { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Name { get { throw null; } }
         public System.Reflection.Metadata.StringHandle Namespace { get { throw null; } }
         public System.Reflection.Metadata.NamespaceDefinitionHandle NamespaceDefinition { get { throw null; } }
@@ -2422,11 +2423,11 @@ namespace System.Reflection.Metadata.Ecma335
         public void CustomAttributeSignature(out System.Reflection.Metadata.Ecma335.FixedArgumentsEncoder fixedArguments, out System.Reflection.Metadata.Ecma335.CustomAttributeNamedArgumentsEncoder namedArguments) { throw null; }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder FieldSignature() { throw null; }
         public System.Reflection.Metadata.Ecma335.LocalVariablesEncoder LocalVariableSignature(int variableCount) { throw null; }
-        public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder MethodSignature(System.Reflection.Metadata.SignatureCallingConvention convention=(System.Reflection.Metadata.SignatureCallingConvention)(0), int genericParameterCount=0, bool isInstanceMethod=false) { throw null; }
+        public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder MethodSignature(System.Reflection.Metadata.SignatureCallingConvention convention = (System.Reflection.Metadata.SignatureCallingConvention)(0), int genericParameterCount = 0, bool isInstanceMethod = false) { throw null; }
         public System.Reflection.Metadata.Ecma335.GenericTypeArgumentsEncoder MethodSpecificationSignature(int genericArgumentCount) { throw null; }
         public System.Reflection.Metadata.Ecma335.NamedArgumentsEncoder PermissionSetArguments(int argumentCount) { throw null; }
         public System.Reflection.Metadata.Ecma335.PermissionSetEncoder PermissionSetBlob(int attributeCount) { throw null; }
-        public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder PropertySignature(bool isInstanceProperty=false) { throw null; }
+        public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder PropertySignature(bool isInstanceProperty = false) { throw null; }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder TypeSpecificationSignature() { throw null; }
     }
     public static partial class CodedIndex
@@ -2523,7 +2524,7 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly object _dummy;
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public bool HasSmallFormat { get { throw null; } }
-        public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder Add(System.Reflection.Metadata.ExceptionRegionKind kind, int tryOffset, int tryLength, int handlerOffset, int handlerLength, System.Reflection.Metadata.EntityHandle catchType=default(System.Reflection.Metadata.EntityHandle), int filterOffset=0) { throw null; }
+        public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder Add(System.Reflection.Metadata.ExceptionRegionKind kind, int tryOffset, int tryLength, int handlerOffset, int handlerLength, System.Reflection.Metadata.EntityHandle catchType = default(System.Reflection.Metadata.EntityHandle), int filterOffset = 0) { throw null; }
         public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder AddCatch(int tryOffset, int tryLength, int handlerOffset, int handlerLength, System.Reflection.Metadata.EntityHandle catchType) { throw null; }
         public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder AddFault(int tryOffset, int tryLength, int handlerOffset, int handlerLength) { throw null; }
         public System.Reflection.Metadata.Ecma335.ExceptionRegionEncoder AddFilter(int tryOffset, int tryLength, int handlerOffset, int handlerLength, int filterOffset) { throw null; }
@@ -2565,7 +2566,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct InstructionEncoder
     {
         private readonly object _dummy;
-        public InstructionEncoder(System.Reflection.Metadata.BlobBuilder codeBuilder, System.Reflection.Metadata.Ecma335.ControlFlowBuilder controlFlowBuilder=null) { throw null; }
+        public InstructionEncoder(System.Reflection.Metadata.BlobBuilder codeBuilder, System.Reflection.Metadata.Ecma335.ControlFlowBuilder controlFlowBuilder = null) { throw null; }
         public System.Reflection.Metadata.BlobBuilder CodeBuilder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.ControlFlowBuilder ControlFlowBuilder { get { throw null; } }
         public int Offset { get { throw null; } }
@@ -2635,7 +2636,7 @@ namespace System.Reflection.Metadata.Ecma335
         public LocalVariableTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
-        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef=false, bool isPinned=false) { throw null; }
+        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef = false, bool isPinned = false) { throw null; }
         public void TypedReference() { }
     }
     public sealed partial class MetadataAggregator
@@ -2646,7 +2647,7 @@ namespace System.Reflection.Metadata.Ecma335
     }
     public sealed partial class MetadataBuilder
     {
-        public MetadataBuilder(int userStringHeapStartOffset=0, int stringHeapStartOffset=0, int blobHeapStartOffset=0, int guidHeapStartOffset=0) { }
+        public MetadataBuilder(int userStringHeapStartOffset = 0, int stringHeapStartOffset = 0, int blobHeapStartOffset = 0, int guidHeapStartOffset = 0) { }
         public System.Reflection.Metadata.AssemblyDefinitionHandle AddAssembly(System.Reflection.Metadata.StringHandle name, System.Version version, System.Reflection.Metadata.StringHandle culture, System.Reflection.Metadata.BlobHandle publicKey, System.Reflection.AssemblyFlags flags, System.Reflection.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public System.Reflection.Metadata.AssemblyFileHandle AddAssemblyFile(System.Reflection.Metadata.StringHandle name, System.Reflection.Metadata.BlobHandle hashValue, bool containsMetadata) { throw null; }
         public System.Reflection.Metadata.AssemblyReferenceHandle AddAssemblyReference(System.Reflection.Metadata.StringHandle name, System.Version version, System.Reflection.Metadata.StringHandle culture, System.Reflection.Metadata.BlobHandle publicKeyOrToken, System.Reflection.AssemblyFlags flags, System.Reflection.Metadata.BlobHandle hashValue) { throw null; }
@@ -2695,7 +2696,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Reflection.Metadata.BlobHandle GetOrAddBlob(System.Collections.Immutable.ImmutableArray<byte> value) { throw null; }
         public System.Reflection.Metadata.BlobHandle GetOrAddBlob(System.Reflection.Metadata.BlobBuilder value) { throw null; }
         public System.Reflection.Metadata.BlobHandle GetOrAddBlobUTF16(string value) { throw null; }
-        public System.Reflection.Metadata.BlobHandle GetOrAddBlobUTF8(string value, bool allowUnpairedSurrogates=true) { throw null; }
+        public System.Reflection.Metadata.BlobHandle GetOrAddBlobUTF8(string value, bool allowUnpairedSurrogates = true) { throw null; }
         public System.Reflection.Metadata.BlobHandle GetOrAddConstantBlob(object value) { throw null; }
         public System.Reflection.Metadata.BlobHandle GetOrAddDocumentName(string value) { throw null; }
         public System.Reflection.Metadata.GuidHandle GetOrAddGuid(System.Guid guid) { throw null; }
@@ -2726,7 +2727,7 @@ namespace System.Reflection.Metadata.Ecma335
     }
     public sealed partial class MetadataRootBuilder
     {
-        public MetadataRootBuilder(System.Reflection.Metadata.Ecma335.MetadataBuilder tablesAndHeaps, string metadataVersion=null, bool suppressValidation=false) { }
+        public MetadataRootBuilder(System.Reflection.Metadata.Ecma335.MetadataBuilder tablesAndHeaps, string metadataVersion = null, bool suppressValidation = false) { }
         public string MetadataVersion { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.MetadataSizes Sizes { get { throw null; } }
         public bool SuppressValidation { get { throw null; } }
@@ -2809,8 +2810,10 @@ namespace System.Reflection.Metadata.Ecma335
         private readonly object _dummy;
         public MethodBodyStreamEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
-        public System.Reflection.Metadata.Ecma335.MethodBodyStreamEncoder.MethodBody AddMethodBody(int codeSize, int maxStack=8, int exceptionRegionCount=0, bool hasSmallExceptionRegions=true, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature=default(System.Reflection.Metadata.StandaloneSignatureHandle), System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes=(System.Reflection.Metadata.Ecma335.MethodBodyAttributes)(1)) { throw null; }
-        public int AddMethodBody(System.Reflection.Metadata.Ecma335.InstructionEncoder instructionEncoder, int maxStack=8, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature=default(System.Reflection.Metadata.StandaloneSignatureHandle), System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes=(System.Reflection.Metadata.Ecma335.MethodBodyAttributes)(1)) { throw null; }
+        public System.Reflection.Metadata.Ecma335.MethodBodyStreamEncoder.MethodBody AddMethodBody(int codeSize, int maxStack, int exceptionRegionCount, bool hasSmallExceptionRegions, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature, System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes) { throw null; }
+        public System.Reflection.Metadata.Ecma335.MethodBodyStreamEncoder.MethodBody AddMethodBody(int codeSize, int maxStack = 8, int exceptionRegionCount = 0, bool hasSmallExceptionRegions = true, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature = default(System.Reflection.Metadata.StandaloneSignatureHandle), System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes = (System.Reflection.Metadata.Ecma335.MethodBodyAttributes)(1), bool hasDynamicStackAllocation = false) { throw null; }
+        public int AddMethodBody(System.Reflection.Metadata.Ecma335.InstructionEncoder instructionEncoder, int maxStack, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature, System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes) { throw null; }
+        public int AddMethodBody(System.Reflection.Metadata.Ecma335.InstructionEncoder instructionEncoder, int maxStack = 8, System.Reflection.Metadata.StandaloneSignatureHandle localVariablesSignature = default(System.Reflection.Metadata.StandaloneSignatureHandle), System.Reflection.Metadata.Ecma335.MethodBodyAttributes attributes = (System.Reflection.Metadata.Ecma335.MethodBodyAttributes)(1), bool hasDynamicStackAllocation = false) { throw null; }
         public readonly partial struct MethodBody
         {
             private readonly object _dummy;
@@ -2855,7 +2858,7 @@ namespace System.Reflection.Metadata.Ecma335
     public readonly partial struct ParametersEncoder
     {
         private readonly object _dummy;
-        public ParametersEncoder(System.Reflection.Metadata.BlobBuilder builder, bool hasVarArgs=false) { throw null; }
+        public ParametersEncoder(System.Reflection.Metadata.BlobBuilder builder, bool hasVarArgs = false) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public bool HasVarArgs { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.ParameterTypeEncoder AddParameter() { throw null; }
@@ -2867,7 +2870,7 @@ namespace System.Reflection.Metadata.Ecma335
         public ParameterTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
-        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef=false) { throw null; }
+        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef = false) { throw null; }
         public void TypedReference() { }
     }
     public readonly partial struct PermissionSetEncoder
@@ -2880,7 +2883,7 @@ namespace System.Reflection.Metadata.Ecma335
     }
     public sealed partial class PortablePdbBuilder
     {
-        public PortablePdbBuilder(System.Reflection.Metadata.Ecma335.MetadataBuilder tablesAndHeaps, System.Collections.Immutable.ImmutableArray<int> typeSystemRowCounts, System.Reflection.Metadata.MethodDefinitionHandle entryPoint, System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId> idProvider=null) { }
+        public PortablePdbBuilder(System.Reflection.Metadata.Ecma335.MetadataBuilder tablesAndHeaps, System.Collections.Immutable.ImmutableArray<int> typeSystemRowCounts, System.Reflection.Metadata.MethodDefinitionHandle entryPoint, System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId> idProvider = null) { }
         public ushort FormatVersion { get { throw null; } }
         public System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId> IdProvider { get { throw null; } }
         public string MetadataVersion { get { throw null; } }
@@ -2892,7 +2895,7 @@ namespace System.Reflection.Metadata.Ecma335
         public ReturnTypeEncoder(System.Reflection.Metadata.BlobBuilder builder) { throw null; }
         public System.Reflection.Metadata.BlobBuilder Builder { get { throw null; } }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
-        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef=false) { throw null; }
+        public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder Type(bool isByRef = false) { throw null; }
         public void TypedReference() { }
         public void Void() { }
     }
@@ -2913,7 +2916,7 @@ namespace System.Reflection.Metadata.Ecma335
         public System.Collections.Immutable.ImmutableArray<TType> DecodeLocalSignature(ref System.Reflection.Metadata.BlobReader blobReader) { throw null; }
         public System.Reflection.Metadata.MethodSignature<TType> DecodeMethodSignature(ref System.Reflection.Metadata.BlobReader blobReader) { throw null; }
         public System.Collections.Immutable.ImmutableArray<TType> DecodeMethodSpecificationSignature(ref System.Reflection.Metadata.BlobReader blobReader) { throw null; }
-        public TType DecodeType(ref System.Reflection.Metadata.BlobReader blobReader, bool allowTypeSpecifications=false) { throw null; }
+        public TType DecodeType(ref System.Reflection.Metadata.BlobReader blobReader, bool allowTypeSpecifications = false) { throw null; }
     }
     public readonly partial struct SignatureTypeEncoder
     {
@@ -2927,7 +2930,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Char() { }
         public System.Reflection.Metadata.Ecma335.CustomModifiersEncoder CustomModifiers() { throw null; }
         public void Double() { }
-        public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder FunctionPointer(System.Reflection.Metadata.SignatureCallingConvention convention=(System.Reflection.Metadata.SignatureCallingConvention)(0), System.Reflection.Metadata.Ecma335.FunctionPointerAttributes attributes=(System.Reflection.Metadata.Ecma335.FunctionPointerAttributes)(0), int genericParameterCount=0) { throw null; }
+        public System.Reflection.Metadata.Ecma335.MethodSignatureEncoder FunctionPointer(System.Reflection.Metadata.SignatureCallingConvention convention = (System.Reflection.Metadata.SignatureCallingConvention)(0), System.Reflection.Metadata.Ecma335.FunctionPointerAttributes attributes = (System.Reflection.Metadata.Ecma335.FunctionPointerAttributes)(0), int genericParameterCount = 0) { throw null; }
         public System.Reflection.Metadata.Ecma335.GenericTypeArgumentsEncoder GenericInstantiation(System.Reflection.Metadata.EntityHandle genericType, int genericArgumentCount, bool isValueType) { throw null; }
         public void GenericMethodTypeParameter(int parameterIndex) { }
         public void GenericTypeParameter(int parameterIndex) { }
@@ -3082,6 +3085,9 @@ namespace System.Reflection.PortableExecutable
         public DebugDirectoryBuilder() { }
         public void AddCodeViewEntry(string pdbPath, System.Reflection.Metadata.BlobContentId pdbContentId, ushort portablePdbVersion) { }
         public void AddEmbeddedPortablePdbEntry(System.Reflection.Metadata.BlobBuilder debugMetadata, ushort portablePdbVersion) { }
+        public void AddEntry(System.Reflection.PortableExecutable.DebugDirectoryEntryType type, uint version, uint stamp) { }
+        public void AddEntry<TData>(System.Reflection.PortableExecutable.DebugDirectoryEntryType type, uint version, uint stamp, TData data, System.Action<System.Reflection.Metadata.BlobBuilder, TData> dataSerializer) { }
+        public void AddPdbChecksumEntry(string algorithmName, System.Collections.Immutable.ImmutableArray<byte> checksum) { }
         public void AddReproducibleEntry() { }
     }
     public readonly partial struct DebugDirectoryEntry
@@ -3102,6 +3108,7 @@ namespace System.Reflection.PortableExecutable
         CodeView = 2,
         Coff = 1,
         EmbeddedPortablePdb = 17,
+        PdbChecksum = 19,
         Reproducible = 16,
         Unknown = 0,
     }
@@ -3135,6 +3142,7 @@ namespace System.Reflection.PortableExecutable
         AM33 = (ushort)467,
         Amd64 = (ushort)34404,
         Arm = (ushort)448,
+        Arm64 = (ushort)43620,
         ArmThumb2 = (ushort)452,
         Ebc = (ushort)3772,
         I386 = (ushort)332,
@@ -3159,11 +3167,17 @@ namespace System.Reflection.PortableExecutable
     {
         public const int ManagedResourcesDataAlignment = 8;
         public const int MappedFieldDataAlignment = 8;
-        public ManagedPEBuilder(System.Reflection.PortableExecutable.PEHeaderBuilder header, System.Reflection.Metadata.Ecma335.MetadataRootBuilder metadataRootBuilder, System.Reflection.Metadata.BlobBuilder ilStream, System.Reflection.Metadata.BlobBuilder mappedFieldData=null, System.Reflection.Metadata.BlobBuilder managedResources=null, System.Reflection.PortableExecutable.ResourceSectionBuilder nativeResources=null, System.Reflection.PortableExecutable.DebugDirectoryBuilder debugDirectoryBuilder=null, int strongNameSignatureSize=128, System.Reflection.Metadata.MethodDefinitionHandle entryPoint=default(System.Reflection.Metadata.MethodDefinitionHandle), System.Reflection.PortableExecutable.CorFlags flags=(System.Reflection.PortableExecutable.CorFlags)(1), System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId> deterministicIdProvider=null) : base (default(System.Reflection.PortableExecutable.PEHeaderBuilder), default(System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId>)) { }
+        public ManagedPEBuilder(System.Reflection.PortableExecutable.PEHeaderBuilder header, System.Reflection.Metadata.Ecma335.MetadataRootBuilder metadataRootBuilder, System.Reflection.Metadata.BlobBuilder ilStream, System.Reflection.Metadata.BlobBuilder mappedFieldData = null, System.Reflection.Metadata.BlobBuilder managedResources = null, System.Reflection.PortableExecutable.ResourceSectionBuilder nativeResources = null, System.Reflection.PortableExecutable.DebugDirectoryBuilder debugDirectoryBuilder = null, int strongNameSignatureSize = 128, System.Reflection.Metadata.MethodDefinitionHandle entryPoint = default(System.Reflection.Metadata.MethodDefinitionHandle), System.Reflection.PortableExecutable.CorFlags flags = (System.Reflection.PortableExecutable.CorFlags)(1), System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId> deterministicIdProvider = null) : base (default(System.Reflection.PortableExecutable.PEHeaderBuilder), default(System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, System.Reflection.Metadata.BlobContentId>)) { }
         protected override System.Collections.Immutable.ImmutableArray<System.Reflection.PortableExecutable.PEBuilder.Section> CreateSections() { throw null; }
         protected internal override System.Reflection.PortableExecutable.PEDirectoriesBuilder GetDirectories() { throw null; }
         protected override System.Reflection.Metadata.BlobBuilder SerializeSection(string name, System.Reflection.PortableExecutable.SectionLocation location) { throw null; }
         public void Sign(System.Reflection.Metadata.BlobBuilder peImage, System.Func<System.Collections.Generic.IEnumerable<System.Reflection.Metadata.Blob>, byte[]> signatureProvider) { }
+    }
+    public readonly partial struct PdbChecksumDebugDirectoryData
+    {
+        private readonly object _dummy;
+        public string AlgorithmName { get { throw null; } }
+        public System.Collections.Immutable.ImmutableArray<byte> Checksum { get { throw null; } }
     }
     public abstract partial class PEBuilder
     {
@@ -3251,7 +3265,7 @@ namespace System.Reflection.PortableExecutable
     }
     public sealed partial class PEHeaderBuilder
     {
-        public PEHeaderBuilder(System.Reflection.PortableExecutable.Machine machine=(System.Reflection.PortableExecutable.Machine)(0), int sectionAlignment=8192, int fileAlignment=512, ulong imageBase=(ulong)4194304, byte majorLinkerVersion=(byte)48, byte minorLinkerVersion=(byte)0, ushort majorOperatingSystemVersion=(ushort)4, ushort minorOperatingSystemVersion=(ushort)0, ushort majorImageVersion=(ushort)0, ushort minorImageVersion=(ushort)0, ushort majorSubsystemVersion=(ushort)4, ushort minorSubsystemVersion=(ushort)0, System.Reflection.PortableExecutable.Subsystem subsystem=(System.Reflection.PortableExecutable.Subsystem)(3), System.Reflection.PortableExecutable.DllCharacteristics dllCharacteristics=(System.Reflection.PortableExecutable.DllCharacteristics)(34112), System.Reflection.PortableExecutable.Characteristics imageCharacteristics=(System.Reflection.PortableExecutable.Characteristics)(8192), ulong sizeOfStackReserve=(ulong)1048576, ulong sizeOfStackCommit=(ulong)4096, ulong sizeOfHeapReserve=(ulong)1048576, ulong sizeOfHeapCommit=(ulong)4096) { }
+        public PEHeaderBuilder(System.Reflection.PortableExecutable.Machine machine = (System.Reflection.PortableExecutable.Machine)(0), int sectionAlignment = 8192, int fileAlignment = 512, ulong imageBase = (ulong)4194304, byte majorLinkerVersion = (byte)48, byte minorLinkerVersion = (byte)0, ushort majorOperatingSystemVersion = (ushort)4, ushort minorOperatingSystemVersion = (ushort)0, ushort majorImageVersion = (ushort)0, ushort minorImageVersion = (ushort)0, ushort majorSubsystemVersion = (ushort)4, ushort minorSubsystemVersion = (ushort)0, System.Reflection.PortableExecutable.Subsystem subsystem = (System.Reflection.PortableExecutable.Subsystem)(3), System.Reflection.PortableExecutable.DllCharacteristics dllCharacteristics = (System.Reflection.PortableExecutable.DllCharacteristics)(34112), System.Reflection.PortableExecutable.Characteristics imageCharacteristics = (System.Reflection.PortableExecutable.Characteristics)(8192), ulong sizeOfStackReserve = (ulong)1048576, ulong sizeOfStackCommit = (ulong)4096, ulong sizeOfHeapReserve = (ulong)1048576, ulong sizeOfHeapCommit = (ulong)4096) { }
         public System.Reflection.PortableExecutable.DllCharacteristics DllCharacteristics { get { throw null; } }
         public int FileAlignment { get { throw null; } }
         public ulong ImageBase { get { throw null; } }
@@ -3330,6 +3344,7 @@ namespace System.Reflection.PortableExecutable
         public System.Reflection.PortableExecutable.CodeViewDebugDirectoryData ReadCodeViewDebugDirectoryData(System.Reflection.PortableExecutable.DebugDirectoryEntry entry) { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.PortableExecutable.DebugDirectoryEntry> ReadDebugDirectory() { throw null; }
         public System.Reflection.Metadata.MetadataReaderProvider ReadEmbeddedPortablePdbDebugDirectoryData(System.Reflection.PortableExecutable.DebugDirectoryEntry entry) { throw null; }
+        public System.Reflection.PortableExecutable.PdbChecksumDebugDirectoryData ReadPdbChecksumDebugDirectoryData(System.Reflection.PortableExecutable.DebugDirectoryEntry entry) { throw null; }
         public bool TryOpenAssociatedPortablePdb(string peImagePath, System.Func<string, System.IO.Stream> pdbFileStreamProvider, out System.Reflection.Metadata.MetadataReaderProvider pdbReaderProvider, out string pdbPath) { throw null; }
     }
     [System.FlagsAttribute]
