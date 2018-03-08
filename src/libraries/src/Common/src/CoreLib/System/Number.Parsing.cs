@@ -300,7 +300,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static int ParseInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
+        internal static unsafe int ParseInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
             NumberBuffer number = default;
             int i = 0;
@@ -324,7 +324,7 @@ namespace System
             return i;
         }
 
-        internal unsafe static long ParseInt64(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
+        internal static unsafe long ParseInt64(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             NumberBuffer number = default;
             long i = 0;
@@ -348,7 +348,7 @@ namespace System
             return i;
         }
 
-        internal unsafe static uint ParseUInt32(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
+        internal static unsafe uint ParseUInt32(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             NumberBuffer number = default;
             uint i = 0;
@@ -373,7 +373,7 @@ namespace System
             return i;
         }
 
-        internal unsafe static ulong ParseUInt64(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
+        internal static unsafe ulong ParseUInt64(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             NumberBuffer number = default;
             ulong i = 0;
@@ -396,7 +396,7 @@ namespace System
             return i;
         }
 
-        private unsafe static bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, bool parseDecimal)
+        private static unsafe bool ParseNumber(ref char* str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, bool parseDecimal)
         {
             const int StateSign = 0x0001;
             const int StateParens = 0x0002;
@@ -601,7 +601,7 @@ namespace System
             return false;
         }
 
-        internal unsafe static bool TryParseInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out int result)
+        internal static unsafe bool TryParseInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out int result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -628,7 +628,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static bool TryParseInt64(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out long result)
+        internal static unsafe bool TryParseInt64(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out long result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -655,7 +655,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static bool TryParseUInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out uint result)
+        internal static unsafe bool TryParseUInt32(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out uint result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -682,7 +682,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static bool TryParseUInt64(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out ulong result)
+        internal static unsafe bool TryParseUInt64(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out ulong result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -709,7 +709,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
+        internal static unsafe decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             NumberBuffer number = default;
             decimal result = 0;
@@ -723,7 +723,7 @@ namespace System
             return result;
         }
 
-        internal unsafe static double ParseDouble(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
+        internal static unsafe double ParseDouble(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             NumberBuffer number = default;
             double d = 0;
@@ -757,7 +757,7 @@ namespace System
             return d;
         }
 
-        internal unsafe static float ParseSingle(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
+        internal static unsafe float ParseSingle(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt)
         {
             NumberBuffer number = default;
             double d = 0;
@@ -795,7 +795,7 @@ namespace System
             return castSingle;
         }
 
-        internal unsafe static bool TryParseDecimal(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out decimal result)
+        internal static unsafe bool TryParseDecimal(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out decimal result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -812,7 +812,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out double result)
+        internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out double result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -829,7 +829,7 @@ namespace System
             return true;
         }
 
-        internal unsafe static bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out float result)
+        internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles options, NumberFormatInfo numfmt, out float result)
         {
             NumberBuffer number = default;
             result = 0;
@@ -897,7 +897,7 @@ namespace System
             return true;
         }
 
-        private unsafe static char* MatchChars(char* p, string str)
+        private static unsafe char* MatchChars(char* p, string str)
         {
             fixed (char* stringPointer = str)
             {
@@ -905,7 +905,7 @@ namespace System
             }
         }
 
-        private unsafe static char* MatchChars(char* p, char* str)
+        private static unsafe char* MatchChars(char* p, char* str)
         {
             Debug.Assert(p != null && str != null);
 

@@ -10,6 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static int GetFileType(SafeHandle hFile);
+        internal static extern int GetFileType(SafeHandle hFile);
     }
 }

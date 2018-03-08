@@ -20,7 +20,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct UIntPtr : IEquatable<UIntPtr>, ISerializable
     {
-        unsafe private void* _value; // Do not rename (binary serialization)
+        private unsafe void* _value; // Do not rename (binary serialization)
 
         [Intrinsic]
         public static readonly UIntPtr Zero;

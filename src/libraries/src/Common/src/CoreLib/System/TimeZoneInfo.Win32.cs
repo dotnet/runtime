@@ -676,7 +676,7 @@ namespace System
             return true;
         }
 
-        private unsafe static bool TryGetTimeZoneEntryFromRegistry(RegistryKey key, string name, out REG_TZI_FORMAT dtzi)
+        private static unsafe bool TryGetTimeZoneEntryFromRegistry(RegistryKey key, string name, out REG_TZI_FORMAT dtzi)
         {
             byte[] regValue = key.GetValue(name, null, RegistryValueOptions.None) as byte[];
             if (regValue == null || regValue.Length != sizeof(REG_TZI_FORMAT))
