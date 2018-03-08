@@ -76,6 +76,10 @@
     <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
       <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
     </BinPlaceConfiguration>
+    <!-- some libraries that produce packages will remain targeting uap10.0.16299 -->
+    <BinPlaceConfiguration Condition="'$(BuildingUAPVertical)' == 'true' OR '$(BuildingUAPAOTVertical)' == 'true'" Include="uap10.0.16299">
+      <RefPath>$(RefRootPath)uap10.0.16299/</RefPath>
+    </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
     <_TargetGroupsWithIsAot Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
       <IsAot>$([System.String]::new('%(Identity)').Contains('aot'))</IsAot>

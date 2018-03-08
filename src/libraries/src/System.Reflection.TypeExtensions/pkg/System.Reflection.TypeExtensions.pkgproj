@@ -17,9 +17,9 @@
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="netcoreapp2.0" />
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
     <File Include="$(PlaceholderFile)">
-      <TargetPath>runtimes/aot/lib/$(UAPvNextTFM)</TargetPath>
+      <TargetPath>runtimes/aot/lib/uap10.0.16299</TargetPath>
     </File>
     <InboxOnTargetFramework Include="MonoAndroid10" />
     <InboxOnTargetFramework Include="MonoTouch10" />
