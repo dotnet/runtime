@@ -224,7 +224,7 @@ namespace IntelHardwareIntrinsicTest
         public bool CheckResult(CheckMethodSpan<T> check)
         {
             bool result = true;
-            for (int i = 0; i < inArray1.Length; i++)
+            for (int i = 0; i < inArray1.Length; i += ElementCount)
             {
                 var x = new Span<T>(inArray1, i, ElementCount);
                 var y = new Span<T>(inArray2, i, ElementCount);
