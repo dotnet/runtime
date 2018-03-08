@@ -398,7 +398,7 @@ namespace System
         }
 
         /// <summary>
-        /// Enumerate files 
+        /// Enumerate files
         /// </summary>
         private static IEnumerable<string> EnumerateFilesRecursively(string path)
         {
@@ -1198,9 +1198,9 @@ namespace System
                     int secondDotIndex = dateRule.IndexOf('.', firstDotIndex + 1);
                     if (secondDotIndex > 0)
                     {
-                        if (int.TryParse(dateRule.AsSpan().Slice(1, firstDotIndex - 1), out month) &&
-                            int.TryParse(dateRule.AsSpan().Slice(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1), out week) &&
-                            int.TryParse(dateRule.AsSpan().Slice(secondDotIndex + 1), out int day))
+                        if (int.TryParse(dateRule.AsSpan(1, firstDotIndex - 1), out month) &&
+                            int.TryParse(dateRule.AsSpan(firstDotIndex + 1, secondDotIndex - firstDotIndex - 1), out week) &&
+                            int.TryParse(dateRule.AsSpan(secondDotIndex + 1), out int day))
                         {
                             dayOfWeek = (DayOfWeek)day;
                             return true;
