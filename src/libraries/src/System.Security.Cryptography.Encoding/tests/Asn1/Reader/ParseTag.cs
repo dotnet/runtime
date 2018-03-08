@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             byte[] secondBytes = new byte[inputBytes.Length];
             int written;
-            Assert.False(tag.TryWrite(secondBytes.AsSpan().Slice(0, inputBytes.Length - 1), out written));
+            Assert.False(tag.TryWrite(secondBytes.AsSpan(0, inputBytes.Length - 1), out written));
             Assert.Equal(0, written);
             Assert.True(tag.TryWrite(secondBytes, out written));
             Assert.Equal(inputBytes.Length, written);

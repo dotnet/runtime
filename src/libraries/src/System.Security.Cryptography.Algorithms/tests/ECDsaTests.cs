@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 Assert.NotNull(result);
                 Assert.NotEmpty(result);
 
-                Assert.False(ecdsa.VerifyData(input.AsSpan().Slice(1).ToArray(), result, HashAlgorithmName.SHA256));
+                Assert.False(ecdsa.VerifyData(input.AsSpan(1).ToArray(), result, HashAlgorithmName.SHA256));
                 Assert.True(ecdsa.VerifyData(input, result, HashAlgorithmName.SHA256));
             }
         }
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 Assert.NotNull(result);
                 Assert.NotEmpty(result);
 
-                Assert.False(ecdsa.VerifyData(new MemoryStream(input.AsSpan().Slice(1).ToArray()), result, HashAlgorithmName.SHA256));
+                Assert.False(ecdsa.VerifyData(new MemoryStream(input.AsSpan(1).ToArray()), result, HashAlgorithmName.SHA256));
                 Assert.True(ecdsa.VerifyData(new MemoryStream(input), result, HashAlgorithmName.SHA256));
             }
         }

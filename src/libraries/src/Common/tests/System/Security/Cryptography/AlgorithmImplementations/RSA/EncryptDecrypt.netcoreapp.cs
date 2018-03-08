@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 actual = new byte[TestData.HelloBytes.Length + 1000];
                 Assert.True(rsa.TryDecrypt(cipherBytes, actual, RSAEncryptionPadding.OaepSHA1, out bytesWritten));
                 Assert.Equal(TestData.HelloBytes.Length, bytesWritten);
-                Assert.Equal<byte>(TestData.HelloBytes, actual.AsSpan().Slice(0, TestData.HelloBytes.Length).ToArray());
+                Assert.Equal<byte>(TestData.HelloBytes, actual.AsSpan(0, TestData.HelloBytes.Length).ToArray());
             }
         }
 

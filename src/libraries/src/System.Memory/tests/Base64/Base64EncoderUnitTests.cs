@@ -21,7 +21,7 @@ namespace System.Buffers.Text.Tests
 
             for (int value = 0; value < 256; value++)
             {
-                Span<byte> sourceBytes = bytes.AsSpan().Slice(0, value + 1);
+                Span<byte> sourceBytes = bytes.AsSpan(0, value + 1);
                 Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(sourceBytes.Length)];
                 Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(sourceBytes, encodedBytes, out int consumed, out int encodedBytesCount));
                 Assert.Equal(sourceBytes.Length, consumed);
@@ -90,7 +90,7 @@ namespace System.Buffers.Text.Tests
             // 1610612734, larger than MaximumEncodeLength, requires output buffer of size 2147483648 (which is > int.MaxValue)
             const int sourceCount = (int.MaxValue >> 2) * 3 + 1;
             const int encodedCount = 2000000000;
-            
+
             try
             {
                 allocatedFirst = AllocationHelper.TryAllocNative((IntPtr)sourceCount, out memBlockFirst);
@@ -103,7 +103,7 @@ namespace System.Buffers.Text.Tests
                         var encodedBytes = new Span<byte>(memBlockSecond.ToPointer(), encodedCount);
 
                         Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
-                        Assert.Equal((encodedBytes.Length >> 2) * 3, consumed); // encoding 1500000000 bytes fits into buffer of 2000000000 bytes 
+                        Assert.Equal((encodedBytes.Length >> 2) * 3, consumed); // encoding 1500000000 bytes fits into buffer of 2000000000 bytes
                         Assert.Equal(encodedBytes.Length, encodedBytesCount);
                     }
                 }

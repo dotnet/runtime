@@ -331,7 +331,7 @@ namespace System
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        //          End       NumEnd      NumAmPm     NumSpace    NumDaySep   NumTimesep  MonthEnd    MonthSpace  MonthDSep   NumDateSuff NumTimeSuff     DayOfWeek     YearSpace   YearDateSep YearEnd     TimeZone   Era         UTCTimeMark   
+        //          End       NumEnd      NumAmPm     NumSpace    NumDaySep   NumTimesep  MonthEnd    MonthSpace  MonthDSep   NumDateSuff NumTimeSuff     DayOfWeek     YearSpace   YearDateSep YearEnd     TimeZone   Era         UTCTimeMark
         private static DS[][] dateParsingStates = {
 // DS.BEGIN                                                                             // DS.BEGIN
 new DS[] { DS.BEGIN, DS.ERROR,   DS.TX_N,    DS.N,       DS.D_Nd,    DS.T_Nt,    DS.ERROR,   DS.D_M,     DS.D_M,     DS.D_S,     DS.T_S,         DS.BEGIN,     DS.D_Y,     DS.D_Y,     DS.ERROR,   DS.BEGIN,  DS.BEGIN,    DS.ERROR},
@@ -713,7 +713,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                         return false;
                                     }
 
-                                    // we have the date and time separators are same and getting a year number, then change the token to YearDateSep as 
+                                    // we have the date and time separators are same and getting a year number, then change the token to YearDateSep as
                                     // we are sure we are not parsing time.
                                     dtok.dtt = DTT.YearDateSep;
                                     break;
@@ -1002,7 +1002,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                                     return false;
                                 }
 
-                                // we have the date and time separators are same and getting a Month name, then change the token to MonthDatesep as 
+                                // we have the date and time separators are same and getting a Month name, then change the token to MonthDatesep as
                                 // we are sure we are not parsing time.
                                 dtok.dtt = DTT.MonthDatesep;
                                 break;
@@ -1212,7 +1212,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     // The has was un-paired
                     return false;
                 }
-                // Valid Hash usage: eat the hash and continue. 
+                // Valid Hash usage: eat the hash and continue.
                 str.GetNext();
                 return true;
             }
@@ -2591,7 +2591,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         if (dtok.dtt == DTT.YearEnd || dtok.dtt == DTT.YearSpace || dtok.dtt == DTT.YearDateSep)
                         {
-                            // When time and date separators are same and we are hitting a year number while the first parsed part of the string was recognized 
+                            // When time and date separators are same and we are hitting a year number while the first parsed part of the string was recognized
                             // as part of time (and not a date) DS.T_Nt, DS.T_NNt then change the state to be a date so we try to parse it as a date instead
                             if (dps == DS.T_Nt)
                             {
@@ -2608,7 +2608,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             switch (dtok.dtt)
                             {
-                                // we have the case of Serbia have dates in forms 'd.M.yyyy.' so we can expect '.' after the date parts. 
+                                // we have the case of Serbia have dates in forms 'd.M.yyyy.' so we can expect '.' after the date parts.
                                 // changing the token to end with space instead of Date Separator will avoid failing the parsing.
 
                                 case DTT.YearDateSep: dtok.dtt = atEnd ? DTT.YearEnd : DTT.YearSpace; break;
@@ -2734,7 +2734,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         {
             if ((result.flags & ParseFlags.CaptureOffset) != 0)
             {
-                // This is a DateTimeOffset parse, so the offset will actually be captured directly, and 
+                // This is a DateTimeOffset parse, so the offset will actually be captured directly, and
                 // no adjustment is required in most cases
                 return DateTimeOffsetTimeZonePostProcessing(ref str, ref result, styles);
             }
@@ -2810,7 +2810,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
         // Apply validation and adjustments specific to DateTimeOffset
         private static Boolean DateTimeOffsetTimeZonePostProcessing(ref __DTString str, ref DateTimeResult result, DateTimeStyles styles)
         {
-            // For DateTimeOffset, default to the Utc or Local offset when an offset was not specified by 
+            // For DateTimeOffset, default to the Utc or Local offset when an offset was not specified by
             // the input string.
             if ((result.flags & ParseFlags.TimeZoneUsed) == 0)
             {
@@ -2833,7 +2833,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             Int64 utcTicks = result.parsedDate.Ticks - offsetTicks;
 
             // For DateTimeOffset, both the parsed time and the corresponding UTC value must be within the boundaries
-            // of a DateTime instance.            
+            // of a DateTime instance.
             if (utcTicks < DateTime.MinTicks || utcTicks > DateTime.MaxTicks)
             {
                 result.SetFailure(ParseFailureKind.FormatWithOriginalDateTime, nameof(SR.Format_UTCOutOfRange));
@@ -3668,7 +3668,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 }
             }
 
-            // assume the offset is Local            
+            // assume the offset is Local
             return DateTime.Now;
         }
 
@@ -4218,7 +4218,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     }
 
                     // The "r" and "u" formats incorrectly quoted 'GMT' and 'Z', respectively.  We cannot
-                    // correct this mistake for DateTime.ParseExact for compatibility reasons, but we can 
+                    // correct this mistake for DateTime.ParseExact for compatibility reasons, but we can
                     // fix it for DateTimeOffset.ParseExact as DateTimeOffset has not been publically released
                     // with this issue.
                     if ((result.flags & ParseFlags.CaptureOffset) != 0)
@@ -5045,7 +5045,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             return false;
                         }
-                        if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength)) != 0)
+                        if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan(targetPosition, segmentLength)) != 0)
                         {
                             return false;
                         }
@@ -5071,7 +5071,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                     {
                         return false;
                     }
-                    if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan().Slice(targetPosition, segmentLength)) != 0)
+                    if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan(targetPosition, segmentLength)) != 0)
                     {
                         return false;
                     }

@@ -36,8 +36,8 @@ namespace System.Text.Encodings.Tests
             byte[] bytes;
 
             bytes = new byte[encoding.GetByteCount(TextString)];
-            encoder.Convert(TextString.AsSpan(), bytes.AsSpan().Slice(0, 2), true, out int charsUsed, out int bytesUsed, out bool completed);
-            Assert.Equal(encoding.GetBytes(TextString).AsSpan().Slice(0, 2).ToArray(), bytes.AsSpan().Slice(0, 2).ToArray());
+            encoder.Convert(TextString.AsSpan(), bytes.AsSpan(0, 2), true, out int charsUsed, out int bytesUsed, out bool completed);
+            Assert.Equal(encoding.GetBytes(TextString).AsSpan(0, 2).ToArray(), bytes.AsSpan(0, 2).ToArray());
             Assert.Equal(2, charsUsed);
             Assert.Equal(2, bytesUsed);
             Assert.False(completed);

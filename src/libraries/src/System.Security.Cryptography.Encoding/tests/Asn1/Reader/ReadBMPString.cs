@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 output[0] = 'a';
 
                 copied = reader.TryCopyBMPString(
-                    output.AsSpan().Slice(0, expectedValue.Length - 1),
+                    output.AsSpan(0, expectedValue.Length - 1),
                     out charsWritten);
 
                 Assert.False(copied, "reader.TryCopyBMPString - too short");
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 output[0] = 32;
 
-                copied = reader.TryCopyBMPStringBytes(output.AsSpan().Slice(0, output.Length - 1),
+                copied = reader.TryCopyBMPStringBytes(output.AsSpan(0, output.Length - 1),
                     out bytesWritten);
 
                 Assert.False(copied, "reader.TryCopyBMPStringBytes - too short");

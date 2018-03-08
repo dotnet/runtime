@@ -33,8 +33,8 @@ namespace System.SpanTests
 
                 ReadOnlySpan<int> source = a.AsReadOnlySpan().Slice(7, 5);
 
-                Span<int> expected = new int[a.Length].AsSpan().Slice(i, 5);
-                Span<int> actual = a.AsSpan().Slice(i, 5);
+                Span<int> expected = new int[a.Length].AsSpan(i, 5);
+                Span<int> actual = a.AsSpan(i, 5);
 
                 DoubleEachElementForwards(source, expected);
                 DoubleEachElementForwards(source, actual);
@@ -54,7 +54,7 @@ namespace System.SpanTests
                     a.AsReadOnlySpan().AsBytes()
                     .Slice(2, 5 * sizeof(int)));
 
-                Span<int> actual = a.AsSpan().Slice(0, 5);
+                Span<int> actual = a.AsSpan(0, 5);
 
                 DoubleEachElementForwards(source, actual);
             });
@@ -67,7 +67,7 @@ namespace System.SpanTests
                     a.AsReadOnlySpan().AsBytes()
                     .Slice(2, 5 * sizeof(int)));
 
-                Span<int> actual = a.AsSpan().Slice(1, 5);
+                Span<int> actual = a.AsSpan(1, 5);
 
                 DoubleEachElementForwards(source, actual);
             });
@@ -97,8 +97,8 @@ namespace System.SpanTests
 
                 ReadOnlySpan<int> source = a.AsReadOnlySpan().Slice(7, 5);
 
-                Span<int> expected = new int[a.Length].AsSpan().Slice(i, 5);
-                Span<int> actual = a.AsSpan().Slice(i, 5);
+                Span<int> expected = new int[a.Length].AsSpan(i, 5);
+                Span<int> actual = a.AsSpan(i, 5);
 
                 DoubleEachElementBackwards(source, expected);
                 DoubleEachElementBackwards(source, actual);
@@ -117,7 +117,7 @@ namespace System.SpanTests
                 ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
                     a.AsReadOnlySpan().AsBytes().Slice(2, 5 * sizeof(int)));
 
-                Span<int> actual = a.AsSpan().Slice(0, 5);
+                Span<int> actual = a.AsSpan(0, 5);
 
                 DoubleEachElementBackwards(source, actual);
             });
@@ -129,7 +129,7 @@ namespace System.SpanTests
                 ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
                     a.AsReadOnlySpan().AsBytes().Slice(2, 5 * sizeof(int)));
 
-                Span<int> actual = a.AsSpan().Slice(1, 5);
+                Span<int> actual = a.AsSpan(1, 5);
 
                 DoubleEachElementBackwards(source, actual);
             });

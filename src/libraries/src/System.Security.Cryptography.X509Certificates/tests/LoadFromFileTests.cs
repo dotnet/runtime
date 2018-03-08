@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     byte[] thumbPrint = new byte[expectedSize + 10];
                     thumbPrint.AsSpan().Fill(FillByte);
 
-                    Span<byte> writeDest = thumbPrint.AsSpan().Slice(WriteOffset);
+                    Span<byte> writeDest = thumbPrint.AsSpan(WriteOffset);
                     int bytesWritten;
 
                     // Too small.
