@@ -1775,91 +1775,56 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 }
 
 //------------------------------------------------------------------------
-// genReturn: Generates code for return statement.
-//            In case of struct return, delegates to the genStructReturn method.
+// genSimpleReturn: Generates code for simple return statement for arm64.
+//
+// Note: treeNode's and op1's registers are already consumed.
 //
 // Arguments:
-//    treeNode - The GT_RETURN or GT_RETFILT tree node.
+//    treeNode - The GT_RETURN or GT_RETFILT tree node with non-struct and non-void type
 //
 // Return Value:
 //    None
 //
-void CodeGen::genReturn(GenTree* treeNode)
+void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
-    // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in the return
-    // register, if it's not already there. The processing is the same as GT_RETURN. For filters, the IL spec says the
-    // result is type int32. Further, the only legal values are 0 or 1; the use of other values is "undefined".
-    assert(!treeNode->OperIs(GT_RETFILT) || (targetType == TYP_VOID) || (targetType == TYP_INT));
+    assert(!isStructReturn(treeNode));
+    assert(targetType != TYP_VOID);
 
-#ifdef DEBUG
-    if (targetType == TYP_VOID)
+    regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
+
+    bool movRequired = (op1->gtRegNum != retReg);
+
+    if (!movRequired)
     {
-        assert(op1 == nullptr);
-    }
-#endif
-
-    if (isStructReturn(treeNode))
-    {
-        genStructReturn(treeNode);
-    }
-    else if (targetType != TYP_VOID)
-    {
-        assert(op1 != nullptr);
-        noway_assert(op1->gtRegNum != REG_NA);
-
-        genConsumeReg(op1);
-
-        regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
-
-        bool movRequired = (op1->gtRegNum != retReg);
-
-        if (!movRequired)
+        if (op1->OperGet() == GT_LCL_VAR)
         {
-            if (op1->OperGet() == GT_LCL_VAR)
+            GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
+            bool                 isRegCandidate = compiler->lvaTable[lcl->gtLclNum].lvIsRegCandidate();
+            if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
             {
-                GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
-                bool                 isRegCandidate = compiler->lvaTable[lcl->gtLclNum].lvIsRegCandidate();
-                if (isRegCandidate && ((op1->gtFlags & GTF_SPILLED) == 0))
+                // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
+
+                unsigned   lclNum  = lcl->gtLclNum;
+                LclVarDsc* varDsc  = &(compiler->lvaTable[lclNum]);
+                var_types  op1Type = genActualType(op1->TypeGet());
+                var_types  lclType = genActualType(varDsc->TypeGet());
+
+                if (genTypeSize(op1Type) < genTypeSize(lclType))
                 {
-                    // We may need to generate a zero-extending mov instruction to load the value from this GT_LCL_VAR
-
-                    unsigned   lclNum  = lcl->gtLclNum;
-                    LclVarDsc* varDsc  = &(compiler->lvaTable[lclNum]);
-                    var_types  op1Type = genActualType(op1->TypeGet());
-                    var_types  lclType = genActualType(varDsc->TypeGet());
-
-                    if (genTypeSize(op1Type) < genTypeSize(lclType))
-                    {
-                        movRequired = true;
-                    }
+                    movRequired = true;
                 }
             }
         }
-
-        if (movRequired)
-        {
-            emitAttr attr = emitActualTypeSize(targetType);
-            getEmitter()->emitIns_R_R(INS_mov, attr, retReg, op1->gtRegNum);
-        }
     }
-
-#ifdef PROFILING_SUPPORTED
-    // There will be a single return block while generating profiler ELT callbacks.
-    //
-    // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
-    // In flowgraph and other places assert that the last node of a block marked as
-    // GT_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
-    // maintain such an invariant irrespective of whether profiler hook needed or not.
-    // Also, there is not much to be gained by materializing it as an explicit node.
-    if (compiler->compCurBB == compiler->genReturnBB)
+    if (movRequired)
     {
-        genProfilingLeaveCallback();
+        emitAttr attr = emitActualTypeSize(targetType);
+        getEmitter()->emitIns_R_R(INS_mov, attr, retReg, op1->gtRegNum);
     }
-#endif
 }
 
 /***********************************************************************************************
