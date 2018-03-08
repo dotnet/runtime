@@ -323,7 +323,7 @@ namespace System
                     T[] list = null;
 
                     if (name == null || name.Length == 0 ||
-                        (cacheType == CacheType.Constructor && name.FirstChar != '.' && name.FirstChar != '*'))
+                        (cacheType == CacheType.Constructor && name[0] != '.' && name[0] != '*'))
                     {
                         list = GetListByName(null, 0, null, 0, listType, cacheType);
                     }

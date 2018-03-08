@@ -319,7 +319,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\String.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
