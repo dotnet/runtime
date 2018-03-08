@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27331.1
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Memory.Tests", "tests\System.Memory.Tests.csproj", "{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -25,24 +25,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3F794AE4-319F-4498-A9DA-C49A4EB11D9E}"
-	ProjectSection(SolutionItems) = preProject
-		..\Common\src\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs = ..\Common\src\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs
-		..\Common\src\CoreLib\System\ReadOnlySpan.Fast.cs = ..\Common\src\CoreLib\System\ReadOnlySpan.Fast.cs
-		..\Common\src\CoreLib\System\Span.Fast.cs = ..\Common\src\CoreLib\System\Span.Fast.cs
-		..\Common\src\CoreLib\System\Span.NonGeneric.cs = ..\Common\src\CoreLib\System\Span.NonGeneric.cs
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
@@ -64,8 +56,5 @@ Global
 		{18482C55-6B57-41E8-BBC4-383B9E2C7AA2} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{E883935B-D8FD-4FC9-A189-9D9E7F7EF550} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {D1974D36-E7EF-4503-B474-D92F2D79ABE5}
 	EndGlobalSection
 EndGlobal

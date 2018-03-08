@@ -6,6 +6,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BerConverterTests.cs" />
     <Compile Include="LdapSessionOptionsTests.cs" />
@@ -50,7 +52,6 @@
     <Compile Include="BerConversionExceptionTests.cs" />
     <Compile Include="AsqRequestControlTests.cs" />
     <Compile Include="AddRequestTests.cs" />
-
     <Compile Include="DirectoryServicesProtocolsTests.cs" />
     <Compile Include="$(CommonTestPath)\System\DirectoryServices\LdapConfiguration.cs">
       <Link>Common\DirectoryServices\LdapConfiguration.cs</Link>

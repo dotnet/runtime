@@ -7,6 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Exte
 		{DE90AD0B-649D-4062-B8D9-9658DE140532} = {DE90AD0B-649D-4062-B8D9-9658DE140532}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Extensions.Performance.Tests", "tests\Performance\System.Threading.Tasks.Extensions.Performance.Tests.csproj", "{77E38A48-61ED-4D79-9136-D88617EE3558}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DE90AD0B-649D-4062-B8D9-9658DE140532} = {DE90AD0B-649D-4062-B8D9-9658DE140532}
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Threading.Tasks.Extensions", "src\System.Threading.Tasks.Extensions.csproj", "{DE90AD0B-649D-4062-B8D9-9658DE140532}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0DF7FA9A-E7D3-4CEF-862B-A37F5BBBB54C} = {0DF7FA9A-E7D3-4CEF-862B-A37F5BBBB54C}
@@ -30,6 +35,10 @@ Global
 		{275B161B-D525-48A0-B1DE-344273AB9A99}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{275B161B-D525-48A0-B1DE-344273AB9A99}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{275B161B-D525-48A0-B1DE-344273AB9A99}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{77E38A48-61ED-4D79-9136-D88617EE3558}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{77E38A48-61ED-4D79-9136-D88617EE3558}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{77E38A48-61ED-4D79-9136-D88617EE3558}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{77E38A48-61ED-4D79-9136-D88617EE3558}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{DE90AD0B-649D-4062-B8D9-9658DE140532}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{DE90AD0B-649D-4062-B8D9-9658DE140532}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{DE90AD0B-649D-4062-B8D9-9658DE140532}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -44,6 +53,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{275B161B-D525-48A0-B1DE-344273AB9A99} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{77E38A48-61ED-4D79-9136-D88617EE3558} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{DE90AD0B-649D-4062-B8D9-9658DE140532} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{0DF7FA9A-E7D3-4CEF-862B-A37F5BBBB54C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
