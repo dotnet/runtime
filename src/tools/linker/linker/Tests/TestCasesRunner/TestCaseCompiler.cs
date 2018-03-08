@@ -77,7 +77,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			};
 		}
 
-		protected virtual CompilerOptions CreateOptionsForSupportingAssembly (SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines)
+		protected virtual CompilerOptions CreateOptionsForSupportingAssembly (SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources)
 		{
 			var allDefines = defines.Concat (setupCompileInfo.Defines ?? new string [0]).ToArray ();
 			var allReferences = references.Concat (setupCompileInfo.References?.Select (p => MakeSupportingAssemblyReferencePathAbsolute (outputDirectory, p)) ?? new NPath [0]).ToArray ();
@@ -88,6 +88,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				SourceFiles = sourceFiles,
 				References = allReferences,
 				Defines = allDefines,
+				Resources = resources,
 				AdditionalArguments = additionalArguments,
 				CompilerToUse = setupCompileInfo.CompilerToUse?.ToLower ()
 			};
@@ -97,7 +98,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesBefore ())
 			{
-				var options = CreateOptionsForSupportingAssembly (setupCompileInfo, outputDirectory, CollectSetupBeforeSourcesFiles (setupCompileInfo), references, defines);
+				var options = CreateOptionsForSupportingAssembly (
+					setupCompileInfo,
+					outputDirectory,
+					CollectSetupBeforeSourcesFiles (setupCompileInfo),
+					references,
+					defines,
+					CollectSetupBeforeResourcesFiles (setupCompileInfo));
 				var output = CompileAssembly (options);
 				if (setupCompileInfo.AddAsReference)
 					yield return output;
@@ -108,7 +115,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesAfter ())
 			{
-				var options = CreateOptionsForSupportingAssembly (setupCompileInfo, outputDirectory, CollectSetupAfterSourcesFiles (setupCompileInfo), references, defines);
+				var options = CreateOptionsForSupportingAssembly (
+					setupCompileInfo,
+					outputDirectory,
+					CollectSetupAfterSourcesFiles (setupCompileInfo),
+					references,
+					defines,
+					CollectSetupAfterResourcesFiles (setupCompileInfo));
 				CompileAssembly (options);
 			}
 		}
@@ -121,6 +134,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		private NPath[] CollectSetupAfterSourcesFiles (SetupCompileInfo info)
 		{
 			return CollectSourceFilesFrom (_sandbox.AfterReferenceSourceDirectoryFor (info.OutputName));
+		}
+		
+		private NPath[] CollectSetupBeforeResourcesFiles (SetupCompileInfo info)
+		{
+			return _sandbox.BeforeReferenceResourceDirectoryFor (info.OutputName).Files ().ToArray ();
+		}
+
+		private NPath[] CollectSetupAfterResourcesFiles (SetupCompileInfo info)
+		{
+			return  _sandbox.AfterReferenceResourceDirectoryFor (info.OutputName).Files ().ToArray ();
 		}
 
 		private static NPath[] CollectSourceFilesFrom (NPath directory)

@@ -170,13 +170,19 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return new SetupCompileInfo
 			{
 				OutputName = (string) ctorArguments [0].Value,
-				SourceFiles = ((CustomAttributeArgument []) ctorArguments [1].Value).Select (arg => _testCase.SourceFile.Parent.Combine (arg.Value.ToString ())).ToArray (),
+				SourceFiles = ((CustomAttributeArgument []) ctorArguments [1].Value).Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
 				References = ((CustomAttributeArgument []) ctorArguments [2].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
 				Defines = ((CustomAttributeArgument []) ctorArguments [3].Value)?.Select (arg => arg.Value.ToString ()).ToArray (),
-				AdditionalArguments = (string) ctorArguments [4].Value,
-				CompilerToUse = (string) ctorArguments [5].Value,
-				AddAsReference = ctorArguments.Count >= 7 ? (bool) ctorArguments [6].Value : true
+				Resources = ((CustomAttributeArgument []) ctorArguments [4].Value)?.Select (arg => MakeSourceTreeFilePathAbsolute (arg.Value.ToString ())).ToArray (),
+				AdditionalArguments = (string) ctorArguments [5].Value,
+				CompilerToUse = (string) ctorArguments [6].Value,
+				AddAsReference = ctorArguments.Count >= 8 ? (bool) ctorArguments [7].Value : true
 			};
+		}
+
+		protected NPath MakeSourceTreeFilePathAbsolute (string value)
+		{
+			return _testCase.SourceFile.Parent.Combine (value);
 		}
 	}
 }

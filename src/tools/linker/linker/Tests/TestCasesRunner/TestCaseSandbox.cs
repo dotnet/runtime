@@ -85,12 +85,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			{
 				var destination = BeforeReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.SourceFiles.Copy (destination);
+				
+				destination = BeforeReferenceResourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
+				compileRefInfo.Resources?.Copy (destination);
 			}
 
 			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesAfter ())
 			{
 				var destination = AfterReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
 				compileRefInfo.SourceFiles.Copy (destination);
+				
+				destination = AfterReferenceResourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
+				compileRefInfo.Resources?.Copy (destination);
 			}
 		}
 
@@ -113,6 +119,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public NPath AfterReferenceSourceDirectoryFor (string outputName)
 		{
 			return _directory.Combine ($"ref_source_after_{Path.GetFileNameWithoutExtension (outputName)}");
+		}
+		
+		public NPath BeforeReferenceResourceDirectoryFor (string outputName)
+		{
+			return _directory.Combine ($"ref_resource_before_{Path.GetFileNameWithoutExtension (outputName)}");
+		}
+
+		public NPath AfterReferenceResourceDirectoryFor (string outputName)
+		{
+			return _directory.Combine ($"ref_resource_after_{Path.GetFileNameWithoutExtension (outputName)}");
 		}
 	}
 }
