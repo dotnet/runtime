@@ -7519,6 +7519,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
+    assert(args == nullptr ||
+           generateUniqueVN); // All arguments should be processed or we generate unique VN and do not care.
 }
 
 void Compiler::fgValueNumberCall(GenTreeCall* call)
