@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyName>System.IO.Compression.Performance.Tests</AssemblyName>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <ProjectGuid>{1341F8C8-637A-49A1-BE0F-13867A634929}</ProjectGuid>
+    <ProjectGuid>{13C0F956-FB7B-4882-A411-39B8E22463D2}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
