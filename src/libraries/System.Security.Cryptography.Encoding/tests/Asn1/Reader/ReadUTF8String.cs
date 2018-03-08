@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
                 copied = reader.TryCopyCharacterString(
                     UniversalTagNumber.UTF8String,
-                    output.AsSpan().Slice(0, expectedValue.Length - 1),
+                    output.AsSpan(0, expectedValue.Length - 1),
                     out charsWritten);
 
                 Assert.False(copied, "reader.TryCopyUTF8String - too short");
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
                 copied = reader.TryCopyCharacterStringBytes(
                     UniversalTagNumber.UTF8String,
-                    output.AsSpan().Slice(0, output.Length - 1),
+                    output.AsSpan(0, output.Length - 1),
                     out bytesWritten);
 
                 Assert.False(copied, "reader.TryCopyUTF8StringBytes - too short");

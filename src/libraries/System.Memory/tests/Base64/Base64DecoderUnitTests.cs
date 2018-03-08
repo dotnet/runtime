@@ -410,7 +410,7 @@ namespace System.Buffers.Text.Tests
 
             for (int value = 0; value < 256; value++)
             {
-                Span<byte> sourceBytes = testBytes.AsSpan().Slice(0, value + 1);
+                Span<byte> sourceBytes = testBytes.AsSpan(0, value + 1);
                 Span<byte> buffer = new byte[Base64.GetMaxEncodedToUtf8Length(sourceBytes.Length)];
 
                 Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(sourceBytes, buffer, out int consumed, out int written));

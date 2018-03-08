@@ -120,7 +120,7 @@ namespace System.IO
         {
             if (GetType() != typeof(StringReader))
             {
-                // This overload was added affter the Read(char[], ...) overload, and so in case
+                // This overload was added after the Read(char[], ...) overload, and so in case
                 // a derived type may have overridden it, we need to delegate to it, which the base does.
                 return base.Read(buffer);
             }
@@ -138,7 +138,7 @@ namespace System.IO
                     n = buffer.Length;
                 }
 
-                _s.AsSpan().Slice(_pos, n).CopyTo(buffer);
+                _s.AsSpan(_pos, n).CopyTo(buffer);
                 _pos += n;
             }
 

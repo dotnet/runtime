@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 actual[actual.Length - 1] = 42;
                 Assert.True(hash.TryComputeHash(input, actual, out bytesWritten));
                 Assert.Equal(expected.Length, bytesWritten);
-                Assert.Equal(expected, actual.AsSpan().Slice(0, expected.Length).ToArray());
+                Assert.Equal(expected, actual.AsSpan(0, expected.Length).ToArray());
                 Assert.Equal(42, actual[actual.Length - 1]);
             }
         }

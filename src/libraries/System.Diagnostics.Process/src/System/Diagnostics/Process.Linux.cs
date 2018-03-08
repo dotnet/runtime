@@ -88,7 +88,7 @@ namespace System.Diagnostics
                 int length = text.IndexOf(' ');
                 if (length != -1)
                 {
-                    Double.TryParse(text.AsSpan().Slice(0, length), NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out uptimeSeconds);
+                    Double.TryParse(text.AsSpan(0, length), NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out uptimeSeconds);
                 }
 
                 return TimeSpan.FromSeconds(uptimeSeconds);
@@ -191,7 +191,7 @@ namespace System.Diagnostics
             ulong rsslim = GetStat().rsslim;
 
             // rsslim is a ulong, but maxWorkingSet is an IntPtr, so we need to cap rsslim
-            // at the max size of IntPtr.  This often happens when there is no configured 
+            // at the max size of IntPtr.  This often happens when there is no configured
             // rsslim other than ulong.MaxValue, which without these checks would show up
             // as a maxWorkingSet == -1.
             switch (IntPtr.Size)

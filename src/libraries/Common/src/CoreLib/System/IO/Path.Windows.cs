@@ -83,7 +83,7 @@ namespace System.IO
                 // Path is current drive rooted i.e. starts with \:
                 // "\Foo" and "C:\Bar" => "C:\Foo"
                 // "\Foo" and "\\?\C:\Bar" => "\\?\C:\Foo"
-                combinedPath = Join(GetPathRoot(basePath.AsSpan()), path.AsSpan().Slice(1)); // Cut the separator to ensure we don't end up with two separators when joining with the root.
+                combinedPath = Join(GetPathRoot(basePath.AsSpan()), path.AsSpan(1)); // Cut the separator to ensure we don't end up with two separators when joining with the root.
             }
             else if (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == PathInternal.VolumeSeparatorChar)
             {
@@ -95,7 +95,7 @@ namespace System.IO
                     // Matching root
                     // "C:Foo" and "C:\Bar" => "C:\Bar\Foo"
                     // "C:Foo" and "\\?\C:\Bar" => "\\?\C:\Bar\Foo"
-                    combinedPath = Join(basePath, path.AsSpan().Slice(2));
+                    combinedPath = Join(basePath, path.AsSpan(2));
                 }
                 else
                 {
@@ -105,8 +105,8 @@ namespace System.IO
                     combinedPath = !PathInternal.IsDevice(basePath)
                         ? path.Insert(2, @"\")
                         : length == 2
-                            ? JoinInternal(basePath.AsSpan().Slice(0, 4), path, @"\")
-                            : JoinInternal(basePath.AsSpan().Slice(0, 4), path.AsSpan().Slice(0, 2), @"\", path.AsSpan().Slice(2));
+                            ? JoinInternal(basePath.AsSpan(0, 4), path, @"\")
+                            : JoinInternal(basePath.AsSpan(0, 4), path.AsSpan(0, 2), @"\", path.AsSpan(2));
                 }
             }
             else

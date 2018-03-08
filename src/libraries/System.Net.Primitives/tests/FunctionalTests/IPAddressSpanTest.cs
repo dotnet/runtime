@@ -37,7 +37,7 @@ namespace System.Net.Primitives.Functional.Tests
             IPAddress ip = new IPAddress(address);
 
             Assert.True(ip.TryWriteBytes(new Span<byte>(result), out int bytesWritten));
-            Assert.Equal<byte>(address, result.AsSpan().Slice(0, bytesWritten).ToArray());
+            Assert.Equal<byte>(address, result.AsSpan(0, bytesWritten).ToArray());
             Assert.Equal(address.Length, bytesWritten);
         }
 

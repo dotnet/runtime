@@ -14,7 +14,7 @@ namespace System.Text.Tests
             Assert.Equal(expected, encoding.GetByteCount(chars, index, count));
 
             // Use GetByteCount(ReadOnlySpan<char> chars)
-            Assert.Equal(expected, encoding.GetByteCount(chars.AsSpan().Slice(index, count)));
+            Assert.Equal(expected, encoding.GetByteCount(chars.AsSpan(index, count)));
 
             if (count == 0)
                 Assert.Equal(expected, encoding.GetByteCount(ReadOnlySpan<char>.Empty));
@@ -28,7 +28,7 @@ namespace System.Text.Tests
 
             // Use GetBytes(ReadOnlySpan<char>, Span<byte>)
             Array.Clear(stringResultAdvanced, 0, stringResultAdvanced.Length);
-            Assert.Equal(expected.Length, encoding.GetBytes(chars.AsSpan().Slice(index, count), (Span<byte>)stringResultAdvanced));
+            Assert.Equal(expected.Length, encoding.GetBytes(chars.AsSpan(index, count), (Span<byte>)stringResultAdvanced));
             VerifyGetBytes(stringResultAdvanced, 0, stringResultAdvanced.Length, new byte[expected.Length], expected);
 
             if (count == 0)
