@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
@@ -832,6 +834,21 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Equal(13, pdbReader.Documents.Count);
 
             embeddedPdbProvider.Dispose();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static MetadataReader GetMetadataReaderFromPEReader()
+            => new PEReader(Misc.Debug.ToImmutableArray()).GetMetadataReader();
+
+        [Fact, MethodImpl(MethodImplOptions.NoOptimization)]
+        public void KeepMetadataAlive()
+        {
+            var reader = GetMetadataReaderFromPEReader();
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+
+            Assert.Equal(@"Debug", reader.GetString(reader.GetAssemblyDefinition().Name));
         }
     }
 }

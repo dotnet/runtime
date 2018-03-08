@@ -22,6 +22,9 @@ namespace System.Reflection.Metadata
         // A row id of "mscorlib" AssemblyRef in a WinMD file (each WinMD file must have such a reference).
         internal readonly int WinMDMscorlibRef;
 
+        // Keeps the underlying memory alive.
+        private readonly object _memoryOwnerObj;
+
         private readonly MetadataReaderOptions _options;
         private Dictionary<TypeDefinitionHandle, ImmutableArray<TypeDefinitionHandle>> _lazyNestedTypesMap;
         
@@ -34,7 +37,7 @@ namespace System.Reflection.Metadata
         /// The memory is owned by the caller and it must be kept memory alive and unmodified throughout the lifetime of the <see cref="MetadataReader"/>.
         /// </remarks>
         public unsafe MetadataReader(byte* metadata, int length)
-            : this(metadata, length, MetadataReaderOptions.Default, null)
+            : this(metadata, length, MetadataReaderOptions.Default, utf8Decoder: null, memoryOwner: null)
         {
         }
 
@@ -47,7 +50,7 @@ namespace System.Reflection.Metadata
         /// metadata from a PE image.
         /// </remarks>
         public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options)
-            : this(metadata, length, options, null)
+            : this(metadata, length, options, utf8Decoder: null, memoryOwner: null)
         {
         }
 
@@ -65,6 +68,11 @@ namespace System.Reflection.Metadata
         /// <exception cref="PlatformNotSupportedException">The current platform is big-endian.</exception>
         /// <exception cref="BadImageFormatException">Bad metadata header.</exception>
         public unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder)
+            : this(metadata, length, options, utf8Decoder, memoryOwner: null)
+        {
+        }
+
+        internal unsafe MetadataReader(byte* metadata, int length, MetadataReaderOptions options, MetadataStringDecoder utf8Decoder, object memoryOwner)
         {
             // Do not throw here when length is 0. We'll throw BadImageFormatException later on, so that the caller doesn't need to 
             // worry about the image (stream) being empty and can handle all image errors by catching BadImageFormatException.
@@ -90,6 +98,7 @@ namespace System.Reflection.Metadata
 
             Block = new MemoryBlock(metadata, length);
 
+            _memoryOwnerObj = memoryOwner;
             _options = options;
             UTF8Decoder = utf8Decoder;
 
