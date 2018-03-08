@@ -13,7 +13,7 @@
     <HarvestIncludePaths Include="ref/netstandard1.1" />
     <HarvestIncludePaths Include="lib/netstandard1.3" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wpa81" />
     <InboxOnTargetFramework Include="portable-net45+win8+wpa81" />

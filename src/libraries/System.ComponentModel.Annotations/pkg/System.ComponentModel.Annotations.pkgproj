@@ -16,7 +16,7 @@
       <FrameworkReference>System.ComponentModel.DataAnnotations</FrameworkReference>
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="netcoreapp2.0" />
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="portable-net45+win8" />
     <InboxOnTargetFramework Include="xamarinios10" />

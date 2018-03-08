@@ -7,7 +7,7 @@
     <CoreClrPackageVersion Condition="'$(TargetGroup)' == 'netcoreapp2.0'">2.0.0</CoreClrPackageVersion>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'  Or '$(TargetGroup)' == 'uap10.0.16299aot'">
     <!-- Temporarily Override restore moniker since NETNative's targeting pack still uses uap10.1 moniker -->
     <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
@@ -15,7 +15,7 @@
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'  Or '$(TargetGroup)' == 'uap10.0.16299aot'">
     <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
       <Version>1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
     </PackageReference>
@@ -24,7 +24,7 @@
     <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'  And '$(TargetGroup)' != 'uap10.0.16299aot'">
     <PackageReference Include="Microsoft.NETCore.Platforms">
       <Version>$(MicrosoftNETCorePlatformsPackageVersion)</Version>
     </PackageReference>

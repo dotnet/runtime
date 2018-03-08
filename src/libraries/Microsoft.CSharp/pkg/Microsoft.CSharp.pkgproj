@@ -19,7 +19,7 @@
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="netcoreapp2.0" />
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
     <InboxOnTargetFramework Include="win8" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="wpa81" />

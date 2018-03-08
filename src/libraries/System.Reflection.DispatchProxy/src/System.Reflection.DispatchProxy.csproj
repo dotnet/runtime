@@ -5,10 +5,10 @@
     <ProjectGuid>{1E689C1B-690C-4799-BDE9-6E7990585894}</ProjectGuid>
     <AssemblyName>System.Reflection.DispatchProxy</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uapaot'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">true</IsPartialFacadeAssembly>
     <!-- this library depends on Ref.Emit which is not available for netstandard -->
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'uapaot'">None</ResourcesSourceOutputDirectory>
+    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">None</ResourcesSourceOutputDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -22,6 +22,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299aot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299aot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
     <Compile Include="System\Reflection\DispatchProxyGenerator.cs" />
@@ -31,7 +35,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
