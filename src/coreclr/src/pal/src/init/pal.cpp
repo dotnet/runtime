@@ -174,7 +174,7 @@ PAL_InitializeDLL()
     return Initialize(0, NULL, PAL_INITIALIZE_DLL);
 }
 
-#ifndef __GLIBC__
+#ifdef ENSURE_PRIMARY_STACK_SIZE
 /*++
 Function:
   EnsureStackSize
@@ -197,7 +197,7 @@ EnsureStackSize(SIZE_T stackSize)
     volatile uint8_t *s = (uint8_t *)_alloca(stackSize);
     *s = 0;
 }
-#endif // __GLIBC__
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
 /*++
 Function:
@@ -224,14 +224,14 @@ InitializeDefaultStackSize()
         }
     }
 
-#ifndef __GLIBC__
+#ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
     {
         // Set the default minimum stack size for MUSL to the same value as we
         // use on Windows.
         g_defaultStackSize = 1536 * 1024;
     }
-#endif // __GLIBC__
+#endif // ENSURE_PRIMARY_STACK_SIZE
 }
 
 /*++
@@ -312,9 +312,12 @@ Initialize(
 
         InitializeDefaultStackSize();
 
-#ifndef __GLIBC__
-        EnsureStackSize(g_defaultStackSize);
-#endif // __GLIBC__
+#ifdef ENSURE_PRIMARY_STACK_SIZE
+        if (flags & PAL_INITIALIZE_ENSURE_STACK_SIZE)
+        {
+            EnsureStackSize(g_defaultStackSize);
+        }
+#endif // ENSURE_PRIMARY_STACK_SIZE
 
         // Initialize the TLS lookaside cache
         if (FALSE == TLSInitialize())
