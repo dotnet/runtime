@@ -1364,6 +1364,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	}
 	case MONO_PATCH_INFO_METHOD_JUMP:
+		// When a function is calling itself (recursively), skip creating the trampoline.
+		// Trampoline would be shortly patched out and never executed.
+		if (method == patch_info->data.method)
+			return code;
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE, error);
 		if (!mono_error_ok (error))
 			return NULL;
