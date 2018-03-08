@@ -327,6 +327,18 @@ void genMultiRegCallStoreToLocal(GenTree* treeNode);
 bool isStructReturn(GenTree* treeNode);
 void genStructReturn(GenTree* treeNode);
 
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+void genLongReturn(GenTree* treeNode);
+#endif // _TARGET_X86_ ||  _TARGET_ARM_
+
+#if defined(_TARGET_X86_)
+void genFloatReturn(GenTree* treeNode);
+#endif // _TARGET_X86_
+
+#if defined(_TARGET_ARM64_)
+void genSimpleReturn(GenTree* treeNode);
+#endif // _TARGET_ARM64_
+
 void genReturn(GenTree* treeNode);
 
 void genLclHeap(GenTree* tree);
