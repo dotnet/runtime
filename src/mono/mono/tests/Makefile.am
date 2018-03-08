@@ -1214,7 +1214,10 @@ test-env-options:
 
 # Precompile the test assemblies in parallel
 compile-tests:
-	$(MAKE) -j4 $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTS_GSHARED) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) $(TESTSAOT_GSHARED) compile-gac-loading
+	$(MAKE) -j4 compile-tests-parallel
+
+# Use the parallelism specified on the command line instead -- more or less than 4.
+compile-tests-parallel: $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTS_GSHARED) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) $(TESTSAOT_GSHARED) compile-gac-loading
 
 # Remove empty .stdout and .stderr files for wrench
 rm-empty-logs:
