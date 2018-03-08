@@ -567,17 +567,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            /// <summary>
-            /// Calls MoveNext on <see cref="StateMachine"/>. Implements ITaskCompletionAction.Invoke so
-            /// that the state machine object may be queued directly as a continuation into a Task's
-            /// continuation slot/list.
-            /// </summary>
-            /// <param name="ignored">The completing task that caused this method to be invoked, if there was one.</param>
-            void ITaskCompletionAction.Invoke(Task ignored) => MoveNext();
-
-            /// <summary>Signals to Task's continuation logic that <see cref="Invoke"/> runs arbitrary user code via MoveNext.</summary>
-            bool ITaskCompletionAction.InvokeMayRunArbitraryCode => true;
-
             /// <summary>Gets the state machine as a boxed object.  This should only be used for debugging purposes.</summary>
             IAsyncStateMachine IAsyncStateMachineBox.GetStateMachineObject() => StateMachine; // likely boxes, only use for debugging
         }
@@ -895,8 +884,11 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// An interface implemented by all <see cref="AsyncStateMachineBox{TStateMachine, TResult}"/> instances, regardless of generics.
     /// </summary>
-    internal interface IAsyncStateMachineBox : ITaskCompletionAction
+    internal interface IAsyncStateMachineBox
     {
+        /// <summary>Move the state machine forward.</summary>
+        void MoveNext();
+
         /// <summary>
         /// Gets an action for moving forward the contained state machine.
         /// This will lazily-allocate the delegate as needed.

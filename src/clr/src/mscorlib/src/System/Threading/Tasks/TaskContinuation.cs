@@ -737,34 +737,65 @@ namespace System.Threading.Tasks
         /// <param name="allowInlining">
         /// true to allow inlining, or false to force the action to run asynchronously.
         /// </param>
-        /// <param name="currentTask">
-        /// A reference to the t_currentTask thread static value.
-        /// This is passed by-ref rather than accessed in the method in order to avoid
-        /// unnecessary thread-static writes.
-        /// </param>
         /// <remarks>
         /// No ExecutionContext work is performed used.  This method is only used in the
         /// case where a raw Action continuation delegate was stored into the Task, which
         /// only happens in Task.SetContinuationForAwait if execution context flow was disabled
         /// via using TaskAwaiter.UnsafeOnCompleted or a similar path.
         /// </remarks>
-        internal static void RunOrScheduleAction(Action action, bool allowInlining, ref Task currentTask)
+        internal static void RunOrScheduleAction(Action action, bool allowInlining)
         {
-            Debug.Assert(currentTask == Task.t_currentTask);
+            ref Task currentTask = ref Task.t_currentTask;
+            Task prevCurrentTask = currentTask;
 
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
             {
-                UnsafeScheduleAction(action, currentTask);
+                UnsafeScheduleAction(action, prevCurrentTask);
                 return;
             }
 
             // Otherwise, run it, making sure that t_currentTask is null'd out appropriately during the execution
-            Task prevCurrentTask = currentTask;
             try
             {
                 if (prevCurrentTask != null) currentTask = null;
                 action();
+            }
+            catch (Exception exception)
+            {
+                ThrowAsyncIfNecessary(exception);
+            }
+            finally
+            {
+                if (prevCurrentTask != null) currentTask = prevCurrentTask;
+            }
+        }
+
+        /// <summary>Invokes or schedules the action to be executed.</summary>
+        /// <param name="box">The <see cref="IAsyncStateMachineBox"/> that needs to be invoked or queued.</param>
+        /// <param name="allowInlining">
+        /// true to allow inlining, or false to force the box's action to run asynchronously.
+        /// </param>
+        internal static void RunOrScheduleAction(IAsyncStateMachineBox box, bool allowInlining)
+        {
+            // Same logic as in the RunOrScheduleAction(Action, ...) overload, except invoking
+            // box.Invoke instead of action().
+
+            ref Task currentTask = ref Task.t_currentTask;
+            Task prevCurrentTask = currentTask;
+
+            // If we're not allowed to run here, schedule the action
+            if (!allowInlining || !IsValidLocationForInlining)
+            {
+                UnsafeScheduleAction(box.MoveNextAction, prevCurrentTask);
+                return;
+            }
+
+            // Otherwise, run it, making sure that t_currentTask is null'd out appropriately during the execution
+            try
+            {
+                if (prevCurrentTask != null) currentTask = null;
+                box.MoveNext();
             }
             catch (Exception exception)
             {
