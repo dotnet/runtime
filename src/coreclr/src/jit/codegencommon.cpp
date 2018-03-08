@@ -12783,4 +12783,203 @@ GenTreeIntCon CodeGen::intForm(var_types type, ssize_t value)
     return i;
 }
 
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+//------------------------------------------------------------------------
+// genLongReturn: Generates code for long return statement for x86 and arm.
+//
+// Note: treeNode's and op1's registers are already consumed.
+//
+// Arguments:
+//    treeNode - The GT_RETURN or GT_RETFILT tree node with LONG return type.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genLongReturn(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->TypeGet() == TYP_LONG);
+    GenTree*  op1        = treeNode->gtGetOp1();
+    var_types targetType = treeNode->TypeGet();
+
+    assert(op1 != nullptr);
+    assert(op1->OperGet() == GT_LONG);
+    GenTree* loRetVal = op1->gtGetOp1();
+    GenTree* hiRetVal = op1->gtGetOp2();
+    assert((loRetVal->gtRegNum != REG_NA) && (hiRetVal->gtRegNum != REG_NA));
+
+    genConsumeReg(loRetVal);
+    genConsumeReg(hiRetVal);
+    if (loRetVal->gtRegNum != REG_LNGRET_LO)
+    {
+        inst_RV_RV(ins_Copy(targetType), REG_LNGRET_LO, loRetVal->gtRegNum, TYP_INT);
+    }
+    if (hiRetVal->gtRegNum != REG_LNGRET_HI)
+    {
+        inst_RV_RV(ins_Copy(targetType), REG_LNGRET_HI, hiRetVal->gtRegNum, TYP_INT);
+    }
+}
+#endif // _TARGET_X86_ || _TARGET_ARM_
+
+//------------------------------------------------------------------------
+// genReturn: Generates code for return statement.
+//            In case of struct return, delegates to the genStructReturn method.
+//
+// Arguments:
+//    treeNode - The GT_RETURN or GT_RETFILT tree node.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genReturn(GenTree* treeNode)
+{
+    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    GenTree*  op1        = treeNode->gtGetOp1();
+    var_types targetType = treeNode->TypeGet();
+
+    // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in the return
+    // register, if it's not already there. The processing is the same as GT_RETURN. For filters, the IL spec says the
+    // result is type int32. Further, the only legal values are 0 or 1; the use of other values is "undefined".
+    assert(!treeNode->OperIs(GT_RETFILT) || (targetType == TYP_VOID) || (targetType == TYP_INT));
+
+#ifdef DEBUG
+    if (targetType == TYP_VOID)
+    {
+        assert(op1 == nullptr);
+    }
+#endif // DEBUG
+
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+    if (targetType == TYP_LONG)
+    {
+        genLongReturn(treeNode);
+    }
+    else
+#endif // _TARGET_X86_ || _TARGET_ARM_
+    {
+        if (isStructReturn(treeNode))
+        {
+            genStructReturn(treeNode);
+        }
+        else if (targetType != TYP_VOID)
+        {
+            assert(op1 != nullptr);
+            noway_assert(op1->gtRegNum != REG_NA);
+
+            // !! NOTE !! genConsumeReg will clear op1 as GC ref after it has
+            // consumed a reg for the operand. This is because the variable
+            // is dead after return. But we are issuing more instructions
+            // like "profiler leave callback" after this consumption. So
+            // if you are issuing more instructions after this point,
+            // remember to keep the variable live up until the new method
+            // exit point where it is actually dead.
+            genConsumeReg(op1);
+
+#if defined(_TARGET_ARM64_)
+            genSimpleReturn(treeNode);
+#else // !_TARGET_ARM64_
+#if defined(_TARGET_X86_)
+            if (varTypeIsFloating(treeNode))
+            {
+                genFloatReturn(treeNode);
+            }
+            else
+#elif defined(_TARGET_ARM_)
+            if (varTypeIsFloating(treeNode) && (compiler->opts.compUseSoftFP || compiler->info.compIsVarArgs))
+            {
+                if (targetType == TYP_FLOAT)
+                {
+                    getEmitter()->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, REG_INTRET, op1->gtRegNum);
+                }
+                else
+                {
+                    assert(targetType == TYP_DOUBLE);
+                    getEmitter()->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, REG_INTRET, REG_NEXT(REG_INTRET),
+                                                op1->gtRegNum);
+                }
+            }
+            else
+#endif // _TARGET_ARM_
+            {
+                regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
+                if (op1->gtRegNum != retReg)
+                {
+                    inst_RV_RV(ins_Move_Extend(targetType, true), retReg, op1->gtRegNum, targetType);
+                }
+            }
+#endif // !_TARGET_ARM64_
+        }
+    }
+
+#ifdef PROFILING_SUPPORTED
+    // !! Note !!
+    // TODO-AMD64-Unix: If the profiler hook is implemented on *nix, make sure for 2 register returned structs
+    //                  the RAX and RDX needs to be kept alive. Make the necessary changes in lowerxarch.cpp
+    //                  in the handling of the GT_RETURN statement.
+    //                  Such structs containing GC pointers need to be handled by calling gcInfo.gcMarkRegSetNpt
+    //                  for the return registers containing GC refs.
+
+    // There will be a single return block while generating profiler ELT callbacks.
+    //
+    // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
+    // In flowgraph and other places assert that the last node of a block marked as
+    // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
+    // maintain such an invariant irrespective of whether profiler hook needed or not.
+    // Also, there is not much to be gained by materializing it as an explicit node.
+    if (compiler->compCurBB == compiler->genReturnBB)
+    {
+        // !! NOTE !!
+        // Since we are invalidating the assumption that we would slip into the epilog
+        // right after the "return", we need to preserve the return reg's GC state
+        // across the call until actual method return.
+        ReturnTypeDesc retTypeDesc;
+        unsigned       regCount = 0;
+        if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            if (varTypeIsLong(compiler->info.compRetNativeType))
+            {
+                retTypeDesc.InitializeLongReturnType(compiler);
+            }
+            else // we must have a struct return type
+            {
+                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass);
+            }
+            regCount = retTypeDesc.GetReturnRegCount();
+        }
+
+        if (varTypeIsGC(compiler->info.compRetType))
+        {
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetType);
+        }
+        else if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
+                {
+                    gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i), retTypeDesc.GetReturnRegType(i));
+                }
+            }
+        }
+
+        genProfilingLeaveCallback();
+
+        if (varTypeIsGC(compiler->info.compRetType))
+        {
+            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
+        }
+        else if (compiler->compMethodReturnsMultiRegRetType())
+        {
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
+                {
+                    gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
+                }
+            }
+        }
+    }
+#endif // PROFILING_SUPPORTED
+}
+
 #endif // !LEGACY_BACKEND
