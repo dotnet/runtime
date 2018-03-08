@@ -897,7 +897,7 @@ namespace System
             return result;
         }
 
-        // a remove that just takes a startindex. 
+        // a remove that just takes a startindex.
         public string Remove(int startIndex)
         {
             if (startIndex < 0)
@@ -1136,7 +1136,7 @@ namespace System
                 int count = replacementIdx - thisIdx;
                 if (count != 0)
                 {
-                    this.AsSpan().Slice(thisIdx, count).CopyTo(dstSpan.Slice(dstIdx));
+                    this.AsSpan(thisIdx, count).CopyTo(dstSpan.Slice(dstIdx));
                     dstIdx += count;
                 }
                 thisIdx = replacementIdx + oldValueLength;
@@ -1148,7 +1148,7 @@ namespace System
 
             // Copy over the final non-matching portion at the end of the string.
             Debug.Assert(this.Length - thisIdx == dstSpan.Length - dstIdx);
-            this.AsSpan().Slice(thisIdx).CopyTo(dstSpan.Slice(dstIdx));
+            this.AsSpan(thisIdx).CopyTo(dstSpan.Slice(dstIdx));
 
             return dst;
         }
@@ -1236,7 +1236,7 @@ namespace System
                 return new string[] { this };
             }
 
-            string[] result = omitEmptyEntries 
+            string[] result = omitEmptyEntries
                 ? SplitOmitEmptyEntries(sepList, default, 1, count)
                 : SplitKeepEmptyEntries(sepList, default, 1, count);
 
@@ -1301,7 +1301,7 @@ namespace System
             {
                 return SplitInternal(separator, count, options);
             }
-            
+
             Span<int> sepListInitialSpan = stackalloc int[StackallocIntBufferSizeLimit];
             var sepListBuilder = new ValueListBuilder<int>(sepListInitialSpan);
 
@@ -1311,14 +1311,14 @@ namespace System
             MakeSeparatorList(separators, ref sepListBuilder, ref lengthListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
             ReadOnlySpan<int> lengthList = lengthListBuilder.AsSpan();
-            
+
             // Handle the special case of no replaces.
             if (sepList.Length == 0)
             {
                 return new string[] { this };
             }
 
-            string[] result = omitEmptyEntries 
+            string[] result = omitEmptyEntries
                 ? SplitOmitEmptyEntries(sepList, lengthList, 0, count)
                 : SplitKeepEmptyEntries(sepList, lengthList, 0, count);
 
@@ -1341,7 +1341,7 @@ namespace System
                 return new string[] { this };
             }
 
-            string[] result = options == StringSplitOptions.RemoveEmptyEntries 
+            string[] result = options == StringSplitOptions.RemoveEmptyEntries
                 ? SplitOmitEmptyEntries(sepList, default, separator.Length, count)
                 : SplitKeepEmptyEntries(sepList, default, separator.Length, count);
 
@@ -1386,15 +1386,15 @@ namespace System
         }
 
 
-        // This function will not keep the Empty string 
+        // This function will not keep the Empty string
         private string[] SplitOmitEmptyEntries(ReadOnlySpan<int> sepList, ReadOnlySpan<int> lengthList, int defaultLength, int count)
         {
             Debug.Assert(count >= 2);
 
             int numReplaces = sepList.Length;
 
-            // Allocate array to hold items. This array may not be 
-            // filled completely in this function, we will create a 
+            // Allocate array to hold items. This array may not be
+            // filled completely in this function, we will create a
             // new array and copy string references to that new array.
             int maxItems = (numReplaces < count) ? (numReplaces + 1) : count;
             string[] splitStrings = new string[maxItems];
@@ -1555,7 +1555,7 @@ namespace System
         /// </summary>
         /// <param name="separators">separator strngs</param>
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> for separator indexes</param>
-        /// <param name="lengthListBuilder"><see cref="ValueListBuilder{T}"/> for separator length values</param>        
+        /// <param name="lengthListBuilder"><see cref="ValueListBuilder{T}"/> for separator length values</param>
         private void MakeSeparatorList(string[] separators, ref ValueListBuilder<int> sepListBuilder, ref ValueListBuilder<int> lengthListBuilder)
         {
             Debug.Assert(separators != null && separators.Length > 0, "separators != null && separators.Length > 0");

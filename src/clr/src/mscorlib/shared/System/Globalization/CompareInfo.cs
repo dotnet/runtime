@@ -506,8 +506,8 @@ namespace System.Globalization
             }
 
             return CompareString(
-                string1.AsSpan().Slice(offset1, length1),
-                string2.AsSpan().Slice(offset2, length2),
+                string1.AsSpan(offset1, length1),
+                string2.AsSpan(offset2, length2),
                 options);
         }
 
@@ -531,7 +531,7 @@ namespace System.Globalization
         {
             Debug.Assert(indexA + lengthA <= strA.Length);
             Debug.Assert(indexB + lengthB <= strB.Length);
-            return CompareOrdinalIgnoreCase(strA.AsSpan().Slice(indexA, lengthA), strB.AsSpan().Slice(indexB, lengthB));
+            return CompareOrdinalIgnoreCase(strA.AsSpan(indexA, lengthA), strB.AsSpan(indexB, lengthB));
         }
 
         internal static unsafe int CompareOrdinalIgnoreCase(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB)
