@@ -45,6 +45,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' and '$(TargetsWindows)' == 'true'">
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.Windows.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' and '$(TargetsUnix)' == 'true'">
+    <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Interop.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />

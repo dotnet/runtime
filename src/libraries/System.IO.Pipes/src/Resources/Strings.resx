@@ -267,8 +267,8 @@
   <data name="PlatformNotSupported_RemotePipes" xml:space="preserve">
     <value>Access to remote named pipes is not supported on this platform.</value>
   </data>
-  <data name="PlatformNotSupproted_InvalidNameChars" xml:space="preserve">
-    <value>The name of a pipe on this platform must only include characters valid in file names.</value>
+  <data name="PlatformNotSupported_InvalidPipeNameChars" xml:space="preserve">
+    <value>The name of a pipe on this platform must be a valid file name or a valid absolute path to a file name.</value>
   </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>

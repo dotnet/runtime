@@ -41,6 +41,19 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [Fact]
+        public static void CreateServer_ConnectClient_UsingUnixAbsolutePath()
+        {
+            string name = Path.Combine("/tmp", GetUniquePipeName());
+            using (var server = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly))
+            {
+                using (var client = new NamedPipeClientStream(".", name, PipeDirection.InOut, PipeOptions.CurrentUserOnly))
+                {
+                    client.Connect();
+                }
+            }
+        }
+
         [Theory]
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
