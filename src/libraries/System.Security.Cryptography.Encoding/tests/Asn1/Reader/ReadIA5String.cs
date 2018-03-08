@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 output[0] = 'a';
 
-                copied = reader.TryCopyIA5String(output.AsSpan().Slice(0, expectedValue.Length - 1),
+                copied = reader.TryCopyIA5String(output.AsSpan(0, expectedValue.Length - 1),
                     out charsWritten);
 
                 Assert.False(copied, "reader.TryCopyIA5String - too short");
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             {
                 output[0] = 32;
 
-                copied = reader.TryCopyIA5StringBytes(output.AsSpan().Slice(0, output.Length - 1),
+                copied = reader.TryCopyIA5StringBytes(output.AsSpan(0, output.Length - 1),
                     out bytesWritten);
 
                 Assert.False(copied, "reader.TryCopyIA5StringBytes - too short");

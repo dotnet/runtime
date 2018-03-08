@@ -141,7 +141,7 @@ namespace System.SpanTests
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.Slice(0, 5).SequenceEqual(stringSpan.TrimEnd(trimChars)));
         }
-        
+
         [Fact]
         public static void TrimCharactersAtStartAndEnd()
         {
@@ -253,7 +253,7 @@ namespace System.SpanTests
             }
 
             string testString = "afghijklmnopqrstfe";
-            ReadOnlySpan<char> stringSpan = testString.AsSpan().Slice(1, testString.Length - 2);
+            ReadOnlySpan<char> stringSpan = testString.AsSpan(1, testString.Length - 2);
             ReadOnlySpan<char> trimChars = "abcde".AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));

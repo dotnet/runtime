@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
                 byte[] signature = wrapperDsa.SignData(input, HashAlgorithmName.SHA1);
                 Assert.True(wrapperDsa.VerifyData(input.AsSpan(), signature, HashAlgorithmName.SHA1));
-                Assert.False(wrapperDsa.VerifyData(input.AsSpan(), signature.AsSpan().Slice(0, signature.Length - 1), HashAlgorithmName.SHA1));
+                Assert.False(wrapperDsa.VerifyData(input.AsSpan(), signature.AsSpan(0, signature.Length - 1), HashAlgorithmName.SHA1));
             }
         }
 
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
                 byte[] signature = wrapperDsa.SignData(new MemoryStream(input), HashAlgorithmName.SHA1);
                 Assert.True(wrapperDsa.VerifyData(new MemoryStream(input), signature, HashAlgorithmName.SHA1));
-                Assert.False(wrapperDsa.VerifyData(new MemoryStream(input), signature.AsSpan().Slice(0, signature.Length - 1).ToArray(), HashAlgorithmName.SHA1));
+                Assert.False(wrapperDsa.VerifyData(new MemoryStream(input), signature.AsSpan(0, signature.Length - 1).ToArray(), HashAlgorithmName.SHA1));
             }
         }
 
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
                 byte[] signature = wrapperDsa.SignData(input, HashAlgorithmName.SHA1);
                 Assert.True(wrapperDsa.VerifyData(input.AsSpan(), signature, HashAlgorithmName.SHA1));
-                Assert.False(wrapperDsa.VerifyData(input.AsSpan(), signature.AsSpan().Slice(0, signature.Length - 1), HashAlgorithmName.SHA1));
+                Assert.False(wrapperDsa.VerifyData(input.AsSpan(), signature.AsSpan(0, signature.Length - 1), HashAlgorithmName.SHA1));
             }
         }
 

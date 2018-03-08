@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         {
             byte[] basis = SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber;
             byte[] data = new byte[basis.Length + 60];
-            data.AsSpan().Slice(basis.Length).Fill(0x5E);
+            data.AsSpan(basis.Length).Fill(0x5E);
             basis.AsSpan().CopyTo(data);
 
             SignedCms cms = new SignedCms();

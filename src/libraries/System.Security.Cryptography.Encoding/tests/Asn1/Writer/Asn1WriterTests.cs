@@ -20,13 +20,13 @@ namespace System.Security.Cryptography.Tests.Asn1
             encoded2[0] = 255;
             encoded2[encoded.Length] = 254;
 
-            Span<byte> dest = encoded2.AsSpan().Slice(0, encoded.Length - 1);
+            Span<byte> dest = encoded2.AsSpan(0, encoded.Length - 1);
             Assert.False(writer.TryEncode(dest, out int bytesWritten), "writer.TryEncode (too small)");
             Assert.Equal(0, bytesWritten);
             Assert.Equal(255, encoded2[0]);
             Assert.Equal(254, encoded2[encoded.Length]);
 
-            dest = encoded2.AsSpan().Slice(0, encoded.Length);
+            dest = encoded2.AsSpan(0, encoded.Length);
             Assert.True(writer.TryEncode(dest, out bytesWritten), "writer.TryEncode (exact length)");
             Assert.Equal(encoded.Length, bytesWritten);
             Assert.True(dest.SequenceEqual(encoded), "dest.SequenceEqual(encoded2) (exact length)");

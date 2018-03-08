@@ -40,7 +40,7 @@ namespace System.Text.Encodings.Tests
             char[] chars;
 
             chars = new char[TextString.Length];
-            decoder.Convert(textBytes.AsSpan(), chars.AsSpan().Slice(0, 2), true, out int bytesUsed, out int charsUsed, out bool completed);
+            decoder.Convert(textBytes.AsSpan(), chars.AsSpan(0, 2), true, out int bytesUsed, out int charsUsed, out bool completed);
             Assert.Equal("he", new string(chars, 0, 2));
             Assert.Equal(2, bytesUsed);
             Assert.Equal(2, charsUsed);

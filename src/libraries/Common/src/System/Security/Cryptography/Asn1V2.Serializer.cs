@@ -635,7 +635,7 @@ namespace System.Security.Cryptography.Asn1
                         // TODO: split netstandard/netcoreapp for span usage?
                         ReadOnlyMemory<byte> valAsMemory = (ReadOnlyMemory<byte>)value;
                         byte[] tooBig = new byte[valAsMemory.Length + 1];
-                        valAsMemory.Span.CopyTo(tooBig.AsSpan().Slice(1));
+                        valAsMemory.Span.CopyTo(tooBig.AsSpan(1));
                         Array.Reverse(tooBig);
                         BigInteger bigInt = new BigInteger(tooBig);
                         writer.WriteInteger(bigInt);
@@ -761,7 +761,7 @@ namespace System.Security.Cryptography.Asn1
                 {
                     expectedTag = fieldData.ExpectedTag;
                 }
-                    
+
                 deserializer = DefaultValueDeserializer(
                     deserializer,
                     fieldData.IsOptional,
@@ -876,12 +876,12 @@ namespace System.Security.Cryptography.Asn1
                         // Guaranteed too big, because it has the tag and length.
                         int length = reader.PeekEncodedValue().Length;
                         byte[] rented = ArrayPool<byte>.Shared.Rent(length);
-                        
+
                         try
                         {
                             if (reader.TryCopyBitStringBytes(rented, out _, out int bytesWritten))
                             {
-                                return new ReadOnlyMemory<byte>(rented.AsSpan().Slice(0, bytesWritten).ToArray());
+                                return new ReadOnlyMemory<byte>(rented.AsSpan(0, bytesWritten).ToArray());
                             }
 
                             Debug.Fail("TryCopyBitStringBytes produced more data than the encoded size");
@@ -912,7 +912,7 @@ namespace System.Security.Cryptography.Asn1
                         {
                             if (reader.TryCopyOctetStringBytes(rented, out int bytesWritten))
                             {
-                                return new ReadOnlyMemory<byte>(rented.AsSpan().Slice(0, bytesWritten).ToArray());
+                                return new ReadOnlyMemory<byte>(rented.AsSpan(0, bytesWritten).ToArray());
                             }
 
                             Debug.Fail("TryCopyOctetStringBytes produced more data than the encoded size");
@@ -1030,7 +1030,7 @@ namespace System.Security.Cryptography.Asn1
             throw new AsnSerializationConstraintException(
                 SR.Format(SR.Cryptography_AsnSerializer_UnhandledType, typeT.FullName));
         }
-        
+
         private static object DefaultValue(
             byte[] defaultContents,
             Deserializer valueDeserializer)
@@ -1381,14 +1381,14 @@ namespace System.Security.Cryptography.Asn1
         /// <remarks>
         /// Except for where required to for avoiding ambiguity, this method does not check that there are
         /// no cycles in the type graph for <typeparamref name="T"/>.  If <typeparamref name="T"/> is a
-        /// reference type (class) which includes a cycle in the type graph, 
+        /// reference type (class) which includes a cycle in the type graph,
         /// then it is possible for the data in <paramref name="source"/> to cause
         /// an arbitrary extension to the maximum stack depth of this routine, leading to a
         /// <see cref="StackOverflowException"/>.
-        /// 
+        ///
         /// If <typeparamref name="T"/> is a value type (struct) the compiler will enforce that there are no
         /// cycles in the type graph.
-        /// 
+        ///
         /// When reference types are used the onus is on the caller of this method to prevent cycles, or to
         /// mitigate the possibility of the stack overflow.
         /// </remarks>
@@ -1427,14 +1427,14 @@ namespace System.Security.Cryptography.Asn1
         /// <remarks>
         /// Except for where required to for avoiding ambiguity, this method does not check that there are
         /// no cycles in the type graph for <typeparamref name="T"/>.  If <typeparamref name="T"/> is a
-        /// reference type (class) which includes a cycle in the type graph, 
+        /// reference type (class) which includes a cycle in the type graph,
         /// then it is possible for the data in <paramref name="source"/> to cause
         /// an arbitrary extension to the maximum stack depth of this routine, leading to a
         /// <see cref="StackOverflowException"/>.
-        /// 
+        ///
         /// If <typeparamref name="T"/> is a value type (struct) the compiler will enforce that there are no
         /// cycles in the type graph.
-        /// 
+        ///
         /// When reference types are used the onus is on the caller of this method to prevent cycles, or to
         /// mitigate the possibility of the stack overflow.
         /// </remarks>
@@ -1471,10 +1471,10 @@ namespace System.Security.Cryptography.Asn1
         /// no cycles in the type graph for <typeparamref name="T"/>.  If <typeparamref name="T"/> is a
         /// reference type (class) which includes a cycle in the type graph, and there is a cycle within the
         /// object graph this method will consume memory and stack space until one is exhausted.
-        /// 
+        ///
         /// If <typeparamref name="T"/> is a value type (struct) the compiler will enforce that there are no
         /// cycles in the type graph.
-        /// 
+        ///
         /// When reference types are used the onus is on the caller of this method to prevent object cycles,
         /// or to mitigate the possibility of the stack overflow or memory exhaustion.
         /// </remarks>
@@ -1513,10 +1513,10 @@ namespace System.Security.Cryptography.Asn1
         /// no cycles in the type graph for <typeparamref name="T"/>.  If <typeparamref name="T"/> is a
         /// reference type (class) which includes a cycle in the type graph, and there is a cycle within the
         /// object graph this method will consume memory and stack space until one is exhausted.
-        /// 
+        ///
         /// If <typeparamref name="T"/> is a value type (struct) the compiler will enforce that there are no
         /// cycles in the type graph.
-        /// 
+        ///
         /// When reference types are used the onus is on the caller of this method to prevent object cycles,
         /// or to mitigate the possibility of the stack overflow or memory exhaustion.
         /// </remarks>
