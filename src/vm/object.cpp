@@ -1082,62 +1082,6 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
     return EmptyStringRefPtr;
 }
 
-/*=============================StringInitCharHelper=============================
-**Action:
-**Returns:
-**Arguments:
-**Exceptions:
-**Note this
-==============================================================================*/
-STRINGREF __stdcall StringObject::StringInitCharHelper(LPCSTR pszSource, int length) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    STRINGREF pString=NULL;
-    int dwSizeRequired=0;
-     _ASSERTE(length>=-1);                        
-     
-    if (!pszSource || length == 0) {
-        return StringObject::GetEmptyString();
-    }
-#ifndef FEATURE_PAL
-    else if ((size_t)pszSource < 64000) {
-        COMPlusThrow(kArgumentException, W("Arg_MustBeStringPtrNotAtom"));
-    }    
-#endif // FEATURE_PAL
-
-    // Make sure we can read from the pointer.
-    // This is better than try to read from the pointer and catch the access violation exceptions.
-    if( length == -1) {
-        length = (INT32)strlen(pszSource);
-    }
-   
-    if(length > 0)  {  
-        dwSizeRequired=WszMultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, pszSource, length, NULL, 0);
-    }
-
-    if (dwSizeRequired == 0) {
-        if (length == 0) {
-            return StringObject::GetEmptyString();
-        }
-        COMPlusThrow(kArgumentException, W("Arg_InvalidANSIString"));
-    }
-
-    pString = AllocateString(dwSizeRequired);        
-    dwSizeRequired = WszMultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (LPCSTR)pszSource, length, pString->GetBuffer(), dwSizeRequired);
-    if (dwSizeRequired == 0) {
-        COMPlusThrow(kArgumentException, W("Arg_InvalidANSIString"));
-    }
-
-    _ASSERTE(dwSizeRequired != INT32_MAX && pString->GetBuffer()[dwSizeRequired]==0);
-
-    return pString;
-}
-
-
 // strAChars must be null-terminated, with an appropriate aLength
 // strBChars must be null-terminated, with an appropriate bLength OR bLength == -1
 // If bLength == -1, we stop on the first null character in strBChars
