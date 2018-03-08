@@ -1,0 +1,6 @@
+Compat issues with assembly System.Memory:
+MembersMustExist : Member 'System.MemoryExtensions.AsReadOnlyMemory<T>(System.Memory<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MemoryExtensions.AsReadOnlySpan<T>(System.ArraySegment<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MemoryExtensions.AsReadOnlySpan<T>(System.Span<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MemoryExtensions.AsReadOnlySpan<T>(T[])' does not exist in the implementation but it does exist in the contract.
+Total Issues: 4

@@ -1,0 +1,4 @@
+Compat issues with assembly System.IO.IsolatedStorage:
+MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorage.IdentityHash.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.IO.IsolatedStorage.IsolatedStorage.Scope.set(System.IO.IsolatedStorage.IsolatedStorageScope)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2

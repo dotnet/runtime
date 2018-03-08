@@ -1,0 +1,5 @@
+Compat issues with assembly System.Data.Odbc:
+TypesMustExist : Type 'System.Data.Odbc.ODBC32' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Odbc.OdbcParameter.Offset.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Odbc.OdbcParameter.Offset.set(System.Int32)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 3

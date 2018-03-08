@@ -1,0 +1,4 @@
+Compat issues with assembly System.Security.Cryptography.Pkcs:
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.GetSignature()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2
