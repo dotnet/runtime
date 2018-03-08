@@ -1,0 +1,3 @@
+Compat issues with assembly System.Collections.Specialized:
+TypesMustExist : Type 'System.Collections.Specialized.ListDictionary.DictionaryNode' does not exist in the implementation but it does exist in the contract.
+Total Issues: 1
