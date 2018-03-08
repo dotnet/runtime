@@ -57,30 +57,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Benchmark(InnerIterationCount = 1_000_000)]
-        [InlineData(16)]
-        public async Task ReceiveAsyncThenSendAsync_Task_Parallel(int numConnections)
-        {
-            ReadOnlyMemory<byte> clientBuffer = new byte[1];
-            Memory<byte> serverBuffer = new byte[1];
-            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
-            {
-                await OpenLoopbackConnectionAsync(async (client, server) =>
-                {
-                    long iters = Benchmark.InnerIterationCount;
-                    using (iteration.StartMeasurement())
-                    {
-                        for (int i = 0; i < iters; i++)
-                        {
-                            ValueTask<int> r = server.ReceiveAsync(serverBuffer, SocketFlags.None);
-                            await client.SendAsync(clientBuffer, SocketFlags.None);
-                            await r;
-                        }
-                    }
-                });
-            }
-        }
-
         [Benchmark(InnerIterationCount = 10_000), MeasureGCAllocations]
         public async Task SendAsyncThenReceiveAsync_SocketAsyncEventArgs()
         {
