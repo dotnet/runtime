@@ -207,7 +207,7 @@
         "msbuildLocation": "",
         "platform": "",
         "configuration": "",
-        "msbuildArguments": "$(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudDropAccountName);AccountKey=$(CloudDropAccessToken);EndpointSuffix=core.windows.net\" /p:\"CloudResultsConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudResultsAccountName);AccountKey=$(OutputCloudResultsAccessToken);EndpointSuffix=core.windows.net\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\"",
+        "msbuildArguments": "$(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudDropAccountName);AccountKey=$(CloudDropAccessToken);EndpointSuffix=core.windows.net\" /p:\"CloudResultsConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudResultsAccountName);AccountKey=$(OutputCloudResultsAccessToken);EndpointSuffix=core.windows.net\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\" /p:\"ProductBuildId=$(ProductBuildId)\"",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -421,6 +421,10 @@
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "ProductBuildId": {
+      "value": null,
       "allowOverride": true
     },
     "PB_BuildArguments": {
