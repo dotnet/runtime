@@ -34,7 +34,7 @@ namespace System.IO
 
             // We would ideally use realpath to do this, but it resolves symlinks, requires that the file actually exist,
             // and turns it into a full path, which we only want if fullCheck is true.
-            string collapsedString = RemoveRelativeSegments(path);
+            string collapsedString = PathInternal.RemoveRelativeSegments(path);
 
             Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
                 "Either we've removed characters, or the string should be unmodified from the input path.");
