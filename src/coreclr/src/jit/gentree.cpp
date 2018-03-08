@@ -18017,9 +18017,18 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         HWIntrinsicFlag flags = Compiler::flagsOfHWIntrinsic(AsHWIntrinsic()->gtHWIntrinsicId);
         return ((flags & HW_Flag_NoRMWSemantics) == 0);
     }
-#endif // _TARGET_XARCH_
 
+    switch (AsHWIntrinsic()->gtHWIntrinsicId)
+    {
+        case NI_SSE42_Crc32:
+            return true;
+
+        default:
+            return false;
+    }
+#else
     return false;
+#endif // _TARGET_XARCH_
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
