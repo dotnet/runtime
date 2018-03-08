@@ -79,10 +79,10 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "setup_vs_tools.cmd",
+        "filename": "$(Pipeline.SourcesDirectory)\\setup_vs_tools.cmd",
         "arguments": "",
         "modifyEnvironment": "true",
-        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
