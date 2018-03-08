@@ -4573,9 +4573,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_TAILCALL: {
+		case OP_TAILCALL:
+		case OP_TAILCALL_MEMBASE: {
 			MonoCallInst *call = (MonoCallInst*)ins;
 			int i, save_area_offset;
+			gboolean membase = (ins->opcode == OP_TAILCALL_MEMBASE);
+
+			// FIXME make this two pass for an accurate size
+			// FIXME varargs
 
 			g_assert (!cfg->method->save_lmf);
 
@@ -4583,12 +4588,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * space in the code buffer here again */
 			max_len += AMD64_NREG * 4 + call->stack_usage * 15 + EXTRA_CODE_SPACE;
 
+			if (membase)
+				max_len += 3;
+
 			if (G_UNLIKELY (offset + max_len > cfg->code_size)) {
 				cfg->code_size *= 2;
 				cfg->native_code = (unsigned char *) mono_realloc_native_code(cfg);
 				code = cfg->native_code + offset;
 				cfg->stat_code_reallocs++;
 			}
+
+			// FIXME This is overly pessimistic.
+			// Rax can work, swap with below.
+			// R10 can work?
+			// Unused parameter registers are also ok.
+			// non-volatiles cannot work.
+			if (membase)
+				amd64_mov_reg_reg (code, AMD64_R11, ins->sreg1, 8);
 
 			/* Restore callee saved registers */
 			save_area_offset = cfg->arch.reg_save_area_offset;
@@ -4619,13 +4635,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_leave (code);
 #endif
 			}
-
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
-			if (cfg->compile_aot)
-				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-			else
-				amd64_set_reg_template (code, AMD64_R11);
-			amd64_jump_reg (code, AMD64_R11);
+			if (membase) {
+				// rex opcode modrm 4bytes => 7 bytes
+				amd64_jump_membase (code, AMD64_R11, ins->inst_offset);
+			} else {
+				// FIXME move this earlier to fix ABI violation
+				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
+				if (cfg->compile_aot) {
+					// rex opcode modrm 4bytes => 7 bytes
+					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
+				} else {
+					// rex opcode 8byte => 10 bytes
+					amd64_set_reg_template (code, AMD64_R11);
+				}
+				// rex + opcode => 2 bytes
+				amd64_jump_reg (code, AMD64_R11);
+			}
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;

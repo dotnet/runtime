@@ -596,7 +596,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_VCALL2_MEMBASE:
 	case OP_VOIDCALL:
 	case OP_VOIDCALL_MEMBASE:
-	case OP_TAILCALL: {
+	case OP_TAILCALL:
+	case OP_TAILCALL_MEMBASE: {
 		MonoCallInst *call = (MonoCallInst*)ins;
 		GSList *list;
 

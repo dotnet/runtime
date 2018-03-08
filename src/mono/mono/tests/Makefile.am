@@ -565,6 +565,10 @@ TESTS_IL_SRC=			\
 	tail1.il		\
 	taili1.il		\
 	vtail1.il		\
+	tailcall-virt.il 	\
+	tailcall-rgctxa.il 	\
+	tailcall-rgctxb.il 	\
+	tailcall-mrgctx.il 	\
 	field-access.il		\
 	method-access.il	\
 	ldftn-access.il		\
@@ -697,7 +701,15 @@ TESTS_GSHARED_SRC = \
 	bug-1147.cs	\
 	generic-type-builder.2.cs
 
-PLATFORM_DISABLED_TESTS=
+PLATFORM_DISABLED_TESTS=\
+	tailcall-rgctxb.exe
+
+# tailcall-virt only currently implemented on AMD64 (JIT, AOT, LLVM).
+# Not ARM, not interpreter, etc.
+
+if !AMD64
+PLATFORM_DISABLED_TESTS += tailcall-virt.exe
+endif
 
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS += bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe
@@ -763,7 +775,8 @@ PLATFORM_DISABLED_TESTS += \
 	sgen-bridge-xref.exe
 endif
 
-PROFILE_DISABLED_TESTS=
+PROFILE_DISABLED_TESTS= \
+	tailcall-rgctxb.exe
 
 if FULL_AOT_TESTS
 # Tests which rely on TypeLoadExceptions
@@ -980,6 +993,7 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # appdomain-marshalbyref-assemblyload.exe: https://bugzilla.xamarin.com/show_bug.cgi?id=49308
 # threads-init.exe: runs out of system threads
 # dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/coreclr/issues/15353)
+# tailcall-rgctxb.exe seems like it would but it does not, needs debugging
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
@@ -998,7 +1012,8 @@ KNOWN_FAILING_TESTS = \
 	stail1.exe \
 	tail1.exe \
 	taili1.exe \
-	vtail1.exe
+	vtail1.exe \
+	tailcall-rgctxb.exe
 
 DISABLED_TESTS = \
 	$(KNOWN_FAILING_TESTS) \
@@ -1009,7 +1024,14 @@ DISABLED_TESTS = \
 	$(if $(CI_PR),$(CI_PR_DISABLED_TESTS)) \
 	$(if $(LLVM),$(LLVM_DISABLED_TESTS))
 
-INTERP_DISABLED_TESTS = $(DISABLED_TESTS)
+# Interpreter does not currently implement tailcall.
+# Disable all tailcall tests that are not otherwise disabled.
+INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
+	itail1.exe \
+	sitail1.exe \
+	tailcall-mrgctx.exe \
+	tailcall-virt.exe   \
+	tailcall-rgctxa.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
@@ -1049,7 +1071,6 @@ INTERP_DISABLED_TESTS += \
 	field-access.exe \
 	finalizer-exception.exe \
 	handleref.exe \
-	itail1.exe \
 	monitor-abort.exe \
 	nullable_boxing.2.exe \
 	pinvoke.exe \
@@ -1058,7 +1079,6 @@ INTERP_DISABLED_TESTS += \
 	remoting2.exe \
 	remoting3.exe \
 	safehandle.2.exe \
-	sitail1.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
 	threadpool-exceptions2.exe \
@@ -1080,10 +1100,8 @@ INTERP_DISABLED_TESTS += \
 	calliGenericTest.exe \
 	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
-	itail1.exe \
 	pinvoke2.exe \
-	pinvoke3.exe \
-	sitail1.exe
+	pinvoke3.exe
 endif
 
 if AMD64
@@ -1095,11 +1113,9 @@ INTERP_DISABLED_TESTS += \
 	cominterop.exe \
 	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
-	itail1.exe \
 	pinvoke.exe \
 	pinvoke2.exe \
-	pinvoke3.exe \
-	sitail1.exe
+	pinvoke3.exe
 endif
 
 TESTS_CS=$(filter-out $(DISABLED_TESTS),$(TESTS_CS_SRC:.cs=.exe))

@@ -2030,6 +2030,8 @@ static int
 callvirt_to_call (int opcode)
 {
 	switch (opcode) {
+	case OP_TAILCALL_MEMBASE:
+		return OP_TAILCALL;
 	case OP_CALL_MEMBASE:
 		return OP_CALL;
 	case OP_VOIDCALL_MEMBASE:
@@ -2173,8 +2175,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 	if (tail) {
 		mini_profiler_emit_tail_call (cfg, target);
-
-		MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
+		MONO_INST_NEW_CALL (cfg, call, virtual_ ? OP_TAILCALL_MEMBASE : OP_TAILCALL);
 	} else
 		MONO_INST_NEW_CALL (cfg, call, ret_type_to_call_opcode (cfg, sig->ret, calli, virtual_));
 
@@ -2437,7 +2438,7 @@ mono_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 			For a test case look into #667921.
 
 			FIXME: a dummy use is not the best way to do it as the local register allocator
-			will put it on a caller save register and spil it around the call. 
+			will put it on a caller save register and spill it around the call.
 			Ideally, we would either put it on a callee save register or only do the store part.  
 			 */
 			EMIT_NEW_DUMMY_USE (cfg, dummy_use, args [0]);
@@ -7005,8 +7006,22 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 		supported_tail_call = FALSE;
 	if (cmethod->wrapper_type && cmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		supported_tail_call = FALSE;
-	if (call_opcode != CEE_CALL)
+
+	switch (call_opcode) {
+	case CEE_CALL:
+		break;
+	case CEE_CALLI:
 		supported_tail_call = FALSE;
+		break;
+	case CEE_CALLVIRT:
+		if (!cfg->backend->have_op_tail_call_membase)
+			supported_tail_call = FALSE;
+		break;
+	default:
+		g_assertf (call_opcode == CEE_CALL || call_opcode == CEE_CALLVIRT || call_opcode == CEE_CALLI, "%s (%d)", mono_opcode_name (call_opcode), (int)call_opcode);
+		supported_tail_call = FALSE;
+		break;
+	}
 
 	/* Debugging support */
 #if 0
@@ -9027,14 +9042,30 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (ins)
 				goto call_end;
 
+			gboolean inst_tailcall;
+			inst_tailcall = (ins_flag & MONO_INST_TAILCALL) != 0;
+
 			/* Tail prefix / tail call optimization */
 
-			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests */
+			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests.
+				  Inlining and stack traces are not guaranteed however. */
 			/* FIXME: runtime generic context pointer for jumps? */
 			/* FIXME: handle this for generic sharing eventually */
-			if ((ins_flag & MONO_INST_TAILCALL) &&
-				!vtable_arg && !cfg->gshared && is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
+			if (inst_tailcall
+					&& (cfg->backend->have_op_tail_call || (!vtable_arg && !cfg->gshared))
+					&& is_supported_tail_call (cfg, method, cmethod, fsig, call_opcode))
 				supported_tail_call = TRUE;
+
+			// http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
+			// 1. Non-generic non-static methods of reference types have access to the
+			//    RGCTX via the “this” argument (this->vtable->rgctx).
+			// 2. a Non-generic static methods of reference types and b. non-generic methods
+			//    of value types need to be passed a pointer to the caller’s class’s VTable in the MONO_ARCH_RGCTX_REG register.
+			// 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
+			if (inst_tailcall && cfg->verbose_level >= 2)
+				g_print ("tail.%s %s -> %s supported_tail_call:%d gshared:%d vtable_arg:%d\n",
+					mono_opcode_name (*ip), method->name, cmethod->name,
+					(int)supported_tail_call, (int)cfg->gshared, !!vtable_arg);
 
 			if (supported_tail_call) {
 				MonoCallInst *call;

@@ -94,6 +94,9 @@ load_file (const char *name) {
 			g_string_append (comment, str);
 			continue;
 		}
+		p = strchr (str, '#');
+		if (p)
+			*p = 0;
 		p = strchr (str, ':');
 		if (!p)
 			g_error ("Invalid format at line %d in %s\n", line, name);
