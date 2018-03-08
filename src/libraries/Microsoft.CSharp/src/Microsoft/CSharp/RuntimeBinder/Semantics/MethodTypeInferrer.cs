@@ -1176,37 +1176,34 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             //TypeArray pInterfaces = null;
 
-            if (!pSource.IsStructType && !pSource.IsClassType && !pSource.IsInterfaceType && !(pSource is TypeParameterType))
+            if (pSource is AggregateType sourceAts && (sourceAts.IsStructType || sourceAts.IsClassType || sourceAts.IsInterfaceType))
             {
-                return false;
-            }
-
-            var interfaces = pSource.AllPossibleInterfaces();
-            AggregateType pInterface = null;
-            foreach (AggregateType pCurrent in interfaces)
-            {
-                if (pCurrent.OwningAggregate == pDest.OwningAggregate)
+                AggregateType iface = null;
+                foreach (AggregateType current in sourceAts.IfacesAll.Items)
                 {
-                    if (pInterface == null)
+                    if (current.OwningAggregate == pDest.OwningAggregate)
                     {
-                        pInterface = pCurrent;
-                    }
-                    else if (pInterface != pCurrent)
-                    {
-                        // Not unique. Bail out.
-                        return false;
+                        if (iface == null)
+                        {
+                            iface = current;
+                        }
+                        else if (iface != current)
+                        {
+                            // Not unique. Bail out.
+                            return false;
+                        }
                     }
                 }
-            }
-            if (pInterface == null)
-            {
-                return false;
-            }
-            LowerBoundTypeArgumentInference(pInterface, pDest);
-            return true;
-        }
 
-        ////////////////////////////////////////////////////////////////////////////////
+                if (iface != null)
+                {
+                    LowerBoundTypeArgumentInference(iface, pDest);
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         private void LowerBoundTypeArgumentInference(
             AggregateType pSource, AggregateType pDest)
@@ -1480,37 +1477,34 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // SPEC:   or indirectly implements C<V1...Vk> then an exact ...
             // SPEC:  ... and U is an interface CType ...
 
-            if (!pDest.IsStructType && !pDest.IsClassType && !pDest.IsInterfaceType)
+            if (pDest is AggregateType destAts && (destAts.IsStructType || destAts.IsClassType || destAts.IsInterfaceType))
             {
-                return false;
-            }
-
-            var interfaces = pDest.AllPossibleInterfaces();
-            AggregateType pInterface = null;
-            foreach (AggregateType pCurrent in interfaces)
-            {
-                if (pCurrent.OwningAggregate == pSource.OwningAggregate)
+                AggregateType iface = null;
+                foreach (AggregateType current in destAts.IfacesAll.Items)
                 {
-                    if (pInterface == null)
+                    if (current.OwningAggregate == pSource.OwningAggregate)
                     {
-                        pInterface = pCurrent;
-                    }
-                    else if (pInterface != pCurrent)
-                    {
-                        // Not unique. Bail out.
-                        return false;
+                        if (iface == null)
+                        {
+                            iface = current;
+                        }
+                        else if (iface != current)
+                        {
+                            // Not unique. Bail out.
+                            return false;
+                        }
                     }
                 }
-            }
-            if (pInterface == null)
-            {
-                return false;
-            }
-            UpperBoundTypeArgumentInference(pInterface, pDest as AggregateType);
-            return true;
-        }
 
-        ////////////////////////////////////////////////////////////////////////////////
+                if (iface != null)
+                {
+                    UpperBoundTypeArgumentInference(iface, pDest as AggregateType);
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         private void UpperBoundTypeArgumentInference(
             AggregateType pSource, AggregateType pDest)
