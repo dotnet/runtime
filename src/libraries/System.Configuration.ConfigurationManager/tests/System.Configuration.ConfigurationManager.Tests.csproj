@@ -90,6 +90,7 @@
     <Compile Include="System\Configuration\LocalFileSettingsProviderTests.cs" />
     <Compile Include="System\Configuration\NameValueConfigurationCollectionTests.cs" />
     <Compile Include="System\Configuration\SectionGroupsTests.cs" />
+    <Compile Include="System\Configuration\SettingElementTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />
     <Compile Include="System\Configuration\StringUtilTests.cs" />
     <Compile Include="System\Configuration\TempConfig.cs" />
