@@ -52,7 +52,6 @@ void StackLevelSetter::DoPhase()
         comp->codeGen->setFramePointerRequired(true);
     }
 #endif // !FEATURE_FIXED_OUT_ARGS
-    assert(maxStackLevel <= comp->fgGetPtrArgCntMax());
     if (maxStackLevel != comp->fgGetPtrArgCntMax())
     {
         JITDUMP("fgPtrArgCntMax was calculated wrong during the morph, the old value: %u, the right value: %u.\n",
