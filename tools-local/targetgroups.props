@@ -17,19 +17,34 @@
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
+    <TargetGroups Include="uap10.0.16299aot">
+      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
+      <NuGetTargetMoniker>UAP,Version=v10.0.16299</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.0.16299</NuGetTargetMonikerShort>
+      <UWPCompatible>true</UWPCompatible>
+      <Imports>netcore50aot</Imports>
+      <CompatibleWith>uap10.0.16299;netstandard</CompatibleWith>
+    </TargetGroups>
+    <TargetGroups Include="uap10.0.16299">
+      <NuGetTargetMoniker>UAP,Version=v10.0.16299</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>uap10.0.16299</NuGetTargetMonikerShort>
+      <UWPCompatible>true</UWPCompatible>
+      <Imports>netcore50</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
     <TargetGroups Include="uapvnextaot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>$(UAPvNextTFM)</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50aot</Imports>
+      <Imports>uap10.0.16299aot</Imports>
       <CompatibleWith>uapvnext;netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uapvnext">
       <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>$(UAPvNextTFM)</NuGetTargetMonikerShort>
       <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50</Imports>
+      <Imports>uap10.0.16299</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <!-- uap is an alias for uapvNext any/coreclr runtime -->

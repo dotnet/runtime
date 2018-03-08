@@ -6,9 +6,9 @@
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks);$(UAPvNextTFM)</SupportedFramework>
     </ProjectReference>
     <File Include="$(PlaceHolderFile)"> 
-      <TargetPath>runtimes/win/lib/$(UAPvNextTFM)</TargetPath> 
+      <TargetPath>runtimes/win/lib/uap10.0.16299</TargetPath> 
     </File> 
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" /> 
+    <InboxOnTargetFramework Include="uap10.0.16299" /> 
     <ProjectReference Include="..\src\System.IO.Ports.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

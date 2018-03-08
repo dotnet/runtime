@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Drawing.Common.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>uap10.0.16299;net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Drawing.Common.csproj" />
 

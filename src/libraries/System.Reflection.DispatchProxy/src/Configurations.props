@@ -5,6 +5,8 @@
       netfx;
       netstandard;
       netcoreapp2.0;
+      uap10.0.16299-Windows_NT;
+      uap10.0.16299aot-Windows_NT;
       uapaot-Windows_NT;
       uap-Windows_NT;
     </PackageConfigurations>

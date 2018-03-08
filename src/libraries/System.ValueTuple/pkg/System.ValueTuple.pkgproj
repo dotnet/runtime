@@ -8,7 +8,7 @@
     <ProjectReference Include="..\src\System.ValueTuple.csproj" />
     <InboxOnTargetFramework Include="netstandard2.0" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
-    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
