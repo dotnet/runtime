@@ -7,6 +7,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		public NPath[] SourceFiles;
 		public string[] Defines;
 		public string[] References;
+		public NPath[] Resources;
 		public string AdditionalArguments;
 		public string CompilerToUse;
 		public bool AddAsReference;

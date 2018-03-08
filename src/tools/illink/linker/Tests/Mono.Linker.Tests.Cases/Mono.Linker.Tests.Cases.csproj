@@ -119,6 +119,8 @@
     <Compile Include="Reflection\MethodUsedViaReflection.cs" />
     <Compile Include="Reflection\PropertyUsedViaReflection.cs" />
     <Compile Include="Reflection\UsedViaReflectionIntegrationTest.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
+    <Compile Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
@@ -154,9 +156,13 @@
     <Compile Include="Symbols\ReferenceWithPortablePdbDeleteAction.cs" />
     <Compile Include="Symbols\ReferenceWithPortablePdbDeleteActionAndSymbolLinkingEnabled.cs" />
     <Compile Include="TestFramework\CanCompileILAssembly.cs" />
+    <Compile Include="TestFramework\CanCompileReferencesWithResources.cs" />
+    <Compile Include="TestFramework\CanCompileReferencesWithResourcesWithCsc.cs" />
+    <Compile Include="TestFramework\CanCompileReferencesWithResourcesWithMcs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithDebugPdbs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithCsc.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithMsc.cs" />
+    <Compile Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc_Lib.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs_Lib.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
@@ -270,11 +276,14 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveMethodsHasFieldsRemoved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessedAndKept.xml" />
     <Content Include="Resources\Dependencies\NonLinkerEmbeddedResourceHasNoImpact.xml" />
+    <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.txt" />
+    <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.log" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
