@@ -84,7 +84,7 @@ namespace System.IO
                 buffer.Append(PathInternal.UncExtendedPathPrefix);
 
                 // Copy Server\Share\... over to the buffer
-                buffer.Append(content.AsSpan().Slice(PathInternal.UncPrefixLength));
+                buffer.Append(content.AsSpan(PathInternal.UncPrefixLength));
 
                 // Return the prefix difference
                 return PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength;
@@ -198,7 +198,7 @@ namespace System.IO
                     if (foundIndex < inputLength - 1)
                     {
                         // It was a partial find, put the non-existent part of the path back
-                        outputBuilder.Append(inputBuilder.AsSpan().Slice(foundIndex, inputBuilder.Length - foundIndex));
+                        outputBuilder.Append(inputBuilder.AsSpan(foundIndex, inputBuilder.Length - foundIndex));
                     }
                 }
             }
@@ -218,7 +218,7 @@ namespace System.IO
                 builderToUse[PathInternal.UncExtendedPrefixLength - PathInternal.UncPrefixLength] = '\\';
 
             // Strip out any added characters at the front of the string
-            ReadOnlySpan<char> output = builderToUse.AsSpan().Slice(rootDifference);
+            ReadOnlySpan<char> output = builderToUse.AsSpan(rootDifference);
 
             string returnValue = output.EqualsOrdinal(originalPath.AsSpan())
                 ? originalPath : new string(output);
