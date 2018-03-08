@@ -22,7 +22,15 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 							 mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
-	g_error ("mono_arch_unwind_frame");
+	if (ji)
+		g_error ("Can't unwind compiled code");
+
+	if (*lmf) {
+		if ((*lmf)->top_entry)
+			return FALSE;
+		g_error ("Can't handle non-top-entry LMFs\n");
+	}
+
 	return FALSE;
 }
 

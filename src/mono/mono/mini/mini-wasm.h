@@ -20,9 +20,7 @@ struct MonoLMF {
 	gpointer previous_lmf;
 	gpointer lmf_addr;
 
-	/* This is only set in trampoline LMF frames */
-	MonoMethod *method;
-
+	/* This is set to signal this is the top lmf entry */
 	gboolean top_entry;
 };
 
@@ -35,10 +33,11 @@ typedef struct {
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->llvm_exc_reg = (gsize)exc; } while (0)
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
-		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
-		MONO_CONTEXT_SET_BP ((ctx), (0));	\
-		MONO_CONTEXT_SET_SP ((ctx), (0));	\
-	} while (0)
+	int ___tmp = 99;	\
+	MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
+	MONO_CONTEXT_SET_BP ((ctx), (0));	\
+	MONO_CONTEXT_SET_SP ((ctx), (&___tmp));	\
+} while (0)
 
 
 #define MONO_ARCH_VTABLE_REG WASM_REG_0
@@ -50,6 +49,7 @@ typedef struct {
 
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_HAS_REGISTER_ICALL 1
+#define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 
 
 
