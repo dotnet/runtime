@@ -1,0 +1,3 @@
+Compat issues with assembly System.Runtime.Serialization.Xml:
+MembersMustExist : Member 'System.Runtime.Serialization.DataContractSerializer..ctor(System.Type, System.Xml.XmlDictionaryString, System.Xml.XmlDictionaryString, System.Collections.Generic.IEnumerable<System.Type>, System.Int32, System.Boolean, System.Boolean, System.Runtime.Serialization.DataContractResolver)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 1

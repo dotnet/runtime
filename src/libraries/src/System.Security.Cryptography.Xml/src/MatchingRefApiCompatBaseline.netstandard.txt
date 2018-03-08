@@ -1,0 +1,4 @@
+Compat issues with assembly System.Security.Cryptography.Xml:
+TypesMustExist : Type 'System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.X509IssuerSerial' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2

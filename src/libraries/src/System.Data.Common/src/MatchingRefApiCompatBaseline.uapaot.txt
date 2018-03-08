@@ -1,0 +1,9 @@
+Compat issues with assembly System.Data.Common:
+TypesMustExist : Type 'System.Data.DataCommonEventSource' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbProviderFactories.GetProviderInvariantNames()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbProviderFactories.RegisterFactory(System.String, System.Data.Common.DbProviderFactory)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbProviderFactories.RegisterFactory(System.String, System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbProviderFactories.RegisterFactory(System.String, System.Type)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbProviderFactories.TryGetFactory(System.String, System.Data.Common.DbProviderFactory)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Common.DbProviderFactories.UnregisterFactory(System.String)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 7
