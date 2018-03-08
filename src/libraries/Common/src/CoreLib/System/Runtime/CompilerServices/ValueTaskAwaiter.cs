@@ -105,7 +105,7 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            box.Invoke(null);
+            box.MoveNext();
         };
 #endif
     }
