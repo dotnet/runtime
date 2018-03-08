@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Static Members
-        static internal String UnmangleTypeName(String typeName)
+        internal static String UnmangleTypeName(String typeName)
         {
             // Gets the original type name, without '+' name mangling.
 
@@ -148,10 +148,10 @@ namespace System.Reflection.Emit
 
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetTypeRef(RuntimeModule module, String strFullName, RuntimeModule refedModule, String strRefedModuleFileName, int tkResolution);
+        private static extern int GetTypeRef(RuntimeModule module, String strFullName, RuntimeModule refedModule, String strRefedModuleFileName, int tkResolution);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetMemberRef(RuntimeModule module, RuntimeModule refedModule, int tr, int defToken);
+        private static extern int GetMemberRef(RuntimeModule module, RuntimeModule refedModule, int tr, int defToken);
 
         private int GetMemberRef(Module refedModule, int tr, int defToken)
         {
@@ -159,7 +159,7 @@ namespace System.Reflection.Emit
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetMemberRefFromSignature(RuntimeModule module, int tr, String methodName, byte[] signature, int length);
+        private static extern int GetMemberRefFromSignature(RuntimeModule module, int tr, String methodName, byte[] signature, int length);
 
         private int GetMemberRefFromSignature(int tr, String methodName, byte[] signature, int length)
         {
@@ -167,7 +167,7 @@ namespace System.Reflection.Emit
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetMemberRefOfMethodInfo(RuntimeModule module, int tr, IRuntimeMethodInfo method);
+        private static extern int GetMemberRefOfMethodInfo(RuntimeModule module, int tr, IRuntimeMethodInfo method);
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeMethodInfo method)
         {
@@ -184,7 +184,7 @@ namespace System.Reflection.Emit
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetMemberRefOfFieldInfo(RuntimeModule module, int tkType, RuntimeTypeHandle declaringType, int tkField);
+        private static extern int GetMemberRefOfFieldInfo(RuntimeModule module, int tkType, RuntimeTypeHandle declaringType, int tkField);
 
         private int GetMemberRefOfFieldInfo(int tkType, RuntimeTypeHandle declaringType, RuntimeFieldInfo runtimeField)
         {
@@ -194,7 +194,7 @@ namespace System.Reflection.Emit
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetTokenFromTypeSpec(RuntimeModule pModule, byte[] signature, int length);
+        private static extern int GetTokenFromTypeSpec(RuntimeModule pModule, byte[] signature, int length);
 
         private int GetTokenFromTypeSpec(byte[] signature, int length)
         {
@@ -202,13 +202,13 @@ namespace System.Reflection.Emit
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetArrayMethodToken(RuntimeModule module, int tkTypeSpec, String methodName, byte[] signature, int sigLength);
+        private static extern int GetArrayMethodToken(RuntimeModule module, int tkTypeSpec, String methodName, byte[] signature, int sigLength);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int GetStringConstant(RuntimeModule module, String str, int length);
+        private static extern int GetStringConstant(RuntimeModule module, String str, int length);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal extern static void SetFieldRVAContent(RuntimeModule module, int fdToken, byte[] data, int length);
+        internal static extern void SetFieldRVAContent(RuntimeModule module, int fdToken, byte[] data, int length);
 
         #endregion
 

@@ -119,13 +119,13 @@ namespace System
             return _ByteLength(array);
         }
 
-        internal unsafe static void ZeroMemory(byte* src, long len)
+        internal static unsafe void ZeroMemory(byte* src, long len)
         {
             while (len-- > 0)
                 *(src + len) = 0;
         }
 
-        internal unsafe static void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len)
+        internal static unsafe void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len)
         {
             Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
             Debug.Assert(dest.Length - destIndex >= len, "not enough bytes in dest");
@@ -139,7 +139,7 @@ namespace System
             }
         }
 
-        internal unsafe static void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
+        internal static unsafe void Memcpy(byte* pDest, int destIndex, byte[] src, int srcIndex, int len)
         {
             Debug.Assert((srcIndex >= 0) && (destIndex >= 0) && (len >= 0), "Index and length must be non-negative!");
             Debug.Assert(src.Length - srcIndex >= len, "not enough bytes in src");
@@ -164,10 +164,10 @@ namespace System
         // 2. It is difficult to get this right for arm and again due to release dates we would like to visit it later.
 #if ARM
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe static extern void Memcpy(byte* dest, byte* src, int len);
+        internal static extern unsafe void Memcpy(byte* dest, byte* src, int len);
 #else // ARM
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static void Memcpy(byte* dest, byte* src, int len)
+        internal static unsafe void Memcpy(byte* dest, byte* src, int len)
         {
             Debug.Assert(len >= 0, "Negative length in memcopy!");
             Memmove(dest, src, (uint)len);
@@ -175,7 +175,7 @@ namespace System
 #endif // ARM
 
         // This method has different signature for x64 and other platforms and is done for performance reasons.
-        internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
+        internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
         {
 #if AMD64 || (BIT32 && !ARM)
             const nuint CopyThreshold = 2048;
@@ -592,7 +592,7 @@ PInvoke:
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private unsafe static void _Memmove(byte* dest, byte* src, nuint len)
+        private static unsafe void _Memmove(byte* dest, byte* src, nuint len)
         {
             __Memmove(dest, src, len);
         }
@@ -600,7 +600,7 @@ PInvoke:
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        private unsafe static void _Memmove(ref byte dest, ref byte src, nuint len)
+        private static unsafe void _Memmove(ref byte dest, ref byte src, nuint len)
         {
             fixed (byte* pDest = &dest)
             fixed (byte* pSrc = &src)
@@ -608,7 +608,7 @@ PInvoke:
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        extern private unsafe static void __Memmove(byte* dest, byte* src, nuint len);
+        private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
         // The attributes on this method are chosen for best JIT performance. 
         // Please do not edit unless intentional.

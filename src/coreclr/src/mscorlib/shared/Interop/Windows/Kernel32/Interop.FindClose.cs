@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal extern static bool FindClose(IntPtr hFindFile);
+        internal static extern bool FindClose(IntPtr hFindFile);
     }
 }

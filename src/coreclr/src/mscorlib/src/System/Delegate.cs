@@ -540,7 +540,7 @@ namespace System
 
         // V2 internal API.
         // This is Critical because it skips the security check when creating the delegate.
-        internal unsafe static Delegate CreateDelegateNoSecurityCheck(Type type, Object target, RuntimeMethodHandle method)
+        internal static unsafe Delegate CreateDelegateNoSecurityCheck(Type type, Object target, RuntimeMethodHandle method)
         {
             // Validate the parameters.
             if (type == null)
@@ -633,13 +633,13 @@ namespace System
         private extern bool BindToMethodInfo(Object target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static MulticastDelegate InternalAlloc(RuntimeType type);
+        private static extern MulticastDelegate InternalAlloc(RuntimeType type);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static MulticastDelegate InternalAllocLike(Delegate d);
+        internal static extern MulticastDelegate InternalAllocLike(Delegate d);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static bool InternalEqualTypes(object a, object b);
+        internal static extern bool InternalEqualTypes(object a, object b);
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
@@ -656,7 +656,7 @@ namespace System
         internal extern IRuntimeMethodInfo FindMethodHandle();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static bool InternalEqualMethodHandles(Delegate left, Delegate right);
+        internal static extern bool InternalEqualMethodHandles(Delegate left, Delegate right);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern IntPtr AdjustTarget(Object target, IntPtr methodPtr);
@@ -670,7 +670,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static bool CompareUnmanagedFunctionPtrs(Delegate d1, Delegate d2);
+        internal static extern bool CompareUnmanagedFunctionPtrs(Delegate d1, Delegate d2);
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their

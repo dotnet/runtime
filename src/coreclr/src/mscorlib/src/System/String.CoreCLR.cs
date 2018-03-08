@@ -54,7 +54,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static String FastAllocateString(int length);
+        internal static extern String FastAllocateString(int length);
 
         // Is this a string that can be compared quickly (that is it has only characters > 0x80 
         // and not a - or '
@@ -94,7 +94,7 @@ namespace System
         }
 
         // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.
-        internal unsafe static void InternalCopy(String src, IntPtr dest, int len)
+        internal static unsafe void InternalCopy(String src, IntPtr dest, int len)
         {
             if (len == 0)
                 return;

@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata
     {
         [DllImport(JitHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private unsafe static extern bool InternalTryGetRawMetadata(RuntimeAssembly assembly, ref byte* blob, ref int length);
+        private static extern unsafe bool InternalTryGetRawMetadata(RuntimeAssembly assembly, ref byte* blob, ref int length);
 
         // Retrieves the metadata section of the assembly, for use with System.Reflection.Metadata.MetadataReader.
         //   - Returns false upon failure. Metadata might not be available for some assemblies, such as AssemblyBuilder, .NET
@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata
         //     associated, is alive. The caller is responsible for keeping the assembly object alive while accessing the
         //     metadata blob.
         [CLSCompliant(false)] // out byte* blob
-        public unsafe static bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
+        public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
             if (assembly == null)
             {

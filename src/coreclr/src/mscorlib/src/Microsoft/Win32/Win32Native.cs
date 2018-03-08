@@ -22,7 +22,7 @@
  *  private static extern SafeFileHandle CreateFile(...);
  *
  *  [DllImport(Interop.Libraries.Kernel32, SetLastError=true)]
- *  unsafe internal static extern int ReadFile(SafeFileHandle handle, ...);
+ *  internal static extern unsafe int ReadFile(SafeFileHandle handle, ...);
  *
  *  [DllImport(Interop.Libraries.Kernel32, SetLastError=true)]
  *  internal static extern bool CloseHandle(IntPtr handle);
@@ -264,16 +264,16 @@ namespace Microsoft.Win32
         private static extern bool GlobalMemoryStatusExNative([In, Out] ref MEMORYSTATUSEX buffer);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        unsafe internal static extern UIntPtr VirtualQuery(void* address, ref MEMORY_BASIC_INFORMATION buffer, UIntPtr sizeOfBuffer);
+        internal static extern unsafe UIntPtr VirtualQuery(void* address, ref MEMORY_BASIC_INFORMATION buffer, UIntPtr sizeOfBuffer);
 
         // VirtualAlloc should generally be avoided, but is needed in 
         // the MemoryFailPoint implementation (within a CER) to increase the 
         // size of the page file, ignoring any host memory allocators.
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        unsafe internal static extern void* VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
+        internal static extern unsafe void* VirtualAlloc(void* address, UIntPtr numBytes, int commitOrReserve, int pageProtectionMode);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        unsafe internal static extern bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
+        internal static extern unsafe bool VirtualFree(void* address, UIntPtr numBytes, int pageFreeMode);
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Ansi, ExactSpelling = true, EntryPoint = "lstrlenA")]
         internal static extern int lstrlenA(IntPtr ptr);
@@ -324,7 +324,7 @@ namespace Microsoft.Win32
         internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static unsafe extern int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, out int numBytesWritten, IntPtr mustBeZero);
+        internal static extern unsafe int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, out int numBytesWritten, IntPtr mustBeZero);
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern SafeWaitHandle CreateSemaphoreEx(SECURITY_ATTRIBUTES lpSecurityAttributes, int initialCount, int maximumCount, string name, uint flags, uint desiredAccess);
@@ -371,10 +371,10 @@ namespace Microsoft.Win32
         }
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode)]
-        internal static unsafe extern char* GetEnvironmentStrings();
+        internal static extern unsafe char* GetEnvironmentStrings();
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode)]
-        internal static unsafe extern bool FreeEnvironmentStrings(char* pStrings);
+        internal static extern unsafe bool FreeEnvironmentStrings(char* pStrings);
 
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true)]
         internal static extern uint GetCurrentProcessId();
@@ -394,13 +394,13 @@ namespace Microsoft.Win32
         internal static extern int RegDeleteValue(SafeRegistryHandle hKey, String lpValueName);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal unsafe static extern int RegEnumKeyEx(SafeRegistryHandle hKey, int dwIndex,
+        internal static extern unsafe int RegEnumKeyEx(SafeRegistryHandle hKey, int dwIndex,
                     char[] lpName, ref int lpcbName, int[] lpReserved,
                     [Out]StringBuilder lpClass, int[] lpcbClass,
                     long[] lpftLastWriteTime);
 
         [DllImport(ADVAPI32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal unsafe static extern int RegEnumValue(SafeRegistryHandle hKey, int dwIndex,
+        internal static extern unsafe int RegEnumValue(SafeRegistryHandle hKey, int dwIndex,
                     char[] lpValueName, ref int lpcbValueName,
                     IntPtr lpReserved_MustBeZero, int[] lpType, byte[] lpData,
                     int[] lpcbData);
@@ -454,7 +454,7 @@ namespace Microsoft.Win32
 
         [DllImport(Interop.Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal extern static bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
+        internal static extern bool QueryUnbiasedInterruptTime(out ulong UnbiasedTime);
 
         internal const byte VER_GREATER_EQUAL = 0x3;
         internal const uint VER_MAJORVERSION = 0x0000002;

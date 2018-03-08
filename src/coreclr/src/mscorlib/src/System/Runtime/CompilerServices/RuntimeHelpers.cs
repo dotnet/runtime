@@ -87,7 +87,7 @@ namespace System.Runtime.CompilerServices
         internal static extern void _CompileMethod(IRuntimeMethodInfo method);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern void _PrepareMethod(IRuntimeMethodInfo method, IntPtr* pInstantiation, int cInstantiation);
+        private static extern unsafe void _PrepareMethod(IRuntimeMethodInfo method, IntPtr* pInstantiation, int cInstantiation);
 
         public static void PrepareMethod(RuntimeMethodHandle method) 
         {
@@ -188,7 +188,7 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <returns>true if given type is reference type or value type that contains references</returns>
-        static public bool IsReferenceOrContainsReferences<T>()
+        public static bool IsReferenceOrContainsReferences<T>()
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementation for how this happens.

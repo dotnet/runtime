@@ -23,7 +23,7 @@ internal partial class Interop
         internal const int STATUS_NO_MEMORY = unchecked((int)0xC0000017);
 
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        private static unsafe extern int BCryptGenRandom(IntPtr hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
+        private static extern unsafe int BCryptGenRandom(IntPtr hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
     }
 
     internal static unsafe void GetRandomBytes(byte* buffer, int length)
