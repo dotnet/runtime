@@ -9,10 +9,10 @@ namespace System.Text
     public partial class StringBuilder
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern void ReplaceBufferInternal(char* newBuffer, int newLength);
+        internal extern unsafe void ReplaceBufferInternal(char* newBuffer, int newLength);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength);
+        internal extern unsafe void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength);
 
         /// <summary>
         /// Copies the contents of this builder to the specified buffer.

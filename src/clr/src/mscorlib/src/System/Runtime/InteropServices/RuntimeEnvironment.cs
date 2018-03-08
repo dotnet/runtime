@@ -24,7 +24,7 @@ using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Runtime.InteropServices
 {
-    static internal class RuntimeEnvironment
+    internal static class RuntimeEnvironment
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern String GetModuleFileName();

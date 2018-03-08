@@ -258,7 +258,7 @@ namespace System
 
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static extern private IRuntimeMethodInfo GetMethodFromStackTrace(Object stackTrace);
+        static private extern IRuntimeMethodInfo GetMethodFromStackTrace(Object stackTrace);
 
         private MethodBase GetExceptionMethodFromStackTrace()
         {
@@ -725,7 +725,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static bool nIsTransient(int hr);
+        private static extern bool nIsTransient(int hr);
 
 
         // This piece of infrastructure exists to help avoid deadlocks 

@@ -25,7 +25,7 @@ namespace System
         //Native Static Methods
         //
 
-        private unsafe static int CompareOrdinalIgnoreCaseHelper(String strA, String strB)
+        private static unsafe int CompareOrdinalIgnoreCaseHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -68,7 +68,7 @@ namespace System
         //This will not work in case-insensitive mode for any character greater than 0x7F.  
         //We'll throw an ArgumentException.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        unsafe internal static extern int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte* strBBytes);
+        internal static extern unsafe int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte* strBBytes);
 
         //
         //
@@ -80,7 +80,7 @@ namespace System
         // Search/Query methods
         //
 
-        private unsafe static bool EqualsHelper(String strA, String strB)
+        private static unsafe bool EqualsHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -137,7 +137,7 @@ namespace System
             }
         }
 
-        private unsafe static bool EqualsIgnoreCaseAsciiHelper(String strA, String strB)
+        private static unsafe bool EqualsIgnoreCaseAsciiHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
@@ -175,7 +175,7 @@ namespace System
             }
         }
 
-        private unsafe static bool StartsWithOrdinalHelper(String str, String startsWith)
+        private static unsafe bool StartsWithOrdinalHelper(String str, String startsWith)
         {
             Debug.Assert(str != null);
             Debug.Assert(startsWith != null);

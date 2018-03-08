@@ -260,8 +260,8 @@ namespace System.Runtime.InteropServices
 
 #if MDA_SUPPORTED
         // The GCHandle cookie table.
-        static private volatile GCHandleCookieTable s_cookieTable = null;
-        static private volatile bool s_probeIsActive = false;
+        private static volatile GCHandleCookieTable s_cookieTable = null;
+        private static volatile bool s_probeIsActive = false;
 #endif
 
         private void ValidateHandle()

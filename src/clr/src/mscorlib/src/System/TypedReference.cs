@@ -70,7 +70,7 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
-        private unsafe static extern void InternalMakeTypedReference(void* result, Object target, IntPtr[] flds, RuntimeType lastFieldType);
+        private static extern unsafe void InternalMakeTypedReference(void* result, Object target, IntPtr[] flds, RuntimeType lastFieldType);
 
         public override int GetHashCode()
         {
@@ -85,13 +85,13 @@ namespace System
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
-        public unsafe static Object ToObject(TypedReference value)
+        public static unsafe Object ToObject(TypedReference value)
         {
             return InternalToObject(&value);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern static Object InternalToObject(void* value);
+        internal static extern unsafe Object InternalToObject(void* value);
 
         internal bool IsNull
         {
@@ -113,12 +113,12 @@ namespace System
 
         //  This may cause the type to be changed.
         [CLSCompliant(false)]
-        public unsafe static void SetTypedReference(TypedReference target, Object value)
+        public static unsafe void SetTypedReference(TypedReference target, Object value)
         {
             InternalSetTypedReference(&target, value);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern static void InternalSetTypedReference(void* target, Object value);
+        internal static extern unsafe void InternalSetTypedReference(void* target, Object value);
     }
 }

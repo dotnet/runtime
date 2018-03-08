@@ -17,19 +17,19 @@ namespace System.Reflection
 
         #region FCalls
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetType(RuntimeModule module, String className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
+        private static extern void GetType(RuntimeModule module, String className, bool throwOnError, bool ignoreCase, ObjectHandleOnStack type, ObjectHandleOnStack keepAlive);
 
         [DllImport(JitHelpers.QCall)]
         private static extern bool nIsTransientInternal(RuntimeModule module);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetScopeName(RuntimeModule module, StringHandleOnStack retString);
+        private static extern void GetScopeName(RuntimeModule module, StringHandleOnStack retString);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static void GetFullyQualifiedName(RuntimeModule module, StringHandleOnStack retString);
+        private static extern void GetFullyQualifiedName(RuntimeModule module, StringHandleOnStack retString);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static RuntimeType[] GetTypes(RuntimeModule module);
+        private static extern RuntimeType[] GetTypes(RuntimeModule module);
 
         internal RuntimeType[] GetDefinedTypes()
         {
@@ -37,7 +37,7 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static bool IsResource(RuntimeModule module);
+        private static extern bool IsResource(RuntimeModule module);
         #endregion
 
         #region Module overrides

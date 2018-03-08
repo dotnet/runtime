@@ -173,7 +173,7 @@ namespace System
             FormatDigits(outputBuffer, value, len, false);
         }
 
-        internal unsafe static void FormatDigits(StringBuilder outputBuffer, int value, int len, bool overrideLengthLimit)
+        internal static unsafe void FormatDigits(StringBuilder outputBuffer, int value, int len, bool overrideLengthLimit)
         {
             Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
 

@@ -65,7 +65,7 @@ namespace System
         }
 
         // Create instance will create an array
-        public unsafe static Array CreateInstance(Type elementType, int length)
+        public static unsafe Array CreateInstance(Type elementType, int length)
         {
             if ((object)elementType == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
@@ -78,7 +78,7 @@ namespace System
             return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
         }
 
-        public unsafe static Array CreateInstance(Type elementType, int length1, int length2)
+        public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
         {
             if ((object)elementType == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
@@ -96,7 +96,7 @@ namespace System
             return InternalCreate((void*)t.TypeHandle.Value, 2, pLengths, null);
         }
 
-        public unsafe static Array CreateInstance(Type elementType, int length1, int length2, int length3)
+        public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
         {
             if ((object)elementType == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
@@ -117,7 +117,7 @@ namespace System
             return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
         }
 
-        public unsafe static Array CreateInstance(Type elementType, params int[] lengths)
+        public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
         {
             if ((object)elementType == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
@@ -165,7 +165,7 @@ namespace System
         }
 
 
-        public unsafe static Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
+        public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
             if (elementType == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
@@ -196,7 +196,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe static extern Array InternalCreate(void* elementType, int rank, int* pLengths, int* pLowerBounds);
+        private static extern unsafe Array InternalCreate(void* elementType, int rank, int* pLengths, int* pLowerBounds);
 
         internal static Array UnsafeCreateInstance(Type elementType, int length)
         {
@@ -476,12 +476,12 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         // reference to TypedReference is banned, so have to pass result as pointer
-        private unsafe extern void InternalGetReference(void* elemRef, int rank, int* pIndices);
+        private extern unsafe void InternalGetReference(void* elemRef, int rank, int* pIndices);
 
         // Ideally, we would like to use TypedReference.SetValue instead. Unfortunately, TypedReference.SetValue
         // always throws not-supported exception
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe extern static void InternalSetValue(void* target, Object value);
+        private static extern unsafe void InternalSetValue(void* target, Object value);
 
         public extern int Length
         {

@@ -46,9 +46,9 @@ namespace System.Threading
             _executionContext = ec;
         }
 
-        static internal ContextCallback _ccb = new ContextCallback(ThreadStart_Context);
+        internal static ContextCallback _ccb = new ContextCallback(ThreadStart_Context);
 
-        static private void ThreadStart_Context(Object state)
+        private static void ThreadStart_Context(Object state)
         {
             ThreadHelper t = (ThreadHelper)state;
             if (t._start is ThreadStart)
@@ -201,7 +201,7 @@ namespace System.Threading
             return _managedThreadId;
         }
 
-        extern public new int ManagedThreadId
+        public extern new int ManagedThreadId
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -286,7 +286,7 @@ namespace System.Threading
         // correctness) and for FileStream's async code path (for perf, to
         // avoid creating a Thread instance).
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern static IntPtr InternalGetCurrentThread();
+        internal static extern IntPtr InternalGetCurrentThread();
 
         /*=========================================================================
         ** Suspends the current thread for timeout milliseconds. If timeout == 0,
