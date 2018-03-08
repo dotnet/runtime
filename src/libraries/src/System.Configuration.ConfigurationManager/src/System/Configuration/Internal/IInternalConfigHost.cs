@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace System.Configuration.Internal
 {
@@ -102,5 +103,7 @@ namespace System.Configuration.Internal
         bool IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord);
 
         IDisposable Impersonate();
+
+        void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady);
     }
 }

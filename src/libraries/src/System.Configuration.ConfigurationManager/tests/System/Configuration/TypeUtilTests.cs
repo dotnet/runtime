@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.Configuration;
 using System.Configuration.Internal;
 using System.IO;
+using System.Security;
 using Xunit;
 
 namespace System.ConfigurationTests
@@ -296,6 +297,11 @@ namespace System.ConfigurationTests
             }
 
             bool IInternalConfigHost.IsTrustedConfigPath(string configPath)
+            {
+                throw new NotImplementedException();
+            }
+
+            void IInternalConfigHost.GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady)
             {
                 throw new NotImplementedException();
             }
