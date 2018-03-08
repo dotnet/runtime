@@ -767,6 +767,8 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	        mono_defaults.corlib, "System.Collections.Generic", "IList`1");
 	mono_defaults.generic_ireadonlylist_class = mono_class_load_from_name (
 	        mono_defaults.corlib, "System.Collections.Generic", "IReadOnlyList`1");
+	mono_defaults.generic_ienumerator_class = mono_class_load_from_name (
+	        mono_defaults.corlib, "System.Collections.Generic", "IEnumerator`1");
 
 	mono_defaults.threadpool_wait_callback_class = mono_class_load_from_name (
 		mono_defaults.corlib, "System.Threading", "_ThreadPoolWaitCallback");
