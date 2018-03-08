@@ -37,6 +37,9 @@ static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 2 == METHOD__STRING__CTORF_CH
 static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 3 == METHOD__STRING__CTORF_CHARPTR);
 static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 4 == METHOD__STRING__CTORF_CHARPTR_START_LEN);
 static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 5 == METHOD__STRING__CTORF_READONLYSPANOFCHAR);
+static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 6 == METHOD__STRING__CTORF_SBYTEPTR);
+static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 7 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN);
+static_assert_no_msg(METHOD__STRING__CTORF_FIRST + 8 == METHOD__STRING__CTORF_SBYTEPTR_START_LEN_ENCODING);
 
 // ECall::CtorCharXxx has to be in same order as METHOD__STRING__CTORF_XXX
 #define ECallCtor_First ECall::CtorCharArrayManaged
@@ -46,8 +49,11 @@ static_assert_no_msg(ECallCtor_First + 2 == ECall::CtorCharCountManaged);
 static_assert_no_msg(ECallCtor_First + 3 == ECall::CtorCharPtrManaged);
 static_assert_no_msg(ECallCtor_First + 4 == ECall::CtorCharPtrStartLengthManaged);
 static_assert_no_msg(ECallCtor_First + 5 == ECall::CtorReadOnlySpanOfCharManaged);
+static_assert_no_msg(ECallCtor_First + 6 == ECall::CtorSBytePtrManaged);
+static_assert_no_msg(ECallCtor_First + 7 == ECall::CtorSBytePtrStartLengthManaged);
+static_assert_no_msg(ECallCtor_First + 8 == ECall::CtorSBytePtrStartLengthEncodingManaged);
 
-#define NumberOfStringConstructors 6
+#define NumberOfStringConstructors 9
 
 void ECall::PopulateManagedStringConstructors()
 {

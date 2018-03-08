@@ -532,9 +532,6 @@
   <data name="Arg_MustBeString" xml:space="preserve">
     <value>Object must be of type String.</value>
   </data>
-  <data name="Arg_MustBeStringPtrNotAtom" xml:space="preserve">
-    <value>The pointer passed in as a String must not be in the bottom 64K of the process's address space.</value>
-  </data>
   <data name="Arg_MustBeTimeSpan" xml:space="preserve">
     <value>Object must be of type TimeSpan.</value>
   </data>
@@ -3717,5 +3714,8 @@
   </data>
   <data name="Arg_InsufficientNumberOfElements" xml:space="preserve">
     <value>At least {0} element(s) are expected in the parameter "{1}".</value>
+  </data>
+  <data name="Arg_MustBeNullTerminatedString" xml:space="preserve">
+    <value>The string must be null-terminated.</value>
   </data>
 </root>

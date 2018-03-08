@@ -1024,7 +1024,6 @@ class StringObject : public Object
 
     static STRINGREF* InitEmptyStringRefPtr();
 
-    static STRINGREF __stdcall StringInitCharHelper(LPCSTR pszSource, int length);
     DWORD InternalCheckHighChars();
 
     BOOL HasTrailByte();
