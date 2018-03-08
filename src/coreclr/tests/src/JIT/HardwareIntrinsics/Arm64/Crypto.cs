@@ -3,9 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
 using System.Runtime.Intrinsics.Arm.Arm64;
-#endif //ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
 
 namespace Arm64intrisicsTest
 {
@@ -218,7 +216,6 @@ namespace Arm64intrisicsTest
 
         static void TestAes()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Aes";
 
             if (Aes.IsSupported)
@@ -236,12 +233,10 @@ namespace Arm64intrisicsTest
                 testThrowsPlatformNotSupported<Vector128<byte> , Vector128<byte>  >(name, (x, y, z) => Aes.MixColumns(x));
                 testThrowsPlatformNotSupported<Vector128<byte> , Vector128<byte>  >(name, (x, y, z) => Aes.InverseMixColumns(x));
             }
-#endif //ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestSha256()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Sha256";
             if (Sha256.IsSupported)
             {
@@ -257,12 +252,10 @@ namespace Arm64intrisicsTest
                 testThrowsPlatformNotSupported<Vector128<uint>, Vector128<uint> >(name, (x, y, z) => Sha256.SchedulePart1(x, y));
                 testThrowsPlatformNotSupported<Vector128<uint>, Vector128<uint> >(name, (x, y, z) => Sha256.SchedulePart2(x, y, z));
             }
-#endif //ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void TestSha1()
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             String name = "Sha1";
             if (Sha1.IsSupported)
             {
@@ -284,7 +277,6 @@ namespace Arm64intrisicsTest
                 testThrowsPlatformNotSupported<Vector128<uint> , Vector128<uint>  >(name, (x, y, z) => Sha1.SchedulePart1(x, y, z));
                 testThrowsPlatformNotSupported<Vector128<uint> , Vector128<uint>  >(name, (x, y, z) => Sha1.SchedulePart2(x, y));
             }
-#endif //ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
         }
 
         static void initializeDataSetDefault()
@@ -323,11 +315,9 @@ namespace Arm64intrisicsTest
 
         static int Main(string[] args)
         {
-#if ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             Console.WriteLine($"System.Runtime.Intrinsics.Arm.Arm64.Aes.IsSupported = {Aes.IsSupported}");
             Console.WriteLine($"System.Runtime.Intrinsics.Arm.Arm64.Sha1.IsSupported = {Sha1.IsSupported}");
             Console.WriteLine($"System.Runtime.Intrinsics.Arm.Arm64.Sha2.IsSupported = {Sha256.IsSupported}");
-#endif //ARM64_SIMD_API_PENDING_APPROVAL_AND_OR_COREFX_MERGE
             initializeDataSetDefault();
             Console.WriteLine("Running tests");
             ExecuteAllTests();
