@@ -23,9 +23,8 @@ class Program
         if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("DefaultMethod").Invoke(new Fooer(), new object[] { })).Equals(typeof(Fooer).TypeHandle))
             return 12;
 
-        // Likely failing due to https://github.com/dotnet/coreclr/issues/15241
-        //if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("InstanceMethod").Invoke(new Fooer(), new object[] { })).Equals(typeof(Fooer[]).TypeHandle))
-        //    return 13;
+        if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("InstanceMethod").Invoke(new Fooer(), new object[] { })).Equals(typeof(Fooer[]).TypeHandle))
+            return 13;
 
         if ((int)typeof(IFoo).GetMethod("DefaultMethod").Invoke(new ValueFooer(), new object[] { 1 }) != 51)
             return 22;
@@ -36,9 +35,8 @@ class Program
         if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("DefaultMethod").Invoke(new ValueFooer(), new object[] { })).Equals(typeof(Fooer).TypeHandle))
             return 32;
 
-        // Likely failing due to https://github.com/dotnet/coreclr/issues/15241
-        //if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("InstanceMethod").Invoke(new ValueFooer(), new object[] { })).Equals(typeof(Fooer[]).TypeHandle))
-        //    return 33;
+        if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("InstanceMethod").Invoke(new ValueFooer(), new object[] { })).Equals(typeof(Fooer[]).TypeHandle))
+            return 33;
 
         return 100;
     }
