@@ -3178,7 +3178,8 @@ BOOL DispatchInfo::IsVariantByrefStaticArray(VARIANT *pOle)
 
     if (V_VT(pOle) & VT_BYREF && V_VT(pOle) & VT_ARRAY)
     {
-        if ((*V_ARRAYREF(pOle))->fFeatures & FADF_STATIC)
+        SAFEARRAY *pSafeArray = *V_ARRAYREF(pOle);
+        if (pSafeArray && (pSafeArray->fFeatures & FADF_STATIC))
             return TRUE;
     }
 
