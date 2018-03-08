@@ -148,7 +148,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\TypeTable.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Types\VoidType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\UnaOpSig.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\UtilityTypeExtensions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\WithType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\SpecialNames.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\SymbolTable.cs" />
