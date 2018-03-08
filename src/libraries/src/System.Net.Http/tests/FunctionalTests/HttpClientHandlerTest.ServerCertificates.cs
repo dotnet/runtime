@@ -377,13 +377,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
                     Assert.NotNull(chain);
-                    if (!useSocketsHttpHandler)
-                    {
-                        // TODO #23137: This test is failing with SocketsHttpHandler on the exact value of the managed errors,
-                        // e.g. reporting "RemoteCertificateNameMismatch, RemoteCertificateChainErrors" when we only expect
-                        // "RemoteCertificateChainErrors"
-                        Assert.Equal(expectedErrors, errors);
-                    }
+                    Assert.Equal(expectedErrors, errors);
                     return true;
                 };
 
