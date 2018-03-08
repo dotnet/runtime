@@ -32,6 +32,17 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void EnumerateDirectories_NonBreakingSpace()
+        {
+            DirectoryInfo rootDirectory = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo subDirectory1 = rootDirectory.CreateSubdirectory("\u00A0");
+            DirectoryInfo subDirectory2 = subDirectory1.CreateSubdirectory(GetTestFileName());
+
+            Assert.Equal(new string[] { subDirectory1.FullName, subDirectory2.FullName }, Directory.EnumerateDirectories(rootDirectory.FullName, string.Empty, SearchOption.AllDirectories));
+        }
+
         class ThreadSafeRepro
         {
             volatile IEnumerator<string> _enumerator;
