@@ -289,29 +289,15 @@ namespace System.Collections.Generic
 
         internal unsafe override int IndexOf(byte[] array, byte value, int startIndex, int count)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (startIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
-            if (count > array.Length - startIndex)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (count == 0) return -1;
-            fixed (byte* pbytes = array)
-            {
-                return Buffer.IndexOfByte(pbytes, value, startIndex, count);
-            }
+            int found = new ReadOnlySpan<byte>(array, startIndex, count).IndexOf(value);
+            return (found >= 0) ? (startIndex + found) : found;
         }
 
         internal override int LastIndexOf(byte[] array, byte value, int startIndex, int count)
         {
             int endIndex = startIndex - count + 1;
-            for (int i = startIndex; i >= endIndex; i--)
-            {
-                if (array[i] == value) return i;
-            }
-            return -1;
+            int found = new ReadOnlySpan<byte>(array, endIndex, count).LastIndexOf(value);
+            return (found >= 0) ? (endIndex + found) : found;
         }
 
         // Equals method for the comparer itself.
