@@ -18,10 +18,10 @@ using System.Collections.Generic;
 namespace System.Text
 {
     // This class represents a mutable string.  It is convenient for situations in
-    // which it is desirable to modify a string, perhaps by removing, replacing, or 
+    // which it is desirable to modify a string, perhaps by removing, replacing, or
     // inserting characters, without creating a new String subsequent to
-    // each modification. 
-    // 
+    // each modification.
+    //
     // The methods contained within this class do not return a new StringBuilder
     // object unless specified otherwise.  This class may be used in conjunction with the String
     // class to carry out modifications upon strings.
@@ -30,8 +30,8 @@ namespace System.Text
     public sealed partial class StringBuilder : ISerializable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
-        // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk, 
-        // so that is what we do.  
+        // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk,
+        // so that is what we do.
 
         /// <summary>
         /// The character buffer for this chunk.
@@ -73,7 +73,7 @@ namespace System.Text
         // We want to keep chunk arrays out of large object heap (< 85K bytes ~ 40K chars) to be sure.
         // Making the maximum chunk size big means less allocation code called, but also more waste
         // in unused characters and slower inserts / replaces (since you do need to slide characters over
-        // within a buffer).  
+        // within a buffer).
         internal const int MaxChunkSize = 8000;
 
         /// <summary>
@@ -377,7 +377,7 @@ namespace System.Text
                             int chunkOffset = chunk.m_ChunkOffset;
                             int chunkLength = chunk.m_ChunkLength;
 
-                            // Check that we will not overrun our boundaries. 
+                            // Check that we will not overrun our boundaries.
                             if ((uint)(chunkLength + chunkOffset) <= (uint)result.Length && (uint)chunkLength <= (uint)sourceArray.Length)
                             {
                                 fixed (char* sourcePtr = &sourceArray[0])
@@ -691,7 +691,7 @@ namespace System.Text
         }
 
         // We put this fixed in its own helper to avoid the cost of zero-initing `valueChars` in the
-        // case we don't actually use it.  
+        // case we don't actually use it.
         private void AppendHelper(string value)
         {
             unsafe
@@ -921,7 +921,7 @@ namespace System.Text
                 return this;
             }
 
-            // Ensure we don't insert more chars than we can hold, and we don't 
+            // Ensure we don't insert more chars than we can hold, and we don't
             // have any integer overflow in our new length.
             long insertingChars = (long)value.Length * count;
             if (insertingChars > MaxCapacity - this.Length)
@@ -1115,7 +1115,7 @@ namespace System.Text
         {
             return AppendJoinCore(&separator, 1, values);
         }
-        
+
         private unsafe StringBuilder AppendJoinCore<T>(char* separator, int separatorLength, IEnumerable<T> values)
         {
             Debug.Assert(separator != null);
@@ -1552,7 +1552,7 @@ namespace System.Text
                         if (startPos != pos)
                         {
                             // There was no brace escaping, extract the item format as a single string
-                            itemFormatSpan = format.AsSpan().Slice(startPos, pos - startPos);
+                            itemFormatSpan = format.AsSpan(startPos, pos - startPos);
                         }
                     }
                     else
@@ -1749,7 +1749,7 @@ namespace System.Text
             int indexInChunk = startIndex - chunk.m_ChunkOffset;
             while (count > 0)
             {
-                // Look for a match in the chunk,indexInChunk pointer 
+                // Look for a match in the chunk,indexInChunk pointer
                 if (StartsWith(chunk, indexInChunk, count, oldValue))
                 {
                     // Push it on the replacements array (with growth), we will do all replacements in a
@@ -1775,13 +1775,13 @@ namespace System.Text
 
                 if (indexInChunk >= chunk.m_ChunkLength || count == 0) // Have we moved out of the current chunk?
                 {
-                    // Replacing mutates the blocks, so we need to convert to a logical index and back afterwards. 
+                    // Replacing mutates the blocks, so we need to convert to a logical index and back afterwards.
                     int index = indexInChunk + chunk.m_ChunkOffset;
                     int indexBeforeAdjustment = index;
 
                     // See if we accumulated any replacements, if so apply them.
                     ReplaceAllInChunk(replacements, replacementsCount, chunk, oldValue.Length, newValue);
-                    // The replacement has affected the logical index.  Adjust it.  
+                    // The replacement has affected the logical index.  Adjust it.
                     index += ((newValue.Length - oldValue.Length) * replacementsCount);
                     replacementsCount = 0;
 
@@ -1874,7 +1874,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(valueCount), SR.ArgumentOutOfRange_LengthGreaterThanCapacity);
             }
 
-            // This case is so common we want to optimize for it heavily. 
+            // This case is so common we want to optimize for it heavily.
             int newIndex = valueCount + m_ChunkLength;
             if (newIndex <= m_ChunkChars.Length)
             {
@@ -1891,7 +1891,7 @@ namespace System.Text
                     m_ChunkLength = m_ChunkChars.Length;
                 }
 
-                // Expand the builder to add another chunk. 
+                // Expand the builder to add another chunk.
                 int restLength = valueCount - firstLength;
                 ExpandByABlock(restLength);
                 Debug.Assert(m_ChunkLength == 0, "A new block was not created.");
@@ -1948,16 +1948,16 @@ namespace System.Text
             {
                 fixed (char* valuePtr = value)
                 {
-                    // calculate the total amount of extra space or space needed for all the replacements.  
+                    // calculate the total amount of extra space or space needed for all the replacements.
                     int delta = (value.Length - removeCount) * replacementsCount;
 
                     StringBuilder targetChunk = sourceChunk;        // the target as we copy chars down
                     int targetIndexInChunk = replacements[0];
 
-                    // Make the room needed for all the new characters if needed. 
+                    // Make the room needed for all the new characters if needed.
                     if (delta > 0)
                         MakeRoom(targetChunk.m_ChunkOffset + targetIndexInChunk, delta, out targetChunk, out targetIndexInChunk, true);
-                    // We made certain that characters after the insertion point are not moved, 
+                    // We made certain that characters after the insertion point are not moved,
                     int i = 0;
                     for (;;)
                     {
@@ -1974,7 +1974,7 @@ namespace System.Text
                         Debug.Assert(gapStart < sourceChunk.m_ChunkChars.Length, "gap starts at end of buffer.  Should not happen");
                         Debug.Assert(gapStart <= gapEnd, "negative gap size");
                         Debug.Assert(gapEnd <= sourceChunk.m_ChunkLength, "gap too big");
-                        if (delta != 0)     // can skip the sliding of gaps if source an target string are the same size.  
+                        if (delta != 0)     // can skip the sliding of gaps if source an target string are the same size.
                         {
                             // Copy the gap data between the current replacement and the next replacement
                             fixed (char* sourcePtr = &sourceChunk.m_ChunkChars[gapStart])
@@ -1987,7 +1987,7 @@ namespace System.Text
                         }
                     }
 
-                    // Remove extra space if necessary. 
+                    // Remove extra space if necessary.
                     if (delta < 0)
                         Remove(targetChunk.m_ChunkOffset + targetIndexInChunk, -delta, out targetChunk, out targetIndexInChunk);
                 }
@@ -2056,7 +2056,7 @@ namespace System.Text
                     int lengthToCopy = Math.Min(lengthInChunk, count);
                     ThreadSafeCopy(value, chunk.m_ChunkChars, indexInChunk, lengthToCopy);
 
-                    // Advance the index. 
+                    // Advance the index.
                     indexInChunk += lengthToCopy;
                     if (indexInChunk >= chunk.m_ChunkLength)
                     {
@@ -2374,7 +2374,7 @@ namespace System.Text
 
             int endIndex = startIndex + count;
 
-            // Find the chunks for the start and end of the block to delete. 
+            // Find the chunks for the start and end of the block to delete.
             chunk = this;
             StringBuilder endChunk = null;
             int endIndexInChunk = 0;
@@ -2425,7 +2425,7 @@ namespace System.Text
             // SafeCritical: We ensure that `endIndexInChunk + copyCount` is within range of `m_ChunkChars`, and
             // also ensure that `copyTargetIndexInChunk + copyCount` is within the chunk.
 
-            // Remove any characters in the end chunk, by sliding the characters down. 
+            // Remove any characters in the end chunk, by sliding the characters down.
             if (copyTargetIndexInChunk != endIndexInChunk) // Sometimes no move is necessary
             {
                 ThreadSafeCopy(endChunk.m_ChunkChars, endIndexInChunk, endChunk.m_ChunkChars, copyTargetIndexInChunk, copyCount);
