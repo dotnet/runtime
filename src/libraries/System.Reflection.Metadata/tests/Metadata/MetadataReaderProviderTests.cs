@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
 
@@ -145,6 +146,21 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(PortablePdbs.DocumentsPdb.Length, PortablePdbReader2.GetMetadataReader().Block.Length);
             var reader2 = PortablePdbReader2.GetMetadataReader();
             Assert.Equal(13, reader2.Documents.Count);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static MetadataReader GetMetadataReaderFromProvider()
+            => MetadataReaderProvider.FromMetadataImage(PortablePdbs.DocumentsPdb.ToImmutableArray()).GetMetadataReader();
+
+        [Fact, MethodImpl(MethodImplOptions.NoOptimization)]
+        public void KeepMetadataAlive()
+        {
+            var reader = GetMetadataReaderFromProvider();
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+
+            Assert.Equal(@"C:\Documents.cs", reader.GetString(reader.GetDocument(MetadataTokens.DocumentHandle(1)).Name));
         }
     }
 }
