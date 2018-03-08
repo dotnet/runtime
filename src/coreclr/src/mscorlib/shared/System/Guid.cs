@@ -1232,7 +1232,7 @@ namespace System
             return (char)((a > 9) ? a - 10 + 0x61 : a + 0x30);
         }
 
-        unsafe private static int HexsToChars(char* guidChars, int a, int b)
+        private static unsafe int HexsToChars(char* guidChars, int a, int b)
         {
             guidChars[0] = HexToChar(a >> 4);
             guidChars[1] = HexToChar(a);
@@ -1243,7 +1243,7 @@ namespace System
             return 4;
         }
 
-        unsafe private static int HexsToCharsHexOutput(char* guidChars, int a, int b)
+        private static unsafe int HexsToCharsHexOutput(char* guidChars, int a, int b)
         {
             guidChars[0] = '0';
             guidChars[1] = 'x';

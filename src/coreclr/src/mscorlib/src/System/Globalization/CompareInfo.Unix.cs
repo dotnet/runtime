@@ -739,7 +739,7 @@ namespace System.Globalization
             return new SortKey(Name, source, options, keyData);
         }       
 
-        private unsafe static bool IsSortable(char *text, int length)
+        private static unsafe bool IsSortable(char *text, int length)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
@@ -814,7 +814,7 @@ namespace System.Globalization
         }
 
         [DllImport(JitHelpers.QCall)]
-        private static unsafe extern int InternalHashSortKey(byte* sortKey, int sortKeyLength);
+        private static extern unsafe int InternalHashSortKey(byte* sortKey, int sortKeyLength);
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
         {

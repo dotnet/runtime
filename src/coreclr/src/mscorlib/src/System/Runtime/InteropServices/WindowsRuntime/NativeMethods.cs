@@ -32,12 +32,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static extern void RoReportUnhandledError(IRestrictedErrorInfo error);
 
         [DllImport("api-ms-win-core-winrt-string-l1-1-0.dll", CallingConvention = CallingConvention.StdCall)]
-        internal static unsafe extern int WindowsCreateString([MarshalAs(UnmanagedType.LPWStr)] string sourceString,
+        internal static extern unsafe int WindowsCreateString([MarshalAs(UnmanagedType.LPWStr)] string sourceString,
                                                               int length,
                                                               [Out] IntPtr* hstring);
 
         [DllImport("api-ms-win-core-winrt-string-l1-1-0.dll", CallingConvention = CallingConvention.StdCall)]
-        internal static unsafe extern int WindowsCreateStringReference(char* sourceString,
+        internal static extern unsafe int WindowsCreateStringReference(char* sourceString,
                                                                        int length,
                                                                        [Out] HSTRING_HEADER* hstringHeader,
                                                                        [Out] IntPtr* hstring);
@@ -46,6 +46,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static extern int WindowsDeleteString(IntPtr hstring);
 
         [DllImport("api-ms-win-core-winrt-string-l1-1-0.dll", CallingConvention = CallingConvention.StdCall)]
-        internal static unsafe extern char* WindowsGetStringRawBuffer(IntPtr hstring, [Out] uint* length);
+        internal static extern unsafe char* WindowsGetStringRawBuffer(IntPtr hstring, [Out] uint* length);
     }
 }

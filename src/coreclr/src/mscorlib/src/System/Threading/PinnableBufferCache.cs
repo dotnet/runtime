@@ -536,7 +536,7 @@ namespace System
         public void AgePendingBuffersResults(string cacheName, int promotedToFreeListCount, int heldBackCount) { }
         public void WalkFreeListResult(string cacheName, int freeListCount, int gen0BuffersInFreeList) { }
 
-        static internal ulong AddressOf(object obj)
+        internal static ulong AddressOf(object obj)
         {
             return 0;
         }

@@ -74,27 +74,27 @@ namespace System.Runtime.CompilerServices
 
         // Wraps object variable into a handle. Used to return managed strings from QCalls.
         // s has to be a local variable on the stack.
-        static internal StringHandleOnStack GetStringHandleOnStack(ref string s)
+        internal static StringHandleOnStack GetStringHandleOnStack(ref string s)
         {
             return new StringHandleOnStack(UnsafeCastToStackPointer(ref s));
         }
 
         // Wraps object variable into a handle. Used to pass managed object references in and out of QCalls.
         // o has to be a local variable on the stack.
-        static internal ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class
+        internal static ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class
         {
             return new ObjectHandleOnStack(UnsafeCastToStackPointer(ref o));
         }
 
         // Wraps StackCrawlMark into a handle. Used to pass StackCrawlMark to QCalls.
         // stackMark has to be a local variable on the stack.
-        static internal StackCrawlMarkHandle GetStackCrawlMarkHandle(ref StackCrawlMark stackMark)
+        internal static StackCrawlMarkHandle GetStackCrawlMarkHandle(ref StackCrawlMark stackMark)
         {
             return new StackCrawlMarkHandle(UnsafeCastToStackPointer(ref stackMark));
         }
 
 #if DEBUG
-        static internal int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
+        internal static int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
         {
             Debug.Assert(typeof(T).IsEnum
                               && (Enum.GetUnderlyingType(typeof(T)) == typeof(int)
@@ -107,14 +107,14 @@ namespace System.Runtime.CompilerServices
             return UnsafeEnumCastInternal<T>(val);
         }
 
-        static private int UnsafeEnumCastInternal<T>(T val) where T : struct		// Actually T must be 4 (or less) byte enum
+        private static int UnsafeEnumCastInternal<T>(T val) where T : struct		// Actually T must be 4 (or less) byte enum
         {
             // should be return (int) val; but C# does not allow, runtime does this magically
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
 
-        static internal long UnsafeEnumCastLong<T>(T val) where T : struct		// Actually T must be 8 byte enum
+        internal static long UnsafeEnumCastLong<T>(T val) where T : struct		// Actually T must be 8 byte enum
         {
             Debug.Assert(typeof(T).IsEnum
                               && (Enum.GetUnderlyingType(typeof(T)) == typeof(long)
@@ -123,7 +123,7 @@ namespace System.Runtime.CompilerServices
             return UnsafeEnumCastLongInternal<T>(val);
         }
 
-        static private long UnsafeEnumCastLongInternal<T>(T val) where T : struct	// Actually T must be 8 byte enum
+        private static long UnsafeEnumCastLongInternal<T>(T val) where T : struct	// Actually T must be 8 byte enum
         {
             // should be return (int) val; but C# does not allow, runtime does this magically
             // See getILIntrinsicImplementation for how this happens.  
@@ -132,14 +132,14 @@ namespace System.Runtime.CompilerServices
 
         // Internal method for getting a raw pointer for handles in JitHelpers.
         // The reference has to point into a local stack variable in order so it can not be moved by the GC.
-        static internal IntPtr UnsafeCastToStackPointer<T>(ref T val)
+        internal static IntPtr UnsafeCastToStackPointer<T>(ref T val)
         {
             IntPtr p = UnsafeCastToStackPointerInternal<T>(ref val);
             Debug.Assert(IsAddressInStack(p), "Pointer not in the stack!");
             return p;
         }
 
-        static private IntPtr UnsafeCastToStackPointerInternal<T>(ref T val)
+        private static IntPtr UnsafeCastToStackPointerInternal<T>(ref T val)
         {
             // The body of this function will be replaced by the EE with unsafe code that just returns val!!!
             // See getILIntrinsicImplementation for how this happens.  
@@ -147,21 +147,21 @@ namespace System.Runtime.CompilerServices
         }
 #else // DEBUG
 
-        static internal int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
+        internal static int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
         {
             // should be return (int) val; but C# does not allow, runtime does this magically
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
 
-        static internal long UnsafeEnumCastLong<T>(T val) where T : struct	// Actually T must be 8 byte enum
+        internal static long UnsafeEnumCastLong<T>(T val) where T : struct	// Actually T must be 8 byte enum
         {
             // should be return (long) val; but C# does not allow, runtime does this magically
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
 
-        static internal IntPtr UnsafeCastToStackPointer<T>(ref T val)
+        internal static IntPtr UnsafeCastToStackPointer<T>(ref T val)
         {
             // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
             // See getILIntrinsicImplementation for how this happens.  
@@ -171,20 +171,20 @@ namespace System.Runtime.CompilerServices
 
         // Set the given element in the array without any type or range checks
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        extern static internal void UnsafeSetArrayElement(Object[] target, int index, Object element);
+        internal static extern void UnsafeSetArrayElement(Object[] target, int index, Object element);
 
         // Used for unsafe pinning of arbitrary objects.
-        static internal PinningHelper GetPinningHelper(Object o)
+        internal static PinningHelper GetPinningHelper(Object o)
         {
             return Unsafe.As<PinningHelper>(o);
         }
 
 #if DEBUG
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern static bool IsAddressInStack(IntPtr ptr);
+        private static extern bool IsAddressInStack(IntPtr ptr);
 #endif
 
-        static internal ref byte GetRawSzArrayData(this Array array)
+        internal static ref byte GetRawSzArrayData(this Array array)
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementation for how this happens.

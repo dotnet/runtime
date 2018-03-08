@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices
         #endregion
 
 
-        #region static internal methods
+        #region internal static methods
 
         internal static ComEventsMethod Find(ComEventsMethod methods, int dispid)
         {

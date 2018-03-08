@@ -18,7 +18,7 @@ namespace System.Runtime
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
+        internal static unsafe void RhZeroMemory(ref byte b, nuint byteLength)
         {
             fixed (byte* bytePointer = &b)
             {
@@ -26,15 +26,15 @@ namespace System.Runtime
             }
         }
 
-        internal unsafe static void RhZeroMemory(IntPtr p, UIntPtr byteLength)
+        internal static unsafe void RhZeroMemory(IntPtr p, UIntPtr byteLength)
         {
             RhZeroMemory((void*)p, (nuint)byteLength);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        extern private unsafe static void RhZeroMemory(void* b, nuint byteLength);
+        private static extern unsafe void RhZeroMemory(void* b, nuint byteLength);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern unsafe static void RhBulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+        internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
     }
 }

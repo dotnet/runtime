@@ -677,11 +677,11 @@ namespace System.Reflection.Emit
 
         #region FCalls
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int DefineType(RuntimeModule module,
+        private static extern int DefineType(RuntimeModule module,
             String fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private extern static int DefineGenericParam(RuntimeModule module,
+        private static extern int DefineGenericParam(RuntimeModule module,
             String name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

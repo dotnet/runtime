@@ -33,12 +33,12 @@ namespace System.Globalization
         //
         // This points to a native data table which maps an encoding name to the correct code page.        
         //
-        unsafe internal static InternalEncodingDataItem* encodingDataPtr = GetEncodingData();
+        internal static unsafe InternalEncodingDataItem* encodingDataPtr = GetEncodingData();
         //
         // This points to a native data table which stores the properties for the code page, and
         // the table is indexed by code page.
         //
-        unsafe internal static InternalCodePageDataItem* codePageDataPtr = GetCodePageData();
+        internal static unsafe InternalCodePageDataItem* codePageDataPtr = GetCodePageData();
         //
         // This caches the mapping of an encoding name to a code page.
         //
@@ -50,7 +50,7 @@ namespace System.Globalization
 
         // Find the data item by binary searching the table that we have in native.
         // nativeCompareOrdinalWC is an internal-only function.
-        unsafe private static int internalGetCodePageFromName(String name)
+        private static unsafe int internalGetCodePageFromName(String name)
         {
             int left = 0;
             int right = lastEncodingItem;
@@ -161,7 +161,7 @@ namespace System.Globalization
             return codePage;
         }
 
-        unsafe internal static CodePageDataItem GetCodePageDataItem(int codepage)
+        internal static unsafe CodePageDataItem GetCodePageDataItem(int codepage)
         {
             CodePageDataItem dataItem;
 
@@ -202,7 +202,7 @@ namespace System.Globalization
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe static extern InternalEncodingDataItem* GetEncodingData();
+        private static extern unsafe InternalEncodingDataItem* GetEncodingData();
 
         //
         // Return the number of encoding data items.
@@ -211,7 +211,7 @@ namespace System.Globalization
         private static extern int GetNumEncodingItems();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private unsafe static extern InternalCodePageDataItem* GetCodePageData();
+        private static extern unsafe InternalCodePageDataItem* GetCodePageData();
     }
 
     /*=================================InternalEncodingDataItem==========================

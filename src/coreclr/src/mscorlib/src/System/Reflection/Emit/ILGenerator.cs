@@ -727,7 +727,7 @@ namespace System.Reflection.Emit
             m_ILStream[m_length++] = (byte)(arg >> 56);
         }
 
-        unsafe public virtual void Emit(OpCode opcode, float arg)
+        public unsafe virtual void Emit(OpCode opcode, float arg)
         {
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -738,7 +738,7 @@ namespace System.Reflection.Emit
             m_ILStream[m_length++] = (byte)(tempVal >> 24);
         }
 
-        unsafe public virtual void Emit(OpCode opcode, double arg)
+        public unsafe virtual void Emit(OpCode opcode, double arg)
         {
             EnsureCapacity(11);
             InternalEmit(opcode);

@@ -47,7 +47,7 @@ namespace System
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static bool IsFinite(double d)
+        public static unsafe bool IsFinite(double d)
         {
             var bits = BitConverter.DoubleToInt64Bits(d);
             return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
@@ -56,7 +56,7 @@ namespace System
         /// <summary>Determines whether the specified value is infinite.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static bool IsInfinity(double d)
+        public static unsafe bool IsInfinity(double d)
         {
             var bits = BitConverter.DoubleToInt64Bits(d);
             return (bits & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
@@ -65,7 +65,7 @@ namespace System
         /// <summary>Determines whether the specified value is NaN.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static bool IsNaN(double d)
+        public static unsafe bool IsNaN(double d)
         {
             var bits = BitConverter.DoubleToInt64Bits(d);
             return (bits & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000;
@@ -74,7 +74,7 @@ namespace System
         /// <summary>Determines whether the specified value is negative.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static bool IsNegative(double d)
+        public static unsafe bool IsNegative(double d)
         {
             var bits = unchecked((ulong)BitConverter.DoubleToInt64Bits(d));
             return (bits & 0x8000000000000000) == 0x8000000000000000;
@@ -91,7 +91,7 @@ namespace System
         /// <summary>Determines whether the specified value is normal.</summary>
         [NonVersionable]
         // This is probably not worth inlining, it has branches and should be rarely called
-        public unsafe static bool IsNormal(double d)
+        public static unsafe bool IsNormal(double d)
         {
             var bits = BitConverter.DoubleToInt64Bits(d);
             bits &= 0x7FFFFFFFFFFFFFFF;
@@ -109,7 +109,7 @@ namespace System
         /// <summary>Determines whether the specified value is subnormal.</summary>
         [NonVersionable]
         // This is probably not worth inlining, it has branches and should be rarely called
-        public unsafe static bool IsSubnormal(double d)
+        public static unsafe bool IsSubnormal(double d)
         {
             var bits = BitConverter.DoubleToInt64Bits(d);
             bits &= 0x7FFFFFFFFFFFFFFF;
