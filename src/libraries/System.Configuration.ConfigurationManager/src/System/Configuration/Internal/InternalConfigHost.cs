@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Security;
 
 namespace System.Configuration.Internal
 {
@@ -303,5 +304,11 @@ namespace System.Configuration.Internal
         public bool IsFullTrustSectionWithoutAptcaAllowed(IInternalConfigRecord configRecord) => true;
 
         public IDisposable Impersonate() => new DummyDisposable();
+
+        public void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady)
+        {
+            permissionSet = new PermissionSet(null);
+            isHostReady = true;
+        }
     }
 }
