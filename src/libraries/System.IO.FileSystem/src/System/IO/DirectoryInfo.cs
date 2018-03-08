@@ -56,14 +56,16 @@ namespace System.IO
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            if (path.Length == 0)
+            if (PathInternal.IsEffectivelyEmpty(path))
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             if (Path.IsPathRooted(path))
                 throw new ArgumentException(SR.Arg_Path2IsRooted, nameof(path));
 
             string fullPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
-            if (0 != string.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.StringComparison))
+            if (fullPath.Length < FullPath.Length 
+                || (fullPath.Length > FullPath.Length && !PathInternal.IsDirectorySeparator(fullPath[FullPath.Length]))
+                || string.Compare(FullPath, 0, fullPath, 0, FullPath.Length, PathInternal.StringComparison) != 0)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidSubPath, path, FullPath), nameof(path));
             }
