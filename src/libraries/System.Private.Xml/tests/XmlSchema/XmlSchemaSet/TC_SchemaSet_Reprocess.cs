@@ -635,15 +635,15 @@ namespace System.Xml.Tests
             string correctUri = Path.GetFullPath(path);
             _output.WriteLine("Include uri: " + includeUri);
             _output.WriteLine("Correct uri: " + correctUri);
-            Stream s = new FileStream(Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read, 1);
-            XmlReader r = XmlReader.Create(s, new XmlReaderSettings(), includeUri);
-            _output.WriteLine("Reader uri: " + r.BaseURI);
-            XmlSchema som = null;
-            using (r)
+            using (Stream s = new FileStream(Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read, 1))
             {
-                som = XmlSchema.Read(r, new ValidationEventHandler(ValidationCallback));
+                XmlReader r = XmlReader.Create(s, new XmlReaderSettings(), includeUri);
+                _output.WriteLine("Reader uri: " + r.BaseURI);
+                using (r)
+                {
+                    return XmlSchema.Read(r, new ValidationEventHandler(ValidationCallback));
+                }
             }
-            return som;
         }
     }
 }
