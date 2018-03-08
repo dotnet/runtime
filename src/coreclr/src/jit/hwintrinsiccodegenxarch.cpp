@@ -1084,6 +1084,18 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE2_StoreNonTemporal:
+        {
+            assert(baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG);
+            assert(op1 != nullptr);
+            assert(op2 != nullptr);
+
+            op2Reg          = op2->gtRegNum;
+            instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+            emit->emitIns_AR_R(ins, emitTypeSize(baseType), op2Reg, op1Reg, 0);
+            break;
+        }
+
         default:
             unreached();
             break;
