@@ -1639,7 +1639,7 @@ BOOL MethodDesc::IsSharedByGenericMethodInstantiations()
 //     - there is no this pointer providing generic dictionary info
 // * shared-code instance methods in instantiated generic structs (e.g. void MyValueType<string>::m())
 //     - unboxed 'this' pointer in value-type instance methods don't have MethodTable pointer by definition
-// * default interface method called via interface dispatch (e. g. IFoo<string>.Foo calling into IFoo<object>::Foo())
+// * shared instance and default interface methods called via interface dispatch (e. g. IFoo<string>.Foo calling into IFoo<object>::Foo())
 //     - this pointer is ambiguous as it can implement more than one IFoo<T>
 BOOL MethodDesc::RequiresInstMethodTableArg() 
 {
@@ -1648,7 +1648,8 @@ BOOL MethodDesc::RequiresInstMethodTableArg()
     return
         IsSharedByGenericInstantiations() &&
         !HasMethodInstantiation() &&
-        (IsStatic() || GetMethodTable()->IsValueType() || IsDefaultInterfaceMethod());
+        (IsStatic() || GetMethodTable()->IsValueType() || (GetMethodTable()->IsInterface() && !IsAbstract()));
+
 }
 
 //*******************************************************************************
@@ -1670,7 +1671,7 @@ BOOL MethodDesc::RequiresInstArg()
     LIMITED_METHOD_DAC_CONTRACT;
 
     BOOL fRet = IsSharedByGenericInstantiations() &&
-        (HasMethodInstantiation() || IsStatic() || GetMethodTable()->IsValueType() || IsDefaultInterfaceMethod());
+        (HasMethodInstantiation() || IsStatic() || GetMethodTable()->IsValueType() || (GetMethodTable()->IsInterface() && !IsAbstract()));
 
     _ASSERT(fRet == (RequiresInstMethodTableArg() || RequiresInstMethodDescArg()));
     return fRet;
@@ -1747,7 +1748,7 @@ BOOL MethodDesc::AcquiresInstMethodTableFromThis() {
         !HasMethodInstantiation() &&
         !IsStatic() &&
         !GetMethodTable()->IsValueType() &&
-        !IsDefaultInterfaceMethod();
+        !(GetMethodTable()->IsInterface() && !IsAbstract());
 }
 
 //*******************************************************************************
