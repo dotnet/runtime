@@ -12,6 +12,7 @@
 #include "config.h"
 
 #include "mono/metadata/handle.h"
+#include "mono/metadata/method-builder-ilgen-internals.h"
 #include "mono/metadata/remoting.h"
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/marshal-internals.h"

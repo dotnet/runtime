@@ -96,6 +96,9 @@
 /* Disable interpreter */
 /* #undef DISABLE_INTERPRETER */
 
+/* Some VES is available at runtime */
+#define ENABLE_ILGEN 1
+
 /* Enable DTrace probes */
 /* #undef ENABLE_DTRACE */
 

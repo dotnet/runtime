@@ -85,9 +85,13 @@ if DISABLE_ICALL_TABLES
 icall_table_libraries = libmono-icall-table.la
 endif
 
+if !ENABLE_ILGEN
+ilgen_libraries = libmono-ilgen.la
+endif
+
 noinst_LTLIBRARIES = libmonoruntime-config.la $(boehm_libraries) $(sgen_libraries)
 
-lib_LTLIBRARIES = $(icall_table_libraries)
+lib_LTLIBRARIES = $(icall_table_libraries) $(ilgen_libraries)
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) $(SHARED_CFLAGS)
 
@@ -122,6 +126,25 @@ libmono_icall_table_la_LIBADD = ../eglib/libeglib.la ../utils/libmonoutils.la ..
 endif
 endif
 
+#
+# This library contains code to generate IL at runtime
+#
+if !ENABLE_ILGEN
+libmono_ilgen_la_SOURCES = \
+	method-builder-ilgen.c \
+	method-builder-ilgen.h \
+	method-builder-ilgen-internals.h \
+	marshal-ilgen.c \
+	marshal-ilgen.h	\
+	sgen-mono-ilgen.c \
+	sgen-mono-ilgen.h
+libmono_ilgen_la_CFLAGS = $(SGEN_DEFINES)
+libmono_ilgen_la_LDFLAGS = $(libmonoldflags)
+if BITCODE
+libmono_ilgen_la_LIBADD = ../eglib/libeglib.la ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+endif
+endif
+
 CLEANFILES = mono-bundle.stamp
 
 null_sources = \
@@ -135,6 +158,17 @@ null_gc_sources = \
 if !DISABLE_ICALL_TABLES
 icall_tables_sources = \
 	icall-table.c
+endif
+
+if ENABLE_ILGEN
+ilgen_sources = \
+	method-builder-ilgen.c \
+	method-builder-ilgen.h \
+	method-builder-ilgen-internals.h \
+	marshal-ilgen.c \
+	marshal-ilgen.h	\
+	sgen-mono-ilgen.c \
+	sgen-mono-ilgen.h
 endif
 
 common_sources = \
@@ -204,6 +238,7 @@ common_sources = \
 	metadata-verify.c	\
 	metadata-internals.h	\
 	method-builder.h 	\
+	method-builder-internals.h 	\
 	method-builder.c 	\
 	mono-basic-block.c	\
 	mono-basic-block.h	\
@@ -327,13 +362,14 @@ sgen_sources = \
 	sgen-toggleref.h		\
 	sgen-stw.c				\
 	sgen-mono.c		\
+	sgen-mono.h		\
 	sgen-client-mono.h
 
-libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
+libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
 libmonoruntime_la_LIBADD = libmonoruntime-config.la
 
-libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(gc_dependent_sources) $(sgen_sources)
+libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(sgen_sources)
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)
 libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la
 

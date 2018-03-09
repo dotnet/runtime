@@ -51,11 +51,6 @@ struct _MonoType {
 #define MONO_PROCESSOR_ARCHITECTURE_AMD64 4
 #define MONO_PROCESSOR_ARCHITECTURE_ARM 5
 
-#if !defined(DISABLE_JIT) || !defined(DISABLE_INTERPRETER)
-/* Some VES is available at runtime */
-#define ENABLE_ILGEN
-#endif
-
 struct _MonoAssemblyName {
 	const char *name;
 	const char *culture;

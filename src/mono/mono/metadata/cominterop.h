@@ -11,6 +11,7 @@
 #define __MONO_COMINTEROP_H__
 
 #include <mono/metadata/method-builder.h>
+#include <mono/metadata/method-builder-ilgen.h>
 #include <mono/metadata/marshal.h>
 
 void

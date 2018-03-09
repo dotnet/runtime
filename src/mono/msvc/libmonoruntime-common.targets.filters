@@ -166,6 +166,12 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal-ilgen.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-ilgen.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
@@ -190,7 +196,19 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\method-builder.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.c">
@@ -565,6 +583,15 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sgen-mono.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common\sgen</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-mono.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\sgen</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sgen-mono-ilgen.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common\sgen</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-mono-ilgen.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\sgen</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-client-mono.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\sgen</Filter>
     </ClInclude>

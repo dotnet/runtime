@@ -18,6 +18,8 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/method-builder.h>
+#include <mono/metadata/method-builder-ilgen.h>
+#include <mono/metadata/method-builder-ilgen-internals.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/metadata-internals.h>

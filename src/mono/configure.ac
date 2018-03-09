@@ -1422,6 +1422,12 @@ fi
 
 AM_CONDITIONAL(DISABLE_INTERPRETER, test x$mono_feature_disable_interpreter = xyes)
 
+if test "x$mono_feature_disable_interpreter" != "xyes" -o "x$mono_feature_disable_jit" != "xyes"; then
+	AC_DEFINE(ENABLE_ILGEN, 1, [Some VES is available at runtime])
+fi
+
+AM_CONDITIONAL(ENABLE_ILGEN, test x$mono_feature_disable_interpreter != xyes -o x$mono_feature_disable_jit != xyes)
+
 if test "x$mono_feature_disable_simd" = "xyes"; then
 	AC_DEFINE(DISABLE_SIMD, 1, [Disable SIMD intrinsics related optimizations.])
 	AC_MSG_NOTICE([Disabled SIMD support])

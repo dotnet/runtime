@@ -14,6 +14,8 @@
 
 #include <mono/metadata/class.h>
 #include <mono/metadata/method-builder.h>
+#include <mono/metadata/method-builder-ilgen.h>
+#include <mono/metadata/method-builder-ilgen-internals.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/atomic.h>

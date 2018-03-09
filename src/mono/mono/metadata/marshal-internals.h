@@ -39,4 +39,10 @@ gpointer
 mono_string_to_utf8str (MonoString *s);
 #endif  /* HOST_WIN32 */
 
+typedef enum {
+	TYPECHECK_OBJECT_ARG_POS = 0,
+	TYPECHECK_CLASS_ARG_POS = 1,
+	TYPECHECK_CACHE_ARG_POS = 2
+} MarshalTypeCheckPositions;
+
 #endif /* __MONO_METADATA_MARSHAL_INTERNALS_H__ */

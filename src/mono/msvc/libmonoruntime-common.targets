@@ -59,6 +59,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\lock-tracer.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\marshal-ilgen.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-ilgen.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\marshal-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mempool.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mempool.h" />
@@ -67,7 +69,11 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\metadata-verify.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\metadata-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\method-builder.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen-internals.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-config.c" />
@@ -208,6 +214,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-toggleref.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sgen-stw.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sgen-mono.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-mono.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sgen-mono-ilgen.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-mono-ilgen.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sgen-client-mono.h" />
   </ItemGroup>
   <ItemGroup Label="libmonoruntimeinclude_headers">
