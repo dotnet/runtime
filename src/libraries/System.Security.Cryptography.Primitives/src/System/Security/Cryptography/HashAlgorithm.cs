@@ -96,13 +96,23 @@ namespace System.Security.Cryptography
                 throw new ObjectDisposedException(null);
 
             // Default the buffer size to 4K.
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
+
+            try
             {
-                HashCore(buffer, 0, bytesRead);
+                int bytesRead;
+                while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    HashCore(buffer, 0, bytesRead);
+                }
+
+                return CaptureHashCodeAndReinitialize();
             }
-            return CaptureHashCodeAndReinitialize();
+            finally
+            {
+                CryptographicOperations.ZeroMemory(buffer);
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         private byte[] CaptureHashCodeAndReinitialize()

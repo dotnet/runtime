@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -270,6 +271,8 @@ namespace System.Security.Cryptography
                     Buffer.BlockCopy(_outputBuffer, 0, buffer, offset, _outputBufferIndex);
                     bytesToDeliver -= _outputBufferIndex;
                     currentOutputIndex += _outputBufferIndex;
+                    int toClear = _outputBuffer.Length - _outputBufferIndex;
+                    CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
                     _outputBufferIndex = 0;
                 }
                 else
@@ -277,6 +280,10 @@ namespace System.Security.Cryptography
                     Buffer.BlockCopy(_outputBuffer, 0, buffer, offset, count);
                     Buffer.BlockCopy(_outputBuffer, count, _outputBuffer, 0, _outputBufferIndex - count);
                     _outputBufferIndex -= count;
+
+                    int toClear = _outputBuffer.Length - _outputBufferIndex;
+                    CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
+
                     return (count);
                 }
             }
@@ -294,47 +301,77 @@ namespace System.Security.Cryptography
             int numOutputBytes;
 
             // OK, see first if it's a multi-block transform and we can speed up things
-            if (bytesToDeliver > _outputBlockSize)
+            int blocksToProcess = bytesToDeliver / _outputBlockSize;
+
+            if (blocksToProcess > 1 && _transform.CanTransformMultipleBlocks)
             {
-                if (_transform.CanTransformMultipleBlocks)
+                int numWholeBlocksInBytes = blocksToProcess * _inputBlockSize;
+                byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocksInBytes);
+                byte[] tempOutputBuffer = null;
+
+                try
                 {
-                    int BlocksToProcess = bytesToDeliver / _outputBlockSize;
-                    int numWholeBlocksInBytes = BlocksToProcess * _inputBlockSize;
-                    byte[] tempInputBuffer = new byte[numWholeBlocksInBytes];
-                    // get first the block already read
-                    Buffer.BlockCopy(_inputBuffer, 0, tempInputBuffer, 0, _inputBufferIndex);
-                    amountRead = _inputBufferIndex;
-                    amountRead += useAsync ?
+                    amountRead = useAsync ?
                         await _stream.ReadAsync(new Memory<byte>(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex), cancellationToken) :
                         _stream.Read(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex);
 
-                    _inputBufferIndex = 0;
-                    if (amountRead <= _inputBlockSize)
+                    int totalInput = _inputBufferIndex + amountRead;
+
+                    // If there's still less than a block, copy the new data into the hold buffer and move to the slow read.
+                    if (totalInput < _inputBlockSize)
                     {
-                        _inputBuffer = tempInputBuffer;
-                        _inputBufferIndex = amountRead;
-                        goto slow;
+                        Buffer.BlockCopy(tempInputBuffer, _inputBufferIndex, _inputBuffer, _inputBufferIndex, amountRead);
+                        _inputBufferIndex = totalInput;
                     }
-                    // Make amountRead an integral multiple of _InputBlockSize
-                    int numWholeReadBlocksInBytes = (amountRead / _inputBlockSize) * _inputBlockSize;
-                    int numIgnoredBytes = amountRead - numWholeReadBlocksInBytes;
-                    if (numIgnoredBytes != 0)
+                    else
                     {
-                        _inputBufferIndex = numIgnoredBytes;
-                        Buffer.BlockCopy(tempInputBuffer, numWholeReadBlocksInBytes, _inputBuffer, 0, numIgnoredBytes);
+                        // Copy any held data into tempInputBuffer now that we know we're proceeding
+                        Buffer.BlockCopy(_inputBuffer, 0, tempInputBuffer, 0, _inputBufferIndex);
+                        CryptographicOperations.ZeroMemory(new Span<byte>(_inputBuffer, 0, _inputBufferIndex));
+                        amountRead += _inputBufferIndex;
+                        _inputBufferIndex = 0;
+                        
+                        // Make amountRead an integral multiple of _InputBlockSize
+                        int numWholeReadBlocks = amountRead / _inputBlockSize;
+                        int numWholeReadBlocksInBytes = numWholeReadBlocks * _inputBlockSize;
+                        int numIgnoredBytes = amountRead - numWholeReadBlocksInBytes;
+
+                        if (numIgnoredBytes != 0)
+                        {
+                            _inputBufferIndex = numIgnoredBytes;
+                            Buffer.BlockCopy(tempInputBuffer, numWholeReadBlocksInBytes, _inputBuffer, 0, numIgnoredBytes);
+                        }
+
+                        tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeReadBlocks * _outputBlockSize);
+                        numOutputBytes = _transform.TransformBlock(tempInputBuffer, 0, numWholeReadBlocksInBytes, tempOutputBuffer, 0);
+                        Buffer.BlockCopy(tempOutputBuffer, 0, buffer, currentOutputIndex, numOutputBytes);
+
+                        // Clear what was written while we know how much that was
+                        CryptographicOperations.ZeroMemory(new Span<byte>(tempOutputBuffer, 0, numOutputBytes));
+                        ArrayPool<byte>.Shared.Return(tempOutputBuffer);
+                        tempOutputBuffer = null;
+
+                        bytesToDeliver -= numOutputBytes;
+                        currentOutputIndex += numOutputBytes;
                     }
-                    byte[] tempOutputBuffer = new byte[(numWholeReadBlocksInBytes / _inputBlockSize) * _outputBlockSize];
-                    numOutputBytes = _transform.TransformBlock(tempInputBuffer, 0, numWholeReadBlocksInBytes, tempOutputBuffer, 0);
-                    Buffer.BlockCopy(tempOutputBuffer, 0, buffer, currentOutputIndex, numOutputBytes);
-                    // Now, tempInputBuffer and tempOutputBuffer are no more needed, so zeroize them to protect plain text
-                    Array.Clear(tempInputBuffer, 0, tempInputBuffer.Length);
-                    Array.Clear(tempOutputBuffer, 0, tempOutputBuffer.Length);
-                    bytesToDeliver -= numOutputBytes;
-                    currentOutputIndex += numOutputBytes;
+                }
+                finally
+                {
+                    // If we rented and then an exception happened we don't know how much was written to,
+                    // clear the whole thing and return it.
+                    if (tempOutputBuffer != null)
+                    {
+                        CryptographicOperations.ZeroMemory(tempOutputBuffer);
+                        ArrayPool<byte>.Shared.Return(tempOutputBuffer);
+                        tempOutputBuffer = null;
+                    }
+
+                    CryptographicOperations.ZeroMemory(new Span<byte>(tempInputBuffer, 0, numWholeBlocksInBytes));
+                    ArrayPool<byte>.Shared.Return(tempInputBuffer);
+                    tempInputBuffer = null;
                 }
             }
 
-        slow:
             // try to fill _InputBuffer so we have something to transform
             while (bytesToDeliver > 0)
             {
@@ -348,11 +385,14 @@ namespace System.Security.Cryptography
                     if (amountRead == 0) goto ProcessFinalBlock;
                     _inputBufferIndex += amountRead;
                 }
+
                 numOutputBytes = _transform.TransformBlock(_inputBuffer, 0, _inputBlockSize, _outputBuffer, 0);
                 _inputBufferIndex = 0;
+
                 if (bytesToDeliver >= numOutputBytes)
                 {
                     Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, numOutputBytes);
+                    CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, 0, numOutputBytes));
                     currentOutputIndex += numOutputBytes;
                     bytesToDeliver -= numOutputBytes;
                 }
@@ -361,6 +401,8 @@ namespace System.Security.Cryptography
                     Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, bytesToDeliver);
                     _outputBufferIndex = numOutputBytes - bytesToDeliver;
                     Buffer.BlockCopy(_outputBuffer, bytesToDeliver, _outputBuffer, 0, _outputBufferIndex);
+                    int toClear = _outputBuffer.Length - _outputBufferIndex;
+                    CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
                     return count;
                 }
             }
@@ -381,6 +423,8 @@ namespace System.Security.Cryptography
                 Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, bytesToDeliver);
                 _outputBufferIndex -= bytesToDeliver;
                 Buffer.BlockCopy(_outputBuffer, bytesToDeliver, _outputBuffer, 0, _outputBufferIndex);
+                int toClear = _outputBuffer.Length - _outputBufferIndex;
+                CryptographicOperations.ZeroMemory(new Span<byte>(_outputBuffer, _outputBufferIndex, toClear));
                 return (count);
             }
             else
@@ -388,6 +432,7 @@ namespace System.Security.Cryptography
                 Buffer.BlockCopy(_outputBuffer, 0, buffer, currentOutputIndex, _outputBufferIndex);
                 bytesToDeliver -= _outputBufferIndex;
                 _outputBufferIndex = 0;
+                CryptographicOperations.ZeroMemory(_outputBuffer);
                 return (count - bytesToDeliver);
             }
         }
@@ -500,21 +545,38 @@ namespace System.Security.Cryptography
                 if (bytesToWrite >= _inputBlockSize)
                 {
                     // We have at least an entire block's worth to transform
+                    int numWholeBlocks = bytesToWrite / _inputBlockSize;
+
                     // If the transform will handle multiple blocks at once, do that
-                    if (_transform.CanTransformMultipleBlocks)
+                    if (_transform.CanTransformMultipleBlocks && numWholeBlocks > 1)
                     {
-                        int numWholeBlocks = bytesToWrite / _inputBlockSize;
                         int numWholeBlocksInBytes = numWholeBlocks * _inputBlockSize;
-                        byte[] _tempOutputBuffer = new byte[numWholeBlocks * _outputBlockSize];
-                        numOutputBytes = _transform.TransformBlock(buffer, currentInputIndex, numWholeBlocksInBytes, _tempOutputBuffer, 0);
+                        byte[] tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocks * _outputBlockSize);
+                        numOutputBytes = 0;
 
-                        if (useAsync)
-                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_tempOutputBuffer, 0, numOutputBytes), cancellationToken);
-                        else
-                            _stream.Write(_tempOutputBuffer, 0, numOutputBytes);
+                        try
+                        {
+                            numOutputBytes =
+                                _transform.TransformBlock(buffer, currentInputIndex, numWholeBlocksInBytes, tempOutputBuffer, 0);
 
-                        currentInputIndex += numWholeBlocksInBytes;
-                        bytesToWrite -= numWholeBlocksInBytes;
+                            if (useAsync)
+                            {
+                                await _stream.WriteAsync(new ReadOnlyMemory<byte>(tempOutputBuffer, 0, numOutputBytes), cancellationToken);
+                            }
+                            else
+                            {
+                                _stream.Write(tempOutputBuffer, 0, numOutputBytes);
+                            }
+
+                            currentInputIndex += numWholeBlocksInBytes;
+                            bytesToWrite -= numWholeBlocksInBytes;
+                        }
+                        finally
+                        {
+                            CryptographicOperations.ZeroMemory(new Span<byte>(tempOutputBuffer, 0, numOutputBytes));
+                            ArrayPool<byte>.Shared.Return(tempOutputBuffer);
+                            tempOutputBuffer = null;
+                        }
                     }
                     else
                     {
