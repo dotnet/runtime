@@ -183,7 +183,6 @@ DECL_OFFSET(MonoContext, wasm_bp)
 DECL_OFFSET(MonoContext, wasm_sp)
 DECL_OFFSET(MonoContext, llvm_exc_reg)
 
-DECL_OFFSET(MonoLMF, method)
 DECL_OFFSET(MonoLMF, lmf_addr)
 
 #elif defined(TARGET_X86)

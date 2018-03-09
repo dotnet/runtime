@@ -1131,6 +1131,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	gboolean async = mono_thread_info_is_async_context ();
 	Unwinder unwinder;
 
+#ifndef TARGET_WASM
 	if (mono_llvm_only) {
 		GSList *l, *ips;
 
@@ -1161,6 +1162,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 		g_free (ips);
 		return;
 	}
+#endif
 
 	g_assert (start_ctx);
 	g_assert (domain);
