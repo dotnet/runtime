@@ -5990,6 +5990,21 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
                 }
 #endif // !LEGACY_BACKEND
             }
+
+            // Is the type being stored different from the type computed by the rhs?
+            if (rhs->TypeGet() != lhs->TypeGet())
+            {
+                // This menas that there is an implicit cast on the rhs value
+                //
+                // We will add a cast function to reflect the possible narrowing of the rhs value
+                //
+                var_types castToType   = lhs->TypeGet();
+                var_types castFromType = rhs->TypeGet();
+                bool      isUnsigned   = varTypeIsUnsigned(castFromType);
+
+                rhsVNPair = vnStore->VNPairForCast(rhsVNPair, castToType, castFromType, isUnsigned);
+            }
+
             if (tree->TypeGet() != TYP_VOID)
             {
                 // Assignment operators, as expressions, return the value of the RHS.
