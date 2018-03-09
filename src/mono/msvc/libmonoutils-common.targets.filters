@@ -160,6 +160,12 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-uri.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-utils-debug.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-utils-debug.h">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-poll.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>

@@ -71,6 +71,8 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\strenc.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-uri.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-utils-debug.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-utils-debug.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-poll.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-path.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-semaphore.h" />
