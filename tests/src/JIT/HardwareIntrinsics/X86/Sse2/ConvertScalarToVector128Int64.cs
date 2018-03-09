@@ -52,6 +52,11 @@ namespace IntelHardwareIntrinsicTest
                         {
 
                         }
+                        catch(Exception ex)
+                        {
+                            testResult = Fail;
+                            Console.WriteLine($"{nameof(Sse2)}.{nameof(Sse2.ConvertScalarToVector128Int64)}-{ex} failed: expected PlatformNotSupportedException exception.");                            
+                        }
                     }
                 }
             }
