@@ -5994,7 +5994,7 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
             // Is the type being stored different from the type computed by the rhs?
             if (rhs->TypeGet() != lhs->TypeGet())
             {
-                // This menas that there is an implicit cast on the rhs value
+                // This means that there is an implicit cast on the rhs value
                 //
                 // We will add a cast function to reflect the possible narrowing of the rhs value
                 //
