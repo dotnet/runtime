@@ -71,6 +71,7 @@ namespace System.Net.WebSockets
         public async Task ConnectAsyncCore(Uri uri, CancellationToken cancellationToken, ClientWebSocketOptions options)
         {
             HttpResponseMessage response = null;
+            SocketsHttpHandler handler = null;
             try
             {
                 // Create the request message, including a uri with ws{s} switched to http{s}.
@@ -89,7 +90,7 @@ namespace System.Net.WebSockets
                 AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key, options);
 
                 // Create the handler for this request and populate it with all of the options.
-                var handler = new SocketsHttpHandler();
+                handler = new SocketsHttpHandler();
                 handler.Credentials = options.Credentials;
                 handler.Proxy = options.Proxy;
                 handler.CookieContainer = options.Cookies;
@@ -188,6 +189,11 @@ namespace System.Net.WebSockets
                     throw;
                 }
                 throw new WebSocketException(SR.net_webstatus_ConnectFailure, exc);
+            }
+            finally
+            {
+                // Disposing the handler will not affect any active stream wrapped in the WebSocket.
+                handler?.Dispose();
             }
         }
 
