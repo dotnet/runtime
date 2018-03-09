@@ -1,4 +1,0 @@
-Compat issues with assembly System.Runtime.Serialization.Formatters:
-TypesMustExist : Type 'System.Runtime.Serialization.SerializationEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.Serialization.TypeLoadExceptionHolder' does not exist in the implementation but it does exist in the contract.
-Total Issues: 2

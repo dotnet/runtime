@@ -1,5 +1,0 @@
-Compat issues with assembly System.Text.Encoding.CodePages:
-CannotRemoveBaseTypeOrInterface : Type 'System.Text.CodePagesEncodingProvider' does not inherit from base type 'System.Text.EncodingProvider' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Text.CodePagesEncodingProvider.GetEncoding(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.CodePagesEncodingProvider.GetEncoding(System.String)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3

@@ -1,3 +1,0 @@
-Compat issues with assembly System.Net.Requests:
-MembersMustExist : Member 'System.Net.HttpWebRequest..ctor()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1
