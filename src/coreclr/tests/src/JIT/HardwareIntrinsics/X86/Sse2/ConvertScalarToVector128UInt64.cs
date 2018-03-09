@@ -26,10 +26,10 @@ namespace IntelHardwareIntrinsicTest
                 {
                     if (Environment.Is64BitProcess)
                     {
-                        var vd = Sse2.ConvertScalarToVector128UInt64((ulong)5);
+                        var vd = Sse2.ConvertScalarToVector128UInt64(0xffffffff01ul);
                         Unsafe.Write(ulongTable.outArrayPtr, vd);
 
-                        if (!ulongTable.CheckResult((x, y) => (y[0] == 5) && (y[1] == 0)))
+                        if (!ulongTable.CheckResult((x, y) => (y[0] == 0xffffffff01ul) && (y[1] == 0)))
                         {
                             Console.WriteLine("SSE ConvertScalarToVector128Single failed on ulong:");
                             foreach (var item in ulongTable.outArray)
@@ -51,6 +51,11 @@ namespace IntelHardwareIntrinsicTest
                         catch (PlatformNotSupportedException)
                         {
 
+                        }
+                        catch(Exception ex)
+                        {
+                            testResult = Fail;
+                            Console.WriteLine($"{nameof(Sse2)}.{nameof(Sse2.ConvertScalarToVector128UInt64)}-{ex} failed: expected PlatformNotSupportedException exception.");                            
                         }
                     }
                 }
