@@ -119,13 +119,15 @@ namespace System.IO
             Debug.Assert(skip >= 0);
             bool flippedSeparator = false;
 
+            Span<char> initialBuffer = stackalloc char[260 /* PathInternal.MaxShortPath */];
+            ValueStringBuilder sb = new ValueStringBuilder(initialBuffer);
+
             // Remove "//", "/./", and "/../" from the path by copying each character to the output, 
             // except the ones we're removing, such that the builder contains the normalized path 
             // at the end.
-            StringBuilder sb = StringBuilderCache.Acquire(path.Length);
             if (skip > 0)
             {
-                sb.Append(path, 0, skip);
+                sb.Append(path.AsSpan().Slice(0, skip));
             }
 
             for (int i = skip; i < path.Length; i++)
@@ -186,16 +188,14 @@ namespace System.IO
                 sb.Append(c);
             }
 
-            if (flippedSeparator || sb.Length != path.Length)
+            // If we haven't changed the source path, return the original
+            if (!flippedSeparator && sb.Length == path.Length)
             {
-                return StringBuilderCache.GetStringAndRelease(sb);
-            }
-            else
-            {
-                // We haven't changed the source path, return the original
-                StringBuilderCache.Release(sb);
+                sb.Dispose();
                 return path;
             }
+
+            return sb.ToString();
         }
     }
 }
