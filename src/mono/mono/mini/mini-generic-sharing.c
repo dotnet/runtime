@@ -1439,6 +1439,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	static GHashTable *cache;
 	const char *name;
 	gboolean generic = FALSE;
+	gboolean return_native_struct;
 
 	sig = mini_get_underlying_signature (sig);
 
@@ -1455,6 +1456,14 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	if (sig->param_count > 8)
 		/* Call the generic interpreter entry point, the specialized ones only handle a limited number of arguments */
 		generic = TRUE;
+
+	/*
+	 * If we need to return a native struct, we can't allocate a local and store it
+	 * there since that assumes a managed representation. Instead we allocate on the
+	 * stack, pass this address to the interp_entry and when we return it we use
+	 * CEE_MONO_LDNATIVEOBJ
+	 */
+	return_native_struct = sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke;
 
 	/* Create the signature for the wrapper */
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));
@@ -1513,8 +1522,15 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		mb->method->save_lmf = 1;
 
 #ifndef DISABLE_JIT
-	if (sig->ret->type != MONO_TYPE_VOID)
+	if (return_native_struct) {
+		retval_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		mono_mb_emit_icon (mb, mono_class_native_size (sig->ret->data.klass, NULL));
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_LOCALLOC);
+		mono_mb_emit_stloc (mb, retval_var);
+	} else if (sig->ret->type != MONO_TYPE_VOID) {
 		retval_var = mono_mb_add_local (mb, sig->ret);
+	}
 
 	/* Make the call */
 	if (generic) {
@@ -1541,7 +1557,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 			mono_mb_emit_ldarg (mb, 0);
 		else
 			mono_mb_emit_byte (mb, CEE_LDNULL);
-		if (sig->ret->type != MONO_TYPE_VOID)
+		if (return_native_struct)
+			mono_mb_emit_ldloc (mb, retval_var);
+		else if (sig->ret->type != MONO_TYPE_VOID)
 			mono_mb_emit_ldloc_addr (mb, retval_var);
 		else
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -1549,7 +1567,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	} else {
 		if (sig->hasthis)
 			mono_mb_emit_ldarg (mb, 0);
-		if (sig->ret->type != MONO_TYPE_VOID)
+		if (return_native_struct)
+			mono_mb_emit_ldloc (mb, retval_var);
+		else if (sig->ret->type != MONO_TYPE_VOID)
 			mono_mb_emit_ldloc_addr (mb, retval_var);
 		for (i = 0; i < sig->param_count; i++) {
 			if (sig->params [i]->byref)
@@ -1569,8 +1589,14 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	mono_mb_emit_byte (mb, CEE_MONO_GET_RGCTX_ARG);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	mono_mb_emit_calli (mb, entry_sig);
-	if (sig->ret->type != MONO_TYPE_VOID)
+
+	if (return_native_struct) {
 		mono_mb_emit_ldloc (mb, retval_var);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_LDNATIVEOBJ, sig->ret->data.klass);
+	} else if (sig->ret->type != MONO_TYPE_VOID) {
+		mono_mb_emit_ldloc (mb, retval_var);
+	}
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
