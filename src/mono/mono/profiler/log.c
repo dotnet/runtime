@@ -4196,6 +4196,7 @@ mono_profiler_init_log (const char *desc)
 		mono_profiler_set_gc_finalizing_callback (handle, finalize_begin);
 		mono_profiler_set_gc_finalized_callback (handle, finalize_end);
 		mono_profiler_set_gc_finalizing_object_callback (handle, finalize_object_begin);
+		mono_profiler_set_gc_finalized_object_callback (handle, finalize_object_end);
 	}
 
 	//On Demand heapshot uses the finalizer thread to force a collection and thus a heapshot
