@@ -100,6 +100,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-merp.h>
 
 #include "decimal-ms.h"
 #include "number-ms.h"
@@ -5705,6 +5706,28 @@ ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, gboolea
 	mono_assembly_name_free (aname);
 	if (free_struct)
 		g_free (aname);
+}
+
+ICALL_EXPORT void
+ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
+{
+#ifdef HOST_DARWIN
+	mono_merp_disable ();
+#else
+	// Icall has platform check in managed too.
+	g_assert_not_reached ();
+#endif
+}
+
+ICALL_EXPORT void
+ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (char *appBundleID, char *appSignature, char *appVersion, char *merpGUIPath)
+{
+#ifdef HOST_DARWIN
+	mono_merp_enable (appBundleID, appSignature, appVersion, merpGUIPath);
+#else
+	// Icall has platform check in managed too.
+	g_assert_not_reached ();
+#endif
 }
 
 ICALL_EXPORT MonoBoolean
