@@ -51,8 +51,10 @@ namespace System
         /// <param name="value">The value to compare with the source span.</param>
         /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
         /// </summary>
-        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType) 
-            => string.Compare(span.ToString(), value.ToString(), comparisonType);
+        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+            => comparisonType == StringComparison.Ordinal
+                ? span.SequenceCompareTo(value)
+                : string.Compare(span.ToString(), value.ToString(), comparisonType);
         
         /// <summary>
         /// Reports the zero-based index of the first occurrence of the specified <paramref name="value"/> in the current <paramref name="span"/>.
