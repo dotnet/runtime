@@ -5,8 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.IO;
-using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -285,10 +284,14 @@ namespace System.Net.Sockets
 
         }
 
-        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle()
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle() =>
+            _handle.GetThreadPoolBoundHandle() ??
+            GetOrAllocateThreadPoolBoundHandleSlow();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandleSlow()
         {
-            // There is a known bug that exists through Windows 7 with UDP and
-            // SetFileCompletionNotificationModes.
+            // There is a known bug that exists through Windows 7 with UDP and SetFileCompletionNotificationModes.
             // So, don't try to enable skipping the completion port on success in this case.
             bool trySkipCompletionPortOnSuccess = !(CompletionPortHelper.PlatformHasUdpIssue && _protocolType == ProtocolType.Udp);
             return _handle.GetOrAllocateThreadPoolBoundHandle(trySkipCompletionPortOnSuccess);
