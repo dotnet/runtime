@@ -304,7 +304,7 @@
       "allowOverride": true
     },
     "ProductBuildId": {
-      "value": null,
+      "value": "",
       "allowOverride": true
     },
     "PB_Label": {
