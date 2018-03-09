@@ -467,7 +467,22 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
         /// </summary>
-        public static Vector128<float> SetVector128(float e3, float e2, float e1, float e0) => SetVector128(e3, e2, e1, e0);
+        public static unsafe Vector128<float> SetVector128(float e3, float e2, float e1, float e0)
+        {
+            // TODO-CQ Optimize algorithm choice based on benchmarks
+
+            // Zero vector and load e2 et index 0
+            Vector128<float> e2Vector = SetScalarVector128(e2);
+            Vector128<float> e1Vector = SetScalarVector128(e1);
+            Vector128<float> e0Vector = SetScalarVector128(e0);
+            // Create { -- -- e2 e0 }
+            e0Vector = UnpackLow(e0Vector, e2Vector);
+            e2Vector = SetScalarVector128(e3);
+            // Create { -- -- e3 e1 }
+            e1Vector = UnpackLow(e1Vector, e2Vector);
+            // Create { e3 e2 e1 e0 } and return result
+            return UnpackLow(e0Vector, e1Vector);
+        }
 
         /// <summary>
         /// __m128 _mm_set_ss (float a)
