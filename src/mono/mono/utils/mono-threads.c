@@ -1133,17 +1133,13 @@ mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
 	if (tid == mono_native_thread_id_get ())
 		return;
 
+	mono_thread_info_suspend_lock ();
 	hp = mono_hazard_pointer_get ();
 	info = mono_thread_info_lookup (tid);
-	if (!info)
-		return;
-
-	if (mono_thread_info_run_state (info) == STATE_DETACHED) {
-		mono_hazard_pointer_clear (hp, 1);
+	if (!info) {
+		mono_thread_info_suspend_unlock ();
 		return;
 	}
-
-	mono_thread_info_suspend_lock ();
 	mono_threads_begin_global_suspend ();
 
 	mono_threads_suspend_abort_syscall (info);
