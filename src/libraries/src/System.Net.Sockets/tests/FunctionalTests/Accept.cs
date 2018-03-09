@@ -276,6 +276,30 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
             }
         }
+
+        [Fact]
+        public async Task AcceptAsync_MultipleAcceptsThenDispose_AcceptsThrowAfterDispose()
+        {
+            if (UsesSync)
+            {
+                return;
+            }
+
+            for (int i = 0; i < 100; i++)
+            {
+                using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    listener.Listen(2);
+
+                    Task accept1 = AcceptAsync(listener);
+                    Task accept2 = AcceptAsync(listener);
+                    listener.Dispose();
+                    await Assert.ThrowsAnyAsync<Exception>(() => accept1);
+                    await Assert.ThrowsAnyAsync<Exception>(() => accept2);
+                }
+            }
+        }
     }
 
     public sealed class AcceptSync : Accept<SocketHelperArraySync> { }
