@@ -510,4 +510,10 @@ class Tests
 		}
 		return 0;
 	}
+
+	public static int test_0_regress_gh_7364 () {
+		var map1 = new Dictionary <Type, IntPtr> (EqualityComparer<Type>.Default);
+		var map2 = new Dictionary <IntPtr, WeakReference> (EqualityComparer<IntPtr>.Default);
+		return 0;
+	}
 }
