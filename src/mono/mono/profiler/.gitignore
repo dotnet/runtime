@@ -1,15 +1,7 @@
-/Makefile.in
 /Makefile
-/.deps
-/.libs
-/.cvsignore
-/*.o
-/*.lo
-/*.la
 /*.a
+/*.la
+/*.lo
 /*.so
-/*.exe
 /*.mdb
-/*.mlpd
-/TAGS
 /mprof-report
