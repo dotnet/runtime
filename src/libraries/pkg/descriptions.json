@@ -1014,7 +1014,11 @@
     "Name": "System.Memory",
     "Description": "Provides types for efficient low-allocation access to memory.",
     "CommonTypes": [
-      "System.Span"
+        "System.Span",
+        "System.ReadOnlySpan",
+        "System.Memory",
+        "System.ReadOnlyMemory",
+        "System.MemoryExtensions"
     ]
   },
   {
@@ -1439,7 +1443,7 @@
       "System.Runtime.Caching.FileChangeMonitor",
       "System.Runtime.Caching.HostFileChangeMonitor",
       "System.Runtime.Caching.MemoryCache",
-      "System.Runtime.Caching.ObjectCache",
+      "System.Runtime.Caching.ObjectCache"
     ]
   },
   {
