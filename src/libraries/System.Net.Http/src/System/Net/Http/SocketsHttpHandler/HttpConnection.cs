@@ -123,7 +123,7 @@ namespace System.Net.Http
                         ValueTask<int> t = _readAheadTask.GetValueOrDefault();
                         if (t.IsCompleted && !t.IsCompletedSuccessfully)
                         {
-                            Exception ignored = t.AsTask().Exception; // accessing Exception prop is suffificient to suppress unobserved exception events
+                            Exception ignored = t.AsTask().Exception; // accessing Exception prop is sufficient to suppress unobserved exception events
                         }
                         else
                         {
