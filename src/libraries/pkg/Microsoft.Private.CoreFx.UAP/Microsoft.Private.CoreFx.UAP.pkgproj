@@ -12,8 +12,7 @@
     <LibBinDir>$(UAPPackageRuntimePath)</LibBinDir>
     <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(UAPAOTPackageRuntimePath)</LibBinDir>
 
-    <!-- <IsFrameworkPackage>true</IsFrameworkPackage> -->
-    <SkipValidatePackage>true</SkipValidatePackage>
+    <IsFrameworkPackage>true</IsFrameworkPackage>
 
     <!-- Private packages need symbols -->
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
@@ -66,6 +65,12 @@
       <Value>
         System.Private.Reflection.Metadata.Ecma335;
       </Value>
+    </ValidatePackageSuppression>
+    <!-- Permit missing Inbox since this used to be a shim and it is now OOB -->
+    <ValidatePackageSuppression Include="PermitMissingInbox">
+        <Value>
+            System.ComponentModel.Composition;
+        </Value>
     </ValidatePackageSuppression>
   </ItemGroup>
 

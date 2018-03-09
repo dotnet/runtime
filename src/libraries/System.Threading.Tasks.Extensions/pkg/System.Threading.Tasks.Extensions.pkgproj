@@ -12,6 +12,7 @@
     <ProjectReference Include="..\src\System.Threading.Tasks.Extensions.csproj" />
 
     <InboxOnTargetFramework Include="netcoreapp2.1" />
+    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
 
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
