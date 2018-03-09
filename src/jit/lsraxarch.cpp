@@ -2314,6 +2314,19 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         }
     }
 
+    // Check for "srcCount >= 2" to match against 3+ operand nodes where one is constant
+    if ((op2 == nullptr) && (info->srcCount >= 2) && intrinsicTree->isRMWHWIntrinsic(compiler))
+    {
+        // TODO-XArch-CQ: This is currently done in order to handle intrinsics which have more than
+        // two arguments but which still have RMW semantics (such as NI_SSE41_Insert). We should make
+        // this handling more general and move it back out to LinearScan::BuildNode.
+
+        assert(numArgs > 2);
+        LocationInfoListNode* op2Info = useList.Begin()->Next();
+        op2Info->info.isDelayFree     = true;
+        info->hasDelayFreeSrc         = true;
+    }
+
     switch (intrinsicID)
     {
         case NI_SSE_CompareEqualOrderedScalar:
