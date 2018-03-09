@@ -121,6 +121,10 @@
     <Compile Include="Reflection\UsedViaReflectionIntegrationTest.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy.cs" />
+    <Compile Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.cs" />
+    <Compile Include="Resources\EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink.cs" />
+    <Compile Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.cs" />
     <Compile Include="Resources\EmbeddedLinkXmlFileIsProcessed.cs" />
@@ -277,6 +281,8 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml" />
+    <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedIfNameDoesNotMatchAnAssembly.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsNotProcessedWhenBlacklistStepIsDisabled.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileIsProcessed.xml" />
