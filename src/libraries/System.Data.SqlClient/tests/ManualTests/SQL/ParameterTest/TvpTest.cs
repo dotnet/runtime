@@ -41,6 +41,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         // data value and server consts
         private string _connStr;
 
+        [ActiveIssue(27858, TestPlatforms.AnyUnix)]
         [CheckConnStrSetupFact]
         public void TestMain()
         {
