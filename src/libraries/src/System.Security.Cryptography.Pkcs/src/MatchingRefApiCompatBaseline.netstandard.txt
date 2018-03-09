@@ -1,4 +1,5 @@
 Compat issues with assembly System.Security.Cryptography.Pkcs:
+#These members don't belong in netstandard reference because of type unification with netfx (the members are new in net472).
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.GetSignature()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.SignerInfo.SignatureAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
 Total Issues: 2
