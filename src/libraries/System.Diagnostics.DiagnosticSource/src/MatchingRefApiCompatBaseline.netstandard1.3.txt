@@ -1,5 +1,0 @@
-Compat issues with assembly System.Diagnostics.DiagnosticSource:
-TypesMustExist : Type 'System.Diagnostics.Activity' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.DiagnosticSource.StartActivity(System.Diagnostics.Activity, System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Diagnostics.DiagnosticSource.StopActivity(System.Diagnostics.Activity, System.Object)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3
