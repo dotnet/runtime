@@ -452,8 +452,18 @@ namespace System.Net.Http
                 cts = _pendingRequestsCts;
             }
 
-            // Initiate the send
-            Task<HttpResponseMessage> sendTask = base.SendAsync(request, cts.Token);
+            // Initiate the send.
+            Task<HttpResponseMessage> sendTask;
+            try
+            {
+                sendTask = base.SendAsync(request, cts.Token);
+            }
+            catch
+            {
+                HandleFinishSendAsyncCleanup(cts, disposeCts);
+                throw;
+            }
+
             return completionOption == HttpCompletionOption.ResponseContentRead ?
                 FinishSendAsyncBuffered(sendTask, request, cts, disposeCts) :
                 FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts);
