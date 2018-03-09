@@ -68,7 +68,7 @@ else()
         ${STATIC_MT_CPP_LIB}
     )
 
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi.pdb DESTINATION PDB)
+    _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi.pdb DESTINATION PDB)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
-install (TARGETS superpmi DESTINATION .)
+_install (TARGETS superpmi DESTINATION .)
