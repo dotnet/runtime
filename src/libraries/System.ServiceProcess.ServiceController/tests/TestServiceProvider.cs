@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System;
 using System.Diagnostics;
-using System.Security.Principal;
-using Xunit;
-using System.IO;
-using System.Threading;
 using System.IO.Pipes;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 namespace System.ServiceProcess.Tests
@@ -84,7 +79,7 @@ namespace System.ServiceProcess.Tests
             Task readTask;
             byte[] received = new byte[] { 0 };
             readTask = Client.ReadAsync(received, 0, 1);
-            await readTask.TimeoutAfter(readTimeout);
+            await readTask.TimeoutAfter(readTimeout).ConfigureAwait(false);
             return received[0];
         }
 
