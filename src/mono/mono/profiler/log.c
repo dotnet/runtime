@@ -77,6 +77,8 @@ static gint32 sync_points_ctr,
               heap_starts_ctr,
               heap_ends_ctr,
               heap_roots_ctr,
+              heap_root_registers_ctr,
+              heap_root_unregisters_ctr,
               gc_events_ctr,
               gc_resizes_ctr,
               gc_allocs_ctr,
@@ -1277,7 +1279,7 @@ gc_root_register (MonoProfiler *prof, const mono_byte *start, size_t size, MonoG
 
 	int name_len = name ? strlen (name) + 1 : 0;
 
-	ENTER_LOG (&heap_roots_ctr, logbuffer,
+	ENTER_LOG (&heap_root_registers_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* start */ +
 		LEB128_SIZE /* size */ +
@@ -1299,7 +1301,7 @@ gc_root_register (MonoProfiler *prof, const mono_byte *start, size_t size, MonoG
 static void
 gc_root_deregister (MonoProfiler *prof, const mono_byte *start)
 {
-	ENTER_LOG (&heap_roots_ctr, logbuffer,
+	ENTER_LOG (&heap_root_unregisters_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* start */
 	);
@@ -3909,6 +3911,8 @@ runtime_initialized (MonoProfiler *profiler)
 	register_counter ("Event: Heap starts", &heap_starts_ctr);
 	register_counter ("Event: Heap ends", &heap_ends_ctr);
 	register_counter ("Event: Heap roots", &heap_roots_ctr);
+	register_counter ("Event: Heap root registers", &heap_root_registers_ctr);
+	register_counter ("Event: Heap root unregisters", &heap_root_unregisters_ctr);
 	register_counter ("Event: GC events", &gc_events_ctr);
 	register_counter ("Event: GC resizes", &gc_resizes_ctr);
 	register_counter ("Event: GC allocations", &gc_allocs_ctr);
