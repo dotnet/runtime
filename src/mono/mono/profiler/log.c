@@ -3080,7 +3080,7 @@ new_filename (const char* filename)
 }
 
 static MonoProfilerThread *
-profiler_thread_begin (const char *name)
+profiler_thread_begin (const char *name, gboolean send)
 {
 	MonoProfilerThread *thread = init_thread (FALSE);
 
@@ -3103,6 +3103,12 @@ profiler_thread_begin (const char *name)
 	mono_error_assert_ok (error);
 
 	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+
+	if (!send) {
+		dump_buffer (thread->buffer);
+		init_buffer_state (thread);
+	} else
+		send_log_unsafe (FALSE);
 
 	mono_os_sem_post (&log_profiler.attach_threads_sem);
 
@@ -3158,7 +3164,7 @@ add_to_fd_set (fd_set *set, int fd, int *max_fd)
 static void *
 helper_thread (void *arg)
 {
-	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Helper");
+	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Helper", TRUE);
 
 	GArray *command_sockets = g_array_new (FALSE, FALSE, sizeof (int));
 
@@ -3410,7 +3416,7 @@ writer_thread (void *arg)
 {
 	dump_header ();
 
-	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Writer");
+	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Writer", FALSE);
 
 	while (mono_atomic_load_i32 (&log_profiler.run_writer_thread)) {
 		mono_os_sem_wait (&log_profiler.writer_queue_sem, MONO_SEM_FLAGS_NONE);
@@ -3523,7 +3529,7 @@ handle_dumper_queue_entry (void)
 static void *
 dumper_thread (void *arg)
 {
-	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Dumper");
+	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Dumper", TRUE);
 
 	while (mono_atomic_load_i32 (&log_profiler.run_dumper_thread)) {
 		/*
