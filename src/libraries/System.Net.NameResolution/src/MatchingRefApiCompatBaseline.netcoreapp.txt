@@ -1,3 +1,0 @@
-Compat issues with assembly System.Net.NameResolution:
-TypesMustExist : Type 'System.Net.Internals.ProtocolType' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1

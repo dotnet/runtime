@@ -1,3 +1,0 @@
-Compat issues with assembly System.Text.RegularExpressions:
-MembersMustExist : Member 'System.Text.RegularExpressions.RegexOptions System.Text.RegularExpressions.RegexOptions.Debug' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1
