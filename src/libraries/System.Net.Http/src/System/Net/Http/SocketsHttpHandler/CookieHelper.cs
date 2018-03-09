@@ -22,7 +22,18 @@ namespace System.Net.Http
                 Uri requestUri = response.RequestMessage.RequestUri;
                 for (int i = 0; i < valuesArray.Length; i++)
                 {
-                    cookieContainer.SetCookies(requestUri, valuesArray[i]);
+                    try
+                    {
+                        cookieContainer.SetCookies(requestUri, valuesArray[i]);
+                    }
+                    catch (CookieException)
+                    {
+                        // Ignore invalid Set-Cookie header and continue processing.
+                        if (NetEventSource.IsEnabled)
+                        {
+                            NetEventSource.Info(response, $"Invalid Set-Cookie '{valuesArray[i]}' ignored.");
+                        }
+                    }
                 }
             }
         }
