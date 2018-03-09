@@ -23,8 +23,7 @@
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
     <_RunApiCompat>true</_RunApiCompat>
     <!-- Disable running apicompat for uap scenarios because the RuntimePath is not correctly setup in BuildAllConfigurations mode -->
-    <!-- <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and $(TargetGroup.StartsWith('uap'))">false</_RunApiCompat> -->
-    <_RunApiCompat Condition="$(TargetGroup.StartsWith('uap'))">false</_RunApiCompat>
+    <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and $(TargetGroup.StartsWith('uap'))">false</_RunApiCompat>
   </PropertyGroup>
 
   <ItemGroup>
