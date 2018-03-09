@@ -470,6 +470,68 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        public void SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
+        {
+            RemoteInvoke(useSocketsHttpHandlerString =>
+            {
+                bool exceptionLogged = false;
+                bool activityStopLogged = false;
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
+                    {
+                        Assert.NotNull(kvp.Value);
+                        GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
+                        var requestStatus = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
+                        Assert.Equal(TaskStatus.Faulted, requestStatus);
+
+                        activityStopLogged = true;
+                    }
+                    else if (kvp.Key.Equals("System.Net.Http.Exception"))
+                    {
+                        Assert.NotNull(kvp.Value);
+                        GetPropertyValueFromAnonymousTypeInstance<Exception>(kvp.Value, "Exception");
+
+                        exceptionLogged = true;
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable();
+                    using (HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString))
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        if (bool.Parse(useSocketsHttpHandlerString))
+                        {
+                            // Forces a synchronous exception for SocketsHttpHandler
+                            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, $"http://{Guid.NewGuid()}.com");
+                            request.Version = new Version(0, 0);
+
+                            Assert.ThrowsAsync<NotSupportedException>(() => client.SendAsync(request)).Wait();
+                        }
+                        else
+                        {
+                            // Forces a synchronous exception for WinHttpHandler
+                            handler.UseCookies = true;
+                            handler.CookieContainer = null;
+
+                            Assert.ThrowsAsync<InvalidOperationException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
+                        }
+                    }
+                    // Poll with a timeout since logging response is not synchronized with returning a response.
+                    WaitForTrue(() => activityStopLogged, TimeSpan.FromSeconds(1),
+                        "Response with exception was not logged within 1 second timeout.");
+                    Assert.True(exceptionLogged, "Exception was not logged");
+                    diagnosticListenerObserver.Disable();
+                }
+
+                return SuccessExitCode;
+            }, UseSocketsHttpHandler.ToString()).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
         public void SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
             RemoteInvoke(useSocketsHttpHandlerString =>
