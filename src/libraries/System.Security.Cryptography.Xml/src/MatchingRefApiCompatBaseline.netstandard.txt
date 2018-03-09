@@ -1,3 +1,2 @@
-Compat issues with assembly System.Security.Cryptography.Xml:
-#Type must be public in implementation for serialization to work but we don't want to expose it publicly in the contract as it isn't public on .NET Framework
+# Type must be public in implementation for serialization to work but we don't want to expose it publicly in the contract as it isn't public on .NET Framework
 TypesMustExist : Type 'System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException' does not exist in the implementation but it does exist in the contract.
