@@ -59,6 +59,8 @@ namespace System.Text
         }
 
         public ReadOnlySpan<char> AsSpan() => _chars.Slice(0, _pos);
+        public ReadOnlySpan<char> AsSpan(int start) => _chars.Slice(start, _pos - start);
+        public ReadOnlySpan<char> AsSpan(int start, int length) => _chars.Slice(start, length);
 
         public bool TryCopyTo(Span<char> destination, out int charsWritten)
         {
