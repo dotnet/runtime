@@ -95,7 +95,7 @@
     <!-- Rewrite ResolvedAssembliesToPublish, which is an input to
          ComputeFilesToPublish. -->
     <ItemGroup>
-      <ResolvedAssembliesToPublish Remove="@(_ManagedResolvedAssembliesToPublish)" />
+      <ResolvedAssembliesToPublish Remove="@(_ManagedAssembliesToLink)" />
       <ResolvedAssembliesToPublish Remove="@(_NativeResolvedDepsToPublish)" />
       <ResolvedAssembliesToPublish Include="@(_NativeKeptDepsToPublish)" />
       <ResolvedAssembliesToPublish Include="@(_LinkedResolvedAssemblies)" />
@@ -172,6 +172,7 @@
           DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;ILLink">
     <ItemGroup>
       <__LinkedResolvedAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
+      <__LinkedResolvedAssemblies Remove="@(_DuplicateManagedAssembliesToSkip->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
       <_LinkedResolvedAssemblies Include="@(__LinkedResolvedAssemblies)" Condition="Exists('%(Identity)')" />
     </ItemGroup>
 
@@ -299,7 +300,7 @@
       <_NativeDepsToAlwaysKeep Include="hostpolicy.dll;libhostpolicy.dylib;libhostpolicy.so" />
     </ItemGroup>
 
-    <FindNativeDeps ManagedAssemblyPaths="@(_ManagedLinkedAssemblies)"
+    <FindNativeDeps ManagedAssemblyPaths="@(_ManagedLinkedAssemblies);@(_DuplicateManagedAssembliesToSkip)"
                     NativeDepsPaths="@(_NativeResolvedDepsToPublish)"
                     NativeDepsToKeep="@(_NativeDepsToAlwaysKeep)">
       <Output TaskParameter="KeptNativeDepsPaths" ItemName="_NativeKeptDepsToPublish" />
@@ -310,11 +311,28 @@
   <!-- Computes the managed assemblies that are input to the
        linker. Includes managed assemblies from
        ResolvedAssembliesToPublish, and IntermediateAssembly. -->
+  <UsingTask TaskName="FindDuplicatesByMetadata" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_ComputeManagedAssembliesToLink"
           DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish">
     <ItemGroup>
       <_ManagedAssembliesToLink Include="@(IntermediateAssembly)" />
       <_ManagedAssembliesToLink Include="@(_ManagedResolvedAssembliesToPublish)" />
+    </ItemGroup>
+
+    <!-- Remove duplicate implementation dlls. This can happen if a
+         portable app has platform-specific managed assemblies. The
+         linker isn't currently able to analyze multiple assemblies
+         with the same identity, so we skip these, keeping only one
+         representative assembly from each set of duplicates. -->
+    <FindDuplicatesByMetadata Items="@(_ManagedAssembliesToLink)"
+                              MetadataName="Filename">
+      <Output TaskParameter="DuplicateItems" ItemName="_DuplicateManagedAssemblies" />
+      <Output TaskParameter="DuplicateRepresentatives" ItemName="_DuplicateManagedAssembliesToLink" />
+    </FindDuplicatesByMetadata>
+    <ItemGroup>
+      <_DuplicateManagedAssembliesToSkip Include="@(_DuplicateManagedAssemblies)" />
+      <_DuplicateManagedAssembliesToSkip Remove="@(_DuplicateManagedAssembliesToLink)" />
+      <_ManagedAssembliesToLink Remove="@(_DuplicateManagedAssembliesToSkip)" />
     </ItemGroup>
 
     <!-- Portable publish: need to supply the linker with any needed
@@ -408,7 +426,13 @@
     <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
       <_LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
       <_LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
-      <LinkerRootAssemblies Include="@(_LinkerRootAssemblies)" />
+    </ItemGroup>
+    <RemoveDuplicates Inputs="@(_LinkerRootAssemblies)"
+                      Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
+      <Output TaskParameter="Filtered" ItemName="_UniqueLinkerRootAssemblies" />
+    </RemoveDuplicates>
+    <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'true' ">
+      <LinkerRootAssemblies Include="@(_UniqueLinkerRootAssemblies)" />
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RootAllApplicationAssemblies)' == 'false' ">
@@ -487,7 +511,7 @@
           DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;_ComputeLinkedAssemblies;_FindNativeDeps;_HandlePublishFileConflicts"
           BeforeTargets="GeneratePublishDependencyFile"
           Condition=" '$(LinkDuringPublish)' == 'true' ">
-    <ComputeRemovedAssemblies InputAssemblies="@(_ManagedResolvedAssembliesToPublish)"
+    <ComputeRemovedAssemblies InputAssemblies="@(_ManagedAssembliesToLink)"
                               KeptAssemblies="@(_LinkedResolvedAssemblies)">
       <Output TaskParameter="RemovedAssemblies" ItemName="_RemovedManagedAssemblies" />
     </ComputeRemovedAssemblies>

@@ -106,6 +106,7 @@
     <Compile Include="CreateRootDescriptorFile.cs" />
     <Compile Include="CreateRuntimeRootDescriptorFile.cs" />
     <Compile Include="FilterByMetadata.cs" />
+    <Compile Include="FindDuplicatesByMetadata.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/BuildErrorException.cs" />
