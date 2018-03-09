@@ -729,12 +729,8 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 #define  eg_unreachable()
 #endif
 
-/* Old version. Preserved for testing and history. */
-
 /* g_assert is a boolean expression; the precise value is not preserved, just true or false. */
-#define g_assert(x) \
-	(G_LIKELY(x) ? 1 : (g_assertion_message ( \
-	"* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x), 0))
+#define g_assert(x) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x), 0))
 
 #define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
@@ -755,10 +751,11 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
  * format must be a string literal, in order to be concatenated.
  * If this is too restrictive, g_error remains.
  */
-#define  g_assertf(x, format, ...) \
-	(G_LIKELY(x) ? 1 : (g_assertion_message ( \
-	"* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", \
-	__FILE__, __LINE__, #x, __func__, __VA_ARGS__), 0))
+#if defined(_MSC_VER) && (_MSC_VER < 1910)
+#define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #x, __func__, __VA_ARGS__), 0))
+#else
+#define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #x, __func__, ##__VA_ARGS__), 0))
+#endif
 
 /*
  * Unicode conversion

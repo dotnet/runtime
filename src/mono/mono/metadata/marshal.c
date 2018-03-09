@@ -1151,11 +1151,8 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 			// Check that we will not overrun our boundaries.
 			gunichar2 *source = (gunichar2 *)chunk->chunkChars->vector;
 
-			if (chunk->chunkLength <= len) {
-				memcpy (str + chunk->chunkOffset, source, chunk->chunkLength * sizeof(gunichar2));
-			} else {
-				g_error ("A chunk in the StringBuilder had a length longer than expected from the offset.");
-			}
+			g_assertf (chunk->chunkLength <= len, "A chunk in the StringBuilder had a length longer than expected from the offset.");
+			memcpy (str + chunk->chunkOffset, source, chunk->chunkLength * sizeof(gunichar2));
 
 			len -= chunk->chunkLength;
 		}
