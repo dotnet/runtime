@@ -2,16 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System;
-using System.Diagnostics;
-using System.IO.Pipes;
-using System.Security.Principal;
 using Xunit;
 
 namespace System.ServiceProcess.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/27071")]
     [OuterLoop(/* Modifies machine state */)]
     public class ServiceControllerTests : IDisposable
     {
@@ -110,10 +104,13 @@ namespace System.ServiceProcess.Tests
         {
             string serviceName = _testService.TestServiceName;
             var controller = new ServiceController(serviceName);
+
             controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
             Assert.Equal(ServiceControllerStatus.Running, controller.Status);
 
             _testService.Client.Connect(connectionTimeout);
+            Assert.Equal((int)PipeMessageByteCode.Connected, _testService.GetByte());
+
             for (int i = 0; i < 2; i++)
             {
                 controller.Pause();

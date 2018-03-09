@@ -13,10 +13,10 @@ namespace System.Threading.Tasks
         {
             var cts = new CancellationTokenSource();
 
-            if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout, cts.Token)))
+            if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
             {
                 cts.Cancel();
-                await task;
+                await task.ConfigureAwait(false);
             }
             else
             {
@@ -28,10 +28,10 @@ namespace System.Threading.Tasks
         {
             var cts = new CancellationTokenSource();
 
-            if (task == await Task<TResult>.WhenAny(task, Task<TResult>.Delay(millisecondsTimeout, cts.Token)))
+            if (task == await Task<TResult>.WhenAny(task, Task<TResult>.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
             {
                 cts.Cancel();
-                return await task;
+                return await task.ConfigureAwait(false);
             }
             else
             {
@@ -46,7 +46,7 @@ namespace System.Threading.Tasks
             if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
             {
                 cts.Cancel();
-                await task;
+                await task.ConfigureAwait(false);
             }
             else
             {
