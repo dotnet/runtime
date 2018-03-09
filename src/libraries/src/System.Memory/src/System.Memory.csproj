@@ -156,5 +156,19 @@
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(CommonPath)\CoreLib\System\MemoryExtensions.Fast.cs">
+      <Link>System\MemoryExtensions.Fast.cs</Link>
+    </None>
+    <None Include="$(CommonPath)\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs">
+      <Link>System\Runtime\InteropServices\MemoryMarshal.Fast.cs</Link>
+    </None>
+    <None Include="$(CommonPath)\CoreLib\System\ReadOnlySpan.Fast.cs">
+      <Link>System\ReadOnlySpan.Fast.cs</Link>
+    </None>
+    <None Include="$(CommonPath)\CoreLib\System\Span.Fast.cs">
+      <Link>System\Span.Fast.cs</Link>
+    </None>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
