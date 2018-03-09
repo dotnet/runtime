@@ -44,9 +44,5 @@
     {
         "package_name": "libcurl",
         "package_version": ""
-    },
-    {
-        "package_name": "libuuid",
-        "package_version": ""
     }]
 }

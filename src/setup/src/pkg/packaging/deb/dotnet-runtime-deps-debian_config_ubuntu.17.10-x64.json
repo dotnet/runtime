@@ -36,7 +36,6 @@
         "liblttng-ust0":{},
         "libstdc++6":{},
         "libunwind8":{},
-        "libuuid1":{},
         "zlib1g":{},
         "libssl1.0.0" : {},
         "libicu57": {} 
