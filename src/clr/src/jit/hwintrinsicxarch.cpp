@@ -909,24 +909,6 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_SSE_SetVector128:
-        {
-            assert(sig->numArgs == 4);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-
-            op4 = impPopStack().val;
-            op3 = impPopStack().val;
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
-
-            GenTree* left    = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE_UnpackLow, TYP_FLOAT, simdSize);
-            GenTree* right   = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE_UnpackLow, TYP_FLOAT, simdSize);
-            GenTree* control = gtNewIconNode(68, TYP_UBYTE);
-
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, left, right, control, NI_SSE_Shuffle, TYP_FLOAT, simdSize);
-            break;
-        }
-
         case NI_SSE_MoveMask:
             assert(sig->numArgs == 1);
             assert(JITtype2varType(sig->retType) == TYP_INT);
