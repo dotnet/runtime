@@ -1,7 +1,6 @@
-Compat issues with assembly System.IO.Pipes:
+# Exposed public in System.IO.Pipes.AccessControl but implemented in System.IO.Pipes
 TypesMustExist : Type 'System.IO.Pipes.PipeAccessRights' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Pipes.PipeAccessRule' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Pipes.PipeAuditRule' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Pipes.PipesAclExtensions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Pipes.PipeSecurity' does not exist in the implementation but it does exist in the contract.
-Total Issues: 5
