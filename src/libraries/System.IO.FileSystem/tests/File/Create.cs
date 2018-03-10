@@ -212,7 +212,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(Path.Combine(testDir.FullName, "*Tes*t")));
         }
 
-        [ActiveIssue(27269)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -248,7 +247,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(path));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             InlineData("\n"),
             InlineData(">"),

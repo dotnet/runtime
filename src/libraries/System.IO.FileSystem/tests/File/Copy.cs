@@ -189,7 +189,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Copy(invalid, testFile));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             InlineData("\n"),
             InlineData(">"),
