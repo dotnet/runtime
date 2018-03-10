@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -59,15 +60,25 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory,
-            InlineData(@"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp"),
-            InlineData(@"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp\"),
-            InlineData(@"C:\", @"C:\"),
-            InlineData(@"C:\tmp\", @"C:\tmp"),
-            InlineData(@"C:\tmp\", @"C:\tmp\")]
-        public void GetTempPath_SetEnvVar(string expected, string newTempPath)
+        public static IEnumerable<string[]> GetTempPath_SetEnvVar_Data()
         {
-            GetTempPath_SetEnvVar("TMP", expected, newTempPath);
+            yield return new string[] { @"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp" };
+            yield return new string[] { @"C:\Users\someuser\AppData\Local\Temp\", @"C:\Users\someuser\AppData\Local\Temp\" };
+            yield return new string[] { @"C:\", @"C:\" };
+            yield return new string[] { @"C:\tmp\", @"C:\tmp" };
+            yield return new string[] { @"C:\tmp\", @"C:\tmp\" };
+        }
+
+        [Fact]
+        public void GetTempPath_SetEnvVar()
+        {
+            RemoteInvoke(() => 
+            {
+                foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
+                {
+                    GetTempPath_SetEnvVar("TMP", tempPath[0], tempPath[1]);
+                }
+            }).Dispose();
         }
 
         [Theory, MemberData(nameof(TestData_Spaces))]
