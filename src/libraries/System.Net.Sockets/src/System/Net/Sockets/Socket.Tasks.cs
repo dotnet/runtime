@@ -779,6 +779,11 @@ namespace System.Net.Sockets
             /// </summary>
             internal bool _accessed = false;
 
+            internal TaskSocketAsyncEventArgs() :
+                base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose Task, which handles it
+            {
+            }
+
             /// <summary>Gets the builder's task with appropriate synchronization.</summary>
             internal AsyncTaskMethodBuilder<TResult> GetCompletionResponsibility(out bool responsibleForReturningToPool)
             {
@@ -860,7 +865,11 @@ namespace System.Net.Sockets
             /// <summary>Initializes the event args.</summary>
             /// <param name="socket">The associated socket.</param>
             /// <param name="buffer">The buffer to use for all operations.</param>
-            public AwaitableSocketAsyncEventArgs() => Completed += s_completedHandler;
+            public AwaitableSocketAsyncEventArgs() :
+                base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
+            {
+                Completed += s_completedHandler;
+            }
 
             public bool WrapExceptionsInIOExceptions { get; set; }
 
