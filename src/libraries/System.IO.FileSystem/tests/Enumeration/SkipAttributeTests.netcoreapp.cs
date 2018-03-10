@@ -65,6 +65,28 @@ namespace System.IO.Tests.Enumeration
             paths = GetPaths(testDirectory.FullName, new EnumerationOptions { RecurseSubdirectories = true });
             Assert.Equal(new string[] { fileOne.FullName }, paths);
         }
+
+        [Fact]
+        public void SkipComesFirst()
+        {
+            // If skip comes first we shouldn't find ourselves recursing.
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo testSubdirectory = Directory.CreateDirectory(Path.Combine(testDirectory.FullName, GetTestFileName()));
+
+            FileInfo fileOne = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+            FileInfo fileTwo = new FileInfo(Path.Combine(testDirectory.FullName, GetTestFileName()));
+
+            FileInfo fileThree = new FileInfo(Path.Combine(testSubdirectory.FullName, GetTestFileName()));
+            FileInfo fileFour = new FileInfo(Path.Combine(testSubdirectory.FullName, GetTestFileName()));
+
+            fileOne.Create().Dispose();
+            fileTwo.Create().Dispose();
+            fileThree.Create().Dispose();
+            fileFour.Create().Dispose();
+
+            string[] paths = GetPaths(testDirectory.FullName, new EnumerationOptions { AttributesToSkip = FileAttributes.Directory, RecurseSubdirectories = true });
+            FSAssert.EqualWhenOrdered(new string[] { fileOne.FullName, fileTwo.FullName }, paths);
+        }
     }
 
     public class SkipAttributeTests_Directory_GetFiles : SkipAttributeTests
