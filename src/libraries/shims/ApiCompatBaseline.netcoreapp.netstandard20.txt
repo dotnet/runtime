@@ -1,6 +1,18 @@
 Compat issues with assembly mscorlib:
-TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypesMustExist : Type 'System.TupleExtensions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.CompilerServices.TupleElementNamesAttribute' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly netstandard:
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
+Compat issues with assembly System.Core:
+TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
+
+# Compat issues complaining about class vs delegate and class vs struct are because of a bug in APICompat tool where the implementation is picking
+# the wrong core assembly. It is picking System.Runtime instead of System.Private.CoreLib, there isn't any straight forward way to fix so baselining.
+
+TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypesMustExist : Type 'System.ValueTuple' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ValueTuple<T1>' does not exist in the implementation but it does exist in the contract.
@@ -11,12 +23,4 @@ TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5>' does not exist in 
 TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6>' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7>' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Runtime.CompilerServices.TupleElementNamesAttribute' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly netstandard:
-TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
-TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
-Compat issues with assembly System.Core:
-TypesMustExist : Type 'System.Security.Cryptography.ECCurve' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECParameters' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.ECPoint' does not exist in the implementation but it does exist in the contract.
-Total Issues: 18
+
