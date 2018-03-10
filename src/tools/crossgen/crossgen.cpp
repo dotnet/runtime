@@ -112,7 +112,6 @@ void PrintUsageHelper()
        W("    /verbose             - Display verbose information\n")
        W("    @response.rsp        - Process command line arguments from specified\n")
        W("                           response file\n")
-       W("    /partialtrust        - Assembly will be run in a partial trust domain.\n")
        W("    /in <file>           - Specifies input filename (optional)\n")
        W("    /out <file>          - Specifies output filename (optional)\n")
        W("    /Trusted_Platform_Assemblies <path[") PATH_SEPARATOR_STR_W W("path]>\n")
@@ -463,9 +462,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     argc = argc2;
     argv = argv2;
 
-    // By default, Crossgen will assume code-generation for fulltrust domains unless /PartialTrust switch is specified
-    dwFlags |= NGENWORKER_FLAGS_FULLTRUSTDOMAIN;
-
     // By default, Crossgen will generate readytorun images unless /FragileNonVersionable switch is specified
     dwFlags |= NGENWORKER_FLAGS_READYTORUN;
 
@@ -496,20 +492,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("MissingDependenciesOK")))
         {
             dwFlags |= NGENWORKER_FLAGS_MISSINGDEPENDENCIESOK;
-        }
-        else if (MatchParameter(*argv, W("PartialTrust")))
-        {
-            // Clear the /fulltrust flag
-            dwFlags = dwFlags & ~NGENWORKER_FLAGS_FULLTRUSTDOMAIN;
-        }
-        else if (MatchParameter(*argv, W("FullTrust")))
-        {
-            // Keep the "/fulltrust" switch around but let it be no-nop. Without this, any usage of /fulltrust will result in crossgen command-line
-            // parsing failure. Considering that scripts all over (CLR, Phone Build, etc) specify that switch, we let it be as opposed to going
-            // and fixing all the scripts.
-            //
-            // We dont explicitly set the flag here again so that if "/PartialTrust" is specified, then it will successfully override the default
-            // fulltrust behaviour.
         }
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         else if (MatchParameter(*argv, W("JITPath")) && (argc > 1))
@@ -626,7 +608,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
 
             // Clear any extra flags - using /CreatePDB fails if any of these are set.
-            dwFlags = dwFlags & ~(NGENWORKER_FLAGS_FULLTRUSTDOMAIN | NGENWORKER_FLAGS_READYTORUN);
+            dwFlags = dwFlags & ~NGENWORKER_FLAGS_READYTORUN;
 
             // Parse: <directory to store PDB>
             wzDirectoryToStorePDB.Set(argv[0]);
@@ -692,9 +674,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             fCreatePDB = true;
             argv++;
             argc--;
-
-            // Clear the /fulltrust flag - /CreatePerfMap does not work with any other flags.
-            dwFlags = dwFlags & ~NGENWORKER_FLAGS_FULLTRUSTDOMAIN;
 
             // Clear the /ready to run flag - /CreatePerfmap does not work with any other flags.
             dwFlags = dwFlags & ~NGENWORKER_FLAGS_READYTORUN;

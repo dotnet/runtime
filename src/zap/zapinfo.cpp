@@ -1346,9 +1346,6 @@ void ZapInfo::allocUnwindInfo (
 
 BOOL ZapInfo::logMsg(unsigned level, const char *fmt, va_list args)
 {
-    if (m_zapper->m_pOpt->m_legacyMode)
-        return FALSE;
-
     if (HasSvcLogger())
     {
         if (level <= LL_INFO10)

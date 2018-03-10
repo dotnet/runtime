@@ -129,8 +129,7 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
                                      IMetaDataAssemblyEmit *pEmitter,
                                      BOOL fForceDebug,
                                      BOOL fForceProfiling,
-                                     BOOL fForceInstrument,
-                                     BOOL fForceFulltrustDomain)
+                                     BOOL fForceInstrument)
 {
     STANDARD_VM_CONTRACT;
 

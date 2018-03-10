@@ -193,8 +193,7 @@ class CEECompileInfo : public ICorCompileInfo
                          IMetaDataAssemblyEmit    *pEmitter,
                          BOOL                     fForceDebug,
                          BOOL                     fForceProfiling,
-                         BOOL                     fForceInstrument,
-                         BOOL                     fForceFulltrustDomain);
+                         BOOL                     fForceInstrument);
 
     HRESULT MakeCrossDomainCallback(
                                     ICorCompilationDomain*  pDomain,
