@@ -3134,7 +3134,26 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             call->gtCallType    = CT_HELPER;
             call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
         }
-#endif // !defined(LEGACY_BACKEND)
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(_TARGET_ARMARCH_)
+        // For arm, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
+        // for indirection cell address, which ZapIndirectHelperThunk expects.
+        if (call->IsR2RRelativeIndir())
+        {
+            assert(call->gtEntryPoint.addr != nullptr);
+
+            size_t   addrValue            = (size_t)call->gtEntryPoint.addr;
+            GenTree* indirectCellAddress  = gtNewIconHandleNode(addrValue, GTF_ICON_FTN_ADDR);
+            indirectCellAddress->gtRegNum = REG_R2R_INDIRECT_PARAM;
+
+            // Push the stub address onto the list of arguments.
+            call->gtCallArgs = gtNewListNode(indirectCellAddress, call->gtCallArgs);
+
+            numArgs++;
+            nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->gtRegNum);
+        }
+
+#endif // FEATURE_READYTORUN_COMPILER && _TARGET_ARMARCH_
+#endif // !LEGACY_BACKEND
 
         // Allocate the fgArgInfo for the call node;
         //
