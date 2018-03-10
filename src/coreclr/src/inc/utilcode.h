@@ -1106,7 +1106,7 @@ inline HRESULT DecimalCanonicalize(DECIMAL* dec)
 //
 //*****************************************************************************
 // secure version! Specify the size of the each buffer in count of elements
-void    SplitPath(register const WCHAR *path,
+void    SplitPath(const WCHAR *path,
                   __inout_z __inout_ecount_opt(driveSizeInWords) WCHAR *drive, int driveSizeInWords,
                   __inout_z __inout_ecount_opt(dirSizeInWords) WCHAR *dir, int dirSizeInWords,
                   __inout_z __inout_ecount_opt(fnameSizeInWords) WCHAR *fname, size_t fnameSizeInWords,
