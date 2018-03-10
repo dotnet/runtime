@@ -252,7 +252,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*Test"));
         }
 
-        [ActiveIssue(27269)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]

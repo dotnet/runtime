@@ -230,7 +230,6 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(27269)]
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InvalidPath_Core()
@@ -276,7 +275,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => GetEntries(invalid));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             InlineData("\n"),
             InlineData(">"),

@@ -53,7 +53,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
         }
 
-        [ActiveIssue(27269)]
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PathWithIllegalCharacters_Core(string invalidPath)
@@ -250,7 +249,6 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(27269)]
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -258,7 +256,7 @@ namespace System.IO.Tests
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, invalidPath));
+            Assert.ThrowsAny<IOException>(() => Move(testFile.FullName, testFile.DirectoryName + Path.DirectorySeparatorChar + invalidPath));
         }
 
         [Fact]
@@ -272,7 +270,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Move(GetTestFilePath(), "*Test"));
         }
 
-        [ActiveIssue(27269)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -319,7 +316,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Move(testFile.FullName, whitespace));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]

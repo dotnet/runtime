@@ -40,7 +40,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(invalidPath));
         }
 
-        [ActiveIssue(27269)]
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PathWithInvalidCharactersAsPath_Core(string invalidPath)
@@ -224,7 +223,6 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(27269)]
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -349,7 +347,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(path));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -450,7 +447,6 @@ namespace System.IO.Tests
             Assert.Throws<NotSupportedException>(() => Create(path));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             MemberData(nameof(PathsWithColons))]
         [PlatformSpecific(TestPlatforms.Windows)] // alternate data streams
@@ -487,7 +483,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create(path));
         }
 
-        [ActiveIssue(27269)]
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -505,7 +500,6 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Create("//"));
         }
 
-        [ActiveIssue(27269)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
