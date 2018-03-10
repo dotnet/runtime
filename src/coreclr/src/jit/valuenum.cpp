@@ -7426,6 +7426,22 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         vnpUniq.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
     }
 
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(_TARGET_ARMARCH_)
+    if (call->IsR2RRelativeIndir())
+    {
+#ifdef DEBUG
+        assert(args->Current()->OperGet() == GT_ARGPLACE);
+
+        // Find the corresponding late arg.
+        GenTree* indirectCellAddress = call->fgArgInfo->GetLateArg(0);
+        assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->gtRegNum == REG_R2R_INDIRECT_PARAM);
+#endif // DEBUG
+        // For ARM indirectCellAddress is consumed by the call itself, so it should have added as an implicit argument
+        // in morph. So we do not need to use EntryPointAddrAsArg0, because arg0 is already an entry point addr.
+        useEntryPointAddrAsArg0 = false;
+    }
+#endif // FEATURE_READYTORUN_COMPILER && _TARGET_ARMARCH_
+
     if (nArgs == 0)
     {
         if (generateUniqueVN)
@@ -7467,7 +7483,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             vnp0                = ValueNumPair(callAddrVN, callAddrVN);
         }
         else
-#endif
+#endif // FEATURE_READYTORUN_COMPILER
         {
             assert(!useEntryPointAddrAsArg0);
             ValueNumPair vnp0wx = getCurrentArg(0)->gtVNPair;
