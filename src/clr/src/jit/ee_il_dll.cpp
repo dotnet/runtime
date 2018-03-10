@@ -798,7 +798,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     printf("%3d(%10s) : From %08Xh to %08Xh, in ", var->varNumber,
            (VarNameToStr(name) == nullptr) ? "UNKNOWN" : VarNameToStr(name), var->startOffset, var->endOffset);
 
-    switch (var->loc.vlType)
+    switch ((Compiler::siVarLocType)var->loc.vlType)
     {
         case VLT_REG:
         case VLT_REG_BYREF:

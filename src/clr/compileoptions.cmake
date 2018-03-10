@@ -38,6 +38,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   # There are constants of type BOOL used in a condition. But BOOL is defined as int
   # and so the compiler thinks that there is a mistake.
   add_compile_options(-Wno-constant-logical-operand)
+  # We use pshpack1/2/4/8.h and poppack.h headers to set and restore packing. However
+  # clang 6.0 complains when the packing change lifetime is not contained within 
+  # a header file.
+  add_compile_options(-Wno-pragma-pack)
 
   add_compile_options(-Wno-unknown-warning-option)
 
