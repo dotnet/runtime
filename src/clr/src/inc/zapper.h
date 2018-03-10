@@ -126,7 +126,6 @@ class Zapper
 #if !defined(NO_NGENPDB)
     SString                 m_DiasymreaderPath;
 #endif // !defined(NO_NGENPDB)
-    bool                    m_fForceFullTrust;
 
     SString                 m_outputFilename;
 
@@ -352,7 +351,6 @@ class Zapper
     void SetAppPaths(LPCWSTR pwzAppPaths);
     void SetAppNiPaths(LPCWSTR pwzAppNiPaths);
     void SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths);
-    void SetForceFullTrust(bool val);
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     void SetCLRJITPath(LPCWSTR pwszCLRJITPath);
@@ -365,8 +363,6 @@ class Zapper
 
     void SetOutputFilename(LPCWSTR pwszOutputFilename);
     SString GetOutputFileName();
-
-    void SetLegacyMode();
 
  private:
 
@@ -444,39 +440,12 @@ class ZapperOptions
 
     CORJIT_FLAGS m_compilerFlags;
 
-    bool       m_legacyMode;          // true if the zapper was invoked using legacy mode
-
     bool        m_fNoMetaData;          // Do not copy metadata and IL to native image
 
     void SetCompilerFlags(void);
 
     ZapperOptions();
     ~ZapperOptions();
-};
-
-struct NGenPrivateAttributesClass : public NGenPrivateAttributes
-{
-    NGenPrivateAttributesClass()
-    {
-        Flags    = 0;
-        ZapStats = 0;
-        DbgDir   = NULL;
-    }
-
-private:
-    // Make sure that copies of this object aren't inadvertently created
-    NGenPrivateAttributesClass(const NGenPrivateAttributesClass &init);
-    const NGenPrivateAttributesClass &operator =(const NGenPrivateAttributesClass &rhs);
-
-public:
-    ~NGenPrivateAttributesClass()
-    {
-        if (DbgDir)
-        {
-            ::SysFreeString(DbgDir);
-            DbgDir = NULL;
-        }
-    }
 };
 
 #endif // ZAPPER_H_
