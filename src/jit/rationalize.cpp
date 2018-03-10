@@ -160,13 +160,13 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     assert(JITtype2varType(sig.retType) == tree->gtType);
 #endif // DEBUG
 
-    call = comp->fgMorphArgs(call);
-    // Determine if this call has changed any codegen requirements.
-    comp->fgCheckArgCnt();
-
 #ifdef FEATURE_READYTORUN_COMPILER
     call->gtCall.setEntryPoint(entryPoint);
 #endif
+
+    call = comp->fgMorphArgs(call);
+    // Determine if this call has changed any codegen requirements.
+    comp->fgCheckArgCnt();
 
     // Replace "tree" with "call"
     if (parents.Height() > 1)
