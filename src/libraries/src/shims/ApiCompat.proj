@@ -59,6 +59,8 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netfx to $(TargetGroup)" />
+
     <PropertyGroup>
       <NETStandard20OnlyRef>$(NetStandardRefPath)/netstandard.dll</NETStandard20OnlyRef>
       <!-- For netcoreapp also pass in System.Runtime to workaround issue in apicompat tool when it cannot find a core assembly -->
@@ -73,6 +75,8 @@
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
 
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(TargetGroup)" />
+
     <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; -baseline:$(ApiCompatNSBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
@@ -80,6 +84,8 @@
     >
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
+
+    <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(TargetGroup)" />
 
   </Target>
 
