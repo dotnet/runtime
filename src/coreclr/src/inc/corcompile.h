@@ -1460,8 +1460,7 @@ class ICorCompileInfo
             IMetaDataAssemblyEmit   *pEmitter,
             BOOL fForceDebug,
             BOOL fForceProfiling,
-            BOOL fForceInstrument,
-            BOOL fForceFulltrustDomain
+            BOOL fForceInstrument
             ) = 0;
 
     // calls pfnCallback in the specified domain

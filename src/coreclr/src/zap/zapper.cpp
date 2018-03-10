@@ -9,24 +9,6 @@
 
 #include "clr/fs/dir.h"
 
-/* --------------------------------------------------------------------------- *
- * Error Macros
- * --------------------------------------------------------------------------- */
-
-#ifdef ALLOW_LOCAL_WORKER
-namespace
-{
-
-bool g_eeInitialized = false;
-//these track the initialization state of the runtime in local worker mode.  If
-//the flags change during subsequent calls to InitEE, then fail.
-BOOL g_fForceDebug, g_fForceProfile, g_fForceInstrument;
-
-}
-#endif
-
-
-
 #pragma warning(push)
 #pragma warning(disable: 4995)
 #include "shlwapi.h"
@@ -151,8 +133,6 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
             zap->SetCLRJITPath(pwszCLRJITPath);
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
 
-        zap->SetForceFullTrust(!!(dwFlags & NGENWORKER_FLAGS_FULLTRUSTDOMAIN));
-
         g_fNGenMissingDependenciesOk = !!(dwFlags & NGENWORKER_FLAGS_MISSINGDEPENDENCIESOK);
 
 #ifdef FEATURE_WINMD_RESILIENT
@@ -219,10 +199,6 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
             zap->SetDiasymreaderPath(pwzDiasymreaderPath);
 #endif // !defined(NO_NGENPDB)
 
-        // Avoid unnecessary security failures, since permissions are irrelevant when
-        // generating NGEN PDBs
-        zap->SetForceFullTrust(true);
-
         BSTRHolder strAssemblyPath(::SysAllocString(pwzAssemblyPath));
         BSTRHolder strPdbPath(::SysAllocString(pwzPdbPath));
         BSTRHolder strManagedPdbSearchPath(::SysAllocString(pwzManagedPdbSearchPath));
@@ -269,8 +245,7 @@ ZapperOptions::ZapperOptions() :
   m_fPartialNGenSet(false),
   m_fNGenLastRetry(false),
   m_compilerFlags(),
-  m_legacyMode(false)
-  ,m_fNoMetaData(s_fNGenNoMetaData)
+  m_fNoMetaData(s_fNGenNoMetaData)
 {
     SetCompilerFlags();
 
@@ -491,8 +466,6 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     m_fDontLoadJit = false;
 #endif // !defined(FEATURE_MERGE_JIT_AND_ENGINE)
-
-    m_fForceFullTrust = false;
 }
 
 // LoadAndInitializeJITForNgen: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
@@ -646,31 +619,7 @@ void Zapper::InitEE(BOOL fForceDebug, BOOL fForceProfile, BOOL fForceInstrument)
     if (m_pOpt->m_verbose)
         IfFailThrow(m_pEECompileInfo->SetVerboseLevel (CORCOMPILE_VERBOSE));
 
-#ifdef ALLOW_LOCAL_WORKER
-    //if this is not NULL it means that we've already initialized the EE.
-    //Do not do so again.  However, verify that it would get initialized
-    //the same way.
-    if (g_eeInitialized)
-    {
-        if (fForceDebug != g_fForceDebug ||
-            fForceProfile != g_fForceProfile ||
-            fForceInstrument != g_fForceInstrument)
-        {
-            Error(W("AllowLocalWorker does not support changing EE initialization state\r\n"));
-            ThrowHR(E_FAIL);
-        }
-    }
-    else
-    {
-#endif // ALLOW_LOCAL_WORKER
-        IfFailThrow(m_pEECompileInfo->Startup(fForceDebug, fForceProfile, fForceInstrument));
-#ifdef ALLOW_LOCAL_WORKER
-        g_fForceDebug = fForceDebug;
-        g_fForceProfile = fForceProfile;
-        g_fForceInstrument = fForceInstrument;
-        g_eeInitialized = true;
-    }
-#endif // ALLOW_LOCAL_WORKER
+    IfFailThrow(m_pEECompileInfo->Startup(fForceDebug, fForceProfile, fForceInstrument));
 
     m_pEEJitInfo = GetZapJitInfo();
 
@@ -1023,8 +972,7 @@ void Zapper::CreateCompilationDomain()
                                                CreateAssemblyEmitter(),
                                                fForceDebug,
                                                fForceProfile,
-                                               fForceInstrument,
-                                               m_fForceFullTrust));
+                                               fForceInstrument));
 
 #ifdef CROSSGEN_COMPILE
     IfFailThrow(m_pDomain->SetPlatformWinmdPaths(m_platformWinmdPaths));
@@ -1852,12 +1800,6 @@ void Zapper::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
     m_platformWinmdPaths.Set(pwzPlatformWinmdPaths);
 }
 
-void Zapper::SetForceFullTrust(bool val)
-{
-    m_fForceFullTrust = val;
-}
-
-
 
 void Zapper::SetOutputFilename(LPCWSTR pwzOutputFilename)
 {
@@ -1869,11 +1811,3 @@ SString Zapper::GetOutputFileName()
 {
     return m_outputFilename;
 }
-
-void Zapper::SetLegacyMode()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pOpt->m_legacyMode = true;
-}
-

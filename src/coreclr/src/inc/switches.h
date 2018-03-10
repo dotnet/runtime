@@ -118,11 +118,6 @@
 #define ENABLE_STARTUP_DELAY
 
 
-#ifndef ALLOW_LOCAL_WORKER
-#define ALLOW_LOCAL_WORKER
-#endif
-
-
 #ifdef _DEBUG
 
 //hurray DAC makes everything more fun - you can't have defines that control whether
