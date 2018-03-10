@@ -725,6 +725,16 @@ while :; do
             __ClangMinorVersion=0
             ;;
 
+        clang5.0|-clang5.0)
+            __ClangMajorVersion=5
+            __ClangMinorVersion=0
+            ;;
+
+        clang6.0|-clang6.0)
+            __ClangMajorVersion=6
+            __ClangMinorVersion=0
+            ;;
+
         ninja|-ninja)
             __UseNinja=1
             ;;
