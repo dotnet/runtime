@@ -185,9 +185,6 @@
     <Compile Include="Binary\BinaryWriterUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\Common\src\System\MutableDecimal.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTestData.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.Negative.cs" />
@@ -219,6 +216,9 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs">
       <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\MutableDecimal.cs">
+      <Link>Common\System\MutableDecimal.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
