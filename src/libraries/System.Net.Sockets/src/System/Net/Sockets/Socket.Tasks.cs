@@ -812,38 +812,6 @@ namespace System.Net.Sockets
             private static readonly Action<object> s_completedSentinel = state => throw new Exception(nameof(s_completedSentinel));
             /// <summary>Sentinel object used to indicate that the instance is available for use.</summary>
             private static readonly Action<object> s_availableSentinel = state => throw new Exception(nameof(s_availableSentinel));
-            /// <summary>Event handler for the Completed event.</summary>
-            private static readonly EventHandler<SocketAsyncEventArgs> s_completedHandler = (s, e) =>
-            {
-                // When the operation completes, see if OnCompleted was already called to hook up a continuation.
-                // If it was, invoke the continuation.
-                AwaitableSocketAsyncEventArgs ea = (AwaitableSocketAsyncEventArgs)e;
-                Action<object> c = ea._continuation;
-                if (c != null || (c = Interlocked.CompareExchange(ref ea._continuation, s_completedSentinel, null)) != null)
-                {
-                    Debug.Assert(c != s_availableSentinel, "The delegate should not have been the available sentinel.");
-                    Debug.Assert(c != s_completedSentinel, "The delegate should not have been the completed sentinel.");
-
-                    object continuationState = ea.UserToken;
-                    ea.UserToken = null;
-                    ea._continuation = s_completedSentinel; // in case someone's polling IsCompleted
-
-                    ExecutionContext ec = ea._executionContext;
-                    if (ec == null)
-                    {
-                        ea.InvokeContinuation(c, continuationState, forceAsync: false);
-                    }
-                    else
-                    {
-                        ea._executionContext = null;
-                        ExecutionContext.Run(ec, runState =>
-                        {
-                            var t = (Tuple<AwaitableSocketAsyncEventArgs, Action<object>, object>)runState;
-                            t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false);
-                        }, Tuple.Create(ea, c, continuationState));
-                    }
-                }
-            };
             /// <summary>
             /// <see cref="s_availableSentinel"/> if the object is available for use, after GetResult has been called on a previous use.
             /// null if the operation has not completed.
@@ -868,7 +836,6 @@ namespace System.Net.Sockets
             public AwaitableSocketAsyncEventArgs() :
                 base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
             {
-                Completed += s_completedHandler;
             }
 
             public bool WrapExceptionsInIOExceptions { get; set; }
@@ -879,6 +846,40 @@ namespace System.Net.Sockets
             {
                 _token++;
                 Volatile.Write(ref _continuation, s_availableSentinel);
+            }
+
+            protected override void OnCompleted(SocketAsyncEventArgs _)
+            {
+                // When the operation completes, see if OnCompleted was already called to hook up a continuation.
+                // If it was, invoke the continuation.
+                Action<object> c = _continuation;
+                if (c != null || (c = Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null)) != null)
+                {
+                    Debug.Assert(c != s_availableSentinel, "The delegate should not have been the available sentinel.");
+                    Debug.Assert(c != s_completedSentinel, "The delegate should not have been the completed sentinel.");
+
+                    object continuationState = UserToken;
+                    UserToken = null;
+                    _continuation = s_completedSentinel; // in case someone's polling IsCompleted
+
+                    ExecutionContext ec = _executionContext;
+                    if (ec == null)
+                    {
+                        InvokeContinuation(c, continuationState, forceAsync: false);
+                    }
+                    else
+                    {
+                        // This case should be relatively rare, as the async Task/ValueTask method builders
+                        // use the awaiter's UnsafeOnCompleted, so this will only happen with code that
+                        // explicitly uses the awaiter's OnCompleted instead.
+                        _executionContext = null;
+                        ExecutionContext.Run(ec, runState =>
+                        {
+                            var t = (Tuple<AwaitableSocketAsyncEventArgs, Action<object>, object>)runState;
+                            t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false);
+                        }, Tuple.Create(this, c, continuationState));
+                    }
+                }
             }
 
             /// <summary>Initiates a receive operation on the associated socket.</summary>
