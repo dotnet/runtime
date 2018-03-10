@@ -1919,7 +1919,6 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
 
         if (varTypeIsFloating(pFieldInfo->fldType) || varTypeIsSIMD(pFieldInfo->fldType))
         {
-            lvaTable[lclNum].lvContainsFloatingFields = 1;
             // Whenever we promote a struct that contains a floating point field
             // it's possible we transition from a method that originally only had integer
             // local vars to start having FP.  We have to communicate this through this flag
@@ -6833,10 +6832,12 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" pinned");
     }
+#ifdef LEGACY_BACKEND
     if (varDsc->lvRefAssign)
     {
         printf(" ref-asgn");
     }
+#endif
     if (varDsc->lvStackByref)
     {
         printf(" stack-byref");
