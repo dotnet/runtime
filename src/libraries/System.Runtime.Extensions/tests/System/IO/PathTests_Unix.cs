@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Tests
@@ -28,22 +29,32 @@ namespace System.IO.Tests
             Assert.Equal(expected, new string(Path.GetFileName(path.AsSpan())));
         }
 
-        [Theory,
-            InlineData("/tmp/", "/tmp"),
-            InlineData("/tmp/", "/tmp/"),
-            InlineData("/", "/"),
-            InlineData("/var/tmp/", "/var/tmp"),
-            InlineData("/var/tmp/", "/var/tmp/"),
-            InlineData("~/", "~"),
-            InlineData("~/", "~/"),
-            InlineData(".tmp/", ".tmp"),
-            InlineData("./tmp/", "./tmp"),
-            InlineData("/home/someuser/sometempdir/", "/home/someuser/sometempdir/"),
-            InlineData("/home/someuser/some tempdir/", "/home/someuser/some tempdir/"),
-            InlineData("/tmp/", null)]
-        public void GetTempPath_SetEnvVar_Unix(string expected, string newTempPath)
+        public static IEnumerable<string[]> GetTempPath_SetEnvVar_Data()
         {
-            GetTempPath_SetEnvVar("TMPDIR", expected, newTempPath);
+            yield return new string[] { "/tmp/", "/tmp" };
+            yield return new string[] { "/tmp/", "/tmp/" };
+            yield return new string[] { "/", "/" };
+            yield return new string[] { "/var/tmp/", "/var/tmp" };
+            yield return new string[] { "/var/tmp/", "/var/tmp/" };
+            yield return new string[] { "~/", "~" };
+            yield return new string[] { "~/", "~/" };
+            yield return new string[] { ".tmp/", ".tmp" };
+            yield return new string[] { "./tmp/", "./tmp" };
+            yield return new string[] { "/home/someuser/sometempdir/", "/home/someuser/sometempdir/" };
+            yield return new string[] { "/home/someuser/some tempdir/", "/home/someuser/some tempdir/" };
+            yield return new string[] { "/tmp/", null };
+        }
+
+        [Fact]
+        public void GetTempPath_SetEnvVar_Unix()
+        {
+            RemoteInvoke(() =>
+            {
+                foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
+                {
+                    GetTempPath_SetEnvVar("TMPDIR", tempPath[0], tempPath[1]);
+                }
+            }).Dispose();
         }
 
         [Fact]
