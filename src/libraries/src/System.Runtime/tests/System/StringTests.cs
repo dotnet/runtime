@@ -2857,6 +2857,19 @@ namespace System.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // These tests assume that UTF8 is the default encoding
+        public static unsafe void ConstructorsTest_InvalidUTF8()
+        {
+            byte[] invalidUTF8Bytes = new byte[] { (byte)'A', (byte)'B', 0xEE, (byte)'C', (byte)'D', 0 };
+
+            fixed (byte* pBytes = invalidUTF8Bytes)
+            {
+                Assert.Equal("AB\ufffdCD", new String((sbyte*)pBytes));
+                Assert.Equal("B\ufffdC", new String((sbyte*)pBytes, 1, 3));
+            }
+        }
+
+        [Fact]
         public static unsafe void CloneTest()
         {
             string s = "some string to clone";
