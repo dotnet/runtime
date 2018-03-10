@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class ExecutionContextFlowTest : FileCleanupTestBase
+    public partial class ExecutionContextFlowTest : FileCleanupTestBase
     {
         [Theory]
         [InlineData(false)]
