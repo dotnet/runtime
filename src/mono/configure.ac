@@ -3465,7 +3465,7 @@ case "$host" in
 			dnl if they are, we specify them by lib.a(lib.so)
 			dnl we may hardcode 64-bit names at times, but we don't do 32-bit AIX, so
 			LIBC="libc.a(shr_64.o)"
-			INTL="libintl.a(libintl.so.9)"
+			INTL="libintl.a(libintl.so.8)"
 			;;
 		  linux*)
 			BTLS_SUPPORTED=yes
@@ -4553,7 +4553,7 @@ if test "x$enable_btls" = "xyes"; then
 		btls_arch=powerpc
 		case $host_os in
 			aix*|os400*)
-				btls_cflags="$btls_cflags -maix64 -D_ALL_SOURCE -D_THREAD_SAFE -D_REENTRANT"
+				btls_cflags="$btls_cflags -maix64 -mminimal-toc -pthread -D_ALL_SOURCE -D_THREAD_SAFE -D_REENTRANT"
 				BTLS_CMAKE_ARGS="-DCMAKE_AR=/usr/bin/ar -DCMAKE_C_ARCHIVE_CREATE=\"<CMAKE_AR> -X64 cr <TARGET> <LINK_FLAGS> <OBJECTS>\""
 		esac
 		;;
