@@ -852,6 +852,18 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
+static void
+inc_method_ref_count (MonoMethod *method)
+{
+	mono_image_addref (mono_class_get_image (mono_method_get_class (method)));
+}
+
+static void
+dec_method_ref_count (MonoMethod *method)
+{
+	mono_image_close (mono_class_get_image (mono_method_get_class (method)));
+}
+
 // The reader lock must be held.
 static void
 register_method_local (MonoMethod *method, MonoJitInfo *ji)
@@ -866,7 +878,9 @@ register_method_local (MonoMethod *method, MonoJitInfo *ji)
 		info->time = current_time ();
 
 		GPtrArray *arr = thread->methods ? thread->methods : (thread->methods = g_ptr_array_new ());
+
 		g_ptr_array_add (arr, info);
+		inc_method_ref_count (method);
 	}
 }
 
@@ -2272,6 +2286,9 @@ async_walk_stack (MonoMethod *method, MonoDomain *domain, void *base_address, in
 		sample->frames [i].base_address = base_address;
 		sample->frames [i].offset = offset;
 
+		if (method)
+			inc_method_ref_count (method);
+
 		sample->count++;
 	}
 
@@ -3362,6 +3379,7 @@ handle_writer_queue_entry (void)
 			wrote_methods = TRUE;
 
 		free_info:
+			dec_method_ref_count (info->method);
 			g_free (info);
 		}
 
@@ -3445,7 +3463,12 @@ handle_dumper_queue_entry (void)
 				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
 
 				if (ji)
-					sample->frames [i].method = mono_jit_info_get_method (ji);
+					method = mono_jit_info_get_method (ji);
+
+				if (method)
+					inc_method_ref_count (method);
+
+				sample->frames [i].method = method;
 			}
 		}
 
@@ -3479,6 +3502,13 @@ handle_dumper_queue_entry (void)
 			emit_method (logbuffer, sample->frames [i].method);
 
 		EXIT_LOG;
+
+		for (int i = 0; i < sample->count; ++i) {
+			MonoMethod *method = sample->frames [i].method;
+
+			if (method)
+				dec_method_ref_count (method);
+		}
 
 		mono_thread_hazardous_try_free (sample, reuse_sample_hit);
 
