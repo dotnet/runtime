@@ -13,22 +13,22 @@ namespace System.IO.Tests
             return new FileInfo(path).Open(mode);
         }
 
-        [Fact]
+        [Theory, MemberData(nameof(StreamSpecifiers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FileInfo.Open(string, filemode) on netfx always uses FileAccess.ReadWrite instead of choosing a FileAccess based on the FileMode. This bug was fixed in netcoreapp.")]
-        public override void FileModeAppend()
+        public override void FileModeAppend(string streamSpecifier)
         {
-            using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Append))
+            using (FileStream fs = CreateFileStream(GetTestFilePath() + streamSpecifier, FileMode.Append))
             {
                 Assert.Equal(false, fs.CanRead);
                 Assert.Equal(true, fs.CanWrite);
             }
         }
 
-        [Fact]
+        [Theory, MemberData(nameof(StreamSpecifiers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FileInfo.Open(string, filemode) on netfx always uses FileAccess.ReadWrite instead of choosing a FileAccess based on the FileMode. This bug was fixed in netcoreapp.")]
-        public override void FileModeAppendExisting()
+        public override void FileModeAppendExisting(string streamSpecifier)
         {
-            string fileName = GetTestFilePath();
+            string fileName = GetTestFilePath() + streamSpecifier;
             using (FileStream fs = CreateFileStream(fileName, FileMode.Create))
             {
                 fs.WriteByte(0);

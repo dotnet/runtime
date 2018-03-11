@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Linq;
 
 namespace System.IO.Tests
 {
@@ -348,6 +349,29 @@ namespace System.IO.Tests
 
         }
 
+        [Theory,
+            InlineData("", ":bar"),
+            InlineData("", ":bar:$DATA"),
+            InlineData("::$DATA", ":bar"),
+            InlineData("::$DATA", ":bar:$DATA")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsAlternateDataStreamMove(string defaultStream, string alternateStream)
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            string testFile = Path.Combine(testDirectory.FullName, GetTestFileName());
+            string testFileDefaultStream = testFile + defaultStream;
+            string testFileAlternateStream = testFile + alternateStream;
+
+            // Cannot move into an alternate stream
+            File.WriteAllText(testFileDefaultStream, "Foo");
+            Assert.Throws<IOException>(() => Move(testFileDefaultStream, testFileAlternateStream));
+
+            // Cannot move out of an alternate stream
+            File.WriteAllText(testFileAlternateStream, "Bar");
+            string testFile2 = Path.Combine(testDirectory.FullName, GetTestFileName());
+            Assert.Throws<IOException>(() => Move(testFileAlternateStream, testFile2));
+        }
         #endregion
     }
 }
