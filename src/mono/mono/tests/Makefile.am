@@ -933,6 +933,9 @@ PROFILE_DISABLED_TESTS += \
 	assemblyresolve_event3.exe \
 	appdomain-serialize-exception.exe
 
+PROFILE_DISABLED_TESTS += \
+	delegate15.exe
+
 # https://bugzilla.xamarin.com/show_bug.cgi?id=60973
 PROFILE_DISABLED_TESTS += \
 	weak-fields.exe
