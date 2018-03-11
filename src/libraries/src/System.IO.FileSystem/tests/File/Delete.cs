@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using Xunit;
 using Xunit.NetCore.Extensions;
 
@@ -10,8 +9,6 @@ namespace System.IO.Tests
 {
     public class File_Delete : FileSystemTest
     {
-        #region Utilities
-
         public virtual void Delete(string path)
         {
             File.Delete(path);
@@ -23,8 +20,6 @@ namespace System.IO.Tests
             ret.Create().Dispose();
             return ret;
         }
-
-        #endregion
 
         #region UniversalTests
 
@@ -197,6 +192,24 @@ namespace System.IO.Tests
             testFile.Attributes = FileAttributes.ReadOnly;
             Delete(testFile.FullName);
             Assert.False(testFile.Exists);
+        }
+
+        [Theory,
+            InlineData(":bar"),
+            InlineData(":bar:$DATA")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsDeleteAlternateDataStream(string streamName)
+        {
+            FileInfo testFile = Create(GetTestFilePath());
+            testFile.Create().Dispose();
+            streamName = testFile.FullName + streamName;
+            File.Create(streamName).Dispose();
+            Assert.True(File.Exists(streamName));
+            Delete(streamName);
+            Assert.False(File.Exists(streamName));
+            testFile.Refresh();
+            Assert.True(testFile.Exists);
         }
 
         #endregion

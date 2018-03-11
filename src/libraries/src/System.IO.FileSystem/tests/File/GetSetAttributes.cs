@@ -18,6 +18,20 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => GetAttributes(GetTestFilePath() + trailingChar));
         }
 
+        // Getting only throws for File, not FileInfo
+        [Theory,
+            InlineData(":bar"),
+            InlineData(":bar:$DATA")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void GetAttributes_MissingAlternateDataStream_Windows(string streamName)
+        {
+            string path = CreateItem();
+            streamName = path + streamName;
+
+            Assert.Throws<FileNotFoundException>(() => GetAttributes(streamName));
+        }
+
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void GetAttributes_MissingDirectory(char trailingChar)
         {
