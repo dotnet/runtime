@@ -8,14 +8,10 @@ namespace System.IO.Tests
 {
     public class File_Create_str : FileSystemTest
     {
-        #region Utilities
-
         public virtual FileStream Create(string path)
         {
             return File.Create(path);
         }
-
-        #endregion
 
         #region UniversalTests
 
@@ -280,6 +276,49 @@ namespace System.IO.Tests
             using (Create(Path.Combine(testDir.FullName, path)))
             {
                 Assert.True(File.Exists(Path.Combine(testDir.FullName, path)));
+            }
+        }
+
+        [Theory,
+            InlineData(":bar"),
+            InlineData(":bar:$DATA"),
+            InlineData("::$DATA")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsAlternateDataStream(string streamName)
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+            streamName = Path.Combine(testDirectory.FullName, GetTestFileName()) + streamName;
+            using (Create(streamName))
+            {
+                Assert.True(File.Exists(streamName));
+            }
+        }
+
+        [Theory,
+            InlineData(":bar"),
+            InlineData(":bar:$DATA")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void WindowsAlternateDataStream_OnExisting(string streamName)
+        {
+            DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());
+
+            // On closed file
+            string fileName = Path.Combine(testDirectory.FullName, GetTestFileName());
+            Create(fileName).Dispose();
+            streamName = fileName + streamName;
+            using (Create(streamName))
+            {
+                Assert.True(File.Exists(streamName));
+            }
+
+            // On open file
+            fileName = Path.Combine(testDirectory.FullName, GetTestFileName());
+            using (Create(fileName))
+            using (Create(streamName))
+            {
+                Assert.True(File.Exists(streamName));
             }
         }
 
