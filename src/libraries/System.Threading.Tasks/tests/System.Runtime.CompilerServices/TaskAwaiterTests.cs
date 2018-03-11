@@ -123,7 +123,6 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ActiveIssue(27675, ~TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public async Task Await_TaskCompletesOnNonDefaultSyncCtx_ContinuesOnDefaultSyncCtx()
         {
@@ -154,7 +153,6 @@ namespace System.Threading.Tasks.Tests
             });
         }
 
-        [ActiveIssue(27675, ~TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public async Task Await_TaskCompletesOnNonDefaultScheduler_ContinuesOnDefaultScheduler()
         {
