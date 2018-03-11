@@ -9,7 +9,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 3
 #define LOG_VERSION_MINOR 0
-#define LOG_DATA_VERSION 16
+#define LOG_DATA_VERSION 17
 
 /*
  * Changes in major/minor versions:
@@ -85,6 +85,7 @@
                added generation field to TYPE_HEAO_OBJECT
                added TYPE_AOT_ID
                removed TYPE_SAMPLE_UBIN
+ * version 17: MONO_PROFILER_CODE_BUFFER_{METHOD_TRAMPOLINE,MONITOR} are no longer produced
  */
 
 /*

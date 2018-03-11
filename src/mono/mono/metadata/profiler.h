@@ -131,7 +131,13 @@ typedef enum {
 	 * The \c data parameter is a \c MonoMethod pointer.
 	 */
 	MONO_PROFILER_CODE_BUFFER_METHOD = 0,
+	/**
+	 * \deprecated No longer used.
+	 */
 	MONO_PROFILER_CODE_BUFFER_METHOD_TRAMPOLINE = 1,
+	/**
+	 * The \c data parameter is a \c MonoMethod pointer.
+	 */
 	MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE = 2,
 	MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE = 3,
 	MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE = 4,
@@ -140,6 +146,9 @@ typedef enum {
 	 */
 	MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE = 5,
 	MONO_PROFILER_CODE_BUFFER_HELPER = 6,
+	/**
+	 * \deprecated No longer used.
+	 */
 	MONO_PROFILER_CODE_BUFFER_MONITOR = 7,
 	MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE = 8,
 	MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING = 9,
