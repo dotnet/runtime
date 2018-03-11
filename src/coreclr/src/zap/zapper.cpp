@@ -167,6 +167,8 @@ STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPat
 
     EX_TRY
     {
+        GetCompileInfo()->SetIsGeneratingNgenPDB(TRUE);
+
         NGenOptions ngo = {0};
         ngo.dwSize = sizeof(NGenOptions);
 
@@ -1060,8 +1062,6 @@ void Zapper::CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImag
     EX_TRY
     {
         CORINFO_ASSEMBLY_HANDLE hAssembly = NULL;
-
-        m_pEECompileInfo->SetIsGeneratingNgenPDB(TRUE);
 
         IfFailThrow(m_pEECompileInfo->LoadAssemblyByPath(
             pAssemblyPathOrName, 
