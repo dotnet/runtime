@@ -184,7 +184,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnost
 #endif
 /* keep in sync with the enum in mini.h */
 const char
-ins_info[] = {
+mini_ins_info[] = {
 #include "mini-ops.h"
 };
 #undef MINI_OP
@@ -196,7 +196,7 @@ ins_info[] = {
  * This should contain the index of the last sreg + 1. This is not the same
  * as the number of sregs for opcodes like IA64_CMP_EQ_IMM.
  */
-const gint8 ins_sreg_counts[] = {
+const gint8 mini_ins_sreg_counts[] = {
 #include "mini-ops.h"
 };
 #undef MINI_OP
@@ -754,7 +754,7 @@ mono_create_exvar_for_offset (MonoCompile *cfg, int offset)
  * FIXME: return a MonoType/MonoClass for the byref and VALUETYPE cases.
  */
 void
-type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
+mini_type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 {
 	MonoClass *klass;
 
@@ -824,7 +824,7 @@ handle_enum:
 			g_assert (cfg->gsharedvt);
 			inst->type = STACK_VTYPE;
 		} else {
-			type_to_eval_stack_type (cfg, mini_get_underlying_type (type), inst);
+			mini_type_to_eval_stack_type (cfg, mini_get_underlying_type (type), inst);
 		}
 		return;
 	default:
@@ -2184,7 +2184,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	call->rgctx_reg = rgctx;
 	sig_ret = mini_get_underlying_type (sig->ret);
 
-	type_to_eval_stack_type ((cfg), sig_ret, &call->inst);
+	mini_type_to_eval_stack_type ((cfg), sig_ret, &call->inst);
 
 	if (tail) {
 		if (mini_type_is_vtype (sig_ret)) {
@@ -8599,7 +8599,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_sharable_method (cfg, cmethod, fsig, sp))) {
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					type_to_eval_stack_type ((cfg), fsig->ret, ins);
+					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
 					emit_widen = FALSE;
 				}
 
@@ -8771,7 +8771,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* Conversion to a JIT intrinsic */
 			if ((cfg->opt & MONO_OPT_INTRINS) && (ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
 				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					type_to_eval_stack_type ((cfg), fsig->ret, ins);
+					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
 					emit_widen = FALSE;
 				}
 				goto call_end;
@@ -10048,7 +10048,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (alloc == NULL) {
 				/* Valuetype */
 				EMIT_NEW_TEMPLOAD (cfg, ins, iargs [0]->inst_c0);
-				type_to_eval_stack_type (cfg, &ins->klass->byval_arg, ins);
+				mini_type_to_eval_stack_type (cfg, &ins->klass->byval_arg, ins);
 				*sp++= ins;
 			} else {
 				*sp++ = alloc;
@@ -10832,7 +10832,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					case MONO_TYPE_PTR:
 					case MONO_TYPE_FNPTR:
 						EMIT_NEW_PCONST (cfg, *sp, *((gpointer *)addr));
-						type_to_eval_stack_type ((cfg), field->type, *sp);
+						mini_type_to_eval_stack_type ((cfg), field->type, *sp);
 						sp++;
 						break;
 					case MONO_TYPE_STRING:
@@ -10842,7 +10842,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					case MONO_TYPE_ARRAY:
 						if (!mono_gc_is_moving ()) {
 							EMIT_NEW_PCONST (cfg, *sp, *((gpointer *)addr));
-							type_to_eval_stack_type ((cfg), field->type, *sp);
+							mini_type_to_eval_stack_type ((cfg), field->type, *sp);
 							sp++;
 						} else {
 							is_const = FALSE;

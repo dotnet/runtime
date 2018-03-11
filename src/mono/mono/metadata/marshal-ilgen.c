@@ -2829,7 +2829,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		int label_false;
 		guint8 ldc_op = CEE_LDC_I4_1;
 
-		local_type = marshal_boolean_conv_in_get_local_type (spec, &ldc_op);
+		local_type = mono_marshal_boolean_conv_in_get_local_type (spec, &ldc_op);
 		if (t->byref)
 			*conv_arg_type = int_type;
 		else
@@ -2887,7 +2887,7 @@ emit_marshal_boolean_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		guint8 ldop = CEE_LDIND_I4;
 		int label_null, label_false;
 
-		conv_arg_class = marshal_boolean_managed_conv_in_get_conv_arg_class (spec, &ldop);
+		conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, &ldop);
 		conv_arg = mono_mb_add_local (mb, boolean_type);
 
 		if (t->byref)

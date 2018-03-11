@@ -55,7 +55,7 @@
 MonoStats mono_stats;
 
 /* Statistics */
-extern gint32 inflated_methods_size;
+extern gint32 mono_inflated_methods_size;
 
 /* Function supplied by the runtime to find classes by name using information from the AOT file */
 static MonoGetClassFromName get_class_from_name = NULL;
@@ -994,7 +994,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	UnlockedIncrement (&mono_stats.inflated_method_count);
 
-	UnlockedAdd (&inflated_methods_size,  sizeof (MonoMethodInflated));
+	UnlockedAdd (&mono_inflated_methods_size,  sizeof (MonoMethodInflated));
 
 	sig = mono_method_signature (method);
 	if (!sig) {
@@ -1764,7 +1764,7 @@ get_image_for_container (MonoGenericContainer *container)
 }
 
 MonoImage *
-get_image_for_generic_param (MonoGenericParam *param)
+mono_get_image_for_generic_param (MonoGenericParam *param)
 {
 	MonoGenericContainer *container = mono_generic_param_owner (param);
 	g_assert_checked (container);
@@ -1774,7 +1774,7 @@ get_image_for_generic_param (MonoGenericParam *param)
 // Make a string in the designated image consisting of a single integer.
 #define INT_STRING_SIZE 16
 char *
-make_generic_name_string (MonoImage *image, int num)
+mono_make_generic_name_string (MonoImage *image, int num)
 {
 	char *name = (char *)mono_image_alloc0 (image, INT_STRING_SIZE);
 	g_snprintf (name, INT_STRING_SIZE, "%d", num);

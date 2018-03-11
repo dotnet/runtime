@@ -47,7 +47,7 @@ static MONO_ALWAYS_INLINE void
 par_copy_object_no_checks (char *destination, GCVTable vt, void *obj, mword objsize)
 {
 	sgen_client_pre_copy_checks (destination, vt, obj, objsize);
-	binary_protocol_copy (obj, destination, vt, objsize);
+	sgen_binary_protocol_copy (obj, destination, vt, objsize);
 
 	/* FIXME: assumes object layout */
 	memcpy ((char*)destination + sizeof (mword), (char*)obj + sizeof (mword), objsize - sizeof (mword));

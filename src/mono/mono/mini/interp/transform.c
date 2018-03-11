@@ -774,7 +774,7 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (method->string_ctor)
 		return FALSE;
 
-	for (l = jit_classes; l; l = l->next) {
+	for (l = mono_interp_jit_classes; l; l = l->next) {
 		char *class_name = l->data;
 		// FIXME: Namespaces
 		if (!strcmp (method->klass->name, class_name))
@@ -1758,7 +1758,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 	td->clause_indexes = g_malloc (header->code_size * sizeof (int));
-	td->gen_sdb_seq_points = debug_options.gen_sdb_seq_points;
+	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
 	td->seq_points = g_ptr_array_new ();
 	td->relocs = g_ptr_array_new ();
 	td->verbose_level = mono_interp_traceopt;

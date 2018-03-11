@@ -64,11 +64,11 @@ struct _LOSSection {
 };
 
 /* We allow read only access on the list while sweep is not running */
-LOSObject *los_object_list = NULL;
+LOSObject *sgen_los_object_list = NULL;
 /* Memory used by LOS objects */
-mword los_memory_usage = 0;
+mword sgen_los_memory_usage = 0;
 /* Total memory used by the LOS allocator */
-mword los_memory_usage_total = 0;
+mword sgen_los_memory_usage_total = 0;
 
 static LOSSection *los_sections = NULL;
 static LOSFreeChunks *los_fast_free_lists [LOS_NUM_FAST_SIZES]; /* 0 is for larger sizes */
@@ -101,7 +101,7 @@ los_consistency_check (void)
 	int i;
 	mword memory_usage = 0;
 
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		mword obj_size = sgen_los_object_size (obj);
 		char *end = obj->data + obj_size;
 		int start_index, num_chunks;
@@ -139,7 +139,7 @@ los_consistency_check (void)
 		}
 	}
 
-	g_assert (los_memory_usage == memory_usage);
+	g_assert (sgen_los_memory_usage == memory_usage);
 }
 #endif
 
@@ -272,7 +272,7 @@ get_los_section_memory (size_t size)
 	section->next = los_sections;
 	los_sections = section;
 
-	los_memory_usage_total += LOS_SECTION_SIZE;
+	sgen_los_memory_usage_total += LOS_SECTION_SIZE;
 	++los_num_sections;
 
 	goto retry;
@@ -318,9 +318,9 @@ sgen_los_free_object (LOSObject *obj)
 #ifndef LOS_DUMMY
 	mword size = sgen_los_object_size (obj);
 	SGEN_LOG (4, "Freed large object %p, size %lu", obj->data, (unsigned long)size);
-	binary_protocol_empty (obj->data, size);
+	sgen_binary_protocol_empty (obj->data, size);
 
-	los_memory_usage -= size;
+	sgen_los_memory_usage -= size;
 	los_num_objects--;
 
 #ifdef USE_MALLOC
@@ -331,7 +331,7 @@ sgen_los_free_object (LOSObject *obj)
 		size += sizeof (LOSObject);
 		size = SGEN_ALIGN_UP_TO (size, pagesize);
 		sgen_free_os_memory ((gpointer)SGEN_ALIGN_DOWN_TO ((mword)obj, pagesize), size, SGEN_ALLOC_HEAP, MONO_MEM_ACCOUNT_SGEN_LOS);
-		los_memory_usage_total -= size;
+		sgen_los_memory_usage_total -= size;
 		sgen_memgov_release_space (size, SPACE_LOS);
 	} else {
 		free_los_section_memory (obj, size + sizeof (LOSObject));
@@ -390,7 +390,7 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 		if (sgen_memgov_try_alloc_space (alloc_size, SPACE_LOS)) {
 			obj = (LOSObject *)sgen_alloc_os_memory (alloc_size, (SgenAllocFlags)(SGEN_ALLOC_HEAP | SGEN_ALLOC_ACTIVATE), NULL, MONO_MEM_ACCOUNT_SGEN_LOS);
 			if (obj) {
-				los_memory_usage_total += alloc_size;
+				sgen_los_memory_usage_total += alloc_size;
 				obj = randomize_los_object_start (obj, obj_size, alloc_size, pagesize);
 			}
 		}
@@ -408,17 +408,17 @@ sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
 	vtslot = (void**)obj->data;
 	*vtslot = vtable;
 	sgen_update_heap_boundaries ((mword)obj->data, (mword)obj->data + size);
-	obj->next = los_object_list;
+	obj->next = sgen_los_object_list;
 	/*
 	 * We need a memory barrier so we don't expose as head of the los object list
 	 * a LOSObject that doesn't have its fields initialized.
 	 */
 	mono_memory_write_barrier ();
-	los_object_list = obj;
-	los_memory_usage += size;
+	sgen_los_object_list = obj;
+	sgen_los_memory_usage += size;
 	los_num_objects++;
 	SGEN_LOG (4, "Allocated large object %p, vtable: %p (%s), size: %zd", obj->data, vtable, sgen_client_vtable_get_name (vtable), size);
-	binary_protocol_alloc (obj->data, vtable, size, sgen_client_get_provenance ());
+	sgen_binary_protocol_alloc (obj->data, vtable, size, sgen_client_get_provenance ());
 
 #ifdef LOS_CONSISTENCY_CHECK
 	los_consistency_check ();
@@ -439,7 +439,7 @@ sgen_los_sweep (void)
 
 	/* sweep the big objects list */
 	prevbo = NULL;
-	for (bigobj = los_object_list; bigobj;) {
+	for (bigobj = sgen_los_object_list; bigobj;) {
 		SGEN_ASSERT (0, !SGEN_OBJECT_IS_PINNED (bigobj->data), "Who pinned a LOS object?");
 
 		if (sgen_los_object_is_pinned (bigobj->data)) {
@@ -457,7 +457,7 @@ sgen_los_sweep (void)
 			if (prevbo)
 				prevbo->next = bigobj->next;
 			else
-				los_object_list = bigobj->next;
+				sgen_los_object_list = bigobj->next;
 			to_free = bigobj;
 			bigobj = bigobj->next;
 			sgen_los_free_object (to_free);
@@ -484,7 +484,7 @@ sgen_los_sweep (void)
 			sgen_memgov_release_space (LOS_SECTION_SIZE, SPACE_LOS);
 			section = next;
 			--los_num_sections;
-			los_memory_usage_total -= LOS_SECTION_SIZE;
+			sgen_los_memory_usage_total -= LOS_SECTION_SIZE;
 			continue;
 		}
 
@@ -509,7 +509,7 @@ sgen_los_sweep (void)
 #endif
 
 	/*
-	g_print ("LOS sections: %d  objects: %d  usage: %d\n", num_sections, los_num_objects, los_memory_usage);
+	g_print ("LOS sections: %d  objects: %d  usage: %d\n", num_sections, los_num_objects, sgen_los_memory_usage);
 	for (i = 0; i < LOS_NUM_FAST_SIZES; ++i) {
 		int num_chunks = 0;
 		LOSFreeChunks *free_chunks;
@@ -529,7 +529,7 @@ sgen_ptr_is_in_los (char *ptr, char **start)
 
 	if (start)
 		*start = NULL;
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		char *end = (char*)obj->data + sgen_los_object_size (obj);
 
 		if (ptr >= (char*)obj->data && ptr < end) {
@@ -546,7 +546,7 @@ sgen_los_iterate_objects (IterateObjectCallbackFunc cb, void *user_data)
 {
 	LOSObject *obj;
 
-	for (obj = los_object_list; obj; obj = obj->next)
+	for (obj = sgen_los_object_list; obj; obj = obj->next)
 		cb (obj->data, sgen_los_object_size (obj), user_data);
 }
 
@@ -555,7 +555,7 @@ sgen_los_is_valid_object (char *object)
 {
 	LOSObject *obj;
 
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		if ((char*)obj->data == object)
 			return TRUE;
 	}
@@ -567,7 +567,7 @@ mono_sgen_los_describe_pointer (char *ptr)
 {
 	LOSObject *obj;
 
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		const char *los_kind;
 		mword size;
 		gboolean pinned;
@@ -599,7 +599,7 @@ void
 sgen_los_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
 {
 	LOSObject *obj;
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		GCVTable vt = SGEN_LOAD_VTABLE (obj->data);
 		if (SGEN_VTABLE_HAS_REFERENCES (vt))
 			callback ((mword)obj->data, sgen_los_object_size (obj));
@@ -630,8 +630,8 @@ sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int 
 	LOSObject *obj;
 	int i = 0;
 
-	binary_protocol_los_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
-	for (obj = los_object_list; obj; obj = obj->next, i++) {
+	sgen_binary_protocol_los_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
+	for (obj = sgen_los_object_list; obj; obj = obj->next, i++) {
 		mword num_cards = 0;
 		guint8 *cards;
 
@@ -669,7 +669,7 @@ sgen_los_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int 
 		if (scan_type == CARDTABLE_SCAN_MOD_UNION_PRECLEAN)
 			sgen_free_internal_dynamic (cards, num_cards, INTERNAL_MEM_CARDTABLE_MOD_UNION);
 	}
-	binary_protocol_los_card_table_scan_end (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
+	sgen_binary_protocol_los_card_table_scan_end (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 }
 
 void
@@ -679,7 +679,7 @@ sgen_los_count_cards (long long *num_total_cards, long long *num_marked_cards)
 	long long total_cards = 0;
 	long long marked_cards = 0;
 
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		int i;
 		guint8 *cards = sgen_card_table_get_card_scan_address ((mword) obj->data);
 		guint8 *cards_end = sgen_card_table_get_card_scan_address ((mword) obj->data + sgen_los_object_size (obj) - 1);
@@ -704,7 +704,7 @@ sgen_los_update_cardtable_mod_union (void)
 {
 	LOSObject *obj;
 
-	for (obj = los_object_list; obj; obj = obj->next) {
+	for (obj = sgen_los_object_list; obj; obj = obj->next) {
 		if (!SGEN_OBJECT_HAS_REFERENCES (obj->data))
 			continue;
 		sgen_card_table_update_mod_union (get_cardtable_mod_union_for_object (obj),
@@ -727,7 +727,7 @@ sgen_los_pin_object (GCObject *data)
 {
 	LOSObject *obj = sgen_los_header_for_object (data);
 	obj->size = obj->size | 1;
-	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
+	sgen_binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
 }
 
 gboolean
@@ -744,7 +744,7 @@ sgen_los_pin_object_par (GCObject *data)
 #endif
 	if (old_size & 1)
 		return FALSE;
-	binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
+	sgen_binary_protocol_pin (data, (gpointer)SGEN_LOAD_VTABLE (data), sgen_safe_object_get_size (data));
 	return TRUE;
 }
 

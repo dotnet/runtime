@@ -168,7 +168,7 @@ sgen_pin_stats_register_object (GCObject *obj, int generation)
 	int pin_types = 0;
 	size_t size = 0;
 
-	if (binary_protocol_is_enabled ()) {
+	if (sgen_binary_protocol_is_enabled ()) {
 		size = sgen_safe_object_get_size (obj);
 		pinned_bytes_in_generation [generation] += size;
 		++pinned_objects_in_generation [generation];
@@ -209,27 +209,27 @@ sgen_pin_stats_report (void)
 	PinnedClassEntry *pinned_entry;
 	GlobalRemsetClassEntry *remset_entry;
 
-	binary_protocol_pin_stats (pinned_objects_in_generation [GENERATION_NURSERY], pinned_bytes_in_generation [GENERATION_NURSERY],
+	sgen_binary_protocol_pin_stats (pinned_objects_in_generation [GENERATION_NURSERY], pinned_bytes_in_generation [GENERATION_NURSERY],
 			pinned_objects_in_generation [GENERATION_OLD], pinned_bytes_in_generation [GENERATION_OLD]);
 
 	if (!do_pin_stats)
 		return;
 
-	mono_gc_printf (gc_debug_file, "\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
+	mono_gc_printf (sgen_gc_debug_file, "\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
 	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, char *, name, PinnedClassEntry *, pinned_entry) {
 		int i;
-		mono_gc_printf (gc_debug_file, "%-50s", name);
+		mono_gc_printf (sgen_gc_debug_file, "%-50s", name);
 		for (i = 0; i < PIN_TYPE_MAX; ++i)
-			mono_gc_printf (gc_debug_file, "  %10ld", pinned_entry->num_pins [i]);
-		mono_gc_printf (gc_debug_file, "\n");
+			mono_gc_printf (sgen_gc_debug_file, "  %10ld", pinned_entry->num_pins [i]);
+		mono_gc_printf (sgen_gc_debug_file, "\n");
 	} SGEN_HASH_TABLE_FOREACH_END;
 
-	mono_gc_printf (gc_debug_file, "\n%-50s  %10s\n", "Class", "#Remsets");
+	mono_gc_printf (sgen_gc_debug_file, "\n%-50s  %10s\n", "Class", "#Remsets");
 	SGEN_HASH_TABLE_FOREACH (&global_remset_class_hash_table, char *, name, GlobalRemsetClassEntry *, remset_entry) {
-		mono_gc_printf (gc_debug_file, "%-50s  %10ld\n", name, remset_entry->num_remsets);
+		mono_gc_printf (sgen_gc_debug_file, "%-50s  %10ld\n", name, remset_entry->num_remsets);
 	} SGEN_HASH_TABLE_FOREACH_END;
 
-	mono_gc_printf (gc_debug_file, "\nTotal bytes pinned from stack: %ld  static: %ld  other: %ld\n",
+	mono_gc_printf (sgen_gc_debug_file, "\nTotal bytes pinned from stack: %ld  static: %ld  other: %ld\n",
 			pinned_byte_counts [PIN_TYPE_STACK],
 			pinned_byte_counts [PIN_TYPE_STATIC_DATA],
 			pinned_byte_counts [PIN_TYPE_OTHER]);

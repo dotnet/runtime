@@ -820,7 +820,7 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
  * mono_arch_create_sdb_trampoline:
  *
  *   Return a trampoline which captures the current context, passes it to
- * debugger_agent_single_step_from_context ()/debugger_agent_breakpoint_from_context (),
+ * mono_debugger_agent_single_step_from_context ()/mono_debugger_agent_breakpoint_from_context (),
  * then restores the (potentially changed) context.
  */
 guint8*
@@ -885,9 +885,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_breakpoint_from_context");
 	} else {
 		if (single_step)
-			amd64_mov_reg_imm (code, AMD64_R11, debugger_agent_single_step_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, mono_debugger_agent_single_step_from_context);
 		else
-			amd64_mov_reg_imm (code, AMD64_R11, debugger_agent_breakpoint_from_context);
+			amd64_mov_reg_imm (code, AMD64_R11, mono_debugger_agent_breakpoint_from_context);
 	}	
 	amd64_call_reg (code, AMD64_R11);
 

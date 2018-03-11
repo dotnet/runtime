@@ -4372,11 +4372,11 @@ mono_verifier_verify_methodimpl_row (MonoImage *image, guint32 row, MonoError *e
 
 	mono_metadata_decode_row (table, row, data, MONO_METHODIMPL_SIZE);
 
-	body = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_BODY], NULL, error);
+	body = mono_method_from_method_def_or_ref (image, data [MONO_METHODIMPL_BODY], NULL, error);
 	if (!body)
 		return FALSE;
 
-	declaration = method_from_method_def_or_ref (image, data [MONO_METHODIMPL_DECLARATION], NULL, error);
+	declaration = mono_method_from_method_def_or_ref (image, data [MONO_METHODIMPL_DECLARATION], NULL, error);
 	if (!declaration)
 		return FALSE;
 

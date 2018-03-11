@@ -59,7 +59,7 @@ MonoBoolean ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (Mon
 /* System.Security.SecureString */
 extern void ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope);
 extern void ves_icall_System_Security_SecureString_EncryptInternal (MonoArray *data, MonoObject *scope);
-void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error);
+void mono_invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error);
 
 G_END_DECLS
 

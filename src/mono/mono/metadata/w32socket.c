@@ -2813,7 +2813,7 @@ mono_network_cleanup (void)
 }
 
 void
-icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoError *error)
+ves_icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoError *error)
 {
 	error_init (error);
 	MonoInternalThreadHandle internal = MONO_HANDLE_NEW_GET (MonoInternalThread, thread, internal_thread);

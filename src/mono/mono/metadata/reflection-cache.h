@@ -25,10 +25,10 @@ typedef struct {
 } ReflectedEntry;
 
 gboolean
-reflected_equal (gconstpointer a, gconstpointer b);
+mono_reflected_equal (gconstpointer a, gconstpointer b);
 
 guint
-reflected_hash (gconstpointer a);
+mono_reflected_hash (gconstpointer a);
 
 static inline ReflectedEntry*
 alloc_reflected_entry (MonoDomain *domain)
@@ -56,7 +56,7 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 
 	mono_domain_lock (domain);
 	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_conc_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
+		domain->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
 
 	obj = (MonoObject*) mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe);
 	if (obj == NULL) {
@@ -80,7 +80,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 
 	mono_domain_lock (domain);
 	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_conc_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
+		domain->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
 
 	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {

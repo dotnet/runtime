@@ -63,7 +63,7 @@ lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 	}
 
 	load->opcode = mono_type_to_regmove (cfg, type);
-	type_to_eval_stack_type (cfg, type, load);
+	mini_type_to_eval_stack_type (cfg, type, load);
 	load->sreg1 = var->dreg;
 	mono_atomic_inc_i32 (&mono_jit_stats.loads_eliminated);
 	return TRUE;
@@ -98,7 +98,7 @@ lower_store (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 		store->opcode = coerce_op;
 	else
 		store->opcode = mono_type_to_regmove (cfg, type);
-	type_to_eval_stack_type (cfg, type, store);
+	mini_type_to_eval_stack_type (cfg, type, store);
 	store->dreg = var->dreg;
 	mono_atomic_inc_i32 (&mono_jit_stats.stores_eliminated);
 	return TRUE;

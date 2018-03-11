@@ -189,7 +189,7 @@ set_info_templates (MonoImage *image, MonoRuntimeGenericContextTemplate *templat
 
 		/* FIXME: quadratic! */
 		while (length < type_argc) {
-			template_->method_templates = g_slist_append_image (image, template_->method_templates, NULL);
+			template_->method_templates = mono_g_slist_append_image (image, template_->method_templates, NULL);
 			length++;
 		}
 
@@ -3527,7 +3527,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	key.param.gshared_constraint = constraint;
 
 	g_assert (mono_generic_param_info (par));
-	image = get_image_for_generic_param(par);
+	image = mono_get_image_for_generic_param(par);
 
 	/*
 	 * Need a cache to ensure the newly created gparam

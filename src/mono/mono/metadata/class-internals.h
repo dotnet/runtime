@@ -1245,10 +1245,10 @@ gpointer
 mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
 MonoImage *
-get_image_for_generic_param (MonoGenericParam *param);
+mono_get_image_for_generic_param (MonoGenericParam *param);
 
 char *
-make_generic_name_string (MonoImage *image, int num);
+mono_make_generic_name_string (MonoImage *image, int num);
 
 MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name) MONO_LLVM_INTERNAL;

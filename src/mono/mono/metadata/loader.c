@@ -73,7 +73,7 @@ static gint32 signatures_size;
  * This TLS variable holds how many times the current thread has acquired the loader 
  * lock.
  */
-MonoNativeTlsKey loader_lock_nest_id;
+static MonoNativeTlsKey loader_lock_nest_id;
 
 static void dllmap_cleanup (void);
 static void cached_module_cleanup(void);

@@ -1890,7 +1890,7 @@ ves_icall_System_Reflection_FieldInfo_GetTypeModifiers (MonoReflectionFieldHandl
 }
 
 ICALL_EXPORT int
-vell_icall_get_method_attributes (MonoMethod *method)
+ves_icall_get_method_attributes (MonoMethod *method)
 {
 	return method->flags;
 }
@@ -5357,7 +5357,7 @@ ves_icall_System_RuntimeType_getFullName (MonoReflectionTypeHandle object, gbool
 }
 
 ICALL_EXPORT int
-vell_icall_RuntimeType_get_core_clr_security_level (MonoReflectionTypeHandle rfield, MonoError *error)
+ves_icall_RuntimeType_get_core_clr_security_level (MonoReflectionTypeHandle rfield, MonoError *error)
 {
 	error_init (error);
 	MonoType *type = MONO_HANDLE_GETVAL (rfield, type);
@@ -7804,7 +7804,7 @@ mono_type_from_blob_type (MonoType *type, MonoTypeEnum blob_type, MonoType *real
 }
 
 ICALL_EXPORT MonoObject*
-property_info_get_default_value (MonoReflectionProperty *property)
+ves_icall_property_info_get_default_value (MonoReflectionProperty *property)
 {
 	ERROR_DECL (error);
 	MonoType blob_type;

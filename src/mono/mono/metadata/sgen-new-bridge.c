@@ -179,7 +179,7 @@ set_config (const SgenBridgeProcessorConfig *config)
 static MonoGCBridgeObjectKind
 class_kind (MonoClass *klass)
 {
-	MonoGCBridgeObjectKind res = bridge_callbacks.bridge_class_kind (klass);
+	MonoGCBridgeObjectKind res = mono_bridge_callbacks.bridge_class_kind (klass);
 
 	/* If it's a bridge, nothing we can do about it. */
 	if (res == GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS || res == GC_BRIDGE_OPAQUE_BRIDGE_CLASS)
@@ -197,7 +197,7 @@ class_kind (MonoClass *klass)
 
 		/* FIXME the bridge check can be quite expensive, cache it at the class level. */
 		/* An array of a sealed type that is not a bridge will never get to a bridge */
-		if ((mono_class_get_flags (elem_class) & TYPE_ATTRIBUTE_SEALED) && !m_class_has_references (elem_class) && !bridge_callbacks.bridge_class_kind (elem_class)) {
+		if ((mono_class_get_flags (elem_class) & TYPE_ATTRIBUTE_SEALED) && !m_class_has_references (elem_class) && !mono_bridge_callbacks.bridge_class_kind (elem_class)) {
 			SGEN_LOG (6, "class %s is opaque\n", m_class_get_name (klass));
 			return GC_BRIDGE_OPAQUE_CLASS;
 		}
@@ -764,7 +764,7 @@ processing_build_callback_data (int generation)
 	if (!dyn_array_ptr_size (&registered_bridges))
 		return;
 
-	g_assert (bridge_processing_in_progress);
+	g_assert (mono_bridge_processing_in_progress);
 
 	SGEN_TV_GETTIME (atv);
 

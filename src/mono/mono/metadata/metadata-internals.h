@@ -665,10 +665,10 @@ char*
 mono_image_strdup_printf (MonoImage *image, const char *format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);;
 
 GList*
-g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
+mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 
 GSList*
-g_slist_append_image (MonoImage *image, GSList *list, gpointer data);
+mono_g_slist_append_image (MonoImage *image, GSList *list, gpointer data);
 
 void
 mono_image_lock (MonoImage *image);
@@ -906,7 +906,7 @@ MonoException *mono_get_exception_field_access_msg (const char *msg);
 
 MonoException *mono_get_exception_method_access_msg (const char *msg);
 
-MonoMethod* method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error);
+MonoMethod* mono_method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error);
 
 MonoMethod *mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, MonoClass *constrained_class, MonoGenericContext *context, MonoError *error);
 MonoMethod *mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass *constrained_class, MonoGenericContext *context, MonoMethod **cil_method, MonoError *error);
@@ -939,7 +939,7 @@ MonoType*
 mono_metadata_parse_type_checked (MonoImage *m, MonoGenericContainer *container, short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error);
 
 MonoGenericContainer *
-get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar);
+mono_get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar);
 
 char *
 mono_image_set_description (MonoImageSet *);

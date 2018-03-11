@@ -173,7 +173,7 @@ GRAY_OBJECT_ENQUEUE (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor desc, g
 
 		*++queue->cursor = entry;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-		binary_protocol_gray_enqueue (queue, queue->cursor, obj);
+		sgen_binary_protocol_gray_enqueue (queue, queue->cursor, obj);
 #endif
 	}
 #endif
@@ -203,7 +203,7 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, SgenDescriptor *desc,
 		*obj = entry.obj;
 		*desc = entry.desc;
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-		binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
+		sgen_binary_protocol_gray_dequeue (queue, queue->cursor + 1, *obj);
 #endif
 	}
 #endif

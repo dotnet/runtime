@@ -1769,7 +1769,7 @@ mini_get_single_step_trampoline (void)
 /*
  * mini_get_breakpoint_trampoline:
  *
- *   Return a trampoline which calls debugger_agent_breakpoint_from_context ().
+ *   Return a trampoline which calls mono_debugger_agent_breakpoint_from_context ().
  */
 gpointer
 mini_get_breakpoint_trampoline (void)

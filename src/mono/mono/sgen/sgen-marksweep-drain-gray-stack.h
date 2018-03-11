@@ -42,7 +42,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 
 	SGEN_ASSERT (9, obj, "null object from pointer %p", ptr);
 #if !defined(COPY_OR_MARK_CONCURRENT) && !defined(COPY_OR_MARK_CONCURRENT_WITH_EVACUATION)
-	SGEN_ASSERT (9, current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", current_collection_generation);
+	SGEN_ASSERT (9, sgen_current_collection_generation == GENERATION_OLD, "old gen parallel allocator called from a %d collection", sgen_current_collection_generation);
 #endif
 
 	if (sgen_ptr_in_nursery (obj)) {
@@ -127,7 +127,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 		MS_SET_MARK_BIT (block, word, bit);
 #endif
 		if (first)
-			binary_protocol_mark (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
+			sgen_binary_protocol_mark (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
 
 		return FALSE;
 #endif
@@ -202,7 +202,7 @@ COPY_OR_MARK_FUNCTION_NAME (GCObject **ptr, GCObject *obj, SgenGrayQueue *queue)
 #endif
 
 			if (first) {
-				binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
+				sgen_binary_protocol_pin (obj, (gpointer)SGEN_LOAD_VTABLE (obj), sgen_safe_object_get_size (obj));
 				if (SGEN_OBJECT_HAS_REFERENCES (obj))
 #ifdef COPY_OR_MARK_PARALLEL
 					GRAY_OBJECT_ENQUEUE_PARALLEL (queue, obj, desc);
@@ -238,7 +238,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #if defined(COPY_OR_MARK_CONCURRENT_WITH_EVACUATION)
 #define HANDLE_PTR(ptr,obj)	do {					\
 		GCObject *__old = *(ptr);				\
-		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
+		sgen_binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {            \
 			if (G_UNLIKELY (full_object && !sgen_ptr_in_nursery (ptr) && \
 					sgen_safe_object_is_small (__old, sgen_obj_get_descriptor (__old) & DESC_TYPE_MASK) && \
@@ -256,7 +256,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #elif defined(COPY_OR_MARK_CONCURRENT)
 #define HANDLE_PTR(ptr,obj)	do {					\
 		GCObject *__old = *(ptr);				\
-		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
+		sgen_binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old && !sgen_ptr_in_nursery (__old)) {            \
 			PREFETCH_READ (__old);			\
 			COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
@@ -268,7 +268,7 @@ SCAN_OBJECT_FUNCTION_NAME (GCObject *full_object, SgenDescriptor desc, SgenGrayQ
 #else
 #define HANDLE_PTR(ptr,obj)	do {					\
 		GCObject *__old = *(ptr);					\
-		binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
+		sgen_binary_protocol_scan_process_reference ((full_object), (ptr), __old); \
 		if (__old) {						\
 			gboolean __still_in_nursery = COPY_OR_MARK_FUNCTION_NAME ((ptr), __old, queue); \
 			if (G_UNLIKELY (__still_in_nursery && !sgen_ptr_in_nursery ((ptr)) && !SGEN_OBJECT_IS_CEMENTED (*(ptr)))) { \

@@ -169,28 +169,28 @@ enum {
 
 /* missing: finalizers, roots, non-store wbarriers */
 
-void binary_protocol_init (const char *filename, long long limit);
-gboolean binary_protocol_is_enabled (void);
+void sgen_binary_protocol_init (const char *filename, long long limit);
+gboolean sgen_binary_protocol_is_enabled (void);
 
-gboolean binary_protocol_flush_buffers (gboolean force);
+gboolean sgen_binary_protocol_flush_buffers (gboolean force);
 
 #define BEGIN_PROTOCOL_ENTRY0(method) \
-	void method (void);
+	void sgen_ ## method (void);
 #define BEGIN_PROTOCOL_ENTRY1(method,t1,f1) \
-	void method (t1 f1);
+	void sgen_ ## method (t1 f1);
 #define BEGIN_PROTOCOL_ENTRY2(method,t1,f1,t2,f2) \
-	void method (t1 f1, t2 f2);
+	void sgen_ ## method (t1 f1, t2 f2);
 #define BEGIN_PROTOCOL_ENTRY3(method,t1,f1,t2,f2,t3,f3) \
-	void method (t1 f1, t2 f2, t3 f3);
+	void sgen_ ## method (t1 f1, t2 f2, t3 f3);
 #define BEGIN_PROTOCOL_ENTRY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
-	void method (t1 f1, t2 f2, t3 f3, t4 f4);
+	void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4);
 #define BEGIN_PROTOCOL_ENTRY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
-	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5);
+	void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5);
 #define BEGIN_PROTOCOL_ENTRY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
-	void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
+	void sgen_ ##  method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-#define binary_protocol_is_heavy_enabled()	binary_protocol_is_enabled ()
+#define sgen_binary_protocol_is_heavy_enabled()	sgen_binary_protocol_is_enabled ()
 
 #define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
 	BEGIN_PROTOCOL_ENTRY0 (method)
@@ -207,22 +207,22 @@ gboolean binary_protocol_flush_buffers (gboolean force);
 #define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
 	BEGIN_PROTOCOL_ENTRY6 (method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6)
 #else
-#define binary_protocol_is_heavy_enabled()	FALSE
+#define sgen_binary_protocol_is_heavy_enabled()	FALSE
 
 #define BEGIN_PROTOCOL_ENTRY_HEAVY0(method) \
-	static inline void method (void) {}
+	static inline void sgen_ ## method (void) {}
 #define BEGIN_PROTOCOL_ENTRY_HEAVY1(method,t1,f1) \
-	static inline void method (t1 f1) {}
+	static inline void sgen_ ## method (t1 f1) {}
 #define BEGIN_PROTOCOL_ENTRY_HEAVY2(method,t1,f1,t2,f2) \
-	static inline void method (t1 f1, t2 f2) {}
+	static inline void sgen_ ## method (t1 f1, t2 f2) {}
 #define BEGIN_PROTOCOL_ENTRY_HEAVY3(method,t1,f1,t2,f2,t3,f3) \
-	static inline void method (t1 f1, t2 f2, t3 f3) {}
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3) {}
 #define BEGIN_PROTOCOL_ENTRY_HEAVY4(method,t1,f1,t2,f2,t3,f3,t4,f4) \
-	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4) {}
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4) {}
 #define BEGIN_PROTOCOL_ENTRY_HEAVY5(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5) \
-	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) {}
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5) {}
 #define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
-	static inline void method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) {}
+	static inline void sgen_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6) {}
 #endif
 
 #define DEFAULT_PRINT()

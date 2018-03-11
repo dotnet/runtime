@@ -325,13 +325,13 @@ extern gboolean	mono_using_xdebug;
 extern int mini_verbose;
 extern int valgrind_register;
 
-#define INS_INFO(opcode) (&ins_info [((opcode) - OP_START - 1) * 4])
+#define INS_INFO(opcode) (&mini_ins_info [((opcode) - OP_START - 1) * 4])
 
-extern const char ins_info[];
-extern const gint8 ins_sreg_counts [];
+extern const char mini_ins_info[];
+extern const gint8 mini_ins_sreg_counts [];
 
 #ifndef DISABLE_JIT
-#define mono_inst_get_num_src_registers(ins) (ins_sreg_counts [(ins)->opcode - OP_START - 1])
+#define mono_inst_get_num_src_registers(ins) (mini_ins_sreg_counts [(ins)->opcode - OP_START - 1])
 #else
 #define mono_inst_get_num_src_registers(ins) 0
 #endif
@@ -2499,7 +2499,7 @@ int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 
 int mini_type_stack_size (MonoType *t, int *align);
 int mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke);
-void type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst);
+void mini_type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst);
 guint mono_type_to_regmove (MonoCompile *cfg, MonoType *type) MONO_LLVM_INTERNAL;
 
 void mono_cfg_add_try_hole (MonoCompile *cfg, MonoExceptionClause *clause, guint8 *start, MonoBasicBlock *bb);

@@ -152,7 +152,7 @@ sgen_card_table_wbarrier_range_copy (gpointer _dest, gpointer _src, int size)
 	while (size) {
 		GCObject *value = *src;
 		*dest = value;
-		if (SGEN_PTR_IN_NURSERY (value, nursery_bits, start, end) || concurrent_collection_in_progress) {
+		if (SGEN_PTR_IN_NURSERY (value, nursery_bits, start, end) || sgen_concurrent_collection_in_progress) {
 			*card_address = 1;
 			sgen_dummy_use (value);
 		}
@@ -571,7 +571,7 @@ sgen_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, 
 		ctx.ops->scan_object (obj, sgen_obj_get_descriptor (obj), ctx.queue);
 	}
 
-	binary_protocol_card_scan (obj, sgen_safe_object_get_size (obj));
+	sgen_binary_protocol_card_scan (obj, sgen_safe_object_get_size (obj));
 }
 
 void

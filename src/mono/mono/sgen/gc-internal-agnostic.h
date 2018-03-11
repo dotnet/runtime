@@ -73,7 +73,7 @@ typedef struct {
 	gint64 major_gc_time_concurrent;
 } GCStats;
 
-extern GCStats gc_stats;
+extern GCStats mono_gc_stats;
 
 #ifdef HAVE_SGEN_GC
 typedef SgenDescriptor MonoGCDescriptor;

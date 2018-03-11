@@ -395,7 +395,7 @@ void mono_gc_thread_detach_with_lock (THREAD_INFO_TYPE *info);
 gboolean mono_gc_thread_in_critical_region (THREAD_INFO_TYPE *info);
 
 /* If set, print debugging messages around finalizers. */
-extern gboolean log_finalizers;
+extern gboolean mono_log_finalizers;
 
 /* If set, do not run finalizers. */
 extern gboolean mono_do_not_finalize;

@@ -1141,7 +1141,7 @@ typedef struct {
 	guint16 major, minor, build, revision;
 } IgnoredAssemblyVersion;
 
-const char *ignored_assemblies_file_names[] = {
+static const char *ignored_assemblies_file_names[] = {
 	"System.Runtime.InteropServices.RuntimeInformation.dll",
 	"System.Globalization.Extensions.dll",
 	"System.IO.Compression.dll",
@@ -1212,7 +1212,7 @@ static const IgnoredAssembly ignored_assemblies [] = {
 };
 
 
-const char *ignored_assemblies_names[] = {
+static const char *ignored_assemblies_names[] = {
 	"System.Runtime.InteropServices.RuntimeInformation",
 	"System.Globalization.Extensions",
 	"System.IO.Compression",
@@ -2819,7 +2819,7 @@ mono_image_strdup_printf (MonoImage *image, const char *format, ...)
 }
 
 GList*
-g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
+mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 {
 	GList *new_list;
 	
@@ -2837,7 +2837,7 @@ g_list_prepend_image (MonoImage *image, GList *list, gpointer data)
 }
 
 GSList*
-g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
+mono_g_slist_append_image (MonoImage *image, GSList *list, gpointer data)
 {
 	GSList *new_list;
 

@@ -385,7 +385,7 @@ set_config (const SgenBridgeProcessorConfig *config)
 static MonoGCBridgeObjectKind
 class_kind (MonoClass *klass)
 {
-	return bridge_callbacks.bridge_class_kind (klass);
+	return mono_bridge_callbacks.bridge_class_kind (klass);
 }
 
 static HashEntry*
@@ -677,7 +677,7 @@ processing_build_callback_data (int generation)
 	if (!dyn_array_ptr_size (&registered_bridges))
 		return;
 
-	g_assert (bridge_processing_in_progress);
+	g_assert (mono_bridge_processing_in_progress);
 
 	SGEN_TV_GETTIME (atv);
 

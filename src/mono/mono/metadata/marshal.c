@@ -3061,7 +3061,7 @@ emit_marshal_array_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 MonoType*
-marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
+mono_marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
 {
 	if (spec == NULL) {
 		return m_class_get_byval_arg (mono_defaults.int32_class);
@@ -3083,7 +3083,7 @@ marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*
 }
 
 MonoClass*
-marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/)
+mono_marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/)
 {
 	MonoClass* conv_arg_class = mono_defaults.int32_class;
 	if (spec) {
@@ -3118,11 +3118,11 @@ emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (t->byref)
 			*conv_arg_type = int_type;
 		else
-			*conv_arg_type = marshal_boolean_conv_in_get_local_type (spec, NULL);
+			*conv_arg_type = mono_marshal_boolean_conv_in_get_local_type (spec, NULL);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		MonoClass* conv_arg_class = marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
+		MonoClass* conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
 		if (t->byref)
 			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
 		else

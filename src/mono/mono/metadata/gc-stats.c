@@ -14,7 +14,7 @@
  * "undefined symbol" errors.
  */
 #if defined(__APPLE__)
-GCStats gc_stats = {};
+GCStats mono_gc_stats = {};
 #else
-GCStats gc_stats;
+GCStats mono_gc_stats;
 #endif

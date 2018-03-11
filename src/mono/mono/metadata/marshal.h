@@ -511,7 +511,7 @@ gboolean
 mono_marshal_free_ccw (MonoObject* obj);
 
 void
-cominterop_release_all_rcws (void); 
+mono_cominterop_release_all_rcws (void); 
 
 MonoString*
 ves_icall_mono_string_from_utf16 (gunichar2 *data);
@@ -617,10 +617,10 @@ MonoMarshalConv
 mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec, gboolean *need_free);
 
 MonoType*
-marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/);
+mono_marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/);
 
 MonoClass*
-marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/);
+mono_marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/);
 
 gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo);

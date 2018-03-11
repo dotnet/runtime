@@ -341,7 +341,7 @@ emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	mono_mb_emit_i4 (mb, MONO_MEMORY_BARRIER_NONE);
 #endif
 
-	if (nursery_canaries_enabled ()) {
+	if (sgen_nursery_canaries_enabled ()) {
 		real_size_var = mono_mb_add_local (mb, int_type);
 		mono_mb_emit_ldloc (mb, size_var);
 		mono_mb_emit_stloc(mb, real_size_var);
@@ -388,7 +388,7 @@ emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	mono_mb_emit_byte (mb, CEE_CONV_I);
 	mono_mb_emit_byte (mb, CEE_ADD);
 
-	if (nursery_canaries_enabled ()) {
+	if (sgen_nursery_canaries_enabled ()) {
 			mono_mb_emit_icon (mb, CANARY_SIZE);
 			mono_mb_emit_byte (mb, CEE_ADD);
 	}
@@ -457,7 +457,7 @@ emit_managed_allocater_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	mono_mb_emit_byte (mb, CEE_STIND_I);
 
 	/* mark object end with nursery word */
-	if (nursery_canaries_enabled ()) {
+	if (sgen_nursery_canaries_enabled ()) {
 			mono_mb_emit_ldloc (mb, p_var);
 			mono_mb_emit_ldloc (mb, real_size_var);
 			mono_mb_emit_byte (mb, MONO_CEE_ADD);

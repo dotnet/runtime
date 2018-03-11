@@ -486,7 +486,7 @@ HANDLES(ICALL(SOCK_18, "SetSocketOption_internal(intptr,System.Net.Sockets.Socke
 HANDLES(ICALL(SOCK_19, "Shutdown_internal(intptr,System.Net.Sockets.SocketShutdown,int&)", ves_icall_System_Net_Sockets_Socket_Shutdown_internal))
 HANDLES(ICALL(SOCK_20, "Socket_internal(System.Net.Sockets.AddressFamily,System.Net.Sockets.SocketType,System.Net.Sockets.ProtocolType,int&)", ves_icall_System_Net_Sockets_Socket_Socket_internal))
 HANDLES(ICALL(SOCK_20a, "SupportsPortReuse", ves_icall_System_Net_Sockets_Socket_SupportPortReuse))
-HANDLES(ICALL(SOCK_21a, "cancel_blocking_socket_operation", icall_cancel_blocking_socket_operation))
+HANDLES(ICALL(SOCK_21a, "cancel_blocking_socket_operation", ves_icall_cancel_blocking_socket_operation))
 
 ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
 ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
@@ -636,14 +636,14 @@ HANDLES(ICALL(MMETH_10, "get_core_clr_security_level", ves_icall_MonoMethod_get_
 HANDLES(ICALL(MMETH_9, "get_name", ves_icall_MonoMethod_get_name))
 
 ICALL_TYPE(MMETHI, "System.Reflection.MonoMethodInfo", MMETHI_4)
-ICALL(MMETHI_4, "get_method_attributes", vell_icall_get_method_attributes)
+ICALL(MMETHI_4, "get_method_attributes", ves_icall_get_method_attributes)
 HANDLES(ICALL(MMETHI_1, "get_method_info", ves_icall_get_method_info))
 HANDLES(ICALL(MMETHI_2, "get_parameter_info", ves_icall_System_Reflection_MonoMethodInfo_get_parameter_info))
 HANDLES(ICALL(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal))
 
 ICALL_TYPE(MPROPI, "System.Reflection.MonoPropertyInfo", MPROPI_1)
 HANDLES(ICALL(MPROPI_1, "GetTypeModifiers", ves_icall_MonoPropertyInfo_GetTypeModifiers))
-ICALL(MPROPI_3, "get_default_value", property_info_get_default_value)
+ICALL(MPROPI_3, "get_default_value", ves_icall_property_info_get_default_value)
 HANDLES(ICALL(MPROPI_2, "get_property_info", ves_icall_MonoPropertyInfo_get_property_info))
 
 ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
@@ -801,7 +801,7 @@ HANDLES(ICALL(RT_21, "get_DeclaringMethod", ves_icall_RuntimeType_get_DeclaringM
 HANDLES(ICALL(RT_22, "get_DeclaringType", ves_icall_RuntimeType_get_DeclaringType))
 HANDLES(ICALL(RT_23, "get_Name", ves_icall_RuntimeType_get_Name))
 HANDLES(ICALL(RT_24, "get_Namespace", ves_icall_RuntimeType_get_Namespace))
-HANDLES(ICALL(RT_25, "get_core_clr_security_level", vell_icall_RuntimeType_get_core_clr_security_level))
+HANDLES(ICALL(RT_25, "get_core_clr_security_level", ves_icall_RuntimeType_get_core_clr_security_level))
 HANDLES(ICALL(RT_26, "make_array_type", ves_icall_RuntimeType_make_array_type))
 HANDLES(ICALL(RT_27, "make_byref_type", ves_icall_RuntimeType_make_byref_type))
 

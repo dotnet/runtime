@@ -19,8 +19,8 @@
 #include "mono/sgen/sgen-gc.h"
 #include "mono/metadata/sgen-bridge.h"
 
-extern volatile gboolean bridge_processing_in_progress;
-extern MonoGCBridgeCallbacks bridge_callbacks;
+extern volatile gboolean mono_bridge_processing_in_progress;
+extern MonoGCBridgeCallbacks mono_bridge_callbacks;
 
 gboolean sgen_need_bridge_processing (void);
 void sgen_bridge_reset_data (void);

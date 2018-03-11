@@ -140,7 +140,7 @@ sgen_gray_object_enqueue (SgenGrayQueue *queue, GCObject *obj, SgenDescriptor de
 	*++queue->cursor = entry;
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	binary_protocol_gray_enqueue (queue, queue->cursor, obj);
+	sgen_binary_protocol_gray_enqueue (queue, queue->cursor, obj);
 #endif
 }
 
@@ -224,7 +224,7 @@ sgen_gray_object_dequeue (SgenGrayQueue *queue, gboolean is_parallel)
 	entry = *queue->cursor--;
 
 #ifdef SGEN_HEAVY_BINARY_PROTOCOL
-	binary_protocol_gray_dequeue (queue, queue->cursor + 1, entry.obj);
+	sgen_binary_protocol_gray_dequeue (queue, queue->cursor + 1, entry.obj);
 #endif
 
 	if (G_UNLIKELY (queue->cursor < GRAY_FIRST_CURSOR_POSITION (queue->first))) {

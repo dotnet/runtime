@@ -3786,7 +3786,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 
 			MonoType *subtype = mono_reflection_type_handle_mono_type (nested_tb, error);
 			goto_if_nok (error, failure);
-			nested = g_list_prepend_image (klass->image, nested, mono_class_from_mono_type (subtype));
+			nested = mono_g_list_prepend_image (klass->image, nested, mono_class_from_mono_type (subtype));
 		}
 		mono_class_set_nested_classes_property (klass, nested);
 	}

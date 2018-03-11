@@ -96,7 +96,7 @@ typedef union {
 
 static const SPLIT64    ten_to_eighteen = { 1000000000000000000ULL };
 
-const MonoDouble_double ds2to64 = { .s = { .sign = 0, .exp = MONO_DOUBLE_BIAS + 65, .mantHi = 0, .mantLo = 0 } };
+static const MonoDouble_double ds2to64 = { .s = { .sign = 0, .exp = MONO_DOUBLE_BIAS + 65, .mantHi = 0, .mantLo = 0 } };
 
 //
 // Data tables
@@ -118,7 +118,7 @@ static const double double_power10[] = {
 	1e70, 1e71, 1e72, 1e73, 1e74, 1e75, 1e76, 1e77, 1e78, 1e79,
 	1e80 };
 
-const SPLIT64 sdl_power10[] = { {10000000000ULL},          // 1E10
+static const SPLIT64 sdl_power10[] = { {10000000000ULL},          // 1E10
 				{100000000000ULL},         // 1E11
 				{1000000000000ULL},        // 1E12
 				{10000000000000ULL},       // 1E13
@@ -150,7 +150,7 @@ typedef struct  {
 	uint32_t Hi, Mid, Lo;
 } DECOVFL;
 
-const DECOVFL power_overflow[] = {
+static const DECOVFL power_overflow[] = {
 // This is a table of the largest values that can be in the upper two
 // ULONGs of a 96-bit number that will not overflow when multiplied
 // by a given power.  For the upper word, this is a table of 

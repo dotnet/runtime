@@ -107,7 +107,7 @@ init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod
  * List of classes whose methods will be executed by transitioning to JITted code.
  * Used for testing.
  */
-GSList *jit_classes;
+GSList *mono_interp_jit_classes;
 /* If TRUE, interpreted code will be interrupted at function entry/backward branches */
 static gboolean ss_enabled;
 
@@ -2175,10 +2175,10 @@ static void interp_entry_instance_ret_8 (gpointer this_arg, gpointer res, ARGLIS
 
 #define INTERP_ENTRY_FUNCLIST(type) interp_entry_ ## type ## _0, interp_entry_ ## type ## _1, interp_entry_ ## type ## _2, interp_entry_ ## type ## _3, interp_entry_ ## type ## _4, interp_entry_ ## type ## _5, interp_entry_ ## type ## _6, interp_entry_ ## type ## _7, interp_entry_ ## type ## _8
 
-gpointer entry_funcs_static [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (static) };
-gpointer entry_funcs_static_ret [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (static_ret) };
-gpointer entry_funcs_instance [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (instance) };
-gpointer entry_funcs_instance_ret [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (instance_ret) };
+static gpointer entry_funcs_static [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (static) };
+static gpointer entry_funcs_static_ret [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (static_ret) };
+static gpointer entry_funcs_instance [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (instance) };
+static gpointer entry_funcs_instance_ret [MAX_INTERP_ENTRY_ARGS + 1] = { INTERP_ENTRY_FUNCLIST (instance_ret) };
 
 /* General version for methods with more than MAX_INTERP_ENTRY_ARGS arguments */
 static void
@@ -5198,7 +5198,7 @@ interp_parse_options (const char *options)
 		char *arg = *ptr;
 
 		if (strncmp (arg, "jit=", 4) == 0)
-			jit_classes = g_slist_prepend (jit_classes, arg + 4);
+			mono_interp_jit_classes = g_slist_prepend (mono_interp_jit_classes, arg + 4);
 	}
 }
 

@@ -652,7 +652,7 @@ static void
 add_nursery_frag (SgenFragmentAllocator *allocator, size_t frag_size, char* frag_start, char* frag_end)
 {
 	SGEN_LOG (4, "Found empty fragment: %p-%p, size: %zd", frag_start, frag_end, frag_size);
-	binary_protocol_empty (frag_start, frag_size);
+	sgen_binary_protocol_empty (frag_start, frag_size);
 	/* Not worth dealing with smaller fragments: need to tune */
 	if (frag_size >= SGEN_MAX_NURSERY_WASTE) {
 		/* memsetting just the first chunk start is bound to provide better cache locality */
@@ -927,7 +927,7 @@ sgen_resize_nursery (gboolean need_shrink)
 	if (sgen_nursery_min_size == sgen_nursery_max_size)
 		return;
 
-	major_size = major_collector.get_num_major_sections () * major_collector.section_size + los_memory_usage;
+	major_size = sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size + sgen_los_memory_usage;
 	/*
 	 * We attempt to use a larger nursery size, as long as it doesn't
 	 * exceed a certain percentage of the major heap.
@@ -939,8 +939,8 @@ sgen_resize_nursery (gboolean need_shrink)
 	 */
 	if ((sgen_nursery_size * 2) < (major_size / SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO) &&
 			(sgen_nursery_size * 2) <= sgen_nursery_max_size && !need_shrink) {
-		if ((nursery_section->end_data - nursery_section->data) == sgen_nursery_size)
-			nursery_section->end_data += sgen_nursery_size;
+		if ((sgen_nursery_section->end_data - sgen_nursery_section->data) == sgen_nursery_size)
+			sgen_nursery_section->end_data += sgen_nursery_size;
 		sgen_nursery_size *= 2;
 	} else if ((sgen_nursery_size > (major_size / SGEN_DEFAULT_ALLOWANCE_NURSERY_SIZE_RATIO) || need_shrink) &&
 			(sgen_nursery_size / 2) >= sgen_nursery_min_size) {

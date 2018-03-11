@@ -61,9 +61,9 @@ static gboolean gc_disabled;
 
 static gboolean finalizing_root_domain;
 
-gboolean log_finalizers;
+gboolean mono_log_finalizers;
 gboolean mono_do_not_finalize;
-volatile gboolean suspend_finalizers;
+static volatile gboolean suspend_finalizers;
 gchar **mono_do_not_finalize_class_names ;
 
 #define mono_finalizer_lock() mono_coop_mutex_lock (&finalizer_mutex)
@@ -203,7 +203,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		}
 	}
 
-	if (log_finalizers)
+	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_DEBUG, "<%s at %p> Starting finalizer checks.", o_name, o);
 
 	if (suspend_finalizers)
@@ -226,7 +226,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* make sure the finalizer is not called again if the object is resurrected */
 	object_register_finalizer ((MonoObject *)obj, NULL);
 
-	if (log_finalizers)
+	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Registered finalizer as processed.", o_name, o);
 
 	if (o->vtable->klass == mono_defaults.internal_thread_class) {
@@ -287,7 +287,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	 * create and precompile a wrapper which calls the finalize method using
 	 * a CALLVIRT.
 	 */
-	if (log_finalizers)
+	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Compiling finalizer.", o_name, o);
 
 #ifndef HOST_WASM
@@ -309,7 +309,7 @@ mono_gc_run_finalize (void *obj, void *data)
 				o_ns, o_name);
 	}
 
-	if (log_finalizers)
+	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Calling finalizer.", o_name, o);
 
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
@@ -323,7 +323,7 @@ mono_gc_run_finalize (void *obj, void *data)
 
 	MONO_PROFILER_RAISE (gc_finalized_object, (o));
 
-	if (log_finalizers)
+	if (mono_log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Returned from finalizer.", o_name, o);
 
 unhandled_error:
@@ -949,11 +949,11 @@ mono_gc_init (void)
 	mono_coop_mutex_init_recursive (&finalizer_mutex);
 	mono_coop_mutex_init_recursive (&reference_queue_mutex);
 
-	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_stats.minor_gc_count);
-	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &gc_stats.major_gc_count);
-	mono_counters_register ("Minor GC time", MONO_COUNTER_GC | MONO_COUNTER_ULONG | MONO_COUNTER_TIME, &gc_stats.minor_gc_time);
-	mono_counters_register ("Major GC time", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &gc_stats.major_gc_time);
-	mono_counters_register ("Major GC time concurrent", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &gc_stats.major_gc_time_concurrent);
+	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.minor_gc_count);
+	mono_counters_register ("Major GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.major_gc_count);
+	mono_counters_register ("Minor GC time", MONO_COUNTER_GC | MONO_COUNTER_ULONG | MONO_COUNTER_TIME, &mono_gc_stats.minor_gc_time);
+	mono_counters_register ("Major GC time", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_gc_stats.major_gc_time);
+	mono_counters_register ("Major GC time concurrent", MONO_COUNTER_GC | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_gc_stats.major_gc_time_concurrent);
 
 	mono_gc_base_init ();
 

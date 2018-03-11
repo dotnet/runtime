@@ -76,7 +76,7 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 
 	ptr = VirtualAlloc (addr, length, mflags, prot);
 
-	account_mem (type, (ssize_t)length);
+	mono_account_mem (type, (ssize_t)length);
 
 	return ptr;
 }
@@ -94,12 +94,12 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 	if (!mono_valloc_can_alloc (length))
 		return NULL;
 
-	aligned = aligned_address (mem, length, alignment);
+	aligned = mono_aligned_address (mem, length, alignment);
 
 	aligned = VirtualAlloc (aligned, length, MEM_COMMIT, prot);
 	g_assert (aligned);
 
-	account_mem (type, (ssize_t)length);
+	mono_account_mem (type, (ssize_t)length);
 
 	return aligned;
 }
@@ -117,7 +117,7 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 
 	g_assert (res);
 
-	account_mem (type, -(ssize_t)length);
+	mono_account_mem (type, -(ssize_t)length);
 
 	return 0;
 }
@@ -190,7 +190,7 @@ void*
 mono_shared_area (void)
 {
 	if (!malloced_shared_area)
-		malloced_shared_area = malloc_shared_area (0);
+		malloced_shared_area = mono_malloc_shared_area (0);
 	/* get the pid here */
 	return malloced_shared_area;
 }

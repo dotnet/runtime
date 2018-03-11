@@ -344,7 +344,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
         MONO_INST_NEW ((cfg), (dest), OP_MOVE); \
 		(dest)->opcode = mono_type_to_regmove ((cfg), (vartype));  \
-		type_to_eval_stack_type ((cfg), (vartype), (dest));	\
+		mini_type_to_eval_stack_type ((cfg), (vartype), (dest));	\
 		(dest)->klass = var->klass;	\
 		(dest)->sreg1 = var->dreg;   \
         (dest)->dreg = alloc_dreg ((cfg), (MonoStackType)(dest)->type); \
@@ -430,7 +430,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 /* Variants which take a type argument and handle vtypes as well */
 #define NEW_LOAD_MEMBASE_TYPE(cfg,dest,ltype,base,offset) do { \
 	    NEW_LOAD_MEMBASE ((cfg), (dest), mono_type_to_load_membase ((cfg), (ltype)), 0, (base), (offset)); \
-	    type_to_eval_stack_type ((cfg), (ltype), (dest)); \
+	    mini_type_to_eval_stack_type ((cfg), (ltype), (dest)); \
 	    (dest)->dreg = alloc_dreg ((cfg), (MonoStackType)(dest)->type); \
     } while (0)
 
@@ -439,7 +439,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         (dest)->sreg1 = sr; \
         (dest)->inst_destbasereg = base; \
         (dest)->inst_offset = offset; \
-	    type_to_eval_stack_type ((cfg), (ltype), (dest)); \
+	    mini_type_to_eval_stack_type ((cfg), (ltype), (dest)); \
         (dest)->klass = mono_class_from_mono_type (ltype); \
 	} while (0)
 

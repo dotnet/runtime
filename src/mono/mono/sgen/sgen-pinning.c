@@ -243,7 +243,7 @@ sgen_cement_reset (void)
 			cement_hash [i].count = 0;
 		}
 	}
-	binary_protocol_cement_reset ();
+	sgen_binary_protocol_cement_reset ();
 }
 
 
@@ -350,7 +350,7 @@ sgen_cement_lookup_or_register (GCObject *obj)
 		SGEN_ASSERT (9, SGEN_OBJECT_IS_PINNED (obj), "Can only cement pinned objects");
 		SGEN_CEMENT_OBJECT (obj);
 
-		binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
+		sgen_binary_protocol_cement (obj, (gpointer)SGEN_LOAD_VTABLE (obj),
 				(int)sgen_safe_object_get_size (obj));
 	}
 
@@ -370,7 +370,7 @@ pin_from_hash (CementHashEntry *hash, gboolean has_been_reset)
 
 		sgen_client_pinned_cemented_object (hash [i].obj);
 		sgen_pin_stage_ptr (hash [i].obj);
-		binary_protocol_cement_stage (hash [i].obj);
+		sgen_binary_protocol_cement_stage (hash [i].obj);
 		/* FIXME: do pin stats if enabled */
 
 		SGEN_CEMENT_OBJECT (hash [i].obj);

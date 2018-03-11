@@ -204,7 +204,7 @@ typedef struct {
 #define LREG 'l'
 /* keep in sync with the enum in mini.h */
 const char
-llvm_ins_info[] = {
+mini_llvm_ins_info[] = {
 #include "mini-ops.h"
 };
 #undef MINI_OP
@@ -216,7 +216,7 @@ llvm_ins_info[] = {
 #define GET_LONG_IMM(ins) ((ins)->inst_imm)
 #endif
 
-#define LLVM_INS_INFO(opcode) (&llvm_ins_info [((opcode) - OP_START - 1) * 4])
+#define LLVM_INS_INFO(opcode) (&mini_llvm_ins_info [((opcode) - OP_START - 1) * 4])
 
 #if 0
 #define TRACE_FAILURE(msg) do { printf ("%s\n", msg); } while (0)

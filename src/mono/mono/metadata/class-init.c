@@ -37,12 +37,13 @@ gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 
 /* Statistics */
-gint32 classes_size;
-gint32 inflated_classes_size, inflated_methods_size;
-gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
+static gint32 classes_size;
+static gint32 inflated_classes_size;
+gint32 mono_inflated_methods_size;
+static gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
 
 /* Low level lock which protects data structures in this module */
-mono_mutex_t classes_mutex;
+static mono_mutex_t classes_mutex;
 
 static gboolean class_kind_may_contain_generic_instances (MonoTypeKind kind);
 static int setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite);
@@ -52,7 +53,7 @@ static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 
 /* This TLS variable points to a GSList of classes which have setup_fields () executing */
-MonoNativeTlsKey setup_fields_tls_id;
+static MonoNativeTlsKey setup_fields_tls_id;
 
 static MonoNativeTlsKey init_pending_tls_id;
 
@@ -1098,7 +1099,7 @@ make_generic_param_class (MonoGenericParam *param)
 	MonoGenericContainer *container = mono_generic_param_owner (param);
 	g_assert_checked (container);
 
-	MonoImage *image = get_image_for_generic_param (param);
+	MonoImage *image = mono_get_image_for_generic_param (param);
 	gboolean is_mvar = container->is_method;
 	gboolean is_anonymous = container->is_anonymous;
 
@@ -1111,7 +1112,7 @@ make_generic_param_class (MonoGenericParam *param)
 		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name , pinfo->name );
 	} else {
 		int n = mono_generic_param_num (param);
-		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->name , make_generic_name_string (image, n) );
+		CHECKED_METADATA_WRITE_PTR_LOCAL ( klass->name , mono_make_generic_name_string (image, n) );
 	}
 
 	if (is_anonymous) {
@@ -1194,7 +1195,7 @@ make_generic_param_class (MonoGenericParam *param)
 MonoClass *
 mono_class_create_generic_parameter (MonoGenericParam *param)
 {
-	MonoImage *image = get_image_for_generic_param (param);
+	MonoImage *image = mono_get_image_for_generic_param (param);
 	MonoGenericParamInfo *pinfo = mono_generic_param_info (param);
 	MonoClass *klass, *klass2;
 
@@ -3979,7 +3980,7 @@ generic_array_methods (MonoClass *klass)
  * Global pool of interface IDs, represented as a bitset.
  * LOCKING: Protected by the classes lock.
  */
-MonoBitSet *global_interface_bitset = NULL;
+static MonoBitSet *global_interface_bitset = NULL;
 
 /*
  * mono_unload_interface_ids:
@@ -5315,7 +5316,7 @@ mono_class_setup_nested_types (MonoClass *klass)
 
 	nested_classes = NULL;
 	for (l = classes; l; l = l->next)
-		nested_classes = g_list_prepend_image (klass->image, nested_classes, l->data);
+		nested_classes = mono_g_list_prepend_image (klass->image, nested_classes, l->data);
 	g_list_free (classes);
 
 	mono_loader_lock ();
@@ -5505,7 +5506,7 @@ mono_class_create_array_fill_type (void)
  * mono_classes_init:
  *
  * Initialize the resources used by this module.
- * Known racy counters: `class_gparam_count`, `classes_size` and `inflated_methods_size`
+ * Known racy counters: `class_gparam_count`, `classes_size` and `mono_inflated_methods_size`
  */
 MONO_NO_SANITIZE_THREAD
 void
@@ -5529,7 +5530,7 @@ mono_classes_init (void)
 	mono_counters_register ("MonoClassPointer count",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_pointer_count);
 	mono_counters_register ("Inflated methods size",
-							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_methods_size);
+							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mono_inflated_methods_size);
 	mono_counters_register ("Inflated classes size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
 	mono_counters_register ("MonoClass size",

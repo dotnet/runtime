@@ -727,7 +727,7 @@ static gboolean buffer_replies;
 
 /* Buffered reply packets */
 static ReplyPacket reply_packets [128];
-int nreply_packets;
+static int nreply_packets;
 
 #define dbg_lock() mono_coop_mutex_lock (&debug_mutex)
 #define dbg_unlock() mono_coop_mutex_unlock (&debug_mutex)
@@ -5233,7 +5233,7 @@ mono_debugger_agent_user_break (void)
 		mono_loader_unlock ();
 
 		process_event (EVENT_KIND_USER_BREAK, NULL, 0, &ctx, events, suspend_policy);
-	} else if (debug_options.native_debugger_break) {
+	} else if (mini_debug_options.native_debugger_break) {
 		G_BREAKPOINT ();
 	}
 }
@@ -5403,7 +5403,7 @@ mono_debugger_agent_single_step_event (void *sigctx)
 }
 
 void
-debugger_agent_single_step_from_context (MonoContext *ctx)
+mono_debugger_agent_single_step_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
@@ -5430,7 +5430,7 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 }
 
 void
-debugger_agent_breakpoint_from_context (MonoContext *ctx)
+mono_debugger_agent_breakpoint_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;

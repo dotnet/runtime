@@ -379,7 +379,7 @@ sgen_unified_suspend_stop_world (void)
 
 		stopped_ip = (gpointer) (MONO_CONTEXT_GET_IP (&info->client_info.ctx));
 
-		binary_protocol_thread_suspend ((gpointer) mono_thread_info_get_tid (info), stopped_ip);
+		sgen_binary_protocol_thread_suspend ((gpointer) mono_thread_info_get_tid (info), stopped_ip);
 
 		THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is suspended, stopped_ip = %p, stack = %p -> %p\n",
 			mono_thread_info_get_tid (info), stopped_ip, info->client_info.stack_start, info->client_info.stack_start ? info->client_info.info.stack_end : NULL);
@@ -396,7 +396,7 @@ sgen_unified_suspend_restart_world (void)
 			g_assert (mono_thread_info_begin_resume (info));
 			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] RESUME thread %p\n", mono_thread_info_get_tid (info));
 
-			binary_protocol_thread_restart ((gpointer) mono_thread_info_get_tid (info));
+			sgen_binary_protocol_thread_restart ((gpointer) mono_thread_info_get_tid (info));
 		} else {
 			THREADS_STW_DEBUG ("[GC-STW-RESUME-WORLD] IGNORE thread %p, reason %d\n", mono_thread_info_get_tid (info), reason);
 		}

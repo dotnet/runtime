@@ -28,7 +28,7 @@
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-os-mutex.h"
 
-const unsigned char table_sizes [MONO_TABLE_NUM] = {
+static const unsigned char table_sizes [MONO_TABLE_NUM] = {
 	MONO_MODULE_SIZE,
 	MONO_TYPEREF_SIZE,
 	MONO_TYPEDEF_SIZE,

@@ -36,8 +36,8 @@
 #define object_is_pinned	SGEN_OBJECT_IS_PINNED
 #define safe_object_get_size	sgen_safe_object_get_size
 
-void describe_ptr (char *ptr);
-void check_object (GCObject *obj);
+void sgen_describe_ptr (char *ptr);
+void sgen_check_object (GCObject *obj);
 
 /*
  * ######################################################################
@@ -84,7 +84,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 			ptr = start;
 			mono_sgen_los_describe_pointer (ptr);
 			vtable = LOAD_VTABLE ((GCObject*)ptr);
-		} else if (major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
+		} else if (sgen_major_collector.ptr_is_in_non_pinned_space (ptr, &start)) {
 			if (ptr == start)
 				printf ("Pointer is the start of object %p in oldspace.\n", start);
 			else if (start)
@@ -93,8 +93,8 @@ describe_pointer (char *ptr, gboolean need_setup)
 				printf ("Pointer inside oldspace.\n");
 			if (start)
 				ptr = start;
-			vtable = (GCVTable)major_collector.describe_pointer (ptr);
-		} else if (major_collector.ptr_is_from_pinned_alloc (ptr)) {
+			vtable = (GCVTable)sgen_major_collector.describe_pointer (ptr);
+		} else if (sgen_major_collector.ptr_is_from_pinned_alloc (ptr)) {
 			// FIXME: Handle pointers to the inside of objects
 			printf ("Pointer is inside a pinned chunk.\n");
 			vtable = LOAD_VTABLE ((GCObject*)ptr);
@@ -139,7 +139,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 }
 
 void
-describe_ptr (char *ptr)
+sgen_describe_ptr (char *ptr)
 {
 	describe_pointer (ptr, TRUE);
 }
@@ -159,7 +159,7 @@ static gboolean missing_remsets;
 				GCVTable __vt = SGEN_LOAD_VTABLE (obj);	\
 				gboolean is_pinned = object_is_pinned (*(ptr));	\
 				SGEN_LOG (0, "Oldspace->newspace reference %p at offset %zd in object %p (%s.%s) not found in remsets%s.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt), is_pinned ? ", but object is pinned" : ""); \
-				binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), is_pinned); \
+				sgen_binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), is_pinned); \
 				if (!is_pinned)				\
 					missing_remsets = TRUE;		\
 			}						\
@@ -196,15 +196,15 @@ sgen_check_remset_consistency (void)
 	SGEN_LOG (1, "Begin heap consistency check...");
 
 	// Check that oldspace->newspace pointers are registered with the collector
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_consistency_callback, NULL);
 
 	SGEN_LOG (1, "Heap consistency check done.");
 
 	if (missing_remsets)
-		binary_protocol_flush_buffers (TRUE);
-	if (!binary_protocol_is_enabled ())
+		sgen_binary_protocol_flush_buffers (TRUE);
+	if (!sgen_binary_protocol_is_enabled ())
 		g_assert (!missing_remsets);
 }
 
@@ -224,7 +224,7 @@ is_major_or_los_object_marked (GCObject *obj)
 		if (!cards || !sgen_get_remset ()->find_address_with_cards (start, cards, (char*)(ptr))) { \
 			GCVTable __vt = SGEN_LOAD_VTABLE (obj);	\
 			SGEN_LOG (0, "major->major reference %p at offset %zd in object %p (%s.%s) not found in remsets.", *(ptr), (char*)(ptr) - (char*)(obj), (obj), sgen_client_vtable_get_namespace (__vt), sgen_client_vtable_get_name (__vt)); \
-			binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
+			sgen_binary_protocol_missing_remset ((obj), __vt, (int) ((char*)(ptr) - (char*)(obj)), *(ptr), (gpointer)LOAD_VTABLE(*(ptr)), object_is_pinned (*(ptr))); \
 			missing_remsets = TRUE;				\
 		}																\
 	}																	\
@@ -256,11 +256,11 @@ sgen_check_mod_union_consistency (void)
 {
 	missing_remsets = FALSE;
 
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_mod_union_callback, (void*)FALSE);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_mod_union_callback, (void*)FALSE);
 
 	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_mod_union_callback, (void*)TRUE);
 
-	if (!binary_protocol_is_enabled ())
+	if (!sgen_binary_protocol_is_enabled ())
 		g_assert (!missing_remsets);
 }
 
@@ -282,7 +282,7 @@ check_major_refs_callback (GCObject *obj, size_t size, void *dummy)
 void
 sgen_check_major_refs (void)
 {
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 	sgen_los_iterate_objects ((IterateObjectCallbackFunc)check_major_refs_callback, NULL);
 }
 
@@ -295,13 +295,13 @@ sgen_check_major_refs (void)
 	} while (0)
 
 /*
- * check_object:
+ * sgen_check_object:
  *
  *   Perform consistency check on an object. Currently we only check that the
  * reference fields are valid.
  */
 void
-check_object (GCObject *obj)
+sgen_check_object (GCObject *obj)
 {
 	char *start = (char*)obj;
 	SgenDescriptor desc;
@@ -331,7 +331,7 @@ setup_valid_nursery_objects (void)
 	if (!valid_nursery_objects)
 		valid_nursery_objects = (GCObject **)sgen_alloc_os_memory (sgen_nursery_max_size, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "debugging data", MONO_MEM_ACCOUNT_SGEN_DEBUGGING);
 	valid_nursery_object_count = 0;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE, FALSE);
+	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE, FALSE);
 }
 
 static gboolean
@@ -397,7 +397,7 @@ is_valid_object_pointer (char *object)
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
-	if (major_collector.is_valid_object (object))
+	if (sgen_major_collector.is_valid_object (object))
 		return TRUE;
 	return FALSE;
 }
@@ -464,8 +464,8 @@ sgen_check_whole_heap (gboolean allow_missing_pinned)
 	setup_valid_nursery_objects ();
 
 	broken_heap = FALSE;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE, TRUE);
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
+	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE, TRUE);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 	sgen_los_iterate_objects (verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 
 	g_assert (!broken_heap);
@@ -480,7 +480,7 @@ ptr_in_heap (char *object)
 	if (sgen_los_is_valid_object (object))
 		return TRUE;
 
-	if (major_collector.is_valid_object (object))
+	if (sgen_major_collector.is_valid_object (object))
 		return TRUE;
 	return FALSE;
 }
@@ -532,7 +532,7 @@ find_pinning_reference (char *obj, size_t size)
 	RootRecord *root;
 	char *endobj = obj + size;
 
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_NORMAL], char **, start, RootRecord *, root) {
+	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [ROOT_TYPE_NORMAL], char **, start, RootRecord *, root) {
 		/* if desc is non-null it has precise info */
 		if (!root->root_desc) {
 			while (start < (char**)root->end_root) {
@@ -556,7 +556,7 @@ find_pinning_reference (char *obj, size_t size)
 			} else {					\
 				mword __size = sgen_safe_object_get_size ((GCObject*)__target); \
 				if (__size <= SGEN_MAX_SMALL_OBJ_SIZE)	\
-					g_assert (major_collector.is_object_live ((GCObject*)__target)); \
+					g_assert (sgen_major_collector.is_object_live ((GCObject*)__target)); \
 				else					\
 					g_assert (sgen_los_object_is_pinned ((GCObject*)__target)); \
 			}						\
@@ -577,7 +577,7 @@ check_marked_callback (GCObject *obj, size_t size, void *dummy)
 		if (!sgen_los_object_is_pinned (obj))
 			return;
 	} else {
-		if (!major_collector.is_object_live (obj))
+		if (!sgen_major_collector.is_object_live (obj))
 			return;
 	}
 
@@ -592,7 +592,7 @@ sgen_check_heap_marked (gboolean nursery_must_be_pinned)
 	setup_valid_nursery_objects ();
 
 	iterate_valid_nursery_objects (check_marked_callback, (void*)(size_t)nursery_must_be_pinned);
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, check_marked_callback, (void*)FALSE);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, check_marked_callback, (void*)FALSE);
 	sgen_los_iterate_objects (check_marked_callback, (void*)TRUE);
 }
 
@@ -612,7 +612,7 @@ void
 sgen_check_nursery_objects_pinned (gboolean pinned)
 {
 	sgen_clear_nursery_fragments ();
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
 			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE, TRUE);
 }
 
@@ -621,8 +621,8 @@ verify_scan_starts (char *start, char *end)
 {
 	size_t i;
 
-	for (i = 0; i < nursery_section->num_scan_start; ++i) {
-		char *addr = nursery_section->scan_starts [i];
+	for (i = 0; i < sgen_nursery_section->num_scan_start; ++i) {
+		char *addr = sgen_nursery_section->scan_starts [i];
 		if (addr > start && addr < end)
 			SGEN_LOG (0, "NFC-BAD SCAN START [%zu] %p for obj [%p %p]", i, addr, start, end);
 	}
@@ -633,7 +633,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 {
 	char *start, *end, *cur, *hole_start;
 
-	if (nursery_canaries_enabled ())
+	if (sgen_nursery_canaries_enabled ())
 		SGEN_LOG (0, "Checking nursery canaries...");
 
 	/*This cleans up unused fragments */
@@ -668,7 +668,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 					sgen_client_vtable_get_namespace (vtable), sgen_client_vtable_get_name (vtable),
 					is_array_fill);
 		}
-		if (nursery_canaries_enabled () && !is_array_fill) {
+		if (sgen_nursery_canaries_enabled () && !is_array_fill) {
 			CHECK_CANARY_FOR_OBJECT ((GCObject*)cur, TRUE);
 			CANARIFY_SIZE (size);
 		}
@@ -776,7 +776,7 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 	RootRecord *root;
 	check_key = key;
 
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], void **, start_root, RootRecord *, root) {
+	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
 		SgenDescriptor desc = root->root_desc;
 
 		check_root = root;
@@ -842,17 +842,17 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 
 	scan_object_for_specific_ref_precise = precise;
 
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
 			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE, FALSE);
 
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
 	sgen_los_iterate_objects ((IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
 	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
 	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
 
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], void **, ptr, RootRecord *, root) {
+	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [ROOT_TYPE_PINNED], void **, ptr, RootRecord *, root) {
 		while (ptr < (void**)root->end_root) {
 			check_root_obj_specific_ref (root, (GCObject *)*ptr, key);
 			++ptr;
@@ -886,7 +886,7 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 	void **start_root;
 	RootRecord *root;
 	check_domain = domain;
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], void **, start_root, RootRecord *, root) {
+	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
 		SgenDescriptor desc = root->root_desc;
 
 		/* The MonoDomain struct is allowed to hold
@@ -1046,12 +1046,12 @@ sgen_check_for_xdomain_refs (void)
 {
 	LOSObject *bigobj;
 
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
 			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE, TRUE);
 
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+	for (bigobj = sgen_los_object_list; bigobj; bigobj = bigobj->next)
 		scan_object_for_xdomain_refs ((GCObject*)bigobj->data, sgen_los_object_size (bigobj), NULL);
 }
 
@@ -1189,12 +1189,12 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 		dump_object ((GCObject *)pinned_objects->data [i], TRUE);
 	fprintf (heap_dump_file, "</pinned-objects>\n");
 
-	sgen_dump_section (nursery_section, "nursery");
+	sgen_dump_section (sgen_nursery_section, "nursery");
 
-	major_collector.dump_heap (heap_dump_file);
+	sgen_major_collector.dump_heap (heap_dump_file);
 
 	fprintf (heap_dump_file, "<los>\n");
-	for (bigobj = los_object_list; bigobj; bigobj = bigobj->next)
+	for (bigobj = sgen_los_object_list; bigobj; bigobj = bigobj->next)
 		dump_object ((GCObject*)bigobj->data, FALSE);
 	fprintf (heap_dump_file, "</los>\n");
 
@@ -1218,9 +1218,9 @@ find_object_for_ptr_callback (GCObject *obj, size_t size, void *user_data)
 GCObject*
 sgen_find_object_for_ptr (char *ptr)
 {
-	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
+	if (ptr >= sgen_nursery_section->data && ptr < sgen_nursery_section->end_data) {
 		found_obj = NULL;
-		sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
+		sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
 				find_object_for_ptr_callback, ptr, TRUE, FALSE);
 		if (found_obj)
 			return found_obj;
@@ -1236,7 +1236,7 @@ sgen_find_object_for_ptr (char *ptr)
 	 * be called from gdb, so we don't care.
 	 */
 	found_obj = NULL;
-	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, find_object_for_ptr_callback, ptr);
+	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, find_object_for_ptr_callback, ptr);
 	return found_obj;
 }
 

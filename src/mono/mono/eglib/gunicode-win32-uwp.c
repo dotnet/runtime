@@ -11,24 +11,24 @@
 #define CODESET 1
 #include <windows.h>
 
-extern const char *my_charset;
+extern const char *eg_my_charset;
 static gboolean is_utf8;
 
 gboolean
 g_get_charset (G_CONST_RETURN char **charset)
 {
-	if (my_charset == NULL) {
+	if (eg_my_charset == NULL) {
 		static char buf [14];
 		CPINFOEXA cp_info;
 
 		GetCPInfoExA (CP_ACP, 0, &cp_info);
 		sprintf (buf, "CP%u", cp_info.CodePage);
-		my_charset = buf;
+		eg_my_charset = buf;
 		is_utf8 = FALSE;
 	}
 	
 	if (charset != NULL)
-		*charset = my_charset;
+		*charset = eg_my_charset;
 
 	return is_utf8;
 }

@@ -258,8 +258,8 @@ alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean ha
 
 	age = get_object_age (obj);
 	if (age >= promote_age) {
-		total_promoted_size += objsize;
-		return major_collector.alloc_object (vtable, objsize, has_references);
+		sgen_total_promoted_size += objsize;
+		return sgen_major_collector.alloc_object (vtable, objsize, has_references);
 	}
 
 	/* Promote! */
@@ -271,8 +271,8 @@ alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean ha
 	} else {
 		p = alloc_for_promotion_slow_path (age, objsize);
 		if (!p) {
-			total_promoted_size += objsize;
-			return major_collector.alloc_object (vtable, objsize, has_references);
+			sgen_total_promoted_size += objsize;
+			return sgen_major_collector.alloc_object (vtable, objsize, has_references);
 		}
 	}
 
@@ -289,7 +289,7 @@ minor_alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gbool
 	We only need to check for a non-nursery object if we're doing a major collection.
 	*/
 	if (!sgen_ptr_in_nursery (obj))
-		return major_collector.alloc_object (vtable, objsize, has_references);
+		return sgen_major_collector.alloc_object (vtable, objsize, has_references);
 
 	return alloc_for_promotion (vtable, obj, objsize, has_references);
 }

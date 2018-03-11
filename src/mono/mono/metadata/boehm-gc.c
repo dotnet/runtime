@@ -194,7 +194,7 @@ mono_gc_base_init (void)
 				if (!strcmp (opt, "do-not-finalize")) {
 					mono_do_not_finalize = 1;
 				} else if (!strcmp (opt, "log-finalizers")) {
-					log_finalizers = 1;
+					mono_log_finalizers = 1;
 				}
 			}
 			g_free (env);
@@ -462,7 +462,7 @@ on_gc_notification (GC_EventType event)
 		if (mono_perfcounters)
 			mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
 #endif
-		mono_atomic_inc_i32 (&gc_stats.major_gc_count);
+		mono_atomic_inc_i32 (&mono_gc_stats.major_gc_count);
 		gc_start_time = mono_100ns_ticks ();
 		break;
 
@@ -487,7 +487,7 @@ on_gc_notification (GC_EventType event)
 			UnlockedWrite64 (&mono_perfcounters->gc_gen0size, heap_size);
 		}
 #endif
-		UnlockedAdd64 (&gc_stats.major_gc_time, mono_100ns_ticks () - gc_start_time);
+		UnlockedAdd64 (&mono_gc_stats.major_gc_time, mono_100ns_ticks () - gc_start_time);
 		mono_trace_message (MONO_TRACE_GC, "gc took %" G_GINT64_FORMAT " usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 		break;
 	default:

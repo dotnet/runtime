@@ -494,7 +494,7 @@ clock_sleep_ns_abs (guint64 ns_abs)
 
 #else
 
-clockid_t sampling_posix_clock;
+static clockid_t sampling_posix_clock;
 
 static void
 clock_init (MonoProfilerSampleMode mode)

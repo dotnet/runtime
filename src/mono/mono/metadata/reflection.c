@@ -157,7 +157,7 @@ mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
 }
 
 gboolean
-reflected_equal (gconstpointer a, gconstpointer b)
+mono_reflected_equal (gconstpointer a, gconstpointer b)
 {
 	const ReflectedEntry *ea = (const ReflectedEntry *)a;
 	const ReflectedEntry *eb = (const ReflectedEntry *)b;
@@ -166,7 +166,7 @@ reflected_equal (gconstpointer a, gconstpointer b)
 }
 
 guint
-reflected_hash (gconstpointer a) {
+mono_reflected_hash (gconstpointer a) {
 	const ReflectedEntry *ea = (const ReflectedEntry *)a;
 	/* Combine hashes for item and refclass. Identical to boost's hash_combine */
 	guint seed = mono_aligned_addr_hash (ea->item) + 0x9e3779b9;

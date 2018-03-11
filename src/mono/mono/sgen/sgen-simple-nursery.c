@@ -26,8 +26,8 @@
 static inline GCObject*
 alloc_for_promotion (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references)
 {
-	total_promoted_size += objsize;
-	return major_collector.alloc_object (vtable, objsize, has_references);
+	sgen_total_promoted_size += objsize;
+	return sgen_major_collector.alloc_object (vtable, objsize, has_references);
 }
 
 static inline GCObject*
@@ -35,12 +35,12 @@ alloc_for_promotion_par (GCVTable vtable, GCObject *obj, size_t objsize, gboolea
 {
 	/*
 	 * FIXME
-	 * Note that the stat is not precise. total_promoted_size incrementing is not atomic and
+	 * Note that the stat is not precise. sgen_total_promoted_size incrementing is not atomic and
 	 * even in that case, the same object might be promoted simultaneously by different workers
 	 * leading to one of the allocated major object to be discarded.
 	 */
-	total_promoted_size += objsize;
-	return major_collector.alloc_object_par (vtable, objsize, has_references);
+	sgen_total_promoted_size += objsize;
+	return sgen_major_collector.alloc_object_par (vtable, objsize, has_references);
 }
 
 static SgenFragment*

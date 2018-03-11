@@ -137,25 +137,25 @@ extern guint64 stat_objects_copied_major;
 #endif
 
 #define SGEN_LOG(level, format, ...) do {      \
-	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {	\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= sgen_gc_debug_level)) {	\
 		char logTime[80];								\
 		LOG_TIMESTAMP;									\
-		mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+		mono_gc_printf (sgen_gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
 } } while (0)
 
 #define SGEN_COND_LOG(level, cond, format, ...) do {	\
-	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= gc_debug_level)) {		\
+	if (G_UNLIKELY ((level) <= SGEN_MAX_DEBUG_LEVEL && (level) <= sgen_gc_debug_level)) {		\
 		if (cond) {										\
 			char logTime[80];								\
 			LOG_TIMESTAMP;									\
-			mono_gc_printf (gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
+			mono_gc_printf (sgen_gc_debug_file, "%s " format "\n", logTime, ##__VA_ARGS__);	\
 		}											\
 } } while (0)
 
-extern int gc_debug_level;
-extern FILE* gc_debug_file;
+extern int sgen_gc_debug_level;
+extern FILE* sgen_gc_debug_file;
 
-extern int current_collection_generation;
+extern int sgen_current_collection_generation;
 
 extern unsigned int sgen_global_stop_count;
 
@@ -392,7 +392,7 @@ enum {
 	ROOT_TYPE_NUM
 };
 
-extern SgenHashTable roots_hash [ROOT_TYPE_NUM];
+extern SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM];
 
 int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, void *key, const char *msg)
 	MONO_PERMIT (need (sgen_lock_gc));
@@ -465,7 +465,7 @@ void sgen_add_to_global_remset (gpointer ptr, GCObject *obj);
 
 int sgen_get_current_collection_generation (void);
 gboolean sgen_collection_is_concurrent (void);
-gboolean sgen_concurrent_collection_in_progress (void);
+gboolean sgen_get_concurrent_collection_in_progress (void);
 
 typedef struct _SgenFragment SgenFragment;
 
@@ -686,7 +686,7 @@ struct _SgenMajorCollector {
 	void (*init_block_free_lists) (gpointer *list_p);
 };
 
-extern SgenMajorCollector major_collector;
+extern SgenMajorCollector sgen_major_collector;
 
 void sgen_marksweep_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_init (SgenMajorCollector *collector);
@@ -892,9 +892,9 @@ struct _LOSObject {
 	GCObject data [MONO_ZERO_LEN_ARRAY];
 };
 
-extern LOSObject *los_object_list;
-extern mword los_memory_usage;
-extern mword los_memory_usage_total;
+extern LOSObject *sgen_los_object_list;
+extern mword sgen_los_memory_usage;
+extern mword sgen_los_memory_usage_total;
 
 void sgen_los_free_object (LOSObject *obj);
 void* sgen_los_alloc_large_inner (GCVTable vtable, size_t size)
@@ -964,7 +964,7 @@ sgen_major_is_object_alive (GCObject *object)
 	if (objsize > SGEN_MAX_SMALL_OBJ_SIZE)
 		return sgen_los_object_is_pinned (object);
 
-	return major_collector.is_object_live (object);
+	return sgen_major_collector.is_object_live (object);
 }
 
 
@@ -994,7 +994,7 @@ sgen_is_object_alive_for_current_gen (GCObject *object)
 	if (sgen_ptr_in_nursery (object))
 		return sgen_nursery_is_object_alive (object);
 
-	if (current_collection_generation == GENERATION_NURSERY)
+	if (sgen_current_collection_generation == GENERATION_NURSERY)
 		return TRUE;
 
 	return sgen_major_is_object_alive (object);
@@ -1027,30 +1027,30 @@ void sgen_gchandle_free (guint32 gchandle);
 
 /* Other globals */
 
-extern GCMemSection *nursery_section;
-extern guint32 collect_before_allocs;
-extern guint32 verify_before_allocs;
-extern gboolean has_per_allocation_action;
-extern size_t degraded_mode;
+extern GCMemSection *sgen_nursery_section;
+extern guint32 sgen_collect_before_allocs;
+extern guint32 sgen_verify_before_allocs;
+extern gboolean sgen_has_per_allocation_action;
+extern size_t sgen_degraded_mode;
 extern int default_nursery_size;
-extern guint32 tlab_size;
-extern NurseryClearPolicy nursery_clear_policy;
+extern guint32 sgen_tlab_size;
+extern NurseryClearPolicy sgen_nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
-extern mword total_promoted_size;
-extern mword total_allocated_major;
+extern mword sgen_total_promoted_size;
+extern mword sgen_total_allocated_major;
 extern volatile gboolean sgen_suspend_finalizers;
-extern MonoCoopMutex gc_mutex;
-extern volatile gboolean concurrent_collection_in_progress;
+extern MonoCoopMutex sgen_gc_mutex;
+extern volatile gboolean sgen_concurrent_collection_in_progress;
 
 /* Nursery helpers. */
 
 static inline void
 sgen_set_nursery_scan_start (char *p)
 {
-	size_t idx = (p - (char*)nursery_section->data) / SGEN_SCAN_START_SIZE;
-	char *old = nursery_section->scan_starts [idx];
+	size_t idx = (p - (char*)sgen_nursery_section->data) / SGEN_SCAN_START_SIZE;
+	char *old = sgen_nursery_section->scan_starts [idx];
 	if (!old || old > p)
-		nursery_section->scan_starts [idx] = p;
+		sgen_nursery_section->scan_starts [idx] = p;
 }
 
 
@@ -1114,22 +1114,22 @@ gint64 sgen_timestamp (void);
  * - Canary space is not included on checks against SGEN_MAX_SMALL_OBJ_SIZE
  */
  
-gboolean nursery_canaries_enabled (void);
+gboolean sgen_nursery_canaries_enabled (void);
 
 #define CANARY_SIZE 8
 #define CANARY_STRING  "koupepia"
 
-#define CANARIFY_SIZE(size) if (nursery_canaries_enabled ()) {	\
+#define CANARIFY_SIZE(size) if (sgen_nursery_canaries_enabled ()) {	\
 			size = size + CANARY_SIZE;	\
 		}
 
-#define CANARIFY_ALLOC(addr,size) if (nursery_canaries_enabled ()) {	\
+#define CANARIFY_ALLOC(addr,size) if (sgen_nursery_canaries_enabled ()) {	\
 				memcpy ((char*) (addr) + (size), CANARY_STRING, CANARY_SIZE);	\
 			}
 
 #define CANARY_VALID(addr) (strncmp ((char*) (addr), CANARY_STRING, CANARY_SIZE) == 0)
 
-#define CHECK_CANARY_FOR_OBJECT(addr,fail) if (nursery_canaries_enabled ()) {	\
+#define CHECK_CANARY_FOR_OBJECT(addr,fail) if (sgen_nursery_canaries_enabled ()) {	\
 				guint size = sgen_safe_object_get_size_unaligned ((GCObject *) (addr)); \
 				char* canary_ptr = (char*) (addr) + size;	\
 				if (!CANARY_VALID(canary_ptr)) {	\

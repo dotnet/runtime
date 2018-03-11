@@ -610,18 +610,18 @@ void
 ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope)
 {
 	ERROR_DECL (error);
-	invoke_protected_memory_method (data, scope, FALSE, error);
+	mono_invoke_protected_memory_method (data, scope, FALSE, error);
 	mono_error_set_pending_exception (error);
 }
 void
 ves_icall_System_Security_SecureString_EncryptInternal (MonoArray* data, MonoObject *scope)
 {
 	ERROR_DECL (error);
-	invoke_protected_memory_method (data, scope, TRUE, error);
+	mono_invoke_protected_memory_method (data, scope, TRUE, error);
 	mono_error_set_pending_exception (error);
 }
 
-void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error)
+void mono_invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error)
 {
 	MonoClass *klass;
 	MonoMethod *method;

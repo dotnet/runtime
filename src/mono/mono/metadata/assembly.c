@@ -341,7 +341,7 @@ static char* unquote (const char *str);
 static mono_mutex_t assemblies_mutex;
 
 /* If defined, points to the bundled assembly information */
-const MonoBundledAssembly **bundles;
+static const MonoBundledAssembly **bundles;
 
 static mono_mutex_t assembly_binding_mutex;
 
@@ -1462,7 +1462,7 @@ struct AssemblyLoadHook {
 	gpointer user_data;
 };
 
-AssemblyLoadHook *assembly_load_hook = NULL;
+static AssemblyLoadHook *assembly_load_hook = NULL;
 
 /**
  * mono_assembly_invoke_load_hook:
@@ -1514,7 +1514,7 @@ struct AssemblySearchHook {
 	gpointer user_data;
 };
 
-AssemblySearchHook *assembly_search_hook = NULL;
+static AssemblySearchHook *assembly_search_hook = NULL;
 
 static MonoAssembly*
 mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly *requesting, gboolean refonly, gboolean postload)

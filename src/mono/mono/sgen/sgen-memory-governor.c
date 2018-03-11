@@ -28,8 +28,8 @@
 static SgenPointerQueue log_entries = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_TEMPORARY);
 static mono_mutex_t log_entries_mutex;
 
-mword total_promoted_size = 0;
-mword total_allocated_major = 0;
+mword sgen_total_promoted_size = 0;
+mword sgen_total_allocated_major = 0;
 static mword total_promoted_size_start;
 static mword total_allocated_major_end;
 
@@ -79,9 +79,9 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	if (!need_calculate_minor_collection_allowance)
 		return;
 
-	SGEN_ASSERT (0, major_collector.have_swept (), "Can only calculate allowance if heap is swept");
+	SGEN_ASSERT (0, sgen_major_collector.have_swept (), "Can only calculate allowance if heap is swept");
 
-	new_major = major_collector.get_bytes_survived_last_sweep ();
+	new_major = sgen_major_collector.get_bytes_survived_last_sweep ();
 	new_heap_size = new_major + last_collection_los_memory_usage;
 
 	/*
@@ -110,8 +110,8 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	}
 
 	/* FIXME: Why is this here? */
-	if (major_collector.free_swept_blocks)
-		major_collector.free_swept_blocks (major_collector.get_num_major_sections () * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO);
+	if (sgen_major_collector.free_swept_blocks)
+		sgen_major_collector.free_swept_blocks (sgen_major_collector.get_num_major_sections () * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO);
 
 	major_collection_trigger_size = new_heap_size + allowance;
 
@@ -127,7 +127,7 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 static inline size_t
 get_heap_size (void)
 {
-	return major_collector.get_num_major_sections () * major_collector.section_size + los_memory_usage;
+	return sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size + sgen_los_memory_usage;
 }
 
 gboolean
@@ -135,7 +135,7 @@ sgen_need_major_collection (mword space_needed)
 {
 	size_t heap_size;
 
-	if (sgen_concurrent_collection_in_progress ()) {
+	if (sgen_get_concurrent_collection_in_progress ()) {
 		heap_size = get_heap_size ();
 
 		if (heap_size <= major_collection_trigger_size)
@@ -153,7 +153,7 @@ sgen_need_major_collection (mword space_needed)
 	}
 
 	/* FIXME: This is a cop-out.  We should have some way of figuring this out. */
-	if (!major_collector.have_swept ())
+	if (!sgen_major_collector.have_swept ())
 		return FALSE;
 
 	if (space_needed > sgen_memgov_available_free_space ())
@@ -169,7 +169,7 @@ sgen_need_major_collection (mword space_needed)
 void
 sgen_memgov_minor_collection_start (void)
 {
-	total_promoted_size_start = total_promoted_size;
+	total_promoted_size_start = sgen_total_promoted_size;
 	SGEN_TV_GETTIME (last_minor_start);
 }
 
@@ -193,11 +193,11 @@ sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow)
 		log_entry->reason = reason;
 		log_entry->is_overflow = is_overflow;
 		log_entry->time = SGEN_TV_ELAPSED (last_minor_start, current_time);
-		log_entry->promoted_size = total_promoted_size - total_promoted_size_start;
-		log_entry->major_size = major_collector.get_num_major_sections () * major_collector.section_size;
-		log_entry->major_size_in_use = last_used_slots_size + total_allocated_major - total_allocated_major_end;
-		log_entry->los_size = los_memory_usage_total;
-		log_entry->los_size_in_use = los_memory_usage;
+		log_entry->promoted_size = sgen_total_promoted_size - total_promoted_size_start;
+		log_entry->major_size = sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size;
+		log_entry->major_size_in_use = last_used_slots_size + sgen_total_allocated_major - total_allocated_major_end;
+		log_entry->los_size = sgen_los_memory_usage_total;
+		log_entry->los_size_in_use = sgen_los_memory_usage;
 
 		sgen_add_log_entry (log_entry);
 	}
@@ -206,7 +206,7 @@ sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow)
 void
 sgen_memgov_major_pre_sweep (void)
 {
-	if (sgen_concurrent_collection_in_progress ()) {
+	if (sgen_get_concurrent_collection_in_progress ()) {
 		major_pre_sweep_heap_size = get_heap_size ();
 	} else {
 		/* We decrease the allowance only in the concurrent case */
@@ -221,8 +221,8 @@ sgen_memgov_major_post_sweep (mword used_slots_size)
 		SgenLogEntry *log_entry = (SgenLogEntry*)sgen_alloc_internal (INTERNAL_MEM_LOG_ENTRY);
 
 		log_entry->type = SGEN_LOG_MAJOR_SWEEP_FINISH;
-		log_entry->major_size = major_collector.get_num_major_sections () * major_collector.section_size;
-		log_entry->major_size_in_use = used_slots_size + total_allocated_major - total_allocated_major_end;
+		log_entry->major_size = sgen_major_collector.get_num_major_sections () * sgen_major_collector.section_size;
+		log_entry->major_size_in_use = used_slots_size + sgen_total_allocated_major - total_allocated_major_end;
 
 		sgen_add_log_entry (log_entry);
 	}
@@ -265,14 +265,14 @@ sgen_memgov_major_collection_end (gboolean forced, gboolean concurrent, const ch
 		log_entry->time = SGEN_TV_ELAPSED (last_major_start, current_time);
 		log_entry->reason = reason;
 		log_entry->is_overflow = is_overflow;
-		log_entry->los_size = los_memory_usage_total;
-		log_entry->los_size_in_use = los_memory_usage;
+		log_entry->los_size = sgen_los_memory_usage_total;
+		log_entry->los_size_in_use = sgen_los_memory_usage;
 
 		sgen_add_log_entry (log_entry);
 	}
 
-	last_collection_los_memory_usage = los_memory_usage;
-	total_allocated_major_end = total_allocated_major;
+	last_collection_los_memory_usage = sgen_los_memory_usage;
+	total_allocated_major_end = sgen_total_allocated_major;
 	if (forced) {
 		sgen_get_major_collector ()->finish_sweeping ();
 		sgen_memgov_calculate_minor_collection_allowance ();

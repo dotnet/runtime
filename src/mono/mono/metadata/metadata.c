@@ -2402,7 +2402,7 @@ retry:
 		return signature_in_image (type->data.method, image);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		return image == get_image_for_generic_param (type->data.generic_param);
+		return image == mono_get_image_for_generic_param (type->data.generic_param);
 	default:
 		/* At this point, we should've avoided all potential allocations in mono_class_from_mono_type () */
 		return image == m_class_get_image (mono_class_from_mono_type (type));
@@ -2861,7 +2861,7 @@ retry:
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 	{
-		MonoImage *image = get_image_for_generic_param (type->data.generic_param);
+		MonoImage *image = mono_get_image_for_generic_param (type->data.generic_param);
 		add_image (image, data);
 		break;
 	}
@@ -3448,7 +3448,7 @@ select_container (MonoGenericContainer *gc, MonoTypeEnum type)
 }
 
 MonoGenericContainer *
-get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar)
+mono_get_anonymous_container_for_image (MonoImage *image, gboolean is_mvar)
 {
 	MonoGenericContainer **container_pointer;
 	if (is_mvar)
@@ -3552,7 +3552,7 @@ publish_anon_gparam_slow (MonoImage *image, MonoGenericParam *gparam)
 MonoGenericParam*
 mono_metadata_create_anon_gparam (MonoImage *image, gint32 param_num, gboolean is_mvar)
 {
-	MonoGenericContainer *container = get_anonymous_container_for_image (image, is_mvar);
+	MonoGenericContainer *container = mono_get_anonymous_container_for_image (image, is_mvar);
 	MonoGenericParam *gparam = lookup_anon_gparam (image, container, param_num, is_mvar);
 	if (gparam)
 		return gparam;
@@ -6361,7 +6361,7 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 }
 
 MonoMethod*
-method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error)
+mono_method_from_method_def_or_ref (MonoImage *m, guint32 tok, MonoGenericContext *context, MonoError *error)
 {
 	MonoMethod *result = NULL;
 	guint32 idx = tok >> MONO_METHODDEFORREF_BITS;
@@ -6440,12 +6440,12 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 			break;
 
 		mono_metadata_decode_row (tdef, start + i, cols, MONO_METHODIMPL_SIZE);
-		method = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION], generic_context, error);
+		method = mono_method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_DECLARATION], generic_context, error);
 		if (!method)
 			break;
 
 		result [i * 2] = method;
-		method = method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_BODY], generic_context, error);
+		method = mono_method_from_method_def_or_ref (image, cols [MONO_METHODIMPL_BODY], generic_context, error);
 		if (!method)
 			break;
 
