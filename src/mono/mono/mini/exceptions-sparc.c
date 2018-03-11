@@ -65,6 +65,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	g_assert ((code - start) < 32);
 
 	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	inited = 1;
 
@@ -158,6 +159,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	g_assert ((code - start) < 64);
 
 	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	inited = 1;
 
@@ -215,6 +217,7 @@ get_throw_exception (gboolean rethrow)
 	g_assert ((code - start) <= 16);
 
 	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	return start;
 }
@@ -323,6 +326,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	g_assert ((code - start) < 32);
 
 	mono_arch_flush_icache ((guint8*)start, (guint8*)code - (guint8*)start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	return start;
 }

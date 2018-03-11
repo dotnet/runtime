@@ -2356,9 +2356,10 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		}
 	}
 
-	mono_arch_flush_icache ((guint8*)start, (code - start) * 4);
+	mono_arch_flush_icache ((guint8*)start, (code - start));
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	UnlockedAdd (&mono_stats.imt_trampolines_size, (code - start) * 4);
+	UnlockedAdd (&mono_stats.imt_trampolines_size, (code - start));
 	g_assert (code - start <= size);
 
 	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);

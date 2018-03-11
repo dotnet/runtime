@@ -1177,7 +1177,11 @@ mono_tasklets_arch_restore (void)
 	x86_mov_membase_reg (code, X86_ECX, 0, X86_EDX, 4);*/
 
 	x86_jump_membase (code, X86_EDX, MONO_STRUCT_OFFSET (MonoContinuation, return_ip));
+
+	mono_arch_flush_icache (start, code - start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 	g_assert ((code - start) <= 48);
+
 	saved = start;
 	return (MonoContinuationRestore)saved;
 }

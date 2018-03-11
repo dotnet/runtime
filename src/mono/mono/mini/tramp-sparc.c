@@ -52,6 +52,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	g_assert ((code - start) <= 36);
 
 	mono_arch_flush_icache (start, code - start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
 
 	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
@@ -215,6 +216,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	g_assert ((code - buf) <= 512);
 
 	mono_arch_flush_icache (buf, code - buf);
+	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
 
 	return buf;
 }
@@ -244,9 +246,10 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	g_assert ((code - buf) <= TRAMPOLINE_SIZE);
 
 	if (code_len)
-		*code_len = (code - buf) * 4;
+		*code_len = (code - buf);
 
-	mono_arch_flush_icache ((guint8*)buf, (code - buf) * 4);
+	mono_arch_flush_icache ((guint8*)buf, (code - buf));
+	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, mono_get_generic_trampoline_simple_name (tramp_type)));
 
 	return buf;
 }	
