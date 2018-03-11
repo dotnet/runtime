@@ -90,7 +90,6 @@ HRESULT CEECompileInfo::Startup(  BOOL fForceDebug,
     HRESULT hr = S_OK;
 
     m_fCachingOfInliningHintsEnabled = TRUE;
-    m_fGeneratingNgenPDB = FALSE;
 
     _ASSERTE(!g_fEEStarted && !g_fEEInit && "You cannot run the EE inside an NGEN compilation process");
 

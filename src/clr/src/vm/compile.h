@@ -180,6 +180,11 @@ typedef  SHash<ZapperLoaderModuleTableTraits> ZapperLoaderModuleTable;
 class CEECompileInfo : public ICorCompileInfo
 {
   public:
+    CEECompileInfo()
+       : m_fGeneratingNgenPDB(FALSE)
+    {
+    }
+
     virtual ~CEECompileInfo()
     {
         WRAPPER_NO_CONTRACT;
