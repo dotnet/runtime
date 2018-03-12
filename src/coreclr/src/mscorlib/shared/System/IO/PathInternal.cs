@@ -113,11 +113,18 @@ namespace System.IO
         /// <summary>
         /// Try to remove relative segments from the given path (without combining with a root).
         /// </summary>
-        /// <param name="skip">Skip the specified number of characters before evaluating.</param>
-        internal static string RemoveRelativeSegments(string path, int skip = 0)
+        /// <param name="rootLength">The length of the root of the given path</param>
+        internal static string RemoveRelativeSegments(string path, int rootLength)
         {
-            Debug.Assert(skip >= 0);
+            Debug.Assert(rootLength > 0);
             bool flippedSeparator = false;
+
+            int skip = rootLength;
+            // We treat "\.." , "\." and "\\" as a relative segment. We want to collapse the first separator past the root presuming
+            // the root actually ends in a separator. Otherwise the first segment for RemoveRelativeSegments
+            // in cases like "\\?\C:\.\" and "\\?\C:\..\", the first segment after the root will be ".\" and "..\" which is not considered as a relative segment and hence not be removed.
+            if (path[skip - 1] == '\\')
+                skip--;
 
             Span<char> initialBuffer = stackalloc char[260 /* PathInternal.MaxShortPath */];
             ValueStringBuilder sb = new ValueStringBuilder(initialBuffer);
@@ -195,7 +202,7 @@ namespace System.IO
                 return path;
             }
 
-            return sb.ToString();
+            return sb.Length < rootLength ? path.Substring(0, rootLength) : sb.ToString();
         }
     }
 }
