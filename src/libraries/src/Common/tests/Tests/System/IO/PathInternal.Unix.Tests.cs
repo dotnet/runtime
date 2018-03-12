@@ -41,5 +41,14 @@ namespace Tests.System.IO
             if (string.Equals(path, expected, StringComparison.Ordinal))
                 Assert.Same(path, result);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void IsCaseInsensitive_OSX()
+        {
+            // There have been reports of casing handling not being appropriate on MacOS
+            // https://github.com/dotnet/corefx/issues/26797
+            Assert.False(PathInternal.IsCaseSensitive);
+        }
     }
 }
