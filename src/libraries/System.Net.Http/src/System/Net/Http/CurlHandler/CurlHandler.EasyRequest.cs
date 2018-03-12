@@ -509,10 +509,11 @@ namespace System.Net.Http
                 {
                     // Try to use the requested version, if a known version was explicitly requested.
                     // If an unknown version was requested, we simply use libcurl's default.
+                    // Only allow HTTP/2 when making https requests.
                     var curlVersion =
                         (v.Major == 1 && v.Minor == 1) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_1_1 :
                         (v.Major == 1 && v.Minor == 0) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_1_0 :
-                        (v.Major == 2 && v.Minor == 0) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_2_0 :
+                        (v.Major == 2 && v.Minor == 0) ? Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_2TLS :
                         Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_NONE;
 
                     if (curlVersion != Interop.Http.CurlHttpVersion.CURL_HTTP_VERSION_NONE)
