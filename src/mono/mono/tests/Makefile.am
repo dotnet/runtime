@@ -965,7 +965,8 @@ CI_PR_DISABLED_TESTS = \
 	monitor-abort.exe \
 	monitor-wait-abort.exe \
 	process-stress-3.exe \
-	sleep.exe
+	sleep.exe \
+	bug-80307.exe
 
 if ENABLE_COOP
 CI_PR_DISABLED_TESTS += \
