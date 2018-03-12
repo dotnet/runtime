@@ -64,7 +64,7 @@
   <!-- ILLinik.Tasks package version -->
   <PropertyGroup>
     <ILLinkTasksPackage>ILLink.Tasks</ILLinkTasksPackage>
-    <ILLinkTasksPackageVersion>0.1.4-preview-1317495</ILLinkTasksPackageVersion>
+    <ILLinkTasksPackageVersion>0.1.5-preview-1461378</ILLinkTasksPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>

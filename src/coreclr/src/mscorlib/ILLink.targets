@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TargetsTriggeredByCompilation>
+      $(TargetsTriggeredByCompilation);
+      ILLinkTrimAssembly
+    </TargetsTriggeredByCompilation>
+  </PropertyGroup>
+
+  <!-- Inputs and outputs of ILLinkTrimAssembly -->
+  <PropertyGroup>
+    <ILLinkTasksToolsDir>$(PackagesDir)/illink.tasks/$(ILLinkTasksPackageVersion)/tools</ILLinkTasksToolsDir>
+    <ILLinkTasksDir>$(ILLinkTasksToolsDir)/net46/</ILLinkTasksDir>
+    <ILLinkTasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(ILLinkTasksToolsDir)/netcoreapp2.0/</ILLinkTasksDir>
+    <ILLinkTasksPath>$(ILLinkTasksDir)ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTrimAssembly Condition="'$(ILLinkTrimAssembly)' == ''">true</ILLinkTrimAssembly>
+    <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
+    <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
+    <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
+    <ILLinkTrimInputAssembly>$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)</ILLinkTrimInputAssembly>
+    <ILLinkTrimInputSymbols>$(ILLinkTrimInputPath)$(TargetName).pdb</ILLinkTrimInputSymbols>
+    <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
+
+    <!-- if building a PDB, tell illink to rewrite the symbols file -->
+    <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == '' AND '$(DebugSymbols)' != 'false'">true</ILLinkRewritePDBs>
+  </PropertyGroup>
+
+  <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis 
+       Must be enabled by setting BinPlaceILLinkTrimAssembly=true
+  --> 
+  <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
+    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+      <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
+      <ItemName>TrimmedItem</ItemName>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+      <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/reports</RuntimePath>
+      <ItemName>TrimmingReport</ItemName>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+      <RuntimePath>$(BinDir)ILLinkTrimAssembly/$(BuildConfiguration)/pretrimmed</RuntimePath>
+      <ItemName>PreTrimmedItem</ItemName>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
+  <!-- ILLinkTrimAssembly
+       Examines the "input assembly" for IL that is unreachable from public API and trims that,
+       rewriting the assembly to an "output assembly"
+  -->
+  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
+  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'" DependsOnTargets="EnsureBuildToolsRuntime">
+    <PropertyGroup>
+      <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
+      <!-- default action for core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -c skip</ILLinkArgs>
+      <!-- default action for non-core assemblies -->
+      <ILLinkArgs>$(ILLinkArgs) -u skip</ILLinkArgs>
+      <!-- trim the target assembly -->
+      <ILLinkArgs>$(ILLinkArgs) -p link $(TargetName)</ILLinkArgs>
+      <ILLinkArgs Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')">$(ILLinkArgs) -b true</ILLinkArgs>
+      <!-- keep types and members required by Debugger-related attributes -->
+      <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
+      <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
+      <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
+      <!-- reflection heuristics to apply -->
+      <ILLinkArgs>$(ILLinkArgs) -h LdtokenTypeMethods,InstanceConstructors</ILLinkArgs>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(ILLinkTrimInputPath)" />
+
+    <!-- Move the assembly into a subdirectory for ILLink -->
+    <Move SourceFiles="$(ILLinkTrimAssemblyPath)"
+          DestinationFolder="$(ILLinkTrimInputPath)"
+    />
+
+    <!-- Move the PDB into a subdirectory for ILLink if we are rewriting PDBs -->
+    <Move SourceFiles="$(ILLinkTrimAssemblySymbols)"
+          DestinationFolder="$(ILLinkTrimInputPath)"
+          Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')"
+    />
+
+    <ILLink AssemblyPaths="$(ILLinkTrimInputAssembly)"
+            RootAssemblyNames=""
+            OutputDirectory="$(ILLinkTrimOutputPath)"
+            ClearInitLocals="true"
+            ClearInitLocalsAssemblies="$(TargetName)"
+            ExtraArgs="$(ILLinkArgs)" />
+
+  </Target>
+
+  <!-- ILLink reporting.
+       Only enabled when developer specifies a path to the AsmDiff tool with property AsmDiffCmd.
+       EG: AsmDiffCmd=d:\tools\asmdiff\asmdiff.exe
+       This is necessary until the AsmDiff tool is ported to .NET Core. -->
+  <Target Name="_CreateILLinkTrimAssemblyReports"
+          AfterTargets="ILLinkTrimAssembly"
+          Condition="'$(AsmDiffCmd)' != ''">
+    <PropertyGroup>
+      <AsmDiffArgs>$(AsmDiffArgs) $(ILLinkTrimInputAssembly)</AsmDiffArgs>
+      <AsmDiffArgs>$(AsmDiffArgs) $(ILLinkTrimAssemblyPath)</AsmDiffArgs>
+      <AsmDiffArgs>$(AsmDiffArgs) -includePrivateApis -includeInternalApis -alwaysDiffMembers -diffAttributes</AsmDiffArgs>
+
+      <AsmDiffReport>$(IntermediateOutputPath)$(TargetName).diff.html</AsmDiffReport>
+      <AsmDiffReportArgs>$(AsmDiffArgs) -out:$(AsmDiffReport)</AsmDiffReportArgs>
+      <AsmDiffReportArgs>$(AsmDiffReportArgs) -unchanged -changed -added -removed</AsmDiffReportArgs>
+
+      <AsmDiffList>$(IntermediateOutputPath)$(TargetName).diff.csv</AsmDiffList>
+      <AsmDiffListArgs>$(AsmDiffArgs) -out:$(AsmDiffList)</AsmDiffListArgs>
+      <AsmDiffListArgs>$(AsmDiffListArgs) -unchanged -changed -added -removed </AsmDiffListArgs>
+      <AsmDiffListArgs>$(AsmDiffListArgs) -diffWriter:CSV</AsmDiffListArgs>
+    </PropertyGroup>
+
+    <Exec Command="$(AsmDiffCmd) $(AsmDiffReportArgs)" />
+    <Message Text="Assembly trimming diff: $(AsmDiffReport)" />
+    <Exec Command="$(AsmDiffCmd) $(AsmDiffListArgs)" />
+    <Message Text="Assembly trimming report: $(AsmDiffList)" />
+  </Target>
+  
+  <!-- Similar to _CheckForCompileOutputs and runs in the same places, 
+       always set these even if compile didn't run. -->
+  <Target Name="_CheckForILLinkTrimAssemblyOutputs" 
+          BeforeTargets="CopyFilesToOutputDirectory;_CleanGetCurrentAndPriorFileWrites"
+          Condition="'$(ILLinkTrimAssembly)' == 'true'">
+    <ItemGroup>
+      <PreTrimmedItem Condition="Exists('$(ILLinkTrimInputAssembly)')" Include="$(ILLinkTrimInputAssembly)" />
+      <PreTrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimInputSymbols)')" Include="$(ILLinkTrimInputSymbols)" />
+      <FileWrites Include="@(PreTrimmedItem)" />
+
+      <TrimmedItem Condition="Exists('$(ILLinkTrimAssemblyPath)')" Include="$(ILLinkTrimAssemblyPath)" />
+      <TrimmedItem Condition="'$(ILLinkRewritePDBs)' == 'true' AND Exists('$(ILLinkTrimAssemblySymbols)')" Include="$(ILLinkTrimAssemblySymbols)" />
+
+      <TrimmingReport Condition="Exists('$(AsmDiffReport)')" Include="$(AsmDiffReport)" />
+      <TrimmingReport Condition="Exists('$(AsmDiffList)')" Include="$(AsmDiffList)" />
+    </ItemGroup>
+  </Target>
+</Project>

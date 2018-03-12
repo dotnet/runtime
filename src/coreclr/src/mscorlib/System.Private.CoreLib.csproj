@@ -673,5 +673,7 @@
     <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </ItemGroup>
 
+  <Import Project="ILLink.targets" />
+
   <Import Project="GenerateCompilerResponseFile.targets" />
 </Project>
