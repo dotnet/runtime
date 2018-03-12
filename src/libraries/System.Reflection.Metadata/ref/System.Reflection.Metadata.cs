@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata
 {
     public readonly partial struct ArrayShape
     {
-        private readonly int _dummy;
+        private readonly object _dummy;
         public ArrayShape(int rank, System.Collections.Immutable.ImmutableArray<int> sizes, System.Collections.Immutable.ImmutableArray<int> lowerBounds) { throw null; }
         public System.Collections.Immutable.ImmutableArray<int> LowerBounds { get { throw null; } }
         public int Rank { get { throw null; } }
@@ -510,7 +510,7 @@ namespace System.Reflection.Metadata
     }
     public readonly partial struct CustomAttributeValue<TType>
     {
-        private readonly int _dummy;
+        private readonly object _dummy;
         public CustomAttributeValue(System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeTypedArgument<TType>> fixedArguments, System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeNamedArgument<TType>> namedArguments) { throw null; }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeTypedArgument<TType>> FixedArguments { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.CustomAttributeNamedArgument<TType>> NamedArguments { get { throw null; } }
@@ -666,7 +666,7 @@ namespace System.Reflection.Metadata
     }
     public readonly partial struct EventAccessors
     {
-        private readonly int _dummy;
+        private readonly object _dummy;
         public System.Reflection.Metadata.MethodDefinitionHandle Adder { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.MethodDefinitionHandle> Others { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Raiser { get { throw null; } }
@@ -2040,7 +2040,7 @@ namespace System.Reflection.Metadata
     }
     public readonly partial struct PropertyAccessors
     {
-        private readonly int _dummy;
+        private readonly object _dummy;
         public System.Reflection.Metadata.MethodDefinitionHandle Getter { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<System.Reflection.Metadata.MethodDefinitionHandle> Others { get { throw null; } }
         public System.Reflection.Metadata.MethodDefinitionHandle Setter { get { throw null; } }

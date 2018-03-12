@@ -1,0 +1,5 @@
+Compat issues with assembly System.Data.SqlClient:
+MembersMustExist : Member 'Microsoft.SqlServer.Server.SqlMetaData..ctor(System.String, System.Data.SqlDbType, System.Type)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlDataReader' does not implement interface 'System.Data.Common.IDbColumnSchemaGenerator' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Data.SqlClient.SqlDataReader.GetColumnSchema()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 3

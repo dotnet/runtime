@@ -1,0 +1,7 @@
+Compat issues with assembly System.Xml.XmlSerializer:
+CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Serialization.XmlSchemaImporter' does not inherit from base type 'System.Xml.Serialization.SchemaImporter' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSchemaImporter..ctor(System.Xml.Serialization.XmlSchemas, System.Xml.Serialization.CodeGenerationOptions, System.Xml.Serialization.ImportContext)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSchemaImporter..ctor(System.Xml.Serialization.XmlSchemas, System.Xml.Serialization.CodeIdentifiers, System.Xml.Serialization.CodeGenerationOptions)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializationReader.ReadString()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Xml.Serialization.XmlSerializer.GenerateSerializer(System.Type[], System.Xml.Serialization.XmlMapping[], System.IO.Stream)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 5
