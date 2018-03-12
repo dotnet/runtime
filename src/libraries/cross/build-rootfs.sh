@@ -71,7 +71,7 @@ for i in "$@" ; do
             __LLDB_Package="lldb-3.8-dev"
             ;;
         lldb3.9)
-            __LLDB_Package="lldb-3.9-dev"
+            __LLDB_Package="liblldb-3.9-dev"
             ;;
         no-lldb)
             unset __LLDB_Package
