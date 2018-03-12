@@ -170,6 +170,8 @@ namespace System.Net.Http
 
         public TransportContext TransportContext => _transportContext;
 
+        public bool UsingProxy => _usingProxy;
+
         private int ReadBufferSize => _readBuffer.Length;
 
         private ReadOnlyMemory<byte> RemainingBuffer => new ReadOnlyMemory<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
