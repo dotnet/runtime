@@ -73,7 +73,6 @@
     <Compile Include="System\Security\Cryptography\Xml\TransformChain.cs" />
     <Compile Include="System\Security\Cryptography\Xml\TransformInputType.cs" />
     <Compile Include="System\Security\Cryptography\Xml\Utils.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\X509IssuerSerial.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDecryptionTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigBase64Transform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigC14NTransform.cs" />
@@ -106,6 +105,7 @@
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography.Pkcs" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Text.Encoding.Extensions" />

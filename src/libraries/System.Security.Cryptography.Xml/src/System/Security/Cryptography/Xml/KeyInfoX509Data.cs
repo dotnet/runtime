@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Xml
 {
     public class KeyInfoX509Data : KeyInfoClause
     {
-        // An array of certificates representing the certificate chain 
+        // An array of certificates representing the certificate chain
         private ArrayList _certificates = null;
         // An array of issuer serial structs
         private ArrayList _issuerSerials = null;
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography.Xml
 
             if (_issuerSerials == null)
                 _issuerSerials = new ArrayList();
-            _issuerSerials.Add(new X509IssuerSerial(issuerName, h.ToString()));
+            _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, h.ToString()));
         }
 
         // When we load an X509Data from Xml, we know the serial number is in decimal representation.
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (_issuerSerials == null)
                 _issuerSerials = new ArrayList();
-            _issuerSerials.Add(new X509IssuerSerial(issuerName, serialNumber));
+            _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, serialNumber));
         }
 
         public byte[] CRL

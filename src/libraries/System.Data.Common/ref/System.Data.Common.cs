@@ -1781,9 +1781,7 @@ namespace System.Data.Common
     {
         protected DbConnection() { }
         [System.ComponentModel.DefaultValueAttribute("")]
-#pragma warning disable 0618
         [System.ComponentModel.RecommendedAsConfigurableAttribute(true)]
-#pragma warning restore 0618
         [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
         [System.ComponentModel.SettingsBindableAttribute(true)]
         public abstract string ConnectionString { get; set; }
@@ -2204,6 +2202,12 @@ namespace System.Data.Common
         public static System.Data.Common.DbProviderFactory GetFactory(System.Data.DataRow providerRow) { throw null; }
         public static System.Data.Common.DbProviderFactory GetFactory(string providerInvariantName) { throw null; }
         public static System.Data.DataTable GetFactoryClasses() { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> GetProviderInvariantNames() { throw null; }
+        public static void RegisterFactory(string providerInvariantName, System.Data.Common.DbProviderFactory factory) { }
+        public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName) { }
+        public static void RegisterFactory(string providerInvariantName, System.Type providerFactoryClass) { }
+        public static bool TryGetFactory(string providerInvariantName, out System.Data.Common.DbProviderFactory factory) { throw null; }
+        public static bool UnregisterFactory(string providerInvariantName) { throw null; }
     }
     public abstract partial class DbProviderFactory
     {
