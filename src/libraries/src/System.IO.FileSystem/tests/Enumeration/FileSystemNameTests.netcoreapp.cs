@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class Win32MatcherTests
+    public class FileSystemNameTests
     {
         [Theory,
             MemberData(nameof(SimpleMatchData)),
