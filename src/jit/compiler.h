@@ -215,10 +215,12 @@ public:
     unsigned char lvStructGcCount : 3; // if struct, how many GC pointer (stop counting at 7). The only use of values >1
                                        // is to help determine whether to use block init in the prolog.
     unsigned char lvOnFrame : 1;       // (part of) the variable lives on the frame
-    unsigned char lvDependReg : 1;     // did the predictor depend upon this being enregistered
-    unsigned char lvRegister : 1;      // assigned to live in a register? For RyuJIT backend, this is only set if the
-                                       // variable is in the same register for the entire function.
-    unsigned char lvTracked : 1;       // is this a tracked variable?
+#ifdef LEGACY_BACKEND
+    unsigned char lvDependReg : 1; // did the predictor depend upon this being enregistered
+#endif
+    unsigned char lvRegister : 1; // assigned to live in a register? For RyuJIT backend, this is only set if the
+                                  // variable is in the same register for the entire function.
+    unsigned char lvTracked : 1;  // is this a tracked variable?
     bool          lvTrackedNonStruct()
     {
         return lvTracked && lvType != TYP_STRUCT;
@@ -247,8 +249,10 @@ public:
     unsigned char lvLclBlockOpAddr : 1;   // The variable was written to via a block operation that took its address.
     unsigned char lvLiveAcrossUCall : 1;  // The variable is live across an unmanaged call.
 #endif
-    unsigned char lvIsCSE : 1;       // Indicates if this LclVar is a CSE variable.
-    unsigned char lvRefAssign : 1;   // involved in pointer assignment
+    unsigned char lvIsCSE : 1; // Indicates if this LclVar is a CSE variable.
+#ifdef LEGACY_BACKEND
+    unsigned char lvRefAssign : 1; // involved in pointer assignment
+#endif
     unsigned char lvHasLdAddrOp : 1; // has ldloca or ldarga opcode on this local.
     unsigned char lvStackByref : 1;  // This is a compiler temporary of TYP_BYREF that is known to point into our local
                                      // stack frame.
@@ -261,19 +265,15 @@ public:
 #if OPT_BOOL_OPS
     unsigned char lvIsBoolean : 1; // set if variable is boolean
 #endif
-    unsigned char lvRngOptDone : 1; // considered for range check opt?
-    unsigned char lvLoopInc : 1;    // incremented in the loop?
-    unsigned char lvLoopAsg : 1;    // reassigned  in the loop (other than a monotonic inc/dec for the index var)?
-    unsigned char lvArrIndx : 1;    // used as an array index?
-    unsigned char lvArrIndxOff : 1; // used as an array index with an offset?
-    unsigned char lvArrIndxDom : 1; // index dominates loop exit
 #if ASSERTION_PROP
     unsigned char lvSingleDef : 1;    // variable has a single def
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 #endif
 
+#ifdef LEGACY_BACKEND
     unsigned char lvSpilled : 1; // enregistered variable was spilled
+#endif
 #ifndef _TARGET_64BIT_
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
 #endif                                     // !_TARGET_64BIT_
@@ -291,11 +291,10 @@ public:
                                   // 32-bit target.  For implicit byref parameters, this gets hijacked between
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
-    unsigned char lvIsStructField : 1;          // Is this local var a field of a promoted struct local?
-    unsigned char lvContainsFloatingFields : 1; // Does this struct contains floating point fields?
-    unsigned char lvOverlappingFields : 1;      // True when we have a struct with possibly overlapping fields
-    unsigned char lvContainsHoles : 1;          // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;           // True when this struct has "CustomLayout"
+    unsigned char lvIsStructField : 1;     // Is this local var a field of a promoted struct local?
+    unsigned char lvOverlappingFields : 1; // True when we have a struct with possibly overlapping fields
+    unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
+    unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
