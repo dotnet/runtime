@@ -23,18 +23,18 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>d65aa3ed53359bf140b3624612fbf432e4e79981</CoreFxCurrentRef>
-    <CoreClrCurrentRef>d65aa3ed53359bf140b3624612fbf432e4e79981</CoreClrCurrentRef>
-    <BuildToolsCurrentRef>09810771445d7c03f821d0a8c8f589c8194b8fb2</BuildToolsCurrentRef>
+    <CoreFxCurrentRef>51eda5ba26ef0ef0abee607a1fae2cf528110fc9</CoreFxCurrentRef>
+    <CoreClrCurrentRef>51eda5ba26ef0ef0abee607a1fae2cf528110fc9</CoreClrCurrentRef>
+    <BuildToolsCurrentRef>51eda5ba26ef0ef0abee607a1fae2cf528110fc9</BuildToolsCurrentRef>
     <PgoDataCurrentRef>553f30357d08df4ed6d32f70f3478a76f5db79c2</PgoDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview2-26308-06</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview2-26308-06</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview2-26312-02</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview2-26312-02</MicrosoftNETCorePlatformsPackageVersion>
     <PgoDataPackageVersion>99.99.99-master-20180228-0037</PgoDataPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26308-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-26310-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XunitConsoleNetcorePackageVersion>1.0.2-prerelease-00177</XunitConsoleNetcorePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
@@ -51,7 +51,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-preview2-02607-03</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-preview2-02612-02</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
