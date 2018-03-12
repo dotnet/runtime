@@ -121,6 +121,7 @@
     <Compile Include="System\ReadOnlySpan.Portable.cs" />
     <Compile Include="System\Span.Portable.cs" />
     <Compile Include="System\MemoryExtensions.Portable.cs" />
+    <Compile Include="System\NUint.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.Portable.cs" />

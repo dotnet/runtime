@@ -63,6 +63,7 @@
     <Compile Include="Span\SequenceEqual.T.cs" />
     <Compile Include="Span\SequenceEqual.byte.cs" />
     <Compile Include="Span\SequenceEqual.char.cs" />
+    <Compile Include="Span\SequenceEqual.long.cs" />
     <Compile Include="Span\Slice.cs" />
     <Compile Include="Span\StartsWith.T.cs" />
     <Compile Include="Span\StartsWith.byte.cs" />
