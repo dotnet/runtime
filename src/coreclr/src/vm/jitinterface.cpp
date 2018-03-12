@@ -7467,13 +7467,6 @@ getMethodInfoHelper(
         if (!fILIntrinsic)
         {
             getMethodInfoILMethodHeaderHelper(header, methInfo);
-
-            // Workaround for https://github.com/dotnet/coreclr/issues/1279
-            // Set init locals bit to zero for system module unless profiler may have overrided it. Remove once we have
-            // better solution for this issue.
-            if (pMT->GetModule()->IsSystem() && !(CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages()))
-                methInfo->options = (CorInfoOptions)0;
-
             pLocalSig = header->LocalVarSig;
             cbLocalSig = header->cbLocalVarSig;
         }

@@ -1,0 +1,23 @@
+<linker>
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.CommonlyUsedGenericInstantiations">
+      <!-- Method is purely an aid for NGen to statically deduce which
+           instantiations to save in the ngen image. -->
+      <method name="CommonlyUsedWinRTRedirectedInterfaceStubs" />
+    </type>
+    <type fullname="System.Threading.Tasks.Task">
+      <!-- Properties used by a debugger. -->
+      <property name="ParentForDebugger" />
+      <property name="StateFlagsForDebugger" />
+    </type>
+    <type fullname="System.Diagnostics.Tracing.EventListener">
+      <!-- Method gets used when the code is mirrored into CoreFX
+           and is packaged into Microsoft.Diagnostics.Tracing.EventSource.Redist. -->
+      <method name="DisposeOnShutdown" />
+    </type>
+    <type fullname="System.Threading.Tasks.Task">
+      <!-- Methods is used by VS Tasks Window. -->
+      <method name="GetActiveTaskFromId" />
+    </type>
+  </assembly>
+</linker>
