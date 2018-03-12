@@ -19,7 +19,7 @@ namespace System.Net.Http
                 connection.SendWithNtProxyAuthAsync(request, cancellationToken);
         }
 
-        private static bool CheckIfProxySupportsConnectionAuth(HttpResponseMessage response)
+        private static bool ProxySupportsConnectionAuth(HttpResponseMessage response)
         {
             if (!response.Headers.TryGetValues(KnownHeaders.ProxySupport.Descriptor, out IEnumerable<string> values))
             {
@@ -41,8 +41,13 @@ namespace System.Net.Http
         {
             HttpResponseMessage response = await InnerSendAsync(request, isProxyAuth, connection, cancellationToken).ConfigureAwait(false);
 
-            if (TryGetAuthenticationChallenge(response, isProxyAuth, authUri, credentials, out AuthenticationChallenge challenge) &&
-                (!isProxyAuth || CheckIfProxySupportsConnectionAuth(response)))
+            if (!isProxyAuth && connection.UsingProxy && !ProxySupportsConnectionAuth(response))
+            {
+                // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
+                return response;
+            }
+
+            if (TryGetAuthenticationChallenge(response, isProxyAuth, authUri, credentials, out AuthenticationChallenge challenge))
             {
                 if (challenge.AuthenticationType == AuthenticationType.Negotiate || 
                     challenge.AuthenticationType == AuthenticationType.Ntlm)
