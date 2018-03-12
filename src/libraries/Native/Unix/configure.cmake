@@ -619,9 +619,9 @@ check_cxx_source_compiles(
 check_cxx_source_compiles(
     "
     #include <curl/multi.h>
-    int main() { int i = CURL_HTTP_VERSION_2_0; return 0; }
+    int main() { int i = CURL_HTTP_VERSION_2TLS; return 0; }
     "
-    HAVE_CURL_HTTP_VERSION_2_0)
+    HAVE_CURL_HTTP_VERSION_2TLS)
 
 check_cxx_source_compiles(
     "

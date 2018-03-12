@@ -153,7 +153,7 @@ internal static partial class Interop
             CURL_HTTP_VERSION_NONE = 0,
             CURL_HTTP_VERSION_1_0 = 1,
             CURL_HTTP_VERSION_1_1 = 2,
-            CURL_HTTP_VERSION_2_0 = 3,
+            CURL_HTTP_VERSION_2TLS = 4,
         };
 
         // Enum for constants defined for CURL_SSLVERSION
