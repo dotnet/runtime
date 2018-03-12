@@ -708,7 +708,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // 0
 #endif // DEBUG
 
-    enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0) && compiler->lvaTrackedCount > 0;
+    // Assume that we will enregister local variables if it's not disabled. We'll reset it if we
+    // have no tracked locals when we start allocating. Note that new tracked lclVars may be added
+    // after the first liveness analysis - either by optimizations or by Lowering, and the tracked
+    // set won't be recomputed until after Lowering (and this constructor is called prior to Lowering),
+    // so we don't want to check that yet.
+    enregisterLocalVars = ((compiler->opts.compFlags & CLFLG_REGVAR) != 0);
 #ifdef _TARGET_ARM64_
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
@@ -1308,6 +1313,15 @@ BasicBlock* LinearScan::getNextBlock()
 
 void LinearScan::doLinearScan()
 {
+    // Check to see whether we have any local variables to enregister.
+    // We initialize this in the constructor based on opt settings,
+    // but we don't want to spend time on the lclVar parts of LinearScan
+    // if we have no tracked locals.
+    if (enregisterLocalVars && (compiler->lvaTrackedCount == 0))
+    {
+        enregisterLocalVars = false;
+    }
+
     unsigned lsraBlockEpoch = compiler->GetCurBasicBlockEpoch();
 
     splitBBNumToTargetBBNumMap = nullptr;
