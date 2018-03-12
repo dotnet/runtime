@@ -120,7 +120,7 @@ namespace System.IO.Pipes.Tests
     }
 
     /// <summary>
-    /// Tests for the constructors for NamedPipeClientStream
+    /// Negative tests for PipeOptions.CurrentUserOnly in Windows.
     /// </summary>
     public class NamedPipeTest_CurrentUserOnly_Windows : NamedPipeTestBase, IClassFixture<TestAccountImpersonator>
     {
