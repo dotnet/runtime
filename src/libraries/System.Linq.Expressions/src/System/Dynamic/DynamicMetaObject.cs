@@ -43,9 +43,12 @@ namespace System.Dynamic
         public DynamicMetaObject(Expression expression, BindingRestrictions restrictions, object value)
             : this(expression, restrictions)
         {
-            Value = value;
-            HasValue = true;
+            _value = value;
         }
+
+        // having sentinel value means having no value. (this way we do not need a separate hasValue field)
+        private static readonly object s_noValueSentinel = new object();
+        private readonly object _value = s_noValueSentinel;
 
         /// <summary>
         /// The expression representing the <see cref="DynamicMetaObject"/> during the dynamic binding process.
@@ -60,12 +63,12 @@ namespace System.Dynamic
         /// <summary>
         /// The runtime value represented by this <see cref="DynamicMetaObject"/>.
         /// </summary>
-        public object Value { get; }
+        public object Value => HasValue ? _value : null;
 
         /// <summary>
         /// Gets a value indicating whether the <see cref="DynamicMetaObject"/> has the runtime value.
         /// </summary>
-        public bool HasValue { get; }
+        public bool HasValue => _value != s_noValueSentinel;
 
         /// <summary>
         /// Gets the <see cref="Type"/> of the runtime value or null if the <see cref="DynamicMetaObject"/> has no value associated with it.
