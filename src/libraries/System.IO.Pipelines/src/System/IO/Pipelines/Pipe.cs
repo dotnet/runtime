@@ -20,7 +20,7 @@ namespace System.IO.Pipelines
 
         private static readonly Action<object> s_signalReaderAwaitable = state => ((Pipe)state).ReaderCancellationRequested();
         private static readonly Action<object> s_signalWriterAwaitable = state => ((Pipe)state).WriterCancellationRequested();
-        private static readonly Action<PipeCompletionCallbacks> s_invokeCompletionCallbacks = state => state.Execute();
+        private static readonly Action<object> s_invokeCompletionCallbacks = state => ((PipeCompletionCallbacks)state).Execute();
 
         // These callbacks all point to the same methods but are different delegate types
         private static readonly ContextCallback s_executionContextCallback = ExecuteWithExecutionContext;
@@ -603,7 +603,7 @@ namespace System.IO.Pipelines
             }
         }
 
-        private static void TrySchedule<TState>(PipeScheduler scheduler, Action<TState> action, TState state)
+        private static void TrySchedule(PipeScheduler scheduler, Action<object> action, object state)
         {
             if (action != null)
             {

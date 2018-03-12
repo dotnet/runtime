@@ -9,7 +9,7 @@ namespace System.IO.Pipelines
 {
     internal sealed class ThreadPoolScheduler : PipeScheduler
     {
-        public override void Schedule<TState>(Action<TState> action, TState state)
+        public override void Schedule(Action<object> action, object state)
         {
             System.Threading.ThreadPool.QueueUserWorkItem(action, state, preferLocal: false);
         }

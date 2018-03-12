@@ -25,6 +25,6 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Requests <paramref name="action"/> to be run on scheduler with <paramref name="state"/> being passed in
         /// </summary>
-        public abstract void Schedule<TState>(Action<TState> action, TState state);
+        public abstract void Schedule(Action<object> action, object state);
     }
 }
