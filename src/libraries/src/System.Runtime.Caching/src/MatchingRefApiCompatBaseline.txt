@@ -1,0 +1,6 @@
+Compat issues with assembly System.Runtime.Caching:
+TypesMustExist : Type 'System.Runtime.Caching.Configuration.CachingSectionGroup' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Caching.Configuration.MemoryCacheElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Caching.Configuration.MemoryCacheSection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Runtime.Caching.Configuration.MemoryCacheSettingsCollection' does not exist in the implementation but it does exist in the contract.
+Total Issues: 4

@@ -309,7 +309,7 @@ namespace System.Security.Cryptography.Xml
             // initialize the return value
             discardComments = true;
 
-            // Deal with XPointer of type #xpointer(id("ID")). Other XPointer support isn't handled here and is anyway optional 
+            // Deal with XPointer of type #xpointer(id("ID")). Other XPointer support isn't handled here and is anyway optional
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
             {
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
@@ -328,7 +328,7 @@ namespace System.Security.Cryptography.Xml
         {
             string idref = uri.Substring(1);
 
-            // Deal with XPointer of type #xpointer(id("ID")). Other XPointer support isn't handled here and is anyway optional 
+            // Deal with XPointer of type #xpointer(id("ID")). Other XPointer support isn't handled here and is anyway optional
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
             {
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
@@ -356,9 +356,9 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        // Writes one stream (starting from the current position) into 
-        // an output stream, connecting them up and reading until 
-        // hitting the end of the input stream.  
+        // Writes one stream (starting from the current position) into
+        // an output stream, connecting them up and reading until
+        // hitting the end of the input stream.
         // returns the number of bytes copied
         internal static long Pump(Stream input, Stream output)
         {
@@ -482,7 +482,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        // This method gets the attributes that should be propagated 
+        // This method gets the attributes that should be propagated
         internal static CanonicalXmlNodeList GetPropagatedAttributes(XmlElement elem)
         {
             if (elem == null)
@@ -606,6 +606,21 @@ namespace System.Security.Cryptography.Xml
             return index + 1;
         }
 
+        // Mimic the behavior of the X509IssuerSerial constructor with null and empty checks
+        internal static X509IssuerSerial CreateX509IssuerSerial(string issuerName, string serialNumber)
+        {
+            if (issuerName == null || issuerName.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
+            if (serialNumber == null || serialNumber.Length == 0)
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
+
+            return new X509IssuerSerial()
+            {
+                IssuerName = issuerName,
+                SerialNumber = serialNumber
+            };
+        }
+
         internal static X509Certificate2Collection BuildBagOfCerts(KeyInfoX509Data keyInfoX509Data, CertUsageType certUsageType)
         {
             X509Certificate2Collection collection = new X509Certificate2Collection();
@@ -620,7 +635,7 @@ namespace System.Security.Cryptography.Xml
                             collection.Add(certificate);
                             break;
                         case CertUsageType.Decryption:
-                            decryptionIssuerSerials.Add(new X509IssuerSerial(certificate.IssuerName.Name, certificate.SerialNumber));
+                            decryptionIssuerSerials.Add(CreateX509IssuerSerial(certificate.IssuerName.Name, certificate.SerialNumber));
                             break;
                     }
                 }
