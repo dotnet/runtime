@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO.Enumeration;
-using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests.Enumeration
@@ -32,11 +31,11 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
-        [ActiveIssue(27244)]
         [Fact]
         public void CanRecurseFromRoot()
         {
             string root = Path.GetPathRoot(Path.GetTempPath());
+
             using (var recursed = new DirectoryRecursed(root, new EnumerationOptions { AttributesToSkip = FileAttributes.System, RecurseSubdirectories = true }))
             {
                 while (recursed.MoveNext())
@@ -47,9 +46,10 @@ namespace System.IO.Tests.Enumeration
                         return;
                     }
 
-                    // Should not get back a full path without a single separator (C:\foo.txt or /foo.txt)
-                    int count = recursed.Current.Count(c => c == Path.DirectorySeparatorChar);
-                    Assert.True(count <= 1, $"expected to find just one separator in '{recursed.Current}'");
+                    // Should start with the root and shouldn't have a separator after the root
+                    Assert.StartsWith(root, recursed.Current);
+                    Assert.True(recursed.Current.LastIndexOf(Path.DirectorySeparatorChar) < root.Length,
+                        $"should have no separators pasth the root '{root}' in in '{recursed.Current}'");
                 }
 
                 Assert.NotNull(recursed.LastDirectory);
