@@ -25,6 +25,14 @@ namespace System.Threading.Tasks
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ValueTask : IEquatable<ValueTask>
     {
+        /// <summary>A task canceled using `new CancellationToken(true)`.</summary>
+        private static readonly Task s_canceledTask =
+#if netstandard
+            Task.Delay(Timeout.Infinite, new CancellationToken(canceled: true));
+#else
+            Task.FromCanceled(new CancellationToken(canceled: true));
+#endif
+        /// <summary>A successfully completed task.</summary>
         internal static Task CompletedTask
 #if netstandard
             { get; } = Task.Delay(0);
@@ -175,22 +183,15 @@ namespace System.Threading.Tasks
                 {
                     if (status == ValueTaskSourceStatus.Canceled)
                     {
-#if netstandard
-                        var tcs = new TaskCompletionSource<bool>();
-                        tcs.TrySetCanceled();
-                        return tcs.Task;
-#else
+#if !netstandard
                         if (exc is OperationCanceledException oce)
                         {
                             var task = new Task<VoidTaskResult>();
                             task.TrySetCanceled(oce.CancellationToken, oce);
                             return task;
                         }
-                        else
-                        {
-                            return Task.FromCanceled(new CancellationToken(true));
-                        }
 #endif
+                        return s_canceledTask;
                     }
                     else
                     {
@@ -371,6 +372,8 @@ namespace System.Threading.Tasks
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ValueTask<TResult> : IEquatable<ValueTask<TResult>>
     {
+        /// <summary>A task canceled using `new CancellationToken(true)`. Lazily created only when first needed.</summary>
+        private static Task<TResult> s_canceledTask;
         /// <summary>null if <see cref="_result"/> has the result, otherwise a <see cref="Task{TResult}"/> or a <see cref="IValueTaskSource{TResult}"/>.</summary>
         internal readonly object _obj;
         /// <summary>The result to be used if the operation completed successfully synchronously.</summary>
@@ -548,22 +551,29 @@ namespace System.Threading.Tasks
                 {
                     if (status == ValueTaskSourceStatus.Canceled)
                     {
-#if netstandard
-                        var tcs = new TaskCompletionSource<TResult>();
-                        tcs.TrySetCanceled();
-                        return tcs.Task;
-#else
+#if !netstandard
                         if (exc is OperationCanceledException oce)
                         {
                             var task = new Task<TResult>();
                             task.TrySetCanceled(oce.CancellationToken, oce);
                             return task;
                         }
-                        else
-                        {
-                            return Task.FromCanceled<TResult>(new CancellationToken(true));
-                        }
 #endif
+
+                        Task<TResult> canceledTask = s_canceledTask;
+                        if (canceledTask == null)
+                        {
+#if netstandard
+                            var tcs = new TaskCompletionSource<TResult>();
+                            tcs.TrySetCanceled();
+                            canceledTask = tcs.Task;
+#else
+                            canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
+#endif
+                            // Benign race condition to initialize cached task, as identity doesn't matter.
+                            s_canceledTask = canceledTask;
+                        }
+                        return canceledTask;
                     }
                     else
                     {
