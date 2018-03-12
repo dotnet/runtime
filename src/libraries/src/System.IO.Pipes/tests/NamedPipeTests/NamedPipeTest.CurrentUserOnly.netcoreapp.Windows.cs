@@ -137,9 +137,12 @@ namespace System.IO.Pipes.Tests
 
         [OuterLoop]
         [ConditionalTheory(nameof(IsAdminOnSupportedWindowsVersions))]
+        [InlineData(PipeOptions.None, PipeOptions.None)]
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
         [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
-        public void Connection_UnderDifferentUser_SingleSide_CurrentUserOnly_Fails(PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly)]
+        public void Connection_UnderDifferentUsers_BehavesAsExpected(
+            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
         {
             string name = GetUniquePipeName();
             using (var cts = new CancellationTokenSource())
@@ -157,8 +160,30 @@ namespace System.IO.Pipes.Tests
 
                 // Server is expected to not have received any request.
                 cts.Cancel();
-                var e = Assert.Throws<AggregateException>(() => serverTask.Wait(10_000));
+                AggregateException e = Assert.Throws<AggregateException>(() => serverTask.Wait(10_000));
                 Assert.IsType(typeof(TaskCanceledException), e.InnerException);
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
+        public void Allow_Connection_UnderDifferentUsers_ForClientReading()
+        {
+            string name = GetUniquePipeName();
+            using (var server = new NamedPipeServerStream(
+                name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+            {
+                Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
+
+                _testAccountImpersonator.RunImpersonated(() =>
+                {
+                    using (var client = new NamedPipeClientStream(".", name, PipeDirection.In))
+                    {
+                        client.Connect(10_000);
+                    }
+                });
+
+                Assert.True(serverTask.Wait(10_000));
             }
         }
     }
