@@ -12389,6 +12389,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsAVXInstruction(ins));
 
             code = insCodeRM(ins);
+            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = insEncodeReg3456(ins, id->idReg2(), size,
+                                    code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
             // 4-byte AVX instructions are special cased inside emitOutputSV
             // since they do not have space to encode ModRM byte.
@@ -12398,11 +12401,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddVexPrefixIfNeeded(ins, code, size);
-
-                // encode source operand reg in 'vvvv' bits in 1's complement form
-                code = insEncodeReg3456(ins, id->idReg2(), size, code);
-
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode);
             }
@@ -12413,9 +12411,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             // This should only be called on AVX instructions
             assert(IsAVXInstruction(ins));
-
             emitGetInsCns(id, &cnsVal);
+
             code = insCodeRM(ins);
+            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = insEncodeReg3456(ins, id->idReg2(), size,
+                                    code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
             // 4-byte AVX instructions are special cased inside emitOutputSV
             // since they do not have space to encode ModRM byte.
@@ -12425,11 +12426,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddVexPrefixIfNeeded(ins, code, size);
-
-                // encode source operand reg in 'vvvv' bits in 1's complement form
-                code = insEncodeReg3456(ins, id->idReg2(), size, code);
-
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode, &cnsVal);
             }
@@ -12551,6 +12547,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsAVXInstruction(ins));
 
             code = insCodeRM(ins);
+            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = insEncodeReg3456(ins, id->idReg2(), size,
+                                    code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
             // Special case 4-byte AVX instructions
             if (Is4ByteSSE4OrAVXInstruction(ins))
@@ -12559,11 +12558,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddVexPrefixIfNeeded(ins, code, size);
-
-                // encode source operand reg in 'vvvv' bits in 1's complement form
-                code = insEncodeReg3456(ins, id->idReg2(), size, code);
-
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
             }
@@ -12575,9 +12569,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             // This should only be called on AVX instructions
             assert(IsAVXInstruction(ins));
-
             emitGetInsCns(id, &cnsVal);
+
             code = insCodeRM(ins);
+            code = AddVexPrefixIfNeeded(ins, code, size);
+            code = insEncodeReg3456(ins, id->idReg2(), size,
+                                    code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
             // Special case 4-byte AVX instructions
             if (Is4ByteSSE4OrAVXInstruction(ins))
@@ -12586,11 +12583,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddVexPrefixIfNeeded(ins, code, size);
-
-                // encode source operand reg in 'vvvv' bits in 1's complement form
-                code = insEncodeReg3456(ins, id->idReg2(), size, code);
-
                 regcode = (insEncodeReg345(ins, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500, &cnsVal);
             }
