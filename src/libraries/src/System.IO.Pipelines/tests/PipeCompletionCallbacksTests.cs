@@ -28,7 +28,7 @@ namespace System.IO.Pipelines.Tests
 
             public Exception LastException { get; set; }
 
-            public override void Schedule<TState>(Action<TState> action, TState state)
+            public override void Schedule(Action<object> action, object state)
             {
                 CallCount++;
                 try

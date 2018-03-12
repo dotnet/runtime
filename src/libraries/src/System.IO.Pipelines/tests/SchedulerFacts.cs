@@ -31,7 +31,7 @@ namespace System.IO.Pipelines.Tests
                 _work.CompleteAdding();
             }
 
-            public override void Schedule<TState>(Action<TState> action, TState state)
+            public override void Schedule(Action<object> action, object state)
             {
                 _work.Add(() => action(state));
             }
