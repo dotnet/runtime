@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Security.Principal;
 using System.Threading.Tasks;
 
@@ -17,80 +18,74 @@ namespace System.Net.Http.Functional.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public class DefaultCredentialsTest : HttpClientTestBase
     {
-        private static string DomainJoinedTestServer => Configuration.Http.DomainJoinedHttpHost;
-        private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(DomainJoinedTestServer);
-        private static bool DomainProxyTestsEnabled => (!string.IsNullOrEmpty(Configuration.Http.DomainJoinedProxyHost)) && DomainJoinedTestsEnabled;
+        private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedHttpHost);
+
+        private static bool DomainProxyTestsEnabled => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedProxyHost);
+
+        // Enable this to test against local HttpListener over loopback
+        // Note this doesn't work as expected with WinHttpHandler, because WinHttpHandler will always authenticate the 
+        // current user against a loopback server using NTLM or Negotiate.
+        private static bool LocalHttpListenerTestsEnabled = false;
+
+        public static bool ServerAuthenticationTestsEnabled => (LocalHttpListenerTestsEnabled || DomainJoinedTestsEnabled);
 
         private static string s_specificUserName = Configuration.Security.ActiveDirectoryUserName;
         private static string s_specificPassword = Configuration.Security.ActiveDirectoryUserPassword;
         private static string s_specificDomain = Configuration.Security.ActiveDirectoryName;
-        private static Uri s_authenticatedServer =
-            new Uri($"http://{DomainJoinedTestServer}/test/auth/negotiate/showidentity.ashx");
-            
-        // This test endpoint offers multiple schemes, Basic and NTLM, in that specific order. This endpoint
-        // helps test that the client will use the stronger of the server proposed auth schemes and
-        // not the first auth scheme.
-        private static Uri s_multipleSchemesAuthenticatedServer =
-            new Uri($"http://{DomainJoinedTestServer}/test/auth/multipleschemes/showidentity.ashx");
-
-        private readonly ITestOutputHelper _output;
         private readonly NetworkCredential _specificCredential =
             new NetworkCredential(s_specificUserName, s_specificPassword, s_specificDomain);
+        private static Uri s_authenticatedServer = DomainJoinedTestsEnabled ? 
+            new Uri($"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/negotiate/showidentity.ashx") : null;
+
+        private readonly ITestOutputHelper _output;
 
         public DefaultCredentialsTest(ITestOutputHelper output)
         {
             _output = output;
-            _output.WriteLine(s_authenticatedServer.ToString());
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(10041)]
-        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task UseDefaultCredentials_DefaultValue_Unauthorized(bool useProxy)
+        [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
+        [MemberData(nameof(AuthenticatedServers))]
+        public async Task UseDefaultCredentials_DefaultValue_Unauthorized(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(10041)]
-        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task UseDefaultCredentials_SetFalse_Unauthorized(bool useProxy)
+        [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
+        [MemberData(nameof(AuthenticatedServers))]
+        public async Task UseDefaultCredentials_SetFalse_Unauthorized(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = false;
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(10041)]
-        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task UseDefaultCredentials_SetTrue_ConnectAsCurrentIdentity(bool useProxy)
+        [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
+        [MemberData(nameof(AuthenticatedServers))]
+        public async Task UseDefaultCredentials_SetTrue_ConnectAsCurrentIdentity(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = true;
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -102,18 +97,19 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(10041)]
-        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task UseDefaultCredentials_SetTrueAndServerOffersMultipleSchemes_Ok(bool useProxy)
+        [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
+        [MemberData(nameof(AuthenticatedServers))]
+        public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(string uri, bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
-            handler.UseDefaultCredentials = true;
+            handler.Credentials = new CredentialWrapper
+            {
+                InnerCredentials = CredentialCache.DefaultCredentials
+            };
 
             using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(s_multipleSchemesAuthenticatedServer))
+            using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -121,6 +117,22 @@ namespace System.Net.Http.Functional.Tests
                 WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
                 _output.WriteLine("currentIdentity={0}", currentIdentity.Name);
                 VerifyAuthentication(responseBody, true, currentIdentity.Name);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]
+        [MemberData(nameof(AuthenticatedServers))]
+        public async Task Credentials_SetToBadCredential_Unauthorized(string uri, bool useProxy)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.UseProxy = useProxy;
+            handler.Credentials = new NetworkCredential("notarealuser", "123456");
+
+            using (var client = new HttpClient(handler))
+            using (HttpResponseMessage response = await client.GetAsync(uri))
+            {
+                Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             }
         }
 
@@ -143,32 +155,6 @@ namespace System.Net.Http.Functional.Tests
                 
                 string responseBody = await response.Content.ReadAsStringAsync();
                 VerifyAuthentication(responseBody, true, s_specificDomain + "\\" + s_specificUserName);
-            }
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(10041)]
-        [ConditionalTheory(nameof(DomainJoinedTestsEnabled))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Credentials_SetToWrappedDefaultCredential_ConnectAsCurrentIdentity(bool useProxy)
-        {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.UseProxy = useProxy;
-            handler.Credentials = new CredentialWrapper
-            {
-                InnerCredentials = CredentialCache.DefaultCredentials
-            };
-
-            using (var client = new HttpClient(handler))
-            using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
-            {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                string responseBody = await response.Content.ReadAsStringAsync();
-                WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
-                _output.WriteLine("currentIdentity={0}", currentIdentity.Name);
-                VerifyAuthentication(responseBody, true, currentIdentity.Name);
             }
         }
 
@@ -218,6 +204,27 @@ namespace System.Net.Http.Functional.Tests
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        public static IEnumerable<object[]> AuthenticatedServers()
+        {
+            // Note that localhost will not actually use the proxy, but there's no harm in testing it.
+            foreach (bool b in new bool[] { true, false })
+            {
+                if (LocalHttpListenerTestsEnabled)
+                {
+                    yield return new object[] { HttpListenerAuthenticatedLoopbackServer.NtlmOnly.Uri, b };
+                    yield return new object[] { HttpListenerAuthenticatedLoopbackServer.NegotiateOnly.Uri, b };
+                    yield return new object[] { HttpListenerAuthenticatedLoopbackServer.NegotiateAndNtlm.Uri, b };
+                    yield return new object[] { HttpListenerAuthenticatedLoopbackServer.BasicAndNtlm.Uri, b };
+                }
+
+                if (!string.IsNullOrEmpty(Configuration.Http.DomainJoinedHttpHost))
+                {
+                    yield return new object[] { $"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/negotiate/showidentity.ashx", b };
+                    yield return new object[] { $"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/multipleschemes/showidentity.ashx", b };
+                }
             }
         }
 
@@ -296,6 +303,46 @@ namespace System.Net.Http.Functional.Tests
             {
                 return false;
             }
-        }        
+        }
+
+        private sealed class HttpListenerAuthenticatedLoopbackServer
+        {
+            private readonly HttpListener _listener;
+            private readonly string _uri;
+
+            public static readonly HttpListenerAuthenticatedLoopbackServer NtlmOnly = new HttpListenerAuthenticatedLoopbackServer("http://localhost:8080/", AuthenticationSchemes.Ntlm);
+            public static readonly HttpListenerAuthenticatedLoopbackServer NegotiateOnly = new HttpListenerAuthenticatedLoopbackServer("http://localhost:8081/", AuthenticationSchemes.Negotiate);
+            public static readonly HttpListenerAuthenticatedLoopbackServer NegotiateAndNtlm = new HttpListenerAuthenticatedLoopbackServer("http://localhost:8082/", AuthenticationSchemes.Negotiate | AuthenticationSchemes.Ntlm);
+            public static readonly HttpListenerAuthenticatedLoopbackServer BasicAndNtlm = new HttpListenerAuthenticatedLoopbackServer("http://localhost:8083/", AuthenticationSchemes.Basic | AuthenticationSchemes.Ntlm);
+
+            // Don't construct directly, use instances above
+            private HttpListenerAuthenticatedLoopbackServer(string uri, AuthenticationSchemes authenticationSchemes)
+            {
+                _uri = uri;
+
+                _listener = new HttpListener();
+                _listener.Prefixes.Add(uri);
+                _listener.AuthenticationSchemes = authenticationSchemes;
+                _listener.Start();
+
+                Task.Run(() => ProcessRequests());
+            }
+
+            public string Uri => _uri;
+
+            private async void ProcessRequests()
+            {
+                while (true)
+                {
+                    var context = await _listener.GetContextAsync();
+
+                    // Send a response in the JSON format that the client expects
+                    string username = context.User.Identity.Name;
+                    await context.Response.OutputStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes($"{{\"authenticated\": \"true\", \"user\": \"{username}\" }}"));
+
+                    context.Response.Close();
+                }
+            }
+        }
     }
 }

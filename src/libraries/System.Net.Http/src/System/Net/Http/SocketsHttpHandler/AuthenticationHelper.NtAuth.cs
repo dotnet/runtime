@@ -57,17 +57,13 @@ namespace System.Net.Http
                         while (true)
                         {
                             string challengeResponse = authContext.GetOutgoingBlob(challengeData);
-                            if (authContext.IsCompleted)
-                            {
-                                break;
-                            }
 
                             await connection.DrainResponseAsync(response).ConfigureAwait(false);
 
                             SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
 
                             response = await InnerSendAsync(request, isProxyAuth, connection, cancellationToken).ConfigureAwait(false);
-                            if (!TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out challengeData))
+                            if (authContext.IsCompleted || !TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out challengeData))
                             {
                                 break;
                             }
