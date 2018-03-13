@@ -999,6 +999,12 @@ namespace System.Net.Http
                                     // our redirect limit, etc.), this will have been unnecessary work in reconfiguring the easy handle, but 
                                     // nothing incorrect, as we'll tear down the handle once the request finishes, anyway, and all of the configuration
                                     // we're doing is about initiating a new request.
+                                    if ((int)response.StatusCode >= 301 && (int)response.StatusCode <= 303)
+                                    {
+                                        // ISSUE: 25163
+                                        // Ideally we want to avoid modifying the users request message.
+                                        easy._requestMessage.Headers.TransferEncodingChunked = false;
+                                    }
                                     easy.SetPossibleRedirectForLocationHeader(headerValue);
                                 }
                                 else if (string.Equals(headerName, HttpKnownHeaderNames.SetCookie, StringComparison.OrdinalIgnoreCase))
