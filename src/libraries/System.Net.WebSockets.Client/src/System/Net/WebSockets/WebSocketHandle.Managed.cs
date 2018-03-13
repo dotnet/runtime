@@ -20,6 +20,9 @@ namespace System.Net.WebSockets
         /// <summary>GUID appended by the server as part of the security key response.  Defined in the RFC.</summary>
         private const string WSServerGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+        /// <summary>Shared, lazily-initialized handler for when using default options.</summary>
+        private static SocketsHttpHandler s_defaultHandler;
+
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
         private WebSocket _webSocket;
@@ -72,6 +75,7 @@ namespace System.Net.WebSockets
         {
             HttpResponseMessage response = null;
             SocketsHttpHandler handler = null;
+            bool disposeHandler = true;
             try
             {
                 // Create the request message, including a uri with ws{s} switched to http{s}.
@@ -90,18 +94,64 @@ namespace System.Net.WebSockets
                 AddWebSocketHeaders(request, secKeyAndSecWebSocketAccept.Key, options);
 
                 // Create the handler for this request and populate it with all of the options.
-                handler = new SocketsHttpHandler();
-                handler.Credentials = options.Credentials;
-                handler.Proxy = options.Proxy;
-                handler.CookieContainer = options.Cookies;
-                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
-                if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
+                // Try to use a shared handler rather than creating a new one just for this request, if
+                // the options are compatible.
+                if (options.Credentials == null &&
+                    !options.UseDefaultCredentials &&
+                    options.Proxy == null &&
+                    options.Cookies == null &&
+                    options.RemoteCertificateValidationCallback == null &&
+                    options._clientCertificates?.Count == 0)
                 {
-                    if (handler.SslOptions.ClientCertificates == null)
+                    disposeHandler = false;
+                    handler = s_defaultHandler;
+                    if (handler == null)
                     {
-                        handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
+                        handler = new SocketsHttpHandler()
+                        {
+                            PooledConnectionLifetime = TimeSpan.Zero,
+                            UseProxy = false,
+                            UseCookies = false,
+                        };
+                        if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
+                        {
+                            handler.Dispose();
+                            handler = s_defaultHandler;
+                        }
                     }
-                    handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
+                }
+                else
+                {
+                    handler = new SocketsHttpHandler();
+                    handler.PooledConnectionLifetime = TimeSpan.Zero;
+                    handler.CookieContainer = options.Cookies;
+                    handler.UseCookies = options.Cookies != null;
+                    handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+
+                    if (options.UseDefaultCredentials)
+                    {
+                        handler.Credentials = CredentialCache.DefaultCredentials;
+                    }
+                    else
+                    {
+                        handler.Credentials = options.Credentials;
+                    }
+
+                    if (options.Proxy == null)
+                    {
+                        handler.UseProxy = false;
+                    }
+                    else if (options.Proxy != ClientWebSocket.DefaultWebProxy.Instance)
+                    {
+                        handler.Proxy = options.Proxy;
+                    }
+
+                    if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
+                    {
+                        Debug.Assert(handler.SslOptions.ClientCertificates == null);
+                        handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
+                        handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
+                    }
                 }
 
                 // Issue the request.  The response must be status code 101.
@@ -109,7 +159,7 @@ namespace System.Net.WebSockets
                 if (cancellationToken.CanBeCanceled) // avoid allocating linked source if external token is not cancelable
                 {
                     linkedCancellation =
-                        externalAndAbortCancellation = 
+                        externalAndAbortCancellation =
                         CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _abortSource.Token);
                 }
                 else
@@ -193,7 +243,10 @@ namespace System.Net.WebSockets
             finally
             {
                 // Disposing the handler will not affect any active stream wrapped in the WebSocket.
-                handler?.Dispose();
+                if (disposeHandler)
+                {
+                    handler?.Dispose();
+                }
             }
         }
 
