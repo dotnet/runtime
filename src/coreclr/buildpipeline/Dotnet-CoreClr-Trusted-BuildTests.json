@@ -341,6 +341,9 @@
     },
     "CrossgenArg": {
       "value": ""
+    },
+    "ScepToolsPath": {
+      "value": "c:\\tools\\"
     }
   },
   "retentionRules": [
