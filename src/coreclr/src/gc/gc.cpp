@@ -1820,7 +1820,7 @@ retry:
 #ifdef SYNCHRONIZATION_STATS
                         (spin_lock->num_switch_thread)++;
 #endif //SYNCHRONIZATION_STATS
-                        BOOL cooperative_mode = gc_heap::enable_preemptive ();
+                        bool cooperative_mode = gc_heap::enable_preemptive ();
 
                         GCToOSInterface::YieldThread(0);
 
@@ -26889,7 +26889,7 @@ void gc_heap::bgc_thread_function()
 
     BOOL do_exit = FALSE;
 
-    BOOL cooperative_mode = TRUE;
+    bool cooperative_mode = true;
     bgc_thread_id.SetToCurrentThread();
     dprintf (1, ("bgc_thread_id is set to %x", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging()));
     while (1)
