@@ -126,6 +126,7 @@
     <Compile Include="Dynamic\BindingRestrictionsTests.cs" />
     <Compile Include="Dynamic\CallInfoTests.cs" />
     <Compile Include="Dynamic\CallSiteBinderDefaultBehaviourTests.cs" />
+    <Compile Include="Dynamic\CallSiteCachingTests.cs" />
     <Compile Include="Dynamic\CallSiteTests.cs" />
     <Compile Include="Dynamic\ConvertBinderTests.cs" />
     <Compile Include="Dynamic\DynamicAttributeTests.cs" />
