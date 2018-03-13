@@ -641,11 +641,10 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(303)]
         public async Task AllowAutoRedirect_True_PostToGetDoesNotSendTE(int statusCode)
         {
-            if (IsCurlHandler)
+            if (IsCurlHandler && statusCode == 300)
             {
-                // ISSUE #27301:
-                // CurlHandler incorrectly sends Transfer-Encoding when the method changes from POST to GET.
-                // Also, note CurlHandler doesn't change POST to GET for 300 response, either (see above test)
+                // ISSUE #26434:
+                // CurlHandler doesn't change POST to GET for 300 response (see above test).
                 return;
             }
 

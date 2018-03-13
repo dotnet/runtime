@@ -767,6 +767,8 @@ namespace System.Net.Http
 
             // Deal with conflict between 'Content-Length' vs. 'Transfer-Encoding: chunked' semantics.
             // libcurl adds a Transfer-Encoding header by default and the request fails if both are set.
+            // ISSUE: 25163
+            // Ideally we want to avoid modifying the users request message.
             if (requestContent.Headers.ContentLength.HasValue)
             {
                 if (chunkedMode)
