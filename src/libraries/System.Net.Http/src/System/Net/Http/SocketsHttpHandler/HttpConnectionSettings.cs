@@ -27,7 +27,7 @@ namespace System.Net.Http
 
         internal int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
         internal int _maxResponseDrainSize = HttpHandlerDefaults.DefaultMaxResponseDrainSize;
-        internal TimeSpan _maxResponseDrainTime = HttpHandlerDefaults.DefaultMaxResponseDrainTime;
+        internal TimeSpan _maxResponseDrainTime = HttpHandlerDefaults.DefaultResponseDrainTimeout;
         internal int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
 
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
