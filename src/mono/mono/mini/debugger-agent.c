@@ -10541,17 +10541,21 @@ debugger_thread (void *arg)
 		/* This will break if the socket is closed during shutdown too */
 		if (res != HEADER_LENGTH) {
 			DEBUG_PRINTF (1, "[dbg] transport_recv () returned %d, expected %d.\n", res, HEADER_LENGTH);
-			break;
+			len = HEADER_LENGTH;
+			id = 0;
+			flags = 0;
+			command_set = CMD_SET_VM;
+			command = CMD_VM_DISPOSE;
+		} else {
+			p = header;
+			end = header + HEADER_LENGTH;
+
+			len = decode_int (p, &p, end);
+			id = decode_int (p, &p, end);
+			flags = decode_byte (p, &p, end);
+			command_set = (CommandSet)decode_byte (p, &p, end);
+			command = decode_byte (p, &p, end);
 		}
-
-		p = header;
-		end = header + HEADER_LENGTH;
-
-		len = decode_int (p, &p, end);
-		id = decode_int (p, &p, end);
-		flags = decode_byte (p, &p, end);
-		command_set = (CommandSet)decode_byte (p, &p, end);
-		command = decode_byte (p, &p, end);
 
 		g_assert (flags == 0);
 
