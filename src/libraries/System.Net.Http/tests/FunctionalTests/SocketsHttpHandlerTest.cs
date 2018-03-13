@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -77,11 +74,11 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override bool UseSocketsHttpHandler => true;
 
-        protected override void SetMaxResponseDrainTime(HttpClientHandler handler, TimeSpan time)
+        protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
         {
             SocketsHttpHandler s = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             Assert.NotNull(s);
-            SetMaxResponseDrainTime(s, time);
+            s.ResponseDrainTimeout = time;
         }
 
         [Fact]
@@ -126,33 +123,18 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // TODO #27685: Remove once MaxResponseDrainTime is public.
-        private TimeSpan GetMaxResponseDrainTime(SocketsHttpHandler handler) =>
-            (TimeSpan)handler.GetType().GetProperty("MaxResponseDrainTime", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(handler);
-        private void SetMaxResponseDrainTime(SocketsHttpHandler handler, TimeSpan value)
-        {
-            try
-            {
-                handler.GetType().GetProperty("MaxResponseDrainTime", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(handler, value);
-            }
-            catch (TargetInvocationException tie)
-            {
-                throw tie.InnerException;
-            }
-        }
-
         [Fact]
-        public void MaxResponseDrainTime_Roundtrips()
+        public void ResponseDrainTimeout_Roundtrips()
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromSeconds(2), GetMaxResponseDrainTime(handler));
+                Assert.Equal(TimeSpan.FromSeconds(2), handler.ResponseDrainTimeout);
 
-                SetMaxResponseDrainTime(handler, TimeSpan.Zero);
-                Assert.Equal(TimeSpan.Zero, GetMaxResponseDrainTime(handler));
+                handler.ResponseDrainTimeout = TimeSpan.Zero;
+                Assert.Equal(TimeSpan.Zero, handler.ResponseDrainTimeout);
 
-                SetMaxResponseDrainTime(handler, TimeSpan.FromTicks(int.MaxValue));
-                Assert.Equal(TimeSpan.FromTicks(int.MaxValue), GetMaxResponseDrainTime(handler));
+                handler.ResponseDrainTimeout = TimeSpan.FromTicks(int.MaxValue);
+                Assert.Equal(TimeSpan.FromTicks(int.MaxValue), handler.ResponseDrainTimeout);
             }
         }
 
@@ -161,26 +143,26 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromSeconds(2), GetMaxResponseDrainTime(handler));
+                Assert.Equal(TimeSpan.FromSeconds(2), handler.ResponseDrainTimeout);
 
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(-1)));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainTime(handler, TimeSpan.MaxValue));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(int.MaxValue)));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(-1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.ResponseDrainTimeout = TimeSpan.MaxValue);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(int.MaxValue));
 
-                Assert.Equal(TimeSpan.FromSeconds(2), GetMaxResponseDrainTime(handler));
+                Assert.Equal(TimeSpan.FromSeconds(2), handler.ResponseDrainTimeout);
             }
         }
 
         [Fact]
-        public void MaxResponseDrainTime_SetAfterUse_Throws()
+        public void ResponseDrainTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (var client = new HttpClient(handler))
             {
-                SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(42));
+                handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42);
                 client.GetAsync("http://" + Guid.NewGuid().ToString("N")); // ignoring failure
-                Assert.Equal(TimeSpan.FromSeconds(42), GetMaxResponseDrainTime(handler));
-                Assert.Throws<InvalidOperationException>(() => SetMaxResponseDrainTime(handler, TimeSpan.FromSeconds(42)));
+                Assert.Equal(TimeSpan.FromSeconds(42), handler.ResponseDrainTimeout);
+                Assert.Throws<InvalidOperationException>(() => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42));
             }
         }
 
@@ -196,7 +178,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var handler = new SocketsHttpHandler();
                     handler.MaxResponseDrainSize = maxDrainSize;
-                    SetMaxResponseDrainTime(handler, Timeout.InfiniteTimeSpan);
+                    handler.ResponseDrainTimeout = Timeout.InfiniteTimeSpan;
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
@@ -242,7 +224,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var handler = new SocketsHttpHandler();
                     handler.MaxResponseDrainSize = maxDrainSize;
-                    SetMaxResponseDrainTime(handler, Timeout.InfiniteTimeSpan);
+                    handler.ResponseDrainTimeout = Timeout.InfiniteTimeSpan;
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
@@ -291,7 +273,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var handler = new SocketsHttpHandler();
                     handler.MaxResponseDrainSize = int.MaxValue;
-                    SetMaxResponseDrainTime(handler, TimeSpan.FromMilliseconds(1));
+                    handler.ResponseDrainTimeout = TimeSpan.FromMilliseconds(1);
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
