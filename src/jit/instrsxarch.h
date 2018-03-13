@@ -489,6 +489,9 @@ INST3( vpsrlvq,      "psrlvq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( vpsravd,      "psravd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x46))   // Variable Bit Shift Right Arithmetic
 INST3( vpsllvd,      "psllvd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x47))   // Variable Bit Shift Left Logical
 INST3( vpsllvq,      "psllvq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x47))   // Variable Bit Shift Left Logical
+INST3( vpermilps,    "permilps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x04))   // Permute In-Lane of Quadruples of Single-Precision Floating-Point Values
+INST3( vpermilpd,    "permilpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x05))   // Permute In-Lane of Quadruples of Double-Precision Floating-Point Values
+
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 // Scalar instructions in SSE4.2
