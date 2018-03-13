@@ -11522,7 +11522,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					NEW_BBLOCK (cfg, dont_throw);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, abort_exc->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, dont_throw);
-					mono_emit_jit_icall (cfg, mono_thread_self_abort, NULL);
+					mono_emit_jit_icall (cfg, ves_icall_thread_finish_async_abort, NULL);
 					cfg->cbb->clause_holes = tmp;
 
 					MONO_START_BB (cfg, dont_throw);

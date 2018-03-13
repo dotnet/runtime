@@ -193,6 +193,9 @@ static void self_abort_internal (MonoError *error);
 static void async_suspend_internal (MonoInternalThread *thread, gboolean interrupt);
 static void self_suspend_internal (void);
 
+static gboolean
+mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboolean sync);
+
 static MonoException* mono_thread_execute_interruption (void);
 static void ref_stack_destroy (gpointer rs);
 
@@ -366,6 +369,29 @@ mono_thread_set_interruption_requested (MonoInternalThread *thread)
 {
 	//always force when the current thread is doing it to itself.
 	gboolean sync = thread == mono_thread_internal_current ();
+	/* Normally synchronous interruptions can bypass abort protection. */
+	return mono_thread_set_interruption_requested_flags (thread, sync);
+}
+
+/* Returns TRUE if there was a state change and the interruption can be
+ * processed.  This variant defers a self abort when inside an abort protected
+ * block.  Normally this should only be done when a thread has received an
+ * outside indication that it should abort.  (For example when the JIT sets a
+ * flag in an finally block.)
+ */
+
+static gboolean
+mono_thread_set_self_interruption_respect_abort_prot (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+	/* N.B. Sets the ASYNC_REQUESTED_BIT even though for this thread. */
+	return mono_thread_set_interruption_requested_flags (thread, FALSE);
+}
+
+/* Returns TRUE if there was a state change and the interruption can be processed. */
+static gboolean
+mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboolean sync)
+{
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
@@ -4081,12 +4107,23 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	return TRUE;
 }
 
+/* This is a JIT icall.  This icall is called from a finally block when
+ * mono_install_handler_block_guard called by another thread has flipped the
+ * finally block's exvar (see mono_find_exvar_for_offset).  In that case, if
+ * the finally is in an abort protected block, we must defer the abort
+ * exception until we leave the abort protected block.  Otherwise we proceed
+ * with a synchronous self-abort.
+ */
 void
-mono_thread_self_abort (void)
+ves_icall_thread_finish_async_abort (void)
 {
-	ERROR_DECL (error);
-	self_abort_internal (error);
-	mono_error_set_pending_exception (error);
+	/* If we're in an abort protected block, just set the async requested bit and return.
+	 * Otherwise self abort now.
+	 */
+	if (!mono_thread_set_self_interruption_respect_abort_prot ())
+		return;
+	else
+		mono_thread_info_self_interrupt ();
 }
 
 /*
