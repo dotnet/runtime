@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,10 +16,6 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public partial class ClientWebSocketOptionsTests : ClientWebSocketTestBase
     {
-        public static bool CanTestCertificates =>
-            Capability.IsTrustedRootCertificateInstalled() &&
-            (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
-
         // Windows 10 Version 1709 introduced the necessary APIs for the UAP version of
         // ClientWebSocket.ConnectAsync to carry out mutual TLS authentication.
         public static bool ClientCertificatesSupported => !PlatformDetection.IsUap;
@@ -38,6 +31,40 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.True(cws.Options.UseDefaultCredentials);
             cws.Options.UseDefaultCredentials = false;
             Assert.False(cws.Options.UseDefaultCredentials);
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        public static void Proxy_Roundtrips()
+        {
+            var cws = new ClientWebSocket();
+
+            Assert.NotNull(cws.Options.Proxy);
+            Assert.Same(cws.Options.Proxy, cws.Options.Proxy);
+
+            IWebProxy p = new WebProxy();
+            cws.Options.Proxy = p;
+            Assert.Same(p, cws.Options.Proxy);
+
+            cws.Options.Proxy = null;
+            Assert.Null(cws.Options.Proxy);
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task NullProxySet_ConnectsSuccessfully(Uri server)
+        {
+            for (int i = 0; i < 3; i++) // Connect and disconnect multiple times to exercise shared handler on netcoreapp
+            {
+                var ws = await WebSocketHelper.Retry(_output, async () =>
+                {
+                    var cws = new ClientWebSocket();
+                    cws.Options.Proxy = null;
+                    await cws.ConnectAsync(server, default);
+                    return cws;
+                });
+                await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, default);
+                ws.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
