@@ -83,30 +83,28 @@ inline void GCToEEInterface::SyncBlockCachePromotionsGranted(int max_gen)
     g_theGCToCLR->SyncBlockCachePromotionsGranted(max_gen);
 }
 
-
 inline uint32_t GCToEEInterface::GetActiveSyncBlockCount()
 {
     assert(g_theGCToCLR != nullptr);
     return g_theGCToCLR->GetActiveSyncBlockCount();
 }
 
-inline bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
+inline bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->IsPreemptiveGCDisabled(pThread);
+    return g_theGCToCLR->IsPreemptiveGCDisabled();
 }
 
-
-inline void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)
+inline bool GCToEEInterface::EnablePreemptiveGC()
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->EnablePreemptiveGC(pThread);
+    return  g_theGCToCLR->EnablePreemptiveGC();
 }
 
-inline void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
+inline void GCToEEInterface::DisablePreemptiveGC()
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->DisablePreemptiveGC(pThread);
+    g_theGCToCLR->DisablePreemptiveGC();
 }
 
 inline Thread* GCToEEInterface::GetThread()
@@ -115,22 +113,10 @@ inline Thread* GCToEEInterface::GetThread()
     return g_theGCToCLR->GetThread();
 }
 
-inline bool GCToEEInterface::TrapReturningThreads()
+inline gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->TrapReturningThreads();
-}
-
-inline gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetAllocContext(pThread);
-}
-
-inline bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->CatchAtSafePoint(pThread);
+    return g_theGCToCLR->GetAllocContext();
 }
 
 inline void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
