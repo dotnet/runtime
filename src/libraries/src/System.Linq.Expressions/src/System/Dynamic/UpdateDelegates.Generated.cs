@@ -24,7 +24,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -48,6 +48,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -82,6 +83,7 @@ namespace System.Dynamic
                     result = rule(site, arg0);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -123,6 +125,7 @@ namespace System.Dynamic
                     result = rule(site, arg0);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -167,7 +170,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -191,6 +194,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -225,6 +229,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -266,6 +271,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -310,7 +316,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -334,6 +340,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -368,6 +375,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -409,6 +417,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -453,7 +462,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -477,6 +486,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -511,6 +521,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -552,6 +563,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -596,7 +608,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -620,6 +632,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -654,6 +667,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -695,6 +709,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -739,7 +754,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -763,6 +778,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -797,6 +813,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -838,6 +855,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -882,7 +900,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -906,6 +924,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -940,6 +959,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -981,6 +1001,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1025,7 +1046,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1049,6 +1070,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -1083,6 +1105,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1124,6 +1147,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1168,7 +1192,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1192,6 +1216,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -1226,6 +1251,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1267,6 +1293,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1311,7 +1338,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1335,6 +1362,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -1369,6 +1397,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1410,6 +1439,7 @@ namespace System.Dynamic
                     result = rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -1453,7 +1483,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1477,6 +1507,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -1511,6 +1542,7 @@ namespace System.Dynamic
                     rule(site, arg0);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1552,6 +1584,7 @@ namespace System.Dynamic
                     rule(site, arg0);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1595,7 +1628,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1619,6 +1652,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -1653,6 +1687,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1694,6 +1729,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1737,7 +1773,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1761,6 +1797,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -1795,6 +1832,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1836,6 +1874,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1879,7 +1918,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -1903,6 +1942,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -1937,6 +1977,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -1978,6 +2019,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2021,7 +2063,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -2045,6 +2087,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -2079,6 +2122,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2120,6 +2164,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2163,7 +2208,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -2187,6 +2232,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -2221,6 +2267,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2262,6 +2309,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2305,7 +2353,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -2329,6 +2377,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -2363,6 +2412,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2404,6 +2454,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2447,7 +2498,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -2471,6 +2522,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -2505,6 +2557,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2546,6 +2599,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2589,7 +2643,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -2613,6 +2667,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -2647,6 +2702,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2688,6 +2744,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2731,7 +2788,7 @@ namespace System.Dynamic
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -2755,6 +2812,7 @@ namespace System.Dynamic
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -2789,6 +2847,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -2830,6 +2889,7 @@ namespace System.Dynamic
                     rule(site, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
