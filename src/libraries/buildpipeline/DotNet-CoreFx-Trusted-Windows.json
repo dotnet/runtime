@@ -238,31 +238,6 @@
     {
       "environment": {},
       "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Index symbol sources",
-      "timeoutInMinutes": 0,
-      "refName": "Task13",
-      "task": {
-        "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SymbolsPath": "",
-        "SearchPattern": "corefx\\bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
-        "SymbolsFolder": "",
-        "SkipIndexing": "false",
-        "TreatNotIndexedAsWarning": "false",
-        "SymbolsMaximumWaitTime": "",
-        "SymbolsProduct": "",
-        "SymbolsVersion": "",
-        "SymbolsArtifactName": "Symbols_$(PB_ConfigurationGroup)"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
       "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",

@@ -4,6 +4,7 @@
   <Import Project="$(ToolsDir)PublishContent.targets" />
   <Import Project="$(ToolsDir)versioning.targets" />
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
+  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
   <PropertyGroup>
     <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputRoot)\**\*.nupkg</PublishPattern>
@@ -64,5 +65,22 @@
                     ManifestBuildId="$(ManifestBuildId)"
                     ManifestBranch="$(ManifestBranch)"
                     ManifestCommit="$(ManifestCommit)" />
+  </Target>
+
+
+  <Target Name="PublishAllSymbols" 
+          DependsOnTargets="SetupPublishSymbols;PublishSymbols"/>
+
+  <Target Name="SetupPublishSymbols">
+    <PropertyGroup>
+      <ConvertPortablePdbsToWindowsPdbs Condition="'$(ConvertPortablePdbsToWindowsPdbs)'==''">true</ConvertPortablePdbsToWindowsPdbs>
+      <SymbolVerboseLogging>true</SymbolVerboseLogging>
+    </PropertyGroup>
+    <ItemGroup>
+      <SymbolPackagesToPublish Include="$(FinalSymbolsPackagesPattern)" />
+    </ItemGroup>
+    <Error Condition="'$(SymbolServerPath)'==''" Text="Missing property SymbolServerPath" />
+    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
+    <Message Importance="High" Text="Publishing @(SymbolPackagesToPublish) to $(SymbolServerPath)"/>
   </Target>
 </Project>
