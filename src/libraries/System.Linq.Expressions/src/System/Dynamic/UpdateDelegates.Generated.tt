@@ -38,7 +38,7 @@ for (int i = 1; i <= 10; i++)
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -62,6 +62,7 @@ for (int i = 1; i <= 10; i++)
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return result;
                         }
 
@@ -96,6 +97,7 @@ for (int i = 1; i <= 10; i++)
                     result = rule(<#=ruleInvocationArguments#>);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -137,6 +139,7 @@ for (int i = 1; i <= 10; i++)
                     result = rule(<#=ruleInvocationArguments#>);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return result;
                     }
                 }
@@ -191,7 +194,7 @@ for (int i = 1; i <= 10; i++)
             //
             // Create matchmaker and its site. We'll need them regardless.
             //
-            site = CallSiteOps.CreateMatchmaker(@this);
+            site = @this.GetMatchmaker();
 
             //
             // Level 1 cache lookup
@@ -215,6 +218,7 @@ for (int i = 1; i <= 10; i++)
                         if (CallSiteOps.GetMatch(site))
                         {
                             CallSiteOps.UpdateRules(@this, i);
+                            @this.ReleaseMatchmaker(site);
                             return;
                         }
 
@@ -249,6 +253,7 @@ for (int i = 1; i <= 10; i++)
                     rule(<#=ruleInvocationArguments#>);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
@@ -290,6 +295,7 @@ for (int i = 1; i <= 10; i++)
                     rule(<#=ruleInvocationArguments#>);
                     if (CallSiteOps.GetMatch(site))
                     {
+                        @this.ReleaseMatchmaker(site);
                         return;
                     }
                 }
