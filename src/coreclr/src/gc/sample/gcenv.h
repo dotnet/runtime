@@ -124,13 +124,6 @@ public:
     void SetGCSpecial(bool fGCSpecial)
     {
     }
-
-    bool CatchAtSafePoint()
-    {
-        // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-        // a foreground GC proceed at that point. So it's always safe to return true.
-        return true;
-    }
 };
 
 Thread * GetThread();

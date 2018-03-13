@@ -455,24 +455,19 @@ void gc_heap::fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject)
 uint32_t gc_heap::user_thread_wait (GCEvent *event, BOOL no_mode_change, int time_out_ms)
 {
     Thread* pCurThread = NULL;
-    bool mode = false;
+    bool bToggleGC = false;
     uint32_t dwWaitResult = NOERROR;
     
     if (!no_mode_change)
     {
-        pCurThread = GCToEEInterface::GetThread();
-        mode = pCurThread ? GCToEEInterface::IsPreemptiveGCDisabled(pCurThread) : false;
-        if (mode)
-        {
-            GCToEEInterface::EnablePreemptiveGC(pCurThread);
-        }
+        bToggleGC = GCToEEInterface::EnablePreemptiveGC();
     }
 
     dwWaitResult = event->Wait(time_out_ms, FALSE);
 
-    if (!no_mode_change && mode)
+    if (bToggleGC)
     {
-        GCToEEInterface::DisablePreemptiveGC(pCurThread);
+        GCToEEInterface::DisablePreemptiveGC();
     }
 
     return dwWaitResult;
@@ -606,6 +601,18 @@ void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 bool GCHeap::RuntimeStructuresValid()
 {
     return GCScan::GetGcRuntimeStructuresValid();
+}
+
+void GCHeap::SetSuspensionPending(bool fSuspensionPending)
+{
+    if (fSuspensionPending)
+    {
+        Interlocked::Increment(&g_fSuspensionPending);
+    }
+    else
+    {
+        Interlocked::Decrement(&g_fSuspensionPending);
+    }
 }
 
 void GCHeap::ControlEvents(GCEventKeyword keyword, GCEventLevel level)
