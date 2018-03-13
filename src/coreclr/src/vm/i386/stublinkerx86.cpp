@@ -3834,28 +3834,56 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     {
         if (pEntry->srcofs & ShuffleEntry::REGMASK)
         {
-            // If source is present in register then destination must also be a register
-            _ASSERTE(pEntry->dstofs & ShuffleEntry::REGMASK);
-            // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
-            _ASSERTE((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK));
-
-            int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
+            // Source in a general purpose or float register, destination in the same kind of a register or on stack
             int srcRegIndex = pEntry->srcofs & ShuffleEntry::OFSREGMASK;
 
-            if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+            if (pEntry->dstofs & ShuffleEntry::REGMASK)
             {
-                // movdqa dstReg, srcReg
-                X64EmitMovXmmXmm((X86Reg)(kXMM0 + dstRegIndex), (X86Reg)(kXMM0 + srcRegIndex));
+                // Source in register, destination in register
+
+                // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
+                _ASSERTE((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK));
+                int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
+
+                if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+                {
+                    // movdqa dstReg, srcReg
+                    X64EmitMovXmmXmm((X86Reg)(kXMM0 + dstRegIndex), (X86Reg)(kXMM0 + srcRegIndex));
+                }
+                else
+                {
+                    // mov dstReg, srcReg
+                    X86EmitMovRegReg(c_argRegs[dstRegIndex], c_argRegs[srcRegIndex]);
+                }
             }
             else
             {
-                // mov dstReg, srcReg
-                X86EmitMovRegReg(c_argRegs[dstRegIndex], c_argRegs[srcRegIndex]);
+                // Source in register, destination on stack
+                int dstOffset = (pEntry->dstofs + 1) * sizeof(void*);
+
+                if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+                {
+                    if (pEntry->dstofs & ShuffleEntry::FPSINGLEMASK)
+                    {
+                        // movss [rax + dst], srcReg
+                        X64EmitMovSSToMem((X86Reg)(kXMM0 + srcRegIndex), SCRATCH_REGISTER_X86REG, dstOffset);
+                    }
+                    else
+                    {
+                        // movsd [rax + dst], srcReg
+                        X64EmitMovSDToMem((X86Reg)(kXMM0 + srcRegIndex), SCRATCH_REGISTER_X86REG, dstOffset);
+                    }
+                }
+                else
+                {
+                    // mov [rax + dst], srcReg
+                    X86EmitIndexRegStore (SCRATCH_REGISTER_X86REG, dstOffset, c_argRegs[srcRegIndex]);
+                }
             }
         }
         else if (pEntry->dstofs & ShuffleEntry::REGMASK)
         {
-            // source must be on the stack
+            // Source on stack, destination in register
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
 
             int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
@@ -3882,10 +3910,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         }
         else
         {
-            // source must be on the stack
+            // Source on stack, destination on stack
             _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
-
-            // dest must be on the stack
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
 
             // mov r10, [rax + src]
