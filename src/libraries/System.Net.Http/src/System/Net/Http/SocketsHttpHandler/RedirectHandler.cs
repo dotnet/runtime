@@ -33,13 +33,21 @@ namespace System.Net.Http
             Uri redirectUri;
             while ((redirectUri = GetUriForRedirect(request.RequestUri, response)) != null)
             {
-                response.Dispose();
-
                 redirectCount++;
+
                 if (redirectCount > _maxAutomaticRedirections)
                 {
-                    throw new HttpRequestException(SR.net_http_max_redirects);
+                    // If we exceed the maximum number of redirects
+                    // then just return the 3xx response.
+                    if (NetEventSource.IsEnabled)
+                    {
+                        NetEventSource.Info(this, $"Exceeded max number of redirects. Redirect from {request.RequestUri} to {redirectUri} blocked.");
+                    }
+
+                    break;
                 }
+
+                response.Dispose();
 
                 // Clear the authorization header.
                 request.Headers.Authorization = null;
