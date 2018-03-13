@@ -53,7 +53,7 @@ namespace System.Configuration
 
         public override int GetHashCode()
         {
-            return ValueXml.GetHashCode();
+            return ValueXml?.GetHashCode() ?? 0;
         }
 
         protected internal override bool IsModified()
