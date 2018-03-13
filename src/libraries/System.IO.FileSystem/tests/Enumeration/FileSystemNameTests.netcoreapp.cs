@@ -143,5 +143,12 @@ namespace System.IO.Tests
         {
             Assert.Equal(expected, FileSystemName.TranslateWin32Expression(expression));
         }
+
+        [Fact]
+        public void TranslateVeryLongExpression()
+        {
+            string longString = new string('a', 10_000_000);
+            Assert.Equal(longString, FileSystemName.TranslateWin32Expression(longString));
+        }
     }
 }
