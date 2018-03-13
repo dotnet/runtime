@@ -540,13 +540,6 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         switch (intrinsicID)
         {
-            case NI_ARM64_SIMD_GE_ZERO:
-                // Unsigned >= 0 ==> Always true
-                node->gtHWIntrinsicId = setAllVector;
-                node->gtOp.gtOp1      = comp->gtNewLconNode(~0ULL);
-                BlockRange().InsertBefore(node, node->gtOp.gtOp1);
-                BlockRange().Remove(origOp1);
-                break;
             case NI_ARM64_SIMD_GT_ZERO:
                 // Unsigned > 0 ==> !(Unsigned == 0)
                 node->gtOp.gtOp1 =
@@ -559,12 +552,21 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Unsigned <= 0 ==> Unsigned == 0
                 node->gtHWIntrinsicId = NI_ARM64_SIMD_EQ_ZERO;
                 break;
+            case NI_ARM64_SIMD_GE_ZERO:
             case NI_ARM64_SIMD_LT_ZERO:
+                // Unsigned >= 0 ==> Always true
                 // Unsigned < 0 ==> Always false
                 node->gtHWIntrinsicId = setAllVector;
-                node->gtOp.gtOp1      = comp->gtNewIconNode(0);
+                node->gtOp.gtOp1      = comp->gtNewLconNode((intrinsicID == NI_ARM64_SIMD_GE_ZERO) ? ~0ULL : 0ULL);
                 BlockRange().InsertBefore(node, node->gtOp.gtOp1);
-                BlockRange().Remove(origOp1);
+                if ((origOp1->gtFlags & GTF_ALL_EFFECT) == 0)
+                {
+                    BlockRange().Remove(origOp1, true);
+                }
+                else
+                {
+                    origOp1->SetUnusedValue();
+                }
                 break;
             default:
                 assert(!"Unhandled LowerCmpUZero case");
