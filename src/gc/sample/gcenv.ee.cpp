@@ -11,8 +11,6 @@
 
 MethodTable * g_pFreeObjectMethodTable;
 
-int32_t g_TrapReturningThreads;
-
 EEConfig * g_pConfig;
 
 gc_alloc_context g_global_alloc_context;
@@ -88,18 +86,14 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
 
         if (NULL != pCurThread)
         {
-            if (GCToEEInterface::IsPreemptiveGCDisabled(pCurThread))
-            {
-                GCToEEInterface::EnablePreemptiveGC(pCurThread);
-                disablePreemptive = true;
-            }
+            disablePreemptive = GCToEEInterface::EnablePreemptiveGC();
         }
 
         result = WaitForSingleObjectEx(m_hEvent, dwMilliseconds, bAlertable);
 
         if (disablePreemptive)
         {
-            GCToEEInterface::DisablePreemptiveGC(pCurThread);
+            GCToEEInterface::DisablePreemptiveGC();
         }
     }
 
@@ -175,18 +169,32 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
-bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
+bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
+    Thread* pThread = ::GetThread();
     return pThread->PreemptiveGCDisabled();
 }
 
-void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)
+bool GCToEEInterface::EnablePreemptiveGC()
 {
-    return pThread->EnablePreemptiveGC();
+    bool bToggleGC = false;
+    Thread* pThread = ::GetThread();
+
+    if (pThread)
+    {
+        bToggleGC = !!pThread->PreemptiveGCDisabled();
+        if (bToggleGC)
+        {
+            pThread->EnablePreemptiveGC();
+        }
+    }
+
+    return bToggleGC;
 }
 
-void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
+void GCToEEInterface::DisablePreemptiveGC()
 {
+    Thread* pThread = ::GetThread();
     pThread->DisablePreemptiveGC();
 }
 
@@ -195,19 +203,10 @@ Thread* GCToEEInterface::GetThread()
     return ::GetThread();
 }
 
-bool GCToEEInterface::TrapReturningThreads()
+gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
-    return !!g_TrapReturningThreads;
-}
-
-gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
-{
+    Thread* pThread = ::GetThread();
     return pThread->GetAllocContext();
-}
-
-bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
-{
-    return pThread->CatchAtSafePoint();
 }
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)

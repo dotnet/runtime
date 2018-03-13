@@ -29,13 +29,11 @@ public:
     void SyncBlockCacheDemote(int max_gen);
     void SyncBlockCachePromotionsGranted(int max_gen);
     uint32_t GetActiveSyncBlockCount();
-    bool IsPreemptiveGCDisabled(Thread * pThread);
-    void EnablePreemptiveGC(Thread * pThread);
-    void DisablePreemptiveGC(Thread * pThread);
+    bool IsPreemptiveGCDisabled();
+    bool EnablePreemptiveGC();
+    void DisablePreemptiveGC();
     Thread* GetThread();
-    bool TrapReturningThreads();
-    gc_alloc_context * GetAllocContext(Thread * pThread);
-    bool CatchAtSafePoint(Thread * pThread);
+    gc_alloc_context * GetAllocContext();
     void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
 
     // Diagnostics methods.
