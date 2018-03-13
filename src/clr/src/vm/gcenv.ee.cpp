@@ -169,7 +169,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
         if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            GCToEEInterface::GetAllocContext(pThread), sc->thread_number))
+            pThread->GetAllocContext(), sc->thread_number))
         {
             sc->thread_under_crawl = pThread;
 #ifdef FEATURE_EVENT_TRACE
@@ -315,16 +315,13 @@ uint32_t GCToEEInterface::GetActiveSyncBlockCount()
     return SyncBlockCache::GetSyncBlockCache()->GetActiveCount();   
 }
 
-gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
+gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
+    
+    Thread* pThread = ::GetThread();
+    assert(pThread != nullptr);
     return pThread->GetAllocContext();
-}
-
-bool GCToEEInterface::CatchAtSafePoint(Thread * pThread)
-{
-    WRAPPER_NO_CONTRACT;
-    return !!pThread->CatchAtSafePoint();
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -350,22 +347,47 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     }
 }
 
-bool GCToEEInterface::IsPreemptiveGCDisabled(Thread * pThread)
+bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     WRAPPER_NO_CONTRACT;
-    return !!pThread->PreemptiveGCDisabled();
+
+    Thread* pThread = ::GetThread();
+    if (pThread)
+    {
+        return !!pThread->PreemptiveGCDisabled();
+    }
+
+    return false;
 }
 
-void GCToEEInterface::EnablePreemptiveGC(Thread * pThread)
+bool GCToEEInterface::EnablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
-    pThread->EnablePreemptiveGC();
+
+    bool bToggleGC = false;
+    Thread* pThread = ::GetThread();
+
+    if (pThread)
+    {
+        bToggleGC = !!pThread->PreemptiveGCDisabled();
+        if (bToggleGC)
+        {
+            pThread->EnablePreemptiveGC();
+        }
+    }
+
+    return bToggleGC;
 }
 
-void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
+void GCToEEInterface::DisablePreemptiveGC()
 {
     WRAPPER_NO_CONTRACT;
-    pThread->DisablePreemptiveGC();
+
+    Thread* pThread = ::GetThread();
+    if (pThread)
+    {
+        pThread->DisablePreemptiveGC();
+    }
 }
 
 Thread* GCToEEInterface::GetThread()
@@ -373,12 +395,6 @@ Thread* GCToEEInterface::GetThread()
     WRAPPER_NO_CONTRACT;
 
     return ::GetThread();
-}
-
-bool GCToEEInterface::TrapReturningThreads()
-{
-    WRAPPER_NO_CONTRACT;
-    return !!g_TrapReturningThreads;
 }
 
 struct BackgroundThreadStubArgs

@@ -717,6 +717,9 @@ public:
     // Gets whether or not the GC runtime structures are in a valid state for heap traversal.
     virtual bool RuntimeStructuresValid() = 0;
 
+    // Tells the GC when the VM is suspending threads.
+    virtual void SetSuspensionPending(bool fSuspensionPending) = 0;
+
     /*
     ============================================================================
     Add/RemoveMemoryPressure support routines. These are on the interface

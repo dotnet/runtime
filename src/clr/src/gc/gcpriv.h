@@ -2797,12 +2797,12 @@ public:
     PER_HEAP_ISOLATED
     uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
 
-    // Returns TRUE if the thread used to be in cooperative mode 
+    // Returns TRUE if the current thread used to be in cooperative mode 
     // before calling this function.
     PER_HEAP_ISOLATED
-    BOOL enable_preemptive (Thread* current_thread);
+    bool enable_preemptive ();
     PER_HEAP_ISOLATED
-    void disable_preemptive (Thread* current_thread, BOOL restore_cooperative);
+    void disable_preemptive (bool restore_cooperative);
 
     /* ------------------- per heap members --------------------------*/
 

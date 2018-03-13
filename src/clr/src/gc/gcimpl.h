@@ -91,6 +91,8 @@ public:
 
     bool RuntimeStructuresValid();
 
+    void SetSuspensionPending(bool fSuspensionPending);
+
     void SetWaitForGCEvent();
     void ResetWaitForGCEvent();
 
@@ -258,7 +260,7 @@ private:
         // to threads returning to cooperative mode is down after gc.
         // In other words, if the sequence in GCHeap::RestartEE changes,
         // the condition here may have to change as well.
-        return !GCToEEInterface::TrapReturningThreads();
+        return g_fSuspensionPending == 0;
     }
 public:
     //return TRUE if GC actually happens, otherwise FALSE
