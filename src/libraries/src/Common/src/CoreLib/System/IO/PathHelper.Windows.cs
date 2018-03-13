@@ -67,7 +67,7 @@ namespace System.IO
             builder.Length = (int)result;
         }
 
-        private static int PrependDevicePathChars(ref ValueStringBuilder content, bool isDosUnc, ref ValueStringBuilder buffer)
+        internal static int PrependDevicePathChars(ref ValueStringBuilder content, bool isDosUnc, ref ValueStringBuilder buffer)
         {
             int length = content.Length;
 
@@ -98,7 +98,7 @@ namespace System.IO
             }
         }
 
-        private static string TryExpandShortFileName(ref ValueStringBuilder outputBuilder, string originalPath)
+        internal static string TryExpandShortFileName(ref ValueStringBuilder outputBuilder, string originalPath)
         {
             // We guarantee we'll expand short names for paths that only partially exist. As such, we need to find the part of the path that actually does exist. To
             // avoid allocating like crazy we'll create only one input array and modify the contents with embedded nulls.
@@ -197,13 +197,13 @@ namespace System.IO
                     outputBuilder.Length = checked((int)result);
                     if (foundIndex < inputLength - 1)
                     {
-                        // It was a partial find, put the non-existent part of the path back
-                        outputBuilder.Append(inputBuilder.AsSpan(foundIndex, inputBuilder.Length - foundIndex));
+                        // It was a partial find, put the non-existent part of the path back (minus the added null)
+                        outputBuilder.Append(inputBuilder.AsSpan(foundIndex, inputBuilder.Length - foundIndex - 1));
                     }
                 }
             }
 
-            // Need to trim out the trailing separator in the input builder
+            // Need to trim out the trailing null in the input builder
             inputBuilder.Length = inputBuilder.Length - 1;
 
             // If we were able to expand the path, use it, otherwise use the original full path result
