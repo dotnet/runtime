@@ -12,7 +12,7 @@
 #include <config.h>
 #include <glib.h>
 
-#ifdef HOST_DARWIN
+#ifdef TARGET_OSX
 #include "mono-merp.h"
 
 #include <unistd.h>
@@ -496,5 +496,5 @@ mono_merp_enabled (void)
 	return config.enable_merp;
 }
 
-#endif // HOST_DARWIN
+#endif // TARGET_OSX
 

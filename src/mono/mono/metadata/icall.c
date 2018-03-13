@@ -5711,7 +5711,7 @@ ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, gboolea
 ICALL_EXPORT void
 ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
 {
-#ifdef HOST_DARWIN
+#ifdef TARGET_OSX
 	mono_merp_disable ();
 #else
 	// Icall has platform check in managed too.
@@ -5722,7 +5722,7 @@ ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
 ICALL_EXPORT void
 ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (char *appBundleID, char *appSignature, char *appVersion, char *merpGUIPath)
 {
-#ifdef HOST_DARWIN
+#ifdef TARGET_OSX
 	mono_merp_enable (appBundleID, appSignature, appVersion, merpGUIPath);
 #else
 	// Icall has platform check in managed too.

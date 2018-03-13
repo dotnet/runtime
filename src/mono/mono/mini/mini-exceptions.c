@@ -2716,7 +2716,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		}
 #endif
 
-#if defined(HOST_DARWIN)
+#if defined(TARGET_OSX)
 		if (mono_merp_enabled ()) {
 			if (pid == 0) {
 				MonoContext mctx;
