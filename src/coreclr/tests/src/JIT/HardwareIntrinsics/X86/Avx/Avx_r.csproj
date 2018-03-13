@@ -74,6 +74,10 @@
     <Compile Include="Multiply.Single.cs" />
     <Compile Include="Or.Double.cs" />
     <Compile Include="Or.Single.cs" />
+    <Compile Include="Permute.Single.1.cs" />
+    <Compile Include="Permute.Double.1.cs" />
+    <Compile Include="Permute.Single.2.cs" />
+    <Compile Include="Permute.Double.2.cs" />
     <Compile Include="RoundCurrentDirection.Double.cs" />
     <Compile Include="RoundCurrentDirection.Single.cs" />
     <Compile Include="RoundToNearestInteger.Double.cs" />
@@ -84,6 +88,8 @@
     <Compile Include="RoundToPositiveInfinity.Single.cs" />
     <Compile Include="RoundToZero.Double.cs" />
     <Compile Include="RoundToZero.Single.cs" />
+    <Compile Include="Shuffle.Single.1.cs" />
+    <Compile Include="Shuffle.Double.1.cs" />
     <Compile Include="Subtract.Double.cs" />
     <Compile Include="Subtract.Single.cs" />
     <Compile Include="TestC.Byte.cs" />
