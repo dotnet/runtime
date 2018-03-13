@@ -167,7 +167,7 @@ namespace System.Net.Http
             }
         }
 
-        internal TimeSpan MaxResponseDrainTime // TODO #27685: Expose publicly.
+        public TimeSpan ResponseDrainTimeout
         {
             get => _settings._maxResponseDrainTime;
             set

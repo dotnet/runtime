@@ -256,6 +256,7 @@ namespace System.Net.Http
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object> Properties { get { throw null; } }
         public System.Net.IWebProxy Proxy { get { throw null; } set { } }
+        public System.TimeSpan ResponseDrainTimeout { get { throw null; } set { } }
         public System.Net.Security.SslClientAuthenticationOptions SslOptions { get { throw null; } set { } }
         public bool UseCookies { get { throw null; } set { } }
         public bool UseProxy { get { throw null; } set { } }

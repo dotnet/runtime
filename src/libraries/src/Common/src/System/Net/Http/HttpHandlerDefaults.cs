@@ -14,7 +14,7 @@ namespace System.Net.Http
         public const int DefaultMaxAutomaticRedirections = 50;
         public const int DefaultMaxConnectionsPerServer = int.MaxValue;
         public const int DefaultMaxResponseDrainSize = 1024 * 1024;
-        public static readonly TimeSpan DefaultMaxResponseDrainTime = TimeSpan.FromSeconds(2);
+        public static readonly TimeSpan DefaultResponseDrainTimeout = TimeSpan.FromSeconds(2);
         public const int DefaultMaxResponseHeadersLength = 64; // Units in K (1024) bytes.
         public const DecompressionMethods DefaultAutomaticDecompression = DecompressionMethods.None;
         public const bool DefaultAutomaticRedirection = true;

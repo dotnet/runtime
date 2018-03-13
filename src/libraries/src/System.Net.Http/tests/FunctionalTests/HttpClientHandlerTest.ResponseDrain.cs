@@ -13,7 +13,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpClientHandler_ResponseDrain_Test : HttpClientTestBase
     {
-        protected virtual void SetMaxResponseDrainTime(HttpClientHandler handler, TimeSpan time) { }
+        protected virtual void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time) { }
 
         public enum ContentMode
         {
@@ -134,7 +134,7 @@ namespace System.Net.Http.Functional.Tests
                 async url =>
                 {
                     HttpClientHandler handler = CreateHttpClientHandler();
-                    SetMaxResponseDrainTime(handler, Timeout.InfiniteTimeSpan);
+                    SetResponseDrainTimeout(handler, Timeout.InfiniteTimeSpan);
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
@@ -212,7 +212,7 @@ namespace System.Net.Http.Functional.Tests
                 async url =>
                 {
                     HttpClientHandler handler = CreateHttpClientHandler();
-                    SetMaxResponseDrainTime(handler, Timeout.InfiniteTimeSpan);
+                    SetResponseDrainTimeout(handler, Timeout.InfiniteTimeSpan);
 
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
