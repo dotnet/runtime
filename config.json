@@ -186,6 +186,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "__DoCrossArchBuild": {
+      "description": "Specifies if we build cross-architecture components on Linux.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
     "GenerateVersionHeader": {
       "description": "Generates _version.h",
       "valueType": "passThrough",
