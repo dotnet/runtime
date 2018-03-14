@@ -384,7 +384,8 @@ static gboolean
 mono_thread_set_self_interruption_respect_abort_prot (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
-	/* N.B. Sets the ASYNC_REQUESTED_BIT even though for this thread. */
+	/* N.B. Sets the ASYNC_REQUESTED_BIT for current this thread,
+	 * which is unusual. */
 	return mono_thread_set_interruption_requested_flags (thread, FALSE);
 }
 
@@ -4117,13 +4118,38 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 void
 ves_icall_thread_finish_async_abort (void)
 {
-	/* If we're in an abort protected block, just set the async requested bit and return.
-	 * Otherwise self abort now.
+	/* We were called from the handler block and are about to
+	 * leave it.  (If we end up postponing the abort because we're
+	 * in an abort protected block, the unwinder won't run and
+	 * won't clear the handler block itself which will confuse the
+	 * unwinder if we're in a try {} catch {} and we throw again.
+	 * ie, this:
+	 * static Constructor () {
+	 *   try {
+	 *     try {
+	 *     } finally {
+	 *       icall (); // Thread.Abort landed here,
+	 *                 // and caused the handler block to be installed
+	 *       if (exvar)
+	 *         ves_icall_thread_finish_async_abort (); // we're here
+	 *     }
+	 *     throw E ();
+	 *   } catch (E) {
+	 *     // unwinder will get confused here and synthesize a self abort
+	 *   }
+	 * }
+	 *
+	 * More interestingly, this doesn't only happen with icalls - a JIT
+	 * trampoline is native code that will cause a handler to be installed.
+	 * So the above situation can happen with any code in a "finally"
+	 * clause.
 	 */
-	if (!mono_thread_set_self_interruption_respect_abort_prot ())
-		return;
-	else
-		mono_thread_info_self_interrupt ();
+	mono_get_eh_callbacks ()->mono_uninstall_current_handler_block_guard ();
+	/* Just set the async interruption requested bit.  Rely on the icall
+	 * wrapper of this icall to process the thread interruption, respecting
+	 * any abort protection blocks in our call stack.
+	 */
+	mono_thread_set_self_interruption_respect_abort_prot ();
 }
 
 /*
