@@ -65,10 +65,16 @@ namespace System.Net.WebSockets.Client.Tests
             Uri server,
             int timeOutMilliseconds,
             ITestOutputHelper output,
-            TimeSpan keepAliveInterval = default) =>
+            TimeSpan keepAliveInterval = default,
+            IWebProxy proxy = null) =>
             Retry(output, async () =>
             {
                 var cws = new ClientWebSocket();
+                if (proxy != null)
+                {
+                    cws.Options.Proxy = proxy;
+                }
+                
                 if (keepAliveInterval.TotalSeconds > 0)
                 {
                     cws.Options.KeepAliveInterval = keepAliveInterval;

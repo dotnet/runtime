@@ -8,6 +8,8 @@ namespace System.Net.Test.Common
     {
         public static partial class WebSockets
         {
+            public static string ProxyServerUri => GetValue("COREFX_WEBSOCKETPROXYSERVERURI");
+
             public static string Host => GetValue("COREFX_WEBSOCKETHOST", DefaultAzureServer);
 
             public static string SecureHost => GetValue("COREFX_SECUREWEBSOCKETHOST", DefaultAzureServer);
