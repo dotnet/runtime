@@ -716,7 +716,7 @@ parallel(
         Utilities.standardJobSetup(newJob, project, false, "*/${branch}")
 
         // Set the cron job here.  We run nightly on each flavor, regardless of code changes
-        //Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
+        Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
 
         newJob.with {
             logRotator {
