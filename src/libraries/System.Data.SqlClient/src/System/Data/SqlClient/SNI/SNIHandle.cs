@@ -41,7 +41,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="packet">SNI packet</param>
         /// <param name="callback">Completion callback</param>
         /// <returns>SNI error code</returns>
-        public abstract uint SendAsync(SNIPacket packet, SNIAsyncCallback callback = null);
+        public abstract uint SendAsync(SNIPacket packet, bool disposePacketAfterSendAsync, SNIAsyncCallback callback = null);
 
         /// <summary>
         /// Receive a packet synchronously
