@@ -101,7 +101,7 @@
       "inputs": {
         "targetType": "inline",
         "filePath": "",
-        "arguments": "-Action u -ToolsPath  $(ScepToolsPath)",
+        "arguments": "",
         "script": "if (Test-Path \"$(AgentToolsPath)\\Begin.ps1\") {\n     \"Begin.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\Begin.ps1\n} else {\n   \"Begin.ps1 script does not exist. Moving on...\"\n}",
         "errorActionPreference": "continue",
         "failOnStderr": "false",
@@ -146,7 +146,7 @@
       "inputs": {
         "targetType": "inline",
         "filePath": "",
-        "arguments": "-Action i -ToolsPath  $(ScepToolsPath)",
+        "arguments": "",
         "script": "if (Test-Path \"$(AgentToolsPath)\\End.ps1\") {\n     \"End.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\End.ps1\n} else {\n   \"End.ps1 script does not exist. Moving on...\"\n}",
         "errorActionPreference": "continue",
         "failOnStderr": "false",
