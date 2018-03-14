@@ -27,8 +27,8 @@ enum NamedIntrinsic : unsigned int
 #define HARDWARE_INTRINSIC(id, isa, name, form, ins0, ins1, ins2, flags) id,
 #include "hwintrinsiclistArm64.h"
 #endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
-    NI_HW_INTRINSIC_END
-#endif
+    NI_HW_INTRINSIC_END,
+#endif // FEATURE_HW_INTRINSICS
 };
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
