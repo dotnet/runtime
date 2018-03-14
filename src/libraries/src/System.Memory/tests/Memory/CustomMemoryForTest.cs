@@ -51,11 +51,24 @@ namespace System.MemoryTests
         {
             unsafe
             {
-                Retain();
-                if (byteOffset != 0 && (((uint)byteOffset) - 1) / Unsafe.SizeOf<T>() >= _array.Length)
-                    throw new ArgumentOutOfRangeException(nameof(byteOffset));
-                var handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
-                return new MemoryHandle(this, Unsafe.Add<byte>((void*)handle.AddrOfPinnedObject(), _offset + byteOffset), handle);
+                Retain(); // this checks IsDisposed
+
+                try
+                {
+                    if ((IntPtr.Size == 4 && (uint)byteOffset > (uint)_array.Length * (uint)Unsafe.SizeOf<T>())
+                        || (IntPtr.Size != 4 && (ulong)byteOffset > (uint)_array.Length * (ulong)Unsafe.SizeOf<T>()))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(byteOffset));
+                    }
+
+                    var handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
+                    return new MemoryHandle(this, Unsafe.Add<byte>((void*)handle.AddrOfPinnedObject(), _offset + byteOffset), handle);
+                }
+                catch
+                {
+                    Release();
+                    throw;
+                }
             }
         }
 

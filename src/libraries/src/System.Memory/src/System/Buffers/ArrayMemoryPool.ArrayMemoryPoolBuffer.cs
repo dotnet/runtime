@@ -72,11 +72,22 @@ namespace System.Buffers
                 {
                     Retain(); // this checks IsDisposed
 
-                    if (byteOffset != 0 && (((uint)byteOffset) - 1) / Unsafe.SizeOf<T>() >= _array.Length)
-                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteOffset);
+                    try
+                    {
+                        if ((IntPtr.Size == 4 && (uint)byteOffset > (uint)_array.Length * (uint)Unsafe.SizeOf<T>())
+                            || (IntPtr.Size != 4 && (ulong)byteOffset > (uint)_array.Length * (ulong)Unsafe.SizeOf<T>()))
+                        {
+                            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteOffset);
+                        }
 
-                    GCHandle handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
-                    return new MemoryHandle(this, ((byte*)handle.AddrOfPinnedObject()) + byteOffset, handle);
+                        GCHandle handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
+                        return new MemoryHandle(this, ((byte*)handle.AddrOfPinnedObject()) + byteOffset, handle);
+                    }
+                    catch
+                    {
+                        Release();
+                        throw;
+                    }
                 }
             }
 

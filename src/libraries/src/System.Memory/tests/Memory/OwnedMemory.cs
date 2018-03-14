@@ -118,6 +118,15 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        [OuterLoop]
+        public static void OwnedMemoryPinLargeArray()
+        {
+            int[] array = new int[0x2000_0000]; // will produce array with total byte length > 2 GB
+            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
+            Assert.Throws<ArgumentOutOfRangeException>(() => owner.Pin(int.MinValue));
+        }
+
+        [Fact]
         public static void MemoryFromOwnedMemoryAfterDispose()
         {
             int[] a = { 91, 92, -93, 94 };
