@@ -121,7 +121,6 @@ def windowsThroughput(String arch, String os, String config, String runType, Str
 
         bat "py \".\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\""
         bat ".\\init-tools.cmd"
-        bat "tests\\runtest.cmd ${config} ${arch} GenerateLayoutOnly"
         bat "py -u tests\\scripts\\run-throughput-perf.py -arch ${arch} -os ${os} -configuration ${config} -opt_level ${optLevel} -jit_name ${jit} ${pgoTestFlag} -clr_root \"%WORKSPACE%\" -assembly_root \"%WORKSPACE%\\${arch}ThroughputBenchmarks\\lib\" -benchview_path \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -run_type ${runType}"
         archiveArtifacts allowEmptyArchive: false, artifacts:'throughput-*.csv,machinedata.json', onlyIfSuccessful: false
     }
