@@ -12,7 +12,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientTestBase
     {
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
 

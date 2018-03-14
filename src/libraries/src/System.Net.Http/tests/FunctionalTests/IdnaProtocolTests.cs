@@ -130,10 +130,4 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "\u30B6\u30C7\u30D8.com" };
         }
     }
-
-    public sealed class HttpClientHandler_IdnaProtocolTests : IdnaProtocolTests
-    {
-        // WinHttp on Win7 does not support IDNA
-        protected override bool SupportsIdna => !PlatformDetection.IsWindows7 && !PlatformDetection.IsFullFramework;
-    }
 }

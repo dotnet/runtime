@@ -24,15 +24,16 @@ namespace System.Net.Http
                     return useSocketsHttpHandler;
                 }
 
-                // AppContext switch wasn't used. Check the environment variable to see if it's been set to true.
+                // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
                 string envVar = Environment.GetEnvironmentVariable(SocketsHttpHandlerEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
-                    return true;
+                    // Use WinHttpHandler on Windows and CurlHandler on Unix.
+                    return false;
                 }
 
-                // Default to using WinHttpHandler on Windows and CurlHandler on Unix
-                return false;
+                // Default to using SocketsHttpHandler.
+                return true;
             }
         }
 

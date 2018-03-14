@@ -111,6 +111,11 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported), nameof(ClientCertificatesSupported))]
         public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                return; // [ActiveIssue(27846)]
+            }
+
             using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
             {
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>

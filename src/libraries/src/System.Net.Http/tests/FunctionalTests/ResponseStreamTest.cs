@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class ResponseStreamTest : HttpClientTestBase
+    public abstract class ResponseStreamTest : HttpClientTestBase
     {
         private readonly ITestOutputHelper _output;
         

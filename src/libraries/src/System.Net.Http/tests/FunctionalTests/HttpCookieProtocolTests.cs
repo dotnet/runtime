@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpCookieProtocolTests : HttpClientTestBase
+    public abstract class HttpCookieProtocolTests : HttpClientTestBase
     {
         private const string s_cookieName = "ABC";
         private const string s_cookieValue = "123";
