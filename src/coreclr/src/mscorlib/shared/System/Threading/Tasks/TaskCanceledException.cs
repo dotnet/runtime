@@ -54,6 +54,18 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="T:System.Threading.Tasks.TaskCanceledException"/>
+        /// class with a specified error message, a reference to the inner exception that is the cause of
+        /// this exception, and the <see cref="CancellationToken"/> that triggered the cancellation.
+        /// </summary>
+        /// <param name="message">The error message that explains the reason for the exception.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception.</param>
+        /// <param name="token">The <see cref="CancellationToken"/> that triggered the cancellation.</param>
+        public TaskCanceledException(string message, Exception innerException, CancellationToken token) : base(message, innerException, token)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Tasks.TaskCanceledException"/> class
         /// with a reference to the <see cref="T:System.Threading.Tasks.Task"/> that has been canceled.
         /// </summary>
