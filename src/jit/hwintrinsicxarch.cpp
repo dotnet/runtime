@@ -546,7 +546,6 @@ bool Compiler::isFullyImplmentedISAClass(InstructionSet isa)
 {
     switch (isa)
     {
-        case InstructionSet_SSE2:
         case InstructionSet_SSE42:
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
@@ -558,6 +557,7 @@ bool Compiler::isFullyImplmentedISAClass(InstructionSet isa)
             return false;
 
         case InstructionSet_SSE:
+        case InstructionSet_SSE2:
         case InstructionSet_SSE3:
         case InstructionSet_SSSE3:
         case InstructionSet_SSE41:
@@ -1002,6 +1002,16 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic        intrinsic,
             op1      = impSIMDPopStack(TYP_SIMD16);
             baseType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
             retNode  = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            break;
+        }
+
+        case NI_SSE2_StoreNonTemporal:
+        {
+            assert(sig->numArgs == 2);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, NI_SSE2_StoreNonTemporal, op2->TypeGet(), 0);
             break;
         }
 
