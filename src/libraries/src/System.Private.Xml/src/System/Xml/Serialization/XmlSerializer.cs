@@ -159,6 +159,7 @@ namespace System.Xml.Serialization
         internal string DefaultNamespace = null;
 #endif
         private Type _rootType;
+        private bool _isReflectionBasedSerializer = false;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -447,7 +448,7 @@ namespace System.Xml.Serialization
                     }
                     SerializePrimitive(xmlWriter, o, namespaces);
                 }
-                else if (ShouldUseReflectionBasedSerialization(_mapping))
+                else if (ShouldUseReflectionBasedSerialization(_mapping) || _isReflectionBasedSerializer)
                 {
                     SerializeUsingReflection(xmlWriter, o, namespaces, encodingStyle, id);
                 }
@@ -587,7 +588,7 @@ namespace System.Xml.Serialization
                     }
                     return DeserializePrimitive(xmlReader, events);
                 }
-                else if (ShouldUseReflectionBasedSerialization(_mapping))
+                else if (ShouldUseReflectionBasedSerialization(_mapping) || _isReflectionBasedSerializer)
                 {
                     return DeserializeUsingReflection(xmlReader, encodingStyle, events);
                 }
@@ -797,6 +798,7 @@ namespace System.Xml.Serialization
                 serializers[i] = new XmlSerializer();
                 serializers[i]._rootType = type;
                 serializers[i]._mapping = mappings[i];
+                serializers[i]._isReflectionBasedSerializer = true;
             }
 
             return serializers;
