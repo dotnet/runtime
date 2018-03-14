@@ -833,8 +833,11 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     // Are we compiling mscorlib.dll? 
     bool fCompilingMscorlib = StringEndsWith((LPWSTR)pwzFilename, CoreLibName_IL_W);
 
+// Disable fragile NGen when compiling Mscorlib for ARM.
+#ifndef _TARGET_ARM_
     if (fCompilingMscorlib)
         dwFlags &= ~NGENWORKER_FLAGS_READYTORUN;
+#endif // _TARGET_ARM_
 
     if(pwzPlatformAssembliesPaths != nullptr)
     {
