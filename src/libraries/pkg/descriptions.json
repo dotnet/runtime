@@ -1012,13 +1012,16 @@
   },
   {
     "Name": "System.Memory",
-    "Description": "Provides types for efficient low-allocation access to memory.",
+    "Description": "Provides types for efficient representation and pooling of managed, stack, and native memory segments and sequences of such segments, along with primitives to parse and format UTF-8 encoded text stored in those memory segments.",
     "CommonTypes": [
         "System.Span",
         "System.ReadOnlySpan",
         "System.Memory",
         "System.ReadOnlyMemory",
-        "System.MemoryExtensions"
+        "System.Buffers.MemoryPool",
+        "System.Buffers.ReadOnlySequence",
+        "System.Buffers.Text.Utf8Parser",
+        "System.Buffers.Text.Utf8Formatter"
     ]
   },
   {
