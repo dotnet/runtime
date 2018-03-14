@@ -3449,6 +3449,6 @@ Usage: dotnet {0} [[/assembly:&lt;assembly name&gt;] | [&lt;assembly file locati
     <value>If you would like more help, please type "sgen {0}".</value>
   </data>
     <data name="GenerateSerializerNotFound" xml:space="preserve">
-    <value>`System.Xml.Serialization.XmlSerializer` does not have a method named `GenerateSerializerNotFound`. SGen does not support the framework of the version you are using.</value>
+    <value>Method 'System.Xml.Serialization.XmlSerializer.GenerateSerializer' was not found. This is likely because you are using an older version of the framework. Please update to .NET Core v2.1 or later.</value>
   </data>
 </root>
