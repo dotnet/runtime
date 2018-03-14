@@ -106,6 +106,12 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 
 Note: Area triage will apply the new scheme (issue types and assignee) throughout 2016.
 
+### Community Partner Experts
+
+| Area        | Owners / experts | Description |
+|-------------|------------------|-------------|
+| Tizen | [@alpencolt](https://github.com/alpencolt), [@gbalykov](https://github.com/gbalykov) | For issues around Tizen CI and build issues |
+
 ### Triage rules - simplified
 
 1. Each issue has exactly one **area-&#42;** label
