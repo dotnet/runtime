@@ -23615,6 +23615,8 @@ Compiler::fgWalkResult Compiler::fgChkThrowCB(GenTree** pTree, fgWalkData* data)
             break;
 
         case GT_INDEX:
+        case GT_INDEX_ADDR:
+            // These two call CORINFO_HELP_RNGCHKFAIL for Debug code
             if (tree->gtFlags & GTF_INX_RNGCHK)
             {
                 return Compiler::WALK_ABORT;

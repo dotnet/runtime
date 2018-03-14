@@ -9546,10 +9546,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
 
             case GT_INDEX:
 
-                if (tree->gtFlags & GTF_INX_RNGCHK)
-                {
-                    chars += printf("[INX_RNGCHK]");
-                }
                 if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
                 {
                     chars += printf("[INX_REFARR_LAYOUT]");
@@ -9557,6 +9553,12 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
                 {
                     chars += printf("[INX_STRING_LAYOUT]");
+                }
+                __fallthrough;
+            case GT_INDEX_ADDR:
+                if (tree->gtFlags & GTF_INX_RNGCHK)
+                {
+                    chars += printf("[INX_RNGCHK]");
                 }
                 break;
 
