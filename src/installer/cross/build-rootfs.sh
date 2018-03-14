@@ -10,6 +10,12 @@ usage()
     exit 1
 }
 
+install_Failed()
+{
+    echo "Failed to install/symlink packages."
+    exit 1
+}
+
 __LinuxCodeName=trusty
 __CrossDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 __InitialDir=$PWD
@@ -178,9 +184,3 @@ else
     usage;
     exit 1
 fi
-
-install_Failed()
-{
-    echo "Failed to install/symlink packages."
-    exit 1
-}
