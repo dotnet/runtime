@@ -123,7 +123,7 @@ namespace System.IO
             // We treat "\.." , "\." and "\\" as a relative segment. We want to collapse the first separator past the root presuming
             // the root actually ends in a separator. Otherwise the first segment for RemoveRelativeSegments
             // in cases like "\\?\C:\.\" and "\\?\C:\..\", the first segment after the root will be ".\" and "..\" which is not considered as a relative segment and hence not be removed.
-            if (path[skip - 1] == '\\')
+            if (PathInternal.IsDirectorySeparator(path[skip - 1]))
                 skip--;
 
             Span<char> initialBuffer = stackalloc char[260 /* PathInternal.MaxShortPath */];
