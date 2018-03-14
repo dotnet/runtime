@@ -90,7 +90,7 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
-      "displayName": "Uninstall SCEP if script exists",
+      "displayName": "Run AgentTools/Begin.ps1",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
       "task": {
@@ -102,7 +102,7 @@
         "targetType": "inline",
         "filePath": "",
         "arguments": "-Action u -ToolsPath  $(ScepToolsPath)",
-        "script": "if (Test-Path \"$(ScepToolsPath)SCEP_Tools\\scripts\\Microsoft.DotNet.Build.Tasks.Extensions.ps1\") {\n     \"Microsoft.DotNet.Build.Tasks.Extensions.ps1 script found. Executing action...\"\n    & $(ScepToolsPath)SCEP_Tools\\scripts\\Microsoft.DotNet.Build.Tasks.Extensions.ps1 -Action u -ToolsPath $(ScepToolsPath)\n} else {\n   \"Microsoft.DotNet.Build.Tasks.Extensions.ps1 script does not exist. Moving on...\"\n}",
+        "script": "if (Test-Path \"$(AgentToolsPath)\\Begin.ps1\") {\n     \"Begin.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\Begin.ps1\n} else {\n   \"Begin.ps1 script does not exist. Moving on...\"\n}",
         "errorActionPreference": "continue",
         "failOnStderr": "false",
         "ignoreLASTEXITCODE": "true",
@@ -135,7 +135,7 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Install SCEP if script exists",
+      "displayName": "Run AgentTools/End.ps1",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
       "task": {
@@ -147,7 +147,7 @@
         "targetType": "inline",
         "filePath": "",
         "arguments": "-Action i -ToolsPath  $(ScepToolsPath)",
-        "script": "if (Test-Path \"$(ScepToolsPath)SCEP_Tools\\scripts\\Microsoft.DotNet.Build.Tasks.Extensions.ps1\") {\n     \"Microsoft.DotNet.Build.Tasks.Extensions.ps1 script found. Executing action...\"\n    & $(ScepToolsPath)SCEP_Tools\\scripts\\Microsoft.DotNet.Build.Tasks.Extensions.ps1 -Action i -ToolsPath $(ScepToolsPath)\n} else {\n   \"Microsoft.DotNet.Build.Tasks.Extensions.ps1 script does not exist. Moving on...\"\n}",
+        "script": "if (Test-Path \"$(AgentToolsPath)\\End.ps1\") {\n     \"End.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\End.ps1\n} else {\n   \"End.ps1 script does not exist. Moving on...\"\n}",
         "errorActionPreference": "continue",
         "failOnStderr": "false",
         "ignoreLASTEXITCODE": "true",
@@ -342,9 +342,9 @@
     "CrossgenArg": {
       "value": ""
     },
-    "ScepToolsPath": {
-      "value": "c:\\tools\\"
-    }
+    "AgentToolsPath": {
+      "value": "c:\\tools\\AgentTools\\"
+    },
   },
   "retentionRules": [
     {
