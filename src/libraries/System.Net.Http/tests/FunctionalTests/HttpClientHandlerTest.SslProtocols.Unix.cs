@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public partial class HttpClientHandler_SslProtocols_Test
+    public abstract partial class HttpClientHandler_SslProtocols_Test
     {
         private bool BackendSupportsSslConfiguration =>
             UseSocketsHttpHandler ||

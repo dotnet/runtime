@@ -1331,8 +1331,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("1", true)]
         [InlineData("0", false)]
         [InlineData("false", false)]
-        [InlineData("helloworld", false)]
-        [InlineData("", false)]
+        [InlineData("helloworld", true)]
+        [InlineData("", true)]
         public void HttpClientHandler_SettingEnvironmentVariableChangesDefault(string envVarValue, bool expectedUseSocketsHandler)
         {
             RemoteInvoke((innerEnvVarValue, innerExpectedUseSocketsHandler) =>

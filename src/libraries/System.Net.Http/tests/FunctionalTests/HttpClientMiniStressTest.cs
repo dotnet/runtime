@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpClientMiniStress : HttpClientTestBase
+    public abstract class HttpClientMiniStress : HttpClientTestBase
     {
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(GetStressOptions))]

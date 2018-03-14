@@ -5,6 +5,7 @@
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
@@ -14,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpClientHandler_ClientCertificates_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_ClientCertificates_Test : HttpClientTestBase
     {
         public bool CanTestCertificates =>
             Capability.IsTrustedRootCertificateInstalled() &&
@@ -311,8 +312,28 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private bool BackendSupportsCustomCertificateHandling =>
-            UseSocketsHttpHandler ||
-            new HttpClientHandler_ServerCertificates_Test().BackendSupportsCustomCertificateHandling;
+        private bool BackendSupportsCustomCertificateHandling
+        {
+            get
+            {
+#if TargetsWindows
+                return true;
+#else
+                if (UseSocketsHttpHandler)
+                {
+                    return true;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    return false;
+                }
+
+                // For other Unix-based systems it's true if (and only if) the openssl backend
+                // is used with libcurl.
+                return (Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) ?? false);
+#endif
+            }
+        }
     }
 }

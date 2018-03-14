@@ -33,6 +33,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -77,6 +78,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -123,6 +125,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -247,6 +250,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_TooMuchAsynchronous_Success(bool transferEncodingChunked)
@@ -273,6 +277,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_TooMuchSynchronous_Success(bool transferEncodingChunked)
@@ -299,6 +304,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_NotEnoughThenCloseAsynchronous_Success(bool transferEncodingChunked)

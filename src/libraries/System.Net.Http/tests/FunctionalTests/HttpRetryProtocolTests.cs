@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpRetryProtocolTests : HttpClientTestBase
+    public abstract class HttpRetryProtocolTests : HttpClientTestBase
     {
         private static readonly string s_simpleContent = "Hello World\r\n";
 

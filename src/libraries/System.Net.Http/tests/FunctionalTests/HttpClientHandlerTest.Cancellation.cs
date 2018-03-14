@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpClientHandler_Cancellation_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_Cancellation_Test : HttpClientTestBase
     {
         [Theory]
         [InlineData(false, CancellationMode.Token)]

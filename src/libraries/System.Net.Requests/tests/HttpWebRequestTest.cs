@@ -1045,6 +1045,7 @@ namespace System.Net.Tests
             response.Dispose();
         }
 
+        [ActiveIssue(27906)]
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
         [Fact]
         public async Task GetResponseAsync_ServerNameNotInDns_ThrowsWebException()

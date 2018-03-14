@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 
     [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
-    public class DiagnosticsTest : HttpClientTestBase
+    public abstract class DiagnosticsTest : HttpClientTestBase
     {
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
@@ -716,7 +716,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.False(SpinWait.SpinUntil(p, timeout), message);
         }
 
-        private void AssertHeadersAreInjected(List<string> requestLines, Activity parent)
+        private static void AssertHeadersAreInjected(List<string> requestLines, Activity parent)
         {
             string requestId = null;
             var correlationContext = new List<NameValueHeaderValue>();
@@ -748,7 +748,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private void AssertNoHeadersAreInjected(List<string> requestLines)
+        private static void AssertNoHeadersAreInjected(List<string> requestLines)
         {
             foreach (var line in requestLines)
             {
