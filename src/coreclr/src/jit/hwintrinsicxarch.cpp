@@ -124,7 +124,7 @@ InstructionSet Compiler::lookupHWIntrinsicISA(const char* className)
 //    isa        -- instruction set of the intrinsic.
 //
 // Return Value:
-//    Id for the hardware intrinsic.
+//    Id for the hardware intrinsic
 //
 // TODO-Throughput: replace sequential search by binary search
 NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSet isa)
@@ -137,6 +137,7 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* methodName, InstructionSe
             if (isa == hwIntrinsicInfoArray[i].isa && strcmp(methodName, hwIntrinsicInfoArray[i].intrinsicName) == 0)
             {
                 result = hwIntrinsicInfoArray[i].intrinsicID;
+                break;
             }
         }
     }
@@ -928,14 +929,6 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, intrinsic, TYP_UBYTE, 0);
             break;
         }
-
-        case NI_SSE_SetAllVector128:
-            assert(sig->numArgs == 1);
-            assert(getBaseTypeOfSIMDType(sig->retTypeSigClass) == TYP_FLOAT);
-            op1     = impPopStack().val;
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtCloneExpr(op1), gtNewIconNode(0), NI_SSE_Shuffle,
-                                               TYP_FLOAT, simdSize);
-            break;
 
         case NI_SSE_StoreFence:
             assert(sig->numArgs == 0);
