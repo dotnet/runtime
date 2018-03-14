@@ -214,6 +214,32 @@ public:
 
 #endif
 
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+// Return an index of argument slot. First indices are reserved for general purpose registers,
+// the following ones for float registers and then the rest for stack slots.
+// This index is independent of how many registers are actually used to pass arguments.
+int GetNormalizedArgumentSlotIndex(UINT16 offset)
+{
+    int index;
+
+    if (offset & ShuffleEntry::FPREGMASK)
+    {
+        index = NUM_ARGUMENT_REGISTERS + (offset & ShuffleEntry::OFSREGMASK);
+    }
+    else if (offset & ShuffleEntry::REGMASK)
+    {
+        index = offset & ShuffleEntry::OFSREGMASK;
+    }
+    else
+    {
+        // stack slot
+        index = NUM_ARGUMENT_REGISTERS + NUM_FLOAT_ARGUMENT_REGISTERS + (offset & ShuffleEntry::OFSMASK);
+    }
+
+    return index;
+}
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
 VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
@@ -352,6 +378,10 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     ArgLocDesc sArgSrc;
     ArgLocDesc sArgDst;
 
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    int argSlots = NUM_FLOAT_ARGUMENT_REGISTERS + NUM_ARGUMENT_REGISTERS + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+
     // If the target method in non-static (this happens for open instance delegates), we need to account for
     // the implicit this parameter.
     if (sSigDst.HasThis())
@@ -367,7 +397,6 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
         entry.srcofs = iteratorSrc.GetNextOfs();
         entry.dstofs = iteratorDst.GetNextOfs();
-
         pShuffleEntryArray->Append(entry);
     }
 
@@ -392,77 +421,80 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
             pShuffleEntryArray->Append(entry);
     }
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-    // The shuffle entries are produced in two passes on Unix AMD64. The first pass generates shuffle entries for
-    // all cases except of shuffling struct argument from stack to registers, which is performed in the second pass
-    // The reason is that if such structure argument contained floating point field and it was followed by a 
-    // floating point argument, generating code for transferring the structure from stack into registers would
-    // overwrite the xmm register of the floating point argument before it could actually be shuffled.
-    // For example, consider this case:
-    // struct S { int x; float y; };
-    // void fn(long a, long b, long c, long d, long e, S f, float g);
-    // src: rdi = this, rsi = a, rdx = b, rcx = c, r8 = d, r9 = e, stack: f, xmm0 = g
-    // dst: rdi = a, rsi = b, rdx = c, rcx = d, r8 = e, r9 = S.x, xmm0 = s.y, xmm1 = g
-    for (int pass = 0; pass < 2; pass++)
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+    // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
+    // destination locations.
+    while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
     {
-        // Iterate all the regular arguments. mapping source registers and stack locations to the corresponding
-        // destination locations.
-        while ((ofsSrc = sArgPlacerSrc.GetNextOffset()) != TransitionBlock::InvalidOffset)
+        ofsDst = sArgPlacerDst.GetNextOffset();
+
+        // Find the argument location mapping for both source and destination signature. A single argument can
+        // occupy a floating point register, a general purpose register, a pair of registers of any kind or
+        // a stack slot.
+        sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
+        sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
+
+        ShuffleIterator iteratorSrc(&sArgSrc);
+        ShuffleIterator iteratorDst(&sArgDst);
+
+        // Shuffle each slot in the argument (register or stack slot) from source to destination.
+        while (iteratorSrc.HasNextOfs())
         {
-            ofsDst = sArgPlacerDst.GetNextOffset();
+            // Locate the next slot to shuffle in the source and destination and encode the transfer into a
+            // shuffle entry.
+            entry.srcofs = iteratorSrc.GetNextOfs();
+            entry.dstofs = iteratorDst.GetNextOfs();
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-            bool shuffleStructFromStackToRegs = (ofsSrc != TransitionBlock::StructInRegsOffset) && (ofsDst == TransitionBlock::StructInRegsOffset);
-            if (((pass == 0) && shuffleStructFromStackToRegs) || 
-                ((pass == 1) && !shuffleStructFromStackToRegs))
-            {
-                continue;
-            }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
-            // Find the argument location mapping for both source and destination signature. A single argument can
-            // occupy a floating point register (in which case we don't need to do anything, they're not shuffled)
-            // or some combination of general registers and the stack.
-            sArgPlacerSrc.GetArgLoc(ofsSrc, &sArgSrc);
-            sArgPlacerDst.GetArgLoc(ofsDst, &sArgDst);
-
-            ShuffleIterator iteratorSrc(&sArgSrc);
-            ShuffleIterator iteratorDst(&sArgDst);
-
-            // Shuffle each slot in the argument (register or stack slot) from source to destination.
-            while (iteratorSrc.HasNextOfs())
-            {
-                // Locate the next slot to shuffle in the source and destination and encode the transfer into a
-                // shuffle entry.
-                entry.srcofs = iteratorSrc.GetNextOfs();
-                entry.dstofs = iteratorDst.GetNextOfs();
-
-                // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
-                // different).
-                if (entry.srcofs != entry.dstofs)
-                    pShuffleEntryArray->Append(entry);
-            }
-
-            // We should have run out of slots to shuffle in the destination at the same time as the source.
-            _ASSERTE(!iteratorDst.HasNextOfs());
+            // Only emit this entry if it's not a no-op (i.e. the source and destination locations are
+            // different).
+            if (entry.srcofs != entry.dstofs)
+                pShuffleEntryArray->Append(entry);
         }
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-        if (pass == 0)
-        {
-            // Reset the iterator for the 2nd pass
-            sSigSrc.Reset();
-            sSigDst.Reset();
 
-            sArgPlacerSrc = ArgIterator(&sSigSrc);
-            sArgPlacerDst = ArgIterator(&sSigDst);
-
-            if (sSigDst.HasThis())
-            {
-                sArgPlacerSrc.GetNextOffset();
-            }
-        }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+        // We should have run out of slots to shuffle in the destination at the same time as the source.
+        _ASSERTE(!iteratorDst.HasNextOfs());
     }
+
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+    // The Unix AMD64 ABI can cause a struct to be passed on stack for the source and in registers for the destination.
+    // That can cause some arguments that are passed on stack for the destination to be passed in registers in the source.
+    // An extreme example of that is e.g.:
+    //   void fn(int, int, int, int, int, struct {int, double}, double, double, double, double, double, double, double, double, double, double)
+    // For this signature, the shuffle needs to move slots as follows (please note the "forward" movement of xmm registers):
+    //   RDI->RSI, RDX->RCX, R8->RDX, R9->R8, stack[0]->R9, xmm0->xmm1, xmm1->xmm2, ... xmm6->xmm7, xmm7->stack[0], stack[1]->xmm0, stack[2]->stack[1], stack[3]->stack[2]
+    // To prevent overwriting of slots before they are moved, we need to sort the move operations.
+
+    NewArrayHolder<bool> filledSlots = new bool[argSlots];
+
+    bool reordered;
+    do
+    {
+        reordered = false;
+
+        for (int i = 0; i < argSlots; i++)
+        {
+            filledSlots[i] = false;
+        }
+        for (int i = 0; i < pShuffleEntryArray->GetCount(); i++)
+        {
+            entry = (*pShuffleEntryArray)[i];
+
+            // If the slot that we are moving the argument to was filled in already, we need to move this entry in front
+            // of the entry that filled it in.
+            if (filledSlots[GetNormalizedArgumentSlotIndex(entry.srcofs)])
+            {
+                int j;
+                for (j = i; (*pShuffleEntryArray)[j].dstofs != entry.srcofs; j--)
+                    (*pShuffleEntryArray)[j] = (*pShuffleEntryArray)[j - 1];
+
+                (*pShuffleEntryArray)[j] = entry;
+                reordered = true;
+            }
+
+            filledSlots[GetNormalizedArgumentSlotIndex(entry.dstofs)] = true;
+        }
+    }
+    while (reordered);
+#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     entry.srcofs = ShuffleEntry::SENTINEL;
     entry.dstofs = 0;

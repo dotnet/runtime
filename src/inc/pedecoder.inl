@@ -1178,7 +1178,7 @@ inline DWORD PEDecoder::GetImageIdentity() const
 }
 
 
-inline IMAGE_SECTION_HEADER *PEDecoder::FindFirstSection() const
+inline PTR_IMAGE_SECTION_HEADER PEDecoder::FindFirstSection() const
 {
     CONTRACT(IMAGE_SECTION_HEADER *)
     {

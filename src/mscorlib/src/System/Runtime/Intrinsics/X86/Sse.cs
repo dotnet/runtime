@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -465,6 +466,25 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> upper, Vector128<float> value) => ReciprocalSqrtScalar(upper, value);
 
         /// <summary>
+        /// __m128 _mm_set1_ps (float a)
+        ///   HELPER
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> SetAllVector128(float value)
+        {
+            // Zero vector and load value et index 0
+            Vector128<float> vector = SetScalarVector128(value);
+            // Create { vl vl vl vl } and return result
+            return Shuffle(vector, vector, 0);
+        }
+
+        /// <summary>
+        /// __m128 _mm_set_ss (float a)
+        ///   HELPER
+        /// </summary>
+        public static Vector128<float> SetScalarVector128(float value) => SetScalarVector128(value);
+
+        /// <summary>
         /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
         /// </summary>
         public static unsafe Vector128<float> SetVector128(float e3, float e2, float e1, float e0)
@@ -483,18 +503,6 @@ namespace System.Runtime.Intrinsics.X86
             // Create { e3 e2 e1 e0 } and return result
             return UnpackLow(e0Vector, e1Vector);
         }
-
-        /// <summary>
-        /// __m128 _mm_set_ss (float a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<float> SetScalarVector128(float value) => SetScalarVector128(value);
-
-        /// <summary>
-        /// __m128 _mm_set1_ps (float a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<float> SetAllVector128(float value) => SetAllVector128(value);
 
         /// <summary>
         /// __m128d _mm_setzero_ps (void)

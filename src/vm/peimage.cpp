@@ -1029,7 +1029,9 @@ PTR_PEImageLayout PEImage::CreateLayoutFlat(BOOL bPermitWriteableSections)
 
     PTR_PEImageLayout pFlatLayout = PEImageLayout::LoadFlat(GetFileHandle(),this);
 
-    if (!bPermitWriteableSections && pFlatLayout->HasWriteableSections())
+    if (!bPermitWriteableSections
+        && pFlatLayout->CheckNTHeaders()
+        && pFlatLayout->HasWriteableSections())
     {
         pFlatLayout->Release();
 
@@ -1114,8 +1116,7 @@ void PEImage::Load()
 
 #ifdef PLATFORM_UNIX
     if (m_pLayouts[IMAGE_FLAT] != NULL
-        && m_pLayouts[IMAGE_FLAT]->CheckFormat()
-        && m_pLayouts[IMAGE_FLAT]->IsILOnly()
+        && m_pLayouts[IMAGE_FLAT]->CheckILOnlyFormat()
         && !m_pLayouts[IMAGE_FLAT]->HasWriteableSections())
     {
         // IL-only images with writeable sections are mapped in general way,
