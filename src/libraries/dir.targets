@@ -127,7 +127,7 @@
 
     <PropertyGroup>
       <_GenAPICmd>$(DotnetToolCommand) $(_GenApiExePath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -assembly:$(TargetPath)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) -assembly:@(IntermediateAssembly)</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) -libPath:$(RefPath)</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) -out:$(_RefSourceFileOutputPath)</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) -excludeAttributesList:$(_ExcludeAPIList)</_GenAPICmd>
