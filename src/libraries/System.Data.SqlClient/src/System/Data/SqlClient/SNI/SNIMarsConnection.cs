@@ -95,7 +95,7 @@ namespace System.Data.SqlClient.SNI
         {
             lock (this)
             {
-                return _lowerHandle.SendAsync(packet, callback);
+                return _lowerHandle.SendAsync(packet, false, callback);
             }
         }
 
@@ -207,8 +207,7 @@ namespace System.Data.SqlClient.SNI
                         };
 
                         _dataBytesLeft = (int)_currentHeader.length;
-                        _currentPacket = new SNIPacket(null);
-                        _currentPacket.Allocate((int)_currentHeader.length);
+                        _currentPacket = new SNIPacket((int)_currentHeader.length);
                     }
 
                     currentHeader = _currentHeader;

@@ -3166,15 +3166,16 @@ namespace System.Data.SqlClient
                 // Add packet to the pending list (since the callback can happen any time after we call SNIWritePacket)
                 packetPointer = AddPacketToPendingList(packet);
             }
+
             // Async operation completion may be delayed (success pending).
             try
             {
             }
             finally
             {
-
                 sniError = WritePacket(packet, sync);
             }
+
             if (sniError == TdsEnums.SNI_SUCCESS_IO_PENDING)
             {
                 Debug.Assert(!sync, "Completion should be handled in SniManagedWwrapper");
