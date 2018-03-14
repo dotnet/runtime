@@ -30,36 +30,36 @@ void
 mono_threadpool_resume (void);
 
 void
-ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads);
+ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads, MonoError *error);
 void
-ves_icall_System_Threading_ThreadPool_GetMinThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads);
+ves_icall_System_Threading_ThreadPool_GetMinThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads, MonoError *error);
 void
-ves_icall_System_Threading_ThreadPool_GetMaxThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads);
+ves_icall_System_Threading_ThreadPool_GetMaxThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads, MonoError *error);
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads);
+ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads, MonoError *error);
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads);
+ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads, MonoError *error);
 void
-ves_icall_System_Threading_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking);
+ves_icall_System_Threading_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking, MonoError *error);
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete (void);
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete (MonoError *error);
 void
-ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (void);
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (MonoError *error);
 void
-ves_icall_System_Threading_ThreadPool_NotifyWorkItemQueued (void);
+ves_icall_System_Threading_ThreadPool_NotifyWorkItemQueued (MonoError *error);
 void
-ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working);
+ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working, MonoError *error);
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void);
+ves_icall_System_Threading_ThreadPool_RequestWorkerThread (MonoError *error);
 
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped);
+ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle);
+ves_icall_System_Threading_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (void);
+ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (MonoError *error);
 
 /* Internals */
 

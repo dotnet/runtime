@@ -34,7 +34,7 @@ wasm_get_stack_size (void)
 
 
 int
-mono_threads_get_max_stack_size (void)
+ves_icall_System_Threading_Thread_SystemMaxStackSize (MonoError *error)
 {
 	return wasm_get_stack_size ();
 }

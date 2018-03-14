@@ -729,12 +729,6 @@ mono_get_exception_argument_out_of_range (const char *arg)
  * \param msg the message to present to the user
  * \returns a new instance of the \c System.Threading.ThreadStateException
  */
-MonoExceptionHandle
-mono_exception_new_thread_state (const char *msg, MonoError *error)
-{
-	return mono_exception_new_by_name_msg (mono_get_corlib (), "System.Threading", "ThreadStateException", msg, error);
-}
-
 MonoException *
 mono_get_exception_thread_state (const char *msg)
 {

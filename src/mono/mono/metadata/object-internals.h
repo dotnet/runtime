@@ -1870,6 +1870,9 @@ mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error);
 char*
 mono_ldstr_utf8 (MonoImage *image, guint32 idx, MonoError *error);
 
+char*
+mono_utf16_to_utf8 (const mono_unichar2 *s, gsize slength, MonoError *error);
+
 gboolean
 mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error);
 

@@ -125,7 +125,7 @@ mono_threads_platform_exit (gsize exit_code)
 }
 
 int
-mono_threads_get_max_stack_size (void)
+ves_icall_System_Threading_Thread_SystemMaxStackSize (MonoError *error)
 {
 	struct rlimit lim;
 
