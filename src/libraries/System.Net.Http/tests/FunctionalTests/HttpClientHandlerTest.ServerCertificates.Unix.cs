@@ -15,7 +15,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public partial class HttpClientHandler_ServerCertificates_Test
+    public abstract partial class HttpClientHandler_ServerCertificates_Test
     {
         private static bool ShouldSuppressRevocationException
         {
@@ -79,6 +79,11 @@ namespace System.Net.Http.Functional.Tests
         public void HttpClientUsesSslCertEnvironmentVariables(bool setSslCertDir, bool createSslCertDir,
             bool setSslCertFile, bool createSslCertFile, bool expectedFailure)
         {
+            if (expectedFailure && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return; // [ActiveIssue(28002)]
+            }
+
             // This test sets SSL_CERT_DIR and SSL_CERT_FILE to empty/non-existing locations and then
             // checks the http request fails.
             // Some platforms will use the system default when not specifying a value, while others

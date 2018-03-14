@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 namespace System.Net.Http.Functional.Tests
 {
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class SchSendAuxRecordHttpTest : HttpClientTestBase
+    public abstract class SchSendAuxRecordHttpTest : HttpClientTestBase
     {
         readonly ITestOutputHelper _output;
         

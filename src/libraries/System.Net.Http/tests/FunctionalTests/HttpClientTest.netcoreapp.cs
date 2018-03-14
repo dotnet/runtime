@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public partial class HttpClientTest
+    public abstract partial class HttpClientTest
     {
         [Fact]
         public async Task PatchAsync_Canceled_Throws()

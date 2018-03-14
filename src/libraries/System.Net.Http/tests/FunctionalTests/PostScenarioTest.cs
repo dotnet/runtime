@@ -14,7 +14,7 @@ namespace System.Net.Http.Functional.Tests
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
-    public class PostScenarioTest : HttpClientTestBase
+    public abstract class PostScenarioTest : HttpClientTestBase
     {
         private const string ExpectedContent = "Test contest";
         private const string UserName = "user1";

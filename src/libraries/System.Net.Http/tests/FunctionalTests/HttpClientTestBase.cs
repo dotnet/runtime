@@ -9,12 +9,12 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientTestBase : RemoteExecutorTestBase
     {
-        protected virtual bool UseSocketsHttpHandler => false;
+        protected virtual bool UseSocketsHttpHandler => true;
 
         protected bool IsWinHttpHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows && !PlatformDetection.IsUap && !PlatformDetection.IsFullFramework;
         protected bool IsCurlHandler => !UseSocketsHttpHandler && !PlatformDetection.IsWindows;
-        protected bool IsNetfxHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows && PlatformDetection.IsFullFramework;
-        protected bool IsUapHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows && PlatformDetection.IsUap;
+        protected bool IsNetfxHandler => PlatformDetection.IsWindows && PlatformDetection.IsFullFramework;
+        protected bool IsUapHandler => PlatformDetection.IsWindows && PlatformDetection.IsUap;
 
         protected HttpClient CreateHttpClient() => new HttpClient(CreateHttpClientHandler());
 
@@ -28,11 +28,12 @@ namespace System.Net.Http.Functional.Tests
 
         protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler)
         {
-            if (!PlatformDetection.IsNetCore) // SocketsHttpHandler only exists on .NET Core
+            if (!PlatformDetection.IsNetCore || useSocketsHttpHandler)
             {
                 return new HttpClientHandler();
             }
 
+            // Create platform specific handler.
             ConstructorInfo ctor = typeof(HttpClientHandler).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(bool) }, null);
             Debug.Assert(ctor != null, "Couldn't find test constructor on HttpClientHandler");
 

@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     // TODO: #2383 - Consolidate the use of the environment variable settings to Common/tests.
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
     [PlatformSpecific(TestPlatforms.Windows)]
-    public class DefaultCredentialsTest : HttpClientTestBase
+    public abstract class DefaultCredentialsTest : HttpClientTestBase
     {
         private static bool DomainJoinedTestsEnabled => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedHttpHost);
 

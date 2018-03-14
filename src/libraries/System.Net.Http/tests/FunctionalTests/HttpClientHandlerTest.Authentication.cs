@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class HttpClientHandler_Authentication_Test : HttpClientTestBase
+    public abstract class HttpClientHandler_Authentication_Test : HttpClientTestBase
     {
         private const string Username = "testusername";
         private const string Password = "testpassword";
