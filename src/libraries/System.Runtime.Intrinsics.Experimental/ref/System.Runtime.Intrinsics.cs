@@ -434,7 +434,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> Xor(Vector256<double> left, Vector256<double> right) { throw null; }
         public static void ZeroAll() { throw null; }
         public static void ZeroUpper() { throw null; }
-        public static Vector256<T> ZeroExtendToVector256<T>(Vector128<T> value) where T : struct { throw null; }
     }
     public static class Avx2
     {
