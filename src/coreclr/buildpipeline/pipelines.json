@@ -141,21 +141,6 @@
             "Architecture": "arm",
             "PB_BuildType": null
           }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
-          "Parameters": {
-            "DockerTag": "ubuntu-16.04-cross-arm64-d809634-20180312171656",
-            "Architecture": "arm64",
-            "Rid": "linux"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Linux",
-            "SubType": "PortableCrossBuild",
-            "Type": "build/product/",
-            "Architecture": "arm64",
-            "PB_BuildType": null
-          }
         }
       ]
     }

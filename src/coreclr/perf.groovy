@@ -200,7 +200,6 @@ def static getOSGroup(def os) {
                                 "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                                 batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                                 batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}${pgo_build} skiptests")
-                                batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
                                 batchFile("py -u tests\\scripts\\run-throughput-perf.py -arch ${arch} -os ${os} -configuration ${configuration} -opt_level ${opt_level} -jit_name ${jit}${pgo_test} -clr_root \"%WORKSPACE%\" -assembly_root \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\\lib\" -benchview_path \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -run_type ${runType}")
                             }
                         }
@@ -717,7 +716,7 @@ parallel(
         Utilities.standardJobSetup(newJob, project, false, "*/${branch}")
 
         // Set the cron job here.  We run nightly on each flavor, regardless of code changes
-        //Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
+        Utilities.addPeriodicTrigger(newJob, "@daily", true /*always run*/)
 
         newJob.with {
             logRotator {
