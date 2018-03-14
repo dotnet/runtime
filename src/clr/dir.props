@@ -168,6 +168,7 @@
 
     <!-- Define packaging attributes for cross target components -->
     <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
+    <HasCrossTargetComponents Condition="'$(TargetsLinux)' == 'true' and '$(PackagePlatform)' =='arm' and '$(__DoCrossArchBuild)' == '1'">true</HasCrossTargetComponents>
     <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm64'">x64</CrossTargetComponentFolder>
     <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm'">x86</CrossTargetComponentFolder>
 
