@@ -95,6 +95,7 @@ namespace IntelHardwareIntrinsicTest
     {
         private const int _stepSize = 16;
         private int _scalarStepSize;
+        private int _lengthInVectors;
         public static int ElementCount;
 
         private GCHandle _inHandle1;
@@ -117,12 +118,27 @@ namespace IntelHardwareIntrinsicTest
         public Vector128<T> Vector1 => Unsafe.Read<Vector128<T>>((byte*)InArray1Ptr + (_index * _stepSize));
         public Vector128<T> Vector2 => Unsafe.Read<Vector128<T>>((byte*)InArray2Ptr + (_index * _stepSize));
         public Vector128<T> Vector3 => Unsafe.Read<Vector128<T>>((byte*)OutArrayPtr + (_index * _stepSize));
-        public int Index { get => _index; set => _index = value; }
+        
+        public int Index
+        {
+            get => _index;
+            set
+            {
+                if (value < 0 || value >= _lengthInVectors)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+                else
+                {
+                    _index = value;
+                }
+            }
+        }
 
         public void SetOutArray(Vector128<T> value, int index = -1)
         {
-            index = index < 0 ? _index : index;
-            Unsafe.Write((byte*)OutArrayPtr + (index * _stepSize), value);
+            Index = index < 0 ? Index : index;
+            Unsafe.Write((byte*)OutArrayPtr + (Index * _stepSize), value);
         }
 
         public void SetOutArray(bool value1, Vector128<T> value2, int index = -1)
@@ -164,6 +180,7 @@ namespace IntelHardwareIntrinsicTest
         public TestTableSse2(int lengthInVectors)
         {
             _scalarStepSize = Marshal.SizeOf<T>();
+            _lengthInVectors = lengthInVectors;
             ElementCount = _stepSize / _scalarStepSize;
             int length = ElementCount * lengthInVectors;
             inArray1 = new T[length];
