@@ -641,7 +641,7 @@ def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, is
             timeout = 360
         }
         else if (isJitStressScenario(scenario)) {
-            timeout = 240
+            timeout = 300
         }
         else if (isR2RBaselineScenario(scenario)) {
             timeout = 240

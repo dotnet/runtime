@@ -1257,6 +1257,11 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
+            if (_invariantMode)
+            {
+                return ((options & CompareOptions.IgnoreCase) != 0) ? TextInfo.GetHashCodeOrdinalIgnoreCase(source) : source.GetHashCode();
+            }
+
             return GetHashCodeOfStringCore(source, options);
         }
 
