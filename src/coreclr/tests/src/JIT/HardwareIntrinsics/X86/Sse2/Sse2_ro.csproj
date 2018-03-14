@@ -36,6 +36,11 @@
     <Compile Include="Add.UInt16.cs" />
     <Compile Include="Add.UInt32.cs" />
     <Compile Include="Add.UInt64.cs" />
+    <Compile Include="AddSaturate.Byte.cs"/>
+    <Compile Include="AddSaturate.SByte.cs"/>
+    <Compile Include="AddSaturate.Int16.cs"/>
+    <Compile Include="AddSaturate.UInt16.cs"/>
+    <Compile Include="AddScalar.Double.cs"/>              
     <Compile Include="And.Double.cs" />
     <Compile Include="And.Byte.cs" />
     <Compile Include="And.Int16.cs" />
@@ -54,6 +59,8 @@
     <Compile Include="AndNot.UInt16.cs" />
     <Compile Include="AndNot.UInt32.cs" />
     <Compile Include="AndNot.UInt64.cs" />
+    <Compile Include="Average.Byte.cs"/>
+    <Compile Include="Average.UInt16.cs"/>    
     <Compile Include="CompareEqual.Double.cs" />
     <Compile Include="CompareEqual.Byte.cs" />
     <Compile Include="CompareEqual.Int16.cs" />
@@ -79,6 +86,7 @@
     <Compile Include="CompareOrdered.Double.cs" />
     <Compile Include="CompareUnordered.Double.cs" />
     <Compile Include="Divide.Double.cs" />
+    <Compile Include="DivideScalar.Double.cs" />
     <Compile Include="Extract.Int16.1.cs" />
     <Compile Include="Extract.UInt16.1.cs" />
     <Compile Include="Extract.Int16.129.cs" />
@@ -90,10 +98,13 @@
     <Compile Include="Max.Double.cs" />
     <Compile Include="Max.Byte.cs" />
     <Compile Include="Max.Int16.cs" />
+    <Compile Include="MaxScalar.Double.cs" />
     <Compile Include="Min.Double.cs" />
     <Compile Include="Min.Byte.cs" />
     <Compile Include="Min.Int16.cs" />
+    <Compile Include="MinScalar.Double.cs" />
     <Compile Include="Multiply.Double.cs" />
+    <Compile Include="MultiplyScalar.Double.cs" />
     <Compile Include="Or.Double.cs" />
     <Compile Include="Or.Byte.cs" />
     <Compile Include="Or.Int16.cs" />
@@ -103,6 +114,15 @@
     <Compile Include="Or.UInt16.cs" />
     <Compile Include="Or.UInt32.cs" />
     <Compile Include="Or.UInt64.cs" />
+    <Compile Include="SetAllVector128.Byte.cs" />
+    <Compile Include="SetAllVector128.SByte.cs" />
+    <Compile Include="SetAllVector128.Int16.cs" />
+    <Compile Include="SetAllVector128.UInt16.cs" />
+    <Compile Include="SetAllVector128.Int32.cs" />
+    <Compile Include="SetAllVector128.UInt32.cs" />
+    <Compile Include="SetAllVector128.Int64.cs" />
+    <Compile Include="SetAllVector128.UInt64.cs" />
+    <Compile Include="SetAllVector128.Double.cs" />    
     <Compile Include="ShiftLeftLogical.Int16.1.cs" />
     <Compile Include="ShiftLeftLogical.UInt16.1.cs" />
     <Compile Include="ShiftLeftLogical.Int32.1.cs" />
@@ -156,6 +176,11 @@
     <Compile Include="Subtract.UInt16.cs" />
     <Compile Include="Subtract.UInt32.cs" />
     <Compile Include="Subtract.UInt64.cs" />
+    <Compile Include="SubtractSaturate.Byte.cs"/>
+    <Compile Include="SubtractSaturate.SByte.cs"/>
+    <Compile Include="SubtractSaturate.Int16.cs"/>
+    <Compile Include="SubtractSaturate.UInt16.cs"/>
+    <Compile Include="SubtractScalar.Double.cs" />    
     <Compile Include="Xor.Double.cs" />
     <Compile Include="Xor.Byte.cs" />
     <Compile Include="Xor.Int16.cs" />
@@ -169,6 +194,8 @@
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\ScalarUnOpTest_DataTable.cs" />
+    <Compile Include="Sse2Verify.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>

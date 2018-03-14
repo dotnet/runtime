@@ -1,0 +1,253 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+
+namespace JIT.HardwareIntrinsics.X86
+{
+    public static partial class Program
+    {
+        private static void {Method}{RetBaseType}()
+        {
+            bool skipIf32Bit = typeof({Op1BaseType}) == typeof(Int64) ? true :
+                                     typeof({Op1BaseType}) == typeof(UInt64) ? true : false;
+
+            if (skipIf32Bit && !Environment.Is64BitProcess)
+            {
+                return;
+            }
+
+            var test = new SimpleScalarUnaryOpTest__{Method}{RetBaseType}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
+
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
+
+                if ({LoadIsa}.IsSupported)
+                {
+                    // Validates calling via reflection works, using Load
+                    test.RunReflectionScenario();
+                }
+
+                // Validates passing a static member works
+                test.RunClsVarScenario();
+
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing the field of a local works
+                test.RunLclFldScenario();
+
+                // Validates passing an instance member works
+                test.RunFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class SimpleScalarUnaryOpTest__{Method}{RetBaseType}
+    {
+        private const int VectorSize = {VectorSize};
+
+        private const int Op1ElementCount = 2;
+        private const int RetElementCount = VectorSize / sizeof({RetBaseType});
+
+        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
+
+        private static {Op1BaseType} _clsVar;
+
+        private {Op1BaseType} _fld;
+
+        private SimpleScalarUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
+
+        static SimpleScalarUnaryOpTest__{Method}{RetBaseType}()
+        {
+            var random = new Random();
+
+            for (int i = 0; i < Op1ElementCount; i++)
+            {
+                _data[i] = {NextValueOp1};
+            }
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Marshal.SizeOf<{Op1BaseType}>());
+        }
+
+        public SimpleScalarUnaryOpTest__{Method}{RetBaseType}()
+        {
+            Succeeded = true;
+
+            var random = new Random();
+
+            for (var i = 0; i < Op1ElementCount; i++)
+            {
+                _data[i] = {NextValueOp1};
+            }
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Marshal.SizeOf<{Op1BaseType}>());
+
+            for (var i = 0; i < Op1ElementCount; i++)
+            {
+                _data[i] = {NextValueOp1};
+            }
+
+            _dataTable = new SimpleScalarUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data, new {RetBaseType}[RetElementCount], VectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            var result = {Isa}.{Method}(
+                Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr)
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) });
+            var result = method.Invoke(null, new object[] { Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr)});
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario()
+        {
+            var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) });
+            {Op1BaseType} parameter = ({Op1BaseType}) _dataTable.inArray[0];
+            var result = method.Invoke(null, new object[] { parameter });
+
+            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            ValidateResult(parameter, _dataTable.outArrayPtr);
+        }
+
+        public void RunClsVarScenario()
+        {
+            var result = {Isa}.{Method}(
+                _clsVar
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_clsVar, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            var firstOp = Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr);
+            var result = {Isa}.{Method}(firstOp);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
+        }
+
+        public void RunLclFldScenario()
+        {
+            var test = new SimpleScalarUnaryOpTest__{Method}{RetBaseType}();
+            var result = {Isa}.{Method}(test._fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
+        }
+
+        public void RunFldScenario()
+        {
+            var result = {Isa}.{Method}(_fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld, _dataTable.outArrayPtr);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult({Op1BaseType} firstOp, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), firstOp);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+
+            ValidateResult(inArray, outArray, method);
+        }
+
+        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+
+            ValidateResult(inArray, outArray, method);
+        }
+
+        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            if ({ValidateFirstResult})
+            {
+                Succeeded = false;
+            }
+            else
+            {
+                for (var i = 1; i < RetElementCount; i++)
+                {
+                    if ({ValidateRemainingResults})
+                    {
+                        Succeeded = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!Succeeded)
+            {
+                Console.WriteLine($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                Console.WriteLine($"  firstOp: ({string.Join(", ", firstOp)})");
+                Console.WriteLine($"   result: ({string.Join(", ", result)})");
+                Console.WriteLine();
+            }
+        }
+    }
+}
