@@ -985,8 +985,6 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op1 != nullptr);
             assert(op2 == nullptr);
             instruction ins = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
-            // TODO-XArch-CQ -> use of type size of TYP_SIMD16 leads to
-            // instruction register encoding errors for SSE legacy encoding
             emit->emitIns_R_R(ins, emitTypeSize(baseType), targetReg, op1Reg);
             break;
         }
