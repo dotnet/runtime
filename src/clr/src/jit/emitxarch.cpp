@@ -312,11 +312,12 @@ bool emitter::Is4ByteSSE4OrAVXInstruction(instruction ins)
 bool emitter::TakesVexPrefix(instruction ins)
 {
     // special case vzeroupper as it requires 2-byte VEX prefix
-    // special case the fencing and the prefetch instructions as they never take a VEX prefix
+    // special case the fencing, movnti and the prefetch instructions as they never take a VEX prefix
     switch (ins)
     {
         case INS_lfence:
         case INS_mfence:
+        case INS_movnti:
         case INS_prefetchnta:
         case INS_prefetcht0:
         case INS_prefetcht1:
@@ -418,13 +419,21 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
 
     if (IsSSEOrAVXInstruction(ins))
     {
-        if (ins == INS_cvttsd2si || ins == INS_cvttss2si || ins == INS_cvtsd2si || ins == INS_cvtss2si ||
-            ins == INS_cvtsi2sd || ins == INS_cvtsi2ss || ins == INS_mov_xmm2i || ins == INS_mov_i2xmm)
+        switch (ins)
         {
-            return true;
+            case INS_cvttsd2si:
+            case INS_cvttss2si:
+            case INS_cvtsd2si:
+            case INS_cvtss2si:
+            case INS_cvtsi2sd:
+            case INS_cvtsi2ss:
+            case INS_mov_xmm2i:
+            case INS_mov_i2xmm:
+            case INS_movnti:
+                return true;
+            default:
+                return false;
         }
-
-        return false;
     }
 
     // TODO-XArch-Cleanup: Better way to not emit REX.W when we don't need it, than just testing all these
