@@ -214,22 +214,22 @@ namespace System.Net
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, incomingBlob);
 
-            var list = new List<SecurityBuffer>(2);
-
-            if (incomingBlob != null)
-            {
-                list.Add(new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
-            }
-
-            if (_channelBinding != null)
-            {
-                list.Add(new SecurityBuffer(_channelBinding));
-            }
-
             SecurityBuffer[] inSecurityBufferArray = null;
-            if (list.Count > 0)
+            if (incomingBlob != null && _channelBinding != null)
             {
-                inSecurityBufferArray = list.ToArray();
+                inSecurityBufferArray = new SecurityBuffer[2]
+                {
+                    new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN),
+                    new SecurityBuffer(_channelBinding)
+                };
+            }
+            else if (incomingBlob != null)
+            {
+                inSecurityBufferArray = new SecurityBuffer[1] { new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN) };
+            }
+            else if (_channelBinding != null)
+            {
+                inSecurityBufferArray = new SecurityBuffer[1] { new SecurityBuffer(_channelBinding) };
             }
 
             var outSecurityBuffer = new SecurityBuffer(_tokenSize, SecurityBufferType.SECBUFFER_TOKEN);
