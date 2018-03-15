@@ -25,6 +25,9 @@ namespace System.Diagnostics.Tracing
     public class TraceLoggingEventTypes
     {
         internal readonly TraceLoggingTypeInfo[] typeInfos;
+#if FEATURE_PERFTRACING
+        internal readonly string[] paramNames;
+#endif
         internal readonly string name;
         internal readonly EventTags tags;
         internal readonly byte level;
@@ -98,6 +101,9 @@ namespace System.Diagnostics.Tracing
             }
 
             this.typeInfos = MakeArray(paramInfos);
+#if FEATURE_PERFTRACING
+            this.paramNames = MakeParamNameArray(paramInfos);
+#endif
             this.name = name;
             this.tags = tags;
             this.level = Statics.DefaultLevel;
@@ -248,5 +254,19 @@ namespace System.Diagnostics.Tracing
 
             return (TraceLoggingTypeInfo[])typeInfos.Clone(); ;
         }
+
+#if FEATURE_PERFTRACING
+        private static string[] MakeParamNameArray(
+            System.Reflection.ParameterInfo[] paramInfos)
+        {
+            string[] paramNames = new string[paramInfos.Length];
+            for (int i = 0; i < paramNames.Length; i++)
+            {
+                paramNames[i] = paramInfos[i].Name;
+            }
+
+            return paramNames;
+        }
+#endif
     }
 }
