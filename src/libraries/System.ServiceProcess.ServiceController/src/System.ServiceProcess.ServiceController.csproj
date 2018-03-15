@@ -96,6 +96,7 @@
     <Compile Include="System\ServiceProcess\ServiceController.cs" />
     <Compile Include="System\ServiceProcess\ServiceControllerStatus.cs" />
     <Compile Include="System\ServiceProcess\ServiceStartMode.cs" />
+    <Compile Include="System\ServiceProcess\ServiceProcessDescriptionAttribute.cs" />
     <Compile Include="System\ServiceProcess\ServiceType.cs" />
     <Compile Include="System\ServiceProcess\SessionChangeDescription.cs" />
     <Compile Include="System\ServiceProcess\SessionChangeReason.cs" />
