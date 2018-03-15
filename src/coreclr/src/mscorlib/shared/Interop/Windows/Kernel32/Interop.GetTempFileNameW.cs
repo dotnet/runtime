@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -11,6 +9,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-        internal static extern uint GetTempFileNameW(string tmpPath, string prefix, uint uniqueIdOrZero, [Out]StringBuilder tmpFileName);
+        internal static extern uint GetTempFileNameW(ref char lpPathName, string lpPrefixString, uint uUnique, ref char lpTempFileName);
     }
 }
