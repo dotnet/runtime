@@ -1590,6 +1590,7 @@ void fgArgInfo::ArgsComplete()
         // This means unnesting, sorting, etc.  Technically this is overly
         // conservative, but I want to avoid as much special-case debug-only code
         // as possible, so leveraging the GTF_CALL flag is the easiest.
+        //
         if (!(argx->gtFlags & GTF_CALL) && (argx->gtFlags & GTF_EXCEPT) && (argCount > 1) &&
             compiler->opts.compDbgCode &&
             (compiler->fgWalkTreePre(&argx, Compiler::fgChkThrowCB) == Compiler::WALK_ABORT))
@@ -6063,6 +6064,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         indexAddr->gtFlags |= (array->gtFlags | index->gtFlags) & GTF_ALL_EFFECT;
 
         // Mark the indirection node as needing a range check if necessary.
+        // Note this will always be true unless JitSkipArrayBoundCheck() is used
         if ((indexAddr->gtFlags & GTF_INX_RNGCHK) != 0)
         {
             fgSetRngChkTarget(indexAddr);
