@@ -36,7 +36,7 @@ namespace System.Drawing
 
     // LAME: I don't see why the "old" (win 2.x) names were exposed in the fx :|
 
-    public sealed class SystemIcons
+    public static class SystemIcons
     {
 
         static Icon[] icons;
@@ -68,10 +68,6 @@ namespace System.Drawing
             icons[Question_] = new Icon("Question.ico", true);
             icons[Shield_] = new Icon("Shield.ico", true);
 #endif
-        }
-
-        private SystemIcons()
-        {
         }
 
         // note: same as WinLogo (for Mono)

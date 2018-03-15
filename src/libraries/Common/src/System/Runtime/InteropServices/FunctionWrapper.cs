@@ -45,9 +45,9 @@ namespace System.Runtime.InteropServices
         }
     }
 
-    public enum FunctionLoadResultKind { Success, LibraryNotFound, FunctionNotFound }
+    internal enum FunctionLoadResultKind { Success, LibraryNotFound, FunctionNotFound }
 
-    public readonly struct FunctionLoadResult<T>
+    internal readonly struct FunctionLoadResult<T>
     {
         public FunctionLoadResultKind ResultKind { get; }
         public T Delegate { get; }

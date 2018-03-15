@@ -31,17 +31,13 @@
 
 namespace System.Drawing
 {
-    public sealed class BufferedGraphicsManager
+    public static class BufferedGraphicsManager
     {
         private static BufferedGraphicsContext graphics_context;
 
         static BufferedGraphicsManager()
         {
             graphics_context = new BufferedGraphicsContext();
-        }
-
-        private BufferedGraphicsManager()
-        {
         }
 
         public static BufferedGraphicsContext Current

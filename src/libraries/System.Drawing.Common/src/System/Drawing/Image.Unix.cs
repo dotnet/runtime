@@ -44,7 +44,6 @@ using System.Reflection;
 
 namespace System.Drawing
 {
-    [Serializable]
 #if !NETCORE
 [Editor ("System.Drawing.Design.ImageEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
 [TypeConverter (typeof(ImageConverter))]
@@ -59,45 +58,6 @@ namespace System.Drawing
         // constructor
         internal Image()
         {
-        }
-
-#if NETCORE
-        protected Image(SerializationInfo info, StreamingContext context)
-#else
-    internal Image (SerializationInfo info, StreamingContext context)
-#endif
-        {
-            foreach (SerializationEntry serEnum in info)
-            {
-                if (String.Compare(serEnum.Name, "Data", true) == 0)
-                {
-                    byte[] bytes = (byte[])serEnum.Value;
-
-                    if (bytes != null)
-                    {
-                        MemoryStream ms = new MemoryStream(bytes);
-                        nativeImage = InitFromStream(ms);
-                    }
-                }
-            }
-        }
-
-        // FIXME - find out how metafiles (another decoder-only codec) are handled
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                // Icon is a decoder-only codec
-                if (RawFormat.Equals(ImageFormat.Icon))
-                {
-                    Save(ms, ImageFormat.Png);
-                }
-                else
-                {
-                    Save(ms, RawFormat);
-                }
-                si.AddValue("Data", ms.ToArray());
-            }
         }
 
         // public methods
