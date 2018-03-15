@@ -66,6 +66,15 @@ namespace System.Diagnostics.Tracing
                     return 0;
                 }
 
+                // If Channel == 11, this is a TraceLogging event.
+                // The first 3 descriptors contain event metadata that is emitted for ETW and should be discarded on EventPipe.
+                // EventPipe metadata is provided via the EventPipeEventProvider.DefineEventHandle.
+                if (eventDescriptor.Channel == 11)
+                {
+                    userData = userData + 3;
+                    userDataCount = userDataCount - 3;
+                    Debug.Assert(userDataCount >= 0);
+                }
                 EventPipeInternal.WriteEventData(eventHandle, eventID, &userData, (uint) userDataCount, activityId, relatedActivityId);
             }
             return 0;
