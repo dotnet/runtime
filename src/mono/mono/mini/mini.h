@@ -2489,12 +2489,16 @@ void mono_generic_sharing_cleanup (void);
 MonoClass* mini_class_get_container_class (MonoClass *klass);
 MonoGenericContext* mini_class_get_context (MonoClass *klass);
 
+typedef enum {
+	SHARE_MODE_NONE = 0x0,
+	SHARE_MODE_GSHAREDVT = 0x1,
+} GetSharedMethodFlags;
+
 MonoType* mini_get_underlying_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);
-MonoMethod* mini_get_shared_method (MonoMethod *method);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
-MonoMethod* mini_get_shared_method_full (MonoMethod *method, gboolean all_vt, gboolean is_gsharedvt);
+MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
 MonoType* mini_get_shared_gparam (MonoType *t, MonoType *constraint);
 int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 

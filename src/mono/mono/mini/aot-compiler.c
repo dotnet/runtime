@@ -3754,11 +3754,16 @@ mono_dedup_cache_method (MonoAotCompile *acfg, MonoMethod *method)
 static void
 add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
 {
-	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE))
-		method = mini_get_shared_method (method);
-	else if ((acfg->opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE))
+	ERROR_DECL (error);
+	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
+		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		mono_error_assert_ok (error);
+	}
+	else if ((acfg->opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
-		method = mini_get_shared_method_full (method, TRUE, TRUE);
+		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
+		mono_error_assert_ok (error);
+	}
 
 	if ((acfg->aot_opts.dedup || acfg->aot_opts.dedup_include) && mono_aot_can_dedup (method)) {
 		mono_dedup_cache_method (acfg, method);
@@ -4236,7 +4241,9 @@ add_wrappers (MonoAotCompile *acfg)
 			m = mono_marshal_get_delegate_invoke (inst, NULL);
 			g_assert (m->is_inflated);
 
-			gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+			gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+			mono_error_assert_ok (error);
+
 			add_extra_method (acfg, gshared);
 
 			/* begin-invoke */
@@ -4250,7 +4257,9 @@ add_wrappers (MonoAotCompile *acfg)
 				m = mono_marshal_get_delegate_begin_invoke (inst);
 				g_assert (m->is_inflated);
 
-				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+				gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+				mono_error_assert_ok (error);
+
 				add_extra_method (acfg, gshared);
 			}
 
@@ -4265,7 +4274,9 @@ add_wrappers (MonoAotCompile *acfg)
 				m = mono_marshal_get_delegate_end_invoke (inst);
 				g_assert (m->is_inflated);
 
-				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+				gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+				mono_error_assert_ok (error);
+
 				add_extra_method (acfg, gshared);
 			}
 		}
@@ -4328,7 +4339,9 @@ add_wrappers (MonoAotCompile *acfg)
 				g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 				m = mono_marshal_get_synchronized_wrapper (inst);
 				g_assert (m->is_inflated);
-				gshared = mini_get_shared_method_full (m, FALSE, TRUE);
+				gshared = mini_get_shared_method_full (m, SHARE_MODE_GSHAREDVT, error);
+				mono_error_assert_ok (error);
+
 				add_method (acfg, gshared);
 			} else {
 				add_method (acfg, mono_marshal_get_synchronized_wrapper (method));
@@ -10958,9 +10971,16 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
-		if (method->is_generic || mono_class_is_gtd (method->klass))
+		if (method->is_generic || mono_class_is_gtd (method->klass)) {
 			/* Compile the ref shared version instead */
-			method = mini_get_shared_method (method);
+			method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+			if (!method) {
+				aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
+				aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+		}
 
 		/* Since we add the normal methods first, their index will be equal to their zero based token index */
 		add_method_with_index (acfg, method, i, FALSE);
@@ -10982,7 +11002,9 @@ collect_methods (MonoAotCompile *acfg)
 		if (method->is_generic || mono_class_is_gtd (method->klass)) {
 			MonoMethod *gshared;
 
-			gshared = mini_get_shared_method_full (method, TRUE, TRUE);
+			gshared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
+			mono_error_assert_ok (error);
+
 			add_extra_method (acfg, gshared);
 		}
 	}

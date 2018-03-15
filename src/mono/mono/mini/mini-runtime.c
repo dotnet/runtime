@@ -1661,10 +1661,13 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 void
 mini_register_jump_site (MonoDomain *domain, MonoMethod *method, gpointer ip)
 {
+	ERROR_DECL (error);
 	MonoJumpList *jlist;
 
-	if (mono_method_is_generic_sharable (method, TRUE))
-		method = mini_get_shared_method (method);
+	if (mono_method_is_generic_sharable (method, TRUE)) {
+		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		mono_error_assert_ok (error);
+	}
 
 	mono_domain_lock (domain);
 	jlist = (MonoJumpList *)g_hash_table_lookup (domain_jit_info (domain)->jump_target_hash, method);
@@ -1684,6 +1687,7 @@ mini_register_jump_site (MonoDomain *domain, MonoMethod *method, gpointer ip)
 void
 mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 {
+	ERROR_DECL (error);
 	GHashTable *hash = domain_jit_info (domain)->jump_target_hash;
 
 	if (!hash)
@@ -1694,8 +1698,10 @@ mini_patch_jump_sites (MonoDomain *domain, MonoMethod *method, gpointer addr)
 	GSList *tmp;
 
 	/* The caller/callee might use different instantiations */
-	if (mono_method_is_generic_sharable (method, TRUE))
-		method = mini_get_shared_method (method);
+	if (mono_method_is_generic_sharable (method, TRUE)) {
+		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		mono_error_assert_ok (error);
+	}
 
 	mono_domain_lock (domain);
 	jlist = (MonoJumpList *)g_hash_table_lookup (hash, method);
@@ -1788,6 +1794,7 @@ mini_lookup_method (MonoDomain *domain, MonoMethod *method, MonoMethod *shared)
 static MonoJitInfo*
 lookup_method (MonoDomain *domain, MonoMethod *method)
 {
+	ERROR_DECL (error);
 	MonoJitInfo *ji;
 	MonoMethod *shared;
 
@@ -1796,7 +1803,8 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 	if (!ji) {
 		if (!mono_method_is_generic_sharable (method, FALSE))
 			return NULL;
-		shared = mini_get_shared_method (method);
+		shared = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		mono_error_assert_ok (error);
 		ji = mini_lookup_method (domain, method, shared);
 	}
 

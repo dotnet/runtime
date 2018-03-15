@@ -253,12 +253,14 @@ mono_save_seq_point_info (MonoCompile *cfg)
 MonoSeqPointInfo*
 mono_get_seq_points (MonoDomain *domain, MonoMethod *method)
 {
+	ERROR_DECL (error);
 	MonoSeqPointInfo *seq_points;
 	MonoMethod *declaring_generic_method = NULL, *shared_method = NULL;
 
 	if (method->is_inflated) {
 		declaring_generic_method = mono_method_get_declaring_generic_method (method);
-		shared_method = mini_get_shared_method (method);
+		shared_method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+		mono_error_assert_ok (error);
 	}
 
 	mono_loader_lock ();
