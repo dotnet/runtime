@@ -3291,6 +3291,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #endif
 
 	cfg->prof_flags = mono_profiler_get_call_instrumentation_flags (cfg->method);
+	cfg->prof_coverage = mono_profiler_coverage_instrumentation_enabled (cfg->method);
 
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mini_debug_options.mdb_optimizations || MONO_CFG_PROFILE_CALL_CONTEXT (cfg)) {

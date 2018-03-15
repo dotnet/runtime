@@ -4290,6 +4290,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (mono_profiler_get_call_instrumentation_flags (method))
 		return FALSE;
 
+	if (mono_profiler_coverage_instrumentation_enabled (method))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -7255,12 +7258,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		seq_points = FALSE;
 	}
 
-	if (cfg->method == method)
-		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
-	if (cfg->compile_aot && cfg->coverage_info)
-		g_error ("Coverage profiling is not supported with AOT.");
+	if (cfg->prof_coverage) {
+		if (cfg->compile_aot)
+			g_error ("Coverage profiling is not supported with AOT.");
 
-	if ((cfg->gen_sdb_seq_points && cfg->method == method) || cfg->coverage_info) {
+		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, header->code_size);
+	}
+
+	if ((cfg->gen_sdb_seq_points && cfg->method == method) || cfg->prof_coverage) {
 		minfo = mono_debug_lookup_method (method);
 		if (minfo) {
 			MonoSymSeqPoint *sps;
@@ -7746,7 +7751,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sym_seq_points)
 				mono_bitset_set_fast (seq_point_set_locs, ip - header->code);
 
-			if ((cfg->method == method) && cfg->coverage_info) {
+			if (cfg->prof_coverage) {
 				guint32 cil_offset = ip - header->code;
 				gpointer counter = &cfg->coverage_info->data [cil_offset].count;
 				cfg->coverage_info->data [cil_offset].cil_code = ip;

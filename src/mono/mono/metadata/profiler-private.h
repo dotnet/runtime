@@ -111,6 +111,7 @@ mono_profiler_installed (void)
 	return !!mono_profiler_state.profilers;
 }
 
+gboolean mono_profiler_coverage_instrumentation_enabled (MonoMethod *method);
 MonoProfilerCoverageInfo *mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries);
 
 struct _MonoProfilerCallContext {
