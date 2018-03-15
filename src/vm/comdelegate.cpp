@@ -75,7 +75,7 @@ class ShuffleIterator
     // Argument location description
     ArgLocDesc* m_argLocDesc;
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     // Current eightByte used for struct arguments in registers
     int m_currentEightByte;
 #endif    
@@ -86,7 +86,7 @@ class ShuffleIterator
     // Current stack slot index (relative to the ArgLocDesc::m_idxStack)
     int m_currentStackSlotIndex;
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     // Get next shuffle offset for struct passed in registers. There has to be at least one offset left.
     UINT16 GetNextOfsInStruct()
     {
@@ -129,7 +129,7 @@ class ShuffleIterator
         _ASSERTE(false);
         return 0;
     }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
 public:
 
@@ -137,7 +137,7 @@ public:
     ShuffleIterator(ArgLocDesc* argLocDesc)
     :
         m_argLocDesc(argLocDesc),
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         m_currentEightByte(0),
 #endif
         m_currentGenRegIndex(0),
@@ -150,7 +150,7 @@ public:
     bool HasNextOfs()
     {
         return (m_currentGenRegIndex < m_argLocDesc->m_cGenReg) || 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
                (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg) ||
 #endif
                (m_currentStackSlotIndex < m_argLocDesc->m_cStack);        
@@ -161,7 +161,7 @@ public:
     {
         int index;
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
 
         // Check if the argLocDesc is for a struct in registers
         EEClass* eeClass = m_argLocDesc->m_eeClass;
@@ -178,7 +178,7 @@ public:
 
             return (UINT16)index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
         }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
         // over a register we later need to shuffle down as well).
@@ -214,7 +214,7 @@ public:
 
 #endif
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
 // Return an index of argument slot. First indices are reserved for general purpose registers,
 // the following ones for float registers and then the rest for stack slots.
 // This index is independent of how many registers are actually used to pass arguments.
@@ -238,7 +238,7 @@ int GetNormalizedArgumentSlotIndex(UINT16 offset)
 
     return index;
 }
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
 VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
@@ -378,9 +378,9 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     ArgLocDesc sArgSrc;
     ArgLocDesc sArgDst;
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     int argSlots = NUM_FLOAT_ARGUMENT_REGISTERS + NUM_ARGUMENT_REGISTERS + sArgPlacerSrc.SizeOfArgStack() / sizeof(size_t);
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     // If the target method in non-static (this happens for open instance delegates), we need to account for
     // the implicit this parameter.
@@ -454,7 +454,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         _ASSERTE(!iteratorDst.HasNextOfs());
     }
 
-#if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     // The Unix AMD64 ABI can cause a struct to be passed on stack for the source and in registers for the destination.
     // That can cause some arguments that are passed on stack for the destination to be passed in registers in the source.
     // An extreme example of that is e.g.:
@@ -494,7 +494,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
         }
     }
     while (reordered);
-#endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
     entry.srcofs = ShuffleEntry::SENTINEL;
     entry.dstofs = 0;

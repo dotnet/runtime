@@ -1286,12 +1286,12 @@ MetaSig::RETURNTYPE MethodDesc::ReturnsObject(
                             *pMT = pReturnTypeMT;
                         }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
                         if (pReturnTypeMT->IsRegPassedStruct())
                         {
                             return MetaSig::RETVALUETYPE;
                         }
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
 
                         if (pReturnTypeMT->ContainsPointers())
                         {

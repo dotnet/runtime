@@ -264,22 +264,22 @@
 #define INDEBUG_LDISASM_COMMA(x)
 #endif
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#define FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(x) , x
-#define FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(x) x
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-#define FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(x)
-#define FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(x)
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
+#define UNIX_AMD64_ABI_ONLY_ARG(x) , x
+#define UNIX_AMD64_ABI_ONLY(x) x
+#else // !defined(UNIX_AMD64_ABI)
+#define UNIX_AMD64_ABI_ONLY_ARG(x)
+#define UNIX_AMD64_ABI_ONLY(x)
+#endif // defined(UNIX_AMD64_ABI)
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) || (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND))
+#if defined(UNIX_AMD64_ABI) || (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND))
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x) , x
 #define PUT_STRUCT_ARG_STK_ONLY(x) x
-#else // !(defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)|| (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)))
+#else // !(defined(UNIX_AMD64_ABI)|| (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)))
 #define PUT_STRUCT_ARG_STK_ONLY_ARG(x)
 #define PUT_STRUCT_ARG_STK_ONLY(x)
-#endif // !(defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)|| (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)))
+#endif // !(defined(UNIX_AMD64_ABI)|| (!defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)))
 
 #if defined(UNIX_AMD64_ABI)
 #define UNIX_AMD64_ABI_ONLY_ARG(x) , x
@@ -293,11 +293,11 @@
 #define MULTIREG_HAS_SECOND_GC_RET 1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x) x
-#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else // !defined(UNIX_AMD64_ABI)
 #define MULTIREG_HAS_SECOND_GC_RET 0
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x)
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x)
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
 // To get rid of warning 4701 : local variable may be used without being initialized
 #define DUMMY_INIT(x) (x)

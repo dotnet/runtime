@@ -288,13 +288,13 @@ void GenTree::InitNodeSize()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 // clang-format off
-#if defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
     // On ARM32, ARM64 and System V for struct returning
     // there is code that does GT_ASG-tree.CopyObj call.
     // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
     GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
-#endif // defined(FEATURE_HFA) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(FEATURE_HFA) || defined(UNIX_AMD64_ABI)
 
     GenTree::s_gtNodeSizes[GT_CALL]             = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CAST]             = TREE_NODE_SZ_LARGE;
@@ -5423,7 +5423,7 @@ bool GenTree::IsAddWithI32Const(GenTree** addr, int* offset)
 //    When FEATURE_MULTIREG_ARGS is defined we can get here with GT_OBJ tree.
 //    This happens when we have a struct that is passed in multiple registers.
 //
-//    Also note that when FEATURE_UNIX_AMD64_STRUCT_PASSING is defined the GT_LDOBJ
+//    Also note that when UNIX_AMD64_ABI is defined the GT_LDOBJ
 //    later gets converted to a GT_FIELD_LIST with two GT_LCL_FLDs in Lower/LowerXArch.
 //
 
@@ -12242,12 +12242,12 @@ void Compiler::gtGetLateArgMsg(
             if (curArgTabEntry->numRegs >= 2)
             {
                 regNumber otherRegNum;
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
                 assert(curArgTabEntry->numRegs == 2);
                 otherRegNum = curArgTabEntry->otherRegNum;
 #else
                 otherRegNum = (regNumber)(((unsigned)curArgTabEntry->regNum) + curArgTabEntry->numRegs - 1);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
                 if (listCount == -1)
                 {
@@ -18401,7 +18401,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
         {
             assert(varTypeIsStruct(returnType));
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             comp->eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, &structDesc);
@@ -18432,7 +18432,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
             //
             NYI("Unsupported TARGET returning a TYP_STRUCT in InitializeStructReturnType");
 
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
             break; // for case SPK_ByValue
         }
@@ -18508,7 +18508,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 
     regNumber resultReg = REG_NA;
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     var_types regType0 = GetReturnRegType(0);
 
     if (idx == 0)
