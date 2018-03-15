@@ -169,6 +169,11 @@
     <Compile Include="System\Security\SecurityState.cs" />
     <Compile Include="System\Security\SecurityZone.cs" />
     <Compile Include="System\Security\XmlSyntaxException.cs" />
+    <Compile Include="System\ServiceProcess\ServiceControllerPermission.cs" />
+    <Compile Include="System\ServiceProcess\ServiceControllerPermissionAccess.cs" />
+    <Compile Include="System\ServiceProcess\ServiceControllerPermissionAttribute.cs" />
+    <Compile Include="System\ServiceProcess\ServiceControllerPermissionEntry.cs" />
+    <Compile Include="System\ServiceProcess\ServiceControllerPermissionEntryCollection.cs" />
     <Compile Include="System\Transactions\DistributedTransactionPermission.cs" />
     <Compile Include="System\Transactions\DistributedTransactionPermissionAttribute.cs" />
   </ItemGroup>
@@ -180,6 +185,7 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Net" />
     <Reference Include="System.Transactions" />
+    <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
