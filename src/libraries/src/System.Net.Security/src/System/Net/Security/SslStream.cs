@@ -178,11 +178,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            // Set the delegates on the options.
-            sslClientAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
-            sslClientAuthenticationOptions._certSelectionDelegate = _certSelectionDelegate;
-
-            _sslState.ValidateCreateContext(sslClientAuthenticationOptions);
+            _sslState.ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
 
             LazyAsyncResult result = new LazyAsyncResult(_sslState, asyncState, asyncCallback);
             _sslState.ProcessAuthentication(result);
@@ -302,11 +298,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
-            // Set the delegates on the options.
-            sslClientAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
-            sslClientAuthenticationOptions._certSelectionDelegate = _certSelectionDelegate;
-
-            _sslState.ValidateCreateContext(sslClientAuthenticationOptions);
+            _sslState.ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
             _sslState.ProcessAuthentication(null);
         }
 
