@@ -25,6 +25,7 @@ int __cdecl main(int argc, char* argv[])
     HANDLE  hDupThread;  
     DWORD   dwThreadId = 0;
     LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread;
+    HANDLE  hSyncEvent;
 
     int threadPriority;
     int duplicatePriority;
@@ -36,11 +37,25 @@ int __cdecl main(int argc, char* argv[])
         return (FAIL);
     }
     
+    LPSECURITY_ATTRIBUTES lpEventAttributes = NULL;
+    BOOL bManualReset = TRUE;
+    BOOL bInitialState = FALSE;
+    hSyncEvent = CreateEvent(lpEventAttributes,
+                             bManualReset,
+                             bInitialState,
+                             NULL);
+
+    if (hSyncEvent == NULL)
+    {
+        Fail("ERROR:%u: Unable to create sync event.\n",
+             GetLastError());
+    }
+
     /* Create a thread.*/
     hThread = CreateThread(NULL,            /* SD*/
                           (DWORD)0,         /* initial stack size*/
                           lpStartAddress,   /* thread function*/
-                          NULL,             /* thread argument*/
+                          (VOID*)hSyncEvent,/* thread argument*/
                           (DWORD)0,         /* creation option*/
                           &dwThreadId);     /* thread identifier*/
     if (hThread == NULL)
@@ -123,6 +138,13 @@ int __cdecl main(int argc, char* argv[])
         Fail("");
     }
 
+    /* Signal the helper thread that it can shut down */
+    if (!SetEvent(hSyncEvent))
+    {
+        Fail("ERROR:%u: Failed to set event.\n",
+             GetLastError());
+    }
+
     /* Wait on the original thread.*/
     if((WaitForSingleObject(hThread, 100)) != WAIT_OBJECT_0)
     {
@@ -136,14 +158,21 @@ int __cdecl main(int argc, char* argv[])
     }
 
     /* Clean-up thread and Terminate the PAL.*/
+    CloseHandle(hSyncEvent);
     CloseHandle(hThread);
     CloseHandle(hDupThread);
     PAL_Terminate();
     return PASS;
 }
 
-/*Thread testing function, only return '0'*/
+/*Thread testing function*/
 DWORD PALAPI CreateTestThread(LPVOID lpParam)
 {
+    HANDLE hSyncEvent = (HANDLE)lpParam;
+
+    /* Wait until the main thread signals that this helper thread should shut down */
+    WaitForSingleObject(hSyncEvent, INFINITE);
+
     return (DWORD)0;
 }
+
