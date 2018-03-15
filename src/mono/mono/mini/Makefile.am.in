@@ -782,6 +782,7 @@ hybridcheck:
 
 fullaot_regtests = $(regtests)
 fullaot_testing_deps = generics-variant-types.dll TestDriver.dll MemoryIntrinsics.dll
+fullaot_testing_deps_commas = generics-variant-types.dll,TestDriver.dll,MemoryIntrinsics.dll
 
 FULLAOT_LIBS_UNIVERSAL = \
 	mscorlib.dll \
@@ -821,7 +822,7 @@ fullaotcheck: $(mono) $(fullaot_regtests) $(fullaot_testing_deps)
 	mkdir $(FULLAOT_TMP_DIR)
 	$(MAKE) fullaot-libs AOT_FLAGS="$(FULLAOT_AOT_ARGS),$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)" GSHAREDVT=$(GSHAREDVT)
 	cp $(regtests) $(fullaot_regtests) $(fullaot_testing_deps) $(FULLAOT_TMP_DIR)/
-	MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot="$(FULLAOT_AOT_ARGS),$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)" $(FULLAOT_TMP_DIR)/{*.dll,*.exe} || exit 1
+	MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot="$(FULLAOT_AOT_ARGS),$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)" $(FULLAOT_TMP_DIR)/{$(fullaot_testing_deps_commas),*.exe} || exit 1
 	ln -s $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),$$PWD/mono) $(FULLAOT_TMP_DIR)/
 	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) $(FULLAOT_ARGS) $(FULLAOT_TMP_DIR)/$$i --exclude '!FULLAOT' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
 
@@ -844,7 +845,7 @@ llvmonlycheck: mono $(llvmonly_regtests)
 	mkdir fullaot-tmp
 	$(MAKE) fullaot-libs AOT_FLAGS="llvmonly,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)"
 	cp $(llvmonly_regtests) $(fullaot_testing_deps) fullaot-tmp/
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  $(MOBILE_RUNTIME_ARG) --aot=llvmonly fullaot-tmp/{*.dll,*.exe} || exit 1
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  $(MOBILE_RUNTIME_ARG) --aot=llvmonly fullaot-tmp/{$(fullaot_testing_deps_commas),*.exe} || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
 	for i in $(llvmonly_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) --llvmonly fullaot-tmp/$$i --exclude '!BITCODE' || exit 1; done
 

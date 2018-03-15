@@ -1409,6 +1409,31 @@ class Tests
 		swap (ref obj.buffer1, ref obj.buffer2);
 		return obj.counter;
 	}
+
+	public interface ICompletion {
+		Type UnsafeOnCompleted ();
+	}
+
+	public struct TaskAwaiter<T> : ICompletion {
+		public Type UnsafeOnCompleted () {
+			typeof(T).GetHashCode ();
+			return typeof(T);
+		}
+	}
+
+	public struct AStruct {
+        public Type Caller<TAwaiter>(ref TAwaiter awaiter)
+            where TAwaiter : ICompletion {
+			return awaiter.UnsafeOnCompleted();
+		}
+	}
+
+    public static int test_0_partial_constrained_call_llvmonly () {
+		var builder = new AStruct ();
+		var awaiter = new TaskAwaiter<bool> ();
+		var res = builder.Caller (ref awaiter);
+		return res == typeof (bool) ? 0 : 1;
+	}
 }
 
 #if !__MOBILE__

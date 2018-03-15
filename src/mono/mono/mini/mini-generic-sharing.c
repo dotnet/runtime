@@ -1876,9 +1876,18 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 		method = mono_class_inflate_generic_method_checked (method, context, error);
 		return_val_if_nok (error, NULL);
+
 		addr = mono_compile_method_checked (method, error);
 		return_val_if_nok (error, NULL);
-		return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
+		if (mono_llvm_only) {
+			gpointer arg = NULL;
+			addr = mini_add_method_wrappers_llvmonly (method, addr, FALSE, FALSE, &arg);
+
+			/* Returns an ftndesc */
+			return mini_create_llvmonly_ftndesc (domain, addr, arg);
+		} else {
+			return mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
+		}
 	}
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
