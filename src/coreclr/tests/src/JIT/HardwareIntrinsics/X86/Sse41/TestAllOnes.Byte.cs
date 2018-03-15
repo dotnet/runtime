@@ -246,7 +246,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Byte[] inArray = new Byte[Op1ElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), value);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Byte, byte>(ref inArray[0]), value);
 
             ValidateResult(inArray, result, method);
         }
