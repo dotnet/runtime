@@ -16,9 +16,6 @@ namespace System.Net.Security
         private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
         private bool _allowRenegotiation = true;
 
-        internal RemoteCertValidationCallback _certValidationDelegate;
-        internal LocalCertSelectionCallback _certSelectionDelegate;
-
         public bool AllowRenegotiation
         {
             get => _allowRenegotiation;
