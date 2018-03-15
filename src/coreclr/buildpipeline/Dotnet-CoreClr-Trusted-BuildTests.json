@@ -341,10 +341,7 @@
     },
     "CrossgenArg": {
       "value": ""
-    },
-    "AgentToolsPath": {
-      "value": "$(AgentToolsPath)"
-    },
+    }
   },
   "retentionRules": [
     {
