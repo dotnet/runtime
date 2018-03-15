@@ -343,7 +343,7 @@
       "value": ""
     },
     "AgentToolsPath": {
-      "value": "$(Agent.HomeDirectory)\\AgentTools\\"
+      "value": "$(AgentToolsPath)"
     },
   },
   "retentionRules": [
