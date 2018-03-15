@@ -95,7 +95,7 @@ namespace System.Data.SqlClient
                         //       This first connection is established to SqlExpress to get the instance name 
                         //       of the UserInstance.
                         SqlConnectionString sseopt = new SqlConnectionString(opt, opt.DataSource, userInstance: true, setEnlistValue: false);
-                        sseConnection = new SqlInternalConnectionTds(identity, sseopt, null, false, applyTransientFaultHandling: applyTransientFaultHandling);
+                        sseConnection = new SqlInternalConnectionTds(identity, sseopt, key.Credential, null, "", null, false, applyTransientFaultHandling: applyTransientFaultHandling);
                         // NOTE: Retrieve <UserInstanceName> here. This user instance name will be used below to connect to the Sql Express User Instance.
                         instanceName = sseConnection.InstanceName;
 
@@ -132,7 +132,7 @@ namespace System.Data.SqlClient
                 opt = new SqlConnectionString(opt, instanceName, userInstance: false, setEnlistValue: null);
                 poolGroupProviderInfo = null; // null so we do not pass to constructor below...
             }
-            result = new SqlInternalConnectionTds(identity, opt, poolGroupProviderInfo, redirectedUserInstance, userOpt, recoverySessionData, applyTransientFaultHandling: applyTransientFaultHandling);
+            result = new SqlInternalConnectionTds(identity, opt, key.Credential, poolGroupProviderInfo, "", null, redirectedUserInstance, userOpt, recoverySessionData, applyTransientFaultHandling: applyTransientFaultHandling);
             return result;
         }
 

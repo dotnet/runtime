@@ -204,6 +204,22 @@ namespace System.Data.SqlClient
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_InstanceFailure));
         }
+        internal static Exception ChangePasswordArgumentMissing(string argumentName)
+        {
+            return ADP.ArgumentNull(SR.GetString(SR.SQL_ChangePasswordArgumentMissing, argumentName));
+        }
+        internal static Exception ChangePasswordConflictsWithSSPI()
+        {
+            return ADP.Argument(SR.GetString(SR.SQL_ChangePasswordConflictsWithSSPI));
+        }
+        internal static Exception ChangePasswordRequiresYukon()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_ChangePasswordRequiresYukon));
+        }
+        static internal Exception ChangePasswordUseOfUnallowedKey(string key)
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_ChangePasswordUseOfUnallowedKey, key));
+        }
 
         //
         // Global Transactions.
