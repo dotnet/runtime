@@ -108,7 +108,7 @@ namespace System.Xml.Linq
         /// <item>TimeSpan</item>
         /// <item>Any type implementing ToString()</item>
         /// <item>Any type implementing IEnumerable</item>
-        /// 
+        ///
         /// </list>
         /// When adding complex content, a number of types may be passed to this method.
         /// <list>
@@ -117,19 +117,19 @@ namespace System.Xml.Linq
         /// <item>XAttribute</item>
         /// <item>Any type implementing IEnumerable</item>
         /// </list>
-        /// 
+        ///
         /// If an object implements IEnumerable, then the collection in the object is enumerated,
         /// and all items in the collection are added. If the collection contains simple content,
         /// then the simple content in the collection is concatenated and added as a single
         /// string of simple content. If the collection contains complex content, then each item
         /// in the collection is added separately.
-        /// 
+        ///
         /// If content is null, nothing is added. This allows the results of a query to be passed
         /// as content. If the query returns null, no contents are added, and this method does not
         /// throw a NullReferenceException.
-        /// 
+        ///
         /// Attributes and simple content can't be added to a document.
-        /// 
+        ///
         /// An added attribute must have a unique name within the element to
         /// which it is being added.
         /// </remarks>
@@ -235,7 +235,7 @@ namespace System.Xml.Linq
         }
 
         /// <summary>
-        /// Creates an <see cref="XmlWriter"/> used to add either nodes 
+        /// Creates an <see cref="XmlWriter"/> used to add either nodes
         /// or attributes to the <see cref="XContainer"/>. The later option
         /// applies only for <see cref="XElement"/>.
         /// </summary>
@@ -259,7 +259,7 @@ namespace System.Xml.Linq
         /// <summary>
         /// Returns the descendant <see cref="XElement"/>s of this <see cref="XContainer"/>.  Note this method will
         /// not return itself in the resulting IEnumerable.  See <see cref="XElement.DescendantsAndSelf()"/> if you
-        /// need to include the current <see cref="XElement"/> in the results.  
+        /// need to include the current <see cref="XElement"/> in the results.
         /// <seealso cref="XElement.DescendantsAndSelf()"/>
         /// </summary>
         /// <returns>
@@ -275,7 +275,7 @@ namespace System.Xml.Linq
         /// of XElement.
         /// </summary>
         /// <param name="name">The <see cref="XName"/> to match against descendant <see cref="XElement"/>s.</param>
-        /// <returns>An <see cref="IEnumerable"/> of <see cref="XElement"/></returns>        
+        /// <returns>An <see cref="IEnumerable"/> of <see cref="XElement"/></returns>
         public IEnumerable<XElement> Descendants(XName name)
         {
             return name != null ? GetDescendants(name, false) : XElement.EmptySequence;
@@ -346,7 +346,7 @@ namespace System.Xml.Linq
         /// that the content does not include <see cref="XAttribute"/>s.
         /// <seealso cref="XElement.Attributes()"/>
         /// </summary>
-        /// <returns>The contents of this <see cref="XContainer"/></returns>        
+        /// <returns>The contents of this <see cref="XContainer"/></returns>
         public IEnumerable<XNode> Nodes()
         {
             XNode n = LastNode;
@@ -385,7 +385,7 @@ namespace System.Xml.Linq
                     {
                         if (this is XElement)
                         {
-                            // Change in the serialization of an empty element: 
+                            // Change in the serialization of an empty element:
                             // from start/end tag pair to empty tag
                             NotifyChanging(this, XObjectChangeEventArgs.Value);
                             if ((object)s != (object)content) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
@@ -554,7 +554,7 @@ namespace System.Xml.Linq
                 {
                     if (this is XElement)
                     {
-                        // Change in the serialization of an empty element: 
+                        // Change in the serialization of an empty element:
                         // from empty tag to start/end tag pair
                         NotifyChanging(this, XObjectChangeEventArgs.Value);
                         if (content != null) throw new InvalidOperationException(SR.InvalidOperation_ExternalCode);
@@ -830,7 +830,7 @@ namespace System.Xml.Linq
             }
             else if (value is DateTime)
             {
-                s = ((DateTime)value).ToString("o"); // Round-trip date/time pattern.
+                s = XmlConvert.ToString((DateTime) value, XmlDateTimeSerializationMode.RoundtripKind);
             }
             else if (value is DateTimeOffset)
             {
@@ -855,7 +855,7 @@ namespace System.Xml.Linq
         internal void ReadContentFrom(XmlReader r)
         {
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
-            
+
             ContentReader cr = new ContentReader(this);
             while (cr.ReadContentFrom(this, r) && r.Read()) ;
         }
@@ -893,7 +893,7 @@ namespace System.Xml.Linq
                 return;
             }
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
- 
+
             ContentReader cr = new ContentReader(this, r, o);
             do
             {
