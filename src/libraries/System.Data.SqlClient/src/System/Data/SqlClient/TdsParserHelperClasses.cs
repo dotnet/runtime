@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Data.Common;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Security;
 using System.Text;
 using Microsoft.SqlServer.Server;
 
@@ -250,9 +251,12 @@ namespace System.Data.SqlClient
         internal string database = "";                                      // initial database
         internal string attachDBFilename = "";                                      // DB filename to be attached
         internal bool useReplication = false;                                   // user login for replication
+        internal string newPassword = "";                                   // new password for reset password
         internal bool useSSPI = false;                                   // use integrated security
         internal int packetSize = SqlConnectionString.DEFAULT.Packet_Size; // packet size
         internal bool readOnlyIntent = false;                                   // read-only intent
+        internal SqlCredential credential;                                      // user id and password in SecureString
+        internal SecureString newSecurePassword;
     }
 
     sealed internal class SqlLoginAck

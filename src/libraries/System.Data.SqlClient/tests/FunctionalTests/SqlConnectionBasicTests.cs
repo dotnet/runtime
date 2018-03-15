@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Reflection;
+using System.Security;
 using System.Threading;
 using Xunit;
 
@@ -148,6 +149,51 @@ namespace System.Data.SqlClient.Tests
                     Assert.True(exception is InvalidOperationException || exception is SqlException, $"Unexpected exception: {exception}");
                 }
             }
+        }
+
+        [Fact]
+        public void ConnectionTestInvalidCredentialCombination()
+        {
+            var cleartextCredsConnStr = "User=test;Password=test;";
+            var sspiConnStr = "Integrated Security=true;";
+            var testPassword = new SecureString();
+            testPassword.MakeReadOnly();
+            var sqlCredential = new SqlCredential(string.Empty, testPassword);
+
+            // Verify that SSPI and cleartext username/password are not in the connection string.
+            Assert.Throws<ArgumentException>(() => { new SqlConnection(cleartextCredsConnStr, sqlCredential); });
+
+            Assert.Throws<ArgumentException>(() => { new SqlConnection(sspiConnStr, sqlCredential); });
+
+            // Verify that credential may not be set with cleartext username/password or SSPI.
+            using (var conn = new SqlConnection(cleartextCredsConnStr))
+            {
+                Assert.Throws<InvalidOperationException>(() => { conn.Credential = sqlCredential; });
+            }
+
+            using (var conn = new SqlConnection(sspiConnStr))
+            {
+                Assert.Throws<InvalidOperationException>(() => { conn.Credential = sqlCredential; });
+            }
+
+            // Verify that connection string with username/password or SSPI may not be set with credential present.
+            using (var conn = new SqlConnection(string.Empty, sqlCredential))
+            {
+                Assert.Throws<InvalidOperationException>(() => { conn.ConnectionString = cleartextCredsConnStr; });
+
+                Assert.Throws<InvalidOperationException>(() => { conn.ConnectionString = sspiConnStr; });
+            }
+        }
+
+        [Fact]
+        public void ConnectionTestValidCredentialCombination()
+        {
+            var testPassword = new SecureString();
+            testPassword.MakeReadOnly();
+            var sqlCredential = new SqlCredential(string.Empty, testPassword);
+            var conn = new SqlConnection(string.Empty, sqlCredential);
+
+            Assert.Equal(sqlCredential, conn.Credential);
         }
 
         public class ConnectionWorker

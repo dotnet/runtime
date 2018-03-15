@@ -41,6 +41,20 @@ namespace System.Data.SqlClient
             return bObfuscated;
         }
 
+        internal static byte[] ObfuscatePassword(byte[] password)
+        {
+            byte bLo;
+            byte bHi;
+
+            for (int i = 0; i < password.Length; i++)
+            {
+                bLo = (byte)(password[i] & 0x0f);
+                bHi = (byte)(password[i] & 0xf0);
+                password[i] = (Byte)(((bHi >> 4) | (bLo << 4)) ^ 0xa5);
+            }
+            return password;
+        }
+
         private const int NoProcessId = -1;
         private static int s_currentProcessId = NoProcessId;
         internal static int GetCurrentProcessIdForTdsLoginOnly()

@@ -891,5 +891,24 @@ namespace System.Data.Common
             return Argument(SR.GetString(SR.ADP_MustBeReadOnly, argumentName));
         }
 
+        internal static InvalidOperationException InvalidMixedUsageOfSecureAndClearCredential()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureAndClearCredential));
+        }
+
+        internal static ArgumentException InvalidMixedArgumentOfSecureAndClearCredential()
+        {
+            return Argument(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureAndClearCredential));
+        }
+
+        internal static InvalidOperationException InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity));
+        }
+
+        internal static ArgumentException InvalidMixedArgumentOfSecureCredentialAndIntegratedSecurity()
+        {
+            return Argument(SR.GetString(SR.ADP_InvalidMixedUsageOfSecureCredentialAndIntegratedSecurity));
+        }
     }
 }
