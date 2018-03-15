@@ -1047,7 +1047,7 @@ void LinearScan::BuildCall(GenTreeCall* call)
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
             appendLocationInfoToList(argNode);
         }
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
         else if (argNode->OperGet() == GT_FIELD_LIST)
         {
             for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
@@ -1058,7 +1058,7 @@ void LinearScan::BuildCall(GenTreeCall* call)
                 appendLocationInfoToList(entry->Current());
             }
         }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
 #ifdef DEBUG
         // In DEBUG only, check validity with respect to the arg table entry.
@@ -1085,7 +1085,7 @@ void LinearScan::BuildCall(GenTreeCall* call)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
             continue;
         }
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
             assert(argNode->isContained());
@@ -1101,7 +1101,7 @@ void LinearScan::BuildCall(GenTreeCall* call)
             }
         }
         else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
         {
             const regNumber argReg = curArgTabEntry->regNum;
             assert(argNode->gtRegNum == argReg);

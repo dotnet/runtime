@@ -11975,7 +11975,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 byrefRegs |= RBM_EAX;
             }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
             // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
             if (id->idIsLargeCall())
             {
@@ -11989,7 +11989,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     byrefRegs |= RBM_RDX;
                 }
             }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
             // If the GC register set has changed, report the new set
             if (gcrefRegs != emitThisGCrefRegs)

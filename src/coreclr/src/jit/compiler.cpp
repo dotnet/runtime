@@ -765,7 +765,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     }
     assert(structSize > 0);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
     // An 8-byte struct may need to be passed in a floating point register
     // So we always consult the struct "Classifier" routine
@@ -829,7 +829,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             else // Not an HFA struct type
             {
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
                 // The case of (structDesc.eightByteCount == 1) should have already been handled
                 if (structDesc.eightByteCount > 1)
@@ -982,7 +982,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     }
     assert(structSize > 0);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
     // An 8-byte struct may need to be returned in a floating point register
     // So we always consult the struct "Classifier" routine
@@ -1016,7 +1016,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         }
     }
 
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
 #ifdef _TARGET_64BIT_
     // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
@@ -1064,7 +1064,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             else // Not an HFA struct type
             {
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
                 // The case of (structDesc.eightByteCount == 1) should have already been handled
                 if (structDesc.eightByteCount > 1)
@@ -6962,7 +6962,7 @@ START:
     return result;
 }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
 
 // GetTypeFromClassificationAndSizes:
 //   Returns the type of the eightbyte accounting for the classification and size of the eightbyte.
@@ -7151,7 +7151,7 @@ void Compiler::GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
     GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
 }
 
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
 /*****************************************************************************/
 /*****************************************************************************/

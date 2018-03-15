@@ -1018,13 +1018,13 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_LNGRET               REG_EAX
   #define RBM_LNGRET               RBM_EAX
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     #define REG_INTRET_1           REG_RDX
     #define RBM_INTRET_1           RBM_RDX
 
     #define REG_LNGRET_1           REG_RDX
     #define RBM_LNGRET_1           RBM_RDX
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
 
   #define REG_FLOATRET             REG_XMM0
@@ -1032,13 +1032,13 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_DOUBLERET            REG_XMM0
   #define RBM_DOUBLERET            RBM_XMM0
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 #define REG_FLOATRET_1             REG_XMM1
 #define RBM_FLOATRET_1             RBM_XMM1
 
 #define REG_DOUBLERET_1            REG_XMM1
 #define RBM_DOUBLERET_1            RBM_XMM1
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
   #define REG_FPBASE               REG_EBP
   #define RBM_FPBASE               RBM_EBP
@@ -1132,7 +1132,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
   // See vm\amd64\unixasmhelpers.S for more details.
   //
   // On Unix a struct of size >=9 and <=16 bytes in size is returned in two return registers.

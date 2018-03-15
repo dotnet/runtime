@@ -2390,10 +2390,10 @@ inline
         if (lvaDoneFrameLayout > REGALLOC_FRAME_LAYOUT && !varDsc->lvOnFrame)
         {
 #ifdef _TARGET_AMD64_
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifndef UNIX_AMD64_ABI
             // On amd64, every param has a stack location, except on Unix-like systems.
             assert(varDsc->lvIsParam);
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 #elif !defined(LEGACY_BACKEND)
             // For !LEGACY_BACKEND on other targets, a stack parameter that is enregistered or prespilled
             // for profiling on ARM will have a stack location.
