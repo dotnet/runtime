@@ -595,7 +595,9 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		MonoMethod *method;
 
 		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
-		g_assert (ji);
+		/* FIXME we leak wrapper with the interpreter */
+		if (!ji)
+			return;
 
 		method = mono_jit_info_get_method (ji);
 		method_data = (void **)((MonoMethodWrapper*)method)->method_data;
