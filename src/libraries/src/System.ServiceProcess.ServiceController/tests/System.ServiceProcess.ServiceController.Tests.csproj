@@ -13,6 +13,7 @@
     <Compile Include="TestServiceProvider.cs" />
     <Compile Include="SafeServiceControllerTests.cs" />
     <Compile Include="ServiceControllerTests.cs" />
+    <Compile Include="ServiceProcessDescriptionAttributeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include=".\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
