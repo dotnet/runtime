@@ -97,7 +97,7 @@ namespace System.Net.Security
             }
         }
 
-        internal void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        internal void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
         {
             ThrowIfExceptional();
 
@@ -116,15 +116,14 @@ namespace System.Net.Security
                 throw new ArgumentNullException(nameof(sslClientAuthenticationOptions.TargetHost));
             }
 
-            if (sslClientAuthenticationOptions.TargetHost.Length == 0)
-            {
-                sslClientAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
-            }
-
             _exception = null;
             try
             {
-                _sslAuthenticationOptions = new SslAuthenticationOptions(sslClientAuthenticationOptions);
+                _sslAuthenticationOptions = new SslAuthenticationOptions(sslClientAuthenticationOptions, remoteCallback, localCallback);
+                if (_sslAuthenticationOptions.TargetHost.Length == 0)
+                {
+                    _sslAuthenticationOptions.TargetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);
+                }
                 _context = new SecureChannel(_sslAuthenticationOptions);
             }
             catch (Win32Exception e)
