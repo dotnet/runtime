@@ -16,6 +16,7 @@
     <Compile Include="XHashtable.cs" />
     <Compile Include="XLinqErrata4.cs" />
     <Compile Include="XNameAPI.cs" />
+    <Compile Include="XAttribute.cs" />
     <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
   </ItemGroup>
   <ItemGroup>
