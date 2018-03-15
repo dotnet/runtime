@@ -23,7 +23,13 @@
 #include "mono/sgen/sgen-workers.h"
 #include "mono/sgen/sgen-client.h"
 
-#define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(SGEN_DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
+/*
+ * The allowance we are targeting is a third of the current heap size. Still, we
+ * allow the heap to grow at least 4 times the nursery size before triggering a
+ * major, to reduce unnecessary collections. We make sure we don't set the minimum
+ * allowance too high when using a soft heap limit.
+ */
+#define MIN_MINOR_COLLECTION_ALLOWANCE	(MIN(((mword)(sgen_nursery_size * default_allowance_nursery_size_ratio)), (soft_heap_limit * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO)))
 
 static SgenPointerQueue log_entries = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_TEMPORARY);
 static mono_mutex_t log_entries_mutex;
