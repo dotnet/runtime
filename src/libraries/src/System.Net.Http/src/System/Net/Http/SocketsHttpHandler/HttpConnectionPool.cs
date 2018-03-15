@@ -120,6 +120,12 @@ namespace System.Net.Http
                 _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
                 Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
             }
+            
+            // Set up for PreAuthenticate.  Access to this cache is guarded by a lock on the cache itself.
+            if (_poolManager.Settings._preAuthenticate)
+            {
+                PreAuthCredentials = new CredentialCache();
+            }
         }
 
         private static SslClientAuthenticationOptions ConstructSslOptions(HttpConnectionPoolManager poolManager, string sslHostName)
@@ -139,6 +145,7 @@ namespace System.Net.Http
         public Uri ProxyUri => _proxyUri;
         public ICredentials ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[] HostHeaderValueBytes => _hostHeaderValueBytes;
+        public CredentialCache PreAuthCredentials { get; }
 
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _idleConnections;
