@@ -31,11 +31,15 @@ namespace System.Reflection.Emit.Tests
             il.Emit(OpCodes.Ret);
 
             Type dynamicType = typeBuilder.CreateType();
-            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(new Int32SumStdCall(Int32Sum));
+
+            var del = new Int32SumStdCall(Int32Sum);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
 
             object resultValue = dynamicType
                 .GetMethod("F", BindingFlags.Public | BindingFlags.Static)
                 .Invoke(null, new object[] { funcPtr, a, b });
+
+            GC.KeepAlive(del);
 
             Assert.IsType(returnType, resultValue);
             Assert.Equal(result, resultValue);
@@ -57,10 +61,13 @@ namespace System.Reflection.Emit.Tests
             il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, returnType, new Type[] { typeof(int), typeof(int) });
             il.Emit(OpCodes.Ret);
 
-            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(new Int32SumStdCall(Int32Sum));
+            var del = new Int32SumStdCall(Int32Sum);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
 
             object resultValue = dynamicMethod
                 .Invoke(null, new object[] { funcPtr, a, b });
+
+            GC.KeepAlive(del);
 
             Assert.IsType(returnType, resultValue);
             Assert.Equal(result, resultValue);
@@ -86,11 +93,15 @@ namespace System.Reflection.Emit.Tests
             il.Emit(OpCodes.Ret);
 
             Type dynamicType = typeBuilder.CreateType();
-            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(new StringReverseCdecl(StringReverse));
+
+            var del = new StringReverseCdecl(StringReverse);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
 
             object resultValue = dynamicType
                 .GetMethod("F", BindingFlags.Public | BindingFlags.Static)
                 .Invoke(null, new object[] { funcPtr, input });
+
+            GC.KeepAlive(del);
 
             Assert.IsType(returnType, resultValue);
             Assert.Equal(result, resultValue);
@@ -111,10 +122,13 @@ namespace System.Reflection.Emit.Tests
             il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, returnType, new Type[] { typeof(string) });
             il.Emit(OpCodes.Ret);
 
-            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(new StringReverseCdecl(StringReverse));
+            var del = new StringReverseCdecl(StringReverse);
+            IntPtr funcPtr = Marshal.GetFunctionPointerForDelegate(del);
 
             object resultValue = dynamicMethod
                 .Invoke(null, new object[] { funcPtr, input });
+
+            GC.KeepAlive(del);
 
             Assert.IsType(returnType, resultValue);
             Assert.Equal(result, resultValue);
