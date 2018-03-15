@@ -276,8 +276,8 @@ namespace JIT.HardwareIntrinsics.X86
             UInt64[] inArray1 = new UInt64[Op1ElementCount];
             UInt64[] inArray2 = new UInt64[Op2ElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
-            Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt64, byte>(ref inArray1[0]), left);
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt64, byte>(ref inArray2[0]), right);
 
             ValidateResult(inArray1, inArray2, result, method);
         }
