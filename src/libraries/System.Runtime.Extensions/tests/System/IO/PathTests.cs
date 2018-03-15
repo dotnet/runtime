@@ -196,32 +196,73 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetFullPath(string.Empty));
         }
 
-        public static IEnumerable<object[]> GetFullPath_BasicExpansions_TestData()
+        public static TheoryData<string, string> GetFullPath_BasicExpansions
         {
-            string curDir = Directory.GetCurrentDirectory();
-            yield return new object[] { curDir, curDir }; // Current directory => current directory
-            yield return new object[] { ".", curDir }; // "." => current directory
-            yield return new object[] { "..", Path.GetDirectoryName(curDir) }; // "." => up a directory
-            yield return new object[] { Path.Combine(curDir, ".", ".", ".", ".", "."), curDir }; // "dir/./././." => "dir"
-            yield return new object[] { curDir + new string(Path.DirectorySeparatorChar, 3) + ".", curDir }; // "dir///." => "dir"
-            yield return new object[] { Path.Combine(curDir, "..", Path.GetFileName(curDir), ".", "..", Path.GetFileName(curDir)), curDir }; // "dir/../dir/./../dir" => "dir"
-            yield return new object[] { Path.Combine(Path.GetPathRoot(curDir), "somedir", ".."), Path.GetPathRoot(curDir) }; // "C:\somedir\.." => "C:\"
-            yield return new object[] { Path.Combine(Path.GetPathRoot(curDir), "."), Path.GetPathRoot(curDir) }; // "C:\." => "C:\"
-            yield return new object[] { Path.Combine(Path.GetPathRoot(curDir), "..", "..", "..", ".."), Path.GetPathRoot(curDir) }; // "C:\..\..\..\.." => "C:\"
-            yield return new object[] { Path.GetPathRoot(curDir) + new string(Path.DirectorySeparatorChar, 3), Path.GetPathRoot(curDir) }; // "C:\\\" => "C:\"
-
-            // Path longer than MaxPath that normalizes down to less than MaxPath
-            const int Iters = 10000;
-            var longPath = new StringBuilder(curDir, curDir.Length + (Iters * 2));
-            for (int i = 0; i < 10000; i++)
+            get
             {
-                longPath.Append(Path.DirectorySeparatorChar).Append('.');
+                string currentDirectory = Directory.GetCurrentDirectory();
+                string root = Path.GetPathRoot(currentDirectory);
+                string fileName = Path.GetFileName(currentDirectory);
+
+                TheoryData<string, string> data = new TheoryData<string, string>
+                {
+                    // Current directory => current directory
+                    { currentDirectory, currentDirectory },
+                    // "." => current directory
+                    { ".", currentDirectory },
+                    // ".." => up a directory
+                    { "..", Path.GetDirectoryName(currentDirectory) },
+                    // "dir/./././." => "dir"
+                    { Path.Combine(currentDirectory, ".", ".", ".", ".", "."), currentDirectory },
+                    // "dir///." => "dir"
+                    { currentDirectory + new string(Path.DirectorySeparatorChar, 3) + ".", currentDirectory },
+                    // "dir/../dir/./../dir" => "dir"
+                    { Path.Combine(currentDirectory, "..", fileName, ".", "..", fileName), currentDirectory },
+                    // "C:\somedir\.." => "C:\"
+                    { Path.Combine(root, "somedir", ".."), root },
+                    // "C:\." => "C:\"
+                    { Path.Combine(root, "."), root },
+                    // "C:\..\..\..\.." => "C:\"
+                    { Path.Combine(root, "..", "..", "..", ".."), root },
+                    // "C:\\\" => "C:\"
+                    { root + new string(Path.DirectorySeparatorChar, 3), root },
+                };
+
+                // Path longer than MaxPath that normalizes down to less than MaxPath
+                const int Iters = 10000;
+                var longPath = new StringBuilder(currentDirectory, currentDirectory.Length + (Iters * 2));
+                for (int i = 0; i < 10000; i++)
+                {
+                    longPath.Append(Path.DirectorySeparatorChar).Append('.');
+                }
+                data.Add(longPath.ToString(), currentDirectory);
+
+                return data;
             }
-            yield return new object[] { longPath.ToString(), curDir };
         }
 
-        [Theory, MemberData(nameof(GetFullPath_BasicExpansions_TestData))]
-        public void GetFullPath_BasicExpansions(string path, string expected)
+        public static TheoryData<string, string> GetFullPath_TildePaths
+        {
+            get
+            {
+                // Paths with tildes '~' are processed for 8.3 expansion on Windows
+                string currentDirectory = Directory.GetCurrentDirectory();
+                string root = Path.GetPathRoot(currentDirectory);
+
+                TheoryData<string, string> data = new TheoryData<string, string>
+                {
+                    { "~", Path.Combine(currentDirectory, "~") },
+                    { Path.Combine(root, "~"), Path.Combine(root, "~") }
+                };
+
+                return data;
+            }
+        }
+
+        [Theory,
+            MemberData(nameof(GetFullPath_BasicExpansions)),
+            MemberData(nameof(GetFullPath_TildePaths))]
+        public void GetFullPath_CoreTests(string path, string expected)
         {
             Assert.Equal(expected, Path.GetFullPath(path));
         }
