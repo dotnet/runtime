@@ -3,16 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal partial class Interop
 {
     internal partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         internal static extern bool LookupAccountNameW(
-            string machineName, string accountName, byte[] sid,
-            ref int sidLen, 
-            [Out] StringBuilder domainName, ref uint domainNameLen, out int peUse);
+            string lpSystemName,
+            ref char lpAccountName,
+            ref byte Sid,
+            ref uint cbSid,
+            ref char ReferencedDomainName,
+            ref uint cchReferencedDomainName,
+            out uint peUse);
     }
 }

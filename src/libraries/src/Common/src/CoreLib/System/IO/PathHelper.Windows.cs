@@ -33,9 +33,9 @@ namespace System.IO
 
             // If we have the exact same string we were passed in, don't allocate another string.
             // TryExpandShortName does this input identity check.
-            string result = builder.AsSpan().Contains('~')
+            string result = builder.AsSpan().IndexOf('~') >= 0
                 ? TryExpandShortFileName(ref builder, originalPath: path)
-                : builder.AsSpan().EqualsOrdinal(path.AsSpan()) ? path : builder.ToString();
+                : builder.AsSpan().Equals(path.AsSpan(), StringComparison.Ordinal) ? path : builder.ToString();
 
             // Clear the buffer
             builder.Dispose();
@@ -220,7 +220,7 @@ namespace System.IO
             // Strip out any added characters at the front of the string
             ReadOnlySpan<char> output = builderToUse.AsSpan(rootDifference);
 
-            string returnValue = output.EqualsOrdinal(originalPath.AsSpan())
+            string returnValue = ((originalPath != null) && output.Equals(originalPath.AsSpan(), StringComparison.Ordinal))
                 ? originalPath : new string(output);
 
             inputBuilder.Dispose();

@@ -22,5 +22,21 @@ namespace System.Tests
             // Highly unlikely anyone is using user with this name
             Assert.NotEqual("Windows User", Environment.UserName);
         }
+
+        [Fact]
+        public void UserName_Valid()
+        {
+            string name = Environment.UserName;
+            Assert.False(string.IsNullOrWhiteSpace(name));
+            Assert.Equal(-1, name.IndexOf('\0'));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UserName_MatchesEnvironment_Windows()
+        {
+            Assert.Equal(Environment.GetEnvironmentVariable("USERNAME"), Environment.UserName);
+        }
     }
 }

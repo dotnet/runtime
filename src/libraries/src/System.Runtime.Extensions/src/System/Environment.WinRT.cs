@@ -10,6 +10,9 @@ namespace System
 {
     public static partial class Environment
     {
+        public static string UserName => "Windows User";
+        public static string UserDomainName => "Windows Domain";
+
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             // For testing we'll fall back if the needed APIs aren't present.
