@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.ToLowerInvariant().Contains("digest")))
             {
-                // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
+                // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
+                // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 
@@ -77,7 +77,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.Contains("Digest")))
             {
-                // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
+                // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 
@@ -114,7 +114,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "basic", true };
 
             // Add digest tests fail on CurlHandler.
-            // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
+            // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
             yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
             yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"{Convert.ToBase64String(Encoding.UTF8.GetBytes($"{DateTimeOffset.UtcNow}:XMh;z+$5|`i6Hx}}\", qop=auth-int, algorithm=MD5"))}\"", true };
             yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
@@ -126,8 +126,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (PlatformDetection.IsNetCore)
             {
-                // These fail on full framework runs.
-                // TODO: #27113: Fix failing authentication test cases on different httpclienthandlers.
+                // TODO: #28060: Fix failing authentication test cases on Framework run.
                 yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
                 yield return new object[] { "Basic something, Digest something", false };
                 yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=MD5 " +
