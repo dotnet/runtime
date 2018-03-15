@@ -168,6 +168,14 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        internal int TraceLoggingId
+        {
+            get
+            {
+                return m_traceloggingId;
+            }
+        }
+
         public override bool Equals(object obj)
         {
             if (!(obj is EventDescriptor))
