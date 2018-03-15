@@ -106,6 +106,12 @@ namespace System.ServiceProcess
         Manual = 3,
         System = 1,
     }
+    [AttributeUsage(AttributeTargets.All)]
+    public partial class ServiceProcessDescriptionAttribute : System.ComponentModel.DescriptionAttribute
+    {
+        public ServiceProcessDescriptionAttribute(string description) : base(description) { }
+        public override string Description { get { throw null; } }
+    }
     [System.FlagsAttribute]
     public enum ServiceType
     {
