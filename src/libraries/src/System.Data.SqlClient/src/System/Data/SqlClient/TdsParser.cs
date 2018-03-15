@@ -193,7 +193,6 @@ namespace System.Data.SqlClient
             }
         }
 
-
         internal bool IsKatmaiOrNewer
         {
             get
@@ -5986,8 +5985,13 @@ namespace System.Data.SqlClient
             Debug.Assert(TdsEnums.MAXLEN_HOSTNAME >= rec.hostName.Length, "_workstationId.Length exceeds the max length for this value");
 
             Debug.Assert(rec.userName == null || (rec.userName != null && TdsEnums.MAXLEN_USERNAME >= rec.userName.Length), "_userID.Length exceeds the max length for this value");
+            Debug.Assert(rec.credential == null || (rec.credential != null && TdsEnums.MAXLEN_USERNAME >= rec.credential.UserId.Length), "_credential.UserId.Length exceeds the max length for this value");
 
             Debug.Assert(rec.password == null || (rec.password != null && TdsEnums.MAXLEN_PASSWORD >= rec.password.Length), "_password.Length exceeds the max length for this value");
+            Debug.Assert(rec.credential == null || (rec.credential != null && TdsEnums.MAXLEN_PASSWORD >= rec.credential.Password.Length), "_credential.Password.Length exceeds the max length for this value");
+
+            Debug.Assert(rec.credential != null || rec.userName != null || rec.password != null, "cannot mix the new secure password system and the connection string based password");
+            Debug.Assert(rec.newSecurePassword != null || rec.newPassword != null, "cannot have both new secure change password and string based change password");
             Debug.Assert(TdsEnums.MAXLEN_APPNAME >= rec.applicationName.Length, "_applicationName.Length exceeds the max length for this value");
             Debug.Assert(TdsEnums.MAXLEN_SERVERNAME >= rec.serverName.Length, "_dataSource.Length exceeds the max length for this value");
             Debug.Assert(TdsEnums.MAXLEN_LANGUAGE >= rec.language.Length, "_currentLanguage .Length exceeds the max length for this value");
@@ -6000,15 +6004,34 @@ namespace System.Data.SqlClient
 
             // get the password up front to use in sspi logic below
             byte[] encryptedPassword = null;
+            byte[] encryptedChangePassword = null;
             int encryptedPasswordLengthInBytes;
+            int encryptedChangePasswordLengthInBytes;
             bool useFeatureExt = (requestedFeatures != TdsEnums.FeatureExtension.None);
 
             string userName;
 
-            userName = rec.userName;
-            encryptedPassword = TdsParserStaticMethods.ObfuscatePassword(rec.password);
-            encryptedPasswordLengthInBytes = encryptedPassword.Length;  // password in clear text is already encrypted and its length is in byte
+            if (rec.credential != null)
+            {
+                userName = rec.credential.UserId;
+                encryptedPasswordLengthInBytes = rec.credential.Password.Length * 2;
+            }
+            else
+            {
+                userName = rec.userName;
+                encryptedPassword = TdsParserStaticMethods.ObfuscatePassword(rec.password);
+                encryptedPasswordLengthInBytes = encryptedPassword.Length;  // password in clear text is already encrypted and its length is in byte
+            }
 
+            if (rec.newSecurePassword != null)
+            {
+                encryptedChangePasswordLengthInBytes = rec.newSecurePassword.Length * 2;
+            }
+            else
+            {
+                encryptedChangePassword = TdsParserStaticMethods.ObfuscatePassword(rec.newPassword);
+                encryptedChangePasswordLengthInBytes = encryptedChangePassword.Length;
+            }
 
             // set the message type
             _physicalStateObj._outputMessageType = TdsEnums.MT_LOGIN7;
@@ -6042,7 +6065,8 @@ namespace System.Data.SqlClient
             {
                 checked
                 {
-                    length += (userName.Length * 2) + encryptedPasswordLengthInBytes;
+                    length += (userName.Length * 2) + encryptedPasswordLengthInBytes 
+                    + encryptedChangePasswordLengthInBytes;
                 }
             }
             else
@@ -6158,6 +6182,10 @@ namespace System.Data.SqlClient
                 }
 
                 // 4th one
+                if (!string.IsNullOrEmpty(rec.newPassword) || (rec.newSecurePassword != null && rec.newSecurePassword.Length != 0))
+                {
+                    log7Flags |= 1 << 24;
+                }
                 if (rec.userInstance)
                 {
                     log7Flags |= 1 << 26;
@@ -6256,7 +6284,7 @@ namespace System.Data.SqlClient
                 offset += rec.attachDBFilename.Length * 2;
 
                 WriteShort(offset, _physicalStateObj); // reset password offset
-                WriteShort(0, _physicalStateObj);
+                WriteShort(encryptedChangePasswordLengthInBytes / 2, _physicalStateObj);
 
                 WriteInt(0, _physicalStateObj);        // reserved for chSSPI
 
@@ -6269,6 +6297,11 @@ namespace System.Data.SqlClient
                 {
                     WriteString(userName, _physicalStateObj);
 
+                    if (rec.credential != null)
+                    {
+                        _physicalStateObj.WriteSecureString(rec.credential.Password);
+                    }
+                    else
                     {
                         _physicalStateObj.WriteByteArray(encryptedPassword, encryptedPasswordLengthInBytes, 0);
                     }
@@ -6292,6 +6325,19 @@ namespace System.Data.SqlClient
                     _physicalStateObj.WriteByteArray(outSSPIBuff, (int)outSSPILength, 0);
 
                 WriteString(rec.attachDBFilename, _physicalStateObj);
+
+                if (!rec.useSSPI)
+                {
+                    if (rec.newSecurePassword != null)
+                    {
+                        _physicalStateObj.WriteSecureString(rec.newSecurePassword);
+                    }
+                    else
+                    {
+                        _physicalStateObj.WriteByteArray(encryptedChangePassword, encryptedChangePasswordLengthInBytes, 0);
+                    }
+                }
+
                 if (useFeatureExt)
                 {
                     if ((requestedFeatures & TdsEnums.FeatureExtension.SessionRecovery) != 0)
@@ -6318,6 +6364,7 @@ namespace System.Data.SqlClient
             }
 
             _physicalStateObj.WritePacket(TdsEnums.HARDFLUSH);
+            _physicalStateObj.ResetSecurePasswordsInformation();
             _physicalStateObj._pendingData = true;
             _physicalStateObj._messageStatus = 0;
         }// tdsLogin

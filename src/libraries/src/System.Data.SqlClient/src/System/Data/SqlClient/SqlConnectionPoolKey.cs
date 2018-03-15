@@ -15,14 +15,17 @@ namespace System.Data.SqlClient
     internal class SqlConnectionPoolKey : DbConnectionPoolKey
     {
         private int _hashValue;
+        private SqlCredential _credential;
 
-        internal SqlConnectionPoolKey(string connectionString) : base(connectionString)
+        internal SqlConnectionPoolKey(string connectionString, SqlCredential credential) : base(connectionString)
         {
+            _credential = credential;
             CalculateHashCode();
         }
 
         private SqlConnectionPoolKey(SqlConnectionPoolKey key) : base(key)
         {
+            _credential = key.Credential;
             CalculateHashCode();
         }
 
@@ -45,13 +48,14 @@ namespace System.Data.SqlClient
             }
         }
 
-
+        internal SqlCredential Credential => _credential;
 
         public override bool Equals(object obj)
         {
             SqlConnectionPoolKey key = obj as SqlConnectionPoolKey;
             return (key != null &&
-                ConnectionString == key.ConnectionString);
+                ConnectionString == key.ConnectionString &&
+                Credential == key.Credential);
         }
 
         public override int GetHashCode()
@@ -62,6 +66,14 @@ namespace System.Data.SqlClient
         private void CalculateHashCode()
         {
             _hashValue = base.GetHashCode();
+
+            if (_credential != null)
+            {
+                unchecked
+                {
+                    _hashValue = _hashValue * 17 + _credential.GetHashCode();
+                }
+            }
         }
     }
 }

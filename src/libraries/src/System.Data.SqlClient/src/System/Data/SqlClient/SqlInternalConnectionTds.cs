@@ -15,6 +15,7 @@ using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using System.Transactions;
+using System.Security;
 
 namespace System.Data.SqlClient
 {
@@ -104,6 +105,7 @@ namespace System.Data.SqlClient
         private readonly SqlConnectionPoolGroupProviderInfo _poolGroupProviderInfo; // will only be null when called for ChangePassword, or creating SSE User Instance
         private TdsParser _parser;
         private SqlLoginAck _loginAck;
+        private SqlCredential _credential;
 
         // Connection Resiliency
         private bool _sessionRecoveryRequested;
@@ -301,7 +303,10 @@ namespace System.Data.SqlClient
         internal SqlInternalConnectionTds(
                 DbConnectionPoolIdentity identity,
                 SqlConnectionString connectionOptions,
+                SqlCredential credential,
                 object providerInfo,
+                string newPassword,
+                SecureString newSecurePassword,
                 bool redirectedUserInstance,
                 SqlConnectionString userConnectionOptions = null, // NOTE: userConnectionOptions may be different to connectionOptions if the connection string has been expanded (see SqlConnectionString.Expand)
                 SessionData reconnectSessionData = null,
@@ -332,6 +337,10 @@ namespace System.Data.SqlClient
 
 
             _identity = identity;
+            Debug.Assert(newSecurePassword != null || newPassword != null, "cannot have both new secure change password and string based change password to be null");
+            Debug.Assert(credential == null || (string.IsNullOrEmpty(connectionOptions.UserID) && string.IsNullOrEmpty(connectionOptions.Password)), "cannot mix the new secure password system and the connection string based password");
+
+            Debug.Assert(credential == null || !connectionOptions.IntegratedSecurity, "Cannot use SqlCredential and Integrated Security");
 
             _poolGroupProviderInfo = (SqlConnectionPoolGroupProviderInfo)providerInfo;
             _fResetConnection = connectionOptions.ConnectionReset;
@@ -342,6 +351,7 @@ namespace System.Data.SqlClient
             }
 
             _timeoutErrorInternal = new SqlConnectionTimeoutErrorInternal();
+            _credential = credential;
 
             _parserLock.Wait(canReleaseFromAnyThread: false);
             ThreadHasParserLockForClose = true;   // In case of error, let ourselves know that we already own the parser lock
@@ -356,7 +366,8 @@ namespace System.Data.SqlClient
                 {
                     try
                     {
-                        OpenLoginEnlist(timeout, connectionOptions, redirectedUserInstance);
+                        OpenLoginEnlist(timeout, connectionOptions, credential, newPassword, newSecurePassword, redirectedUserInstance);
+
                         break;
                     }
                     catch (SqlException sqlex)
@@ -1053,7 +1064,7 @@ namespace System.Data.SqlClient
             _parser._physicalStateObj.SniContext = SniContext.Snix_Login;
         }
 
-        private void Login(ServerInfo server, TimeoutTimer timeout)
+        private void Login(ServerInfo server, TimeoutTimer timeout, string newPassword, SecureString newSecurePassword)
         {
             // create a new login record
             SqlLogin login = new SqlLogin();
@@ -1099,7 +1110,13 @@ namespace System.Data.SqlClient
             login.useReplication = ConnectionOptions.Replication;
             login.useSSPI = ConnectionOptions.IntegratedSecurity;
             login.packetSize = _currentPacketSize;
+            login.newPassword = newPassword;
             login.readOnlyIntent = ConnectionOptions.ApplicationIntent == ApplicationIntent.ReadOnly;
+            login.credential = _credential;
+            if (newSecurePassword != null)
+            {
+                login.newSecurePassword = newSecurePassword;
+            }
 
             TdsEnums.FeatureExtension requestedFeatures = TdsEnums.FeatureExtension.None;
             if (ConnectionOptions.ConnectRetryCount > 0)
@@ -1127,6 +1144,9 @@ namespace System.Data.SqlClient
 
         private void OpenLoginEnlist(TimeoutTimer timeout,
                                     SqlConnectionString connectionOptions,
+                                    SqlCredential credential,
+                                    string newPassword,
+                                    SecureString newSecurePassword,
                                     bool redirectedUserInstance)
         {
             bool useFailoverPartner; // should we use primary or secondary first
@@ -1160,8 +1180,11 @@ namespace System.Data.SqlClient
                                 useFailoverPartner,
                                 dataSource,
                                 failoverPartner,
+                                newPassword,
+                                newSecurePassword,
                                 redirectedUserInstance,
                                 connectionOptions,
+                                credential,
                                 timeout);
                 }
                 else
@@ -1169,8 +1192,11 @@ namespace System.Data.SqlClient
                     _timeoutErrorInternal.SetFailoverScenario(false); // not a failover scenario
                     LoginNoFailover(
                             dataSource,
+                            newPassword,
+                            newSecurePassword,
                             redirectedUserInstance,
                             connectionOptions,
+                            credential,
                             timeout);
                 }
                 _timeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.PostLogin);
@@ -1210,9 +1236,12 @@ namespace System.Data.SqlClient
         //           Changes to either one should be examined to see if they need to be reflected in the other
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         private void LoginNoFailover(ServerInfo serverInfo,
-                                bool redirectedUserInstance,
-                                    SqlConnectionString connectionOptions,
-                                TimeoutTimer timeout)
+                                     string newPassword,
+                                     SecureString newSecurePassword,
+                                     bool redirectedUserInstance,
+                                     SqlConnectionString connectionOptions,
+                                     SqlCredential credential,
+                                     TimeoutTimer timeout)
         {
             Debug.Assert(object.ReferenceEquals(connectionOptions, this.ConnectionOptions), "ConnectionOptions argument and property must be the same"); // consider removing the argument
             int routingAttempts = 0;
@@ -1273,8 +1302,10 @@ namespace System.Data.SqlClient
                 try
                 {
                     AttemptOneLogin(serverInfo,
+                                    newPassword,
+                                    newSecurePassword,
                                     !connectionOptions.MultiSubnetFailover,    // ignore timeout for SniOpen call unless MSF 
-                                        connectionOptions.MultiSubnetFailover ? intervalTimer : timeout);
+                                    connectionOptions.MultiSubnetFailover ? intervalTimer : timeout);
 
                     if (connectionOptions.MultiSubnetFailover && null != ServerProvidedFailOverPartner)
                     {
@@ -1353,9 +1384,12 @@ namespace System.Data.SqlClient
                                 true,   // start by using failover partner, since we already failed to connect to the primary
                                 serverInfo,
                                 ServerProvidedFailOverPartner,
-                            redirectedUserInstance,
+                                newPassword,
+                                newSecurePassword,
+                                redirectedUserInstance,
                                 connectionOptions,
-                            timeout);
+                                credential,
+                                timeout);
                     return; // LoginWithFailover successfully connected and handled entire connection setup
                 }
 
@@ -1395,9 +1429,12 @@ namespace System.Data.SqlClient
                 bool useFailoverHost,
                 ServerInfo primaryServerInfo,
                 string failoverHost,
-            bool redirectedUserInstance,
+                string newPassword,
+                SecureString newSecurePassword,
+                bool redirectedUserInstance,
                 SqlConnectionString connectionOptions,
-            TimeoutTimer timeout
+                SqlCredential credential,
+                TimeoutTimer timeout
             )
         {
             Debug.Assert(!connectionOptions.MultiSubnetFailover, "MultiSubnetFailover should not be set if failover partner is used");
@@ -1475,7 +1512,9 @@ namespace System.Data.SqlClient
                     // Attempt login.  Use timerInterval for attempt timeout unless infinite timeout was requested.
                     AttemptOneLogin(
                             currentServerInfo,
-                        false,          // Use timeout in SniOpen
+                            newPassword,
+                            newSecurePassword,
+                            false,          // Use timeout in SniOpen
                             intervalTimer,
                             withFailover: true
                             );
@@ -1561,10 +1600,13 @@ namespace System.Data.SqlClient
         }
 
         // Common code path for making one attempt to establish a connection and log in to server.
-        private void AttemptOneLogin(ServerInfo serverInfo,
+        private void AttemptOneLogin(
+                                ServerInfo serverInfo,
+                                string newPassword,
+                                SecureString newSecurePassword,
                                 bool ignoreSniOpenTimeout,
-                                    TimeoutTimer timeout,
-                                    bool withFailover = false)
+                                TimeoutTimer timeout,
+                                bool withFailover = false)
         {
             _routingInfo = null; // forget routing information 
 
@@ -1583,7 +1625,7 @@ namespace System.Data.SqlClient
             _timeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.LoginBegin);
 
             _parser._physicalStateObj.SniContext = SniContext.Snix_Login;
-            this.Login(serverInfo, timeout);
+            this.Login(serverInfo, timeout, newPassword, newSecurePassword);
 
             _timeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.ProcessConnectionAuth);
             _timeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.PostLogin);
