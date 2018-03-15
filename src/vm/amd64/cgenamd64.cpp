@@ -689,7 +689,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     return static_cast<INT32>(offset);
 }
 
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr)
+INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, bool emitJump)
 {
     CONTRACTL
     {
@@ -711,7 +711,14 @@ INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCO
             EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
         }
 
-        emitBackToBackJump((LPBYTE)jumpStubAddr, (LPVOID)target);
+        if (emitJump)
+        {
+            emitBackToBackJump((LPBYTE)jumpStubAddr, (LPVOID)target);
+        }
+        else
+        {
+            _ASSERTE(decodeBackToBackJump(jumpStubAddr) == target);
+        }
     }
 
     _ASSERTE(FitsInI4(offset));

@@ -28,10 +28,11 @@ public static class DynamicMethodJumpStubTests
         // framework libraries.
         ReserveMemoryAround(new Action(ExecutionContext.RestoreFlow).Method.MethodHandle);
 
-        for (int i = 0; i < 64; ++i)
+        var dynamicMethodDelegates = new Action[64];
+        for (int i = 0; i < dynamicMethodDelegates.Length; ++i)
         {
             DynamicMethod dynamicMethod = CreateDynamicMethod("DynMethod" + i);
-            Action dynamicMethodDelegate = (Action)dynamicMethod.CreateDelegate(typeof(Action));
+            dynamicMethodDelegates[i] = (Action)dynamicMethod.CreateDelegate(typeof(Action));
 
             // Before compiling the dynamic method, reserve memory around its current entry point, which should be its
             // precode. Then, when compiling the method, there would be a good chance that the code will be located far from
@@ -44,9 +45,30 @@ public static class DynamicMethodJumpStubTests
                     null,
                     dynamicMethod,
                     null));
-
-            dynamicMethodDelegate();
         }
+
+        // Call each dynamic method concurrently from several threads to validate jump stub usage
+        int threadCount = 64;
+        var barrier = new Barrier(threadCount);
+        ThreadStart threadStart = () =>
+        {
+            var dynamicMethodDelegatesLocal = dynamicMethodDelegates;
+            for (int i = 0; i < dynamicMethodDelegatesLocal.Length; ++i)
+            {
+                var dynamicMethodDelegate = dynamicMethodDelegatesLocal[i];
+                barrier.SignalAndWait();
+                dynamicMethodDelegate();
+            }
+        };
+        var threads = new Thread[threadCount];
+        for (int i = 0; i < threads.Length; ++i)
+        {
+            threads[i] = new Thread(threadStart);
+            threads[i].IsBackground = true;
+            threads[i].Start();
+        }
+        foreach (var t in threads)
+            t.Join();
 
         // This test does not release reserved pages because they may have been committed by other components on the system
     }
