@@ -128,24 +128,61 @@ namespace System.IO
 
         public static string GetTempPath()
         {
-            StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH);
-            uint r = Interop.Kernel32.GetTempPathW(Interop.Kernel32.MAX_PATH, sb);
-            if (r == 0)
+            Span<char> initialBuffer = stackalloc char[PathInternal.MaxShortPath];
+            var builder = new ValueStringBuilder(initialBuffer);
+
+            GetTempPath(ref builder);
+
+            string path = PathHelper.Normalize(ref builder);
+            builder.Dispose();
+            return path;
+        }
+
+        private static void GetTempPath(ref ValueStringBuilder builder)
+        {
+            uint result = 0;
+            while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
+            {
+                // Reported size is greater than the buffer size. Increase the capacity.
+                builder.EnsureCapacity(checked((int)result));
+            }
+
+            if (result == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
-            return GetFullPath(StringBuilderCache.GetStringAndRelease(sb));
+
+            builder.Length = (int)result;
         }
 
         // Returns a unique temporary file name, and creates a 0-byte file by that
         // name on disk.
         public static string GetTempFileName()
         {
-            string path = GetTempPath();
+            Span<char> initialTempPathBuffer = stackalloc char[PathInternal.MaxShortPath];
+            ValueStringBuilder tempPathBuilder = new ValueStringBuilder(initialTempPathBuffer);
 
-            StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH);
-            uint r = Interop.Kernel32.GetTempFileNameW(path, "tmp", 0, sb);
-            if (r == 0)
+            GetTempPath(ref tempPathBuilder);
+
+            Span<char> initialBuffer = stackalloc char[PathInternal.MaxShortPath];
+            var builder = new ValueStringBuilder(initialBuffer);
+
+            uint result = 0;
+            while ((result = Interop.Kernel32.GetTempFileNameW(
+                ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference())) > builder.Capacity)
+            {
+                // Reported size is greater than the buffer size. Increase the capacity.
+                builder.EnsureCapacity(checked((int)result));
+            }
+
+            tempPathBuilder.Dispose();
+
+            if (result == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
-            return StringBuilderCache.GetStringAndRelease(sb);
+
+            builder.Length = (int)result;
+
+            string path = PathHelper.Normalize(ref builder);
+            builder.Dispose();
+            return path;
         }
 
         // Tests if the given path contains a root. A path is considered rooted
