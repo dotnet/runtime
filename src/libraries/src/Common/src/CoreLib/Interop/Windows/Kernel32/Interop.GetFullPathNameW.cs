@@ -14,16 +14,17 @@ internal partial class Interop
         /// </summary>
         [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
 #if PROJECTN
-        internal static extern unsafe uint GetFullPathNameW(string path, uint numBufferChars, char* buffer, IntPtr mustBeZero);
+        internal static extern unsafe uint GetFullPathNameW(char* lpFileName, uint nBufferLength, char* lpBuffer, IntPtr lpFilePart);
 
         // Works around https://devdiv.visualstudio.com/web/wi.aspx?pcguid=011b8bdf-6d56-4f87-be0d-0092136884d9&id=575202
-        internal static unsafe uint GetFullPathNameW(string path, uint numBufferChars, ref char buffer, IntPtr mustBeZero)
+        internal static unsafe uint GetFullPathNameW(ref char lpFileName, uint nBufferLength, ref char lpBuffer, IntPtr lpFilePart)
         {
-            fixed (char* pBuffer = &buffer)
-                return GetFullPathNameW(path, numBufferChars, pBuffer, mustBeZero);
+            fixed (char* pBuffer = &lpBuffer)
+            fixed (char* pFileName = &lpFileName)
+                return GetFullPathNameW(pFileName, nBufferLength, pBuffer, mustBeZero);
         }
 #else
-        internal static extern uint GetFullPathNameW(string path, uint numBufferChars, ref char buffer, IntPtr mustBeZero);
+        internal static extern uint GetFullPathNameW(ref char lpFileName, uint nBufferLength, ref char lpBuffer, IntPtr lpFilePart);
 #endif
     }
 }
