@@ -246,7 +246,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), value);
+            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), value);
 
             ValidateResult(inArray, result, method);
         }
