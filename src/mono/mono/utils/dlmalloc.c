@@ -461,7 +461,9 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 #endif  /* _WIN32 */
 #endif  /* WIN32 */
 #ifdef WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #define HAVE_MMAP 1
 #define HAVE_MORECORE 0
@@ -1214,7 +1216,7 @@ extern void*     sbrk(ptrdiff_t);
 #      define _SC_PAGE_SIZE _SC_PAGESIZE
 #    endif
 #  endif
-#  ifdef _SC_PAGE_SIZE
+#  if defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
 #    define malloc_getpagesize sysconf(_SC_PAGE_SIZE)
 #  else
 #    if defined(BSD) || defined(DGUX) || defined(HAVE_GETPAGESIZE)

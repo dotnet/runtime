@@ -39,8 +39,10 @@ get_address_from_sockaddr (struct sockaddr *sa)
 	switch (sa->sa_family) {
 	case AF_INET:
 		return &((struct sockaddr_in*)sa)->sin_addr;
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
 	case AF_INET6:
 		return &((struct sockaddr_in6*)sa)->sin6_addr;
+#endif
 	}
 	return NULL;
 }
@@ -95,9 +97,11 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 		if (cur->family == PF_INET) {
 			cur->address_len = sizeof (struct in_addr);
 			cur->address.v4 = ((struct sockaddr_in*)res->ai_addr)->sin_addr;
+#ifdef HAVE_STRUCT_SOCKADDR_IN6			
 		} else if (cur->family == PF_INET6) {
 			cur->address_len = sizeof (struct in6_addr);
 			cur->address.v6 = ((struct sockaddr_in6*)res->ai_addr)->sin6_addr;
+#endif
 		} else {
 			g_warning ("Cannot handle address family %d", cur->family);
 			res = res->ai_next;

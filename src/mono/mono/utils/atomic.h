@@ -167,7 +167,7 @@ static inline void
 mono_atomic_store_i8 (volatile gint8 *dst, gint8 val)
 {
 #if (_MSC_VER >= 1600)
-	InterlockedExchange8 ((CHAR volatile *)dst, (CHAR)val);
+	_InterlockedExchange8 ((CHAR volatile *)dst, (CHAR)val);
 #else
 	*dst = val;
 	mono_memory_barrier ();

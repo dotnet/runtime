@@ -19,9 +19,9 @@ g_get_charset (G_CONST_RETURN char **charset)
 {
 	if (eg_my_charset == NULL) {
 		static char buf [14];
-		CPINFOEXA cp_info;
+		CPINFOEXW cp_info;
 
-		GetCPInfoExA (CP_ACP, 0, &cp_info);
+		GetCPInfoExW (CP_ACP, 0, &cp_info);
 		sprintf (buf, "CP%u", cp_info.CodePage);
 		eg_my_charset = buf;
 		is_utf8 = FALSE;

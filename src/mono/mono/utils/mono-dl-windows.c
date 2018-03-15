@@ -55,7 +55,11 @@ mono_dl_open_file (const char *file, int flags)
 #endif
 		guint32 last_error = 0;
 
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 		hModule = LoadLibrary (file_utf16);
+#else
+		hModule = LoadPackagedLibrary (file_utf16, NULL);
+#endif
 		if (!hModule)
 			last_error = GetLastError ();
 
@@ -68,7 +72,11 @@ mono_dl_open_file (const char *file, int flags)
 		if (!hModule)
 			SetLastError (last_error);
 	} else {
+#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 		hModule = GetModuleHandle (NULL);
+#else
+		g_error("Not supported");
+#endif
 	}
 	return hModule;
 }

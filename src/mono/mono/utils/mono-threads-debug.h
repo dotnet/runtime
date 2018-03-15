@@ -9,7 +9,7 @@
 #define MOSTLY_ASYNC_SAFE_PRINTF(...) do { \
 	char __buff[1024];	__buff [0] = '\0'; \
 	g_snprintf (__buff, sizeof (__buff), __VA_ARGS__);	\
-	write (1, __buff, (guint32)strlen (__buff));	\
+	g_write (1, __buff, (guint32)strlen (__buff));	\
 } while (0)
 
 #if 1

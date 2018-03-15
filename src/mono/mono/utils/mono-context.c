@@ -395,11 +395,24 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 #include <mono/arch/arm/arm-codegen.h>
 #include <mono/arch/arm/arm-vfp-codegen.h>
 
+#ifdef HOST_WIN32
+#include <windows.h>
+#endif
+
 void
 mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 {
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
+#elif defined(HOST_WIN32)
+	CONTEXT *context = (CONTEXT*)sigctx;
+
+	mctx->pc = context->Pc;
+	mctx->cpsr = context->Cpsr;
+	memcpy (&mctx->regs, &context->R0, sizeof (DWORD) * 16);
+	
+	/* Why are we only copying 16 registers?! There are 32! */
+	memcpy (&mctx->fregs, &context->D, sizeof (double) * 16);
 #else
 	arm_ucontext *my_uc = sigctx;
 
@@ -418,6 +431,15 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 {
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
+#elif defined(HOST_WIN32)
+	CONTEXT *context = (CONTEXT*)ctx;
+
+	context->Pc = mctx->pc;
+	context->Cpsr = mctx->cpsr;
+	memcpy (&context->R0, &mctx->regs, sizeof (DWORD) * 16);
+	
+	/* Why are we only copying 16 registers?! There are 32! */
+	memcpy (&context->D, &mctx->fregs, sizeof (double) * 16);
 #else
 	arm_ucontext *my_uc = ctx;
 

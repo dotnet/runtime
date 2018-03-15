@@ -32,7 +32,9 @@
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
+#ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
+#endif
 #endif
 #if defined(__HAIKU__)
 #include <os/kernel/OS.h>
@@ -519,7 +521,7 @@ get_user_hz (void)
 {
 	static int user_hz = 0;
 	if (user_hz == 0) {
-#ifdef _SC_CLK_TCK
+#if defined (_SC_CLK_TCK) && defined (HAVE_SYSCONF)
 		user_hz = sysconf (_SC_CLK_TCK);
 #endif
 		if (user_hz == 0)
@@ -778,7 +780,7 @@ mono_cpu_count (void)
  * [5] https://github.com/dotnet/coreclr/blob/7058273693db2555f127ce16e6b0c5b40fb04867/src/pal/src/misc/sysinfo.cpp#L148
  */
 
-#ifdef _SC_NPROCESSORS_CONF
+#if defined (_SC_NPROCESSORS_CONF) && defined (HAVE_SYSCONF)
 	{
 		int count = sysconf (_SC_NPROCESSORS_CONF);
 		if (count > 0)
@@ -795,7 +797,7 @@ mono_cpu_count (void)
 			return CPU_COUNT (&set);
 	}
 #endif
-#ifdef _SC_NPROCESSORS_ONLN
+#if defined (_SC_NPROCESSORS_ONLN) && defined (HAVE_SYSCONF)
 	{
 		int count = sysconf (_SC_NPROCESSORS_ONLN);
 		if (count > 0)
@@ -930,6 +932,7 @@ gint32
 mono_cpu_usage (MonoCpuUsageState *prev)
 {
 	gint32 cpu_usage = 0;
+#ifdef HAVE_GETRUSAGE
 	gint64 cpu_total_time;
 	gint64 cpu_busy_time;
 	struct rusage resource_usage;
@@ -957,7 +960,7 @@ mono_cpu_usage (MonoCpuUsageState *prev)
 
 	if (cpu_total_time > 0 && cpu_busy_time > 0)
 		cpu_usage = (gint32)(cpu_busy_time * 100 / cpu_total_time);
-
+#endif
 	return cpu_usage;
 }
 #endif /* !HOST_WIN32 */

@@ -36,6 +36,19 @@ typedef enum {
 
 #include <windows.h>
 
+/*
+* These APIs were added back in Windows SDK 14393. Let's redirect them to
+* Fls* APIs on older SDKs just like Windows 8.1 headers do
+*/
+#if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
+#if WINDOWS_SDK_BUILD_VERSION < 14393
+#define TlsAlloc() FlsAlloc(NULL)
+#define TlsGetValue FlsGetValue
+#define TlsSetValue FlsSetValue
+#define TlsFree FlsFree
+#endif
+#endif
+
 #define MonoNativeTlsKey DWORD
 #define mono_native_tls_alloc(key,destructor) ((*(key) = TlsAlloc ()) != TLS_OUT_OF_INDEXES && destructor == NULL)
 #define mono_native_tls_free TlsFree

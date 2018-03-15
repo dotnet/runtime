@@ -595,6 +595,9 @@
 /* Defined as strtok_s in eglib-config.hw */
 #define HAVE_STRTOK_R 1
 
+/* Define to 1 if you have the `access' function. */
+#define HAVE_ACCESS 1
+
 /* Have a working sigaltstack */
 /* #undef HAVE_WORKING_SIGALTSTACK */
 

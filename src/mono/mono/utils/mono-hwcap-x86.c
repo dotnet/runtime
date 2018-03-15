@@ -147,7 +147,7 @@ mono_hwcap_arch_init (void)
 		}
 	}
 
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_UNISTD_H) && defined(HAVE_ACCESS)
 	mono_hwcap_x86_is_xen = !access ("/proc/xen", F_OK);
 #endif
 }

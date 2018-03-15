@@ -2638,6 +2638,21 @@ if test x$host_win32 = xno; then
 	], [
 		AC_MSG_RESULT(no)
 	])
+	dnl **********************************
+	dnl *** Check for access ***
+	dnl **********************************
+	AC_MSG_CHECKING(for access)
+		AC_TRY_LINK([
+		#include <unistd.h>
+	], [
+		access(NULL,0);
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_ACCESS, 1, [Have access])
+	], [
+		AC_MSG_RESULT(no)
+	])
 			
 	dnl **********************************
 	dnl *** Checks for proclib         ***

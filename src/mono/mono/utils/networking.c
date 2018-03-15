@@ -17,8 +17,10 @@ mono_address_size_for_family (int family)
 	switch (family) {
 	case AF_INET:
 		return sizeof (struct in_addr);
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
 	case AF_INET6:
 		return sizeof (struct in6_addr);
+#endif
 	}
 	return 0;
 }
@@ -53,6 +55,7 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 #if HAVE_SOCKADDR_IN_SIN_LEN
 		sa->v4.sin_len = sizeof (*len);
 #endif
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
 	} else if (family == AF_INET6) {
 		*len = sizeof (struct sockaddr_in6);
 
@@ -61,6 +64,7 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 		sa->v6.sin6_port = htons (port);
 #if HAVE_SOCKADDR_IN6_SIN_LEN
 		sa->v6.sin6_len = sizeof (*len);
+#endif
 #endif
 	} else {
 		g_error ("Cannot handle address family %d", family);

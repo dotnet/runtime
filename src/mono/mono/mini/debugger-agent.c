@@ -1379,7 +1379,11 @@ socket_transport_connect (const char *address)
 				break;       /* Success */
 			
 			MONO_ENTER_GC_SAFE;
+#ifdef HOST_WIN32
+			closesocket (sfd);
+#else
 			close (sfd);
+#endif
 			MONO_EXIT_GC_SAFE;
 		}
 

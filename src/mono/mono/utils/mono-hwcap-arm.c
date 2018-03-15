@@ -94,6 +94,31 @@ mono_hwcap_arch_init (void)
 	}
 
 	/* TODO: Find a way to detect features like Thumb and VFP. */
+#elif defined (_WIN32)
+	/* From MSDN:	
+	 * Windows on ARM presumes that it is running on an ARMv7 architecture at all times. 
+	 * Floating-point support in the form of VFPv3-D32 or later must be present in hardware.
+	 * The VFP must support both single-precision and double-precision floating-point in hardware. 
+	 *
+	 * The Windows runtime does not support emulation of floating-point to enable running on non-VFP hardware.
+	 * Advanced SIMD Extensions (NEON) support—this includes both integer and floating-point operations—must also be present in hardware. 
+	 * No run-time support for emulation is provided.
+	 *
+	 * Integer divide support (UDIV/SDIV) is strongly recommended but not required.
+	 * Platforms that lack integer divide support may incur a performance penalty because
+	 * these operations have to be trapped and possibly patched.
+	 *
+	 * The instruction set for Windows on ARM is strictly limited to Thumb-2. 
+	 * All code executed on this platform is expected to start and remain in Thumb mode at all times. 
+	 */
+	mono_hwcap_arm_is_v5 = TRUE;
+	mono_hwcap_arm_is_v6 = TRUE;
+	mono_hwcap_arm_is_v7 = TRUE;
+	mono_hwcap_arm_has_vfp = TRUE;
+	mono_hwcap_arm_has_vfp3 = TRUE;
+	mono_hwcap_arm_has_vfp3_d16 = TRUE;
+	mono_hwcap_arm_has_thumb = TRUE;
+	mono_hwcap_arm_has_thumb2 = TRUE;
 #else
 	/* We can't use the auxiliary vector on Android due to
 	 * permissions, so fall back to /proc/cpuinfo. We also
