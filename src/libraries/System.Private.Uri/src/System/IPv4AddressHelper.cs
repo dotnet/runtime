@@ -195,7 +195,7 @@ namespace System
         {
             int numberBase = Decimal;
             char ch;
-            long[] parts = new long[4];
+            Span<long> parts = stackalloc long[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
 
