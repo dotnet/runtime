@@ -870,24 +870,20 @@ namespace System.Net.Security
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
 
-            StreamSizes streamSizes;
-            SslStreamPal.QueryContextStreamSizes(_securityContext, out streamSizes);
+            SslStreamPal.QueryContextStreamSizes(_securityContext, out StreamSizes streamSizes);
 
-            if (streamSizes != null)
+            try
             {
-                try
-                {
-                    _headerSize = streamSizes.Header;
-                    _trailerSize = streamSizes.Trailer;
-                    _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
+                _headerSize = streamSizes.Header;
+                _trailerSize = streamSizes.Trailer;
+                _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
 
-                    Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
-                }
-                catch (Exception e) when (!ExceptionCheck.IsFatal(e))
-                {
-                    NetEventSource.Fail(this, "StreamSizes out of range.");
-                    throw;
-                }
+                Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
+            }
+            catch (Exception e) when (!ExceptionCheck.IsFatal(e))
+            {
+                NetEventSource.Fail(this, "StreamSizes out of range.");
+                throw;
             }
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext, out _connectionInfo);
