@@ -978,12 +978,12 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
 //    call, arg, and info must be non-null.
 //
 // Notes:
-//    For System V systems with native struct passing (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined)
+//    For System V systems with native struct passing (i.e. UNIX_AMD64_ABI defined)
 //    this method allocates a single GT_PUTARG_REG for 1 eightbyte structs and a GT_FIELD_LIST of two GT_PUTARG_REGs
 //    for two eightbyte structs.
 //
 //    For STK passed structs the method generates GT_PUTARG_STK tree. For System V systems with native struct passing
-//    (i.e. FEATURE_UNIX_AMD64_STRUCT_PASSING defined) this method also sets the GC pointers count and the pointers
+//    (i.e. UNIX_AMD64_ABI defined) this method also sets the GC pointers count and the pointers
 //    layout object, so the codegen of the GT_PUTARG_STK could use this for optimizing copying to the stack by value.
 //    (using block copy primitives for non GC pointers and a single TARGET_POINTER_SIZE copy with recording GC info.)
 //
@@ -997,7 +997,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     bool     updateArgTable = true;
 
     bool isOnStack = true;
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     if (varTypeIsStruct(type))
     {
         isOnStack = !info->structDesc.passedInRegisters;
@@ -1006,9 +1006,9 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     {
         isOnStack = info->regNum == REG_STK;
     }
-#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else  // !UNIX_AMD64_ABI
     isOnStack = info->regNum == REG_STK;
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
 
 #ifdef _TARGET_ARMARCH_
     // Mark contained when we pass struct
@@ -1088,7 +1088,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
     {
         if (!isOnStack)
         {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
             if (info->isStruct)
             {
                 // The following code makes sure a register passed struct arg is moved to
@@ -1203,7 +1203,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
             }
             else
-#else // not defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#else // not defined(UNIX_AMD64_ABI)
 #if FEATURE_MULTIREG_ARGS
             if ((info->numRegs > 1) && (arg->OperGet() == GT_FIELD_LIST))
             {
@@ -1245,7 +1245,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
             }
             else
 #endif // FEATURE_MULTIREG_ARGS
-#endif // not defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // not defined(UNIX_AMD64_ABI)
             {
                 putArg = comp->gtNewPutArgReg(type, arg, info->regNum);
             }
