@@ -46,7 +46,6 @@ using System.ComponentModel;
 
 namespace System.Drawing
 {
-    [Serializable]
 #if !NETCORE
     [Editor ("System.Drawing.Design.BitmapEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
 #endif
@@ -85,11 +84,6 @@ namespace System.Drawing
             }
 
             nativeImage = InitFromStream(s);
-        }
-
-        private Bitmap(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
         }
         #endregion
 

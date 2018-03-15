@@ -10,7 +10,7 @@ namespace System.Drawing
     /// <summary>
     /// Translates colors to and from GDI+ <see cref='Color'/> objects.
     /// </summary>
-    public sealed class ColorTranslator
+    public static class ColorTranslator
     {
         private const int Win32RedShift = 0;
         private const int Win32GreenShift = 8;
