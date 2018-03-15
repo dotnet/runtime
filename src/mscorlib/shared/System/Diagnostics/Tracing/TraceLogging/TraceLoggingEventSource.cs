@@ -431,6 +431,13 @@ namespace System.Diagnostics.Tracing
             identity = nameInfo.identity;
             EventDescriptor descriptor = new EventDescriptor(identity, level, opcode, (long)keywords);
 
+#if FEATURE_PERFTRACING
+            IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, descriptor, eventTypes);
+            Debug.Assert(eventHandle != IntPtr.Zero);
+#else
+            IntPtr eventHandle = IntPtr.Zero;
+#endif
+
             var pinCount = eventTypes.pinCount;
             var scratch = stackalloc byte[eventTypes.scratchSize];
             var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
@@ -472,6 +479,7 @@ namespace System.Diagnostics.Tracing
                     this.WriteEventRaw(
                         eventName,
                         ref descriptor,
+                        eventHandle,
                         activityID,
                         childActivityID,
                         (int)(DataCollector.ThreadInstance.Finish() - descriptors),
@@ -538,6 +546,13 @@ namespace System.Diagnostics.Tracing
                     return;
                 }
 
+#if FEATURE_PERFTRACING
+                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, descriptor, eventTypes);
+                    Debug.Assert(eventHandle != IntPtr.Zero);
+#else
+                    IntPtr eventHandle = IntPtr.Zero;
+#endif
+
                 // We make a descriptor for each EventData, and because we morph strings to counted strings
                 // we may have 2 for each arg, so we allocate enough for this.  
                 var descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
@@ -570,6 +585,7 @@ namespace System.Diagnostics.Tracing
                     this.WriteEventRaw(
                         eventName,
                         ref descriptor,
+                        eventHandle,
                         activityID,
                         childActivityID,
                         numDescrs,
@@ -599,6 +615,13 @@ namespace System.Diagnostics.Tracing
                         return;
                     }
 
+#if FEATURE_PERFTRACING
+                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, descriptor, eventTypes);
+                    Debug.Assert(eventHandle != IntPtr.Zero);
+#else
+                    IntPtr eventHandle = IntPtr.Zero;
+#endif
+
 #if FEATURE_MANAGED_ETW
                     var pinCount = eventTypes.pinCount;
                     var scratch = stackalloc byte[eventTypes.scratchSize];
@@ -621,7 +644,7 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
 
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
-                        System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
+                    System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                         EventOpcode opcode = (EventOpcode)descriptor.Opcode;
 
@@ -661,6 +684,7 @@ namespace System.Diagnostics.Tracing
                             this.WriteEventRaw(
                                 eventName,
                                 ref descriptor,
+                                eventHandle,
                                 pActivityId,
                                 pRelatedActivityId,
                                 (int)(DataCollector.ThreadInstance.Finish() - descriptors),
