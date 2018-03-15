@@ -27,7 +27,18 @@ namespace System
             {
                 byte* numbers = stackalloc byte[NumberOfLabels];
                 isLoopback = Parse(str, numbers, start, end);
-                return numbers[0] + "." + numbers[1] + "." + numbers[2] + "." + numbers[3];
+
+                Span<char> stackSpace = stackalloc char[NumberOfLabels * 3 + 3];
+                int totalChars = 0, charsWritten;
+                for (int i = 0; i < 3; i++)
+                {
+                    numbers[i].TryFormat(stackSpace.Slice(totalChars), out charsWritten);
+                    int periodPos = totalChars + charsWritten;
+                    stackSpace[periodPos] = '.';
+                    totalChars = periodPos + 1;
+                }
+                numbers[3].TryFormat(stackSpace.Slice(totalChars), out charsWritten);
+                return new string(stackSpace.Slice(0, totalChars + charsWritten));
             }
         }
 
