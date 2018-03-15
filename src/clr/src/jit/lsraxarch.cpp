@@ -111,8 +111,13 @@ void LinearScan::BuildNode(GenTree* tree)
             BuildStoreLoc(tree->AsLclVarCommon());
             break;
 
-        case GT_LIST:
         case GT_FIELD_LIST:
+            // These should always be contained. We don't correctly allocate or
+            // generate code for a non-contained GT_FIELD_LIST.
+            noway_assert(!"Non-contained GT_FIELD_LIST");
+            break;
+
+        case GT_LIST:
         case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
