@@ -1101,7 +1101,8 @@ CorUnix::InternalSetThreadPriority(
     PAL_ERROR palError = NO_ERROR;
     CPalThread *pTargetThread = NULL;
     IPalObject *pobjThread = NULL;
-    
+
+    int st;
     int policy;
     struct sched_param schedParam;
     int max_priority;
@@ -1237,14 +1238,11 @@ CorUnix::InternalSetThreadPriority(
           iNewPriority, schedParam.sched_priority);
 
     /* Finally, set the new priority into place */
-    if (pthread_setschedparam(
-            pTargetThread->GetPThreadSelf(),
-            policy,
-            &schedParam
-            ) != 0)
+    st = pthread_setschedparam(pTargetThread->GetPThreadSelf(), policy, &schedParam);
+    if (st != 0)
     {
 #if SET_SCHEDPARAM_NEEDS_PRIVS
-        if (EPERM == errno)
+        if (EPERM == st)
         {
             // UNIXTODO: Should log a warning to the event log
             TRACE("Caller does not have OS privileges to call pthread_setschedparam\n");
@@ -1253,7 +1251,7 @@ CorUnix::InternalSetThreadPriority(
         }
 #endif
         
-        ASSERT("Unable to set thread priority (errno %d)\n", errno);
+        ASSERT("Unable to set thread priority to %d (error %d)\n", (int)posix_priority, st);
         palError = ERROR_INTERNAL_ERROR;
         goto InternalSetThreadPriorityExit;
     }
