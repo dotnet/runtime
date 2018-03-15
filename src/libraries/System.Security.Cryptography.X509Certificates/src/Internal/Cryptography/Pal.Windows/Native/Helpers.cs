@@ -5,12 +5,8 @@
 using System;
 using System.Text;
 using System.Diagnostics;
-using System.Globalization;
-using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography.Pal;
 
 namespace Internal.Cryptography.Pal.Native
 {
@@ -30,41 +26,44 @@ namespace Internal.Cryptography.Pal.Native
                 return SafeLocalAllocHandle.InvalidHandle;
             }
 
-            // Copy the oid strings to a local list to prevent a security race condition where
+            // Copy the oid strings to a local array to prevent a security race condition where
             // the OidCollection or individual oids can be modified by another thread and
             // potentially cause a buffer overflow
-            List<byte[]> oidStrings = new List<byte[]>();
-            foreach (Oid oid in oids)
+            var oidStrings = new string[oids.Count];
+            for (int i = 0; i < oidStrings.Length; i++)
             {
-                byte[] oidString = oid.ValueAsAscii();
-                oidStrings.Add(oidString);
+                oidStrings[i] = oids[i].Value;
             }
 
-            numOids = oidStrings.Count;
             unsafe
             {
-                int allocationSize = checked(numOids * sizeof(void*));
-                foreach (byte[] oidString in oidStrings)
+                int allocationSize = checked(oidStrings.Length * sizeof(void*));
+                foreach (string oidString in oidStrings)
                 {
                     checked
                     {
-                        allocationSize += oidString.Length + 1;
+                        allocationSize += oidString.Length + 1; // Encoding.ASCII doesn't have a fallback, so it's fine to use String.Length
                     }
                 }
 
                 SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.Create(allocationSize);
                 byte** pOidPointers = (byte**)(safeLocalAllocHandle.DangerousGetHandle());
-                byte* pOidContents = (byte*)(pOidPointers + numOids);
+                byte* pOidContents = (byte*)(pOidPointers + oidStrings.Length);
 
-                for (int i = 0; i < numOids; i++)
+                for (int i = 0; i < oidStrings.Length; i++)
                 {
+                    string oidString = oidStrings[i];
+
                     pOidPointers[i] = pOidContents;
-                    byte[] oidString = oidStrings[i];
-                    Marshal.Copy(oidString, 0, new IntPtr(pOidContents), oidString.Length);
+
+                    int bytesWritten = Encoding.ASCII.GetBytes(oidString, new Span<byte>(pOidContents, oidString.Length));
+                    Debug.Assert(bytesWritten == oidString.Length);
+
                     pOidContents[oidString.Length] = 0;
                     pOidContents += oidString.Length + 1;
                 }
 
+                numOids = oidStrings.Length;
                 return safeLocalAllocHandle;
             }
         }
