@@ -214,6 +214,9 @@
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
+  <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
+    <value>The data to be decrypted exceeds the maximum for this modulus of {0} bytes.</value>
+  </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
   </data>

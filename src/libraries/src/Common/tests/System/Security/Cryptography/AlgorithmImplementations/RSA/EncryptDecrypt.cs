@@ -346,6 +346,32 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public void RsaPkcsEncryptMaxSize()
+        {
+            RSAParameters rsaParameters = TestData.RSA2048Params;
+
+            using (RSA rsa = RSAFactory.Create(rsaParameters))
+            {
+                RSAEncryptionPadding paddingMode1 = RSAEncryptionPadding.Pkcs1;
+                // The overhead required is 8 + 3 => 11.
+
+                const int Pkcs1Overhead = 11;
+                int maxSize = rsaParameters.Modulus.Length - Pkcs1Overhead;
+
+                byte[] data = new byte[maxSize];
+                byte[] encrypted = Encrypt(rsa, data, paddingMode1);
+                byte[] decrypted = Decrypt(rsa, encrypted, paddingMode1);
+
+                Assert.Equal(data.ByteArrayToHex(), decrypted.ByteArrayToHex());
+
+                data = new byte[maxSize + 1];
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Encrypt(rsa, data, paddingMode1));
+            }
+        }
+
+        [Fact]
         public void RsaOaepMaxSize()
         {
             RSAParameters rsaParameters = TestData.RSA2048Params;
@@ -441,6 +467,31 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public void RsaDecryptPkcs1WrongDataLength()
+        {
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] data = TestData.HelloBytes;
+
+                byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.Pkcs1);
+                Array.Resize(ref encrypted, encrypted.Length + 1);
+
+                // Baseline/exempt a NetFx difference for RSACng
+                if (!PlatformDetection.IsFullFramework ||
+                    rsa.GetType().Assembly.GetName().Name != "System.Core")
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.Pkcs1));
+                }
+
+                Array.Resize(ref encrypted, encrypted.Length - 2);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.Pkcs1));
+            }
+        }
+
+        [Fact]
         public void RsaDecryptOaepWrongDataLength()
         {
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
@@ -464,12 +515,12 @@ namespace System.Security.Cryptography.Rsa.Tests
                     Array.Resize(ref encrypted, encrypted.Length + 1);
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));
 
                     Array.Resize(ref encrypted, encrypted.Length - 2);
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));
                 }
             }
         }

@@ -181,6 +181,9 @@
   <data name="Cryptography_OAEP_Decryption_Failed" xml:space="preserve">
     <value>Error occurred while decoding OAEP padding.</value>
   </data>
+  <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
+    <value>The data to be decrypted exceeds the maximum for this modulus of {0} bytes.</value>
+  </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
   </data>

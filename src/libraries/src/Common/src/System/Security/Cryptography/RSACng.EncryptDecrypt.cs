@@ -19,6 +19,8 @@ namespace System.Security.Cryptography
 #endif
     public sealed partial class RSACng : RSA
     {
+        private const int Pkcs1PaddingOverhead = 11;
+
         /// <summary>Encrypts data using the public key.</summary>
         public override unsafe byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) =>
             EncryptOrDecrypt(data, padding, encrypt: true);
@@ -48,13 +50,28 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
+            int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
+
+            if (!encrypt && data.Length > modulusSizeInBytes)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+            }
+
+            if (encrypt &&
+                padding.Mode == RSAEncryptionPaddingMode.Pkcs1 &&
+                data.Length > modulusSizeInBytes - Pkcs1PaddingOverhead)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_Encryption_MessageTooLong, modulusSizeInBytes - Pkcs1PaddingOverhead));
+            }
+
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
                 if (encrypt && data.Length == 0)
                 {
-                    int bufSize = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
-                    byte[] rented = ArrayPool<byte>.Shared.Rent(bufSize);
-                    Span<byte> paddedMessage = new Span<byte>(rented, 0, bufSize);
+                    byte[] rented = ArrayPool<byte>.Shared.Rent(modulusSizeInBytes);
+                    Span<byte> paddedMessage = new Span<byte>(rented, 0, modulusSizeInBytes);
 
                     try
                     {
@@ -122,13 +139,28 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
+            int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
+
+            if (!encrypt && data.Length > modulusSizeInBytes)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+            }
+
+            if (encrypt &&
+                padding.Mode == RSAEncryptionPaddingMode.Pkcs1 &&
+                data.Length > modulusSizeInBytes - Pkcs1PaddingOverhead)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_Encryption_MessageTooLong, modulusSizeInBytes - Pkcs1PaddingOverhead));
+            }
+
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
                 if (encrypt && data.Length == 0)
                 {
-                    int bufSize = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
-                    byte[] rented = ArrayPool<byte>.Shared.Rent(bufSize);
-                    Span<byte> paddedMessage = new Span<byte>(rented, 0, bufSize);
+                    byte[] rented = ArrayPool<byte>.Shared.Rent(modulusSizeInBytes);
+                    Span<byte> paddedMessage = new Span<byte>(rented, 0, modulusSizeInBytes);
 
                     try
                     {
