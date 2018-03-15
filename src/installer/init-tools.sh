@@ -120,13 +120,18 @@ if [ ! -e $__DOTNET_PATH ]; then
     __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.tar.gz"
 
     install_dotnet_cli() {
-        echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> "$__init_tools_log"
-        rm -rf -- "$__DOTNET_PATH/*"
-        # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
-        if command -v curl > /dev/null; then
-            curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+        if [[ "$DotNetBootstrapCliTarPath" = "" ]]; then
+            echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'"
+            rm -rf -- "$__DOTNET_PATH/*"
+            # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
+            if command -v curl > /dev/null; then
+                curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            else
+                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            fi
         else
-            wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            echo "Copying '$DotNetBootstrapCliTarPath' to '$__DOTNET_PATH/dotnet.tar'"
+            cp $DotNetBootstrapCliTarPath $__DOTNET_PATH/dotnet.tar
         fi
         cd $__DOTNET_PATH
         tar -xf $__DOTNET_PATH/dotnet.tar
