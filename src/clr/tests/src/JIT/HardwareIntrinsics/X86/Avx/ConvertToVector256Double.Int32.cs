@@ -260,7 +260,7 @@ namespace JIT.HardwareIntrinsics.X86
             Int32[] inArray = new Int32[Op1ElementCount];
             Double[] outArray = new Double[RetElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), firstOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), RetVectorSize);
 
             ValidateResult(inArray, outArray, method);

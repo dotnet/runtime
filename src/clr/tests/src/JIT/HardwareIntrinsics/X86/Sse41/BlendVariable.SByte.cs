@@ -299,9 +299,9 @@ namespace JIT.HardwareIntrinsics.X86
             SByte[] inArray3 = new SByte[Op3ElementCount];
             SByte[] outArray = new SByte[RetElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), firstOp);
-            Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), secondOp);
-            Unsafe.Write(Unsafe.AsPointer(ref inArray3[0]), thirdOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), firstOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), secondOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray3[0]), thirdOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
