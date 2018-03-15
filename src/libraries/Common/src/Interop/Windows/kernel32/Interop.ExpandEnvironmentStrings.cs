@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal partial class Interop
 {
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern int ExpandEnvironmentStringsW(string lpSrc, [Out] StringBuilder lpDst, int nSize);
+        internal static extern uint ExpandEnvironmentStringsW(string lpSrc, ref char lpDst, uint nSize);
     }
 }

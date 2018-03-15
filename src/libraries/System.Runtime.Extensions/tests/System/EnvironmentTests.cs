@@ -149,25 +149,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public void UserName_Valid()
-        {
-            Assert.False(string.IsNullOrWhiteSpace(Environment.UserName));
-        }
-
-        [Fact]
-        public void UserDomainName_Valid()
-        {
-            Assert.False(string.IsNullOrWhiteSpace(Environment.UserDomainName));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
-        public void UserDomainName_Unix_MatchesMachineName()
-        {
-            Assert.Equal(Environment.MachineName, Environment.UserDomainName);
-        }
-
-        [Fact]
         public void Version_MatchesFixedVersion()
         {
             Assert.Equal(new Version(4, 0, 30319, 42000), Environment.Version);

@@ -15,41 +15,24 @@ namespace System
         {
             get
             {
-                StringBuilder sb = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH + 1);
-                if (Interop.Kernel32.GetCurrentDirectory(sb.Capacity, sb) == 0)
+                Span<char> initialBuffer = stackalloc char[Interop.Kernel32.MAX_PATH];
+                var builder = new ValueStringBuilder(initialBuffer);
+
+                uint length;
+                while ((length = Interop.Kernel32.GetCurrentDirectory((uint)builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
                 {
-                    StringBuilderCache.Release(sb);
+                    builder.EnsureCapacity((int)length);
+                }
+
+                if (length == 0)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
-                }
-                string currentDirectory = sb.ToString();
 
-                // Note that if we have somehow put our command prompt into short
-                // file name mode (i.e. by running edlin or a DOS grep, etc), then
-                // this will return a short file name.
-                if (currentDirectory.IndexOf('~') >= 0)
-                {
-                    int r = Interop.Kernel32.GetLongPathName(currentDirectory, sb, sb.Capacity);
-                    if (r == 0 || r >= Interop.Kernel32.MAX_PATH)
-                    {
-                        int errorCode = r >= Interop.Kernel32.MAX_PATH ?
-                            Interop.Errors.ERROR_FILENAME_EXCED_RANGE :
-                            Marshal.GetLastWin32Error();
+                builder.Length = (int)length;
 
-                        if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND &&
-                            errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND &&
-                            errorCode != Interop.Errors.ERROR_INVALID_FUNCTION &&
-                            errorCode != Interop.Errors.ERROR_ACCESS_DENIED)
-                        {
-                            StringBuilderCache.Release(sb);
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode);
-                        }
-                    }
-
-                    currentDirectory = sb.ToString();
-                }
-
-                StringBuilderCache.Release(sb);
-                return currentDirectory;
+                // If we have a tilde in the path, make an attempt to expand 8.3 filenames
+                return builder.AsSpan().IndexOf('~') >= 0
+                    ? PathHelper.TryExpandShortFileName(ref builder, null)
+                    : builder.ToString();
             }
             set
             {
@@ -71,8 +54,7 @@ namespace System
         {
             get
             {
-                var info = default(Interop.Kernel32.SYSTEM_INFO);
-                Interop.Kernel32.GetSystemInfo(out info);
+                Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
                 return info.dwPageSize;
             }
         }
@@ -81,42 +63,25 @@ namespace System
 
         private static string ExpandEnvironmentVariablesCore(string name)
         {
-            int currentSize = 100;
-            StringBuilder result = StringBuilderCache.Acquire(currentSize); // A somewhat reasonable default size
+            Span<char> initialBuffer = stackalloc char[128];
+            var builder = new ValueStringBuilder(initialBuffer);
 
-            result.Length = 0;
-            int size = Interop.Kernel32.ExpandEnvironmentStringsW(name, result, currentSize);
-            if (size == 0)
+            uint length;
+            while ((length = Interop.Kernel32.ExpandEnvironmentStringsW(name, ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
             {
-                StringBuilderCache.Release(result);
+                builder.EnsureCapacity((int)length);
+            }
+
+            if (length == 0)
                 Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-            }
 
-            while (size > currentSize)
-            {
-                currentSize = size;
-                result.Length = 0;
-                result.Capacity = currentSize;
-
-                size = Interop.Kernel32.ExpandEnvironmentStringsW(name, result, currentSize);
-                if (size == 0)
-                {
-                    StringBuilderCache.Release(result);
-                    Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());
-                }
-            }
-
-            return StringBuilderCache.GetStringAndRelease(result);
+            // length includes the null terminator
+            builder.Length = (int)length - 1;
+            return builder.ToString();
         }
 
         private static bool Is64BitOperatingSystemWhen32BitProcess
-        {
-            get
-            {
-                bool isWow64;
-                return Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out isWow64) && isWow64;
-            }
-        }
+            => Interop.Kernel32.IsWow64Process(Interop.Kernel32.GetCurrentProcess(), out bool isWow64) && isWow64;
 
         public static string MachineName
         {
@@ -149,46 +114,22 @@ namespace System
         {
             get
             {
-                Span<char> buffer = stackalloc char[260];
-                int requiredSize = Interop.Kernel32.GetSystemDirectoryW(buffer);
+                // Normally this will be C:\Windows\System32
+                Span<char> initialBuffer = stackalloc char[32];
+                var builder = new ValueStringBuilder(initialBuffer);
 
-                if (requiredSize > buffer.Length)
+                uint length;
+                while ((length = Interop.Kernel32.GetSystemDirectoryW(ref builder.GetPinnableReference(), (uint)builder.Capacity)) > builder.Capacity)
                 {
-                    buffer = new char[requiredSize];
-                    requiredSize = Interop.Kernel32.GetSystemDirectoryW(buffer);
+                    builder.EnsureCapacity((int)length);
                 }
 
-                if (requiredSize == 0)
-                {
+                if (length == 0)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
-                }
 
-                return new string(buffer.Slice(0, requiredSize));
+                builder.Length = (int)length;
+                return builder.ToString();
             }
         }
-
-        public static string UserName
-        {
-            get
-            {
-                string username = "Windows User";
-                GetUserName(ref username);
-                return username;
-            }
-        }
-
-        static partial void GetUserName(ref string username);
-
-        public static string UserDomainName
-        {
-            get
-            {
-                string userDomainName = "Windows Domain";
-                GetDomainName(ref userDomainName);
-                return userDomainName;
-            }
-        }
-
-        static partial void GetDomainName(ref string userDomainName);
     }
 }

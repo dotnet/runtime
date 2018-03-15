@@ -3,14 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal partial class Interop
 {
     internal partial class Secur32
     {
         [DllImport(Libraries.Secur32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern byte GetUserNameExW(int NameFormat, [Out] StringBuilder lpNameBuffer, ref uint lpnSize);
+        internal static extern BOOLEAN GetUserNameExW(int NameFormat, ref char lpNameBuffer, ref uint lpnSize);
 
         internal const int NameSamCompatible = 2;
     }

@@ -2,60 +2,108 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System
 {
     public static partial class Environment
     {
-        static partial void GetUserName(ref string username)
+        public static string UserName
         {
-            // Use GetUserNameExW, as GetUserNameW isn't available on all platforms, e.g. Win7
-            var domainName = new StringBuilder(1024);
-            uint domainNameLen = (uint)domainName.Capacity;
-            if (Interop.Secur32.GetUserNameExW(Interop.Secur32.NameSamCompatible, domainName, ref domainNameLen) == 1)
+            get
             {
-                string samName = domainName.ToString();
-                int index = samName.IndexOf('\\');
+                // 40 should be enough as we're asking for the SAM compatible name (DOMAIN\User).
+                // The max length should be 15 (domain) + 1 (separator) + 20 (name) + null. If for
+                // some reason it isn't, we'll grow the buffer.
+
+                // https://support.microsoft.com/en-us/help/909264/naming-conventions-in-active-directory-for-computers-domains-sites-and
+                // https://msdn.microsoft.com/en-us/library/ms679635.aspx
+
+                Span<char> initialBuffer = stackalloc char[40];
+                var builder = new ValueStringBuilder(initialBuffer);
+                GetUserName(ref builder);
+
+                ReadOnlySpan<char> name = builder.AsSpan();
+                int index = name.IndexOf('\\');
                 if (index != -1)
                 {
-                    username = samName.Substring(index + 1);
-                    return;
+                    // In the form of DOMAIN\User, cut off DOMAIN\
+                    name = name.Slice(index + 1);
                 }
-            }
 
-            username = string.Empty;
+                return name.ToString();
+            }
         }
 
-        static partial void GetDomainName(ref string userDomainName)
+        private static void GetUserName(ref ValueStringBuilder builder)
         {
-            var domainName = new StringBuilder(1024);
-            uint domainNameLen = (uint)domainName.Capacity;
-            if (Interop.Secur32.GetUserNameExW(Interop.Secur32.NameSamCompatible, domainName, ref domainNameLen) == 1)
+            uint size = 0;
+            while (Interop.Secur32.GetUserNameExW(Interop.Secur32.NameSamCompatible, ref builder.GetPinnableReference(), ref size) == Interop.BOOLEAN.FALSE)
             {
-                string samName = domainName.ToString();
-                int index = samName.IndexOf('\\');
-                if (index != -1)
+                if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_MORE_DATA)
                 {
-                    userDomainName = samName.Substring(0, index);
+                    builder.EnsureCapacity(checked((int)size));
+                }
+                else
+                {
+                    builder.Length = 0;
                     return;
                 }
             }
-            domainNameLen = (uint)domainName.Capacity;
 
-            byte[] sid = new byte[1024];
-            int sidLen = sid.Length;
-            int peUse;
-            if (!Interop.Advapi32.LookupAccountNameW(null, UserName, sid, ref sidLen, domainName, ref domainNameLen, out peUse))
+            builder.Length = (int)size;
+        }
+
+        public static string UserDomainName
+        {
+            get
             {
-                throw new InvalidOperationException(Win32Marshal.GetExceptionForLastWin32Error().Message);
-            }
+                // See the comment in UserName
+                Span<char> initialBuffer = stackalloc char[40];
+                var builder = new ValueStringBuilder(initialBuffer);
+                GetUserName(ref builder);
 
-            userDomainName = domainName.ToString();
+                ReadOnlySpan<char> name = builder.AsSpan();
+                int index = name.IndexOf('\\');
+                if (index != -1)
+                {
+                    // In the form of DOMAIN\User, cut off \User and return
+                    return name.Slice(0, index).ToString();
+                }
+
+                // In theory we should never get use out of LookupAccountNameW as the above API should
+                // always return what we need. Can't find any clues in the historical sources, however.
+
+                // Domain names aren't typically long.
+                // https://support.microsoft.com/en-us/help/909264/naming-conventions-in-active-directory-for-computers-domains-sites-and
+                Span<char> initialDomainNameBuffer = stackalloc char[64];
+                var domainBuilder = new ValueStringBuilder(initialBuffer);
+                uint length = (uint)domainBuilder.Capacity;
+
+                // This API will fail to return the domain name without a buffer for the SID.
+                // SIDs are never over 68 bytes long.
+                Span<byte> sid = stackalloc byte[68];
+                uint sidLength = 68;
+
+                while (!Interop.Advapi32.LookupAccountNameW(null, ref builder.GetPinnableReference(), ref MemoryMarshal.GetReference(sid),
+                    ref sidLength, ref domainBuilder.GetPinnableReference(), ref length, out _))
+                {
+                    int error = Marshal.GetLastWin32Error();
+
+                    // The docs don't call this out clearly, but experimenting shows that the error returned is the following.
+                    if (error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                    {
+                        throw new InvalidOperationException(Win32Marshal.GetMessage(error));
+                    }
+
+                    domainBuilder.EnsureCapacity((int)length);
+                }
+
+                domainBuilder.Length = (int)length;
+                return domainBuilder.ToString();
+            }
         }
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
@@ -224,8 +272,7 @@ namespace System
         {
             Guid folderId = new Guid(folderGuid);
 
-            string path;
-            int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out path);
+            int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out string path);
             if (hr != 0) // Not S_OK
             {
                 return string.Empty;

@@ -22,5 +22,28 @@ namespace System.Tests
             // Highly unlikely anyone is using domain with this name
             Assert.NotEqual("Windows Domain", Environment.UserDomainName);
         }
+
+        [Fact]
+        public void UserDomainName_Valid()
+        {
+            string name = Environment.UserDomainName;
+            Assert.False(string.IsNullOrWhiteSpace(name));
+            Assert.Equal(-1, name.IndexOf('\0'));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UserDomainName_MatchesMachineName_Unix()
+        {
+            Assert.Equal(Environment.MachineName, Environment.UserDomainName);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void UserDomainName_MatchesEnvironment_Windows()
+        {
+            Assert.Equal(Environment.GetEnvironmentVariable("USERDOMAIN"), Environment.UserDomainName);
+        }
     }
 }
