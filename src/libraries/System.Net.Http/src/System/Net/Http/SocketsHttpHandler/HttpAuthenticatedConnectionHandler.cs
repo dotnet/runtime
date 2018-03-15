@@ -18,7 +18,7 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return _poolManager.SendAsync(request, true, cancellationToken);
+            return _poolManager.SendAsync(request, doRequestAuth:true, cancellationToken);
         }
 
         protected override void Dispose(bool disposing)

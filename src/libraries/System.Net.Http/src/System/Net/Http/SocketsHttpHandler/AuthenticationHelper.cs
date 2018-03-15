@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -79,25 +81,19 @@ namespace System.Net.Http
 
         private static bool TryGetAuthenticationChallenge(HttpResponseMessage response, bool isProxyAuth, Uri authUri, ICredentials credentials, out AuthenticationChallenge challenge)
         {
-            challenge = default;
-
             if (!IsAuthenticationChallenge(response, isProxyAuth))
             {
+                challenge = default;
                 return false;
             }
-
-            HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues = GetResponseAuthenticationHeaderValues(response, isProxyAuth);
 
             // Try to get a valid challenge for the schemes we support, in priority order.
-            if (!TryGetValidAuthenticationChallengeForScheme(NegotiateScheme, AuthenticationType.Negotiate, authUri, credentials, authenticationHeaderValues, out challenge) &&
-                !TryGetValidAuthenticationChallengeForScheme(NtlmScheme, AuthenticationType.Ntlm, authUri, credentials, authenticationHeaderValues, out challenge) &&
-                !TryGetValidAuthenticationChallengeForScheme(DigestScheme, AuthenticationType.Digest, authUri, credentials, authenticationHeaderValues, out challenge) &&
-                !TryGetValidAuthenticationChallengeForScheme(BasicScheme, AuthenticationType.Basic, authUri, credentials, authenticationHeaderValues, out challenge))
-            {
-                return false;
-            }
-
-            return true;
+            HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues = GetResponseAuthenticationHeaderValues(response, isProxyAuth);
+            return
+                TryGetValidAuthenticationChallengeForScheme(NegotiateScheme, AuthenticationType.Negotiate, authUri, credentials, authenticationHeaderValues, out challenge) ||
+                TryGetValidAuthenticationChallengeForScheme(NtlmScheme, AuthenticationType.Ntlm, authUri, credentials, authenticationHeaderValues, out challenge) ||
+                TryGetValidAuthenticationChallengeForScheme(DigestScheme, AuthenticationType.Digest, authUri, credentials, authenticationHeaderValues, out challenge) ||
+                TryGetValidAuthenticationChallengeForScheme(BasicScheme, AuthenticationType.Basic, authUri, credentials, authenticationHeaderValues, out challenge);
         }
 
         private static bool TryGetRepeatedChallenge(HttpResponseMessage response, string scheme, bool isProxyAuth, out string challengeData)
@@ -147,7 +143,13 @@ namespace System.Net.Http
 
         private static void SetBasicAuthToken(HttpRequestMessage request, NetworkCredential credential, bool isProxyAuth)
         {
-            SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(BasicScheme, GetBasicTokenForCredential(credential)), isProxyAuth);
+            string authString = !string.IsNullOrEmpty(credential.Domain) ?
+                credential.Domain + "\\" + credential.UserName + ":" + credential.Password :
+                credential.UserName + ":" + credential.Password;
+
+            string base64AuthString = Convert.ToBase64String(Encoding.UTF8.GetBytes(authString));
+
+            SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(BasicScheme, base64AuthString), isProxyAuth);
         }
 
         private static async Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, NetworkCredential credential, DigestResponse digestResponse, bool isProxyAuth)
@@ -174,12 +176,28 @@ namespace System.Net.Http
 
         private static async Task<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
+            // If preauth is enabled and this isn't proxy auth, try to get a basic credential from the
+            // preauth credentials cache, and if successful, set an auth header for it onto the request.
+            // Currently we only support preauth for Basic.
+            bool performedBasicPreauth = false;
             if (preAuthenticate)
             {
-                NetworkCredential credential = credentials.GetCredential(authUri, BasicScheme);
+                Debug.Assert(pool.PreAuthCredentials != null);
+                NetworkCredential credential;
+                lock (pool.PreAuthCredentials) // TODO #28045: Get rid of this lock.
+                {
+                    // Just look for basic credentials.  If in the future we support preauth
+                    // for other schemes, this will need to search in order of precedence.
+                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NegotiateScheme) == null);
+                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NtlmScheme) == null);
+                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, DigestScheme) == null);
+                    credential = pool.PreAuthCredentials.GetCredential(authUri, BasicScheme);
+                }
+
                 if (credential != null)
                 {
                     SetBasicAuthToken(request, credential, isProxyAuth);
+                    performedBasicPreauth = true;
                 }
             }
 
@@ -187,36 +205,63 @@ namespace System.Net.Http
 
             if (TryGetAuthenticationChallenge(response, isProxyAuth, authUri, credentials, out AuthenticationChallenge challenge))
             {
-                if (challenge.AuthenticationType == AuthenticationType.Digest)
+                switch (challenge.AuthenticationType)
                 {
-                    var digestResponse = new DigestResponse(challenge.ChallengeData);
-                    if (await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
-                    {
-                        response.Dispose();
-                        response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
-
-                        // Retry in case of nonce timeout in server.
-                        if (TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out string challengeData))
+                    case AuthenticationType.Digest:
+                        var digestResponse = new DigestResponse(challenge.ChallengeData);
+                        if (await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
                         {
-                            digestResponse = new DigestResponse(challengeData);
-                            if (IsServerNonceStale(digestResponse) &&
-                                await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
+                            response.Dispose();
+                            response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+
+                            // Retry in case of nonce timeout in server.
+                            if (TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out string challengeData))
                             {
-                                response.Dispose();
-                                response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+                                digestResponse = new DigestResponse(challengeData);
+                                if (IsServerNonceStale(digestResponse) &&
+                                    await TrySetDigestAuthToken(request, challenge.Credential, digestResponse, isProxyAuth).ConfigureAwait(false))
+                                {
+                                    response.Dispose();
+                                    response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
+                                }
                             }
                         }
-                    }
-                }
-                else if (challenge.AuthenticationType == AuthenticationType.Basic)
-                {
-                    if (!preAuthenticate)
-                    {
-                        SetBasicAuthToken(request, challenge.Credential, isProxyAuth);
+                        break;
+
+                    case AuthenticationType.Basic:
+                        if (performedBasicPreauth)
+                        {
+                            break;
+                        }
 
                         response.Dispose();
+                        SetBasicAuthToken(request, challenge.Credential, isProxyAuth);
                         response = await InnerSendAsync(request, isProxyAuth, doRequestAuth, pool, cancellationToken).ConfigureAwait(false);
-                    }
+
+                        if (preAuthenticate)
+                        {
+                            switch (response.StatusCode)
+                            {
+                                case HttpStatusCode.ProxyAuthenticationRequired:
+                                case HttpStatusCode.Unauthorized:
+                                    break;
+
+                                default:
+                                    lock (pool.PreAuthCredentials) // TODO #28045: Get rid of this lock.
+                                    {
+                                        try
+                                        {
+                                            pool.PreAuthCredentials.Add(authUri, BasicScheme, challenge.Credential);
+                                        }
+                                        catch (ArgumentException)
+                                        {
+                                            // The credential already existed.
+                                        }
+                                    }
+                                    break;
+                            }
+                        }
+                        break;
                 }
             }
 
@@ -225,13 +270,12 @@ namespace System.Net.Http
 
         public static Task<HttpResponseMessage> SendWithProxyAuthAsync(HttpRequestMessage request, Uri proxyUri, ICredentials proxyCredentials, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            return SendWithAuthAsync(request, proxyUri, proxyCredentials, false, true, doRequestAuth, pool, cancellationToken);
+            return SendWithAuthAsync(request, proxyUri, proxyCredentials, preAuthenticate:false, isProxyAuth:true, doRequestAuth, pool, cancellationToken);
         }
 
         public static Task<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            return SendWithAuthAsync(request, request.RequestUri, credentials, preAuthenticate, false, true, pool, cancellationToken);
+            return SendWithAuthAsync(request, request.RequestUri, credentials, preAuthenticate, isProxyAuth:false, doRequestAuth:true, pool, cancellationToken);
         }
     }
 }
-
