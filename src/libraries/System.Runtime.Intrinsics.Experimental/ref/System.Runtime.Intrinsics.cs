@@ -35,6 +35,16 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         public static Vector128<byte> MixColumns(Vector128<byte> value) { throw null; }
         public static Vector128<byte> InverseMixColumns(Vector128<byte> value) { throw null; }
     }
+    public static class Base
+    {
+        public static bool IsSupported { get { throw null; } }
+        public static int LeadingSignCount(int value) { throw null; }
+        public static int LeadingSignCount(long value) { throw null; }
+        public static int LeadingZeroCount(int value) { throw null; }
+        public static int LeadingZeroCount(uint value) { throw null; }
+        public static int LeadingZeroCount(long value) { throw null; }
+        public static int LeadingZeroCount(ulong value) { throw null; }
+    }
     public static class Sha1
     {
         public static bool IsSupported { get { throw null; } }
