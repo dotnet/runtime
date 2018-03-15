@@ -1950,7 +1950,7 @@ void LinearScan::insertZeroInitRefPositions()
     }
 }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
 //------------------------------------------------------------------------
 // unixAmd64UpdateRegStateForArg: Sets the register state for an argument of type STRUCT for System V systems.
 //
@@ -1996,7 +1996,7 @@ void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
     }
 }
 
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
 
 //------------------------------------------------------------------------
 // updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
@@ -2019,7 +2019,7 @@ void LinearScan::unixAmd64UpdateRegStateForArg(LclVarDsc* argDsc)
 //
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
     // For System V AMD64 calls the argDsc can have 2 registers (for structs.)
     // Handle them here.
     if (varTypeIsStruct(argDsc))
@@ -2027,7 +2027,7 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
         unixAmd64UpdateRegStateForArg(argDsc);
     }
     else
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(UNIX_AMD64_ABI)
     {
         RegState* intRegState   = &compiler->codeGen->intRegState;
         RegState* floatRegState = &compiler->codeGen->floatRegState;

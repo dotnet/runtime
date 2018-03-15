@@ -1065,12 +1065,12 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
         return false;
     }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     return varTypeIsStruct(treeNode);
-#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else  // !UNIX_AMD64_ABI
     assert(!varTypeIsStruct(treeNode));
     return false;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 }
 
 //------------------------------------------------------------------------
@@ -1089,7 +1089,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     assert(treeNode->OperGet() == GT_RETURN);
     GenTree* op1 = treeNode->gtGetOp1();
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     if (op1->OperGet() == GT_LCL_VAR)
     {
         GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
@@ -1963,7 +1963,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 {
     assert(treeNode->OperGet() == GT_STORE_LCL_VAR);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
     // Structs of size >=9 and <=16 are returned in two return registers on x64 Unix.
     assert(varTypeIsStruct(treeNode));
 
@@ -2121,9 +2121,9 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
     }
 
     varDsc->lvRegNum            = REG_STK;
-#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING && !_TARGET_X86_
+#else  // !UNIX_AMD64_ABI && !_TARGET_X86_
     assert(!"Unreached");
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING && !_TARGET_X86_
+#endif // !UNIX_AMD64_ABI && !_TARGET_X86_
 }
 
 //------------------------------------------------------------------------
@@ -3208,7 +3208,7 @@ void CodeGen::genStructPutArgRepMovs(GenTreePutArgStk* putArgNode)
 // must be cleared to zeroes. The native compiler doesn't clear the upper bits
 // and there is no way to know if the caller is native or not. So, the upper
 // 32 bits of Vector argument on stack are always cleared to zero.
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
 void CodeGen::genClearStackVec3ArgUpperBits()
 {
 #ifdef DEBUG
@@ -3252,7 +3252,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
         }
     }
 }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING) && defined(FEATURE_SIMD)
+#endif // defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 // Generate code for CpObj nodes wich copy structs that have interleaved
@@ -4972,7 +4972,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             continue;
         }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
         // Deal with multi register passed struct args.
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
@@ -5009,7 +5009,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
         }
         else
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
         {
             regNumber argReg = curArgTabEntry->regNum;
             genConsumeReg(argNode);
@@ -5033,7 +5033,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // FEATURE_VARARG
     }
 
-#if defined(_TARGET_X86_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(_TARGET_X86_) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
     // for each putarg_stk:
     ssize_t  stackArgBytes = 0;
@@ -5065,7 +5065,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
         args = args->gtOp.gtOp2;
     }
-#endif // defined(_TARGET_X86_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // defined(_TARGET_X86_) || defined(UNIX_AMD64_ABI)
 
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
@@ -5623,7 +5623,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             continue;
         }
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
             CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
@@ -5669,7 +5669,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             }
         }
         else
-#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#endif // !defined(UNIX_AMD64_ABI)
         {
             // Register argument
             noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
@@ -7442,12 +7442,12 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTree* treeNode)
         LclVarDsc* varDsc = &(compiler->lvaTable[baseVarNum]);
         assert(varDsc != nullptr);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
         assert(!varDsc->lvIsRegArg && varDsc->lvArgReg == REG_STK);
-#else  // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#else  // !UNIX_AMD64_ABI
         // On Windows this assert is always true. The first argument will always be in REG_ARG_0 or REG_FLTARG_0.
         assert(varDsc->lvIsRegArg && (varDsc->lvArgReg == REG_ARG_0 || varDsc->lvArgReg == REG_FLTARG_0));
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
 #endif // !DEBUG
     }
     else
@@ -7890,7 +7890,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     {
         unsigned baseVarNum = getBaseVarForPutArgStk(putArgStk);
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifdef UNIX_AMD64_ABI
 
         if (varTypeIsStruct(targetType))
         {
@@ -7900,7 +7900,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
             m_stkArgVarNum = BAD_VAR_NUM;
             return;
         }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // UNIX_AMD64_ABI
 
         noway_assert(targetType != TYP_STRUCT);
 
@@ -7947,9 +7947,9 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
-#ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
+#ifndef UNIX_AMD64_ABI
     assert(targetType != TYP_STRUCT);
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#endif // !UNIX_AMD64_ABI
 
     GenTree* op1 = tree->gtOp1;
     genConsumeReg(op1);
