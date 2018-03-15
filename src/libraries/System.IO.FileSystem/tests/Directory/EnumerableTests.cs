@@ -40,7 +40,7 @@ namespace System.IO.Tests
             DirectoryInfo subDirectory1 = rootDirectory.CreateSubdirectory("\u00A0");
             DirectoryInfo subDirectory2 = subDirectory1.CreateSubdirectory(GetTestFileName());
 
-            Assert.Equal(new string[] { subDirectory1.FullName, subDirectory2.FullName }, Directory.EnumerateDirectories(rootDirectory.FullName, string.Empty, SearchOption.AllDirectories));
+            FSAssert.EqualWhenOrdered(new string[] { subDirectory1.FullName, subDirectory2.FullName }, Directory.EnumerateDirectories(rootDirectory.FullName, string.Empty, SearchOption.AllDirectories));
         }
 
         class ThreadSafeRepro
