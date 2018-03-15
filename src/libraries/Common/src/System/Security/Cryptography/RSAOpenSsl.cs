@@ -154,6 +154,12 @@ namespace System.Security.Cryptography
 
             int rsaSize = Interop.Crypto.RsaSize(key);
 
+            if (data.Length > rsaSize)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_Padding_DecDataTooBig, rsaSize));
+            }
+
             if (destination.Length < rsaSize)
             {
                 bytesWritten = 0;
