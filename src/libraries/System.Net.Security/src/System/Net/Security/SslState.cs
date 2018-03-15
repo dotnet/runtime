@@ -77,12 +77,29 @@ namespace System.Net.Security
             _innerStream = innerStream;
         }
 
+        /// <summary>Set as the _exception when the instance is disposed.</summary>
+        private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream)));
+
+        private void ThrowIfExceptional()
+        {
+            ExceptionDispatchInfo e = _exception;
+            if (e != null)
+            {
+                // If the stored exception just indicates disposal, throw a new ODE rather than the stored one,
+                // so as to not continually build onto the shared exception's stack.
+                if (ReferenceEquals(e, s_disposedSentinel))
+                {
+                    throw new ObjectDisposedException(nameof(SslStream));
+                }
+
+                // Throw the stored exception.
+                e.Throw();
+            }
+        }
+
         internal void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
-            if (_exception != null)
-            {
-                _exception.Throw();
-            }
+            ThrowIfExceptional();
 
             if (Context != null && Context.IsValidContext)
             {
@@ -118,10 +135,7 @@ namespace System.Net.Security
 
         internal void ValidateCreateContext(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (_exception != null)
-            {
-                _exception.Throw();
-            }
+            ThrowIfExceptional();
 
             if (Context != null && Context.IsValidContext)
             {
@@ -401,7 +415,7 @@ namespace System.Net.Security
             }
         }
 
-        private ExceptionDispatchInfo SetException(Exception e)
+        private void SetException(Exception e)
         {
             Debug.Assert(e != null, $"Expected non-null Exception to be passed to {nameof(SetException)}");
 
@@ -410,12 +424,7 @@ namespace System.Net.Security
                 _exception = ExceptionDispatchInfo.Capture(e);
             }
 
-            if (_exception != null && Context != null)
-            {
-                Context.Close();
-            }
-
-            return _exception;
+            Context?.Close();
         }
 
         private bool HandshakeCompleted
@@ -436,10 +445,7 @@ namespace System.Net.Security
 
         internal void CheckThrow(bool authSuccessCheck, bool shutdownCheck = false)
         {
-            if (_exception != null)
-            {
-                _exception.Throw();
-            }
+            ThrowIfExceptional();
 
             if (authSuccessCheck && !IsAuthenticated)
             {
@@ -467,7 +473,7 @@ namespace System.Net.Security
         //
         internal void Close()
         {
-            _exception = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream)));
+            _exception = s_disposedSentinel;
             Context?.Close();
             _secureStream?.Dispose();
         }
@@ -666,14 +672,12 @@ namespace System.Net.Security
                 _Framing = Framing.Unknown;
                 _handshakeCompleted = false;
 
-                if (SetException(e).SourceException == e)
+                SetException(e);
+                if (_exception.SourceException != e)
                 {
-                    throw;
+                   ThrowIfExceptional();
                 }
-                else
-                {
-                    _exception.Throw();
-                }
+                throw;
             }
             finally
             {
@@ -732,7 +736,8 @@ namespace System.Net.Security
                 _Framing = Framing.Unknown;
                 _handshakeCompleted = false;
 
-                SetException(e).Throw();
+                SetException(e);
+                ThrowIfExceptional();
             }
         }
 
