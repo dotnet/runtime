@@ -198,6 +198,15 @@ namespace System.Security.Cryptography
 
                 if (padding == RSAEncryptionPadding.Pkcs1 && data.Length > 0)
                 {
+                    const int Pkcs1PaddingOverhead = 11;
+                    int maxAllowed = rsaSize - Pkcs1PaddingOverhead;
+
+                    if (data.Length > maxAllowed)
+                    {
+                        throw new CryptographicException(
+                            SR.Format(SR.Cryptography_Encryption_MessageTooLong, maxAllowed));
+                    }
+
                     return Interop.AppleCrypto.TryRsaEncrypt(
                         GetKeys().PublicKey,
                         data,
@@ -268,6 +277,14 @@ namespace System.Security.Cryptography
 
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
                 {
+                    int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
+
+                    if (data.Length > modulusSizeInBytes)
+                    {
+                        throw new CryptographicException(
+                            SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+                    }
+
                     return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
                 }
 
@@ -319,21 +336,30 @@ namespace System.Security.Cryptography
             {
                 Debug.Assert(privateKey != null);
 
+                if (padding.Mode != RSAEncryptionPaddingMode.Pkcs1 &&
+                    padding.Mode != RSAEncryptionPaddingMode.Oaep)
+                {
+                    throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
+                }
+
+                int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
+
+                if (data.Length > modulusSizeInBytes)
+                {
+                    throw new CryptographicException(
+                        SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+                }
+
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ||
                     padding == RSAEncryptionPadding.OaepSHA1)
                 {
                     return Interop.AppleCrypto.TryRsaDecrypt(privateKey, data, destination, padding, out bytesWritten);
                 }
 
-                if (padding.Mode != RSAEncryptionPaddingMode.Oaep)
-                {
-                    throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-                }
-
+                Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
 
-                int bytesRequired = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
-                byte[] rented = ArrayPool<byte>.Shared.Rent(bytesRequired);
+                byte[] rented = ArrayPool<byte>.Shared.Rent(modulusSizeInBytes);
                 Span<byte> unpaddedData = Span<byte>.Empty;
 
                 try
@@ -344,7 +370,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
 
-                    Debug.Assert(bytesRequired == paddedSize);
+                    Debug.Assert(modulusSizeInBytes == paddedSize);
                     unpaddedData = new Span<byte>(rented, 0, paddedSize);
                     return processor.DepadOaep(unpaddedData, destination, out bytesWritten);
                 }
