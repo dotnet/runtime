@@ -318,8 +318,10 @@ SIZE_T Precode::SizeOfTemporaryEntryPoints(PrecodeType t, bool preallocateJumpSt
         if (preallocateJumpStubs)
         {
             // For dynamic methods, space for jump stubs is allocated along with the precodes as part of the temporary entry
-            // points block. The first jump stub begins immediately after the PTR_MethodDesc.
-            size += count * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+            // points block. The first jump stub begins immediately after the PTR_MethodDesc. Aside from a jump stub per
+            // precode, an additional shared precode fixup jump stub is also allocated (see
+            // GetDynamicMethodPrecodeFixupJumpStub()).
+            size += ((SIZE_T)count + 1) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
         }
 #else // !FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
         _ASSERTE(!preallocateJumpStubs);
@@ -571,11 +573,31 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
 #ifdef HAS_FIXUP_PRECODE_CHUNKS
     if (t == PRECODE_FIXUP)
     {
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        PCODE precodeFixupJumpStub = NULL;
+        if (preallocateJumpStubs)
+        {
+            // Emit the jump for the precode fixup jump stub now. This jump stub immediately follows the MethodDesc (see
+            // GetDynamicMethodPrecodeFixupJumpStub()).
+            precodeFixupJumpStub = temporaryEntryPoints + count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
+#ifndef CROSSGEN_COMPILE
+            emitBackToBackJump((LPBYTE)precodeFixupJumpStub, (LPVOID)GetEEFuncEntryPoint(PrecodeFixupThunk));
+#endif // !CROSSGEN_COMPILE
+        }
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+
         TADDR entryPoint = temporaryEntryPoints;
         MethodDesc * pMD = pChunk->GetFirstMethodDesc();
         for (int i = 0; i < count; i++)
         {
             ((FixupPrecode *)entryPoint)->Init(pMD, pLoaderAllocator, pMD->GetMethodDescIndex(), (count - 1) - i);
+
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+            _ASSERTE(
+                !preallocateJumpStubs ||
+                !pMD->IsLCGMethod() ||
+                ((FixupPrecode *)entryPoint)->GetDynamicMethodPrecodeFixupJumpStub() == precodeFixupJumpStub);
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
 
             _ASSERTE((Precode *)entryPoint == GetPrecodeForTemporaryEntryPoint(temporaryEntryPoints, i));
             entryPoint += sizeof(FixupPrecode);
