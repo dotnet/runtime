@@ -126,7 +126,6 @@
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Basic.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
@@ -634,8 +633,6 @@
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Common\System\Threading\Tasks\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
