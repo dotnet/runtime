@@ -21,7 +21,7 @@ namespace System.Diagnostics.Tracing
     /// </typeparam>
     internal sealed class InvokeTypeInfo : TraceLoggingTypeInfo
     {
-        private readonly PropertyAnalysis[] properties;
+        internal readonly PropertyAnalysis[] properties;
 
         public InvokeTypeInfo(
             Type type,
