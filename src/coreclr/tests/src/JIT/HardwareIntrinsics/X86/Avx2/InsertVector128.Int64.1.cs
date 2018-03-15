@@ -287,8 +287,8 @@ namespace JIT.HardwareIntrinsics.X86
             Int64[] inArray2 = new Int64[Op2ElementCount];
             Int64[] outArray = new Int64[RetElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
-            Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int64, byte>(ref inArray1[0]), left);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int64, byte>(ref inArray2[0]), right);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
 
             ValidateResult(inArray1, inArray2, outArray, method);

@@ -276,8 +276,8 @@ namespace JIT.HardwareIntrinsics.X86
             Int32[] inArray1 = new Int32[Op1ElementCount];
             Int32[] inArray2 = new Int32[Op2ElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
-            Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray1[0]), left);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray2[0]), right);
 
             ValidateResult(inArray1, inArray2, result, method);
         }

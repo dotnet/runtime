@@ -246,7 +246,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Int16[] inArray = new Int16[Op1ElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray[0]), value);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int16, byte>(ref inArray[0]), value);
 
             ValidateResult(inArray, result, method);
         }

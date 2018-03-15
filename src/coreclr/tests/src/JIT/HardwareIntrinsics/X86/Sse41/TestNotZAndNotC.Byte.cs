@@ -276,8 +276,8 @@ namespace JIT.HardwareIntrinsics.X86
             Byte[] inArray1 = new Byte[Op1ElementCount];
             Byte[] inArray2 = new Byte[Op2ElementCount];
 
-            Unsafe.Write(Unsafe.AsPointer(ref inArray1[0]), left);
-            Unsafe.Write(Unsafe.AsPointer(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Byte, byte>(ref inArray1[0]), left);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Byte, byte>(ref inArray2[0]), right);
 
             ValidateResult(inArray1, inArray2, result, method);
         }
