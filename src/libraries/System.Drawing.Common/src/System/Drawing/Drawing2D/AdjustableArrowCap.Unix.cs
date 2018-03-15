@@ -8,7 +8,7 @@ namespace System.Drawing.Drawing2D
 {
     public sealed partial class AdjustableArrowCap : CustomLineCap
     {
-        public override object Clone()
+        internal override object CoreClone()
         {
             IntPtr clonedCap;
             int status = SafeNativeMethods.Gdip.GdipCloneCustomLineCap(new HandleRef(this, nativeCap), out clonedCap);

@@ -40,12 +40,11 @@ using System.ComponentModel;
 
 namespace System.Drawing
 {
-    [Serializable]
 #if !NETCORE
     [Editor ("System.Drawing.Design.FontEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
     [TypeConverter (typeof (FontConverter))]
 #endif
-    public sealed class Font : MarshalByRefObject, ISerializable, ICloneable, IDisposable
+    public sealed partial class Font : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
         private IntPtr fontObject = IntPtr.Zero;
         private string systemFontName;
@@ -77,29 +76,6 @@ namespace System.Drawing
                 throw new ArgumentException(string.Format("Style {0} isn't supported by font {1}.", style.ToString(), familyName));
 
             SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        private Font(SerializationInfo info, StreamingContext context)
-        {
-            string name;
-            float size;
-            FontStyle style;
-            GraphicsUnit unit;
-
-            name = (string)info.GetValue("Name", typeof(string));
-            size = (float)info.GetValue("Size", typeof(float));
-            style = (FontStyle)info.GetValue("Style", typeof(FontStyle));
-            unit = (GraphicsUnit)info.GetValue("Unit", typeof(GraphicsUnit));
-
-            CreateFont(name, size, style, unit, DefaultCharSet, false);
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            si.AddValue("Name", Name);
-            si.AddValue("Size", Size);
-            si.AddValue("Style", Style);
-            si.AddValue("Unit", Unit);
         }
 
         ~Font()
