@@ -6997,6 +6997,7 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 		|| (cmethod->wrapper_type && cmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		|| call_opcode == CEE_CALLI
 		|| ((virtual_ || call_opcode == CEE_CALLVIRT) && !cfg->backend->have_op_tail_call_membase)
+		|| vtable_arg // FIXME
 		|| ((vtable_arg || cfg->gshared) && !cfg->backend->have_op_tail_call)
 		|| !mono_arch_tail_call_supported (cfg, mono_method_signature (method), mono_method_signature (cmethod)))
 		return FALSE;
@@ -7010,7 +7011,6 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 #if 0
 	if (!mono_debug_count ())
 		return FALSE;
-	}
 #endif
 
 	return TRUE;

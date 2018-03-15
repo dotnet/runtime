@@ -998,6 +998,8 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # threads-init.exe: runs out of system threads
 # dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/coreclr/issues/15353)
 # tailcall-rgctxb.exe seems like it would but it does not, needs debugging
+# tailcall-mrgctx.exe   temporarily disabled
+# tailcall-rgctxa.exe   temporarily disabled
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
@@ -1017,6 +1019,8 @@ KNOWN_FAILING_TESTS = \
 	tail1.exe \
 	taili1.exe \
 	vtail1.exe \
+	tailcall-mrgctx.exe \
+	tailcall-rgctxa.exe \
 	tailcall-rgctxb.exe
 
 DISABLED_TESTS = \
