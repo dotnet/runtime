@@ -6,14 +6,14 @@ using Xunit;
 
 namespace System.SpanTests
 {
-    public static partial class ReadOnlySpanTests
+    public static partial class SpanTests
     {
         [Fact]
         public static void ZeroLengthStartsWith_Char()
         {
             var a = new char[3];
 
-            var span = new ReadOnlySpan<char>(a);
+            var span = new Span<char>(a);
             var slice = new ReadOnlySpan<char>(a, 2, 0);
             bool b = span.StartsWith<char>(slice);
             Assert.True(b);
@@ -23,7 +23,7 @@ namespace System.SpanTests
         public static void SameSpanStartsWith_Char()
         {
             char[] a = { '4', '5', '6' };
-            var span = new ReadOnlySpan<char>(a);
+            var span = new Span<char>(a);
             bool b = span.StartsWith<char>(span);
             Assert.True(b);
         }
@@ -32,7 +32,7 @@ namespace System.SpanTests
         public static void LengthMismatchStartsWith_Char()
         {
             char[] a = { '4', '5', '6' };
-            var span = new ReadOnlySpan<char>(a, 0, 2);
+            var span = new Span<char>(a, 0, 2);
             var slice = new ReadOnlySpan<char>(a, 0, 3);
             bool b = span.StartsWith<char>(slice);
             Assert.False(b);
@@ -42,7 +42,7 @@ namespace System.SpanTests
         public static void StartsWithMatch_Char()
         {
             char[] a = { '4', '5', '6' };
-            var span = new ReadOnlySpan<char>(a, 0, 3);
+            var span = new Span<char>(a, 0, 3);
             var slice = new ReadOnlySpan<char>(a, 0, 2);
             bool b = span.StartsWith<char>(slice);
             Assert.True(b);
@@ -75,7 +75,7 @@ namespace System.SpanTests
 
                     second[mismatchIndex] = (char)(second[mismatchIndex] + 1);
 
-                    var firstSpan = new ReadOnlySpan<char>(first);
+                    var firstSpan = new Span<char>(first);
                     var secondSpan = new ReadOnlySpan<char>(second);
                     bool b = firstSpan.StartsWith<char>(secondSpan);
                     Assert.False(b);
@@ -94,7 +94,7 @@ namespace System.SpanTests
                 var second = new char[length + 2];
                 second[0] = 'a';
                 second[length + 1] = 'a';
-                var span1 = new ReadOnlySpan<char>(first, 1, length);
+                var span1 = new Span<char>(first, 1, length);
                 var span2 = new ReadOnlySpan<char>(second, 1, length);
                 bool b = span1.StartsWith<char>(span2);
                 Assert.True(b);
