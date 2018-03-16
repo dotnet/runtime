@@ -167,6 +167,23 @@ void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
     }
 }
 
+pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl)
+{
+    int pos = path.find(match);
+    if (pos == pal::string_t::npos)
+    {
+        return path;
+    }
+
+    pal::string_t out = path;
+    do
+    {
+        out[pos] = repl;
+    } while ((pos = out.find(match, pos)) != pal::string_t::npos);
+
+    return out;
+}
+
 const pal::char_t* get_arch()
 {
 #if _TARGET_AMD64_
@@ -183,7 +200,7 @@ const pal::char_t* get_arch()
 }
 
 pal::string_t get_last_known_arg(
-    const std::unordered_map<pal::string_t, std::vector<pal::string_t>>& opts,
+    const opt_map_t& opts,
     const pal::string_t& opt_key,
     const pal::string_t& de_fault)
 {
@@ -201,7 +218,7 @@ bool parse_known_args(
     const std::vector<host_option>& known_opts,
     // Although multimap would provide this functionality the order of kv, values are
     // not preserved in C++ < C++0x
-    std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
+    opt_map_t* opts,
     int* num_args)
 {
     int arg_i = *num_args;
@@ -329,8 +346,27 @@ bool get_path_from_argv(pal::string_t *path)
     // the wrong location when filename is ends up being found in %PATH% and not the current directory.
     if (path->find(DIR_SEPARATOR) != pal::string_t::npos)
     {
-        return (pal::realpath(path) && pal::file_exists(*path));
+        return pal::realpath(path);
     }
 
     return false;
+}
+
+size_t index_of_non_numeric(const pal::string_t& str, unsigned i)
+{
+    return str.find_first_not_of(_X("0123456789"), i);
+}
+
+bool try_stou(const pal::string_t& str, unsigned* num)
+{
+    if (str.empty())
+    {
+        return false;
+    }
+    if (index_of_non_numeric(str, 0) != pal::string_t::npos)
+    {
+        return false;
+    }
+    *num = (unsigned)std::stoul(str);
+    return true;
 }

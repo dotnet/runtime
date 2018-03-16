@@ -15,7 +15,7 @@
 
 hostpolicy_init_t g_init;
 
-int run(const arguments_t& args)
+int run(const arguments_t& args, pal::string_t* out_host_command_result = nullptr)
 {
     // Load the deps resolver
     deps_resolver_t resolver(g_init, args);
@@ -27,19 +27,31 @@ int run(const arguments_t& args)
         return StatusCode::ResolverInitFailure;
     }
 
-    // Setup breadcrumbs
-    pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
-    pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
-
-    // Always insert the hostpolicy that the code is running on.
-    std::unordered_set<pal::string_t> breadcrumbs;
-    breadcrumbs.insert(policy_name);
-    breadcrumbs.insert(policy_name + _X(",") + policy_version);
-
+    // Setup breadcrumbs. Breadcrumbs are not enabled for API calls because they do not execute
+    // the app and may be re-entry
     probe_paths_t probe_paths;
-    if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
+    std::unordered_set<pal::string_t> breadcrumbs;
+    bool breadcrumbs_enabled = (out_host_command_result == nullptr);
+    if (breadcrumbs_enabled)
     {
-        return StatusCode::ResolverResolveFailure;
+        pal::string_t policy_name = _STRINGIFY(HOST_POLICY_PKG_NAME);
+        pal::string_t policy_version = _STRINGIFY(HOST_POLICY_PKG_VER);
+
+        // Always insert the hostpolicy that the code is running on.
+        breadcrumbs.insert(policy_name);
+        breadcrumbs.insert(policy_name + _X(",") + policy_version);
+
+        if (!resolver.resolve_probe_paths(&probe_paths, &breadcrumbs))
+        {
+            return StatusCode::ResolverResolveFailure;
+        }
+    }
+    else
+    {
+        if (!resolver.resolve_probe_paths(&probe_paths, nullptr))
+        {
+            return StatusCode::ResolverResolveFailure;
+        }
     }
 
     pal::string_t clr_path = probe_paths.coreclr;
@@ -175,7 +187,28 @@ int run(const arguments_t& args)
     size_t property_size = property_keys.size();
     assert(property_keys.size() == property_values.size());
 
-    // Bind CoreCLR
+    unsigned int exit_code = 1;
+
+    // Check for host command(s)
+    if (pal::strcasecmp(g_init.host_command.c_str(), _X("get-native-search-directories")) == 0)
+    {
+        // Verify property_keys[1] contains the correct information
+        if (pal::cstrcasecmp(property_keys[1], "NATIVE_DLL_SEARCH_DIRECTORIES"))
+        {
+            trace::error(_X("get-native-search-directories failed to find NATIVE_DLL_SEARCH_DIRECTORIES property"));
+            exit_code = HostApiFailed;
+        }
+        else
+        {
+            assert(out_host_command_result != nullptr);
+            pal::clr_palstring(property_values[1], out_host_command_result);
+            exit_code = 0; // Success
+        }
+
+        return exit_code;
+    }
+
+   // Bind CoreCLR
     trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
     if (!coreclr::bind(clr_dir))
     {
@@ -241,15 +274,17 @@ int run(const arguments_t& args)
     std::vector<char> managed_app;
     pal::pal_clrstring(args.managed_application, &managed_app);
 
-    // Leave breadcrumbs for servicing.
     breadcrumb_writer_t writer(&breadcrumbs);
-    writer.begin_write();
+    if (breadcrumbs_enabled)
+    {
+        // Leave breadcrumbs for servicing.
+        writer.begin_write();
+    }
 
     // Previous hostpolicy trace messages must be printed before executing assembly
     trace::flush();
 
     // Execute the application
-    unsigned int exit_code = 1;
     hr = coreclr::execute_assembly(
         host_handle,
         domain_id,
@@ -273,8 +308,11 @@ int run(const arguments_t& args)
 
     coreclr::unload();
 
-    // Finish breadcrumb writing
-    writer.end_write();
+    if (breadcrumbs_enabled)
+    {
+        // Finish breadcrumb writing
+        writer.end_write();
+    }
 
     return exit_code;
 }
@@ -282,7 +320,10 @@ int run(const arguments_t& args)
 SHARED_API int corehost_load(host_interface_t* init)
 {
     trace::setup();
-    
+
+    // Re-initialize global state in case of re-entry
+    g_init = hostpolicy_init_t();
+
     if (!hostpolicy_init_t::init(init, &g_init))
     {
         return StatusCode::LibHostInitFailure;
@@ -291,11 +332,12 @@ SHARED_API int corehost_load(host_interface_t* init)
     return 0;
 }
 
-SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
+int corehost_main_init(const int argc, const pal::char_t* argv[], const pal::string_t location, arguments_t& args)
 {
     if (trace::is_enabled())
     {
-        trace::info(_X("--- Invoked hostpolicy [commit hash: %s] [%s,%s,%s][%s] main = {"),
+        trace::info(_X("--- Invoked hostpolicy %s[commit hash: %s] [%s,%s,%s][%s] main = {"),
+            location.c_str(),
             _STRINGIFY(REPO_COMMIT_HASH),
             _STRINGIFY(HOST_POLICY_PKG_NAME),
             _STRINGIFY(HOST_POLICY_PKG_VER),
@@ -316,7 +358,6 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
     }
 
     // Take care of arguments
-    arguments_t args;
     if (!parse_arguments(g_init, argc, argv, &args))
     {
         return StatusCode::LibHostInvalidArgs;
@@ -326,7 +367,60 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
         args.print();
     }
 
-    return run(args);
+    return 0;
+}
+
+SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
+{
+    arguments_t args;
+    int rc = corehost_main_init(argc, argv, _X(""), args);
+    if (!rc)
+    {
+        rc = run(args);
+    }
+
+    return rc;
+}
+
+SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
+{
+    arguments_t args;
+
+    int rc = corehost_main_init(argc, argv, _X("corehost_main_with_output_buffer "), args);
+    if (!rc)
+    {
+        if (g_init.host_command == _X("get-native-search-directories"))
+        {
+            pal::string_t output_string;
+            rc = run(args, &output_string);
+            if (!rc)
+            {
+                // Get length in character count not including null terminator
+                int len = output_string.length();
+
+                if (len + 1 > buffer_size)
+                {
+                    rc = HostApiBufferTooSmall;
+                    *required_buffer_size = len + 1;
+                    trace::info(_X("get-native-search-directories failed with buffer too small"), output_string.c_str());
+                }
+                else
+                {
+                    output_string.copy(buffer, len);
+                    buffer[len] = '\0';
+                    *required_buffer_size = 0;
+                    trace::info(_X("get-native-search-directories success: %s"), output_string.c_str());
+                }
+            }
+        }
+        else
+        {
+            trace::error(_X("Unknown command: %s"), g_init.host_command.c_str());
+            rc = LibHostUnknownCommand;
+        }
+    }
+
+    return rc;
 }
 
 SHARED_API int corehost_unload()

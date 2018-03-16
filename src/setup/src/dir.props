@@ -8,8 +8,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <_BuildUwpDependencies Condition="'$(OSGroup)' == 'Windows_NT' and '$(TargetArchitecture)' != 'arm64'">true</_BuildUwpDependencies>
-  
     <LibPrefix Condition="'$(OSGroup)' != 'Windows_NT'">lib</LibPrefix>
     <LibSuffix>.so</LibSuffix> 
     <LibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.dll</LibSuffix>

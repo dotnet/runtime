@@ -39,12 +39,15 @@ bool is_exe_enabled_for_execution(const pal::string_t& own_path)
 {
     constexpr int EMBED_SZ = sizeof(EMBED_HASH_FULL_UTF8) / sizeof(EMBED_HASH_FULL_UTF8[0]);
     constexpr int EMBED_MAX = (EMBED_SZ > 1025 ? EMBED_SZ : 1025); // 1024 DLL name length, 1 NUL
-    static const char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
+
+    // Contains the embed hash value at compile time or the managed DLL name replaced by "dotnet build".
+    // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
+    // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
+    static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
+
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
     static const char lo_part[] = EMBED_HASH_LO_PART_UTF8;
 
-    // At this point the "embed" variable may contain the embed hash value specified above at compile time
-    // or the managed DLL name replaced by "dotnet build".
     std::string binding(&embed[0]);
     pal::string_t pal_binding;
     if (!pal::utf8_palstring(binding, &pal_binding))
@@ -176,7 +179,7 @@ int run(const int argc, const pal::char_t* argv[])
         trace::println();
         trace::println(_X("Options:"));
         trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --version         Display the current SDK version."));
+        trace::println(_X("  --info            Display .NET Core information.."));
         trace::println(_X("  --list-sdks       Display the installed SDKs."));
         trace::println(_X("  --list-runtimes   Display the installed runtimes."));
         trace::println();
@@ -201,7 +204,7 @@ int run(const int argc, const pal::char_t* argv[])
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
         trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
-        trace::error(_X("     %s"), DOTNET_CORE_URL);
+        trace::error(_X("     %s"), DOTNET_CORE_GETTING_STARTED_URL);
         return StatusCode::CoreHostLibLoadFailure;
     }
 

@@ -15,6 +15,13 @@
     ((VersionNT &gt; v6.1) OR (VersionNT = v6.1 AND ServicePackLevel &gt;= 1))
     </bal:Condition>
 
+    <?if $(var.Platform)=x64?>
+     <bal:Condition
+      Message="The $(var.ProductName) isn't supported on x86 operating systems. Please install using the corresponding x86 installer.">
+       VersionNT64
+     </bal:Condition>
+    <?endif?>
+
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.Foundation">
       <bal:WixStandardBootstrapperApplication
         LicenseFile="..\..\windows\sharedframework\dummyEula.rtf"

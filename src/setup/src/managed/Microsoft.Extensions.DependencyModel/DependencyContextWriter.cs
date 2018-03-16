@@ -170,12 +170,12 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void AddAssets(JObject libraryObject, string key, RuntimeAssetGroup group)
         {
-            if (group == null || !group.AssetPaths.Any())
+            if (group == null || !group.RuntimeFiles.Any())
             {
                 return;
             }
             libraryObject.Add(new JProperty(key,
-                       WriteAssetList(group.AssetPaths))
+                       WriteAssetList(group.RuntimeFiles))
                    );
         }
 
@@ -275,9 +275,9 @@ namespace Microsoft.Extensions.DependencyModel
         {
             foreach (var group in assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime)))
             {
-                if (group.AssetPaths.Any())
+                if (group.RuntimeFiles.Any())
                 {
-                    AddRuntimeSpecificAssets(runtimeTargets, group.AssetPaths, group.Runtime, assetType);
+                    AddRuntimeSpecificAssets(runtimeTargets, group.RuntimeFiles, group.Runtime, assetType);
                 }
                 else
                 {
@@ -294,22 +294,55 @@ namespace Microsoft.Extensions.DependencyModel
             }
         }
 
-        private void AddRuntimeSpecificAssets(JObject target, IEnumerable<string> assets, string runtime, string assetType)
+        private void AddRuntimeSpecificAssets(JObject target, IEnumerable<RuntimeFile> assets, string runtime, string assetType)
         {
             foreach (var asset in assets)
             {
-                target.Add(new JProperty(NormalizePath(asset),
-                    new JObject(
+                var asset_props = new JObject(
                         new JProperty(DependencyContextStrings.RidPropertyName, runtime),
                         new JProperty(DependencyContextStrings.AssetTypePropertyName, assetType)
-                        )
-                    ));
+                        );
+
+                if (asset.AssemblyVersion != null)
+                {
+                    asset_props.Add(DependencyContextStrings.AssemblyVersionPropertyName, asset.AssemblyVersion);
+                }
+
+                if (asset.FileVersion != null)
+                {
+                    asset_props.Add(DependencyContextStrings.FileVersionPropertyName, asset.FileVersion);
+                }
+
+                target.Add(new JProperty(NormalizePath(asset.Path), asset_props));
             }
         }
 
         private JObject WriteAssetList(IEnumerable<string> assetPaths)
         {
             return new JObject(assetPaths.Select(assembly => new JProperty(NormalizePath(assembly), new JObject())));
+        }
+
+        private JObject WriteAssetList(IEnumerable<RuntimeFile> runtimeFiles)
+        {
+            var target = new JObject();
+            foreach (var runtimeFile in runtimeFiles)
+            {
+                var fileJson = new JObject();
+
+                if (runtimeFile.AssemblyVersion != null)
+                {
+                    fileJson.Add(DependencyContextStrings.AssemblyVersionPropertyName, runtimeFile.AssemblyVersion);
+                }
+
+                if (runtimeFile.FileVersion != null)
+                {
+                    fileJson.Add(DependencyContextStrings.FileVersionPropertyName, runtimeFile.FileVersion);
+                }
+
+                target.Add(new JProperty(NormalizePath(runtimeFile.Path), fileJson));
+            }
+
+            return target;
         }
 
         private JObject WriteLibraries(DependencyContext context)
