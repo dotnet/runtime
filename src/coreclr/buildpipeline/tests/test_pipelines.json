@@ -92,7 +92,7 @@
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "false",
                 "Rid": "osx-x64",
-                "TargetQueues": "osx.1012.amd64",
+                "TargetQueues": "osx.1012.amd64,osx.1013.amd64",
                 "TestContainerSuffix": "osx",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
                 },
@@ -109,7 +109,7 @@
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "false",
                 "Rid": "osx-x64",
-                "TargetQueues": "osx.1012.amd64",
+                "TargetQueues": "osx.1012.amd64,osx.1013.amd64",
                 "TestContainerSuffix": "osx-r2r",
                 "CrossgenArg": "Crossgen ",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
@@ -127,7 +127,7 @@
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "false",
                 "Rid": "linux-x64",
-                "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1710.amd64",
+                "TargetQueues": "debian.82.amd64,fedora.26.amd64,fedora.27.amd64,redhat.73.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1710.amd64,ubuntu.1804.amd64,opensuse.423.amd64,sles.12.amd64",
                 "TestContainerSuffix": "linux",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
                 },
@@ -144,7 +144,7 @@
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "false",
                 "Rid": "linux-x64",
-                "TargetQueues": "debian.82.amd64,fedora.25.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1710.amd64",
+                "TargetQueues": "debian.82.amd64,fedora.26.amd64,fedora.27.amd64,redhat.73.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1710.amd64,ubuntu.1804.amd64,opensuse.423.amd64,sles.12.amd64",
                 "TestContainerSuffix": "linux-r2r",
                 "CrossgenArg": "Crossgen ",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
