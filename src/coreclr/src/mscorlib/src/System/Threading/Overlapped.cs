@@ -64,11 +64,10 @@ namespace System.Threading
         private uint _numBytes; // No. of bytes transferred 
         private NativeOverlapped* _pOVERLAP;
 
-        internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback)
+        internal _IOCompletionCallback(IOCompletionCallback ioCompletionCallback, ExecutionContext executionContext)
         {
             _ioCompletionCallback = ioCompletionCallback;
-            // clone the exection context
-            _executionContext = ExecutionContext.Capture();
+            _executionContext = executionContext;
         }
         // Context callback: same sig for SendOrPostCallback and ContextCallback
         internal static ContextCallback _ccb = new ContextCallback(IOCompletionCallback_Context);
@@ -170,7 +169,8 @@ namespace System.Threading
 
             if (iocb != null)
             {
-                m_iocbHelper = new _IOCompletionCallback(iocb);
+                ExecutionContext ec = ExecutionContext.Capture();
+                m_iocbHelper = ec != null ? new _IOCompletionCallback(iocb, ec) : null;
                 m_iocb = iocb;
             }
             else
