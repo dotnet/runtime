@@ -105,7 +105,7 @@ namespace System.SpanTests
             {
                 byte[] first = new byte[length];
                 byte[] second = new byte[length];
-                
+
                 for (int i = 0; i < length; i++)
                 {
                     first[i] = (byte)(i + 1);
