@@ -49,7 +49,7 @@ namespace System
             }
             return -1;
         }
-        
+
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length)
             where T : IEquatable<T>
         {
@@ -189,21 +189,21 @@ namespace System
             }
             return -1;
 
-            Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return index;
-            Found1:
+        Found1:
             return index + 1;
-            Found2:
+        Found2:
             return index + 2;
-            Found3:
+        Found3:
             return index + 3;
-            Found4:
+        Found4:
             return index + 4;
-            Found5:
+        Found5:
             return index + 5;
-            Found6:
+        Found6:
             return index + 6;
-            Found7:
+        Found7:
             return index + 7;
         }
 
@@ -272,21 +272,21 @@ namespace System
             }
             return -1;
 
-            Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return index;
-            Found1:
+        Found1:
             return index + 1;
-            Found2:
+        Found2:
             return index + 2;
-            Found3:
+        Found3:
             return index + 3;
-            Found4:
+        Found4:
             return index + 4;
-            Found5:
+        Found5:
             return index + 5;
-            Found6:
+        Found6:
             return index + 6;
-            Found7:
+        Found7:
             return index + 7;
         }
 
