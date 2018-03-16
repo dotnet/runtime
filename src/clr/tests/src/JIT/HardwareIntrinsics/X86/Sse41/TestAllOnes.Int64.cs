@@ -86,9 +86,9 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class BooleanComparisonOpTest__TestAllOnesInt64
     {
-        private const int VectorSize = 16;
+        private static readonly int LargestVectorSize = 16;
 
-        private const int Op1ElementCount = VectorSize / sizeof(Int64);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
 
         private static Int64[] _data = new Int64[Op1ElementCount];
 
@@ -103,7 +103,7 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar), ref Unsafe.As<Int64, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar), ref Unsafe.As<Int64, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
         }
 
         public BooleanComparisonOpTest__TestAllOnesInt64()
@@ -113,10 +113,10 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld), ref Unsafe.As<Int64, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld), ref Unsafe.As<Int64, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            _dataTable = new BooleanUnaryOpTest__DataTable<Int64>(_data, VectorSize);
+            _dataTable = new BooleanUnaryOpTest__DataTable<Int64>(_data, LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             Int64[] inArray = new Int64[Op1ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
             ValidateResult(inArray, result, method);
         }

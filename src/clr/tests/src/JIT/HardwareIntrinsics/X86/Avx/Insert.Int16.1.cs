@@ -92,10 +92,10 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class SimpleUnaryOpTest__InsertInt161
     {
-        private const int VectorSize = 32;
+        private static readonly int LargestVectorSize = 32;
 
-        private const int Op1ElementCount = VectorSize / sizeof(Int16);
-        private const int RetElementCount = VectorSize / sizeof(Int16);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector256<Int16>>() / sizeof(Int16);
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector256<Int16>>() / sizeof(Int16);
 
         private static Int16[] _data = new Int16[Op1ElementCount];
 
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (short)0; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Int16>, byte>(ref _clsVar), ref Unsafe.As<Int16, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Int16>, byte>(ref _clsVar), ref Unsafe.As<Int16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Int16>>());
         }
 
         public SimpleUnaryOpTest__InsertInt161()
@@ -120,10 +120,10 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (short)0; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Int16>, byte>(ref _fld), ref Unsafe.As<Int16, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Int16>, byte>(ref _fld), ref Unsafe.As<Int16, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Int16>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (short)0; }
-            _dataTable = new SimpleUnaryOpTest__DataTable<Int16, Int16>(_data, new Int16[RetElementCount], VectorSize);
+            _dataTable = new SimpleUnaryOpTest__DataTable<Int16, Int16>(_data, new Int16[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Avx.IsSupported;
@@ -281,7 +281,7 @@ namespace JIT.HardwareIntrinsics.X86
             Int16[] outArray = new Int16[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<Int16, byte>(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector256<Int16>>());
 
             ValidateResult(inArray, outArray, method);
         }
@@ -291,8 +291,8 @@ namespace JIT.HardwareIntrinsics.X86
             Int16[] inArray = new Int16[Op1ElementCount];
             Int16[] outArray = new Int16[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector256<Int16>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector256<Int16>>());
 
             ValidateResult(inArray, outArray, method);
         }

@@ -85,12 +85,12 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class SimpleTernaryOpTest__BlendVariableSByte
     {
-        private const int VectorSize = 16;
+        private static readonly int LargestVectorSize = 16;
 
-        private const int Op1ElementCount = VectorSize / sizeof(SByte);
-        private const int Op2ElementCount = VectorSize / sizeof(SByte);
-        private const int Op3ElementCount = VectorSize / sizeof(SByte);
-        private const int RetElementCount = VectorSize / sizeof(SByte);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
+        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
+        private static readonly int Op3ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
 
         private static SByte[] _data1 = new SByte[Op1ElementCount];
         private static SByte[] _data2 = new SByte[Op2ElementCount];
@@ -111,11 +111,11 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar3), ref Unsafe.As<SByte, byte>(ref _data3[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar3), ref Unsafe.As<SByte, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
         }
 
         public SimpleTernaryOpTest__BlendVariableSByte()
@@ -125,16 +125,16 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld3), ref Unsafe.As<SByte, byte>(ref _data3[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld3), ref Unsafe.As<SByte, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (sbyte)(((i % 2) == 0) ? -128 : 1); }
-            _dataTable = new SimpleTernaryOpTest__DataTable<SByte, SByte, SByte, SByte>(_data1, _data2, _data3, new SByte[RetElementCount], VectorSize);
+            _dataTable = new SimpleTernaryOpTest__DataTable<SByte, SByte, SByte, SByte>(_data1, _data2, _data3, new SByte[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -302,7 +302,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), firstOp);
             Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), secondOp);
             Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray3[0]), thirdOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
         }
@@ -314,10 +314,10 @@ namespace JIT.HardwareIntrinsics.X86
             SByte[] inArray3 = new SByte[Op3ElementCount];
             SByte[] outArray = new SByte[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(secondOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(thirdOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(secondOp), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(thirdOp), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
         }

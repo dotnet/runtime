@@ -85,10 +85,10 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class SimpleUnaryOpTest__RoundCurrentDirectionSingle
     {
-        private const int VectorSize = 16;
+        private static readonly int LargestVectorSize = 16;
 
-        private const int Op1ElementCount = VectorSize / sizeof(Single);
-        private const int RetElementCount = VectorSize / sizeof(Single);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
 
         private static Single[] _data = new Single[Op1ElementCount];
 
@@ -103,7 +103,7 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
         }
 
         public SimpleUnaryOpTest__RoundCurrentDirectionSingle()
@@ -113,10 +113,10 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (float)(random.NextDouble()); }
-            _dataTable = new SimpleUnaryOpTest__DataTable<Single, Single>(_data, new Single[RetElementCount], VectorSize);
+            _dataTable = new SimpleUnaryOpTest__DataTable<Single, Single>(_data, new Single[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -260,7 +260,7 @@ namespace JIT.HardwareIntrinsics.X86
             Single[] outArray = new Single[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
             ValidateResult(inArray, outArray, method);
         }
@@ -270,8 +270,8 @@ namespace JIT.HardwareIntrinsics.X86
             Single[] inArray = new Single[Op1ElementCount];
             Single[] outArray = new Single[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Single>>());
 
             ValidateResult(inArray, outArray, method);
         }

@@ -85,10 +85,10 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class BooleanBinaryOpTest__TestCInt64
     {
-        private const int VectorSize = 16;
+        private static readonly int LargestVectorSize = 16;
 
-        private const int Op1ElementCount = VectorSize / sizeof(Int64);
-        private const int Op2ElementCount = VectorSize / sizeof(Int64);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
+        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
 
         private static Int64[] _data1 = new Int64[Op1ElementCount];
         private static Int64[] _data2 = new Int64[Op2ElementCount];
@@ -106,9 +106,9 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar1), ref Unsafe.As<Int64, byte>(ref _data1[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar1), ref Unsafe.As<Int64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar2), ref Unsafe.As<Int64, byte>(ref _data2[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _clsVar2), ref Unsafe.As<Int64, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
         }
 
         public BooleanBinaryOpTest__TestCInt64()
@@ -118,13 +118,13 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld1), ref Unsafe.As<Int64, byte>(ref _data1[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld1), ref Unsafe.As<Int64, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld2), ref Unsafe.As<Int64, byte>(ref _data2[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Int64>, byte>(ref _fld2), ref Unsafe.As<Int64, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = (long)(random.Next(int.MinValue, int.MaxValue)); }
-            _dataTable = new BooleanBinaryOpTest__DataTable<Int64, Int64>(_data1, _data2, VectorSize);
+            _dataTable = new BooleanBinaryOpTest__DataTable<Int64, Int64>(_data1, _data2, LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -288,8 +288,8 @@ namespace JIT.HardwareIntrinsics.X86
             Int64[] inArray1 = new Int64[Op1ElementCount];
             Int64[] inArray2 = new Int64[Op2ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), VectorSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), (uint)Unsafe.SizeOf<Vector128<Int64>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
             ValidateResult(inArray1, inArray2, result, method);
         }
