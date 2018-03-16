@@ -15819,6 +15819,8 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
 
             if (returnType != originalCallType)
             {
+                JITDUMP("Return type mismatch, have %s, needed %s\n", varTypeName(returnType),
+                        varTypeName(originalCallType));
                 compInlineResult->NoteFatal(InlineObservation::CALLSITE_RETURN_TYPE_MISMATCH);
                 return false;
             }
@@ -18670,6 +18672,17 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
         op1 = gtCloneExpr(argInfo.argNode);
         PREFIX_ASSUME(op1 != nullptr);
         argInfo.argTmpNum = BAD_VAR_NUM;
+
+        // We may need to retype to ensure we match the callee's view of the type.
+        // Otherwise callee-pass throughs of arguments can create return type
+        // mismatches that block inlining.
+        //
+        // Note argument type mismatches that prevent inlining should
+        // have been caught in impInlineInitVars.
+        if (op1->TypeGet() != lclTyp)
+        {
+            op1->gtType = genActualType(lclTyp);
+        }
     }
     else if (argInfo.argIsLclVar && !argCanBeModified && !argInfo.argHasCallerLocalRef)
     {
