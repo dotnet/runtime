@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Text;
@@ -22,6 +23,7 @@ namespace System.Diagnostics
         private string _directory;
         private string _userName;
         private string _verb;
+        private Collection<string> _argumentList;
         private ProcessWindowStyle _windowStyle;
 
         internal DictionaryWrapper _environmentVariables;
@@ -59,6 +61,18 @@ namespace System.Diagnostics
         {
             get => _arguments ?? string.Empty;
             set => _arguments = value;
+        }
+
+        public Collection<string> ArgumentList
+        {
+            get
+            {
+                if (_argumentList == null)
+                {
+                    _argumentList = new Collection<string>();
+                }
+                return _argumentList;
+            }
         }
 
         public bool CreateNoWindow { get; set; }
