@@ -535,8 +535,7 @@ TESTS_CS_SRC=		\
 	threads-init.cs \
 	bug-60848.cs \
 	bug-59400.cs \
-	sizeof-empty-structs.cs \
-	tailcall-generic-cast-cs.cs
+	sizeof-empty-structs.cs
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
@@ -644,9 +643,7 @@ TESTS_IL_SRC=			\
 	dim-methodimpl.il	\
 	dim-sharedgenerics.il	\
 	dim-simple.il	\
-	dim-valuetypes.il \
-	tailcall-generic-cast-conservestack-il.il \
-	tailcall-generic-cast-nocrash-il.il
+	dim-valuetypes.il
 
 TESTS_GSHARED_SRC = \
 	generics-sharing.2.cs	\
@@ -743,7 +740,6 @@ endif
 if POWERPC
 # bug #71274
 PLATFORM_DISABLED_TESTS += finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
-PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 endif
 
 if POWERPC64
@@ -753,12 +749,10 @@ PLATFORM_DISABLED_TESTS += monitor.exe threadpool-exceptions5.exe appdomain-unlo
 	pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe abort-cctor.exe load-exceptions.exe \
 	sgen-domain-unload-2.exe sgen-weakref-stress.exe sgen-cementing-stress.exe sgen-new-threads-dont-join-stw.exe \
 	sgen-new-threads-dont-join-stw-2.exe sgen-new-threads-collect.exe sgen-bridge.exe
-PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 endif
 
 if ARM
 PLATFORM_DISABLED_TESTS += filter-stack.exe weak-fields.exe
-PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 endif
 
 if ARM64
@@ -768,7 +762,6 @@ endif
 if MIPS
 # monitor.exe is racy
 PLATFORM_DISABLED_TESTS += filter-stack.exe monitor.exe
-PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 endif
 
 if S390X
@@ -780,7 +773,6 @@ PLATFORM_DISABLED_TESTS += \
 	sgen-bridge.exe \
 	sgen-bridge-major-fragmentation.exe \
 	sgen-bridge-xref.exe
-PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 endif
 
 PROFILE_DISABLED_TESTS= \
@@ -1006,6 +998,8 @@ LLVM = $(filter --llvm, $(MONO_ENV_OPTIONS))
 # threads-init.exe: runs out of system threads
 # dim-constrainedcall.exe: fails on dontnet as well (https://github.com/dotnet/coreclr/issues/15353)
 # tailcall-rgctxb.exe seems like it would but it does not, needs debugging
+# tailcall-mrgctx.exe   temporarily disabled
+# tailcall-rgctxa.exe   temporarily disabled
 KNOWN_FAILING_TESTS = \
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
@@ -1025,6 +1019,8 @@ KNOWN_FAILING_TESTS = \
 	tail1.exe \
 	taili1.exe \
 	vtail1.exe \
+	tailcall-mrgctx.exe \
+	tailcall-rgctxa.exe \
 	tailcall-rgctxb.exe
 
 DISABLED_TESTS = \
@@ -1043,8 +1039,7 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	sitail1.exe \
 	tailcall-mrgctx.exe \
 	tailcall-virt.exe   \
-	tailcall-rgctxa.exe \
-	tailcall-generic-cast-conservestack-il.exe
+	tailcall-rgctxa.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.

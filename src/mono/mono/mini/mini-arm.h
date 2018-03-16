@@ -373,10 +373,6 @@ typedef struct MonoCompileArch {
 /* First argument reg */
 #define MONO_ARCH_VTABLE_REG ARMREG_R0
 
-// Does the ABI have a volatile non-parameter register, so tailcall
-// can pass context to generics or interfaces?
-#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
-
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,func) do {	\

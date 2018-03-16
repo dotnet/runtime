@@ -3015,11 +3015,6 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_OP_TAIL_CALL
 	backend->have_op_tail_call = 1;
 #endif
-// Does the ABI have a volatile non-parameter register, so tailcall
-// can pass context to generics or interfaces?
-#ifdef MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER
-	backend->have_volatile_non_param_register = 1;
-#endif
 #ifdef MONO_ARCH_HAVE_OP_TAIL_CALL_MEMBASE
 	backend->have_op_tail_call_membase = 1;
 #endif
