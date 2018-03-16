@@ -82,5 +82,9 @@ namespace Microsoft.Extensions.DependencyModel
         internal const string LocalePropertyName = "locale";
 
         internal const string CompilationOnlyPropertyName = "compileOnly";
+
+        internal const string AssemblyVersionPropertyName = "assemblyVersion";
+
+        internal const string FileVersionPropertyName = "fileVersion";
     }
 }

@@ -362,56 +362,66 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
     return wchar_convert_helper(CP_UTF8, cstr, ::strlen(cstr), out);
 }
 
+// Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path)
 {
-
-    if (LongFile::IsNormalized(*path))
+    if (LongFile::IsNormalized(path->c_str()))
     {
-        return true;
+        WIN32_FILE_ATTRIBUTE_DATA data;
+        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
+        {
+            return true;
+        }
     }
 
     char_t buf[MAX_PATH];
     auto size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
-    
     if (size == 0)
     {
         trace::error(_X("Error resolving full path [%s]"), path->c_str());
         return false;
-    }
-
-    if (size < MAX_PATH)
-    {
-        path->assign(buf);
-        return true;
     }
 
     string_t str;
-    str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
-
-    size = ::GetFullPathNameW(path->c_str() , size, (LPWSTR)str.data() , nullptr);
-    assert(size <= str.size());
-    
-    if (size == 0)
+    if (size < MAX_PATH)
     {
-        trace::error(_X("Error resolving full path [%s]"), path->c_str());
-        return false;
+        str.assign(buf);
+    }
+    else
+    {
+        str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
+
+        size = ::GetFullPathNameW(path->c_str(), size, (LPWSTR)str.data(), nullptr);
+        assert(size <= str.size());
+
+        if (size == 0)
+        {
+            trace::error(_X("Error resolving full path [%s]"), path->c_str());
+            return false;
+        }
+
+        const string_t* prefix = &LongFile::ExtendedPrefix;
+        //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk 
+        if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
+        {
+            prefix = &LongFile::UNCExtendedPathPrefix;
+            str.erase(0, LongFile::UNCPathPrefix.length());
+            size = size - LongFile::UNCPathPrefix.length();
+        }
+
+        str.insert(0, *prefix);
+        str.resize(size + prefix->length());
+        str.shrink_to_fit();
     }
 
-    const string_t* prefix = &LongFile::ExtendedPrefix;
-    //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk 
-    if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (GetFileAttributesExW(str.c_str(), GetFileExInfoStandard, &data) != 0)
     {
-        prefix = &LongFile::UNCExtendedPathPrefix;
-        str.erase(0, LongFile::UNCPathPrefix.length());
-        size = size - LongFile::UNCPathPrefix.length();
+        *path = str;
+        return true;
     }
 
-    str.insert(0, *prefix);
-    str.resize(size + prefix->length());
-    str.shrink_to_fit();
-    *path = str;
-
-    return true;
+    return false;
 }
 
 bool pal::file_exists(const string_t& path)
@@ -421,26 +431,8 @@ bool pal::file_exists(const string_t& path)
         return false;
     }
 
-    auto pathstring = path.c_str();
-    string_t normalized_path;
-    if (LongFile::ShouldNormalize(path))
-    {
-        normalized_path = path;
-        if (!pal::realpath(&normalized_path))
-        {
-            return false;
-        }
-        pathstring = normalized_path.c_str();
-    }
-
-    // We will attempt to fetch attributes for the file or folder in question that are
-    // returned only if they exist.
-    WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExW(pathstring, GetFileExInfoStandard, &data) != 0) {
-        return true;
-    }
-    
-    return false;
+    string_t tmp(path);
+    return pal::realpath(&tmp);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

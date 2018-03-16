@@ -7,7 +7,6 @@
       "alwaysRun": false,
       "displayName": "Cleanup previous build",
       "timeoutInMinutes": 0,
-      "refName": "Task1",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -27,7 +26,6 @@
       "alwaysRun": false,
       "displayName": "Clone repo",
       "timeoutInMinutes": 0,
-      "refName": "Task2",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -47,7 +45,6 @@
       "alwaysRun": false,
       "displayName": "git checkout",
       "timeoutInMinutes": 0,
-      "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -67,7 +64,6 @@
       "alwaysRun": false,
       "displayName": "Create host machine tools sandbox",
       "timeoutInMinutes": 0,
-      "refName": "Task4",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -89,7 +85,6 @@
       "alwaysRun": false,
       "displayName": "Initialize tools in sandbox for host machine",
       "timeoutInMinutes": 0,
-      "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -109,7 +104,6 @@
       "alwaysRun": false,
       "displayName": "Initialize docker",
       "timeoutInMinutes": 0,
-      "refName": "Task6",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -129,7 +123,6 @@
       "alwaysRun": false,
       "displayName": "Build",
       "timeoutInMinutes": 0,
-      "refName": "Task7",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -149,7 +142,6 @@
       "alwaysRun": false,
       "displayName": "Publish",
       "timeoutInMinutes": 0,
-      "refName": "Task8",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -169,7 +161,6 @@
       "alwaysRun": false,
       "displayName": "Copy built Portable binaries to staging directory",
       "timeoutInMinutes": 0,
-      "refName": "Task9",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -191,7 +182,6 @@
       "alwaysRun": false,
       "displayName": "Initialize docker - Ubuntu14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task10",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -211,7 +201,6 @@
       "alwaysRun": false,
       "displayName": "Clean - Ubuntu14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task11",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -231,7 +220,6 @@
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Ubuntu 14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task12",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -249,9 +237,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Package Runtime Dep - Ubuntu 14.04 ",
+      "displayName": "Package Runtime packages and Runtime Dep - Ubuntu 14.04",
       "timeoutInMinutes": 0,
-      "refName": "Task13",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -271,7 +258,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 14.04 ",
       "timeoutInMinutes": 0,
-      "refName": "Task14",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -279,7 +265,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) /p:PublishDebToolToFeed=true /p:CliNuGetFeedUrl=$(CLI_NUGET_FEED_URL) /p:CliNuGetApiKey=$(CLI_NUGET_API_KEY) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -291,7 +277,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Ubuntu 16.04",
       "timeoutInMinutes": 0,
-      "refName": "Task18",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -299,7 +284,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=ubuntu.16.04-$(PB_TargetArchitecture) /p:BuildRuntimeDebs=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.16.04-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -311,7 +296,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 16.04 ",
       "timeoutInMinutes": 0,
-      "refName": "Task19",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -319,47 +303,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=ubuntu.16.04-$(PB_TargetArchitecture)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Package Runtime Dep - Ubuntu 17.04",
-      "timeoutInMinutes": 0,
-      "refName": "ClonedTask184",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=ubuntu.17.04-$(PB_TargetArchitecture) /p:BuildRuntimeDebs=false",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Publish Runtime Dep - Ubuntu 17.04",
-      "timeoutInMinutes": 0,
-      "refName": "ClonedTask195",
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=ubuntu.17.04-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=ubuntu.16.04-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -371,7 +315,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Ubuntu 17.10",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1844",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -379,7 +322,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=ubuntu.17.10-$(PB_TargetArchitecture) /p:BuildRuntimeDebs=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.17.10-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -391,7 +334,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 17.10",
       "timeoutInMinutes": 0,
-      "refName": "ClonedClonedTask1955",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -399,7 +341,121 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=ubuntu.17.10-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=ubuntu.17.10-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Ubuntu 18.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.18.04-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - Ubuntu 18.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=ubuntu.18.04-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - LinuxMint 7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=linuxmint.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - LinuxMint 7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=linuxmint.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - LinuxMint 8",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=linuxmint.8-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - LinuxMint 8",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=linuxmint.8-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -411,7 +467,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Debian 8",
       "timeoutInMinutes": 0,
-      "refName": "Task28",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -419,7 +474,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=debian.8-$(PB_TargetArchitecture) /p:BuildRuntimeDebs=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=debian.8-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -431,7 +486,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Debian 8",
       "timeoutInMinutes": 0,
-      "refName": "Task29",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -439,7 +493,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=debian.8-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=debian.8-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -451,7 +505,6 @@
       "alwaysRun": false,
       "displayName": "Package Runtime Dep - Debian 9",
       "timeoutInMinutes": 0,
-      "refName": "Task33",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -459,7 +512,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) /p:OutputRid=debian.9-$(PB_TargetArchitecture) $(DistroSpecificMSBuildArguments) /p:BuildRuntimeDebs=false",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=debian.9-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -471,7 +524,6 @@
       "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Debian 9",
       "timeoutInMinutes": 0,
-      "refName": "Task34",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -479,7 +531,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) /p:OutputRid=debian.9-$(PB_TargetArchitecture) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepDebPackage) /p:OutputRid=debian.9-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -491,7 +543,6 @@
       "alwaysRun": false,
       "displayName": "Initialize docker - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task35",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -511,7 +562,6 @@
       "alwaysRun": false,
       "displayName": "Clean - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task36",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -531,7 +581,6 @@
       "alwaysRun": false,
       "displayName": "Build traversal build dependencies - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task37",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -549,9 +598,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Package - Rhel7",
+      "displayName": "Package Runtime Dep - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task38",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -569,9 +617,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish - Rhel7",
+      "displayName": "Publish Runtime Dep - Rhel7",
       "timeoutInMinutes": 0,
-      "refName": "Task39",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -579,7 +626,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -589,9 +636,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Package - OpenSuse",
+      "displayName": "Package Runtime Dep - OpenSuse",
       "timeoutInMinutes": 0,
-      "refName": "Task38",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -599,7 +645,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -609,9 +655,8 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish - OpenSuse",
+      "displayName": "Publish Runtime Dep - OpenSuse",
       "timeoutInMinutes": 0,
-      "refName": "Task39",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -619,7 +664,197 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Fedora 26",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.26-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - Fedora 26",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=fedora.26-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Fedora 27",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.27-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - Fedora 27",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=fedora.27-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Centos 7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=centos.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - Centos 7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=centos.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Oracle Linux 7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - Oracle Linux 7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - SLES",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=sles.12-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish Runtime Dep - SLES",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToPublishRuntimeDepRPMPackage) /p:OutputRid=sles.12-$(PB_TargetArchitecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -632,7 +867,6 @@
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task40",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -653,7 +887,6 @@
       "displayName": "Copy Files to: $(Build.StagingDirectory)\\BuildLogs",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
-      "refName": "CopyFiles1",
       "task": {
         "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
         "versionSpec": "2.*",
@@ -676,7 +909,6 @@
       "displayName": "Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "condition": "succeededOrFailed()",
-      "refName": "PublishBuildArtifacts2",
       "task": {
         "id": "2ff763a7-ce83-4e1f-bc89-0ae63477cebe",
         "versionSpec": "1.*",
@@ -699,7 +931,6 @@
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
       "condition": "always()",
-      "refName": "Task42",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
@@ -856,18 +1087,8 @@
     "PB_AdditionalMSBuildArguments": {
       "value": ""
     },
-    "CLI_NUGET_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v2/package"
-    },
-    "CLI_NUGET_SYMBOLS_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/symbols/api/v2/package"
-    },
-    "CliNuGetApiKey": {
-      "value": null,
-      "isSecret": true
-    },
     "DistroSpecificMSBuildArguments": {
-      "value": "/flp:v=diag /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=false /p:ConfigurationGroup=$(BuildConfiguration) /p:OSGroup=Linux /p:OfficialBuildId=$(OfficialBuildId)"
+      "value": "/flp:v=diag /clp:v=detailed /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=false /p:ConfigurationGroup=$(BuildConfiguration) /p:OSGroup=Linux /p:OfficialBuildId=$(OfficialBuildId)"
     },
     "DistroSpecificMSBuildPublishArgs": {
       "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumContainerName=$(PB_ChecksumContainerName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken)"
@@ -895,6 +1116,18 @@
     },
     "DockerCommonCleanCommands": {
       "value": "-c \"HOME=$(PB_GitDirectory); $(PB_GitDirectory)/clean.sh\""
+    },
+    "CommonDockerCommandToBuildRuntimeDepDebPackage": {
+      "value": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:BuildRuntimeDebs=false"
+    },
+    "CommonDockerCommandToPublishRuntimeDepDebPackage": {
+      "value": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)"
+    },
+    "CommonDockerCommandToBuildRuntimeDepRPMPackage": {
+      "value": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:BuildRuntimeRpms=false"
+    },
+    "CommonDockerCommandToPublishRuntimeDepRPMPackage": {
+      "value": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:PublishType=$(PB_PublishType) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)"
     }
   },
   "demands": [

@@ -139,7 +139,7 @@ namespace pal
 
 #else
     #ifdef COREHOST_MAKE_DLL
-        #define SHARED_API extern "C"
+        #define SHARED_API extern "C" __attribute__((__visibility__("default")))
     #else
         #define SHARED_API
     #endif

@@ -56,6 +56,7 @@ struct host_interface_t
     strarr_t fx_dirs;
     strarr_t fx_requested_versions;
     strarr_t fx_found_versions;
+    const pal::char_t* host_command;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -85,7 +86,8 @@ static_assert(offsetof(host_interface_t, fx_names) == 18 * sizeof(size_t), "Stru
 static_assert(offsetof(host_interface_t, fx_dirs) == 20 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, fx_requested_versions) == 22 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, fx_found_versions) == 24 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 26 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, host_command) == 26 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 27 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)
@@ -115,14 +117,17 @@ private:
     std::vector<const pal::char_t*> m_fx_requested_versions_cstr;
     std::vector<pal::string_t> m_fx_found_versions;
     std::vector<const pal::char_t*> m_fx_found_versions_cstr;
+    const pal::string_t m_host_command;
 public:
     corehost_init_t(
+        const pal::string_t& host_command,
         const pal::string_t& deps_file,
         const pal::string_t& additional_deps_serialized,
         const std::vector<pal::string_t>& probe_paths,
         const host_mode_t mode,
         const fx_definition_vector_t& fx_definitions)
-        : m_deps_file(deps_file)
+        : m_host_command(host_command)
+        , m_deps_file(deps_file)
         , m_additional_deps_serialized(additional_deps_serialized)
         , m_portable(get_app(fx_definitions).get_runtime_config().get_portable())
         , m_probe_paths(probe_paths)
@@ -186,7 +191,7 @@ public:
         {
             hi.fx_name = m_fx_names_cstr[1];
             hi.fx_dir = m_fx_dirs_cstr[1];
-            hi.fx_ver = m_fx_found_versions_cstr[1];
+            hi.fx_ver = m_fx_requested_versions_cstr[1];
         }
         else
         {
@@ -220,6 +225,8 @@ public:
         hi.fx_found_versions.len = m_fx_found_versions_cstr.size();
         hi.fx_found_versions.arr = m_fx_found_versions_cstr.data();
 
+        hi.host_command = m_host_command.c_str();
+
         return hi;
     }
 
@@ -248,6 +255,7 @@ struct hostpolicy_init_t
     bool patch_roll_forward;
     bool prerelease_roll_forward;
     bool is_portable;
+    pal::string_t host_command;
 
     static bool init(host_interface_t* input, hostpolicy_init_t* init)
     {
@@ -260,7 +268,6 @@ struct hostpolicy_init_t
 
         trace::verbose(_X("Reading from host interface version: [0x%04x:%d] to initialize policy version: [0x%04x:%d]"), input->version_hi, input->version_lo, HOST_INTERFACE_LAYOUT_VERSION_HI, HOST_INTERFACE_LAYOUT_VERSION_LO);
 
-        
         //This check is to ensure is an old hostfxr can still load new hostpolicy.
         //We should not read garbage due to potentially shorter struct size
 
@@ -350,6 +357,11 @@ struct hostpolicy_init_t
                 fx = new fx_definition_t(fx_name, fx_dir, fx_requested_ver, fx_found_ver);
                 init->fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
             }
+        }
+
+        if (input->version_lo >= offsetof(host_interface_t, host_command) + sizeof(input->host_command))
+        {
+            init->host_command = input->host_command;
         }
 
         return true;

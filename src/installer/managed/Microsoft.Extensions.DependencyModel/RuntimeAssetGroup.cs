@@ -8,12 +8,21 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeAssetGroup
     {
+        private IReadOnlyList<string> _assetPaths;
+        private IReadOnlyList<RuntimeFile> _runtimeFiles;
+
         public RuntimeAssetGroup(string runtime, params string[] assetPaths) : this(runtime, (IEnumerable<string>)assetPaths) { }
 
         public RuntimeAssetGroup(string runtime, IEnumerable<string> assetPaths)
         {
             Runtime = runtime;
-            AssetPaths = assetPaths.ToArray();
+            _assetPaths = assetPaths.ToArray();
+        }
+
+        public RuntimeAssetGroup(string runtime, IEnumerable<RuntimeFile> runtimeFiles)
+        {
+            Runtime = runtime;
+            _runtimeFiles = runtimeFiles.ToArray();
         }
 
         /// <summary>
@@ -22,8 +31,35 @@ namespace Microsoft.Extensions.DependencyModel
         public string Runtime { get; }
 
         /// <summary>
-        /// Gets a list of assets provided in this runtime group
+        /// Gets a list of asset paths provided in this runtime group
         /// </summary>
-        public IReadOnlyList<string> AssetPaths { get; }
+        public IReadOnlyList<string> AssetPaths
+        {
+            get
+            {
+                if (_assetPaths != null)
+                {
+                    return _assetPaths;
+                }
+
+                return _runtimeFiles.Select(file => file.Path).ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Gets a list of RuntimeFiles provided in this runtime group
+        /// </summary>
+        public IReadOnlyList<RuntimeFile> RuntimeFiles
+        {
+            get
+            {
+                if (_runtimeFiles != null)
+                {
+                    return _runtimeFiles;
+                }
+
+                return _assetPaths.Select(path => new RuntimeFile(path, null, null)).ToArray();
+            }
+        }
     }
 }

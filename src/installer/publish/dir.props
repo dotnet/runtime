@@ -29,9 +29,6 @@
     <RuntimePackageFile Include="$(PackageOutputPath)**/runtime.*.nupkg" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RuntimePackageFile>
-    <UWPArtifactsToUpload Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)" Condition="Exists('$(MicrosoftNetCoreRuntimeAppxOutputPath)')" >
-      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
-    </UWPArtifactsToUpload>
     <RidAgnosticPackageFile Include="$(PackageOutputPath)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
@@ -46,10 +43,12 @@
   <ItemGroup>
     <PublishRid Include="ubuntu.14.04-x64" />
     <PublishRid Include="ubuntu.16.04-x64" />
-    <PublishRid Include="ubuntu.17.04-x64" />
     <PublishRid Include="ubuntu.17.10-x64" />
+    <PublishRid Include="ubuntu.18.04-x64" />
     <PublishRid Include="debian.8-x64" />
     <PublishRid Include="debian.9-x64" />
+    <PublishRid Include="linuxmint.7-x64" />
+    <PublishRid Include="linuxmint.8-x64" />
     <PublishRid Include="linux-x64" />
     <PublishRid Include="win-x86" />
     <PublishRid Include="win-x64" />
@@ -59,5 +58,10 @@
     <PublishRid Include="linux-arm" />
     <PublishRid Include="rhel.7-x64" />
     <PublishRid Include="opensuse.42-x64" />
+    <PublishRid Include="centos.7-x64" />
+    <PublishRid Include="fedora.26-x64" />
+    <PublishRid Include="fedora.27-x64" />
+    <PublishRid Include="oraclelinux.7-x64" />
+    <PublishRid Include="sles.12-x64" />
   </ItemGroup>
 </Project>

@@ -21,7 +21,7 @@ bool deps_entry_t::to_path(const pal::string_t& base, bool look_in_base, pal::st
 
     // Entry relative path contains '/' separator, sanitize it to use
     // platform separator. Perf: avoid extra copy if it matters.
-    pal::string_t pal_relative_path = relative_path;
+    pal::string_t pal_relative_path = asset.relative_path;
     if (_X('/') != DIR_SEPARATOR)
     {
         replace_char(&pal_relative_path, _X('/'), DIR_SEPARATOR);
@@ -64,7 +64,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str) co
 {
     if (asset_type == asset_types::resources)
     {
-        pal::string_t pal_relative_path = relative_path;
+        pal::string_t pal_relative_path = asset.relative_path;
         if (_X('/') != DIR_SEPARATOR)
         {
             replace_char(&pal_relative_path, _X('/'), DIR_SEPARATOR);
@@ -83,7 +83,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str) co
         
         pal::string_t base_ietf_dir = base;
         append_path(&base_ietf_dir, ietf.c_str());
-        trace::verbose(_X("Detected a resource asset, will query dir/ietf-tag/resource base: %s asset: %s"), base_ietf_dir.c_str(), asset_name.c_str());
+        trace::verbose(_X("Detected a resource asset, will query dir/ietf-tag/resource base: %s asset: %s"), base_ietf_dir.c_str(), asset.name.c_str());
         return to_path(base_ietf_dir, true, str);
     }
     return to_path(base, true, str);

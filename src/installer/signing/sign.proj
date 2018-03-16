@@ -37,10 +37,6 @@
       <FilesToSign Include="$(OutDir)corehost/**/dotnet.exe">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
-      <FilesToSign Include="$(OutDir)Microsoft.Build.Net.CoreRuntimeTask/**/Microsoft.Build.Net.CoreRuntimeTask.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-        <StrongName>StrongName</StrongName>
-      </FilesToSign>
     </ItemGroup>
 
     <ItemGroup>
@@ -55,28 +51,7 @@
       </FilesToSign>
     </ItemGroup>
 
-    <ItemGroup>
-      <FilesToSign Include="$(UWPOutputDir)*.dll">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-      <FilesToSign Include="$(UWPOutputDir)*.exe">
-        <Authenticode>$(CertificateId)</Authenticode>
-      </FilesToSign>
-    </ItemGroup>
     <Error Condition="'@(FilesToSign)' == ''" Text="There are no files to sign. FilesToSign group is empty."/>
-  </Target>
-
-  <Target Name="SignAppxFiles" Condition="'$(SignType)' == 'real'" DependsOnTargets="GetSignAppxFiles">
-    <CallTarget Targets="SignFiles" />
-  </Target>
-  
-  <Target Name="GetSignAppxFiles">
-    <ItemGroup>
-      <FilesToSign Include="$(UWPOutputDir)*.appx">
-        <Authenticode>Appx</Authenticode>
-      </FilesToSign>
-    </ItemGroup>
-    <Error Condition="'@(FilesToSign)' == '' AND '$(Platform)' != 'arm64'" Text="There are no files to sign. FilesToSign group is empty."/>
   </Target>
 
   <Target Name="SignMsiAndCab" Condition="'$(SignType)' == 'real'" DependsOnTargets="GetSignMsiAndCabFiles">
