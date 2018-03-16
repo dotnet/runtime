@@ -1,5 +1,29 @@
 {
   "build": [
+      {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Run AgentTools/Begin.ps1",
+      "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "targetType": "inline",
+        "filePath": "",
+        "arguments": "",
+        "script": "if (Test-Path \"$(AgentToolsPath)\\Begin.ps1\") {\n     \"Begin.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\Begin.ps1\n} else {\n   \"Begin.ps1 script does not exist. Moving on...\"\n}",
+        "errorActionPreference": "continue",
+        "failOnStderr": "false",
+        "ignoreLASTEXITCODE": "true",
+        "workingDirectory": ""
+      }
+    },
     {
       "environment": {},
       "enabled": true,
@@ -88,30 +112,6 @@
     {
       "environment": {},
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Run AgentTools/Begin.ps1",
-      "timeoutInMinutes": 0,
-      "condition": "succeededOrFailed()",
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "2.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "targetType": "inline",
-        "filePath": "",
-        "arguments": "",
-        "script": "if (Test-Path \"$(AgentToolsPath)\\Begin.ps1\") {\n     \"Begin.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\Begin.ps1\n} else {\n   \"Begin.ps1 script does not exist. Moving on...\"\n}",
-        "errorActionPreference": "continue",
-        "failOnStderr": "false",
-        "ignoreLASTEXITCODE": "true",
-        "workingDirectory": ""
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run build-test.cmd",
@@ -128,30 +128,6 @@
         "arguments": "$(PB_BuildType) $(Architecture) buildagainstpackages runtimeid $(Rid) $(TargetsNonWindowsArg)$(CrossgenArg)-OfficialBuildId=$(OfficialBuildId) -OverwriteCoreClrPackageVersion -Priority=$(Priority) -- /p:IntermediateAzureFeed=$(IntermediateAzureFeed)",
         "workingFolder": "",
         "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Run AgentTools/End.ps1",
-      "timeoutInMinutes": 0,
-      "condition": "succeededOrFailed()",
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "2.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "targetType": "inline",
-        "filePath": "",
-        "arguments": "",
-        "script": "if (Test-Path \"$(AgentToolsPath)\\End.ps1\") {\n     \"End.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\End.ps1\n} else {\n   \"End.ps1 script does not exist. Moving on...\"\n}",
-        "errorActionPreference": "continue",
-        "failOnStderr": "false",
-        "ignoreLASTEXITCODE": "true",
-        "workingDirectory": ""
       }
     },
     {
@@ -251,6 +227,30 @@
       "inputs": {
         "branchFilters": "[\"+refs/heads/*\"]",
         "additionalFields": "{}"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Run AgentTools/End.ps1",
+      "timeoutInMinutes": 0,
+      "condition": "succeededOrFailed()",
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "targetType": "inline",
+        "filePath": "",
+        "arguments": "",
+        "script": "if (Test-Path \"$(AgentToolsPath)\\End.ps1\") {\n     \"End.ps1 script found. Executing...\"\n    & $(AgentToolsPath)\\End.ps1\n} else {\n   \"End.ps1 script does not exist. Moving on...\"\n}",
+        "errorActionPreference": "continue",
+        "failOnStderr": "false",
+        "ignoreLASTEXITCODE": "true",
+        "workingDirectory": ""
       }
     }
   ],
