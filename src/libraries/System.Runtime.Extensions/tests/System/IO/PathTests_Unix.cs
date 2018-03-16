@@ -65,5 +65,67 @@ namespace System.IO.Tests
             Assert.Equal(Path.Combine(curDir, "    "), Path.GetFullPath("    "));
             Assert.Equal(Path.Combine(curDir, "\r\n"), Path.GetFullPath("\r\n"));
         }
+
+        public static TheoryData<string, string, string> GetFullPath_BasePath_BasicExpansions_TestData_Unix => new TheoryData<string, string, string>
+        {
+            { @"/home/git", @"/home/git", @"/home/git" },
+            { "", @"/home/git", @"/home/git" },
+            { "..", @"/home/git", @"/home" },
+            { @"/home/git/././././././", @"/home/git", @"/home/git/" },
+            { @"/home/git///.", @"/home/git", @"/home/git" },
+            { @"/home/git/../git/./../git", @"/home/git", @"/home/git" },
+            { @"/home/git/somedir/..", @"/home/git", @"/home/git" },
+            { @"/home/git/./", @"/home/git", @"/home/git/" },
+            { @"/home/../../../../..", @"/home/git", @"/" },
+            { @"/home///", @"/home/git", @"/home/" },
+            { "tmp", @"/home/git", @"/home/git/tmp" },
+            { "tmp/bar/..", @"/home/git", @"/home/git/tmp" },
+            { "tmp/..", @"/home/git", @"/home/git" },
+            { "tmp/./bar/../", @"/home/git", @"/home/git/tmp/" },
+            { "tmp/bar/../../", @"/home/git", @"/home/git/" },
+            { "tmp/bar/../next/../", @"/home/git", @"/home/git/tmp/" },
+            { "tmp/bar/next", @"/home/git", @"/home/git/tmp/bar/next" },
+
+            // Rooted
+            { @"/tmp/bar", @"/home/git", @"/tmp/bar" },
+            { @"/bar", @"/home/git", @"/bar" },
+            { @"/tmp/..", @"/home/git", @"/" },
+            { @"/tmp/bar/..", @"/home/git", @"/tmp" },
+            { @"/tmp/..", @"/home/git", @"/" },
+            { @"/", @"/home/git", @"/" },
+
+            { @"/tmp/../../../bar", @"/home/git", @"/bar" },
+            { @"/bar/././././../../..", @"/home/git", @"/" },
+            { @"/../../tmp/../../", @"/home/git", @"/" },
+            { @"/../../tmp/bar/..", @"/home/git", @"/tmp" },
+            { @"/tmp/..", @"/home/git", @"/" },
+            { @"/././../../../../", @"/home/git", @"/" },
+
+            { @"/tmp/../../../../../bar", @"/home/git", @"/bar" },
+            { @"/./././bar/../../../", @"/home/git", @"/" },
+            { @"/tmp/..", @"/home/git", @"/" },
+            { @"/../../tmp/bar/..", @"/home/git", @"/tmp" },
+            { @"/tmp/..", @"/home/git", @"/" },
+            { @"../../../", @"/home/git", @"/" },
+
+            { @"../.././././bar/../../../", @"/home/git", @"/" },
+            { @"../../.././tmp/..", @"/home/git", @"/" },
+            { @"../../../tmp/bar/..", @"/home/git", @"/tmp" },
+            { @"../../././tmp/..", @"/home/git", @"/" },
+            { @"././../../../", @"/home/git", @"/" },
+        };
+
+        [Theory,
+           MemberData(nameof(GetFullPath_BasePath_BasicExpansions_TestData_Unix))]
+        public static void GetFullPath_BasicExpansions_Unix(string path, string basePath, string expected)
+        {
+            Assert.Equal(expected, Path.GetFullPath(path, basePath));
+        }
+
+        [Fact]
+        public void GetFullPath_ThrowsOnEmbeddedNulls()
+        {
+            Assert.Throws<ArgumentException>(null, () => Path.GetFullPath("/gi\0t", "/foo/bar"));
+        }
     }
 }
