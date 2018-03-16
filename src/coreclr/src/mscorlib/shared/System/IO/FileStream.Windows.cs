@@ -173,13 +173,14 @@ namespace System.IO
 
         private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
             if ((share & FileShare.Inheritable) != 0)
             {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES();
-                secAttrs.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
-
-                secAttrs.bInheritHandle = Interop.BOOL.TRUE;
+                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
+                {
+                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
+                    bInheritHandle = Interop.BOOL.TRUE
+                };
             }
             return secAttrs;
         }
@@ -225,21 +226,16 @@ namespace System.IO
         }
 
         private bool HasActiveBufferOperation
-        {
-            get { return _activeBufferOperation != null && !_activeBufferOperation.IsCompleted; }
-        }
+            => _activeBufferOperation != null && !_activeBufferOperation.IsCompleted;
 
-        public override bool CanSeek
-        {
-            get { return _canSeek; }
-        }
+        public override bool CanSeek => _canSeek;
 
         private unsafe long GetLengthInternal()
         {
             Interop.Kernel32.FILE_STANDARD_INFO info = new Interop.Kernel32.FILE_STANDARD_INFO();
 
             if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             long len = info.EndOfFile;
             // If we're writing near the end of the file, we must include our
             // internal buffer in our Length calculation.  Don't flush because
@@ -307,7 +303,7 @@ namespace System.IO
         {
             if (!Interop.Kernel32.FlushFileBuffers(_fileHandle))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             }
         }
 
@@ -404,7 +400,7 @@ namespace System.IO
                 int errorCode = Marshal.GetLastWin32Error();
                 if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_FileLengthTooBig);
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
             }
             // Return file pointer to where it was before setting length
             if (origPos != value)
@@ -506,8 +502,7 @@ namespace System.IO
             // Make sure we are reading from the right spot
             VerifyOSHandlePosition();
 
-            int errorCode = 0;
-            int r = ReadFileNative(_fileHandle, buffer, null, out errorCode);
+            int r = ReadFileNative(_fileHandle, buffer, null, out int errorCode);
 
             if (r == -1)
             {
@@ -521,7 +516,7 @@ namespace System.IO
                     if (errorCode == ERROR_INVALID_PARAMETER)
                         throw new ArgumentException(SR.Arg_HandleNotSync, "_fileHandle");
 
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
             }
             Debug.Assert(r >= 0, "FileStream's ReadNative is likely broken.");
@@ -621,17 +616,15 @@ namespace System.IO
             Debug.Assert(!fileHandle.IsClosed && _canSeek, "!fileHandle.IsClosed && _canSeek");
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
 
-            long ret = 0;
-
-            if (!Interop.Kernel32.SetFilePointerEx(fileHandle, offset, out ret, (uint)origin))
+            if (!Interop.Kernel32.SetFilePointerEx(fileHandle, offset, out long ret, (uint)origin))
             {
                 if (closeInvalidHandle)
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(throwIfInvalidHandle: false));
+                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(throwIfInvalidHandle: false), _path);
                 }
                 else
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                    throw Win32Marshal.GetExceptionForLastWin32Error(_path);
                 }
             }
 
@@ -739,7 +732,7 @@ namespace System.IO
                     // to a handle opened asynchronously.
                     if (errorCode == ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                 }
             }
             Debug.Assert(r >= 0, "FileStream's WriteCore is likely broken.");
@@ -938,7 +931,7 @@ namespace System.IO
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                     }
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
@@ -1141,7 +1134,7 @@ namespace System.IO
                     }
                     else
                     {
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                     }
                 }
                 else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
@@ -1264,7 +1257,7 @@ namespace System.IO
                 _fileHandle.Dispose();
 
                 if (throwIfInvalidHandle)
-                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
             }
 
             return errorCode;
@@ -1418,7 +1411,7 @@ namespace System.IO
                                     break;
                                 default:
                                     // Everything else is an error (and there won't be a callback).
-                                    throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
                             }
                         }
 
@@ -1436,7 +1429,7 @@ namespace System.IO
                             case Interop.Errors.ERROR_OPERATION_ABORTED: // canceled
                                 throw new OperationCanceledException(cancellationToken.IsCancellationRequested ? cancellationToken : new CancellationToken(true));
                             default: // error
-                                throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode);
+                                throw Win32Marshal.GetExceptionForWin32Error((int)readAwaitable._errorCode, _path);
                         }
 
                         // Successful operation.  If we got zero bytes, we're done: exit the read/write loop.
@@ -1623,7 +1616,7 @@ namespace System.IO
 
             if (!Interop.Kernel32.LockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             }
         }
 
@@ -1636,9 +1629,10 @@ namespace System.IO
 
             if (!Interop.Kernel32.UnlockFile(_fileHandle, positionLow, positionHigh, lengthLow, lengthHigh))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             }
         }
+
         private SafeFileHandle ValidateFileHandle(SafeFileHandle fileHandle)
         {
             if (fileHandle.IsInvalid)
