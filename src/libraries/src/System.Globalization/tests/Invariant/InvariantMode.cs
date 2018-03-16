@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections;
 using System.Text;
 using Xunit;
 
@@ -71,7 +72,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "a", "A", 0, 1, CompareOptions.Ordinal, -1 };
             yield return new object[] { "abc", "aBc", 0, 3, CompareOptions.Ordinal, -1 };
 
-            // Ordinal with numbers and 
+            // Ordinal with numbers and
             yield return new object[] { "a", "1", 0, 1, CompareOptions.Ordinal, -1 };
             yield return new object[] { "1", "1", 0, 1, CompareOptions.Ordinal, 0 };
             yield return new object[] { "1", "!", 0, 1, CompareOptions.Ordinal, -1 };
@@ -144,7 +145,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "foobardzsdzs", "rddzs", 11, 12, CompareOptions.None, -1 };
             yield return new object[] { "foobardzsdzs", "rddzs", 11, 12, CompareOptions.Ordinal, -1 };
 
-            // Turkish                                      
+            // Turkish
             yield return new object[] { "Hi", "I", 1, 2, CompareOptions.None, -1 };
             yield return new object[] { "Hi", "I", 1, 2, CompareOptions.IgnoreCase, 1 };
             yield return new object[] { "Hi", "\u0130", 1, 2, CompareOptions.None, -1 };
@@ -190,7 +191,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
             yield return new object[] { "dzsdzsfoobar", "ddzsf", CompareOptions.Ordinal, false };
 
-            // Turkish                                      
+            // Turkish
             yield return new object[] { "interesting", "I", CompareOptions.None, false };
             yield return new object[] { "interesting", "I", CompareOptions.IgnoreCase, true };
             yield return new object[] { "interesting", "\u0130", CompareOptions.None, false };
@@ -227,7 +228,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "foobardzsdzs", "rddzs", CompareOptions.Ordinal, false };
             yield return new object[] { "foobardzsdzs", "rddzs", CompareOptions.None, false };
 
-            // Turkish                                      
+            // Turkish
             yield return new object[] { "Hi", "I", CompareOptions.None, false };
             yield return new object[] { "Hi", "I", CompareOptions.IgnoreCase, true };
             yield return new object[] { "Hi", "\u0130", CompareOptions.None, false };
@@ -245,7 +246,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "More Test's", "Tests", CompareOptions.IgnoreSymbols, false };
             yield return new object[] { "More Test's", "Tests", CompareOptions.None, false };
 
-            // Platform differences 
+            // Platform differences
             yield return new object[] { "foobardzsdzs", "rddzs", CompareOptions.None, false };
         }
 
@@ -374,10 +375,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "this \t HaS \t somE \t TABS", "THIS \t HAS \t SOME \t TABS", true };
 
             yield return new object[] { "embedded\0NuLL\0Byte\0", "EMBEDDED\0NULL\0BYTE\0", true };
-                                                     
+
             // LATIN SMALL LETTER O WITH ACUTE, which has an upper case variant.
             yield return new object[] { "\u00F3", "\u00D3", false };
-                                                     
+
             // SNOWMAN, which does not have an upper case variant.
             yield return new object[] { "\u2603", "\u2603", true };
 
@@ -438,7 +439,7 @@ namespace System.Globalization.Tests
         {
             yield return new object[] { "xn--yda", 0, 7, "\u0101" };
             yield return new object[] { "axn--ydab", 1, 7, "\u0101" };
-            
+
             yield return new object[] { "xn--aa-cla", 0, 10, "\u0101\u0061a" };
             yield return new object[] { "xn--ab-dla", 0, 10, "\u0061\u0101\u0062" };
             yield return new object[] { "xn--ab-ela", 0, 10, "\u0061\u0062\u0101"  };
@@ -453,10 +454,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 45, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" }; // Fully qualified domain name
 
             // Embedded domain name conversion (NLS + only)(Priority 1)
-            // Per the spec [7], "The index and count parameters (when provided) allow the 
-            // conversion to be done on a larger string where the domain name is embedded 
-            // (such as a URI or IRI). The output string is only the converted FQDN or 
-            // label, not the whole input string (if the input string contains more 
+            // Per the spec [7], "The index and count parameters (when provided) allow the
+            // conversion to be done on a larger string where the domain name is embedded
+            // (such as a URI or IRI). The output string is only the converted FQDN or
+            // label, not the whole input string (if the input string contains more
             // character than the substring to convert)."
             // Fully Qualified Domain Name (Label1.Label2.Label3)
             yield return new object[] { "abc.xn--d9juau41awczczp.xn--de-jg4avhby1noc0d", 0, 45, "\u0061\u0062\u0063.\u305D\u306E\u30B9\u30D4\u30FC\u30C9\u3067.\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
@@ -476,7 +477,7 @@ namespace System.Globalization.Tests
 
             //
             // DateTimeInfo
-            // 
+            //
 
             Assert.Equal(CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedDayNames, ci.DateTimeFormat.AbbreviatedDayNames);
             Assert.Equal(CultureInfo.InvariantCulture.DateTimeFormat.AbbreviatedMonthGenitiveNames, ci.DateTimeFormat.AbbreviatedMonthGenitiveNames);
@@ -523,7 +524,7 @@ namespace System.Globalization.Tests
 
             //
             // Culture data
-            // 
+            //
 
             Assert.True(ci.Calendar is GregorianCalendar);
 
@@ -692,7 +693,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        
+
         [Theory]
         [MemberData(nameof(Compare_TestData))]
         public void TestCompare(string source, string value, CompareOptions options, int result)
@@ -783,6 +784,15 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected, new IdnMapping().GetUnicode(ascii, index));
             }
             Assert.Equal(expected, new IdnMapping().GetUnicode(ascii, index, count));
+        }
+
+        [Fact]
+        public void TestHashing()
+        {
+            StringComparer cultureComparer = StringComparer.Create(CultureInfo.GetCultureInfo("tr-TR"), true);
+            StringComparer ordinalComparer = StringComparer.OrdinalIgnoreCase;
+            string turkishString = "i\u0130";
+            Assert.Equal(ordinalComparer.GetHashCode(turkishString), cultureComparer.GetHashCode(turkishString));
         }
     }
 }
