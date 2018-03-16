@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -6,11 +7,40 @@ using Microsoft.Xunit.Performance.Api;
 
 namespace JitBench
 {
-    class MusicStoreBenchmark : Benchmark
+    class MusicStoreBenchmark : WebAppBenchmark
     {
-        public MusicStoreBenchmark() : base("MusicStore")
+        public MusicStoreBenchmark() : base("MusicStore") { }
+
+        protected override string ExecutableName => "MusicStore.dll";
+
+        protected override string GetWebAppSrcDirectory(string outputDir)
         {
+            return Path.Combine(GetJitBenchRepoRootDir(outputDir), "src", "MusicStore");
         }
+    }
+
+    class AllReadyBenchmark : WebAppBenchmark
+    {
+        public AllReadyBenchmark() : base("AllReady") { }
+
+        protected override string ExecutableName => "AllReady.dll";
+
+        protected override string GetWebAppSrcDirectory(string outputDir)
+        {
+            return Path.Combine(GetJitBenchRepoRootDir(outputDir), "src", "AllReady");
+        }
+    }
+
+    abstract class WebAppBenchmark : Benchmark
+    {
+        private static readonly HashSet<int> DefaultExitCodes = new HashSet<int>(new[] { 0 });
+
+        public WebAppBenchmark(string name) : base(name)
+        {
+            ExePath = ExecutableName;
+        }
+
+        protected abstract string ExecutableName { get; }
 
         public override async Task Setup(DotNetInstallation dotNetInstall, string outputDir, bool useExistingSetup, ITestOutputHelper output)
         {
@@ -18,40 +48,34 @@ namespace JitBench
             {
                 using (var setupSection = new IndentedTestOutputHelper("Setup " + Name, output))
                 {
-                    await DownloadAndExtractJitBenchRepo(outputDir, setupSection);
+                    await CloneAspNetJitBenchRepo(outputDir, setupSection);
                     await CreateStore(dotNetInstall, outputDir, setupSection);
                     await Publish(dotNetInstall, outputDir, setupSection);
                 }
             }
-            string musicStoreSrcDirectory = GetMusicStoreSrcDirectory(outputDir);
+            string webAppSrcDirectory = GetWebAppSrcDirectory(outputDir);
             string tfm = DotNetSetup.GetTargetFrameworkMonikerForFrameworkVersion(dotNetInstall.FrameworkVersion);
-            ExePath = "MusicStore.dll";
-            WorkingDirPath = GetMusicStorePublishDirectory(dotNetInstall, outputDir, tfm);
-            EnvironmentVariables.Add("DOTNET_SHARED_STORE", GetMusicStoreStoreDir(outputDir));
+            WorkingDirPath = GetWebAppPublishDirectory(dotNetInstall, outputDir, tfm);
+            EnvironmentVariables.Add("DOTNET_SHARED_STORE", GetWebAppStoreDir(outputDir));
         }
 
-        async Task DownloadAndExtractJitBenchRepo(string outputDir, ITestOutputHelper output)
+        async Task CloneAspNetJitBenchRepo(string outputDir, ITestOutputHelper output)
         {
             // If the repo already exists, we delete it and extract it again.
             string jitBenchRepoRootDir = GetJitBenchRepoRootDir(outputDir);
             FileTasks.DeleteDirectory(jitBenchRepoRootDir, output);
 
-            string localJitBenchRepo = GetLocalJitBenchRepoDirectory();
-            if (localJitBenchRepo == null)
-            {
-                var url = $"{JitBenchRepoUrl}/archive/{JitBenchCommitSha1Id}.zip";
-                FileTasks.DeleteDirectory(jitBenchRepoRootDir + "_temp", output);
-                await FileTasks.DownloadAndUnzip(url, jitBenchRepoRootDir+"_temp", output);
-                FileTasks.MoveDirectory(Path.Combine(jitBenchRepoRootDir + "_temp", $"JitBench-{JitBenchCommitSha1Id}"), jitBenchRepoRootDir, output);
-            }
-            else
-            {
-                if (!Directory.Exists(localJitBenchRepo))
-                {
-                    throw new Exception("Local JitBench repo " + localJitBenchRepo + " does not exist");
-                }
-                FileTasks.DirectoryCopy(localJitBenchRepo, jitBenchRepoRootDir, output);
-            }
+            await ExecuteGitCommand($"clone {JitBenchRepoUrl} {jitBenchRepoRootDir}", output);
+            await ExecuteGitCommand($"checkout {JitBenchCommitSha1Id}", output, workingDirectory: jitBenchRepoRootDir);
+            await ExecuteGitCommand($"submodule update --init --recursive", output, workingDirectory: jitBenchRepoRootDir);
+        }
+
+        async Task ExecuteGitCommand(string arguments, ITestOutputHelper output, string workingDirectory = null)
+        {
+            int exitCode = await new ProcessRunner("git", arguments).WithLog(output).WithWorkingDirectory(workingDirectory).Run();
+
+            if (!DefaultExitCodes.Contains(exitCode))
+                throw new Exception($"git {arguments} has failed, the exit code was {exitCode}");
         }
 
         private static async Task CreateStore(DotNetInstallation dotNetInstall, string outputDir, ITestOutputHelper output)
@@ -69,27 +93,27 @@ namespace JitBench
                 .Run();
         }
 
-        private static async Task<string> Publish(DotNetInstallation dotNetInstall, string outputDir, ITestOutputHelper output)
+        private async Task<string> Publish(DotNetInstallation dotNetInstall, string outputDir, ITestOutputHelper output)
         {
             string tfm = DotNetSetup.GetTargetFrameworkMonikerForFrameworkVersion(dotNetInstall.FrameworkVersion);
-            string publishDir = GetMusicStorePublishDirectory(dotNetInstall, outputDir, tfm);
-            string manifestPath = Path.Combine(GetMusicStoreStoreDir(outputDir), dotNetInstall.Architecture, tfm, "artifact.xml");
+            string publishDir = GetWebAppPublishDirectory(dotNetInstall, outputDir, tfm);
+            string manifestPath = Path.Combine(GetWebAppStoreDir(outputDir), dotNetInstall.Architecture, tfm, "artifact.xml");
             if (publishDir != null)
             {
                 FileTasks.DeleteDirectory(publishDir, output);
             }
             string dotNetExePath = dotNetInstall.DotNetExe;
             await new ProcessRunner(dotNetExePath, $"publish -c Release -f {tfm} --manifest {manifestPath}")
-                .WithWorkingDirectory(GetMusicStoreSrcDirectory(outputDir))
+                .WithWorkingDirectory(GetWebAppSrcDirectory(outputDir))
                 .WithEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .WithEnvironmentVariable("JITBENCH_ASPNET_VERSION", "2.0")
                 .WithEnvironmentVariable("JITBENCH_TARGET_FRAMEWORK_MONIKER", tfm)
-                .WithEnvironmentVariable("JITBENCH_TARGET_FRAMEWORK_VERSION", dotNetInstall.FrameworkVersion)
+                .WithEnvironmentVariable("JITBENCH_FRAMEWORK_VERSION", dotNetInstall.FrameworkVersion)
                 .WithEnvironmentVariable("UseSharedCompilation", "false")
                 .WithLog(output)
                 .Run();
 
-            publishDir = GetMusicStorePublishDirectory(dotNetInstall, outputDir, tfm);
+            publishDir = GetWebAppPublishDirectory(dotNetInstall, outputDir, tfm);
             if (publishDir == null)
             {
                 throw new DirectoryNotFoundException("Could not find 'publish' directory");
@@ -179,7 +203,7 @@ namespace JitBench
 
         /// <summary>
         /// When serializing the result data to benchview this is called to determine if any of the metrics should be reported differently
-        /// than they were collected. MusicStore uses this to collect several measurements in each iteration, then present those measurements
+        /// than they were collected. Both web apps use this to collect several measurements in each iteration, then present those measurements
         /// to benchview as if each was the Duration metric of a distinct scenario test with its own set of iterations.
         /// </summary>
         public override bool TryGetBenchviewCustomMetricReporting(Metric originalMetric, out Metric newMetric, out string newScenarioModelName)
@@ -204,25 +228,22 @@ namespace JitBench
             return true;
         }
 
-        static string GetJitBenchRepoRootDir(string outputDir)
+        protected static string GetJitBenchRepoRootDir(string outputDir)
         {
             return Path.Combine(outputDir, "J"); 
         }
 
-        static string GetMusicStoreSrcDirectory(string outputDir)
-        {
-            return Path.Combine(GetJitBenchRepoRootDir(outputDir), "src", "MusicStore");
-        }
+        protected abstract string GetWebAppSrcDirectory(string outputDir);
 
-        static string GetMusicStorePublishDirectory(DotNetInstallation dotNetInstall, string outputDir, string tfm)
+        string GetWebAppPublishDirectory(DotNetInstallation dotNetInstall, string outputDir, string tfm)
         {
-            string dir = Path.Combine(GetMusicStoreSrcDirectory(outputDir), "bin", dotNetInstall.Architecture, "Release", tfm, "publish");
+            string dir = Path.Combine(GetWebAppSrcDirectory(outputDir), "bin", dotNetInstall.Architecture, "Release", tfm, "publish");
             if (Directory.Exists(dir))
             {
                 return dir;
             }
 
-            dir = Path.Combine(GetMusicStoreSrcDirectory(outputDir), "bin", "Release", tfm, "publish");
+            dir = Path.Combine(GetWebAppSrcDirectory(outputDir), "bin", "Release", tfm, "publish");
             if (Directory.Exists(dir))
             {
                 return dir;
@@ -231,7 +252,7 @@ namespace JitBench
             return null;
         }
 
-        static string GetMusicStoreStoreDir(string outputDir)
+        static string GetWebAppStoreDir(string outputDir)
         {
             return Path.Combine(GetJitBenchRepoRootDir(outputDir), StoreDirName);
         }
@@ -242,7 +263,7 @@ namespace JitBench
         }
 
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
-        private const string JitBenchCommitSha1Id = "6e1327b633e2d7d45f4c13f498fc27698ea5735a";
+        private const string JitBenchCommitSha1Id = "6bee730486f272d31f23f1033225090511f856f3";
         private const string EnvironmentFileName = "JitBenchEnvironment.txt";
         private const string StoreDirName = ".store";
         private readonly Metric StartupMetric = new Metric("Startup", "ms");
