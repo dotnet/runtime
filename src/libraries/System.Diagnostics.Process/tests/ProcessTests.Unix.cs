@@ -178,6 +178,31 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Theory, InlineData("nano"), InlineData("vi")]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [OuterLoop("Opens program")]
+        public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgramUsingArgumentList(string programToOpenWith)
+        {
+            if (IsProgramInstalled(programToOpenWith))
+            {
+                string fileToOpen = GetTestFilePath() + ".txt";
+                File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram)}");
+                ProcessStartInfo psi = new ProcessStartInfo(programToOpenWith);
+                psi.ArgumentList.Add(fileToOpen);
+                using (var px = Process.Start(psi))
+                {
+                    Assert.Equal(programToOpenWith, px.ProcessName);
+                    px.Kill();
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Program specified to open file with {programToOpenWith} is not installed on this machine.");
+            }
+        }
+
         [Theory, InlineData("/usr/bin/open"), InlineData("/usr/bin/nano")]
         [PlatformSpecific(TestPlatforms.OSX)]
         [OuterLoop("Opens program")]
@@ -215,6 +240,34 @@ namespace System.Diagnostics.Tests
         public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string arguments)
         {
             var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = "https://github.com/dotnet/corefx", Arguments = arguments };
+            using (var px = Process.Start(startInfo))
+            {
+                Assert.NotNull(px);
+                px.Kill();
+                px.WaitForExit();
+                Assert.True(px.HasExited);
+            }
+        }
+
+        public static TheoryData<string[]> StartOSXProcessWithArgumentList => new TheoryData<string[]>
+        {
+            { new string[] { "-a", "Safari" } },
+            { new string[] { "-a", "\"Google Chrome\"" } }
+        };
+
+        [Theory,
+            MemberData(nameof(StartOSXProcessWithArgumentList))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [OuterLoop("Opens browser")]
+        public void ProcessStart_UseShellExecuteTrue_OpenUrl_SuccessfullyReadsArgument(string[] argumentList)
+        {
+            var startInfo = new ProcessStartInfo { UseShellExecute = true, FileName = "https://github.com/dotnet/corefx"};
+
+            foreach (string item in argumentList)
+            {
+                startInfo.ArgumentList.Add(item);
+            }
+
             using (var px = Process.Start(startInfo))
             {
                 Assert.NotNull(px);

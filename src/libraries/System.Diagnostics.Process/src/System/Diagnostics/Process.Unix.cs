@@ -376,7 +376,6 @@ namespace System.Diagnostics
         /// <summary>Size to use for redirect streams and stream readers/writers.</summary>
         private const int StreamBufferSize = 4096;
 
-
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
         /// <param name="alternativePath">alternative resolved path to use as first argument</param>
@@ -384,7 +383,7 @@ namespace System.Diagnostics
         private static string[] ParseArgv(ProcessStartInfo psi, string alternativePath = null)
         {
             string argv0 = psi.FileName; // when no alternative path exists, pass filename (instead of resolved path) as argv[0], to match what caller supplied
-            if (string.IsNullOrEmpty(psi.Arguments) && string.IsNullOrEmpty(alternativePath))
+            if (string.IsNullOrEmpty(psi.Arguments) && string.IsNullOrEmpty(alternativePath) && psi.ArgumentList.Count == 0)
             {
                 return new string[] { argv0 };
             }
@@ -398,8 +397,16 @@ namespace System.Diagnostics
                     argvList.Add("openURL"); // kfmclient needs OpenURL
                 }
             }
+
             argvList.Add(argv0);
-            ParseArgumentsIntoList(psi.Arguments, argvList);
+            if (!string.IsNullOrEmpty(psi.Arguments))
+            {
+                ParseArgumentsIntoList(psi.Arguments, argvList);
+            }
+            else
+            {
+                argvList.AddRange(psi.ArgumentList);
+            }
             return argvList.ToArray();
         }
 
