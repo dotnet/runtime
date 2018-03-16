@@ -29,6 +29,68 @@ namespace System
             unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) * (uint)right) : new NUInt(((ulong)left._value) * (uint)right); }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NUInt operator +(NUInt left, int right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) + (uint)right) : new NUInt(((ulong)left._value) + (uint)right); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NUInt operator -(NUInt left, int right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) - (uint)right) : new NUInt(((ulong)left._value) - (uint)right); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NUInt operator *(NUInt left, NUInt right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) * (uint)right._value) : new NUInt(((ulong)left._value) * (ulong)right._value); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NUInt operator +(NUInt left, NUInt right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) + (uint)right._value) : new NUInt(((ulong)left._value) + (ulong)right._value); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NUInt operator -(NUInt left, NUInt right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) - (uint)right._value) : new NUInt(((ulong)left._value) - (ulong)right._value); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator >=(NUInt left, int right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) >= (uint)right : ((ulong)left._value) >= (uint)right; }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator <=(NUInt left, int right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) <= (uint)right : ((ulong)left._value) <= (uint)right; }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator >(NUInt left, int right) => !(left <= right);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator <(NUInt left, int right) => !(left >= right);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator <=(NUInt left, NUInt right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) <= (uint)right._value : ((ulong)left._value) <= (ulong)right._value; }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator >=(NUInt left, NUInt right)
+        {
+            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) >= (uint)right._value : ((ulong)left._value) >= (ulong)right._value; }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator >(NUInt left, NUInt right) => !(left <= right);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator <(NUInt left, NUInt right) => !(left >= right);
+
         public static bool operator ==(NUInt left, NUInt right) => left._value == right._value;
         public static bool operator !=(NUInt left, NUInt right) => left._value != right._value;
 
