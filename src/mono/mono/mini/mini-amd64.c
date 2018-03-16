@@ -7529,6 +7529,8 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 			if (inst->opcode == OP_REGVAR)
 				amd64_mov_membase_reg (code, AMD64_RSP, (i * 8), inst->dreg, 8);
 			else {
+				if (inst->opcode == OP_VTARG_ADDR)
+					inst = inst->inst_left;
 				amd64_mov_reg_membase (code, AMD64_R11, inst->inst_basereg, inst->inst_offset, 8);
 				amd64_mov_membase_reg (code, AMD64_RSP, (i * 8), AMD64_R11, 8);
 			}
