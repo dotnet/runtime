@@ -86,9 +86,9 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class BooleanComparisonOpTest__{Method}{RetBaseType}
     {
-        private const int VectorSize = {VectorSize};
+        private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private const int Op1ElementCount = VectorSize / sizeof({Op1BaseType});
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
 
@@ -103,7 +103,7 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
         }
 
         public BooleanComparisonOpTest__{Method}{RetBaseType}()
@@ -113,10 +113,10 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
-            _dataTable = new BooleanUnaryOpTest__DataTable<{Op1BaseType}>(_data, VectorSize);
+            _dataTable = new BooleanUnaryOpTest__DataTable<{Op1BaseType}>(_data, LargestVectorSize);
         }
 
         public bool IsSupported => {Isa}.IsSupported;
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
             ValidateResult(inArray, result, method);
         }
