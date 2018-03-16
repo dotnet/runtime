@@ -56,7 +56,7 @@ namespace System.IO
             // Get the full path
             GetFullPathName(path.AsSpan(terminate: true), ref builder);
 
-            string result = builder.AsSpan().Contains('~')
+            string result = builder.AsSpan().IndexOf('~') >= 0
                 ? TryExpandShortFileName(ref builder, originalPath: null)
                 : builder.ToString();
 
