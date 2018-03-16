@@ -97,14 +97,19 @@ enum HWIntrinsicFlag : unsigned int
     // Select base type using the second argument type
     HW_Flag_BaseTypeFromSecondArg = 0x10000,
 
-    // Specail codegen
+    // Special codegen
     // the intrinsics need special rules in CodeGen,
-    // but can be table-driven in the front-end
+    // but may be table-driven in the front-end
     HW_Flag_SpecialCodeGen = 0x20000,
 
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
     HW_Flag_NoRMWSemantics = 0x40000,
+
+    // Special import
+    // the intrinsics need special rules in importer,
+    // but may be table-driven in the back-end
+    HW_Flag_SpecialImport = 0x80000,
 };
 
 inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)

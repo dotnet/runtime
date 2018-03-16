@@ -307,7 +307,7 @@ namespace System
 
             if (_ignoreCase)
             {
-                return TextInfo.GetHashCodeOrdinalIgnoreCase(obj);
+                return CompareInfo.GetIgnoreCaseHash(obj);
             }
 
             return obj.GetHashCode();
@@ -375,7 +375,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return TextInfo.GetHashCodeOrdinalIgnoreCase(obj);
+            return CompareInfo.GetIgnoreCaseHash(obj);
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
