@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -53,7 +54,12 @@ namespace JIT.HardwareIntrinsics.X86
             // to compute the aligned address.
 
             var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-            return (void*)(buffer + misalignment);
+            var result = (void*)(buffer + misalignment);
+            
+            Debug.Assert(((ulong)(result) % expectedAlignment) == 0);
+            Debug.Assert((ulong)(result) <= ((ulong)(result) + expectedAlignment));
+
+            return result;
         }
     }
 }
