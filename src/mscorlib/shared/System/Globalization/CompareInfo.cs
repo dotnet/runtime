@@ -1236,7 +1236,7 @@ namespace System.Globalization
 
             int charsWritten = source.AsSpan().ToUpperInvariant(span);
 
-            // Slice the array to the input size as we could have gotten a larger array from the ArrayPool.
+            // Slice the array to the size returned by ToUpperInvariant.
             int hash = Marvin.ComputeHash32(span.Slice(0, charsWritten).AsBytes(), Marvin.DefaultSeed);
 
             // Return the borrowed array if necessary.
