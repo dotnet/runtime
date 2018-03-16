@@ -47,6 +47,9 @@
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
+    <Compile Include="..\..\Common\src\System\PasteArguments.cs">
+      <Link>Common\System\PasteArguments.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">

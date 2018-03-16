@@ -49,6 +49,7 @@
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+    <Compile Include="ProcessStartInfoTests.netcoreapp.cs" />
     <Compile Include="ProcessStreamReadTests.netcoreapp.cs" />
     <Compile Include="ProcessTests.netcoreapp.cs" />
   </ItemGroup>

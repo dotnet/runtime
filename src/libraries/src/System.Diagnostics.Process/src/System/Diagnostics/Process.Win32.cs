@@ -46,9 +46,21 @@ namespace System.Diagnostics
             if (startInfo._environmentVariables != null)
                 throw new InvalidOperationException(SR.CantUseEnvVars);
 
+            string arguments;
+            if (startInfo.ArgumentList.Count > 0)
+            {
+                StringBuilder sb = new StringBuilder();
+                Process.AppendArguments(sb, startInfo.ArgumentList);
+                arguments = sb.ToString();
+            }
+            else
+            {
+                arguments = startInfo.Arguments;
+            }
+
             fixed (char* fileName = startInfo.FileName.Length > 0 ? startInfo.FileName : null)
             fixed (char* verb = startInfo.Verb.Length > 0 ? startInfo.Verb : null)
-            fixed (char* parameters = startInfo.Arguments.Length > 0 ? startInfo.Arguments : null)
+            fixed (char* parameters = arguments.Length > 0 ? arguments : null)
             fixed (char* directory = startInfo.WorkingDirectory.Length > 0 ? startInfo.WorkingDirectory : null)
             {
                 Interop.Shell32.SHELLEXECUTEINFO shellExecuteInfo = new Interop.Shell32.SHELLEXECUTEINFO()

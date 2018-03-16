@@ -158,6 +158,7 @@ namespace System.Diagnostics
         public ProcessStartInfo(string fileName) { }
         public ProcessStartInfo(string fileName, string arguments) { }
         public string Arguments { get { throw null; } set { } }
+        public System.Collections.ObjectModel.Collection<string> ArgumentList { get { throw null; } }
         public bool CreateNoWindow { get { throw null; } set { } }
         public string Domain { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(null)]
