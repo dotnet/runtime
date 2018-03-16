@@ -119,6 +119,7 @@ namespace System.MemoryTests
 
         [Fact]
         [OuterLoop]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop framework doesn't support large arrays by default.")]
         public static void OwnedMemoryPinLargeArray()
         {
             int[] array = new int[0x2000_0000]; // will produce array with total byte length > 2 GB
