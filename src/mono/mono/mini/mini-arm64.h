@@ -150,6 +150,10 @@ typedef struct {
 
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
 
+// Does the ABI have a volatile non-parameter register, so tailcall
+// can pass context to generics or interfaces?
+#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 1
+
 #ifdef TARGET_IOS
 
 #define MONO_ARCH_REDZONE_SIZE 128
