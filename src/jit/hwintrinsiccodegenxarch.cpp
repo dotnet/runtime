@@ -252,10 +252,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             genSSE42Intrinsic(node);
             break;
         case InstructionSet_AVX:
-            genAVXIntrinsic(node);
-            break;
         case InstructionSet_AVX2:
-            genAVX2Intrinsic(node);
+            genAvxOrAvx2Intrinsic(node);
             break;
         case InstructionSet_AES:
             genAESIntrinsic(node);
@@ -1269,24 +1267,30 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 }
 
 //------------------------------------------------------------------------
-// genAVXIntrinsic: Generates the code for an AVX hardware intrinsic node
+// genAvxOrAvx2Intrinsic: Generates the code for an AVX/AVX2 hardware intrinsic node
 //
 // Arguments:
 //    node - The hardware intrinsic node
 //
-void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
     var_types      baseType    = node->gtSIMDBaseType;
     emitAttr       attr        = EA_ATTR(node->gtSIMDSize);
     var_types      targetType  = node->TypeGet();
     instruction    ins         = Compiler::insOfHWIntrinsic(intrinsicID, baseType);
+    int            numArgs     = Compiler::numArgsOfHWIntrinsic(node);
     GenTree*       op1         = node->gtGetOp1();
     GenTree*       op2         = node->gtGetOp2();
+    regNumber      op1Reg      = REG_NA;
+    regNumber      op2Reg      = REG_NA;
     regNumber      targetReg   = node->gtRegNum;
     emitter*       emit        = getEmitter();
 
-    genConsumeOperands(node);
+    if ((op1 != nullptr) && !op1->OperIsList())
+    {
+        genConsumeOperands(node);
+    }
 
     switch (intrinsicID)
     {
@@ -1357,30 +1361,88 @@ void CodeGen::genAVXIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        default:
-            unreached();
+        case NI_AVX_ExtractVector128:
+        case NI_AVX_InsertVector128:
+        case NI_AVX2_ExtractVector128:
+        case NI_AVX2_InsertVector128:
+        {
+            GenTree* lastOp = nullptr;
+            if (numArgs == 2)
+            {
+                assert(intrinsicID == NI_AVX_ExtractVector128 || NI_AVX_ExtractVector128);
+                op1Reg = op1->gtRegNum;
+                op2Reg = op2->gtRegNum;
+                lastOp = op2;
+            }
+            else
+            {
+                assert(numArgs == 3);
+                assert(op1->OperIsList());
+                assert(op1->gtGetOp2()->OperIsList());
+                assert(op1->gtGetOp2()->gtGetOp2()->OperIsList());
+
+                GenTreeArgList* argList = op1->AsArgList();
+                op1                     = argList->Current();
+                genConsumeRegs(op1);
+                op1Reg = op1->gtRegNum;
+
+                argList = argList->Rest();
+                op2     = argList->Current();
+                genConsumeRegs(op2);
+                op2Reg = op2->gtRegNum;
+
+                argList = argList->Rest();
+                lastOp  = argList->Current();
+                genConsumeRegs(lastOp);
+            }
+
+            regNumber op3Reg = lastOp->gtRegNum;
+
+            auto emitSwCase = [&](unsigned i) {
+                // TODO-XARCH-Bug the emitter cannot work with imm8 >= 128,
+                // so clear the 8th bit that is not used by the instructions
+                i &= 0x7FU;
+                if (numArgs == 3)
+                {
+                    if (intrinsicID == NI_AVX_ExtractVector128 || intrinsicID == NI_AVX2_ExtractVector128)
+                    {
+                        emit->emitIns_R_AR_I(ins, attr, op2Reg, op1Reg, 0, (int)i);
+                    }
+                    else if (op2->TypeGet() == TYP_I_IMPL)
+                    {
+                        emit->emitIns_SIMD_R_R_AR_I(ins, attr, targetReg, op1Reg, op2Reg, (int)i);
+                    }
+                    else
+                    {
+                        assert(op2->TypeGet() == TYP_SIMD16);
+                        emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, op1Reg, op2Reg, (int)i);
+                    }
+                }
+                else
+                {
+                    assert(numArgs == 2);
+                    assert(intrinsicID == NI_AVX_ExtractVector128 || intrinsicID == NI_AVX2_ExtractVector128);
+                    emit->emitIns_SIMD_R_R_I(ins, attr, targetReg, op1Reg, (int)i);
+                }
+            };
+
+            if (lastOp->IsCnsIntOrI())
+            {
+                ssize_t ival = lastOp->AsIntCon()->IconValue();
+                emitSwCase((unsigned)ival);
+            }
+            else
+            {
+                // We emit a fallback case for the scenario when the imm-op is not a constant. This should
+                // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
+                // can also occur if the consumer calls it directly and just doesn't pass a constant value.
+                regNumber baseReg = node->ExtractTempReg();
+                regNumber offsReg = node->GetSingleTempReg();
+                genHWIntrinsicJumpTableFallback(intrinsicID, op3Reg, baseReg, offsReg, emitSwCase);
+            }
             break;
-    }
+        }
 
-    genProduceReg(node);
-}
-
-//------------------------------------------------------------------------
-// genAVX2Intrinsic: Generates the code for an AVX2 hardware intrinsic node
-//
-// Arguments:
-//    node - The hardware intrinsic node
-//
-void CodeGen::genAVX2Intrinsic(GenTreeHWIntrinsic* node)
-{
-    NamedIntrinsic intrinsicID = node->gtHWIntrinsicId;
-    var_types      baseType    = node->gtSIMDBaseType;
-    instruction    ins         = INS_invalid;
-
-    genConsumeOperands(node);
-
-    switch (intrinsicID)
-    {
         default:
             unreached();
             break;
