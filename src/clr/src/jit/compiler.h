@@ -3063,14 +3063,10 @@ protected:
                                CORINFO_METHOD_HANDLE method,
                                CORINFO_SIG_INFO*     sig,
                                bool                  mustExpand);
-    GenTree* impAVXIntrinsic(NamedIntrinsic        intrinsic,
-                             CORINFO_METHOD_HANDLE method,
-                             CORINFO_SIG_INFO*     sig,
-                             bool                  mustExpand);
-    GenTree* impAVX2Intrinsic(NamedIntrinsic        intrinsic,
-                              CORINFO_METHOD_HANDLE method,
-                              CORINFO_SIG_INFO*     sig,
-                              bool                  mustExpand);
+    GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
+                                   CORINFO_METHOD_HANDLE method,
+                                   CORINFO_SIG_INFO*     sig,
+                                   bool                  mustExpand);
     GenTree* impAESIntrinsic(NamedIntrinsic        intrinsic,
                              CORINFO_METHOD_HANDLE method,
                              CORINFO_SIG_INFO*     sig,

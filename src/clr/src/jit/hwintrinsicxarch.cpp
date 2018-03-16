@@ -660,7 +660,8 @@ bool Compiler::hwIntrinsicSignatureTypeSupported(var_types retType, CORINFO_SIG_
 static bool impIsTableDrivenHWIntrinsic(HWIntrinsicCategory category, HWIntrinsicFlag flags)
 {
     // HW_Flag_NoCodeGen implies this intrinsic should be manually morphed in the importer.
-    return category != HW_Category_Special && category != HW_Category_Scalar && (flags & HW_Flag_NoCodeGen) == 0;
+    return category != HW_Category_Special && category != HW_Category_Scalar &&
+           ((flags & (HW_Flag_NoCodeGen | HW_Flag_SpecialImport)) == 0);
 }
 
 //------------------------------------------------------------------------
@@ -769,7 +770,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(baseType != TYP_UNKNOWN);
     }
 
-    if ((flags & (HW_Flag_OneTypeGeneric | HW_Flag_TwoTypeGeneric)) != 0)
+    if (((flags & (HW_Flag_OneTypeGeneric | HW_Flag_TwoTypeGeneric)) != 0) && ((flags & HW_Flag_SpecialImport) == 0))
     {
         if (!varTypeIsArithmetic(baseType))
         {
@@ -869,9 +870,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_SSE42:
             return impSSE42Intrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_AVX:
-            return impAVXIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_AVX2:
-            return impAVX2Intrinsic(intrinsic, method, sig, mustExpand);
+            return impAvxOrAvx2Intrinsic(intrinsic, method, sig, mustExpand);
 
         case InstructionSet_AES:
             return impAESIntrinsic(intrinsic, method, sig, mustExpand);
@@ -1058,35 +1058,48 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic        intrinsic,
     return retNode;
 }
 
-GenTree* Compiler::impAVXIntrinsic(NamedIntrinsic        intrinsic,
-                                   CORINFO_METHOD_HANDLE method,
-                                   CORINFO_SIG_INFO*     sig,
-                                   bool                  mustExpand)
+GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
+                                         CORINFO_METHOD_HANDLE method,
+                                         CORINFO_SIG_INFO*     sig,
+                                         bool                  mustExpand)
 {
     GenTree*  retNode  = nullptr;
     GenTree*  op1      = nullptr;
     GenTree*  op2      = nullptr;
     var_types baseType = TYP_UNKNOWN;
-    switch (intrinsic)
-    {
-        default:
-            JITDUMP("Not implemented hardware intrinsic");
-            break;
-    }
-    return retNode;
-}
+    int       simdSize = simdSizeOfHWIntrinsic(intrinsic, sig);
 
-GenTree* Compiler::impAVX2Intrinsic(NamedIntrinsic        intrinsic,
-                                    CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig,
-                                    bool                  mustExpand)
-{
-    GenTree*  retNode  = nullptr;
-    GenTree*  op1      = nullptr;
-    GenTree*  op2      = nullptr;
-    var_types baseType = TYP_UNKNOWN;
     switch (intrinsic)
     {
+        case NI_AVX_ExtractVector128:
+        case NI_AVX2_ExtractVector128:
+        {
+            GenTree* lastOp = impPopStack().val;
+            assert(lastOp->IsCnsIntOrI() || mustExpand);
+            GenTree* vectorOp = impSIMDPopStack(TYP_SIMD32);
+            if (sig->numArgs == 2)
+            {
+                baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+                if (!varTypeIsArithmetic(baseType))
+                {
+                    retNode = impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
+                }
+                else
+                {
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, lastOp, intrinsic, baseType, 32);
+                }
+            }
+            else
+            {
+                assert(sig->numArgs == 3);
+                op1                                    = impPopStack().val;
+                CORINFO_ARG_LIST_HANDLE secondArg      = info.compCompHnd->getArgNext(sig->args);
+                CORINFO_CLASS_HANDLE    secondArgClass = info.compCompHnd->getArgClass(sig, secondArg);
+                baseType                               = getBaseTypeOfSIMDType(secondArgClass);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, vectorOp, lastOp, intrinsic, baseType, 32);
+            }
+            break;
+        }
         default:
             JITDUMP("Not implemented hardware intrinsic");
             break;
