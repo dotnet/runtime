@@ -10,6 +10,12 @@ usage()
     exit 1
 }
 
+install_Failed()
+{
+    echo "Failed to install/symlink packages."
+    exit 1
+}
+
 __LinuxCodeName=trusty
 __CrossDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 __InitialDir=$PWD
@@ -71,7 +77,7 @@ for i in "$@" ; do
             __LLDB_Package="lldb-3.8-dev"
             ;;
         lldb3.9)
-            __LLDB_Package="lldb-3.9-dev"
+            __LLDB_Package="liblldb-3.9-dev"
             ;;
         no-lldb)
             unset __LLDB_Package
@@ -178,9 +184,3 @@ else
     usage;
     exit 1
 fi
-
-install_Failed()
-{
-    echo "Failed to install/symlink packages."
-    exit 1
-}

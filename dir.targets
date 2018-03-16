@@ -22,6 +22,7 @@
     </PropertyGroup>
 
       <ItemGroup>
+        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
         <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
@@ -77,7 +78,7 @@
       <NativeVersionLines Include="#define VER_COMPANYNAME_STR         &quot;Microsoft Corporation&quot;" />
       <NativeVersionLines Include="#endif" />
       <NativeVersionLines Include="#ifndef VER_FILEDESCRIPTION_STR" />
-      <NativeVersionLines Include="#define VER_FILEDESCRIPTION_STR     &quot;$(AssemblyName)&quot;" />
+      <NativeVersionLines Include="#define VER_FILEDESCRIPTION_STR     &quot;$(FileDescription)&quot;" />
       <NativeVersionLines Include="#endif" />
       <NativeVersionLines Include="#ifndef VER_INTERNALNAME_STR" />
       <NativeVersionLines Include="#define VER_INTERNALNAME_STR        VER_FILEDESCRIPTION_STR" />

@@ -12,6 +12,8 @@ else()
     add_compile_options(-fPIC)
 endif()
 
+add_compile_options(-fvisibility=hidden)
+
 include(../setup.cmake)
 
 # Include directories
@@ -37,9 +39,12 @@ set(SOURCES
     ../json/casablanca/src/json/json_serialization.cpp
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
     ../fx_definition.cpp
+    ../version.cpp
     ./hostfxr.cpp
     ./fx_ver.cpp
     ./fx_muxer.cpp
+    ./framework_info.cpp
+    ./sdk_info.cpp
 )
 
 if(WIN32)

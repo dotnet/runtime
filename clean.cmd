@@ -1,8 +1,20 @@
 @if not defined _echo @echo off
 setlocal EnableDelayedExpansion
 
-echo Stop VBCSCompiler.exe execution.
-for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
+set NO_DASHES_ARG=%1
+if not defined NO_DASHES_ARG goto no_help
+if /I [%NO_DASHES_ARG:-=%] == [?] goto Usage
+if /I [%NO_DASHES_ARG:-=%] == [h] goto Usage
+
+:no_help
+
+:: Check if VBCSCompiler.exe is running
+tasklist /fi "imagename eq VBCSCompiler.exe" |find ":" > nul
+:: Compiler is running if errorlevel == 1
+if errorlevel 1 (
+	echo Stop VBCSCompiler.exe execution.
+	for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
+)
 
 :: Strip all dashes off the argument and use invariant
 :: compare to match as many versions of "all" that we can

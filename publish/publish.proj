@@ -24,7 +24,6 @@
     <BuildDependsOn Condition="$(PublishType.Contains('nopublishtype'))">
       $(BuildDependsOn);
       PublishDebFilesToDebianRepo;
-      PublishDebToolPackageToFeed;
       PublishFinalOutput;
     </BuildDependsOn>
   </PropertyGroup>
@@ -150,7 +149,6 @@
                    Channel="$(Channel)"
                    Version="$(SharedFrameworkNugetVersion)"
                    SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
-                   UWPCoreRuntimeSdkFullVersion="$(UWPCoreRuntimeSdkFullVersion)"
                    SharedHostNuGetVersion="$(HostVersion)"
                    ProductVersion="$(ProductVersion)"
                    CommitHash="$(LatestCommit)"
@@ -168,7 +166,6 @@
                    Channel="$(Channel)"
                    Version="$(SharedFrameworkNugetVersion)"
                    SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
-                   UWPCoreRuntimeSdkFullVersion="$(UWPCoreRuntimeSdkFullVersion)"
                    SharedHostNuGetVersion="$(HostVersion)"
                    ProductVersion="$(ProductVersion)"
                    CommitHash="$(LatestCommit)"
@@ -222,6 +219,7 @@
       <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">1</SymbolExpirationInDays>
       <SymbolVerboseLogging>true</SymbolVerboseLogging>
       <ConvertPortablePdbsToWindowsPdbs>true</ConvertPortablePdbsToWindowsPdbs>
+      <PdbConversionTreatAsWarning>21,23,30</PdbConversionTreatAsWarning>
     </PropertyGroup>
     <ItemGroup>
       <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" />
@@ -282,19 +280,6 @@
                     AccountKey="$(TransportFeedAccessToken)"
                     ItemsToPush="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)"/>
-  </Target>
-
-  <Target Name="PublishDebToolPackageToFeed"
-          Condition="'$(PublishDebToolToFeed)' == 'true' AND '$(CliNuGetFeedUrl)' != ''">
-    <Error Condition="'$(CliNuGetApiKey)' == ''" Text="Missing required property CliNuGetApiKey" />
-    <ItemGroup>
-      <DebToolPackages Include="$(PackageOutputPath)/dotnet-deb-tool.*.nupkg" />
-    </ItemGroup>
-    <PropertyGroup>
-      <NuGetPushCommand>$(DotnetToolCommand) nuget push --source $(CliNuGetFeedUrl) --api-key $(CliNuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
-    </PropertyGroup>
-    <ExecWithRetriesForNuGetPush Command="$(NuGetPushCommand) %(DebToolPackages.Identity)"
-                                 IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
   </Target>
 
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
