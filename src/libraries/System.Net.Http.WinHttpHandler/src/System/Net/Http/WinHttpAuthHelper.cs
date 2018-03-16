@@ -102,7 +102,7 @@ namespace System.Net.Http
                     // But we can validate with assert.
                     Debug.Assert(authTarget == Interop.WinHttp.WINHTTP_AUTH_TARGET_SERVER);
 
-                    serverAuthScheme = ChooseAuthScheme(supportedSchemes);
+                    serverAuthScheme = ChooseAuthScheme(supportedSchemes, state.RequestMessage.RequestUri, state.ServerCredentials);
                     if (serverAuthScheme != 0)
                     {
                         if (SetWinHttpCredential(
@@ -155,7 +155,7 @@ namespace System.Net.Http
                     // But we can validate with assert.
                     Debug.Assert(authTarget == Interop.WinHttp.WINHTTP_AUTH_TARGET_PROXY);
 
-                    proxyAuthScheme = ChooseAuthScheme(supportedSchemes);
+                    proxyAuthScheme = ChooseAuthScheme(supportedSchemes, state.Proxy.GetProxy(state.RequestMessage.RequestUri), proxyCreds);
                     state.RetryRequest = true;
                     break;
 
@@ -371,11 +371,16 @@ namespace System.Net.Http
             return true;
         }
 
-        private static uint ChooseAuthScheme(uint supportedSchemes)
+        private static uint ChooseAuthScheme(uint supportedSchemes, Uri uri, ICredentials credentials)
         {
+            if (credentials == null)
+            {
+                return 0;
+            }
+
             foreach (uint authScheme in s_authSchemePriorityOrder)
             {
-                if ((supportedSchemes & authScheme) != 0)
+                if ((supportedSchemes & authScheme) != 0 && credentials.GetCredential(uri, s_authSchemeStringMapping[authScheme]) != null)
                 {
                     return authScheme;
                 }
