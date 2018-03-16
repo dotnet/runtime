@@ -140,9 +140,9 @@ namespace Internal.Cryptography.Pal
             // applied to the original store. This has a limit of 99 links per cert context however.
             //
 
-            foreach (X509Certificate2 certificate in certificates)
+            for (int i = 0; i < certificates.Count; i++)
             {
-                SafeCertContextHandle certContext = ((CertificatePal)certificate.Pal).CertContext;
+                SafeCertContextHandle certContext = ((CertificatePal)certificates[i].Pal).CertContext;
                 if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }
