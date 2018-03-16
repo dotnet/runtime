@@ -1210,6 +1210,7 @@ namespace System.IO
         public static string GetFileNameWithoutExtension(string path) { throw null; }
         public static ReadOnlySpan<char> GetFileNameWithoutExtension(ReadOnlySpan<char> path) { throw null; }
         public static string GetFullPath(string path) { throw null; }
+        public static string GetFullPath(string path, string basePath) { throw null; }
         public static char[] GetInvalidFileNameChars() { throw null; }
         public static char[] GetInvalidPathChars() { throw null; }
         public static string GetPathRoot(string path) { throw null; }
