@@ -355,9 +355,17 @@ namespace System.IO
 
         public static void RemoveDirectory(string fullPath, bool recursive)
         {
-            // Do not recursively delete through reparse points.
-            if (!recursive || IsReparsePoint(fullPath))
+            if (!recursive)
             {
+                RemoveDirectoryInternal(fullPath, topLevel: true);
+                return;
+            }
+
+            Interop.Kernel32.WIN32_FIND_DATA findData = new Interop.Kernel32.WIN32_FIND_DATA();
+            GetFindData(fullPath, ref findData);
+            if (IsNameSurrogateReparsePoint(ref findData))
+            {
+                // Don't recurse
                 RemoveDirectoryInternal(fullPath, topLevel: true);
                 return;
             }
@@ -365,24 +373,38 @@ namespace System.IO
             // We want extended syntax so we can delete "extended" subdirectories and files
             // (most notably ones with trailing whitespace or periods)
             fullPath = PathInternal.EnsureExtendedPrefix(fullPath);
-
-            Interop.Kernel32.WIN32_FIND_DATA findData = new Interop.Kernel32.WIN32_FIND_DATA();
             RemoveDirectoryRecursive(fullPath, ref findData, topLevel: true);
         }
 
-        private static bool IsReparsePoint(string fullPath)
+        private static void GetFindData(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData)
         {
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
-            if (errorCode != Interop.Errors.ERROR_SUCCESS)
+            using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(PathInternal.TrimEndingDirectorySeparator(fullPath), ref findData))
             {
-                // File not found doesn't make much sense coming from a directory delete.
-                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
-                    errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+                if (handle.IsInvalid)
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    // File not found doesn't make much sense coming from a directory delete.
+                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                        errorCode = Interop.Errors.ERROR_PATH_NOT_FOUND;
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+                }
             }
+        }
 
-            return (((FileAttributes)data.dwFileAttributes & FileAttributes.ReparsePoint) != 0);
+        private static bool IsNameSurrogateReparsePoint(ref Interop.Kernel32.WIN32_FIND_DATA data)
+        {
+            // Name surrogates are reparse points that point to other named entities local to the file system.
+            // Reparse points can be used for other types of files, notably OneDrive placeholder files. We
+            // should treat reparse points that are not name surrogates as any other directory, e.g. recurse
+            // into them. Surrogates should just be detached.
+            // 
+            // See
+            // https://github.com/dotnet/corefx/issues/24250
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365511.aspx
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365197.aspx
+
+            return ((FileAttributes)data.dwFileAttributes & FileAttributes.ReparsePoint) != 0
+                && (data.dwReserved0 & 0x20000000) != 0; // IsReparseTagNameSurrogate
         }
 
         private static void RemoveDirectoryRecursive(string fullPath, ref Interop.Kernel32.WIN32_FIND_DATA findData, bool topLevel)
@@ -419,9 +441,10 @@ namespace System.IO
                             continue;
 
                         string fileName = findData.cFileName.GetStringFromFixedBuffer();
-                        if ((findData.dwFileAttributes & (int)FileAttributes.ReparsePoint) == 0)
+
+                        if (!IsNameSurrogateReparsePoint(ref findData))
                         {
-                            // Not a reparse point, recurse.
+                            // Not a reparse point, or the reparse point isn't a name surrogate, recurse.
                             try
                             {
                                 RemoveDirectoryRecursive(
@@ -437,7 +460,8 @@ namespace System.IO
                         }
                         else
                         {
-                            // Reparse point, don't recurse, just remove. (dwReserved0 is documented for this flag)
+                            // Name surrogate reparse point, don't recurse, simply remove the directory.
+                            // If a mount point, we have to delete the mount point first.
                             if (findData.dwReserved0 == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                             {
                                 // Mount point. Unmount using full path plus a trailing '\'.
