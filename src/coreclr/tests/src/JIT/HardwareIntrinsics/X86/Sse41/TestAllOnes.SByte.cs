@@ -86,9 +86,9 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class BooleanComparisonOpTest__TestAllOnesSByte
     {
-        private const int VectorSize = 16;
+        private static readonly int LargestVectorSize = 16;
 
-        private const int Op1ElementCount = VectorSize / sizeof(SByte);
+        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
 
         private static SByte[] _data = new SByte[Op1ElementCount];
 
@@ -103,7 +103,7 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar), ref Unsafe.As<SByte, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
         }
 
         public BooleanComparisonOpTest__TestAllOnesSByte()
@@ -113,10 +113,10 @@ namespace JIT.HardwareIntrinsics.X86
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld), ref Unsafe.As<SByte, byte>(ref _data[0]), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (sbyte)(random.Next(sbyte.MinValue, sbyte.MaxValue)); }
-            _dataTable = new BooleanUnaryOpTest__DataTable<SByte>(_data, VectorSize);
+            _dataTable = new BooleanUnaryOpTest__DataTable<SByte>(_data, LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             SByte[] inArray = new SByte[Op1ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), VectorSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
             ValidateResult(inArray, result, method);
         }
