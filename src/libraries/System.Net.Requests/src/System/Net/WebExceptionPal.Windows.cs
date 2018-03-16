@@ -26,7 +26,7 @@ namespace System.Net
                     status = WebExceptionStatus.NameResolutionFailure;
                     break;
                 default:
-                    status = WebExceptionStatus.UnknownError;
+                    status = GetStatusFromExceptionHelper(ex);
                     break;
             }
 
