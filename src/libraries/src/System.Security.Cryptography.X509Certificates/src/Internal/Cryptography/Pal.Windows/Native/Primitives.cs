@@ -752,13 +752,6 @@ namespace Internal.Cryptography.Pal.Native
         public Guid ChainId;
     }
 
-    [Flags]
-    internal enum FormatMessageFlags : int
-    {
-        FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
-        FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct CERT_CHAIN_POLICY_PARA
     {

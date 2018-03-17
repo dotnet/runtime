@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -16,17 +15,17 @@ internal partial class Interop
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
         
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
-        private const int InitialBufferSize = 256;
+        private const int InitialBufferSize = 256; // small enough to be on stack, and large enough for most error messages
         private const int BufferSizeIncreaseFactor = 4;
         private const int MaxAllowedBufferSize = 65 * 1024;
 
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true)]
-        private static extern int FormatMessage(
+        private static extern unsafe int FormatMessage(
             int dwFlags,
             IntPtr lpSource,
             uint dwMessageId,
             int dwLanguageId,
-            [Out] StringBuilder lpBuffer,
+            char* lpBuffer,
             int nSize,
             IntPtr[] arguments);
 
@@ -40,50 +39,54 @@ internal partial class Interop
 
         internal static string GetMessage(IntPtr moduleHandle, int errorCode)
         {
-            var sb = new StringBuilder(InitialBufferSize);
+            Span<char> buffer = stackalloc char[InitialBufferSize];
             do
             {
-                string errorMsg;
-                if (TryGetErrorMessage(moduleHandle, errorCode, sb, out errorMsg))
+                if (TryGetErrorMessage(moduleHandle, errorCode, buffer, out string errorMsg))
                 {
                     return errorMsg;
                 }
-                else
-                {
-                    // increase the capacity of the StringBuilder.
-                    sb.Capacity *= BufferSizeIncreaseFactor;
-                }
+
+                // Increase the capacity of the buffer.
+                buffer = new char[buffer.Length * BufferSizeIncreaseFactor];
             }
-            while (sb.Capacity < MaxAllowedBufferSize);
+            while (buffer.Length < MaxAllowedBufferSize);
 
             // If you come here then a size as large as 65K is also not sufficient and so we give the generic errorMsg.
             return string.Format("Unknown error (0x{0:x})", errorCode);
         }
 
-        private static bool TryGetErrorMessage(IntPtr moduleHandle, int errorCode, StringBuilder sb, out string errorMsg)
+        private static bool TryGetErrorMessage(IntPtr moduleHandle, int errorCode, Span<char> buffer, out string errorMsg)
         {
-            errorMsg = "";
-
             int flags = FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY;
             if (moduleHandle != IntPtr.Zero)
             {
                 flags |= FORMAT_MESSAGE_FROM_HMODULE;
             }
 
-            int result = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, sb, sb.Capacity, null);
+            int result;
+            unsafe
+            {
+                fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
+                {
+                    result = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, bufferPtr, buffer.Length, null);
+                }
+            }
+
             if (result != 0)
             {
-                int i = sb.Length;
+                int i = result;
                 while (i > 0)
                 {
-                    char ch = sb[i - 1];
+                    char ch = buffer[i - 1];
                     if (ch > 32 && ch != '.') break;
                     i--;
                 }
-                errorMsg = sb.ToString(0, i);
+                errorMsg = buffer.Slice(0, i).ToString();
             }
             else if (Marshal.GetLastWin32Error() == ERROR_INSUFFICIENT_BUFFER)
             {
+                errorMsg = "";
                 return false;
             }
             else
