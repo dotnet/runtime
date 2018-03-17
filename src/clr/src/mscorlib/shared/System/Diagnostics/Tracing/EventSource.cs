@@ -623,6 +623,7 @@ namespace System.Diagnostics.Tracing
                     continue;
 
                 byte[] metadata = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(m_eventData[i]);
+                uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                 string eventName = m_eventData[i].Name;
                 Int64 keywords = m_eventData[i].Descriptor.Keywords;
@@ -638,7 +639,7 @@ namespace System.Diagnostics.Tracing
                         eventVersion,
                         level,
                         pMetadata,
-                        (uint)metadata.Length);
+                        metadataLength);
 
                     Debug.Assert(eventHandle != IntPtr.Zero);
                     m_eventData[i].EventHandle = eventHandle;
