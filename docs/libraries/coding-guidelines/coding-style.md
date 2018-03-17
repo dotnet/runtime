@@ -29,6 +29,7 @@ The general rule we follow is "use Visual Studio defaults".
 13. We use ```nameof(...)``` instead of ```"..."``` whenever possible and relevant.
 14. Fields should be specified at the top within type declarations.
 15. When including non-ASCII characters in the source code use Unicode escape sequences (\uXXXX) instead of literal characters. Literal non-ASCII characters occasionally get garbled by a tool or editor.
+16. When using labels (for goto), indent the label one less than the current indentation.
 
 We have provided a Visual Studio 2013 vssettings file (`corefx.vssettings`) at the root of the corefx repository, enabling C# auto-formatting conforming to the above guidelines. Note that rules 7 and 8 are not covered by the vssettings, since these are not rules currently supported by VS formatting.
 
