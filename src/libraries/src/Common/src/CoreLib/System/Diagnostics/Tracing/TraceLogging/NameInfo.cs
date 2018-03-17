@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Interlocked = System.Threading.Interlocked;
 
 #if ES_BUILD_STANDALONE
@@ -42,7 +43,6 @@ namespace System.Diagnostics.Tracing
         internal readonly byte[] nameMetadata;
 
 #if FEATURE_PERFTRACING
-        private IntPtr eventHandle = IntPtr.Zero;
         private readonly object eventHandleCreationLock = new object();
 #endif
 
@@ -82,13 +82,14 @@ namespace System.Diagnostics.Tracing
         }
 
 #if FEATURE_PERFTRACING
-        public IntPtr GetOrCreateEventHandle(EventProvider provider, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
+        public IntPtr GetOrCreateEventHandle(EventProvider provider, ConcurrentDictionary<int, IntPtr> eventHandleMap, EventDescriptor descriptor, TraceLoggingEventTypes eventTypes)
         {
-            if (eventHandle == IntPtr.Zero)
+            IntPtr eventHandle = IntPtr.Zero;
+            if(!eventHandleMap.TryGetValue(descriptor.EventId, out eventHandle))
             {
                 lock (eventHandleCreationLock)
                 {
-                    if (eventHandle == IntPtr.Zero)
+                    if (!eventHandleMap.TryGetValue(descriptor.EventId, out eventHandle))
                     {
                         byte[] metadataBlob = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(
                             descriptor.EventId,
@@ -97,6 +98,7 @@ namespace System.Diagnostics.Tracing
                             (EventLevel)descriptor.Level,
                             descriptor.Version,
                             eventTypes);
+                        uint metadataLength = (metadataBlob != null) ? (uint)metadataBlob.Length : 0;
 
                         unsafe
                         {
@@ -110,7 +112,7 @@ namespace System.Diagnostics.Tracing
                                     descriptor.Version,
                                     descriptor.Level,
                                     pMetadataBlob,
-                                    (uint)metadataBlob.Length);
+                                    metadataLength);
                             }
                         }
                     }

@@ -24,6 +24,7 @@ using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
@@ -45,6 +46,10 @@ namespace System.Diagnostics.Tracing
     {
 #if FEATURE_MANAGED_ETW
         private byte[] providerMetadata;
+#endif
+
+#if FEATURE_PERFTRACING
+        private ConcurrentDictionary<int, IntPtr> m_eventHandleMap = new ConcurrentDictionary<int, IntPtr>();
 #endif
 
         /// <summary>
@@ -432,7 +437,7 @@ namespace System.Diagnostics.Tracing
             EventDescriptor descriptor = new EventDescriptor(identity, level, opcode, (long)keywords);
 
 #if FEATURE_PERFTRACING
-            IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, descriptor, eventTypes);
+            IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, m_eventHandleMap, descriptor, eventTypes);
             Debug.Assert(eventHandle != IntPtr.Zero);
 #else
             IntPtr eventHandle = IntPtr.Zero;
@@ -547,7 +552,7 @@ namespace System.Diagnostics.Tracing
                 }
 
 #if FEATURE_PERFTRACING
-                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, descriptor, eventTypes);
+                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, m_eventHandleMap, descriptor, eventTypes);
                     Debug.Assert(eventHandle != IntPtr.Zero);
 #else
                     IntPtr eventHandle = IntPtr.Zero;
@@ -616,7 +621,7 @@ namespace System.Diagnostics.Tracing
                     }
 
 #if FEATURE_PERFTRACING
-                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, descriptor, eventTypes);
+                    IntPtr eventHandle = nameInfo.GetOrCreateEventHandle(m_provider, m_eventHandleMap, descriptor, eventTypes);
                     Debug.Assert(eventHandle != IntPtr.Zero);
 #else
                     IntPtr eventHandle = IntPtr.Zero;
