@@ -585,7 +585,7 @@
       "allowOverride": true
     },
     "BuildConfiguration": {
-      "value": "release"
+      "value": "Release"
     },
     "BuildPlatform": {
       "value": "any cpu"
