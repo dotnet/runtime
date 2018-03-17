@@ -86,14 +86,11 @@ private:
     static void DisplayDominators(BlkToBlkSetMap* domTree);
 #endif // DEBUG
 
-    // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
-    // count to be the valid entries in the "postOrder" array.  Returns a mapping from blocks to their
-    // iterated dominance frontiers.  (Recall that the dominance frontier of a block B is the set of blocks
-    // B3 such that there exists some B2 s.t. B3 is a successor of B2, and B dominates B2.  Note that this dominance
-    // need not be strict -- B2 and B may be the same node.  The iterated dominance frontier is formed by a closure
-    // operation: the IDF of B is the smallest set that includes B's dominance frontier, and also includes the dominance
-    // frontier of all elements of the set.)
-    BlkToBlkVectorMap* ComputeIteratedDominanceFrontier(BasicBlock** postOrder, int count);
+    // Compute flow graph dominance frontiers.
+    void ComputeDominanceFrontiers(BasicBlock** postOrder, int count, BlkToBlkVectorMap* mapDF);
+
+    // Compute the iterated dominance frontier for the specified block.
+    void ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkVectorMap* mapDF, BlkVector* bIDF);
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Inserts GT_PHI nodes at the beginning
