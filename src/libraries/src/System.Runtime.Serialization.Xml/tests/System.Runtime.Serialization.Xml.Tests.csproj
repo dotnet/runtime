@@ -11,7 +11,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)DataContractSerializerStressTests.cs" />
-    <Compile Include="$(TestSourceFolder)Utils.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)DataContractSerializer.cs" />
@@ -29,6 +28,7 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\DataContractSerializerHelper.cs">
       <Link>Common\System\Runtime\Serialization\DataContractSerializerHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)SerializationTestTypes\ObjRefSample.cs" />
     <Compile Include="SerializationTestTypes\Collections.cs" />
     <Compile Include="SerializationTestTypes\DataContract.cs" />
