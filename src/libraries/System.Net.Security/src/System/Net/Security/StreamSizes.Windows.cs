@@ -4,7 +4,7 @@
 
 namespace System.Net
 {
-    internal partial class StreamSizes
+    internal partial struct StreamSizes
     {
         public StreamSizes(SecPkgContext_StreamSizes interopStreamSizes)
         {

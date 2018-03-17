@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -43,6 +44,7 @@ namespace System.Net.Http
         private static readonly string s_cancellationMessage = new OperationCanceledException().Message; // use same message as the default ctor
 
         private readonly HttpConnectionPool _pool;
+        private readonly Socket _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
         private readonly Stream _stream;
         private readonly TransportContext _transportContext;
         private readonly bool _usingProxy;
@@ -65,6 +67,7 @@ namespace System.Net.Http
 
         public HttpConnection(
             HttpConnectionPool pool,
+            Socket socket,
             Stream stream,
             TransportContext transportContext)
         {
@@ -72,6 +75,7 @@ namespace System.Net.Http
             Debug.Assert(stream != null);
 
             _pool = pool;
+            _socket = socket; // may be null in cases where we couldn't easily get the underlying socket
             _stream = stream;
             _transportContext = transportContext;
             _usingProxy = pool.UsingProxy;
@@ -121,9 +125,12 @@ namespace System.Net.Http
                     if (_readAheadTask != null)
                     {
                         ValueTask<int> t = _readAheadTask.GetValueOrDefault();
-                        if (t.IsCompleted && !t.IsCompletedSuccessfully)
+                        if (t.IsCompleted)
                         {
-                            Exception ignored = t.AsTask().Exception; // accessing Exception prop is sufficient to suppress unobserved exception events
+                            if (!t.IsCompletedSuccessfully)
+                            {
+                                Exception ignored = t.AsTask().Exception; // accessing Exception prop is sufficient to suppress unobserved exception events
+                            }
                         }
                         else
                         {
@@ -137,13 +144,36 @@ namespace System.Net.Http
             }
         }
 
-        public bool ReadAheadCompleted
+        /// <summary>Do a non-blocking poll to see whether the connection has data available or has been closed.</summary>
+        /// <remarks>If we don't have direct access to the underlying socket, we instead use a read-ahead task.</remarks>
+        public bool PollRead() => _socket != null ?
+            _socket.Poll(0, SelectMode.SelectRead) :
+            EnsureReadAheadAndPollRead();
+
+        /// <summary>
+        /// Issues a read-ahead on the connection, which will serve both as the first read on the
+        /// response as well as a polling indication of whether the connection is usable.
+        /// </summary>
+        /// <returns>true if there's data available on the connection or it's been closed; otherwise, false.</returns>
+        public bool EnsureReadAheadAndPollRead()
         {
-            get
+            try
             {
-                Debug.Assert(_readAheadTask != null, $"{nameof(_readAheadTask)} should have been initialized");
-                return _readAheadTask.GetValueOrDefault().IsCompleted;
+                Debug.Assert(_readAheadTask == null || _socket == null, "Should only already have a read-ahead task if we don't have a socket to poll");
+                if (_readAheadTask == null)
+                {
+                    _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
+                }
             }
+            catch (Exception error)
+            {
+                // If reading throws, eat the error and don't pool the connection.
+                if (NetEventSource.IsEnabled) Trace($"Error performing read ahead: {error}");
+                Dispose();
+                _readAheadTask = new ValueTask<int>(0);
+            }
+
+            return _readAheadTask.Value.IsCompleted; // equivalent to polling
         }
 
         public bool IsNewConnection
@@ -1439,26 +1469,6 @@ namespace System.Net.Http
             }
             else
             {
-                try
-                {
-                    // When putting a connection back into the pool, we initiate a pre-emptive
-                    // read on the stream.  When the connection is subsequently taken out of the
-                    // pool, this can be used in place of the first read on the stream that would
-                    // otherwise be done.  But by doing it now, we can check the status of the read
-                    // at any point to understand if the connection has been closed or if errant data
-                    // has been sent on the connection by the server, either of which would mean we
-                    // should close the connection and not use it for subsequent requests.
-                    _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
-                }
-                catch (Exception error)
-                {
-                    // If reading throws, eat the error and don't pool the connection.
-                    if (NetEventSource.IsEnabled) Trace($"Error performing read ahead when returning connection to pool: {error}");
-
-                    Dispose();
-                    return;
-                }
-
                 // Put connection back in the pool.
                 _pool.ReturnConnection(this);
             }
@@ -1501,7 +1511,7 @@ namespace System.Net.Http
 
     internal sealed class HttpConnectionWithFinalizer : HttpConnection
     {
-        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Stream stream, TransportContext transportContext) : base(pool, stream, transportContext) { }
+        public HttpConnectionWithFinalizer(HttpConnectionPool pool, Socket socket, Stream stream, TransportContext transportContext) : base(pool, socket, stream, transportContext) { }
 
         // This class is separated from HttpConnection so we only pay the price of having a finalizer
         // when it's actually needed, e.g. when MaxConnectionsPerServer is enabled.

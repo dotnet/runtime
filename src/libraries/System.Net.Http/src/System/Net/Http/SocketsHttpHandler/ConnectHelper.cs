@@ -32,7 +32,7 @@ namespace System.Net.Http
             }
         }
 
-        public static async ValueTask<Stream> ConnectAsync(string host, int port, CancellationToken cancellationToken)
+        public static async ValueTask<(Socket, Stream)> ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             try
             {
@@ -86,11 +86,11 @@ namespace System.Net.Http
 
                     Debug.Assert(saea.SocketError == SocketError.Success, $"Expected Success, got {saea.SocketError}.");
                     Debug.Assert(saea.ConnectSocket != null, "Expected non-null socket");
-
+                   
                     // Configure the socket and return a stream for it.
                     Socket socket = saea.ConnectSocket;
                     socket.NoDelay = true;
-                    return new NetworkStream(socket, ownsSocket: true);
+                    return (socket, new NetworkStream(socket, ownsSocket: true));
                 }
             }
             catch (Exception error)

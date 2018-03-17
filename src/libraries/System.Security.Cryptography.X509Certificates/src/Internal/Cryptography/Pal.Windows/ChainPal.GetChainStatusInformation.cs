@@ -34,7 +34,7 @@ namespace Internal.Cryptography.Pal
                 {
                     Debug.Assert(index < chainStatus.Length);
 
-                    chainStatus[index].StatusInformation = GetSystemErrorString(mapping.Win32ErrorCode);
+                    chainStatus[index].StatusInformation = Interop.Kernel32.GetMessage(mapping.Win32ErrorCode);
                     chainStatus[index].Status = mapping.ChainStatusFlag;
                     index++;
                     dwStatus &= ~mapping.Win32Flag;
@@ -58,23 +58,6 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(index == chainStatus.Length);
 
             return chainStatus;
-        }
-
-        private static string GetSystemErrorString(int errorCode)
-        {
-            StringBuilder strMessage = new StringBuilder(512);
-            int dwErrorCode = Interop.localization.FormatMessage(
-                FormatMessageFlags.FORMAT_MESSAGE_FROM_SYSTEM | FormatMessageFlags.FORMAT_MESSAGE_IGNORE_INSERTS,
-                IntPtr.Zero,
-                errorCode,
-                0,
-                strMessage,
-                strMessage.Capacity,
-                IntPtr.Zero);
-            if (dwErrorCode != 0)
-                return strMessage.ToString();
-            else
-                return SR.Unknown_Error;
         }
 
         private readonly struct X509ChainErrorMapping
