@@ -65,48 +65,59 @@ namespace System.Diagnostics.Tracing
             uint version,
             EventParameterInfo[] parameters)
         {
-            // eventID          : 4 bytes
-            // eventName        : (eventName.Length + 1) * 2 bytes
-            // keywords         : 8 bytes
-            // eventVersion     : 4 bytes
-            // level            : 4 bytes
-            // parameterCount   : 4 bytes
-            uint metadataLength = 24 + ((uint)eventName.Length + 1) * 2;
-
-            // Check for an empty payload.
-            // Write<T> calls with no arguments by convention have a parameter of
-            // type NullTypeInfo which is serialized as nothing.
-            if((parameters.Length == 1) && (parameters[0].ParameterType == typeof(EmptyStruct)))
+            byte[] metadata = null;
+            try
             {
-                parameters = Array.Empty<EventParameterInfo>();
-            }
+                // eventID          : 4 bytes
+                // eventName        : (eventName.Length + 1) * 2 bytes
+                // keywords         : 8 bytes
+                // eventVersion     : 4 bytes
+                // level            : 4 bytes
+                // parameterCount   : 4 bytes
+                uint metadataLength = 24 + ((uint)eventName.Length + 1) * 2;
 
-            // Increase the metadataLength for parameters.
-            foreach (var parameter in parameters)
-            {
-                metadataLength = metadataLength + parameter.GetMetadataLength();
-            }
-
-            byte[] metadata = new byte[metadataLength];
-
-            // Write metadata: eventID, eventName, keywords, eventVersion, level, parameterCount, param1 type, param1 name...
-            fixed (byte *pMetadata = metadata)
-            {
-                uint offset = 0;
-                WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)eventId);
-                fixed(char *pEventName = eventName)
+                // Check for an empty payload.
+                // Write<T> calls with no arguments by convention have a parameter of
+                // type NullTypeInfo which is serialized as nothing.
+                if ((parameters.Length == 1) && (parameters[0].ParameterType == typeof(EmptyStruct)))
                 {
-                    WriteToBuffer(pMetadata, metadataLength, ref offset, (byte *)pEventName, ((uint)eventName.Length + 1) * 2);
+                    parameters = Array.Empty<EventParameterInfo>();
                 }
-                WriteToBuffer(pMetadata, metadataLength, ref offset, keywords);
-                WriteToBuffer(pMetadata, metadataLength, ref offset, version);
-                WriteToBuffer(pMetadata, metadataLength, ref offset, level);
-                WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)parameters.Length);
+
+                // Increase the metadataLength for parameters.
                 foreach (var parameter in parameters)
                 {
-                    parameter.GenerateMetadata(pMetadata, ref offset, metadataLength);
+                    metadataLength = metadataLength + parameter.GetMetadataLength();
                 }
-                Debug.Assert(metadataLength == offset);
+
+                metadata = new byte[metadataLength];
+
+                // Write metadata: eventID, eventName, keywords, eventVersion, level, parameterCount, param1 type, param1 name...
+                fixed (byte* pMetadata = metadata)
+                {
+                    uint offset = 0;
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)eventId);
+                    fixed (char* pEventName = eventName)
+                    {
+                        WriteToBuffer(pMetadata, metadataLength, ref offset, (byte*)pEventName, ((uint)eventName.Length + 1) * 2);
+                    }
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, keywords);
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, version);
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, level);
+                    WriteToBuffer(pMetadata, metadataLength, ref offset, (uint)parameters.Length);
+                    foreach (var parameter in parameters)
+                    {
+                        parameter.GenerateMetadata(pMetadata, ref offset, metadataLength);
+                    }
+                    Debug.Assert(metadataLength == offset);
+                }
+            }
+            catch
+            {
+                // If a failure occurs during metadata generation, make sure that we don't return
+                // malformed metadata.  Instead, return a null metadata blob.
+                // Consumers can either build in knowledge of the event or skip it entirely.
+                metadata = null;
             }
 
             return metadata;
@@ -262,7 +273,12 @@ namespace System.Diagnostics.Tracing
                 //     TypeCode : 4 bytes
                 //     PropertyName : NULL-terminated string
                 TypeCode typeCode = GetTypeCodeExtended(property.typeInfo.DataType);
-                Debug.Assert(typeCode != TypeCode.Object);
+
+                // EventPipe does not support this type.  Throw, which will cause no metadata to be registered for this event.
+                if(typeCode == TypeCode.Object)
+                {
+                    throw new NotSupportedException();
+                }
 
                 // Write the type code.
                 EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)typeCode);
