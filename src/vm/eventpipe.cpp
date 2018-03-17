@@ -958,7 +958,6 @@ INT_PTR QCALLTYPE EventPipeInternal::DefineEvent(
     BEGIN_QCALL;
 
     _ASSERTE(provHandle != NULL);
-    _ASSERTE(pMetadata != NULL);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
     pEvent = pProvider->AddEvent(eventID, keywords, eventVersion, (EventPipeEventLevel)level, (BYTE *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);
