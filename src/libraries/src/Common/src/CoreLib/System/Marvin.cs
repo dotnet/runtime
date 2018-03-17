@@ -5,62 +5,86 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System
 {
     internal static class Marvin
     {
         /// <summary>
-        /// Convenience method to compute a Marvin hash and collapse it into a 32-bit hash.
+        /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ComputeHash32(ReadOnlySpan<byte> data, ulong seed)
-        {
-            long hash64 = ComputeHash(data, seed);
-            return ((int)(hash64 >> 32)) ^ (int)hash64;
-        }
+        public static int ComputeHash32(ReadOnlySpan<byte> data, ulong seed) => ComputeHash32(ref MemoryMarshal.GetReference(data), data.Length, seed);
 
         /// <summary>
-        /// Computes a 64-hash using the Marvin algorithm.
+        /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
-        public static long ComputeHash(ReadOnlySpan<byte> data, ulong seed)
+        public static int ComputeHash32(ref byte data, int count, ulong seed)
         {
+            nuint ucount = (nuint)count;
             uint p0 = (uint)seed;
             uint p1 = (uint)(seed >> 32);
 
-            if (data.Length >= sizeof(uint))
+            nuint byteOffset = 0;
+
+            while (ucount >= 8)
             {
-                ReadOnlySpan<uint> uData = MemoryMarshal.Cast<byte, uint>(data);
+                p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
+                Block(ref p0, ref p1);
 
-                for (int i = 0; i < uData.Length; i++)
-                {
-                    p0 += uData[i];
-                    Block(ref p0, ref p1);
-                }
+                p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset + 4));
+                Block(ref p0, ref p1);
 
-                // byteOffset = data.Length - data.Length % 4
-                // is equivalent to clearing last 2 bits of length
-                // Using it directly gives a perf hit for short strings making it at least 5% or more slower.
-                int byteOffset = data.Length & (~3);
-                data = data.Slice(byteOffset);
+                byteOffset += 8;
+                ucount -= 8;
             }
 
-            switch (data.Length)
+            switch (ucount)
             {
+                case 4:
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
+                    Block(ref p0, ref p1);
+                    goto case 0;
+
                 case 0:
                     p0 += 0x80u;
                     break;
 
+                case 5:
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
+                    byteOffset += 4;
+                    Block(ref p0, ref p1);
+                    goto case 1;
+
                 case 1:
-                    p0 += 0x8000u | data[0];
+                    p0 += 0x8000u | Unsafe.AddByteOffset(ref data, byteOffset);
                     break;
+
+                case 6:
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
+                    byteOffset += 4;
+                    Block(ref p0, ref p1);
+                    goto case 2;
 
                 case 2:
-                    p0 += 0x800000u | MemoryMarshal.Cast<byte, ushort>(data)[0];
+                    p0 += 0x800000u | Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref data, byteOffset));
                     break;
 
+                case 7:
+                    p0 += Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref data, byteOffset));
+                    byteOffset += 4;
+                    Block(ref p0, ref p1);
+                    goto case 3;
+
                 case 3:
-                    p0 += 0x80000000u | (((uint)data[2]) << 16) | (uint)(MemoryMarshal.Cast<byte, ushort>(data)[0]);
+                    p0 += 0x80000000u | (((uint)(Unsafe.AddByteOffset(ref data, byteOffset + 2))) << 16)| (uint)(Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref data, byteOffset)));
                     break;
 
                 default:
@@ -71,7 +95,7 @@ namespace System
             Block(ref p0, ref p1);
             Block(ref p0, ref p1);
 
-            return (((long)p1) << 32) | p0;
+            return (int)(p1 ^ p0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -107,9 +131,9 @@ namespace System
 
         private static unsafe ulong GenerateSeed()
         {
-            ulong result;
-            Interop.GetRandomBytes((byte*)&result, sizeof(ulong));
-            return result;
+            ulong seed;
+            Interop.GetRandomBytes((byte*)&seed, sizeof(ulong));
+            return seed;
         }
     }
 }
