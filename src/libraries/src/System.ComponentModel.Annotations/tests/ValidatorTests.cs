@@ -229,7 +229,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             var results = new List<ValidationResult>();
             Assert.False(Validator.TryValidateObject(instance, context, results));
-            Assert.Equal("The Required field is required.", Assert.Single(results).ErrorMessage);
+            Assert.Contains("Required", Assert.Single(results).ErrorMessage);
         }
 
         public class RequiredFailure
