@@ -59,7 +59,7 @@ CompPhaseNameMacro(PHASE_BUILD_SSA,              "Build SSA representation",    
 CompPhaseNameMacro(PHASE_BUILD_SSA_TOPOSORT,     "SSA: topological sort",          "SSA-SORT", false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_DOMS,         "SSA: Doms1",                     "SSA-DOMS", false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_LIVENESS,     "SSA: liveness",                  "SSA-LIVE", false, PHASE_BUILD_SSA, false)
-CompPhaseNameMacro(PHASE_BUILD_SSA_IDF,          "SSA: IDF",                       "SSA-IDF",  false, PHASE_BUILD_SSA, false)
+CompPhaseNameMacro(PHASE_BUILD_SSA_DF,           "SSA: DF",                        "SSA-DF",   false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_INSERT_PHIS,  "SSA: insert phis",               "SSA-PHI",  false, PHASE_BUILD_SSA, false)
 CompPhaseNameMacro(PHASE_BUILD_SSA_RENAME,       "SSA: rename",                    "SSA-REN",  false, PHASE_BUILD_SSA, false)
 
