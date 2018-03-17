@@ -322,7 +322,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullGraphics_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("g", "Value of 'null' is not valid for 'g'.", () => new Bitmap(1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("g", null, () => new Bitmap(1, 1, null));
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
