@@ -364,6 +364,7 @@ namespace System.Collections.Generic
             int i = -1;
             int[] buckets = _buckets;
             Entry[] entries = _entries;
+            int collisionCount = 0;
             if (buckets != null)
             {
                 IEqualityComparer<TKey> comparer = _comparer;
@@ -382,6 +383,13 @@ namespace System.Collections.Generic
                         }
 
                         i = entries[i].next;
+                        if (collisionCount >= entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                        collisionCount++;
                     } while (true);
                 }
                 else
@@ -400,6 +408,13 @@ namespace System.Collections.Generic
                         }
 
                         i = entries[i].next;
+                        if (collisionCount >= entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                        collisionCount++;
                     } while (true);
                 }
             }
@@ -469,6 +484,12 @@ namespace System.Collections.Generic
                     }
 
                     i = entries[i].next;
+                    if (collisionCount >= entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
                     collisionCount++;
                 } while (true);
             }
@@ -501,6 +522,12 @@ namespace System.Collections.Generic
                     }
 
                     i = entries[i].next;
+                    if (collisionCount >= entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
                     collisionCount++;
                 } while (true);
 

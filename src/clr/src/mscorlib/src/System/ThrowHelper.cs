@@ -284,6 +284,11 @@ namespace System
             throw GetInvalidOperationException(ExceptionResource.InvalidOperation_NoValue);
         }
 
+        internal static void ThrowInvalidOperationException_ConcurrentOperationsNotSupported()
+        {
+            throw GetInvalidOperationException(ExceptionResource.InvalidOperation_ConcurrentOperationsNotSupported);
+        }
+
         internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
         {
             throw GetArraySegmentCtorValidationFailedException(array, offset, count);
@@ -591,6 +596,7 @@ namespace System
         AsyncMethodBuilder_InstanceNotInitialized,
         ArgumentNull_SafeHandle,
         NotSupported_StringComparison,
+        InvalidOperation_ConcurrentOperationsNotSupported,
     }
 }
 
