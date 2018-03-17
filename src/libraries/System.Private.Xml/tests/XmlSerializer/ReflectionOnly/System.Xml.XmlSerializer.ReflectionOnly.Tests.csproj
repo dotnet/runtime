@@ -11,7 +11,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
