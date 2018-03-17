@@ -43,6 +43,7 @@
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />

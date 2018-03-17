@@ -20,8 +20,11 @@ namespace System.Net
                 return result;
             }
 
-            Interop.Crypt32.CERT_CONTEXT context =
-                Marshal.PtrToStructure<Interop.Crypt32.CERT_CONTEXT>(certContext);
+            Interop.Crypt32.CERT_CONTEXT context;
+            unsafe
+            {
+                context = *(Interop.Crypt32.CERT_CONTEXT*)certContext;
+            }
 
             if (context.hCertStore != IntPtr.Zero)
             {

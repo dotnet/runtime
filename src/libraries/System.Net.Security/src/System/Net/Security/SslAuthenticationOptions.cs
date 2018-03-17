@@ -11,12 +11,12 @@ namespace System.Net.Security
 {
     internal class SslAuthenticationOptions
     {
-        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+        internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertValidationCallback remoteCallback, LocalCertSelectionCallback localCallback)
         {
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
-            CertValidationDelegate = sslClientAuthenticationOptions._certValidationDelegate;
+            CertValidationDelegate = remoteCallback;
             CheckCertName = true;
             EnabledSslProtocols = sslClientAuthenticationOptions.EnabledSslProtocols;
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
@@ -26,7 +26,7 @@ namespace System.Net.Security
             TargetHost = sslClientAuthenticationOptions.TargetHost;
 
             // Client specific options.
-            CertSelectionDelegate = sslClientAuthenticationOptions._certSelectionDelegate;
+            CertSelectionDelegate = localCallback;
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
             LocalCertificateSelectionCallback = sslClientAuthenticationOptions.LocalCertificateSelectionCallback;

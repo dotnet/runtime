@@ -103,7 +103,6 @@
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Helpers.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.cryptoapi.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.crypt32.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Windows\Native\Interop.localization.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\Primitives.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\Native\SafeHandles.cs" />
     <Compile Include="Internal\Cryptography\Pal.Windows\StorePal.cs" />
