@@ -1885,29 +1885,6 @@ CLR_ENGINE_METRICS g_CLREngineMetrics = {
     CorDebugVersion_4_0, 
     &g_hContinueStartupEvent};
 
-
-bool IsTelestoDebugPackInstalled()
-{
-    RegKeyHolder hKey;
-    if (ERROR_SUCCESS != WszRegOpenKeyEx(HKEY_LOCAL_MACHINE, FRAMEWORK_REGISTRY_KEY_W, 0, KEY_READ, &hKey))
-        return false;
-
-    bool debugPackInstalled = false;
-
-    DWORD cbValue = 0;
-
-    if (ERROR_SUCCESS == WszRegQueryValueEx(hKey, CLRConfig::EXTERNAL_DbgPackShimPath, NULL, NULL, NULL, &cbValue))
-    {
-        if (cbValue != 0)
-        {
-            debugPackInstalled = true;
-        }
-    }
-
-    // RegCloseKey called by holder
-    return debugPackInstalled;
-}
-
 #define StartupNotifyEventNamePrefix W("TelestoStartupEvent_")
 const int cchEventNameBufferSize = sizeof(StartupNotifyEventNamePrefix)/sizeof(WCHAR) + 8; // + hex DWORD (8).  NULL terminator is included in sizeof(StartupNotifyEventNamePrefix)
 HANDLE OpenStartupNotificationEvent()
@@ -1919,7 +1896,7 @@ HANDLE OpenStartupNotificationEvent()
     return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, szEventName);
 }
 
-void NotifyDebuggerOfTelestoStartup()
+void NotifyDebuggerOfStartup()
 {
     // Create the continue event first so that we guarantee that any
     // enumeration of this process will get back a valid continue event
@@ -1980,26 +1957,9 @@ HRESULT Debugger::Startup(void)
     _ASSERTE(g_pEEInterface != NULL);
 
 #if !defined(FEATURE_PAL)
-    if (IsWatsonEnabled() || IsTelestoDebugPackInstalled())
-    {
-        // Iff the debug pack is installed, then go through the telesto debugging pipeline.
-        LOG((LF_CORDB, LL_INFO10, "Debugging service is enabled because debug pack is installed or Watson support is enabled)\n"));
-
-        // This may block while an attach occurs.
-        NotifyDebuggerOfTelestoStartup();
-    }
-    else
-    {
-        // On Windows, it's actually safe to finish the initialization here even without the debug pack.
-        // However, doing so causes a perf regression because we used to bail out early if the debug
-        // pack is not installed.
-        //
-        // Unlike Windows, we can't continue executing this function if the debug pack is not installed.
-        // The transport requires the debug pack to be present.  Otherwise it'll raise a fatal error.
-        return S_FALSE;
-    }
+    // This may block while an attach occurs.
+    NotifyDebuggerOfStartup();
 #endif // !FEATURE_PAL
-
     {
         DebuggerLockHolder dbgLockHolder(this);
 
@@ -2010,7 +1970,6 @@ HRESULT Debugger::Startup(void)
         // threads running and throwing debug events. Keep these stress procs separate so that
         // we can focus on certain problem areas.
     #ifdef _DEBUG
-
         g_DbgShouldntUseDebugger = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgNoDebugger) != 0;
 
 
@@ -2078,6 +2037,29 @@ HRESULT Debugger::Startup(void)
 
         InitializeHijackFunctionAddress();
 
+        // Also initialize the AppDomainEnumerationIPCBlock
+    #if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
+        m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
+    #else
+        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
+    #endif 
+
+        if (m_pAppDomainCB == NULL)
+        {
+            LOG((LF_CORDB, LL_INFO100, "D::S: Failed to get AppDomain IPC block from IPCManager.\n"));
+            ThrowHR(E_FAIL);
+        }
+
+        hr = InitAppDomainIPC();
+        _ASSERTE(SUCCEEDED(hr)); // throws on error.
+
+        // Allows the debugger (and profiler) diagnostics to be disabled so resources like 
+        // the named pipes and semaphores are not created.
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+        {
+            return S_OK;
+        }
+
         // Create the runtime controller thread, a.k.a, the debug helper thread.
         // Don't use the interop-safe heap b/c we don't want to lazily create it.
         m_pRCThread = new DebuggerRCThread(this);
@@ -2102,22 +2084,6 @@ HRESULT Debugger::Startup(void)
     #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
         RaiseStartupNotification();
-
-        // Also initialize the AppDomainEnumerationIPCBlock
-    #if !defined(FEATURE_IPCMAN) || defined(FEATURE_DBGIPC_TRANSPORT_VM)
-        m_pAppDomainCB = new (nothrow) AppDomainEnumerationIPCBlock();
-    #else
-        m_pAppDomainCB = g_pIPCManagerInterface->GetAppDomainBlock();
-    #endif 
-
-        if (m_pAppDomainCB == NULL)
-        {
-            LOG((LF_CORDB, LL_INFO100, "D::S: Failed to get AppDomain IPC block from IPCManager.\n"));
-            ThrowHR(E_FAIL);
-        }
-
-        hr = InitAppDomainIPC();
-        _ASSERTE(SUCCEEDED(hr)); // throws on error.
 
         // See if we need to spin up the helper thread now, rather than later.
         DebuggerIPCControlBlock* pIPCControlBlock = m_pRCThread->GetDCB();
@@ -7234,7 +7200,8 @@ void Debugger::JitAttach(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, 
     }
     CONTRACTL_END;
 
-    if (IsDebuggerPresent())
+    // Don't do anything if there is a native debugger already attached or the debugging support has been disabled.
+    if (IsDebuggerPresent() || m_pRCThread == NULL)
         return;
 
     GCX_PREEMP_EEINTERFACE_TOGGLE_IFTHREAD();
@@ -14165,8 +14132,7 @@ DWORD Debugger::GetHelperThreadID(void )
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_pRCThread->GetDCB()
-        ->m_temporaryHelperThreadId;
+    return m_pRCThread ? m_pRCThread->GetDCB()->m_temporaryHelperThreadId : 0;
 }
 
 
