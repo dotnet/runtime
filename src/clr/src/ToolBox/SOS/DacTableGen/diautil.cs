@@ -97,7 +97,7 @@ class Util
 
 public class DiaFile
 {
-    DiaSourceClass  m_dsc;
+    IDiaDataSource  m_dsc;
     IDiaSession     m_session;
     DiaSymbol       m_global;
     IDiaEnumSymbols m_publicsEnum;
@@ -106,7 +106,7 @@ public class DiaFile
 
     public DiaFile(String pdbFile, String dllFile)
     {
-        m_dsc = new DiaSourceClass();
+        m_dsc = GetDiaSourceClass();
         string pdbPath = System.IO.Path.GetDirectoryName(pdbFile);
 
         // Open the PDB file, validating it matches the supplied DLL file
@@ -413,6 +413,37 @@ public class DiaFile
         E_PDB_SYMSRV_BAD_CACHE_PATH ,
         E_PDB_SYMSRV_CACHE_FULL     ,
         E_PDB_MAX           
+    }
+
+    // Get the DiaSourceClass from the msdia140.dll in the app directory without using COM activation
+    static IDiaDataSource GetDiaSourceClass() {
+	    // This is Class ID for the DiaSourceClass used by msdia140.  
+	    var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
+	    var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
+       
+	    // As the DLL to create a new instance of it
+	    object comObject = null;
+	    Guid iDiaDataSourceGuid = typeof(IDiaDataSource).GUID;
+	    comClassFactory.CreateInstance(null, ref iDiaDataSourceGuid, out comObject);
+
+	    // And return it as the type we expect
+	    return (comObject as IDiaDataSource);
+    }
+
+    [return: MarshalAs(UnmanagedType.Interface)]
+    [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+    private static extern object DllGetClassObject(
+        [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
+        [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
+
+    [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    private interface IClassFactory
+    {
+	    void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
+		    ref Guid refiid,
+	        [MarshalAs(UnmanagedType.Interface)] out object createdObject);
+	    void LockServer(bool incrementRefCount);
     }
 }
 
@@ -805,5 +836,6 @@ public class DiaDataSymbol : DiaSymbol
         { return (DataKind == DataKind.DataIsStaticMember); }
     }
 }
+
 
 } // Namespace Dia.Util
