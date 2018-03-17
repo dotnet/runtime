@@ -82,8 +82,8 @@ namespace System.DirectoryServices.Tests
             using (var entry = new DirectoryEntry())
             {
                 PropertyCollection properties = entry.Properties;
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("Number was less than the array's lower bound in the first dimension.", () => properties.CopyTo(new PropertyValueCollection[0], -1));
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("Number was less than the array's lower bound in the first dimension.", () => ((ICollection)properties).CopyTo(new PropertyValueCollection[0], -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("Number was less than the array's lower bound in the first dimension.", null, () => properties.CopyTo(new PropertyValueCollection[0], -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("Number was less than the array's lower bound in the first dimension.", null, () => ((ICollection)properties).CopyTo(new PropertyValueCollection[0], -1));
             }
         }
 
