@@ -60,7 +60,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void CallstackTest_ContainsExpectedFrames()
         {
             var cache = new TraceEventCache();
-            Assert.Contains("at System.Environment.get_StackTrace()", cache.Callstack);
+            Assert.Contains("System.Environment.get_StackTrace()", cache.Callstack);
         }
 
         [Fact]
