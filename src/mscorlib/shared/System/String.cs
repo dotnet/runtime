@@ -164,13 +164,9 @@ namespace System
 
             int numBytes = new ReadOnlySpan<byte>((byte*)value, int.MaxValue).IndexOf<byte>(0);
 
-#if BIT64
             // Check for overflow
             if (numBytes < 0)
                 throw new ArgumentException(SR.Arg_MustBeNullTerminatedString);
-#else
-            Debug.Assert(numBytes >= 0);
-#endif
 
             return CreateStringForSByteConstructor(pb, numBytes);
         }
@@ -194,7 +190,12 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
 
             if (value == null)
+            {
+                if (length == 0)
+                    return Empty;
+
                 throw new ArgumentNullException(nameof(value));
+            }
 
             byte* pStart = (byte*)(value + startIndex);
 
@@ -252,6 +253,14 @@ namespace System
 
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
+
+            if (value == null)
+            {
+                if (length == 0)
+                    return Empty;
+
+                throw new ArgumentNullException(nameof(value));
+            }
 
             byte* pStart = (byte*)(value + startIndex);
 
