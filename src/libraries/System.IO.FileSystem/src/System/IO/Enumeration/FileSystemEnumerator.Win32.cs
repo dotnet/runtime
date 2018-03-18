@@ -11,7 +11,7 @@ namespace System.IO.Enumeration
     {
         /// <returns>'true' if new data was found</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool GetData()
+        private unsafe bool GetData()
         {
             Debug.Assert(_directoryHandle != (IntPtr)(-1) && _directoryHandle != IntPtr.Zero && !_lastEntryFound);
 

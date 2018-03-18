@@ -108,7 +108,7 @@ namespace System.IO.IsolatedStorage
 
         public IsolatedStorageScope Scope
         {
-            get; protected set;
+            get; private set;
         }
 
         protected virtual char SeparatorExternal
@@ -128,7 +128,7 @@ namespace System.IO.IsolatedStorage
 
         public abstract void Remove();
 
-        protected string IdentityHash
+        internal string IdentityHash
         {
             get; private set;
         }
