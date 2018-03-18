@@ -84,6 +84,11 @@ namespace System.Reflection.Tests
             AssertExtensions.Throws<ArgumentException>("path", null, () => AssemblyName.GetAssemblyName(string.Empty));
             Assert.Throws<System.IO.FileNotFoundException>(() => AssemblyName.GetAssemblyName("IDontExist"));
 
+            using (var tempFile = new TempFile(Path.GetTempFileName(), 0)) // Zero-size file
+            {
+                Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
+            }
+
             using (var tempFile = new TempFile(Path.GetTempFileName(), 42))
             {
                 Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
@@ -91,6 +96,24 @@ namespace System.Reflection.Tests
 
             Assembly a = typeof(AssemblyNameTests).Assembly;
             Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(a.Location).ToString());
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "AssemblyName.GetAssemblyName() not supported on UapAot")]
+        public static void GetAssemblyName_LockedFile()
+        {
+            using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
+            using (var fileStream = new FileStream(tempFile.Path, FileMode.Append, FileAccess.Write, FileShare.None))
+            {
+                if (PlatformDetection.IsWindows) // File locking is Windows specific.
+                {
+                    Assert.Throws<System.IO.FileLoadException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
+                }
+                else
+                {
+                    Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
+                }
+            }
         }
 
         public static IEnumerable<object[]> ReferenceMatchesDefinition_TestData()
