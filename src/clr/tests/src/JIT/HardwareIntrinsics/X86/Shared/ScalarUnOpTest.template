@@ -21,8 +21,8 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void {Method}{RetBaseType}()
         {
-            bool skipIf32Bit = typeof({Op1BaseType}) == typeof(Int64) ? true :
-                                     typeof({Op1BaseType}) == typeof(UInt64) ? true : false;
+            bool skipIf32Bit = (typeof({Op1BaseType}) == typeof(Int64)) ||
+                               (typeof({Op1BaseType}) == typeof(UInt64));
 
             if (skipIf32Bit && !Environment.Is64BitProcess)
             {
@@ -33,23 +33,17 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (test.IsSupported)
             {
-                // Validates basic functionality works, using Unsafe.Read
-                test.RunBasicScenario_UnsafeRead();
+                // Validates basic functionality works
+                test.RunBasicScenario();
 
-                // Validates calling via reflection works, using Unsafe.Read
-                test.RunReflectionScenario_UnsafeRead();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates calling via reflection works, using Load
-                    test.RunReflectionScenario();
-                }
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                // Validates passing a local works, using Unsafe.Read
-                test.RunLclVarScenario_UnsafeRead();
+                // Validates passing a local works
+                test.RunLclVarScenario();
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -74,81 +68,52 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op1ElementCount = 2;
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
 
-        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
+        private static readonly Random Random = new Random();
 
         private static {Op1BaseType} _clsVar;
 
         private {Op1BaseType} _fld;
 
-        private SimpleScalarUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}> _dataTable;
+        private SimpleScalarUnaryOpTest__DataTable<{RetBaseType}> _dataTable;
 
         static SimpleScalarUnaryOpTest__{Method}{RetBaseType}()
         {
-            var random = new Random();
-
-            for (int i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = {NextValueOp1};
-            }
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref _clsVar), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Marshal.SizeOf<{Op1BaseType}>());
+            _clsVar = {NextValueOp1};
         }
 
         public SimpleScalarUnaryOpTest__{Method}{RetBaseType}()
         {
             Succeeded = true;
 
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = {NextValueOp1};
-            }
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref _fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Marshal.SizeOf<{Op1BaseType}>());
-
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = {NextValueOp1};
-            }
-
-            _dataTable = new SimpleScalarUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _fld = {NextValueOp1};
+            _dataTable = new SimpleScalarUnaryOpTest__DataTable<{RetBaseType}>(new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => {Isa}.IsSupported;
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario_UnsafeRead()
+        public void RunBasicScenario()
         {
+            var firstOp = {NextValueOp1};
             var result = {Isa}.{Method}(
-                Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr)
+                firstOp
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunReflectionScenario_UnsafeRead()
-        {
-            var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) });
-            var result = method.Invoke(null, new object[] { Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr)});
-
-            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario()
         {
+            var firstOp = {NextValueOp1};
             var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) });
-            {Op1BaseType} parameter = ({Op1BaseType}) _dataTable.inArray[0];
-            var result = method.Invoke(null, new object[] { parameter });
+            var result = method.Invoke(null, new object[] { firstOp });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(parameter, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -161,9 +126,9 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_UnsafeRead()
+        public void RunLclVarScenario()
         {
-            var firstOp = Unsafe.Read<{Op1BaseType}>(_dataTable.inArrayPtr);
+            var firstOp = {NextValueOp1};
             var result = {Isa}.{Method}(firstOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -193,7 +158,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario_UnsafeRead();
+                RunBasicScenario();
             }
             catch (PlatformNotSupportedException)
             {
@@ -203,27 +168,14 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult({Op1BaseType} firstOp, void* result, [CallerMemberName] string method = "")
         {
-            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(firstOp, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
-        {
-            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
-            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
-
-            ValidateResult(inArray, outArray, method);
-        }
-
-        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType} firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             if ({ValidateFirstResult})
             {
