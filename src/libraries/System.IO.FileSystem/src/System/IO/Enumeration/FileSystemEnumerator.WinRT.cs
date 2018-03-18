@@ -10,7 +10,7 @@ namespace System.IO.Enumeration
     public partial class FileSystemEnumerator<TResult>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe bool GetData()
+        private unsafe bool GetData()
         {
             if (!Interop.Kernel32.GetFileInformationByHandleEx(
                 _directoryHandle,
