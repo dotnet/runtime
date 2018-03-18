@@ -21,8 +21,8 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void SetAllVector128Int64()
         {
-            bool skipIf32Bit = typeof(Int64) == typeof(Int64) ? true :
-                                     typeof(Int64) == typeof(UInt64) ? true : false;
+            bool skipIf32Bit = (typeof(Int64) == typeof(Int64)) ||
+                               (typeof(Int64) == typeof(UInt64));
 
             if (skipIf32Bit && !Environment.Is64BitProcess)
             {
@@ -33,23 +33,17 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (test.IsSupported)
             {
-                // Validates basic functionality works, using Unsafe.Read
-                test.RunBasicScenario_UnsafeRead();
+                // Validates basic functionality works
+                test.RunBasicScenario();
 
-                // Validates calling via reflection works, using Unsafe.Read
-                test.RunReflectionScenario_UnsafeRead();
-
-                if (Sse2.IsSupported)
-                {
-                    // Validates calling via reflection works, using Load
-                    test.RunReflectionScenario();
-                }
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                // Validates passing a local works, using Unsafe.Read
-                test.RunLclVarScenario_UnsafeRead();
+                // Validates passing a local works
+                test.RunLclVarScenario();
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -74,81 +68,52 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = 2;
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
 
-        private static Int64[] _data = new Int64[Op1ElementCount];
+        private static readonly Random Random = new Random();
 
         private static Int64 _clsVar;
 
         private Int64 _fld;
 
-        private SimpleScalarUnaryOpTest__DataTable<Int64, Int64> _dataTable;
+        private SimpleScalarUnaryOpTest__DataTable<Int64> _dataTable;
 
         static SimpleScalarUnaryOpTest__SetAllVector128Int64()
         {
-            var random = new Random();
-
-            for (int i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = (long)(random.Next(int.MinValue, int.MaxValue));
-            }
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref _clsVar), ref Unsafe.As<Int64, byte>(ref _data[0]), (uint)Marshal.SizeOf<Int64>());
+            _clsVar = (long)(Random.Next(int.MinValue, int.MaxValue));
         }
 
         public SimpleScalarUnaryOpTest__SetAllVector128Int64()
         {
             Succeeded = true;
 
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = (long)(random.Next(int.MinValue, int.MaxValue));
-            }
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref _fld), ref Unsafe.As<Int64, byte>(ref _data[0]), (uint)Marshal.SizeOf<Int64>());
-
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = (long)(random.Next(int.MinValue, int.MaxValue));
-            }
-
-            _dataTable = new SimpleScalarUnaryOpTest__DataTable<Int64, Int64>(_data, new Int64[RetElementCount], LargestVectorSize);
+            _fld = (long)(Random.Next(int.MinValue, int.MaxValue));
+            _dataTable = new SimpleScalarUnaryOpTest__DataTable<Int64>(new Int64[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse2.IsSupported;
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario_UnsafeRead()
+        public void RunBasicScenario()
         {
+            var firstOp = (long)(Random.Next(int.MinValue, int.MaxValue));
             var result = Sse2.SetAllVector128(
-                Unsafe.Read<Int64>(_dataTable.inArrayPtr)
+                firstOp
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunReflectionScenario_UnsafeRead()
-        {
-            var method = typeof(Sse2).GetMethod(nameof(Sse2.SetAllVector128), new Type[] { typeof(Int64) });
-            var result = method.Invoke(null, new object[] { Unsafe.Read<Int64>(_dataTable.inArrayPtr)});
-
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Int64>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario()
         {
+            var firstOp = (long)(Random.Next(int.MinValue, int.MaxValue));
             var method = typeof(Sse2).GetMethod(nameof(Sse2.SetAllVector128), new Type[] { typeof(Int64) });
-            Int64 parameter = (Int64) _dataTable.inArray[0];
-            var result = method.Invoke(null, new object[] { parameter });
+            var result = method.Invoke(null, new object[] { firstOp });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Int64>)(result));
-            ValidateResult(parameter, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -161,9 +126,9 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_UnsafeRead()
+        public void RunLclVarScenario()
         {
-            var firstOp = Unsafe.Read<Int64>(_dataTable.inArrayPtr);
+            var firstOp = (long)(Random.Next(int.MinValue, int.MaxValue));
             var result = Sse2.SetAllVector128(firstOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -193,7 +158,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario_UnsafeRead();
+                RunBasicScenario();
             }
             catch (PlatformNotSupportedException)
             {
@@ -203,29 +168,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Int64 firstOp, void* result, [CallerMemberName] string method = "")
         {
-            Int64[] inArray = new Int64[Op1ElementCount];
             Int64[] outArray = new Int64[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<Int64, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(firstOp, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Int64 firstOp, Int64[] result, [CallerMemberName] string method = "")
         {
-            Int64[] inArray = new Int64[Op1ElementCount];
-            Int64[] outArray = new Int64[RetElementCount];
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<Int64>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
-
-            ValidateResult(inArray, outArray, method);
-        }
-
-        private void ValidateResult(Int64[] firstOp, Int64[] result, [CallerMemberName] string method = "")
-        {
-            if (result[0] != firstOp[0])
+            if (result[0] != firstOp)
             {
                 Succeeded = false;
             }
@@ -233,7 +185,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (result[i] != firstOp[0])
+                    if (result[i] != firstOp)
                     {
                         Succeeded = false;
                         break;

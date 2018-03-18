@@ -21,8 +21,8 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void SetAllVector128UInt16()
         {
-            bool skipIf32Bit = typeof(UInt16) == typeof(Int64) ? true :
-                                     typeof(UInt16) == typeof(UInt64) ? true : false;
+            bool skipIf32Bit = (typeof(UInt16) == typeof(Int64)) ||
+                               (typeof(UInt16) == typeof(UInt64));
 
             if (skipIf32Bit && !Environment.Is64BitProcess)
             {
@@ -33,23 +33,17 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (test.IsSupported)
             {
-                // Validates basic functionality works, using Unsafe.Read
-                test.RunBasicScenario_UnsafeRead();
+                // Validates basic functionality works
+                test.RunBasicScenario();
 
-                // Validates calling via reflection works, using Unsafe.Read
-                test.RunReflectionScenario_UnsafeRead();
-
-                if (Sse2.IsSupported)
-                {
-                    // Validates calling via reflection works, using Load
-                    test.RunReflectionScenario();
-                }
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                // Validates passing a local works, using Unsafe.Read
-                test.RunLclVarScenario_UnsafeRead();
+                // Validates passing a local works
+                test.RunLclVarScenario();
 
                 // Validates passing the field of a local works
                 test.RunLclFldScenario();
@@ -74,81 +68,52 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = 2;
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<UInt16>>() / sizeof(UInt16);
 
-        private static UInt16[] _data = new UInt16[Op1ElementCount];
+        private static readonly Random Random = new Random();
 
         private static UInt16 _clsVar;
 
         private UInt16 _fld;
 
-        private SimpleScalarUnaryOpTest__DataTable<UInt16, UInt16> _dataTable;
+        private SimpleScalarUnaryOpTest__DataTable<UInt16> _dataTable;
 
         static SimpleScalarUnaryOpTest__SetAllVector128UInt16()
         {
-            var random = new Random();
-
-            for (int i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = (ushort)(random.Next(ushort.MinValue, ushort.MaxValue));
-            }
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref _clsVar), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Marshal.SizeOf<UInt16>());
+            _clsVar = (ushort)(Random.Next(ushort.MinValue, ushort.MaxValue));
         }
 
         public SimpleScalarUnaryOpTest__SetAllVector128UInt16()
         {
             Succeeded = true;
 
-            var random = new Random();
-
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = (ushort)(random.Next(ushort.MinValue, ushort.MaxValue));
-            }
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref _fld), ref Unsafe.As<UInt16, byte>(ref _data[0]), (uint)Marshal.SizeOf<UInt16>());
-
-            for (var i = 0; i < Op1ElementCount; i++)
-            {
-                _data[i] = (ushort)(random.Next(ushort.MinValue, ushort.MaxValue));
-            }
-
-            _dataTable = new SimpleScalarUnaryOpTest__DataTable<UInt16, UInt16>(_data, new UInt16[RetElementCount], LargestVectorSize);
+            _fld = (ushort)(Random.Next(ushort.MinValue, ushort.MaxValue));
+            _dataTable = new SimpleScalarUnaryOpTest__DataTable<UInt16>(new UInt16[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse2.IsSupported;
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario_UnsafeRead()
+        public void RunBasicScenario()
         {
+            var firstOp = (ushort)(Random.Next(ushort.MinValue, ushort.MaxValue));
             var result = Sse2.SetAllVector128(
-                Unsafe.Read<UInt16>(_dataTable.inArrayPtr)
+                firstOp
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunReflectionScenario_UnsafeRead()
-        {
-            var method = typeof(Sse2).GetMethod(nameof(Sse2.SetAllVector128), new Type[] { typeof(UInt16) });
-            var result = method.Invoke(null, new object[] { Unsafe.Read<UInt16>(_dataTable.inArrayPtr)});
-
-            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt16>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario()
         {
+            var firstOp = (ushort)(Random.Next(ushort.MinValue, ushort.MaxValue));
             var method = typeof(Sse2).GetMethod(nameof(Sse2.SetAllVector128), new Type[] { typeof(UInt16) });
-            UInt16 parameter = (UInt16) _dataTable.inArray[0];
-            var result = method.Invoke(null, new object[] { parameter });
+            var result = method.Invoke(null, new object[] { firstOp });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt16>)(result));
-            ValidateResult(parameter, _dataTable.outArrayPtr);
+            ValidateResult(firstOp, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -161,9 +126,9 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_UnsafeRead()
+        public void RunLclVarScenario()
         {
-            var firstOp = Unsafe.Read<UInt16>(_dataTable.inArrayPtr);
+            var firstOp = (ushort)(Random.Next(ushort.MinValue, ushort.MaxValue));
             var result = Sse2.SetAllVector128(firstOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -193,7 +158,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             try
             {
-                RunBasicScenario_UnsafeRead();
+                RunBasicScenario();
             }
             catch (PlatformNotSupportedException)
             {
@@ -203,29 +168,16 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(UInt16 firstOp, void* result, [CallerMemberName] string method = "")
         {
-            UInt16[] inArray = new UInt16[Op1ElementCount];
             UInt16[] outArray = new UInt16[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray[0]), firstOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(firstOp, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt16 firstOp, UInt16[] result, [CallerMemberName] string method = "")
         {
-            UInt16[] inArray = new UInt16[Op1ElementCount];
-            UInt16[] outArray = new UInt16[RetElementCount];
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
-
-            ValidateResult(inArray, outArray, method);
-        }
-
-        private void ValidateResult(UInt16[] firstOp, UInt16[] result, [CallerMemberName] string method = "")
-        {
-            if (result[0] != firstOp[0])
+            if (result[0] != firstOp)
             {
                 Succeeded = false;
             }
@@ -233,7 +185,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if (result[i] != firstOp[0])
+                    if (result[i] != firstOp)
                     {
                         Succeeded = false;
                         break;
