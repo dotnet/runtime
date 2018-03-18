@@ -17,9 +17,10 @@ repositories.  You can see what is available from
  * NETCore.App at <https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App>
 
 These builds have a version number that follows the the versioning scheme described below (month number/day of month), 
-but they also will have a component that indicate which Git Branch the are working from 
+but they also will have a component that indicate which Git Branch the are working from (note these names were
+correct as of 1/2018 and may change but the concept of a suffix that designates the branch is likely to persist)
 
- * preview1 - are daily builds from the 'release/*' branch where * is the next official version to be released
+ * preview1 - are daily builds from the 'release/\*' branch where \* is the next official version to be released
  * preview2 - are daily builds from the 'master' branch (where active work happens first (typically))
 
 Thus if your goal is just to get the latest bug fixes and features, you don't need to build CoreCLR yourself you 
