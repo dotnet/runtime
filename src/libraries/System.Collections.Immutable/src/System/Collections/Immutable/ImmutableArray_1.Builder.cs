@@ -127,6 +127,8 @@ namespace System.Collections.Immutable
                 }
             }
 
+            private static void ThrowIndexOutOfRangeException() => throw new IndexOutOfRangeException();
+
             /// <summary>
             /// Gets or sets the element at the specified index.
             /// </summary>
@@ -140,7 +142,7 @@ namespace System.Collections.Immutable
                 {
                     if (index >= this.Count)
                     {
-                        throw new IndexOutOfRangeException();
+                        ThrowIndexOutOfRangeException();
                     }
 
                     return _elements[index];
@@ -150,7 +152,7 @@ namespace System.Collections.Immutable
                 {
                     if (index >= this.Count)
                     {
-                        throw new IndexOutOfRangeException();
+                        ThrowIndexOutOfRangeException();
                     }
 
                     _elements[index] = value;
@@ -169,7 +171,7 @@ namespace System.Collections.Immutable
             {
                 if (index >= this.Count)
                 {
-                    throw new IndexOutOfRangeException();
+                    ThrowIndexOutOfRangeException();
                 }
 
                 return ref this._elements[index];
@@ -247,8 +249,10 @@ namespace System.Collections.Immutable
             /// <param name="item">The object to add to the <see cref="ICollection{T}"/>.</param>
             public void Add(T item)
             {
-                this.EnsureCapacity(this.Count + 1);
-                _elements[_count++] = item;
+                int newCount = _count + 1;
+                this.EnsureCapacity(newCount);
+                _elements[_count] = item;
+                _count = newCount;
             }
 
             /// <summary>
