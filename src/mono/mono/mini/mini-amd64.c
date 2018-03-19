@@ -183,6 +183,11 @@ amd64_use_imm32 (gint64 val)
 static void
 amd64_patch (unsigned char* code, gpointer target)
 {
+	// NOTE: Sometimes code has just been generated, is not running yet,
+	// and has no alignment requirements. Sometimes it could be running while we patch it,
+	// and there are alignment requirements.
+	// FIXME Assert alignment.
+
 	guint8 rex = 0;
 
 	/* Skip REX */
@@ -199,12 +204,12 @@ amd64_patch (unsigned char* code, gpointer target)
 		/* mov 0(%rip), %dreg */
 		*(guint32*)(code + 2) = (guint32)(guint64)target - 7;
 	}
-	else if ((code [0] == 0xff) && (code [1] == 0x15)) {
-		/* call *<OFFSET>(%rip) */
+	else if (code [0] == 0xff && (code [1] == 0x15 || code [1] == 0x25)) {
+		/* call or jmp *<OFFSET>(%rip) */
 		*(guint32*)(code + 2) = ((guint32)(guint64)target) - 7;
 	}
-	else if (code [0] == 0xe8) {
-		/* call <DISP> */
+	else if (code [0] == 0xe8 || code [0] == 0xe9) {
+		/* call or jmp <DISP> */
 		gint64 disp = (guint8*)target - (guint8*)code;
 		g_assert (amd64_is_imm32 (disp));
 		x86_patch (code, (unsigned char*)target);
@@ -3694,6 +3699,51 @@ emit_get_last_error (guint8* code, int dreg)
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
 
 #ifndef DISABLE_JIT
+
+static guint8*
+amd64_handle_varargs_nregs (guint8 *code, guint32 nregs)
+{
+#ifndef TARGET_WIN32
+	if (nregs)
+		amd64_mov_reg_imm (code, AMD64_RAX, nregs);
+	else
+		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+#endif
+	return code;
+}
+
+static guint8*
+amd64_handle_varargs_call (MonoCompile *cfg, guint8 *code, MonoCallInst *call, gboolean free_rax)
+{
+#ifdef TARGET_WIN32
+	return code;
+#else
+	/*
+	 * The AMD64 ABI forces callers to know about varargs.
+	 */
+	guint32 nregs = 0;
+	if (call->signature->call_convention == MONO_CALL_VARARG && call->signature->pinvoke) {
+		// deliberatly nothing -- but nreg = 0 and do not return
+	} else if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && cfg->method->klass->image != mono_defaults.corlib) {
+		/*
+		 * Since the unmanaged calling convention doesn't contain a
+		 * 'vararg' entry, we have to treat every pinvoke call as a
+		 * potential vararg call.
+		 */
+		for (guint32 i = 0; i < AMD64_XMM_NREG; ++i)
+			nregs += (call->used_fregs & (1 << i)) != 0;
+	} else {
+		return code;
+	}
+	MonoInst *ins = (MonoInst*)call;
+	if (free_rax && ins->sreg1 == AMD64_RAX) {
+		amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+		ins->sreg1 = AMD64_R11;
+	}
+	return amd64_handle_varargs_nregs (code, nregs);
+#endif
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -4580,17 +4630,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			int i, save_area_offset;
 			gboolean membase = (ins->opcode == OP_TAILCALL_MEMBASE);
 
-			// FIXME make this two pass for an accurate size
-			// FIXME varargs
-
 			g_assert (!cfg->method->save_lmf);
 
 			/* the size of the tailcall op depends on signature, let's check for enough
 			 * space in the code buffer here again */
 			max_len += AMD64_NREG * 4 + call->stack_usage * 15 + EXTRA_CODE_SPACE;
-
-			if (membase)
-				max_len += 3;
+			max_len += 64; // FIXME make this two pass for an accurate size
 
 			if (G_UNLIKELY (offset + max_len > cfg->code_size)) {
 				cfg->code_size *= 2;
@@ -4599,13 +4644,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				cfg->stat_code_reallocs++;
 			}
 
-			// FIXME This is overly pessimistic.
-			// Rax can work, swap with below.
-			// R10 can work?
-			// Unused parameter registers are also ok.
-			// non-volatiles cannot work.
-			if (membase)
-				amd64_mov_reg_reg (code, AMD64_R11, ins->sreg1, 8);
+			// FIXME hardcoding RAX here is not ideal.
+
+			if (membase) {
+				amd64_mov_reg_membase (code, AMD64_RAX, ins->sreg1, ins->inst_offset, 8);
+			} else {
+				 if (cfg->compile_aot) {
+					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
+					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RIP, 0, 8);
+				} else {
+					// FIXME Patch data instead of code.
+					guint32 pad_size = (guint32)((code + 2 - cfg->native_code) % 8);
+					if (pad_size)
+						amd64_padding (code, 8 - pad_size);
+					mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
+					amd64_set_reg_template (code, AMD64_RAX);
+				}
+			}
 
 			/* Restore callee saved registers */
 			save_area_offset = cfg->arch.reg_save_area_offset;
@@ -4622,12 +4677,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (call->stack_usage)
 					NOT_IMPLEMENTED;
 			} else {
+				amd64_push_reg (code, AMD64_RAX);
 				/* Copy arguments on the stack to our argument area */
 				for (i = 0; i < call->stack_usage; i += sizeof(mgreg_t)) {
-					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i, sizeof(mgreg_t));
+					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i + 8, sizeof(mgreg_t));
 					amd64_mov_membase_reg (code, AMD64_RBP, ARGS_OFFSET + i, AMD64_RAX, sizeof(mgreg_t));
 				}
-
+				amd64_pop_reg (code, AMD64_RAX);
 #ifdef TARGET_WIN32
 				amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
 				amd64_pop_reg (code, AMD64_RBP);
@@ -4636,22 +4692,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_leave (code);
 #endif
 			}
-			if (membase) {
-				// rex opcode modrm 4bytes => 7 bytes
-				amd64_jump_membase (code, AMD64_R11, ins->inst_offset);
-			} else {
-				// FIXME move this earlier to fix ABI violation
-				mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
-				if (cfg->compile_aot) {
-					// rex opcode modrm 4bytes => 7 bytes
-					amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
-				} else {
-					// rex opcode 8byte => 10 bytes
-					amd64_set_reg_template (code, AMD64_R11);
-				}
-				// rex + opcode => 2 bytes
-				amd64_jump_reg (code, AMD64_R11);
-			}
+
+#ifdef TARGET_WIN32
+			// Redundant REX byte indicates a tailcall to the native unwinder. It means nothing to the processor.
+			// https://github.com/dotnet/coreclr/blob/966dabb5bb3c4bf1ea885e1e8dc6528e8c64dc4f/src/unwinder/amd64/unwinder_amd64.cpp#L1394
+			// FIXME This should be jmp rip+32 for AOT direct to same assembly.
+			// FIXME This should be jmp [rip+32] for AOT direct to not-same assembly (through data).
+			// FIXME This should be jmp [rip+32] for JIT direct -- patch data instead of code.
+			// This is only close to ideal for membase, and even then it should
+			// have a more dynamic register allocation.
+			x86_imm_emit8 (code, 0x48);
+			amd64_jump_reg (code, AMD64_RAX);
+#else
+			// NT does not have varargs rax use, and NT ABI does not have red zone.
+			// Use red-zone mov/jmp instead of push/ret to preserve call/ret speculation stack.
+			// FIXME Just like NT the direct cases are are not ideal.
+			amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RAX, 8);
+			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+			amd64_jump_membase (code, AMD64_RSP, -8);
+#endif
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
@@ -4673,28 +4732,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2:
 		case OP_VOIDCALL:
 			call = (MonoCallInst*)ins;
-			/*
-			 * The AMD64 ABI forces callers to know about varargs.
-			 */
-			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke))
-				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-			else if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (cfg->method->klass->image != mono_defaults.corlib)) {
-				/* 
-				 * Since the unmanaged calling convention doesn't contain a 
-				 * 'vararg' entry, we have to treat every pinvoke call as a
-				 * potential vararg call.
-				 */
-				guint32 nregs, i;
-				nregs = 0;
-				for (i = 0; i < AMD64_XMM_NREG; ++i)
-					if (call->used_fregs & (1 << i))
-						nregs ++;
-				if (!nregs)
-					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-				else
-					amd64_mov_reg_imm (code, AMD64_RAX, nregs);
-			}
 
+			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else
@@ -4717,36 +4756,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = AMD64_R11;
 			}
 
-			/*
-			 * The AMD64 ABI forces callers to know about varargs.
-			 */
-			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke)) {
-				if (ins->sreg1 == AMD64_RAX) {
-					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
-					ins->sreg1 = AMD64_R11;
-				}
-				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-			} else if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (cfg->method->klass->image != mono_defaults.corlib)) {
-				/* 
-				 * Since the unmanaged calling convention doesn't contain a 
-				 * 'vararg' entry, we have to treat every pinvoke call as a
-				 * potential vararg call.
-				 */
-				guint32 nregs, i;
-				nregs = 0;
-				for (i = 0; i < AMD64_XMM_NREG; ++i)
-					if (call->used_fregs & (1 << i))
-						nregs ++;
-				if (ins->sreg1 == AMD64_RAX) {
-					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
-					ins->sreg1 = AMD64_R11;
-				}
-				if (!nregs)
-					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-				else
-					amd64_mov_reg_imm (code, AMD64_RAX, nregs);
-			}
-
+			code = amd64_handle_varargs_call (cfg, code, call, TRUE);
 			amd64_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
@@ -7625,11 +7635,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	}
 
 	/* Set %al since this is a varargs call */
-	if (save_mode == SAVE_XMM)
-		amd64_mov_reg_imm (code, AMD64_RAX, 1);
-	else
-		amd64_mov_reg_imm (code, AMD64_RAX, 0);
-
+	code = amd64_handle_varargs_nregs (code, save_mode == SAVE_XMM);
 	mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_METHODCONST, method);
 	amd64_set_reg_template (code, AMD64_ARG_REG1);
 	code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, (gpointer)func, TRUE);
