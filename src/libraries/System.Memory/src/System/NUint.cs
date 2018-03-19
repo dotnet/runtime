@@ -9,94 +9,27 @@ namespace System
     //
     // A makeshift native uint type for build configurations that don't build 32/64-bit specific binaries (and hence, can't alias them to UInt32/UInt64 via an ifdef.)
     //
-    internal struct NUInt
+    // Note that .NET Framework x86 JIT inliner is only capable of inlining of limited number of NUInt operations per method. Do not use this type heavily
+    // in code that needs to be fast on .NET Framework x86.
+    //
+    internal unsafe struct NUInt
     {
-        private readonly UIntPtr _value;
+        private readonly void* _value;
 
-        private NUInt(int value) => _value = (UIntPtr)value;
-        private NUInt(uint value) => _value = (UIntPtr)value;
-        private NUInt(ulong value) => _value = (UIntPtr)value;
+        private NUInt(uint value) => _value = (void*)value;
+        private NUInt(ulong value) => _value = (void*)value;
 
-        public static explicit operator NUInt(uint value) => new NUInt(value);
-        public static explicit operator UIntPtr(NUInt value) => value._value;
+        public static implicit operator NUInt(uint value) => new NUInt(value);
+        public static implicit operator IntPtr(NUInt value) => (IntPtr)value._value;
 
-        public static explicit operator NUInt(int value) => new NUInt(value);
-        public static explicit operator IntPtr(NUInt value) => (IntPtr)(long)(ulong)value._value;
+        public static explicit operator NUInt(int value) => new NUInt((uint)value);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NUInt operator *(NUInt left, int right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) * (uint)right) : new NUInt(((ulong)left._value) * (uint)right); }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NUInt operator +(NUInt left, int right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) + (uint)right) : new NUInt(((ulong)left._value) + (uint)right); }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NUInt operator -(NUInt left, int right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) - (uint)right) : new NUInt(((ulong)left._value) - (uint)right); }
-        }
+        public static explicit operator void* (NUInt value) => value._value;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NUInt operator *(NUInt left, NUInt right)
         {
-            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) * (uint)right._value) : new NUInt(((ulong)left._value) * (ulong)right._value); }
+            return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) * (uint)right._value) : new NUInt(((ulong)left._value) * (ulong)right._value);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NUInt operator +(NUInt left, NUInt right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) + (uint)right._value) : new NUInt(((ulong)left._value) + (ulong)right._value); }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NUInt operator -(NUInt left, NUInt right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? new NUInt(((uint)left._value) - (uint)right._value) : new NUInt(((ulong)left._value) - (ulong)right._value); }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator >=(NUInt left, int right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) >= (uint)right : ((ulong)left._value) >= (uint)right; }
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator <=(NUInt left, int right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) <= (uint)right : ((ulong)left._value) <= (uint)right; }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator >(NUInt left, int right) => !(left <= right);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator <(NUInt left, int right) => !(left >= right);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator <=(NUInt left, NUInt right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) <= (uint)right._value : ((ulong)left._value) <= (ulong)right._value; }
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator >=(NUInt left, NUInt right)
-        {
-            unsafe { return (sizeof(IntPtr) == 4) ? ((uint)left._value) >= (uint)right._value : ((ulong)left._value) >= (ulong)right._value; }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator >(NUInt left, NUInt right) => !(left <= right);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator <(NUInt left, NUInt right) => !(left >= right);
-
-        public static bool operator ==(NUInt left, NUInt right) => left._value == right._value;
-        public static bool operator !=(NUInt left, NUInt right) => left._value != right._value;
-
-        public override bool Equals(object obj) => obj is NUInt other && _value == other._value;
-        public override int GetHashCode() => _value.GetHashCode();
-
-        public override string ToString() => _value.ToString();
     }
 }
