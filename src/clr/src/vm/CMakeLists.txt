@@ -213,7 +213,6 @@ set(VM_SOURCES_WKS
     jithelpers.cpp
     managedmdimport.cpp
     marshalnative.cpp
-    marvin32.cpp
     mdaassistants.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
