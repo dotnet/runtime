@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using System.IO;
+using System.Linq;
+using Tracing.Tests.Common;
 
 namespace Tracing.Tests
 {
@@ -14,9 +15,9 @@ namespace Tracing.Tests
         {
             // Additional assemblies will be seen, but these are ones we must see
             string[] AssembliesExpected = new string[] {
-                "rundown", // this assembly
+                "Common",
+                "Rundown", // this assembly
                 "System.Runtime",
-                "Microsoft.Diagnostics.Tracing.TraceEvent",
                 "System.Diagnostics.Tracing",
                 "System.Private.CoreLib"
             };
@@ -35,7 +36,7 @@ namespace Tracing.Tests
 
                 Console.WriteLine("\tStart: Process the trace file.");
 
-                var assembliesLoaded = new HashSet<string>();
+                var assembliesLoaded = new List<string>();
                 int nonMatchingEventCount = 0;
 
                 using (var trace = TraceEventDispatcher.GetDispatcherFromFileName(netPerfFile.Path))
@@ -60,9 +61,9 @@ namespace Tracing.Tests
                 }
                 Console.WriteLine("\tEnd: Processing events from file.\n");
 
-                foreach (var name in AssembliesExpected)
+                foreach (var expected in AssembliesExpected)
                 {
-                    Assert.True($"Assembly {name} in loaded assemblies", assembliesLoaded.Contains(name));
+                    Assert.True($"Assembly {expected} in loaded assemblies", assembliesLoaded.Any(loaded => String.Equals(loaded, expected, StringComparison.OrdinalIgnoreCase)));
                 }
                 Assert.Equal(nameof(nonMatchingEventCount), nonMatchingEventCount, 0);
             }
