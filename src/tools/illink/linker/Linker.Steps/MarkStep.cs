@@ -308,8 +308,18 @@ namespace Mono.Linker.Steps {
 
 		protected virtual bool ShouldMarkCustomAttribute (CustomAttribute ca)
 		{
-			if (_context.KeepUsedAttributeTypesOnly && !Annotations.IsMarked (ca.AttributeType.Resolve ()))
-				return false;
+			if (_context.KeepUsedAttributeTypesOnly) {
+				switch (ca.AttributeType.FullName) {
+				// [ThreadStatic] and [ContextStatic] are required by the runtime
+				case "System.ThreadStaticAttribute":
+				case "System.ContextStaticAttribute":
+					return true;
+				}
+				
+				if (!Annotations.IsMarked (ca.AttributeType.Resolve ()))
+					return false;
+			}
+
 			return true;
 		}
 
