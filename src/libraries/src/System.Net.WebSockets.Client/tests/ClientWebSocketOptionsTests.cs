@@ -142,42 +142,5 @@ namespace System.Net.WebSockets.Client.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => cws.Options.KeepAliveInterval = TimeSpan.MinValue);
         }
-
-        [OuterLoop("Connects to remote service")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Lacks RemoteCertificateValidationCallback to enable loopback testing")]
-        [ConditionalFact(nameof(WebSocketsSupported), nameof(ClientCertificatesSupported))]
-        public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
-        {
-            if (PlatformDetection.IsWindows7)
-            {
-                return; // [ActiveIssue(27846)]
-            }
-
-            using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
-            {
-                await LoopbackServer.CreateClientAndServerAsync(async uri =>
-                {
-                    using (var clientSocket = new ClientWebSocket())
-                    using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
-                    {
-                        clientSocket.Options.ClientCertificates.Add(clientCert);
-                        clientSocket.Options.GetType().GetProperty("RemoteCertificateValidationCallback", BindingFlags.NonPublic | BindingFlags.Instance)
-                            .SetValue(clientSocket.Options, new RemoteCertificateValidationCallback(delegate { return true; })); // TODO: #12038: Simplify once property is public.
-                        await clientSocket.ConnectAsync(uri, cts.Token);
-                    }
-                }, server => server.AcceptConnectionAsync(async connection =>
-                {
-                    // Validate that the client certificate received by the server matches the one configured on
-                    // the client-side socket.
-                    SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
-                    Assert.NotNull(sslStream.RemoteCertificate);
-                    Assert.Equal(clientCert, new X509Certificate2(sslStream.RemoteCertificate));
-
-                    // Complete the WebSocket upgrade over the secure channel. After this is done, the client-side
-                    // ConnectAsync should complete.
-                    Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
-                }), new LoopbackServer.Options { UseSsl = true, WebSocketEndpoint = true });
-            }
-        }
     }
 }
