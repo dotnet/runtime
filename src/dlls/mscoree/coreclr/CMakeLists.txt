@@ -162,7 +162,7 @@ if(WIN32)
         clr_unknown_arch()
     endif()
 
-    set(DACTABLEGEN_EXE ${CMAKE_CURRENT_BINARY_DIR}/../../../ToolBox/SOS/DacTableGen/dactablegen.exe)
+    set(DACTABLEGEN_EXE ${CMAKE_BINARY_DIR}/src/ToolBox/SOS/DacTableGen/dactablegen.exe)
     # The DactTableGen executable that we build needs an msdia140.dll supplied by Visual Studio.
     # however VS2015 may not have this, so fall back to the DactTableGen in the tools package (which is old)
     if($ENV{__VSVersion} STREQUAL "vs2015")
