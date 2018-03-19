@@ -1166,6 +1166,55 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX_SetVector256:
+        {
+            // TODO-XARCH: support long/ulong on 32-bit platfroms (remove HW_Flag_SecondArgMaybe64Bit)
+            int numArgs = sig->numArgs;
+            assert(numArgs >= 4);
+            assert(numArgs <= 32);
+            baseType                  = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            GenTree* higherHalfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_SSE_SetZeroVector128, TYP_FLOAT, 16);
+            GenTree* lowerHalfVector  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_SSE_SetZeroVector128, TYP_FLOAT, 16);
+            NamedIntrinsic insertIntrinsic = varTypeIsShort(baseType) ? NI_SSE2_Insert : NI_SSE41_Insert;
+            int            ival            = 0;
+
+            if (baseType != TYP_DOUBLE)
+            {
+                assert(varTypeIsIntegral(baseType) || baseType == TYP_FLOAT);
+
+                for (int i = 0; i < numArgs / 2; i++)
+                {
+                    GenTree* arg = impPopStack().val;
+                    // SSE4.1 insertps has different semantics from integral insert
+                    ival            = baseType == TYP_FLOAT ? i * 16 : i;
+                    lowerHalfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, lowerHalfVector, arg, gtNewIconNode(ival),
+                                                               insertIntrinsic, baseType, 16);
+                }
+
+                for (int i = 0; i < numArgs / 2; i++)
+                {
+                    GenTree* arg = impPopStack().val;
+                    // SSE4.1 insertps has different semantics from integral insert
+                    ival             = baseType == TYP_FLOAT ? i * 16 : i;
+                    higherHalfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, higherHalfVector, arg, gtNewIconNode(ival),
+                                                                insertIntrinsic, baseType, 16);
+                }
+            }
+            else
+            {
+                GenTree* op4     = impPopStack().val;
+                GenTree* op3     = impPopStack().val;
+                GenTree* op2     = impPopStack().val;
+                GenTree* op1     = impPopStack().val;
+                lowerHalfVector  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op4, op3, NI_SSE2_UnpackLow, TYP_DOUBLE, 16);
+                higherHalfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_SSE2_UnpackLow, TYP_DOUBLE, 16);
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, lowerHalfVector, higherHalfVector, gtNewIconNode(1),
+                                               NI_AVX_InsertVector128, baseType, 32);
+            break;
+        }
+
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
         {
