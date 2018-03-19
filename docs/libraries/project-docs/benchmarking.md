@@ -4,7 +4,7 @@ We recommend using [BenchmarkDotNet](https://github.com/dotnet/BenchmarkDotNet) 
 
 ```
 <ItemGroup>
-   <PackageReference Include="BenchmarkDotNet" Version="0.10.11" />
+   <PackageReference Include="BenchmarkDotNet" Version="0.10.13" />
 </ItemGroup>
 ```
 
@@ -22,52 +22,151 @@ For the sake of this tutorial we won't modify the `PATH` variable and instead al
 
 The shared framework is a set of assemblies that are packed into a `netcoreapp` Nuget package which is used when you set your `TargetFramework` to `netcoreappX.X`. You can either decide to use your local self-compiled shared framework package or use the one which is bundled with the .NET Core 2.1 SDK.
 
-## Alternative 1 - Using the shared framework from the .NET Core 2.1 SDK
-Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreapp and skip the last part which calls the `dotnet.exe` to run the application.
+# Benchmarking local CoreFX builds
 
-Add a benchmark class, configure it either with a manual configuration or by attributing it and pass the class type to the BenchmarkRunner:
+Since `0.10.13` BenchmarkDotNet knows [how to](./dogfooding.md#more-advanced-scenario---using-your-local-corefx-build) build a self-contained app against local CoreFX build. You just need to provide it the version you would like to benchmark and path to the folder with NuGet packages.
 
-```csharp
-[MemoryDiagnoser]
-// ...
-public class Benchmark
+**Important:** BenchmarkDotNet will generate the right `.csproj` file for the self-contained app. It's going to reference the `.csproj` file of the project which defines benchmarks. It's going to work even if your project is not self-contained app targeting local CoreFX build. So you can just create a new solution with console app in Visual Studio, install BenchmarkDotNet and it's going to do the right thing for you. 
+
+**Hint:** If you are curious to know what BDN does internally you just need to apply `[KeepBenchmarkFiles]` attribute to your class or set `KeepBenchmarkFiles = true` in your config file. After runing the benchmarks you can find the auto-generated files in `%pathToBenchmarkApp\bin\Release\$TFM\` folder.
+
+```cs
+class Program
 {
-     // Benchmark code ...
+    static void Main(string[] args)
+        => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
+            .Run(args, DefaultConfig.Instance.With(
+                Job.ShortRun.With(
+                    CustomCoreClrToolchain.CreateForLocalCoreFxBuild(
+                        @"C:\Projects\forks\corefx\bin\packages\Release",
+                        "4.5.0-preview2-26313-0"))));
 }
+```
 
-public class Program
+**Warning:** BDN is going to restore the NuGet packages and install them in your `.nuget` folder. Please keep in mind that [you either have to remove them](./dogfooding.md#3---consuming-subsequent-code-changes-by-overwriting-the-binary-alternative-1) or [increase the version number](./dogfooding.md#3---consuming-subsequent-code-changes-by-overwriting-the-binary-alternative-2) after making some code changes and rebuilding the repo. **Otherwise, you are going to benchmark the same code over and over again**.
+
+As an alternative to rebuilding entire CoreFX to regenerate the NuGet packages, you can provide the list of files that need to be copied to the published self-contained app. The files should be the dlls which you are trying to optimize. You can even define two jobs, one for the state before your local changes and one with the changes:
+
+```cs
+static void Main(string[] args)
+    => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
+        .Run(args, DefaultConfig.Instance
+            .With(Job.ShortRun
+                .With(CustomCoreClrToolchain.CreateForLocalCoreFxBuild(
+                    pathToNuGetFolder: @"C:\Projects\forks\corefx\bin\packages\Release",
+                    privateCoreFxNetCoreAppVersion: "4.5.0-preview2-26313-0",
+                    displayName: "before"))
+                .AsBaseline()
+                .WithId("before"))
+            .With(Job.ShortRun
+                .With(CustomCoreClrToolchain.CreateForLocalCoreFxBuild(
+                    pathToNuGetFolder: @"C:\Projects\forks\corefx\bin\packages\Release",
+                    privateCoreFxNetCoreAppVersion: "4.5.0-preview2-26313-0",
+                    displayName: "after",
+                    filesToCopy: new [] {
+					    @"c:\Projects\forks\corefx\bin\AnyOS.AnyCPU.Release\System.Text.RegularExpressions\netcoreapp\System.Text.RegularExpressions.dll"
+				    }))
+			    .WithId("after"))
+            .KeepBenchmarkFiles());
+```
+
+Once you run the benchmarks with such a config it should be clear if you have improved the performance or not (like in the example below):
+
+| Method |    Job | Toolchain | IsBaseline |      Mean |    Error |    StdDev | Scaled | ScaledSD |
+|------- |------- |---------- |----------- |----------:|---------:|----------:|-------:|---------:|
+| Sample |  after |     after |    Default | 35.077 us | 3.363 us | 0.1900 us |   8.64 |     0.15 |
+| Sample | before |    before |       True |  4.060 us | 1.465 us | 0.0828 us |   1.00 |     0.00 |
+
+# Benchmarking nightly CoreFX builds
+
+Since `0.10.13` BenchmarkDotNet knows [how to](./dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreap) build a self-contained app against nightly CoreFX build. You just need to provide it the version you would like to benchmark. You don't need to provide url to MyGet feed, the default value is "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json".
+
+```cs
+static void Main(string[] args)
+    => BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly)
+        .Run(args, DefaultConfig.Instance
+            .With(Job.ShortRun
+                .With(CustomCoreClrToolchain.CreateForNightlyCoreFxBuild("4.5.0-preview2-26215-01"))));
+```
+
+**Hint:** If you would like to compare the performance of different CoreFX versions, you just need to define multiple jobs, each using it's own toolchain.
+
+```cs
+DefaultConfig.Instance
+    .With(Job.Default.With(CustomCoreClrToolchain.CreateForNightlyCoreFxBuild("4.5.0-preview2-26214-01", displayName: "before my change")));
+    .With(Job.Default.With(CustomCoreClrToolchain.CreateForNightlyCoreFxBuild("4.5.0-preview2-26215-01", displayName: "after my change")));
+```
+
+# Benchmarking ANY CoreCLR and CoreFX builds
+
+BenchmarkDotNet allows you to benchmark **ANY** CoreCLR and CoreFX builds. It just generates the right `.csproj` file with appropriate dependencies and `NuGet.config` file with the right feeds.
+
+Example:
+
+```
+public class LocalCoreClrConfig : ManualConfig
 {
-    public static void Main()
-    {
-         BenchmarkRunner.Run<Benchmark>();
-    }
+	public LocalCoreClrConfig()
+	{
+		Add(Job.ShortRun.With(
+			new CustomCoreClrToolchain(
+				"local builds",
+				coreClrNuGetFeed: @"C:\Projects\forks\coreclr\bin\Product\Windows_NT.x64.Release\.nuget\pkg",
+				coreClrVersion: "2.1.0-preview2-26313-0",
+				coreFxNuGetFeed: @"C:\Projects\forks\corefx\bin\packages\Release",
+				coreFxVersion: "4.5.0-preview2-26313-0")
+		));
+
+		Add(Job.ShortRun.With(
+			new CustomCoreClrToolchain(
+				"local coreclr myget corefx",
+				coreClrNuGetFeed: @"C:\Projects\forks\coreclr\bin\Product\Windows_NT.x64.Release\.nuget\pkg",
+				coreClrVersion: "2.1.0-preview2-26313-0",
+				coreFxNuGetFeed: "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json",
+				coreFxVersion: "4.5.0-preview2-26215-01")
+		));
+
+		Add(Job.ShortRun.With(
+			new CustomCoreClrToolchain(
+				"myget coreclr local corefx",
+				coreClrNuGetFeed: "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json",
+				coreClrVersion: "2.1.0-preview2-26214-07",
+				coreFxNuGetFeed: @"C:\Projects\forks\corefx\bin\packages\Release",
+				coreFxVersion: "4.5.0-preview2-26313-0")
+		));
+
+		Add(Job.ShortRun.With(
+			new CustomCoreClrToolchain(
+				"myget builds",
+				coreClrNuGetFeed: "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json",
+				coreClrVersion: "2.1.0-preview2-26214-07",
+				coreFxNuGetFeed: "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json",
+				coreFxVersion: "4.5.0-preview2-26215-01")
+		));
+
+		// the rest of the config..
+	}
 }
 ```
 
-## Alternative 2 - Using your self-compiled shared framework
-Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#more-advanced-scenario---using-your-local-corefx-build and skip the last part which calls the `dotnet.exe` to run the application.
-Make sure to build your local corefx repository in RELEASE mode `.\build -release`! You currently need to have a self-contained application to inject your local shared framework package.
+The output is going to contain exact CoreCLR and CoreFX versions used:
 
-Currently there is no straightforward way to run your BenchmarkDotNet application in a dedicated process, therefore we are using the InProcess switch `[InProcess]`:
-
-```csharp
-[InProcess]
-public class Benchmark
-{
-     // Benchmark code ...
-}
-
-public class Program
-{
-    public static void Main()
-    {
-         BenchmarkRunner.Run<Benchmark>();
-    }
-}
 ```
+BenchmarkDotNet=v0.10.12.20180215-develop, OS=Windows 10 Redstone 3 [1709, Fall Creators Update] (10.0.16299.192)
+Intel Core i7-3687U CPU 2.10GHz (Ivy Bridge), 1 CPU, 4 logical cores and 2 physical cores
+Frequency=2533308 Hz, Resolution=394.7408 ns, Timer=TSC
+.NET Core SDK=2.1.300-preview2-008162
+  [Host]     : .NET Core 2.0.5 (CoreCLR 4.6.26020.03, CoreFX 4.6.26018.01), 64bit RyuJIT
+  Job-DHYYZE : .NET Core ? (CoreCLR 4.6.26313.0, CoreFX 4.6.26313.0), 64bit RyuJIT
+  Job-VGTPFY : .NET Core ? (CoreCLR 4.6.26313.0, CoreFX 4.6.26215.01), 64bit RyuJIT
+  Job-IYZFNW : .NET Core ? (CoreCLR 4.6.26214.07, CoreFX 4.6.26215.01), 64bit RyuJIT
+  Job-CTQFFQ : .NET Core ? (CoreCLR 4.6.26214.07, CoreFX 4.6.26313.0), 64bit RyuJIT
+```
+
+**Warning:** To fully understand the results you need to know what optimizations (PGO, CrossGen) were applied to given build. Usually, CoreCLR installed with the .NET Core SDK will be fully optimized and the fastest. On Windows, you can use the [disassembly diagnoser](http://adamsitnik.com/Disassembly-Diagnoser/) to check the produced assembly code.
 
 # Benchmark multiple or custom .NET Core 2.x SDKs
-Follow the instructions described here https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreapp and skip the last part which calls the `dotnet.exe` to run the application.
+Follow the instructions described [here](./dogfooding.md#advanced-scenario---using-a-nightly-build-of-microsoftnetcoreapp) and skip the last part which calls the `dotnet.exe` to run the application.
 
 Whenever you want to benchmark an application simultaneously with one or multiple different .NET Core run time framework versions, you want to create a manual BenchmarkDotNet configuration file. Add the desired amount of Jobs and `NetCoreAppSettings` to specify the `targetFrameworkMoniker`, `runtimeFrameworkVersion` and `customDotNetCliPath`:
 
