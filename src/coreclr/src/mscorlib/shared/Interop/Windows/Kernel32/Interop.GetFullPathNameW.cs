@@ -21,7 +21,7 @@ internal partial class Interop
         {
             fixed (char* pBuffer = &lpBuffer)
             fixed (char* pFileName = &lpFileName)
-                return GetFullPathNameW(pFileName, nBufferLength, pBuffer, mustBeZero);
+                return GetFullPathNameW(pFileName, nBufferLength, pBuffer, lpFilePart);
         }
 #else
         internal static extern uint GetFullPathNameW(ref char lpFileName, uint nBufferLength, ref char lpBuffer, IntPtr lpFilePart);
