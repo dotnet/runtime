@@ -1058,6 +1058,26 @@ GenTree* Compiler::impSSE42Intrinsic(NamedIntrinsic        intrinsic,
     return retNode;
 }
 
+//------------------------------------------------------------------------
+// normalizeAndGetHalfIndex: compute the half index of a Vector256<baseType>
+//                           and normalize the index to the specific range
+//
+// Arguments:
+//    indexPtr   -- OUT paramter, the pointer to the original index value
+//    baseType   -- the base type of the Vector256<T>
+//
+// Return Value:
+//    retuen the middle index of a Vector256<baseType>
+//    return the normalized index via indexPtr
+//
+static int normalizeAndGetHalfIndex(int* indexPtr, var_types baseType)
+{
+    assert(varTypeIsArithmetic(baseType));
+    // clear the unused bits to normalize the index into the range of [0, length of Vector256<baseType>)
+    *indexPtr = (*indexPtr) & (32 / genTypeSize(baseType) - 1);
+    return (16 / genTypeSize(baseType));
+}
+
 GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
                                          CORINFO_METHOD_HANDLE method,
                                          CORINFO_SIG_INFO*     sig,
@@ -1071,6 +1091,81 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_AVX_Extract:
+        {
+            // Avx.Extract executes software implementation when the imm8 argument is not compile-time constant
+            assert(!mustExpand);
+
+            GenTree* lastOp   = impPopStack().val;
+            GenTree* vectorOp = impSIMDPopStack(TYP_SIMD32);
+            assert(lastOp->IsCnsIntOrI());
+            int ival          = (int)lastOp->AsIntCon()->IconValue();
+            baseType          = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
+            var_types retType = JITtype2varType(sig->retType);
+            assert(varTypeIsArithmetic(baseType));
+
+            int            midIndex         = normalizeAndGetHalfIndex(&ival, baseType);
+            NamedIntrinsic extractIntrinsic = varTypeIsShort(baseType) ? NI_SSE2_Extract : NI_SSE41_Extract;
+            GenTree*       half             = nullptr;
+
+            if (ival >= halfIndex)
+            {
+                half = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, gtNewIconNode(1), NI_AVX_ExtractVector128,
+                                                baseType, 32);
+                ival -= halfIndex;
+            }
+            else
+            {
+                half = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, NI_AVX_GetLowerHalf, baseType, 32);
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, half, gtNewIconNode(ival), extractIntrinsic, baseType, 16);
+            break;
+        }
+
+        case NI_AVX_Insert:
+        {
+            // Avx.Extract executes software implementation when the imm8 argument is not compile-time constant
+            assert(!mustExpand);
+
+            GenTree* lastOp   = impPopStack().val;
+            GenTree* dataOp   = impPopStack().val;
+            GenTree* vectorOp = impSIMDPopStack(TYP_SIMD32);
+            assert(lastOp->IsCnsIntOrI());
+            int ival = (int)lastOp->AsIntCon()->IconValue();
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            assert(varTypeIsArithmetic(baseType));
+
+            int            midIndex        = normalizeAndGetHalfIndex(&ival, baseType);
+            NamedIntrinsic insertIntrinsic = varTypeIsShort(baseType) ? NI_SSE2_Insert : NI_SSE41_Insert;
+
+            GenTree* clonedVectorOp;
+            vectorOp =
+                impCloneExpr(vectorOp, &clonedVectorOp, info.compCompHnd->getArgClass(sig, sig->args),
+                             (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("AVX Insert clones the vector operand"));
+
+            if (ival >= halfIndex)
+            {
+                GenTree* halfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, gtNewIconNode(1),
+                                                               NI_AVX_ExtractVector128, baseType, 32);
+                GenTree* ModifiedHalfVector =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, halfVector, dataOp, gtNewIconNode(ival - halfIndex),
+                                             insertIntrinsic, baseType, 16);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, clonedVectorOp, ModifiedHalfVector, gtNewIconNode(1),
+                                                   NI_AVX_InsertVector128, baseType, 32);
+            }
+            else
+            {
+                GenTree* halfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, NI_AVX_GetLowerHalf, baseType, 32);
+                GenTree* ModifiedHalfVector =
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD32, halfVector, dataOp, gtNewIconNode(ival), insertIntrinsic,
+                                             baseType, 16);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, clonedVectorOp, ModifiedHalfVector, gtNewIconNode(15),
+                                                   NI_AVX_Blend, TYP_FLOAT, 32);
+            }
+            break;
+        }
+
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
         {
