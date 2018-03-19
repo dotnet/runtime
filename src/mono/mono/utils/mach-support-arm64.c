@@ -32,6 +32,7 @@ static const int known_tls_offsets[] = {
 	0x48, /*Found on iOS 6 */
 	0xA4,
 	0xA8,
+	0xE0, /* Found on at least iOS 10 and iOS 11 */
 };
 
 #define TLS_PROBE_COUNT (sizeof (known_tls_offsets) / sizeof (int))
