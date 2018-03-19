@@ -54,9 +54,11 @@
     <Compile Include="Attributes\NoSecurity\SecurityAttributesOnUsedMethodAreRemoved.cs" />
     <Compile Include="Attributes\NoSecurity\SecurityAttributesOnUsedTypeAreRemoved.cs" />
     <Compile Include="Attributes\NoSecurity\CoreLibrarySecurityAttributeTypesAreRemoved.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\ContextStaticIsPreservedOnField.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\Dependencies\UnusedAttributeWithTypeForwarderIsRemoved_Lib.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeDefinedAndUsedInOtherAssemblyIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeUsedByAttributeIsKept.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\ThreadStaticIsPreservedOnField.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeTypeOnModuleIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeWithTypeForwarderIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\CanLinkCoreLibrariesWithOnlyKeepUsedAttributes.cs" />
