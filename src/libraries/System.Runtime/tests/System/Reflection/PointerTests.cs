@@ -23,6 +23,10 @@ namespace System.Reflection.Tests
         }
     }
 
+    unsafe delegate void MethodDelegate(byte* ptr, int expected);
+
+    unsafe delegate bool* ReturnDelegate(int expected);
+
     public unsafe class PointerTests
     {
         [Fact]
@@ -88,6 +92,16 @@ namespace System.Reflection.Tests
             FieldInfo field = typeof(PointerHolder).GetField("field");
             field.SetValue(obj, Pointer.Box(unchecked((void*)value), typeof(int*)));
             Assert.Equal(value, unchecked((int)obj.field));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Bug that will be fixed along with the rest of UAPAOT issues here")]
+        public void PointerFieldSetNullValue()
+        {
+            var obj = new PointerHolder();
+            FieldInfo field = typeof(PointerHolder).GetField("field");
+            field.SetValue(obj, null);
+            Assert.Equal(0, unchecked((int)obj.field));
         }
 
         [Theory]
@@ -184,6 +198,15 @@ namespace System.Reflection.Tests
             method.Invoke(obj, new[] { Pointer.Box(unchecked((void*)value), typeof(byte*)), value });
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
+        public void PointerNullMethodParameter()
+        {
+            var obj = new PointerHolder();
+            MethodInfo method = typeof(PointerHolder).GetMethod("Method");
+            method.Invoke(obj, new object[] { null, 0 });
+        }
+
         [Theory]
         [MemberData(nameof(Pointers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
@@ -215,6 +238,61 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod("Return");
             object actualValue = method.Invoke(obj, new object[] { value });
+            Assert.IsType<Pointer>(actualValue);
+            void* actualPointer = Pointer.Unbox(actualValue);
+            Assert.Equal(value, unchecked((int)actualPointer));
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
+        public void PointerMethodDelegateParameter(int value)
+        {
+            var obj = new PointerHolder();
+            MethodDelegate d = obj.Method;
+            d.DynamicInvoke(Pointer.Box(unchecked((void*)value), typeof(byte*)), value);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
+        public void PointerNullMethodDelegateParameter()
+        {
+            var obj = new PointerHolder();
+            MethodDelegate d = obj.Method;
+            d.DynamicInvoke(null, 0);
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
+        public void IntPtrMethodDelegateParameter(int value)
+        {
+            var obj = new PointerHolder();
+            MethodDelegate d = obj.Method;
+            d.DynamicInvoke((IntPtr)value, value);
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
+        public void PointerMethodDelegateParameter_InvalidType(int value)
+        {
+            var obj = new PointerHolder();
+            MethodDelegate d = obj.Method;
+            AssertExtensions.Throws<ArgumentException>(null, () =>
+            {
+                d.DynamicInvoke(Pointer.Box(unchecked((void*)value), typeof(long*)), value);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(Pointers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
+        public void PointerMethodDelegateReturn(int value)
+        {
+            var obj = new PointerHolder();
+            ReturnDelegate d = obj.Return;
+            object actualValue = d.DynamicInvoke(value);
             Assert.IsType<Pointer>(actualValue);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
