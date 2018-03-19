@@ -298,7 +298,7 @@ void Compiler::fgInstrumentMethod()
     }
     else
     {
-        // For each BasicBlock (non-Internal) 
+        // For each BasicBlock (non-Internal)
         //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
         //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
 
@@ -316,12 +316,13 @@ void Compiler::fgInstrumentMethod()
 
             // Assign the current block's IL offset into the profile data
             bbCurrentBlockProfileBuffer->ILOffset = block->bbCodeOffs;
-            assert(bbCurrentBlockProfileBuffer->ExecutionCount == 0);   // This value should already be zero-ed out
+            assert(bbCurrentBlockProfileBuffer->ExecutionCount == 0); // This value should already be zero-ed out
 
             size_t addrOfCurrentExecutionCount = (size_t)&bbCurrentBlockProfileBuffer->ExecutionCount;
 
             // Read Basic-Block count value
-            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
+            GenTree* valueNode =
+                gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
             // Increment value by 1
             GenTree* rhsNode = gtNewOperNode(GT_ADD, TYP_INT, valueNode, gtNewIconNode(1));
@@ -330,7 +331,7 @@ void Compiler::fgInstrumentMethod()
             GenTree* lhsNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
             GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
 
-            fgInsertStmtAtBeg(block, asgNode); 
+            fgInsertStmtAtBeg(block, asgNode);
 
             // Advance to the next ProfileBuffer tuple [ILOffset, ExecutionCount]
             bbCurrentBlockProfileBuffer++;
