@@ -205,11 +205,14 @@ namespace System.Net.Sockets.Tests
 
                     Task clientReceives = Task.Run(async () =>
                     {
-                        int bytesRead;
                         byte[] buffer = new byte[readBufferSize];
-                        while (readData.Length < writeBuffer.Length)
+                        while (true)
                         {
-                            bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None);
+                            int bytesRead = await client.ReceiveAsync(new Memory<byte>(buffer), SocketFlags.None);
+                            if (bytesRead == 0)
+                            {
+                                break;
+                            }
                             Assert.InRange(bytesRead, 1, writeBuffer.Length - readData.Length);
                             readData.Write(buffer, 0, bytesRead);
                         }
