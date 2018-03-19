@@ -32,8 +32,6 @@
 #include "utilcode.h"
 #endif
 
-#include "newapis.h"
-
 // To include definition of CAPTURE_BUCKETS_AT_TRANSITION
 #include "exstate.h"
 

@@ -336,11 +336,7 @@ FormatMessageW(
     }
     
     if ( !( dwFlags & FORMAT_MESSAGE_FROM_STRING ) && 
-         ( dwLanguageId != 0
-#if ENABLE_DOWNLEVEL_FOR_NLS         
-         && dwLanguageId != MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ) 
-#endif
-         ) )
+         ( dwLanguageId != 0) )
     {
         ERROR( "Invalid language indentifier.\n" );
         SetLastError( ERROR_RESOURCE_LANG_NOT_FOUND );

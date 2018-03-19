@@ -14,7 +14,6 @@
 #include "eventtrace.h"
 #include "posterror.h"
 #include "eemessagebox.h"
-#include "newapis.h"
 
 #include <shlobj.h>
 
@@ -2047,11 +2046,7 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
 #ifndef FEATURE_PAL
 ThreadLocaleHolder::~ThreadLocaleHolder()
 {
-#ifdef FEATURE_USE_LCID
-#endif // FEATURE_USE_LCID
-    {
-        SetThreadLocale(m_locale);
-    }
+    SetThreadLocale(m_locale);
 }
 
 HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName)
@@ -3463,7 +3458,7 @@ INT32 InternalCasingHelper::InvariantToLowerHelper(__out_bcount_opt(cMaxBytes) L
     }
 
     //Do the casing operation
-    NewApis::LCMapStringEx(W(""), LCMAP_LOWERCASE, szInWide, wideCopyLen, szWideOut, wideCopyLen, NULL, NULL, 0);
+    ::LCMapStringEx(W(""), LCMAP_LOWERCASE, szInWide, wideCopyLen, szWideOut, wideCopyLen, NULL, NULL, 0);
 
     //Convert the Unicode back to UTF8
     result = WszWideCharToMultiByte(CP_UTF8, 0, szWideOut, wideCopyLen, szOut, cMaxBytes, NULL, NULL);
