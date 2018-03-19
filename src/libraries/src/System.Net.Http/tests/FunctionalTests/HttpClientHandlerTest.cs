@@ -2831,12 +2831,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(CredentialsForProxyNonRfcCompliant))]
         public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_NonRfcCompliant(ICredentials creds, bool wrapCredsInCache)
         {
-            if (UseSocketsHttpHandler)
-            {
-                // TODO #23135: SocketsHttpHandler currently gets error "System.NotImplementedException : Basic auth: can't handle ':' in domain "dom:\ain""
-                return;
-            }
-
             await Proxy_BypassFalse_GetRequestGoesThroughCustomProxy_Implementation(creds, wrapCredsInCache);
         }
 
