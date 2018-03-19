@@ -190,6 +190,41 @@
                 "Type": "build/product/",
                 "PB_BuildType": "Release"
                 }
+            },
+            {
+                "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+                "Parameters": {
+                "HelixJobType": "test/functional/cli/",
+                "TargetsWindows": "false",
+                "Rid": "alpine.3.6",
+                "TargetQueues": "Alpine.36.Amd64",
+                "TestContainerSuffix": "alpine36",
+                "TargetsNonWindowsArg": "TargetsNonWindows "
+                },
+                "ReportingParameters": {
+                "OperatingSystem": "Alpine3.6",
+                "SubType":  "Build-Tests",
+                "Type": "build/product/",
+                "PB_BuildType": "Release"
+                }
+            },
+            {
+                "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+                "Parameters": {
+                "HelixJobType": "test/functional/r2r/cli/",
+                "TargetsWindows": "false",
+                "Rid": "alpine.3.6",
+                "TargetQueues": "Alpine.36.Amd64",
+                "TestContainerSuffix": "alpine36-r2r",
+                "CrossgenArg": "Crossgen ",
+                "TargetsNonWindowsArg": "TargetsNonWindows "
+                },
+                "ReportingParameters": {
+                "OperatingSystem": "Alpine3.6",
+                "SubType":  "Build-Tests-R2R",
+                "Type": "build/product/",
+                "PB_BuildType": "Release"
+                }
             }
             ],
         }
