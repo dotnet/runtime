@@ -1082,17 +1082,13 @@ void Compiler::compUpdateLifeVar(GenTree* tree, VARSET_TP* pLastUseVars)
 template void Compiler::compUpdateLifeVar<false>(GenTree* tree, VARSET_TP* pLastUseVars);
 
 template <bool ForCodeGen>
-void Compiler::compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree))
+void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 {
     LclVarDsc* varDsc;
 
 #ifdef DEBUG
     if (verbose)
     {
-        if (tree != nullptr)
-        {
-            Compiler::printTreeID(tree);
-        }
         printf("Change life %s ", VarSetOps::ToString(this, compCurLife));
         dumpConvertedVarSet(this, compCurLife);
         printf(" -> %s ", VarSetOps::ToString(this, newLife));
@@ -1163,7 +1159,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree))
             {
                 codeGen->gcInfo.gcRegByrefSetCur &= ~regMask;
             }
-            codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(tree));
+            codeGen->genUpdateRegLife(varDsc, false /*isBorn*/, true /*isDying*/ DEBUGARG(nullptr));
         }
 #ifndef LEGACY_BACKEND
         // This isn't in a register, so update the gcVarPtrSetCur.
@@ -1197,7 +1193,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree))
 #endif // DEBUG
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
 #endif // !LEGACY_BACKEND
-            codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(tree));
+            codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(nullptr));
             regMaskTP regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
@@ -1222,7 +1218,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree))
 }
 
 // Need an explicit instantiation.
-template void Compiler::compChangeLife<true>(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree));
+template void Compiler::compChangeLife<true>(VARSET_VALARG_TP newLife);
 
 #ifdef LEGACY_BACKEND
 

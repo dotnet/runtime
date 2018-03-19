@@ -12971,7 +12971,7 @@ void CodeGen::genCodeForBBlist()
         gcInfo.gcMarkRegSetNpt(gcrefRegs | byrefRegs);
 
         if (!VarSetOps::Equal(compiler, compiler->compCurLife, block->bbLiveOut))
-            compiler->genChangeLife(block->bbLiveOut DEBUGARG(NULL));
+            compiler->genChangeLife(block->bbLiveOut);
 
         /* Both stacks should always be empty on exit from a basic block */
 
