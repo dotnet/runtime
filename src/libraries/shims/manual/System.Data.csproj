@@ -1,24 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
   <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
-      uap;
-    </BuildConfigurations>
-    <IsNETCoreApp>true</IsNETCoreApp>
-    <IsUAP>true</IsUAP>
-  </PropertyGroup>
-  <!-- need to by-pass the dir.props in the shims directory for this project -->
-  <Import Project="..\..\..\dir.props" />
-  <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <AssemblyKey>ECMA</AssemblyKey>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <HasMatchingContract>true</HasMatchingContract>
-    <ContractAssemblyPath>$(NetFxRefPath)System.Data.dll</ContractAssemblyPath>
-    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
-    <IsRuntimeAssembly>true</IsRuntimeAssembly>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
     <ProjectGuid>{5E51460E-C9DC-4B6B-B87E-0ED742FC6733}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
