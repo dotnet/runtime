@@ -89,11 +89,6 @@
 
 /mono/profiler @alexrp @kumpera
 
-/mono/sdks @luhenry
-/mono/sdks/android @luhenry @jonpryor
-/mono/sdks/ios @vargaz @rolfbjarne
-/mono/sdks/wasm @kumpera @lrz
-
 /mono/sgen @BrzVlad @kumpera
 
 /mono/utils @kumpera @vargaz
@@ -105,7 +100,7 @@
 
 /msvc @lateralusX @luhenry
 /msvc/*profiler* @alexrp
-/msvc/scripts @akoeplinger
+/msvc/scripts @akoeplinger @kg
 
 /packaging/ @alexischr @akoeplinger @luhenry
 /packaging/MacSDK/msbuild.py @radical @akoeplinger
@@ -117,8 +112,13 @@
 /samples/size @alexrp
 
 /scripts @akoeplinger @luhenry
-/scripts/ci @akoeplinger
+/scripts/ci @akoeplinger @alexischr
 /scripts/ci/run-test-profiler-stress-tests.sh @alexrp
+
+/sdks @marek-safar @luhenry
+/sdks/wasm @kumpera @lrz
+/sdks/ios @vargaz @rolfbjarne
+/sdks/android @luhenry @jonpryor
 
 /support @luhenry @vargaz
 
