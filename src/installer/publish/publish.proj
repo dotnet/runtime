@@ -219,7 +219,6 @@
       <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">1</SymbolExpirationInDays>
       <SymbolVerboseLogging>true</SymbolVerboseLogging>
       <ConvertPortablePdbsToWindowsPdbs>true</ConvertPortablePdbsToWindowsPdbs>
-      <PdbConversionTreatAsWarning>21,23,30</PdbConversionTreatAsWarning>
     </PropertyGroup>
     <ItemGroup>
       <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" />
