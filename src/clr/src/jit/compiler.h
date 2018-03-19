@@ -7249,11 +7249,11 @@ public:
     GenTree*  compCurLifeTree; // node after which compCurLife has been computed
 
     template <bool ForCodeGen>
-    void compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree));
+    void compChangeLife(VARSET_VALARG_TP newLife);
 
-    void genChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTree* tree))
+    void genChangeLife(VARSET_VALARG_TP newLife)
     {
-        compChangeLife</*ForCodeGen*/ true>(newLife DEBUGARG(tree));
+        compChangeLife</*ForCodeGen*/ true>(newLife);
     }
 
     template <bool ForCodeGen>

@@ -3589,7 +3589,7 @@ inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
 {
     if (!VarSetOps::Equal(this, compCurLife, newLife))
     {
-        compChangeLife<ForCodeGen>(newLife DEBUGARG(nullptr));
+        compChangeLife<ForCodeGen>(newLife);
     }
 #ifdef DEBUG
     else
