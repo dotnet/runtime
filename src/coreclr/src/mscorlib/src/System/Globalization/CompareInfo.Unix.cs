@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -732,7 +733,10 @@ namespace System.Globalization
 
                 fixed (byte* pSortKey = keyData)
                 {
-                    Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
+                    if (Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                    {
+                        throw new ArgumentException(SR.Arg_ExternalException);
+                    }
                 }
             }
 
@@ -796,25 +800,29 @@ namespace System.Globalization
 
             int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
 
-            // As an optimization, for small sort keys we allocate the buffer on the stack.
-            if (sortKeyLength <= 256)
+            byte[] borrowedArr = null;
+            Span<byte> span = sortKeyLength <= 512 ?
+                stackalloc byte[512] :
+                (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+            fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
             {
-                byte* pSortKey = stackalloc byte[sortKeyLength];
-                Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength);
+                if (Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                {
+                    throw new ArgumentException(SR.Arg_ExternalException);
+                }
             }
 
-            byte[] sortKey = new byte[sortKeyLength];
+            int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
 
-            fixed (byte* pSortKey = sortKey)
+            // Return the borrowed array if necessary.
+            if (borrowedArr != null)
             {
-                Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options);
-                return InternalHashSortKey(pSortKey, sortKeyLength);
+                ArrayPool<byte>.Shared.Return(borrowedArr);
             }
+
+            return hash;
         }
-
-        [DllImport(JitHelpers.QCall)]
-        private static extern unsafe int InternalHashSortKey(byte* sortKey, int sortKeyLength);
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
         {
