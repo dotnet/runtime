@@ -2368,6 +2368,20 @@ void LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             break;
         }
 
+        case NI_AVX_SetAllVector256:
+        {
+            if (varTypeIsIntegral(baseType))
+            {
+                info->internalFloatCount = 1;
+                if (!compiler->compSupports(InstructionSet_AVX2) && varTypeIsByte(baseType))
+                {
+                    info->internalFloatCount += 1;
+                }
+                info->setInternalCandidates(this, allSIMDRegs());
+            }
+            break;
+        }
+
         case NI_SSE2_MaskMove:
         {
             // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
