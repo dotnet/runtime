@@ -239,17 +239,14 @@ namespace System.Runtime.Intrinsics.X86
         /// __int8 _mm256_extract_epi8 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static sbyte Extract(Vector256<sbyte> value, byte index)
         {
-            index &= 0x1F; // the instructions only need the lowest 5 bits.
-            if (index > 15)
+            unsafe
             {
-                return Sse41.Extract(ExtractVector128(value, 1), (byte)(index - 16));
-            }
-            else
-            {
-                return Sse41.Extract(GetLowerHalf(value), index);
+                index &= 0x1F;
+                sbyte* buffer = stackalloc sbyte[32];
+                Store(buffer, value);
+                return buffer[index];
             }
         }
 
@@ -257,17 +254,14 @@ namespace System.Runtime.Intrinsics.X86
         /// __int8 _mm256_extract_epi8 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte Extract(Vector256<byte> value, byte index)
         {
-            index &= 0x1F; // the instructions only need the lowest 5 bits.
-            if (index > 15)
+            unsafe
             {
-                return Sse41.Extract(ExtractVector128(value, 1), (byte)(index - 16));
-            }
-            else
-            {
-                return Sse41.Extract(GetLowerHalf(value), index);
+                index &= 0x1F;
+                byte* buffer = stackalloc byte[32];
+                Store(buffer, value);
+                return buffer[index];   
             }
         }
 
@@ -275,35 +269,29 @@ namespace System.Runtime.Intrinsics.X86
         /// __int16 _mm256_extract_epi16 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Extract(Vector256<short> value, byte index)
         {
-            index &= 0xF; // the instructions only need the lowest 4 bits.
-            if (index > 7)
+            unsafe
             {
-                return Sse2.Extract(ExtractVector128(value, 1), (byte)(index - 8));
-            }
-            else
-            {
-                return Sse2.Extract(GetLowerHalf(value), index);
-            }
+                index &= 0xF;
+                short* buffer = stackalloc short[16];
+                Store(buffer, value);
+                return buffer[index];
+            }   
         }
 
         /// <summary>
         /// __int16 _mm256_extract_epi16 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort Extract(Vector256<ushort> value, byte index)
         {
-            index &= 0xF; // the instructions only need the lowest 4 bits.
-            if (index > 7)
+            unsafe
             {
-                return Sse2.Extract(ExtractVector128(value, 1), (byte)(index - 8));
-            }
-            else
-            {
-                return Sse2.Extract(GetLowerHalf(value), index);
+                index &= 0xF;
+                ushort* buffer = stackalloc ushort[16];
+                Store(buffer, value);
+                return buffer[index];
             }
         }
 
@@ -311,17 +299,14 @@ namespace System.Runtime.Intrinsics.X86
         /// __int32 _mm256_extract_epi32 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Extract(Vector256<int> value, byte index)
         {
-            index &= 0x7; // the instructions only need the lowest 3 bits.
-            if (index > 3)
+            unsafe
             {
-                return Sse41.Extract(ExtractVector128(value, 1), (byte)(index - 4));
-            }
-            else
-            {
-                return Sse41.Extract(GetLowerHalf(value), index);
+                index &= 0x7;
+                int* buffer = stackalloc int[8];
+                Store(buffer, value);
+                return buffer[index];
             }
         }
 
@@ -329,17 +314,14 @@ namespace System.Runtime.Intrinsics.X86
         /// __int32 _mm256_extract_epi32 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Extract(Vector256<uint> value, byte index)
         {
-            index &= 0x7; // the instructions only need the lowest 3 bits.
-            if (index > 3)
+            unsafe
             {
-                return Sse41.Extract(ExtractVector128(value, 1), (byte)(index - 4));
-            }
-            else
-            {
-                return Sse41.Extract(GetLowerHalf(value), index);
+                index &= 0x7;
+                uint* buffer = stackalloc uint[8];
+                Store(buffer, value);
+                return buffer[index];
             }
         }
 
@@ -347,17 +329,18 @@ namespace System.Runtime.Intrinsics.X86
         /// __int64 _mm256_extract_epi64 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Extract(Vector256<long> value, byte index)
         {
-            index &= 0x3; // the instructions only need the lowest 2 bits.
-            if (index > 1)
+            if (IntPtr.Size != 8)
             {
-                return Sse41.Extract(ExtractVector128(value, 1), (byte)(index - 2));
+                throw new PlatformNotSupportedException();
             }
-            else
+            unsafe
             {
-                return Sse41.Extract(GetLowerHalf(value), index);
+                index &= 0x3;
+                long* buffer = stackalloc long[4];
+                Store(buffer, value);
+                return buffer[index];
             }
         }
 
@@ -365,17 +348,18 @@ namespace System.Runtime.Intrinsics.X86
         /// __int64 _mm256_extract_epi64 (__m256i a, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Extract(Vector256<ulong> value, byte index)
         {
-            index &= 0x3; // the instructions only need the lowest 2 bits.
-            if (index > 1)
+            if (IntPtr.Size != 8)
             {
-                return Sse41.Extract(ExtractVector128(value, 1), (byte)(index - 2));
+                throw new PlatformNotSupportedException();
             }
-            else
+            unsafe
             {
-                return Sse41.Extract(GetLowerHalf(value), index);
+                index &= 0x3;
+                ulong* buffer = stackalloc ulong[4];
+                Store(buffer, value);
+                return buffer[index];
             }
         }
 
@@ -506,20 +490,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi8 (__m256i a, __int8 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte data, byte index)
         {
-            index &= 0x1F; // the instructions only need the lowest 5 bits.
-            if (index > 15)
+            unsafe
             {
-                Vector128<sbyte> half = ExtractVector128(value, 1);
-                half = Sse41.Insert(half, data, (byte)(index - 16));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<sbyte> half = Sse41.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, sbyte>(Blend(StaticCast<sbyte, float>(value), StaticCast<sbyte, float>(ExtendToVector256(half)), 15));
+                index &= 0x1F;
+                sbyte* buffer = stackalloc sbyte[32];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
 
@@ -527,20 +506,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi8 (__m256i a, __int8 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<byte> Insert(Vector256<byte> value, byte data, byte index)
         {
-            index &= 0x1F; // the instructions only need the lowest 5 bits.
-            if (index > 15)
+            unsafe
             {
-                Vector128<byte> half = ExtractVector128(value, 1);
-                half = Sse41.Insert(half, data, (byte)(index - 16));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<byte> half = Sse41.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, byte>(Blend(StaticCast<byte, float>(value), StaticCast<byte, float>(ExtendToVector256(half)), 15));
+                index &= 0x1F;
+                byte* buffer = stackalloc byte[32];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
         
@@ -548,20 +522,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<short> Insert(Vector256<short> value, short data, byte index)
         {
-            index &= 0xF; // the instructions only need the lowest 4 bits.
-            if (index > 7)
+            unsafe
             {
-                Vector128<short> half = ExtractVector128(value, 1);
-                half = Sse2.Insert(half, data, (byte)(index - 8));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<short> half = Sse2.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, short>(Blend(StaticCast<short, float>(value), StaticCast<short, float>(ExtendToVector256(half)), 15));
+                index &= 0xF;
+                short* buffer = stackalloc short[16];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
 
@@ -569,20 +538,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ushort> Insert(Vector256<ushort> value, ushort data, byte index)
         {
-            index &= 0xF; // the instructions only need the lowest 4 bits.
-            if (index > 7)
+            unsafe
             {
-                Vector128<ushort> half = ExtractVector128(value, 1);
-                half = Sse2.Insert(half, data, (byte)(index - 8));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<ushort> half = Sse2.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, ushort>(Blend(StaticCast<ushort, float>(value), StaticCast<ushort, float>(ExtendToVector256(half)), 15));
+                index &= 0xF;
+                ushort* buffer = stackalloc ushort[16];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
 
@@ -590,20 +554,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> Insert(Vector256<int> value, int data, byte index)
         {
-            index &= 0x7; // the instructions only need the lowest 3 bits.
-            if (index > 3)
+            unsafe
             {
-                Vector128<int> half = ExtractVector128(value, 1);
-                half = Sse41.Insert(half, data, (byte)(index - 4));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<int> half = Sse41.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, int>(Blend(StaticCast<int, float>(value), StaticCast<int, float>(ExtendToVector256(half)), 15));
+                index &= 0x7;
+                int* buffer = stackalloc int[8];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
         
@@ -611,20 +570,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<uint> Insert(Vector256<uint> value, uint data, byte index)
         {
-            index &= 0x7; // the instructions only need the lowest 3 bits.
-            if (index > 3)
+            unsafe
             {
-                Vector128<uint> half = ExtractVector128(value, 1);
-                half = Sse41.Insert(half, data, (byte)(index - 4));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<uint> half = Sse41.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, uint>(Blend(StaticCast<uint, float>(value), StaticCast<uint, float>(ExtendToVector256(half)), 15));
+                index &= 0x7;
+                uint* buffer = stackalloc uint[8];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
 
@@ -632,20 +586,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<long> Insert(Vector256<long> value, long data, byte index)
         {
-            index &= 0x3; // the instructions only need the lowest 2 bits.
-            if (index > 1)
+            unsafe
             {
-                Vector128<long> half = ExtractVector128(value, 1);
-                half = Sse41.Insert(half, data, (byte)(index - 2));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<long> half = Sse41.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, long>(Blend(StaticCast<long, float>(value), StaticCast<long, float>(ExtendToVector256(half)), 15));
+                index &= 0x3;
+                long* buffer = stackalloc long[4];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
 
@@ -653,20 +602,15 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
         ///   HELPER
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ulong> Insert(Vector256<ulong> value, ulong data, byte index)
         {
-            index &= 0x3; // the instructions only need the lowest 2 bits.
-            if (index > 1)
+            unsafe
             {
-                Vector128<ulong> half = ExtractVector128(value, 1);
-                half = Sse41.Insert(half, data, (byte)(index - 2));
-                return InsertVector128(value, half, 1);
-            }
-            else
-            {
-                Vector128<ulong> half = Sse41.Insert(GetLowerHalf(value), data, index);
-                return StaticCast<float, ulong>(Blend(StaticCast<ulong, float>(value), StaticCast<ulong, float>(ExtendToVector256(half)), 15));
+                index &= 0x3;
+                ulong* buffer = stackalloc ulong[4];
+                Store(buffer, value);
+                buffer[index] = data;
+                return LoadVector256(buffer);
             }
         }
 
