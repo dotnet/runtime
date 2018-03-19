@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security;
+using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Security;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -120,24 +121,47 @@ namespace System.Globalization
                 return 0;
             }
 
-            int flags = GetNativeCompareFlags(options);
-            int tmpHash = 0;
-#if CORECLR
-            tmpHash = InternalGetGlobalizedHashCode(_sortHandle, _sortName, source, source.Length, flags);
-#else
+            uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+
             fixed (char* pSource = source)
             {
-                if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                  LCMAP_HASH | (uint)flags,
+                int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                  flags,
                                                   pSource, source.Length,
-                                                  &tmpHash, sizeof(int),
-                                                  null, null, _sortHandle) == 0)
+                                                  null, 0,
+                                                  null, null, _sortHandle);
+                if (sortKeyLength == 0)
                 {
-                    Environment.FailFast("LCMapStringEx failed!");
+                    throw new ArgumentException(SR.Arg_ExternalException);
                 }
+
+                byte[] borrowedArr = null;
+                Span<byte> span = sortKeyLength <= 512 ?
+                    stackalloc byte[512] :
+                    (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+                fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
+                {
+                    if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                      flags,
+                                                      pSource, source.Length,
+                                                      null, 0,
+                                                      null, null, _sortHandle) != sortKeyLength)
+                    {
+                        throw new ArgumentException(SR.Arg_ExternalException);
+                    }
+                }
+
+                int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
+
+                // Return the borrowed array if necessary.
+                if (borrowedArr != null)
+                {
+                    ArrayPool<byte>.Shared.Return(borrowedArr);
+                }
+
+                return hash;
             }
-#endif
-            return tmpHash;
         }
 
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
@@ -516,27 +540,32 @@ namespace System.Globalization
             }
             else
             {
+                uint flags = LCMAP_SORTKEY | (uint)GetNativeCompareFlags(options);
+
                 fixed (char *pSource = source)
                 {
-                    int result = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                LCMAP_SORTKEY | (uint) GetNativeCompareFlags(options),
+                    int sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                flags,
                                                 pSource, source.Length,
                                                 null, 0,
                                                 null, null, _sortHandle);
-                    if (result == 0)
+                    if (sortKeyLength == 0)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidFlag, "source");
+                        throw new ArgumentException(SR.Arg_ExternalException);
                     }
 
-                    keyData = new byte[result];
+                    keyData = new byte[sortKeyLength];
 
                     fixed (byte* pBytes =  keyData)
                     {
-                        result = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
-                                                LCMAP_SORTKEY | (uint) GetNativeCompareFlags(options),
+                        if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
+                                                flags,
                                                 pSource, source.Length,
                                                 pBytes, keyData.Length,
-                                                null, null, _sortHandle);
+                                                null, null, _sortHandle) != sortKeyLength)
+                        {
+                            throw new ArgumentException(SR.Arg_ExternalException);
+                        }
                     }
                 }
             }
@@ -601,11 +630,5 @@ namespace System.Globalization
                         nlsVersion.dwEffectiveId == 0 ? LCID : nlsVersion.dwEffectiveId,
                         nlsVersion.guidCustomVersion);
         }
-
-#if CORECLR
-        // Get a locale sensitive sort hash code from native code -- COMNlsInfo::InternalGetGlobalizedHashCode
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int InternalGetGlobalizedHashCode(IntPtr handle, string localeName, string source, int length, int dwFlags);
-#endif
     }
 }

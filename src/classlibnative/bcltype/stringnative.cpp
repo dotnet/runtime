@@ -31,31 +31,6 @@
 #pragma optimize("tgy", on)
 #endif
 
-inline COMNlsHashProvider * GetCurrentNlsHashProvider()
-{
-    LIMITED_METHOD_CONTRACT;
-    return &COMNlsHashProvider::s_NlsHashProvider;
-}
-
-FCIMPL1(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE) {
-    FCALL_CONTRACT;
-
-    int iReturnHash = 0;
-
-    if (thisRefUNSAFE == NULL) {
-        FCThrow(kNullReferenceException);
-    }
-
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), FCThrow(kStackOverflowException));
-    iReturnHash = GetCurrentNlsHashProvider()->HashString(thisRefUNSAFE->GetBuffer(), thisRefUNSAFE->GetStringLength());
-    END_SO_INTOLERANT_CODE;
-
-    FC_GC_POLL_RET();
-
-    return iReturnHash;
-}
-FCIMPLEND
-
 /*===============================IsFastSort===============================
 **Action: Call the helper to walk the string and see if we have any high chars.
 **Returns: void.  The appropriate bits are set on the String.
