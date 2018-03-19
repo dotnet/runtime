@@ -66,9 +66,7 @@ if(WIN32)
     appxutil.cpp
     dacutil.cpp
     dlwrap.cpp
-    downlevel.cpp
     loadrc.cpp
-    newapis.cpp
     securitywrapper.cpp
     securityutil.cpp
     stacktrace.cpp
