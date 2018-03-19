@@ -11,7 +11,6 @@
 #include "sstring.h"
 #include "ex.h"
 #include "holder.h"
-#include "newapis.h"
 
 
 #if defined(_MSC_VER)
@@ -91,7 +90,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags, LocaleID lcid)
 #else
     // TODO: Uncertain if this is the best behavior.  Caller should specify locale name
     if (lcid == NULL || lcid[0]==W('!')) lcid = W("");
-    int iRet = NewApis::LCMapStringEx(lcid, dwFlags, &wc, 1, &wTmp, 1, NULL, NULL, 0);
+    int iRet = ::LCMapStringEx(lcid, dwFlags, &wc, 1, &wTmp, 1, NULL, NULL, 0);
 #endif
     if (!iRet) {
         // This can fail in non-exceptional cases becauseof unknown unicode characters. 

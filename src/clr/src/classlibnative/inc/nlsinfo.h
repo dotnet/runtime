@@ -43,8 +43,6 @@ class COMNlsInfo
 {
 public:
 
-    static INT32 CallGetUserDefaultUILanguage();
-
     //
     // Native helper functions for methods in DateTimeFormatInfo
     //

@@ -12,7 +12,6 @@
 #include "fusionhelpers.hpp"
 
 #include "shlwapi.h"
-#include "newapis.h"
 
 #define IS_UPPER_A_TO_Z(x) (((x) >= L'A') && ((x) <= L'Z'))
 #define IS_LOWER_A_TO_Z(x) (((x) >= L'a') && ((x) <= L'z'))
@@ -36,7 +35,7 @@ namespace
 #ifdef FEATURE_USE_LCID
         int iRet = WszLCMapString(g_lcid, LCMAP_UPPERCASE, &wc, 1, &wTmp, 1);
 #else
-        int iRet = NewApis::LCMapStringEx(g_lcid, LCMAP_UPPERCASE, &wc, 1, &wTmp, 1, NULL, NULL, 0);
+        int iRet = LCMapStringEx(g_lcid, LCMAP_UPPERCASE, &wc, 1, &wTmp, 1, NULL, NULL, 0);
 #endif
         if (!iRet) {
             _ASSERTE(!"LCMapString failed!");
