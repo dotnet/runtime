@@ -116,7 +116,6 @@ FCFuncStart(gStringFuncs)
     FCFuncElement("SetTrailByte", COMString::FCSetTrailByte)
     FCFuncElement("TryGetTrailByte", COMString::FCTryGetTrailByte)
 #endif // FEATURE_COMINTEROP
-    FCFuncElement("InternalMarvin32HashString", COMString::Marvin32HashString)
 FCFuncEnd()
 
 FCFuncStart(gStringBufferFuncs)
@@ -795,22 +794,12 @@ FCFuncStart(gClrConfig)
 FCFuncEnd()
 
 #if !defined(FEATURE_COREFX_GLOBALIZATION)
-FCFuncStart(gCompareInfoFuncs)
-    QCFuncElement("InternalGetGlobalizedHashCode", COMNlsInfo::InternalGetGlobalizedHashCode)
-FCFuncEnd()
-
 FCFuncStart(gEncodingTableFuncs)
     FCFuncElement("GetNumEncodingItems", COMNlsInfo::nativeGetNumEncodingItems)
     FCFuncElement("GetEncodingData", COMNlsInfo::nativeGetEncodingTableDataPointer)
     FCFuncElement("GetCodePageData", COMNlsInfo::nativeGetCodePageTableDataPointer)
 FCFuncEnd()
 #endif // !defined(FEATURE_COREFX_GLOBALIZATION)
-
-#ifdef FEATURE_COREFX_GLOBALIZATION
-FCFuncStart(gCompareInfoFuncs)
-    QCFuncElement("InternalHashSortKey", CoreFxGlobalization::HashSortKey)
-FCFuncEnd()
-#endif
 
 FCFuncStart(gArrayFuncs)
     FCFuncElement("get_Rank", ArrayNative::GetRank)
@@ -1288,7 +1277,6 @@ FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadCont
 FCClassElement("AssemblyName", "System.Reflection", gAssemblyNameFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CLRConfig", "System", gClrConfig)
-FCClassElement("CompareInfo", "System.Globalization", gCompareInfoFuncs)
 FCClassElement("CompatibilitySwitch", "System.Runtime.Versioning", gCompatibilitySwitchFuncs)
 FCClassElement("CriticalHandle", "System.Runtime.InteropServices", gCriticalHandleFuncs)
 FCClassElement("Currency", "System", gCurrencyFuncs)
