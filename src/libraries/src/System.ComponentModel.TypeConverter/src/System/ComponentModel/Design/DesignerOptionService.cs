@@ -154,6 +154,7 @@ namespace System.ComponentModel.Design
 
                 if (Parent != null)
                 {
+                    parent._properties = null;
                     if (Parent._children == null)
                     {
                         Parent._children = new ArrayList(1);
