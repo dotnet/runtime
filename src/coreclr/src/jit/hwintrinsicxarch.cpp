@@ -1108,11 +1108,11 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             NamedIntrinsic extractIntrinsic = varTypeIsShort(baseType) ? NI_SSE2_Extract : NI_SSE41_Extract;
             GenTree*       half             = nullptr;
 
-            if (ival >= halfIndex)
+            if (ival >= midIndex)
             {
                 half = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, gtNewIconNode(1), NI_AVX_ExtractVector128,
                                                 baseType, 32);
-                ival -= halfIndex;
+                ival -= midIndex;
             }
             else
             {
@@ -1144,12 +1144,12 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
                 impCloneExpr(vectorOp, &clonedVectorOp, info.compCompHnd->getArgClass(sig, sig->args),
                              (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("AVX Insert clones the vector operand"));
 
-            if (ival >= halfIndex)
+            if (ival >= midIndex)
             {
                 GenTree* halfVector = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, gtNewIconNode(1),
                                                                NI_AVX_ExtractVector128, baseType, 32);
                 GenTree* ModifiedHalfVector =
-                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, halfVector, dataOp, gtNewIconNode(ival - halfIndex),
+                    gtNewSimdHWIntrinsicNode(TYP_SIMD16, halfVector, dataOp, gtNewIconNode(ival - midIndex),
                                              insertIntrinsic, baseType, 16);
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, clonedVectorOp, ModifiedHalfVector, gtNewIconNode(1),
                                                    NI_AVX_InsertVector128, baseType, 32);
@@ -1212,6 +1212,21 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, lowerHalfVector, higherHalfVector, gtNewIconNode(1),
                                                NI_AVX_InsertVector128, baseType, 32);
+            break;
+        }
+
+        case NI_AVX_SetAllVector256:
+        {
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+#ifdef _TARGET_X86_
+            // TODO-XARCH: support long/ulong on 32-bit platfroms
+            if (varTypeIsLong(baseType))
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+#endif
+            GenTree* arg = impPopStack().val;
+            retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD32, arg, NI_AVX_SetAllVector256, baseType, 32);
             break;
         }
 
