@@ -1318,6 +1318,67 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX_SetAllVector256:
+        {
+            assert(op1 != nullptr);
+            assert(op2 == nullptr);
+            op1Reg = op1->gtRegNum;
+            if (varTypeIsIntegral(baseType))
+            {
+                // If the argument is a integer, it needs to be moved into a XMM register
+                regNumber tmpXMM = node->ExtractTempReg();
+                emit->emitIns_R_R(INS_mov_i2xmm, emitActualTypeSize(baseType), tmpXMM, op1Reg);
+                op1Reg = tmpXMM;
+            }
+
+            if (compiler->compSupports(InstructionSet_AVX2))
+            {
+                // generate broadcast instructions if AVX2 is available
+                emit->emitIns_R_R(ins, emitTypeSize(TYP_SIMD32), targetReg, op1Reg);
+            }
+            else
+            {
+                // duplicate the scalar argument to XMM register
+                switch (baseType)
+                {
+                    case TYP_FLOAT:
+                        emit->emitIns_SIMD_R_R_I(INS_vpermilps, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg, 0);
+                        break;
+                    case TYP_DOUBLE:
+                        emit->emitIns_R_R(INS_movddup, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg);
+                        break;
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    {
+                        regNumber tmpZeroReg = node->GetSingleTempReg();
+                        emit->emitIns_R_R(INS_pxor, emitTypeSize(TYP_SIMD16), tmpZeroReg, tmpZeroReg);
+                        emit->emitIns_SIMD_R_R_R(INS_pshufb, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg, tmpZeroReg);
+                        break;
+                    }
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                        emit->emitIns_SIMD_R_R_I(INS_pshuflw, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg, 0);
+                        emit->emitIns_SIMD_R_R_I(INS_pshufd, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg, 80);
+                        break;
+                    case TYP_INT:
+                    case TYP_UINT:
+                        emit->emitIns_SIMD_R_R_I(INS_pshufd, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg, 0);
+                        break;
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                        emit->emitIns_SIMD_R_R_I(INS_pshufd, emitTypeSize(TYP_SIMD16), op1Reg, op1Reg, 68);
+                        break;
+
+                    default:
+                        unreached();
+                        break;
+                }
+                // duplicate the XMM register to YMM register
+                emit->emitIns_SIMD_R_R_R_I(INS_vinsertf128, emitTypeSize(TYP_SIMD32), targetReg, op1Reg, op1Reg, 1);
+            }
+            break;
+        }
+
         case NI_AVX_ExtendToVector256:
         {
             // ExtendToVector256 has zero-extend semantics in order to ensure it is deterministic
