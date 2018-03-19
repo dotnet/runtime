@@ -109,7 +109,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal RemoteCertificateValidationCallback RemoteCertificateValidationCallback // TODO #12038: Expose publicly.
+        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback
         {
             get => _remoteCertificateValidationCallback;
             set

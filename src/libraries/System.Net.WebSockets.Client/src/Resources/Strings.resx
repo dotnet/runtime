@@ -183,4 +183,7 @@
   <data name="net_WebSockets_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
     <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
   </data>
+  <data name="net_WebSockets_RemoteValidationCallbackNotSupported" xml:space="preserve">
+    <value>ClientWebSocketOptions.RemoteCertificateValidationCallback is not supported on this platform.</value>
+  </data>
 </root>
