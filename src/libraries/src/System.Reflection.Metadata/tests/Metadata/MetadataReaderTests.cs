@@ -65,7 +65,7 @@ namespace System.Reflection.Metadata.Tests
             mdtNestedClass = 0x29000000,
         }
 
-        internal static readonly Dictionary<byte[], GCHandle> peImages = new Dictionary<byte[], GCHandle>();
+        private static readonly Dictionary<byte[], GCHandle> s_peImages = new Dictionary<byte[], GCHandle>();
 
         internal static unsafe MetadataReader GetMetadataReader(byte[] peImage, bool isModule = false, MetadataReaderOptions options = MetadataReaderOptions.Default, MetadataStringDecoder decoder = null)
         {
@@ -83,13 +83,16 @@ namespace System.Reflection.Metadata.Tests
 
         internal static unsafe GCHandle GetPinnedPEImage(byte[] peImage)
         {
-            GCHandle pinned;
-            if (!peImages.TryGetValue(peImage, out pinned))
+            lock (s_peImages)
             {
-                peImages.Add(peImage, pinned = GCHandle.Alloc(peImage, GCHandleType.Pinned));
-            }
+                GCHandle pinned;
+                if (!s_peImages.TryGetValue(peImage, out pinned))
+                {
+                    s_peImages.Add(peImage, pinned = GCHandle.Alloc(peImage, GCHandleType.Pinned));
+                }
 
-            return pinned;
+                return pinned;
+            }
         }
 
         internal static unsafe int IndexOf(byte[] peImage, byte[] toFind, int start)
