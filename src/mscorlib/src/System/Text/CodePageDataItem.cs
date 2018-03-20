@@ -6,7 +6,7 @@ using System.Text;
 using System;
 using System.Security;
 
-namespace System.Globalization
+namespace System.Text
 {
     //
     // Data item for EncodingTable.  Along with EncodingTable, they are used by 
