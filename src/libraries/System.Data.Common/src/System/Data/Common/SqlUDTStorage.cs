@@ -7,9 +7,10 @@ using System.Xml;
 using System.IO;
 using System.Xml.Serialization;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace System.Data.Common
 {
@@ -19,7 +20,7 @@ namespace System.Data.Common
         private readonly bool _implementsIXmlSerializable = false;
         private readonly bool _implementsIComparable = false;
 
-        private static readonly Dictionary<Type, object> s_typeToNull = new Dictionary<Type, object>();
+        private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 
         public SqlUdtStorage(DataColumn column, Type type)
         : this(column, type, GetStaticNullForUdtType(type))
@@ -34,36 +35,22 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        internal static object GetStaticNullForUdtType(Type type)
+        internal static object GetStaticNullForUdtType(Type type) => s_typeToNull.GetOrAdd(type, t =>
         {
-            object value;
-            if (!s_typeToNull.TryGetValue(type, out value))
+            PropertyInfo propInfo = type.GetProperty("Null", BindingFlags.Public | BindingFlags.Static);
+            if (propInfo != null)
             {
-                System.Reflection.PropertyInfo propInfo = type.GetProperty("Null", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                if (propInfo != null)
-                    value = propInfo.GetValue(null, null);
-                else
-                {
-                    System.Reflection.FieldInfo fieldInfo = type.GetField("Null", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    if (fieldInfo != null)
-                    {
-                        value = fieldInfo.GetValue(null);
-                    }
-                    else
-                    {
-                        throw ExceptionBuilder.INullableUDTwithoutStaticNull(type.AssemblyQualifiedName);
-                    }
-                }
-                lock (s_typeToNull)
-                {
-                    //if(50 < TypeToNull.Count) {
-                    //    TypeToNull.Clear();
-                    //}
-                    s_typeToNull[type] = value;
-                }
+                return propInfo.GetValue(null, null);
             }
-            return value;
-        }
+
+            FieldInfo fieldInfo = type.GetField("Null", BindingFlags.Public | BindingFlags.Static);
+            if (fieldInfo != null)
+            {
+                return fieldInfo.GetValue(null);
+            }
+
+            throw ExceptionBuilder.INullableUDTwithoutStaticNull(type.AssemblyQualifiedName);
+        });
 
         public override bool IsNull(int record)
         {
