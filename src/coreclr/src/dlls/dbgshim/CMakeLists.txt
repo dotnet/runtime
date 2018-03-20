@@ -66,6 +66,7 @@ if(WIN32)
         uuid.lib
         user32.lib
         advapi32.lib
+        ole32.lib
         oleaut32.lib
         WtsApi32.lib
         version.lib
