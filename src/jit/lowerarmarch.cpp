@@ -157,6 +157,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 #endif // _TARGET_ARM_
 
 #ifdef _TARGET_ARM64_
+            case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (immVal == 0)
                     return true;
