@@ -93,6 +93,9 @@ cpp_quote("EXTERN_GUID(IID_ICLRProfiling, 0xb349abe3, 0xb56f, 0x4689, 0xbf, 0xcd
 // IID ICLRDebuggingLibraryProvider interface : uuid{3151C08D-4D09-4f9b-8838-2880BF18FE51}
 cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4f9b, 0x88, 0x38, 0x28, 0x80, 0xbf, 0x18, 0xfe, 0x51);")
 
+// IID ICLRDebuggingLibraryProvider2 interface : uuid{E04E2FF1-DCFD-45D5-BCD1-16FFF2FAF7BA}
+cpp_quote("EXTERN_GUID(IID_ICLRDebuggingLibraryProvider2, 0xE04E2FF1, 0xDCFD, 0x45D5, 0xBC, 0xD1, 0x16, 0xFF, 0xF2, 0xFA, 0xF7, 0xBA);")
+
 typedef HRESULT(__stdcall * CLRCreateInstanceFnPtr)(
         REFCLSID clsid,
         REFIID riid,
@@ -402,7 +405,7 @@ CLR_DEBUGGING_PROCESS_FLAGS;
 interface ICLRDebuggingLibraryProvider : IUnknown
 {
     /**********************************************************************************
-    ** The goal of this method is to allow the debugger to provide a  handle to a    **
+    ** The goal of this method is to allow the debugger to provide a handle to a     **
     ** module which is needed for debugging. The debugger may use any available means**
     ** to locate and/or procure the module. See the security note below for important**
     ** information about implementing this method securely.                          **
@@ -427,6 +430,50 @@ interface ICLRDebuggingLibraryProvider : IUnknown
         [in] DWORD dwTimestamp,
         [in] DWORD dwSizeOfImage,
         [out] HMODULE* phModule);
+}
+
+ /**************************************************************************************
+ ** ICLRDebuggingLibraryProvider2                                                     **
+ ** Implemented by API user                                                           **
+ ** This interface allows the debugger to provide module paths which are needed for   **
+ ** debugging a particular CLR such as mscordbi and mscordacwks.                      **
+ **************************************************************************************/
+[
+    uuid(E04E2FF1-DCFD-45D5-BCD1-16FFF2FAF7BA),
+    version(1.0),
+    helpstring("CLR debugging LibraryProvider callback interface"),
+    local
+]
+interface ICLRDebuggingLibraryProvider2 : IUnknown
+{
+    /**********************************************************************************
+    ** The goal of this method is to allow the debugger to provide a module path     **
+    ** which is needed for debugging. The debugger may use any available means to    **
+    ** locate and/or procure the module. See the security note below for important   **
+    ** information about implementing this method securely.                          **
+    ** Arguments:                                                                    **
+    ** pwzFileName - The name of the module being requested                          **
+    ** dwTimeStamp - The date time stamp stored in the COFF file header of PE files  **
+    ** dwSizeOfImage - The SizeOfImage field stored in the COFF optional file header **
+    **                 of PE files                                                   **
+    ** ppResolvedModulePath - Where *ppResolvedModulePath is a null terminated       **
+    **                        path to the module dll. On Windows it should be        **
+    **                        allocated with CoTaskMemAlloc. On Unix it should be    **
+    **                        allocated with malloc. Failure leave it untouched. See **
+    **                        security note below!                                   **
+    **                                                                               **
+    ** Return value - S_OK if the module was provided, or any other convenient       **
+    **                error HRESULT if the module could not be provided              **
+    **                                                                               **
+    **                               !!!!!!!!!!!!!!                                  **
+    ** SECURITY NOTE: Anything the caller would not be willing to execute itself, it **
+    ** should not provide to the this API call                                       **
+    ***********************************************************************************/
+    HRESULT ProvideLibrary2(
+        [in] const WCHAR* pwszFileName,
+        [in] DWORD dwTimestamp,
+        [in] DWORD dwSizeOfImage,
+        [out] LPWSTR* ppResolvedModulePath);
 }
 
 /**************************************************************************************

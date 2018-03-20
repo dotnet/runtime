@@ -90,116 +90,170 @@ STDMETHODIMP CLRDebuggingImpl::OpenVirtualProcess(
     CLR_DEBUGGING_VERSION version;
     BOOL versionSupportedByCaller = FALSE;
     
-    
+    // argument checking
+    if( (ppProcess != NULL || pFlags != NULL) && pLibraryProvider == NULL)
+    {
+        hr = E_POINTER; // the library provider must be specified if either
+                            // ppProcess or pFlags is non-NULL
+    }
+    else if( (ppProcess != NULL || pFlags != NULL) && pMaxDebuggerSupportedVersion == NULL)
+    {
+        hr = E_POINTER; // the max supported version must be specified if either
+                            // ppProcess or pFlags is non-NULL
+    }
+    else if(pVersion != NULL && pVersion->wStructVersion != 0)
+    {
+        hr = CORDBG_E_UNSUPPORTED_VERSION_STRUCT;
+    }
+    else if(FAILED(pDataTarget->QueryInterface(__uuidof(ICorDebugDataTarget), (void**) &pDt)))
+    {
+        hr = CORDBG_E_MISSING_DATA_TARGET_INTERFACE;
+    }
 
-        // argument checking
-        if( (ppProcess != NULL || pFlags != NULL) && pLibraryProvider == NULL)
-        {
-            hr = E_POINTER; // the library provider must be specified if either
-                                // ppProcess or pFlags is non-NULL
-        }
-        else if( (ppProcess != NULL || pFlags != NULL) && pMaxDebuggerSupportedVersion == NULL)
-        {
-            hr = E_POINTER; // the max supported version must be specified if either
-                                // ppProcess or pFlags is non-NULL
-        }
-        else if(pVersion != NULL && pVersion->wStructVersion != 0)
-        {
-            hr = CORDBG_E_UNSUPPORTED_VERSION_STRUCT;
-        }
-        else if(FAILED(pDataTarget->QueryInterface(__uuidof(ICorDebugDataTarget), (void**) &pDt)))
-        {
-            hr = CORDBG_E_MISSING_DATA_TARGET_INTERFACE;
-        }
+    if(SUCCEEDED(hr))
+    {
+        // get CLR version
+        // The expectation is that new versions of the CLR will continue to use the same GUID
+        // (unless there's a reason to hide them from older shims), but debuggers will tell us the
+        // CLR version they're designed for and mscordbi.dll can decide whether or not to accept it.
+        version.wStructVersion = 0;
+        hr = GetCLRInfo(pDt, 
+                        moduleBaseAddress,
+                        &version,
+                        &dbiTimestamp,
+                        &dbiSizeOfImage,
+                        dbiName,
+                        MAX_PATH_FNAME,
+                        &dacTimestamp,
+                        &dacSizeOfImage,
+                        dacName,
+                        MAX_PATH_FNAME);
+    }
 
-        if(SUCCEEDED(hr))
+    // If we need to fetch either the process info or the flags info then we need to find
+    // mscordbi and DAC and do the version specific OVP work
+    if(SUCCEEDED(hr) && (ppProcess != NULL || pFlags != NULL))
+    {
+        ICLRDebuggingLibraryProvider2* pLibraryProvider2;
+        if (SUCCEEDED(pLibraryProvider->QueryInterface(__uuidof(ICLRDebuggingLibraryProvider2), (void**)&pLibraryProvider2)))
         {
-            // get CLR version
-            // The expectation is that new versions of the CLR will continue to use the same GUID
-            // (unless there's a reason to hide them from older shims), but debuggers will tell us the
-            // CLR version they're designed for and mscordbi.dll can decide whether or not to accept it.
-            version.wStructVersion = 0;
-            hr = GetCLRInfo(pDt, 
-                            moduleBaseAddress,
-                            &version,
-                            &dbiTimestamp,
-                            &dbiSizeOfImage,
-                            dbiName,
-                            MAX_PATH_FNAME,
-                            &dacTimestamp,
-                            &dacSizeOfImage,
-                            dacName,
-                            MAX_PATH_FNAME);
-        }
-
-        // If we need to fetch either the process info or the flags info then we need to find
-        // mscordbi and DAC and do the version specific OVP work
-        if(SUCCEEDED(hr) && (ppProcess != NULL || pFlags != NULL))
-        {
-            // ask library provider for dbi
-            if(FAILED(pLibraryProvider->ProvideLibrary(dbiName, dbiTimestamp, dbiSizeOfImage, &hDbi)) ||
-                hDbi == NULL)
+            LPWSTR pDbiModulePath;
+            if (FAILED(pLibraryProvider2->ProvideLibrary2(dbiName, dbiTimestamp, dbiSizeOfImage, &pDbiModulePath)) ||
+                pDbiModulePath == NULL)
             {
                 hr = CORDBG_E_LIBRARY_PROVIDER_ERROR;
             }
 
-            if(SUCCEEDED(hr))
+            if (SUCCEEDED(hr))
+            {
+                hDbi = LoadLibraryW(pDbiModulePath);
+                if (hDbi == NULL)
+                {
+                    hr = HRESULT_FROM_WIN32(GetLastError());
+                }
+#ifdef FEATURE_PAL
+                free(pDbiModulePath);
+#else
+                CoTaskMemFree(pDbiModulePath);
+#endif
+            }
+
+            if (SUCCEEDED(hr))
             {
                 // Adjust the timestamp and size of image if this DAC is a known buggy version and needs to be retargeted
                 RetargetDacIfNeeded(&dacTimestamp, &dacSizeOfImage);
 
                 // ask library provider for dac
-                if(FAILED(pLibraryProvider->ProvideLibrary(dacName, dacTimestamp, dacSizeOfImage, &hDac)) ||
+                LPWSTR pDacModulePath;
+                if (FAILED(pLibraryProvider2->ProvideLibrary2(dacName, dacTimestamp, dacSizeOfImage, &pDacModulePath)) ||
+                    pDacModulePath == NULL)
+                {
+                    hr = CORDBG_E_LIBRARY_PROVIDER_ERROR;
+                }
+
+                if (SUCCEEDED(hr))
+                {
+                    hDac = LoadLibraryW(pDacModulePath);
+                    if (hDac == NULL)
+                    {
+                        hr = HRESULT_FROM_WIN32(GetLastError());
+                    }
+#ifdef FEATURE_PAL
+                    free(pDacModulePath);
+#else
+                    CoTaskMemFree(pDacModulePath);
+#endif
+                }
+            }
+
+            pLibraryProvider2->Release();
+        }
+        else {
+            // ask library provider for dbi
+            if (FAILED(pLibraryProvider->ProvideLibrary(dbiName, dbiTimestamp, dbiSizeOfImage, &hDbi)) ||
+                hDbi == NULL)
+            {
+                hr = CORDBG_E_LIBRARY_PROVIDER_ERROR;
+            }
+
+            if (SUCCEEDED(hr))
+            {
+                // Adjust the timestamp and size of image if this DAC is a known buggy version and needs to be retargeted
+                RetargetDacIfNeeded(&dacTimestamp, &dacSizeOfImage);
+
+                // ask library provider for dac
+                if (FAILED(pLibraryProvider->ProvideLibrary(dacName, dacTimestamp, dacSizeOfImage, &hDac)) ||
                     hDac == NULL)
                 {
                     hr = CORDBG_E_LIBRARY_PROVIDER_ERROR;
                 }
             }
+        }
 
-            if(SUCCEEDED(hr))
+        if(SUCCEEDED(hr))
+        {
+            // get access to OVP and call it
+            OpenVirtualProcessImplFnPtr ovpFn = (OpenVirtualProcessImplFnPtr) GetProcAddress(hDbi, "OpenVirtualProcessImpl");
+            if(ovpFn == NULL)
             {
-                // get access to OVP and call it
-                OpenVirtualProcessImplFnPtr ovpFn = (OpenVirtualProcessImplFnPtr) GetProcAddress(hDbi, "OpenVirtualProcessImpl");
-                if(ovpFn == NULL)
+                // Fallback to CLR v4 Beta1 path, but skip some of the checking we'd normally do (maxSupportedVersion, etc.)
+                OpenVirtualProcess2FnPtr ovp2Fn = (OpenVirtualProcess2FnPtr) GetProcAddress(hDbi, "OpenVirtualProcess2");
+                if (ovp2Fn == NULL)
                 {
-                    // Fallback to CLR v4 Beta1 path, but skip some of the checking we'd normally do (maxSupportedVersion, etc.)
-                    OpenVirtualProcess2FnPtr ovp2Fn = (OpenVirtualProcess2FnPtr) GetProcAddress(hDbi, "OpenVirtualProcess2");
-                    if (ovp2Fn == NULL)
-                    {
-                        hr = CORDBG_E_LIBRARY_PROVIDER_ERROR;
-                    }
-                    else
-                    {
-                        hr = ovp2Fn(moduleBaseAddress, pDataTarget, hDac, riidProcess, ppProcess, pFlags);
-                    }
+                    hr = CORDBG_E_LIBRARY_PROVIDER_ERROR;
                 }
                 else
                 {
-                    // Have a CLR v4 Beta2+ DBI, call it and let it do the version check
-                    hr = ovpFn(moduleBaseAddress, pDataTarget, hDac, pMaxDebuggerSupportedVersion, riidProcess, ppProcess, pFlags);
-                    if(FAILED(hr))
-                    {
-                        _ASSERTE(ppProcess == NULL || *ppProcess == NULL);
-                        _ASSERTE(pFlags == NULL || *pFlags == 0);
-                    }
+                    hr = ovp2Fn(moduleBaseAddress, pDataTarget, hDac, riidProcess, ppProcess, pFlags);
+                }
+            }
+            else
+            {
+                // Have a CLR v4 Beta2+ DBI, call it and let it do the version check
+                hr = ovpFn(moduleBaseAddress, pDataTarget, hDac, pMaxDebuggerSupportedVersion, riidProcess, ppProcess, pFlags);
+                if(FAILED(hr))
+                {
+                    _ASSERTE(ppProcess == NULL || *ppProcess == NULL);
+                    _ASSERTE(pFlags == NULL || *pFlags == 0);
                 }
             }
         }
-    
-        //version is still valid in some failure cases
-        if(pVersion != NULL &&
-            (SUCCEEDED(hr) ||
-            (hr == CORDBG_E_UNSUPPORTED_DEBUGGING_MODEL) ||
-            (hr == CORDBG_E_UNSUPPORTED_FORWARD_COMPAT)))
-        {
-            memcpy(pVersion, &version, sizeof(CLR_DEBUGGING_VERSION));
-        }
+    }
 
-        // free the data target we QI'ed earlier
-        if(pDt != NULL)
-        {
-            pDt->Release();
-        }
+    //version is still valid in some failure cases
+    if(pVersion != NULL &&
+        (SUCCEEDED(hr) ||
+        (hr == CORDBG_E_UNSUPPORTED_DEBUGGING_MODEL) ||
+        (hr == CORDBG_E_UNSUPPORTED_FORWARD_COMPAT)))
+    {
+        memcpy(pVersion, &version, sizeof(CLR_DEBUGGING_VERSION));
+    }
+
+    // free the data target we QI'ed earlier
+    if(pDt != NULL)
+    {
+        pDt->Release();
+    }
 
     return hr;
 }
