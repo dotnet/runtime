@@ -145,7 +145,7 @@ namespace System.Globalization
                     if (Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                       flags,
                                                       pSource, source.Length,
-                                                      null, 0,
+                                                      pSortKey, sortKeyLength,
                                                       null, null, _sortHandle) != sortKeyLength)
                     {
                         throw new ArgumentException(SR.Arg_ExternalException);
