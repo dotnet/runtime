@@ -150,8 +150,8 @@ mono_msec_boottime (void)
 {
 	gint64 retval = 0;
 
-	/* clock_gettime () is found by configure but its only present from ios 10 */
-#if (defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !defined(TARGET_IOS)
+	/* clock_gettime () is found by configure but its only present from ios 10 and macos 10.12 */
+#if (defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !(defined(TARGET_IOS) || defined(TARGET_OSX))
 	clockid_t clockType =
 #if HAVE_CLOCK_MONOTONIC_COARSE
 	CLOCK_MONOTONIC_COARSE; /* good enough resolution, fastest speed */
