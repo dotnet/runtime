@@ -13468,7 +13468,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // If we're eventually going to return the type handle, remember it now.
     GenTree* boxTypeHandle = nullptr;
-    if (options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
+    if ((options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE) || (options == BR_DONT_REMOVE_WANT_TYPE_HANDLE))
     {
         GenTree*   asgSrc     = asg->gtOp.gtOp2;
         genTreeOps asgSrcOper = asgSrc->OperGet();
@@ -13630,6 +13630,11 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     if (options == BR_DONT_REMOVE)
     {
         return copySrc;
+    }
+
+    if (options == BR_DONT_REMOVE_WANT_TYPE_HANDLE)
+    {
+        return boxTypeHandle;
     }
 
     // Otherwise, proceed with the optimization.
