@@ -223,7 +223,12 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins)
         case INS_unpcklpd:
         case INS_vinsertf128:
         case INS_vinserti128:
+        case INS_vmaskmovps:
+        case INS_vmaskmovpd:
         case INS_vperm2i128:
+        case INS_vperm2f128:
+        case INS_vpermilpsvar:
+        case INS_vpermilpdvar:
         case INS_vpsrlvd:
         case INS_vpsrlvq:
         case INS_vpsravd:
