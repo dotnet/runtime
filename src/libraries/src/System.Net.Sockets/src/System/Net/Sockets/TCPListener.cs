@@ -316,8 +316,18 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            TcpListener listener = new TcpListener(IPAddress.IPv6Any, port);
-            listener.Server.DualMode = true;
+            TcpListener listener;
+            if (Socket.OSSupportsIPv6)
+            {
+                // If OS supports IPv6 use dual mode so both address families work.
+                listener = new TcpListener(IPAddress.IPv6Any, port);
+                listener.Server.DualMode = true;
+            }
+            else
+            {
+                // If not, fall-back to old IPv4.
+                listener = new TcpListener(IPAddress.Any , port);
+            }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(null, port);
 
