@@ -120,8 +120,12 @@ class MappedImageLayout: public PEImageLayout
     VPTR_VTABLE_CLASS(MappedImageLayout,PEImageLayout)
     VPTR_UNIQUE(0x15)
 protected:
+#ifndef FEATURE_PAL
     HandleHolder m_FileMap;
     CLRMapViewHolder m_FileView;
+#else
+    PALPEFileHolder m_LoadedFile;
+#endif
 public:
 #ifndef DACCESS_COMPILE    
     MappedImageLayout(HANDLE hFile, PEImage* pOwner);    

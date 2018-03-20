@@ -469,9 +469,9 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
 #else //!FEATURE_PAL
 
 #ifndef CROSSGEN_COMPILE
-    m_FileView = PAL_LOADLoadPEFile(hFile);
+    m_LoadedFile = PAL_LOADLoadPEFile(hFile);
 
-    if (m_FileView == NULL)
+    if (m_LoadedFile == NULL)
     {
         // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using 
         // regular mapping - but not for native images.
@@ -481,10 +481,10 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     }
 
     LOG((LF_LOADER, LL_INFO1000, "PEImage: image %S (hFile %p) mapped @ %p\n",
-        (LPCWSTR) GetPath(), hFile, (void*)m_FileView));
+        (LPCWSTR) GetPath(), hFile, (void*)m_LoadedFile));
 
-    TESTHOOKCALL(ImageMapped(GetPath(),m_FileView,IM_IMAGEMAP));            
-    IfFailThrow(Init((void *) m_FileView));
+    TESTHOOKCALL(ImageMapped(GetPath(),m_LoadedFile,IM_IMAGEMAP));
+    IfFailThrow(Init((void *) m_LoadedFile));
 
     if (!HasCorHeader())
         ThrowHR(COR_E_BADIMAGEFORMAT);
@@ -500,7 +500,7 @@ MappedImageLayout::MappedImageLayout(HANDLE hFile, PEImage* pOwner)
     }
 
 #else // !CROSSGEN_COMPILE
-    m_FileView = NULL;
+    m_LoadedFile = NULL;
 #endif // !CROSSGEN_COMPILE
 
 #endif // !FEATURE_PAL
