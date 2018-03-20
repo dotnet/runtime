@@ -2866,6 +2866,8 @@ decode_buffer (ProfContext *ctx)
 					type = *p++;
 				else
 					type = decode_uleb128 (p, &p);
+				if (ctx->data_version < 14)
+					--type;
 				intptr_t codediff = decode_sleb128 (p, &p);
 				int codelen = decode_uleb128 (p, &p);
 				const char *name;
