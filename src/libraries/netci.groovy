@@ -353,6 +353,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
             def osGroup = "Linux"
+            def archGroup = 'arm64'
             def osName = 'Ubuntu16.04'
 
             def newJobName = "${osName.toLowerCase()}_arm64_cross_${configurationGroup.toLowerCase()}"
@@ -364,7 +365,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     shell(script)
 
                     // Tar up the appropriate bits.
-                    shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-arm64\" .")
+                    shell("tar -czf bin/build.tar.gz --directory=\"bin/Linux.${archGroup}.${configurationGroup}/native\" .")
                 }
             }
 
