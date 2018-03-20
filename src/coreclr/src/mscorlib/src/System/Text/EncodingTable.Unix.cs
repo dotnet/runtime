@@ -4,9 +4,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
-namespace System.Globalization
+namespace System.Text
 {
     internal static class EncodingTable
     {
