@@ -261,7 +261,7 @@ void Compiler::fgInstrumentMethod()
 
     int         countOfBlocks = 0;
     BasicBlock* block;
-    for (block = fgFirstBB; block; block = block->bbNext)
+    for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
     {
         if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
         {
@@ -272,11 +272,9 @@ void Compiler::fgInstrumentMethod()
 
     // Allocate the profile buffer
 
-    ICorJitInfo::ProfileBuffer* bbProfileBuffer;
+    ICorJitInfo::ProfileBuffer* bbProfileBufferStart;
 
-    HRESULT res = info.compCompHnd->allocBBProfileBuffer(countOfBlocks, &bbProfileBuffer);
-
-    ICorJitInfo::ProfileBuffer* bbProfileBufferStart = bbProfileBuffer;
+    HRESULT res = info.compCompHnd->allocBBProfileBuffer(countOfBlocks, &bbProfileBufferStart);
 
     GenTree* stmt;
 
@@ -300,9 +298,16 @@ void Compiler::fgInstrumentMethod()
     }
     else
     {
-        // Assign a buffer entry for each basic block
+        // For each BasicBlock (non-Internal)
+        //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
+        //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
 
-        for (block = fgFirstBB; block; block = block->bbNext)
+        // Each (non-Internal) block has it own ProfileBuffer tuple [ILOffset, ExecutionCount]
+        // To start we initialize our current one with the first one that we allocated
+        //
+        ICorJitInfo::ProfileBuffer* bbCurrentBlockProfileBuffer = bbProfileBufferStart;
+
+        for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
         {
             if (!(block->bbFlags & BBF_IMPORTED) || (block->bbFlags & BBF_INTERNAL))
             {
@@ -310,25 +315,31 @@ void Compiler::fgInstrumentMethod()
             }
 
             // Assign the current block's IL offset into the profile data
-            bbProfileBuffer->ILOffset = block->bbCodeOffs;
+            bbCurrentBlockProfileBuffer->ILOffset = block->bbCodeOffs;
+            assert(bbCurrentBlockProfileBuffer->ExecutionCount == 0); // This value should already be zero-ed out
 
-            size_t addrOfBlockCount = (size_t)&bbProfileBuffer->ExecutionCount;
+            size_t addrOfCurrentExecutionCount = (size_t)&bbCurrentBlockProfileBuffer->ExecutionCount;
 
             // Read Basic-Block count value
-            GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfBlockCount, GTF_ICON_BBC_PTR, false);
+            GenTree* valueNode =
+                gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
 
             // Increment value by 1
             GenTree* rhsNode = gtNewOperNode(GT_ADD, TYP_INT, valueNode, gtNewIconNode(1));
 
             // Write new Basic-Block count value
-            GenTree* lhsNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfBlockCount, GTF_ICON_BBC_PTR, false);
+            GenTree* lhsNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfCurrentExecutionCount, GTF_ICON_BBC_PTR, false);
             GenTree* asgNode = gtNewAssignNode(lhsNode, rhsNode);
 
             fgInsertStmtAtBeg(block, asgNode);
 
+            // Advance to the next ProfileBuffer tuple [ILOffset, ExecutionCount]
+            bbCurrentBlockProfileBuffer++;
+
+            // One less block
             countOfBlocks--;
-            bbProfileBuffer++;
         }
+        // Check that we allocated and initialized the same number of ProfileBuffer tuples
         noway_assert(countOfBlocks == 0);
 
         // Add the method entry callback node
@@ -359,10 +370,11 @@ void Compiler::fgInstrumentMethod()
         GenTreeArgList* args = gtNewArgList(arg);
         GenTree*        call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
-        size_t addrOfBlockCount = (size_t)&bbProfileBuffer->ExecutionCount;
+        // Get the address of the first blocks ExecutionCount
+        size_t addrOfFirstExecutionCount = (size_t)&bbProfileBufferStart->ExecutionCount;
 
         // Read Basic-Block count value
-        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfBlockCount, GTF_ICON_BBC_PTR, false);
+        GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
 
         // Compare Basic-Block count value against zero
         GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, valueNode, gtNewIconNode(0, TYP_INT));
