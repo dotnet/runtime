@@ -2556,9 +2556,9 @@ public:
     unsigned lvaShadowSPslotsVar; // TYP_BLK variable for all the shadow SP slots
 #endif                            // FEATURE_EH_FUNCLETS
 
-    unsigned lvaCachedGenericContextArgOffs;
-    unsigned lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
-                                                 // THIS pointer
+    int lvaCachedGenericContextArgOffs;
+    int lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
+                                            // THIS pointer
 
     unsigned lvaLocAllocSPvar; // variable which has the result of the last alloca/localloc
 
