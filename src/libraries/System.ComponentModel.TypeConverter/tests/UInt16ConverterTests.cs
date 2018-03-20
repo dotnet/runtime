@@ -41,5 +41,12 @@ namespace System.ComponentModel.Tests
                 },
                 UInt16ConverterTests.s_converter);
         }
+
+        [Fact]
+        public static void ConvertFrom_InvalidValue_ExceptionMessageContainsTypeName()
+        {
+            Exception e = Assert.ThrowsAny<Exception>(() => s_converter.ConvertFrom("badvalue"));
+            Assert.Contains(typeof(ushort).Name, e.Message);
+        }
     }
 }
