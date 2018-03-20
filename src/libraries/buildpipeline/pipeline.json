@@ -72,6 +72,20 @@
             "Platform": "arm",
             "Type": "build/product/"
           }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
+          "Parameters": {
+            "PB_DockerTag": "ubuntu-16.04-cross-arm64-a3ae44b-20180315221921",
+            "PB_Architecture": "arm64",
+            "PB_BuildArguments": "-buildArch=arm64 -$(PB_ConfigurationGroup) -stripSymbols -- /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_SyncArguments": "-p -- /p:ArchGroup=arm64 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Linux",
+            "Platform": "arm64",
+            "Type": "build/product/"
+          }
         }
       ]
     },
