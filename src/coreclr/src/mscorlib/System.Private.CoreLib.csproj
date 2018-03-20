@@ -460,8 +460,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
@@ -588,8 +592,6 @@
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
