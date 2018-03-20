@@ -72,9 +72,12 @@ namespace System.Net.Sockets
 
         #region Constructors
         public Socket(SocketType socketType, ProtocolType protocolType)
-            : this(AddressFamily.InterNetworkV6, socketType, protocolType)
+            : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
         {
-            DualMode = true;
+            if (OSSupportsIPv6)
+            {
+                DualMode = true;
+            }
         }
 
         // Initializes a new instance of the Sockets.Socket class.
