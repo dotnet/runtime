@@ -4410,12 +4410,14 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     // Always do the layout even if returning early. Callers might
     // depend on us to do the layout.
     unsigned frameSize = lvaFrameSize(curState);
+    JITDUMP("\ncompRsvdRegCheck\n  frame size     = %6d\n  compArgSize    = %6d\n", frameSize, compArgSize);
 
     if (opts.MinOpts())
     {
         // Have a recovery path in case we fail to reserve REG_OPT_RSVD and go
         // over the limit of SP and FP offset ranges due to large
         // temps.
+        JITDUMP(" Returning true (MinOpts)\n\n");
         return true;
     }
 
@@ -4430,6 +4432,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 #if defined(_TARGET_ARM64_)
 
     // TODO-ARM64-CQ: update this!
+    JITDUMP(" Returning true (ARM64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #else  // _TARGET_ARM_
@@ -4462,13 +4465,21 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     //
     unsigned maxR11ArgLimit = (compFloatingPointUsed ? 0x03FC : 0x0FFC);
     unsigned maxR11LclLimit = 0x0078;
+    JITDUMP("  maxR11ArgLimit = %6d\n  maxR11LclLimit = %6d\n", maxR11ArgLimit, maxR11LclLimit);
 
     if (codeGen->isFramePointerRequired())
     {
         unsigned maxR11LclOffs = frameSize;
         unsigned maxR11ArgOffs = compArgSize + (2 * REGSIZE_BYTES);
-        if (maxR11LclOffs > maxR11LclLimit || maxR11ArgOffs > maxR11ArgLimit)
+        JITDUMP("  maxR11LclOffs  = %6d\n  maxR11ArgOffs  = %6d\n", maxR11LclOffs, maxR11ArgOffs)
+        if (maxR11LclOffs > maxR11LclLimit)
         {
+            JITDUMP(" Returning true (frame reqd and maxR11LclOffs)\n\n");
+            return true;
+        }
+        if (maxR11ArgOffs > maxR11ArgLimit)
+        {
+            JITDUMP(" Returning true (frame reqd and maxR11ArgOffs)\n\n");
             return true;
         }
     }
@@ -4479,19 +4490,23 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     // Check local coverage first. If vldr/vstr will be used the limit can be +/-imm8.
     unsigned maxSPLclLimit = (compFloatingPointUsed ? 0x03F8 : 0x0FF8);
+    JITDUMP("  maxSPLclLimit  = %6d\n", maxSPLclLimit);
     if (frameSize > (codeGen->isFramePointerUsed() ? (maxR11LclLimit + maxSPLclLimit) : maxSPLclLimit))
     {
+        JITDUMP(" Returning true (frame reqd; local coverage)\n\n");
         return true;
     }
 
     // Check arguments coverage.
     if ((!codeGen->isFramePointerUsed() || (compArgSize > maxR11ArgLimit)) && (compArgSize + frameSize) > maxSPLclLimit)
     {
+        JITDUMP(" Returning true (no frame; arg coverage)\n\n");
         return true;
     }
 
     // We won't need to reserve REG_OPT_RSVD.
     //
+    JITDUMP(" Returning false\n\n");
     return false;
 #endif // _TARGET_ARM_
 }
@@ -5005,12 +5020,20 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
 #endif // _TARGET_ARM_
-#ifdef _TARGET_ARMARCH_
+#if defined(_TARGET_ARMARCH_) && defined(LEGACY_BACKEND)
+    // Determine whether we need to reserve a register for large lclVar offsets.
+    // The determination depends heavily on the number of locals, which changes for RyuJIT backend
+    // due to the introduction of new temps during Rationalizer and Lowering.
+    // In LEGACY_BACKEND we do that here even though the decision to have a frame pointer or not may
+    // change during register allocation, changing the computation somewhat.
+    // In RyuJIT backend we do this after determining the frame type, and before beginning
+    // register allocation.
     if (compRsvdRegCheck(PRE_REGALLOC_FRAME_LAYOUT))
     {
         // We reserve R10/IP1 in this case to hold the offsets in load/store instructions
         codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
         assert(REG_OPT_RSVD != REG_FP);
+        JITDUMP("  Reserved REG_OPT_RSVD (%s) due to large frame\n", getRegName(REG_OPT_RSVD));
     }
     // compRsvdRegCheck() has read out the FramePointerUsed property, but doLinearScan()
     // tries to overwrite it later. This violates the PhasedVar rule and triggers an assertion.
