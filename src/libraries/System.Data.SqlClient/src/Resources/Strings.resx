@@ -490,7 +490,7 @@
     <value>Failed to generate SSPI context.</value>
   </data>
   <data name="SQL_KerberosTicketMissingError" xml:space="preserve">
-    <value>Cannot access Kerberos ticket. Ensure Kerberos has been initialized with 'kinit'.</value>
+    <value>Cannot authenticate using Kerberos. Ensure Kerberos has been initialized on the client with 'kinit' and a Service Principal Name has been registered for the SQL Server to allow Kerberos authentication.</value>  
   </data>
   <data name="SQL_SqlServerBrowserNotAccessible" xml:space="preserve">
     <value>Cannot connect to SQL Server Browser. Ensure SQL Server Browser has been started.</value>
