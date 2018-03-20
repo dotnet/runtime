@@ -48,6 +48,16 @@
 #include "utils/strenc.h"
 #include "utils/refcount.h"
 
+#define TICKS_PER_MICROSECOND 10L
+#define TICKS_PER_MILLISECOND 10000L
+#define TICKS_PER_SECOND 10000000LL
+#define TICKS_PER_MINUTE 600000000LL
+#define TICKS_PER_HOUR 36000000000LL
+#define TICKS_PER_DAY 864000000000LL
+
+// Constants to convert Unix times to the API expected by .NET and Windows
+#define CONVERT_BASE  116444736000000000ULL
+
 #define INVALID_HANDLE_VALUE (GINT_TO_POINTER (-1))
 
 typedef struct {
@@ -96,7 +106,7 @@ time_t_to_filetime (time_t timeval, FILETIME *filetime)
 {
 	guint64 ticks;
 	
-	ticks = ((guint64)timeval * 10000000) + 116444736000000000ULL;
+	ticks = ((guint64)timeval * 10000000) + CONVERT_BASE;
 	filetime->dwLowDateTime = ticks & 0xFFFFFFFF;
 	filetime->dwHighDateTime = ticks >> 32;
 }
@@ -336,6 +346,7 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 	return ret;
 }
 
+#ifndef HAVE_STRUCT_TIMEVAL
 static gint
 _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 {
@@ -361,6 +372,34 @@ _wapi_utime (const gchar *filename, const struct utimbuf *buf)
 
 	return ret;
 }
+
+#else
+static gint
+_wapi_utimes (const gchar *filename, const struct timeval times[2])
+{
+	gint ret;
+
+	MONO_ENTER_GC_SAFE;
+	ret = utimes (filename, times);
+	MONO_EXIT_GC_SAFE;
+	if (ret == -1 && errno == ENOENT && IS_PORTABILITY_SET) {
+		gint saved_errno = errno;
+		gchar *located_filename = mono_portability_find_file (filename, TRUE);
+
+		if (located_filename == NULL) {
+			errno = saved_errno;
+			return -1;
+		}
+
+		MONO_ENTER_GC_SAFE;
+		ret = utimes (located_filename, times);
+		MONO_EXIT_GC_SAFE;
+		g_free (located_filename);
+	}
+
+	return ret;
+}
+#endif
 
 static gint
 _wapi_unlink (const gchar *pathname)
@@ -1395,83 +1434,46 @@ static guint32 file_getfilesize(FileHandle *filehandle, guint32 *highsize)
 	return(size);
 }
 
-static gboolean file_getfiletime(FileHandle *filehandle, FILETIME *create_time,
-				 FILETIME *access_time,
-				 FILETIME *write_time)
+static guint64
+convert_unix_filetime_ms (const FILETIME *file_time, const char *ttype)
 {
-	struct stat statbuf;
-	guint64 create_ticks, access_ticks, write_ticks;
-	gint ret;
+	guint64 t = ((guint64) file_time->dwHighDateTime << 32) + file_time->dwLowDateTime;
 
-	if(!(filehandle->fileaccess & (GENERIC_READ | GENERIC_ALL))) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d doesn't have GENERIC_READ access: %u", __func__, ((MonoFDHandle*) filehandle)->fd, filehandle->fileaccess);
-
-		mono_w32error_set_last (ERROR_ACCESS_DENIED);
-		return(FALSE);
-	}
-	
-	MONO_ENTER_GC_SAFE;
-	ret=fstat(((MonoFDHandle*) filehandle)->fd, &statbuf);
-	MONO_EXIT_GC_SAFE;
-	if(ret==-1) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d fstat failed: %s", __func__, ((MonoFDHandle*) filehandle)->fd, g_strerror(errno));
-
-		_wapi_set_last_error_from_errno ();
-		return(FALSE);
-	}
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: atime: %ld ctime: %ld mtime: %ld", __func__,
-		  statbuf.st_atime, statbuf.st_ctime,
-		  statbuf.st_mtime);
-
-	/* Try and guess a meaningful create time by using the older
-	 * of atime or ctime
+	/* This is (time_t)0.  We can actually go to INT_MIN,
+	 * but this will do for now.
 	 */
-	/* The magic constant comes from msdn documentation
-	 * "Converting a time_t Value to a File Time"
-	 */
-	if(statbuf.st_atime < statbuf.st_ctime) {
-		create_ticks=((guint64)statbuf.st_atime*10000000)
-			+ 116444736000000000ULL;
-	} else {
-		create_ticks=((guint64)statbuf.st_ctime*10000000)
-			+ 116444736000000000ULL;
-	}
-	
-	access_ticks=((guint64)statbuf.st_atime*10000000)+116444736000000000ULL;
-	write_ticks=((guint64)statbuf.st_mtime*10000000)+116444736000000000ULL;
-	
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: aticks: %" G_GUINT64_FORMAT " cticks: %" G_GUINT64_FORMAT " wticks: %" G_GUINT64_FORMAT, __func__,
-		  access_ticks, create_ticks, write_ticks);
-
-	if(create_time!=NULL) {
-		create_time->dwLowDateTime = create_ticks & 0xFFFFFFFF;
-		create_time->dwHighDateTime = create_ticks >> 32;
-	}
-	
-	if(access_time!=NULL) {
-		access_time->dwLowDateTime = access_ticks & 0xFFFFFFFF;
-		access_time->dwHighDateTime = access_ticks >> 32;
-	}
-	
-	if(write_time!=NULL) {
-		write_time->dwLowDateTime = write_ticks & 0xFFFFFFFF;
-		write_time->dwHighDateTime = write_ticks >> 32;
+	if (t < CONVERT_BASE) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: attempt to set %s time too early", __func__, ttype);
+		mono_w32error_set_last (ERROR_INVALID_PARAMETER);
+		return (FALSE);
 	}
 
-	return(TRUE);
+	return t - CONVERT_BASE;
 }
+
+#ifndef HAVE_STRUCT_TIMEVAL
+static guint64
+convert_unix_filetime (const FILETIME *file_time, size_t field_size, const char *ttype)
+{
+	guint64 t = convert_unix_filetime_ms (file_time, ttype);
+
+	if (field_size == 4 && (t / 10000000) > INT_MAX) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: attempt to set %s time that is too big for a 32bits time_t", __func__, ttype);
+		mono_w32error_set_last (ERROR_INVALID_PARAMETER);
+		return (FALSE);
+	}
+
+	return t / 10000000;
+}
+#endif
 
 static gboolean file_setfiletime(FileHandle *filehandle,
 				 const FILETIME *create_time G_GNUC_UNUSED,
 				 const FILETIME *access_time,
 				 const FILETIME *write_time)
 {
-	struct utimbuf utbuf;
 	struct stat statbuf;
-	guint64 access_ticks, write_ticks;
 	gint ret;
-	
 	
 	if(!(filehandle->fileaccess & (GENERIC_WRITE | GENERIC_ALL))) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d doesn't have GENERIC_WRITE access: %u", __func__, ((MonoFDHandle*) filehandle)->fd, filehandle->fileaccess);
@@ -1500,59 +1502,52 @@ static gboolean file_setfiletime(FileHandle *filehandle,
 		return(FALSE);
 	}
 
-	if(access_time!=NULL) {
-		access_ticks=((guint64)access_time->dwHighDateTime << 32) +
-			access_time->dwLowDateTime;
-		/* This is (time_t)0.  We can actually go to INT_MIN,
-		 * but this will do for now.
-		 */
-		if (access_ticks < 116444736000000000ULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: attempt to set access time too early",
-				   __func__);
-			mono_w32error_set_last (ERROR_INVALID_PARAMETER);
-			return(FALSE);
-		}
+#ifdef HAVE_STRUCT_TIMEVAL
+	struct timeval times [2];
+	memset (times, 0, sizeof (times));
 
-		if (sizeof (utbuf.actime) == 4 && ((access_ticks - 116444736000000000ULL) / 10000000) > INT_MAX) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: attempt to set write time that is too big for a 32bits time_t",
-				   __func__);
-			mono_w32error_set_last (ERROR_INVALID_PARAMETER);
-			return(FALSE);
-		}
-
-		utbuf.actime=(access_ticks - 116444736000000000ULL) / 10000000;
+	if (access_time) {
+		guint64 actime = convert_unix_filetime_ms (access_time, "access");
+		times [0].tv_sec = actime / TICKS_PER_SECOND;
+		times [0].tv_usec = (actime % TICKS_PER_SECOND) / TICKS_PER_MICROSECOND;
 	} else {
-		utbuf.actime=statbuf.st_atime;
+#if HAVE_STRUCT_STAT_ST_ATIMESPEC
+		times [0].tv_sec = statbuf.st_atimespec.tv_sec;
+		times [0].tv_usec = statbuf.st_atimespec.tv_nsec / 1000;
+#else
+		times [0].tv_sec = statbuf.st_atime;
+#if HAVE_STRUCT_STAT_ST_ATIM
+		times [0].tv_usec = statbuf.st_atim.tv_nsec / 1000;
+#endif
+#endif
 	}
 
-	if(write_time!=NULL) {
-		write_ticks=((guint64)write_time->dwHighDateTime << 32) +
-			write_time->dwLowDateTime;
-		/* This is (time_t)0.  We can actually go to INT_MIN,
-		 * but this will do for now.
-		 */
-		if (write_ticks < 116444736000000000ULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: attempt to set write time too early",
-				   __func__);
-			mono_w32error_set_last (ERROR_INVALID_PARAMETER);
-			return(FALSE);
-		}
-		if (sizeof (utbuf.modtime) == 4 && ((write_ticks - 116444736000000000ULL) / 10000000) > INT_MAX) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: attempt to set write time that is too big for a 32bits time_t",
-				   __func__);
-			mono_w32error_set_last (ERROR_INVALID_PARAMETER);
-			return(FALSE);
-		}
-		
-		utbuf.modtime=(write_ticks - 116444736000000000ULL) / 10000000;
+	if (write_time) {
+		guint64 wtime = convert_unix_filetime_ms (write_time, "write");
+		times [1].tv_sec = wtime / TICKS_PER_SECOND;
+		times [1].tv_usec = (wtime % TICKS_PER_SECOND) / TICKS_PER_MICROSECOND;
 	} else {
-		utbuf.modtime=statbuf.st_mtime;
+#if HAVE_STRUCT_STAT_ST_ATIMESPEC
+		times [1].tv_sec = statbuf.st_mtimespec.tv_sec;
+		times [1].tv_usec = statbuf.st_mtimespec.tv_nsec / 1000;
+#else
+		times [1].tv_sec = statbuf.st_mtime;
+#if HAVE_STRUCT_STAT_ST_ATIM
+		times [1].tv_usec = statbuf.st_mtim.tv_nsec / 1000;
+#endif
+#endif
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: setting fd %d access %ld write %ld", __func__,
-		   ((MonoFDHandle*) filehandle)->fd, utbuf.actime, utbuf.modtime);
+	ret = _wapi_utimes (filehandle->filename, times);
+#else
+	struct utimbuf utbuf;
+	utbuf.actime  = access_time ? convert_unix_filetime (access_time, sizeof (utbuf.actime), "access") : statbuf.st_atime;
+	utbuf.modtime = write_time  ? convert_unix_filetime (write_time,  sizeof (utbuf.modtime), "write") : statbuf.st_mtime;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: setting fd %d access %ld write %ld", __func__, ((MonoFDHandle*) filehandle)->fd, utbuf.actime, utbuf.modtime);
 
 	ret = _wapi_utime (filehandle->filename, &utbuf);
+#endif
 	if (ret == -1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d [%s] utime failed: %s", __func__, ((MonoFDHandle*) filehandle)->fd, filehandle->filename, g_strerror(errno));
 
@@ -2833,31 +2828,6 @@ GetFileSize(gpointer handle, guint32 *highsize)
 }
 
 gboolean
-mono_w32file_get_times(gpointer handle, FILETIME *create_time, FILETIME *access_time, FILETIME *write_time)
-{
-	FileHandle *filehandle;
-	gboolean ret;
-
-	if (!mono_fdhandle_lookup_and_ref(GPOINTER_TO_INT(handle), (MonoFDHandle**) &filehandle)) {
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		return FALSE;
-	}
-
-	switch (((MonoFDHandle*) filehandle)->type) {
-	case MONO_FDTYPE_FILE:
-		ret = file_getfiletime(filehandle, create_time, access_time, write_time);
-		break;
-	default:
-		mono_w32error_set_last (ERROR_INVALID_HANDLE);
-		mono_fdhandle_unref ((MonoFDHandle*) filehandle);
-		return FALSE;
-	}
-
-	mono_fdhandle_unref ((MonoFDHandle*) filehandle);
-	return ret;
-}
-
-gboolean
 mono_w32file_set_times(gpointer handle, const FILETIME *create_time, const FILETIME *access_time, const FILETIME *write_time)
 {
 	FileHandle *filehandle;
@@ -2885,12 +2855,6 @@ mono_w32file_set_times(gpointer handle, const FILETIME *create_time, const FILET
 /* A tick is a 100-nanosecond interval.  File time epoch is Midnight,
  * January 1 1601 GMT
  */
-
-#define TICKS_PER_MILLISECOND 10000L
-#define TICKS_PER_SECOND 10000000L
-#define TICKS_PER_MINUTE 600000000L
-#define TICKS_PER_HOUR 36000000000LL
-#define TICKS_PER_DAY 864000000000LL
 
 #define isleap(y) ((y) % 4 == 0 && ((y) % 100 != 0 || (y) % 400 == 0))
 
@@ -3497,32 +3461,26 @@ mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat)
 	stat->attributes = _wapi_stat_to_file_attributes (utf8_name, &buf, &linkbuf);
 	stat->length = (stat->attributes & FILE_ATTRIBUTE_DIRECTORY) ? 0 : buf.st_size;
 
-// Multiply seconds by this
-#define SECMULT (1000*1000*10ULL)
-
-// Constants to convert Unix times to the API expected by .NET and Windows
-#define CONVERT_BASE  116444736000000000ULL
-
 #if HAVE_STRUCT_STAT_ST_ATIMESPEC
 	if (buf.st_mtimespec.tv_sec < buf.st_ctimespec.tv_sec || (buf.st_mtimespec.tv_sec == buf.st_ctimespec.tv_sec && buf.st_mtimespec.tv_nsec < buf.st_ctimespec.tv_nsec))
-		stat->creation_time = buf.st_mtimespec.tv_sec * SECMULT + (buf.st_mtimespec.tv_nsec / 100) + CONVERT_BASE;
+		stat->creation_time = buf.st_mtimespec.tv_sec * TICKS_PER_SECOND + (buf.st_mtimespec.tv_nsec / 100) + CONVERT_BASE;
 	else
-		stat->creation_time = buf.st_ctimespec.tv_sec * SECMULT + (buf.st_ctimespec.tv_nsec / 100) + CONVERT_BASE;
+		stat->creation_time = buf.st_ctimespec.tv_sec * TICKS_PER_SECOND + (buf.st_ctimespec.tv_nsec / 100) + CONVERT_BASE;
 
-	stat->last_access_time = buf.st_atimespec.tv_sec * SECMULT + (buf.st_atimespec.tv_nsec / 100) + CONVERT_BASE;
-	stat->last_write_time = buf.st_mtimespec.tv_sec * SECMULT + (buf.st_mtimespec.tv_nsec / 100) + CONVERT_BASE;
+	stat->last_access_time = buf.st_atimespec.tv_sec * TICKS_PER_SECOND + (buf.st_atimespec.tv_nsec / 100) + CONVERT_BASE;
+	stat->last_write_time = buf.st_mtimespec.tv_sec * TICKS_PER_SECOND + (buf.st_mtimespec.tv_nsec / 100) + CONVERT_BASE;
 #elif HAVE_STRUCT_STAT_ST_ATIM
 	if (buf.st_mtime < buf.st_ctime || (buf.st_mtime == buf.st_ctime && buf.st_mtim.tv_nsec < buf.st_ctim.tv_nsec))
-		stat->creation_time = buf.st_mtime * SECMULT + (buf.st_mtim.tv_nsec / 100) + CONVERT_BASE;
+		stat->creation_time = buf.st_mtime * TICKS_PER_SECOND + (buf.st_mtim.tv_nsec / 100) + CONVERT_BASE;
 	else
-		stat->creation_time = buf.st_ctime * SECMULT + (buf.st_ctim.tv_nsec / 100) + CONVERT_BASE;
+		stat->creation_time = buf.st_ctime * TICKS_PER_SECOND + (buf.st_ctim.tv_nsec / 100) + CONVERT_BASE;
 
-	stat->last_access_time = buf.st_atime * SECMULT + (buf.st_atim.tv_nsec / 100) + CONVERT_BASE;
-	stat->last_write_time = buf.st_mtime * SECMULT + (buf.st_mtim.tv_nsec / 100) + CONVERT_BASE;
+	stat->last_access_time = buf.st_atime * TICKS_PER_SECOND + (buf.st_atim.tv_nsec / 100) + CONVERT_BASE;
+	stat->last_write_time = buf.st_mtime * TICKS_PER_SECOND + (buf.st_mtim.tv_nsec / 100) + CONVERT_BASE;
 #else
-	stat->creation_time = (((guint64) (buf.st_mtime < buf.st_ctime ? buf.st_mtime : buf.st_ctime)) * 10 * 1000 * 1000) + CONVERT_BASE;
-	stat->last_access_time = (((guint64) (buf.st_atime)) * SECMULT) + CONVERT_BASE;
-	stat->last_write_time = (((guint64) (buf.st_mtime)) * SECMULT) + CONVERT_BASE;
+	stat->creation_time = (((guint64) (buf.st_mtime < buf.st_ctime ? buf.st_mtime : buf.st_ctime)) * TICKS_PER_SECOND) + CONVERT_BASE;
+	stat->last_access_time = (((guint64) (buf.st_atime)) * TICKS_PER_SECOND) + CONVERT_BASE;
+	stat->last_write_time = (((guint64) (buf.st_mtime)) * TICKS_PER_SECOND) + CONVERT_BASE;
 #endif
 
 	g_free (utf8_name);

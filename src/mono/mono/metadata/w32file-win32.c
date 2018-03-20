@@ -142,16 +142,6 @@ mono_w32file_get_type (gpointer handle)
 }
 
 gboolean
-mono_w32file_get_times (gpointer handle, FILETIME *create_time, FILETIME *access_time, FILETIME *write_time)
-{
-	gboolean res;
-	MONO_ENTER_GC_SAFE;
-	res = GetFileTime (handle, create_time, access_time, write_time);
-	MONO_EXIT_GC_SAFE;
-	return res;
-}
-
-gboolean
 mono_w32file_set_times (gpointer handle, const FILETIME *create_time, const FILETIME *access_time, const FILETIME *write_time)
 {
 	gboolean res;
