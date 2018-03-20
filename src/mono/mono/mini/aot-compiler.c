@@ -12796,8 +12796,10 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 
 	emit_extra_methods (acfg);
 
-	if (acfg->aot_opts.dedup_include && !is_dedup_dummy)
+	if (acfg->aot_opts.dedup_include && !is_dedup_dummy) {
+		fclose (acfg->fp);
 		return 0;
+	}
 
 	emit_trampolines (acfg);
 
