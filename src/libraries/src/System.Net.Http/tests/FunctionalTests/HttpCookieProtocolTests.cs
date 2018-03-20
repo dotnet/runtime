@@ -316,6 +316,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = new HttpClient(handler))
                 {
+                    client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
                     await client.GetAsync(url1);
                 }
             },
@@ -498,6 +499,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = new HttpClient(handler))
                 {
+                    client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
                     await client.GetAsync(url1);
 
                     CookieCollection collection = handler.CookieContainer.GetCookies(url);
