@@ -968,7 +968,6 @@ CI_PR_DISABLED_TESTS = \
 
 if ENABLE_COOP
 CI_PR_DISABLED_TESTS += \
-	abort-cctor.exe \
 	bug-58782-plain-throw.exe \
 	bug-58782-capture-and-throw.exe
 endif

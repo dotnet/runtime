@@ -117,6 +117,7 @@ static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx)
 static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
 static gboolean mono_current_thread_has_handle_block_guard (void);
 static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
+static void mono_uninstall_current_handler_block_guard (void);
 
 static gboolean
 first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
@@ -232,6 +233,7 @@ mono_exceptions_init (void)
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
+	cbs.mono_uninstall_current_handler_block_guard = mono_uninstall_current_handler_block_guard;
 	cbs.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
 	cbs.mono_clear_abort_threshold = mini_clear_abort_threshold;
 	cbs.mono_above_abort_threshold = mini_above_abort_threshold;
@@ -2955,10 +2957,10 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 			break;
 	}
 
-	/*no matching finally */
-	if (i == ji->num_clauses)
-		return;
+	/*no matching finally - can't happen, we parallel the logic in find_last_handler_block. */
+	g_assert (i < ji->num_clauses);
 
+	g_message (" installed handler block guard at %p\n", ip);
         /*Load the spvar*/
         bp = (guint8*)MONO_CONTEXT_GET_BP (ctx);
         *(bp + clause->exvar_offset) = 1;
@@ -2995,6 +2997,15 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 
 	return TRUE;
 }
+
+static void
+mono_uninstall_current_handler_block_guard (void)
+{
+	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+	if (jit_tls)
+		jit_tls->handler_block = NULL;
+}
+
 
 static gboolean
 mono_current_thread_has_handle_block_guard (void)

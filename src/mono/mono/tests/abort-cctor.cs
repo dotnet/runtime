@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 
 class Driver
 {
+	public static SemaphoreSlim sema1 = new SemaphoreSlim (0);
 	public static ManualResetEvent mre1 = new ManualResetEvent (false);
 	public static ManualResetEvent mre2 = new ManualResetEvent (false);
 
@@ -367,6 +368,62 @@ class Driver
 			Environment.Exit (15);
 	}
 
+	public static bool got_to_the_end_of_outer_finally = false;
+	public static bool got_to_the_end_of_inner_finally = false;
+
+	class StaticConstructor6 {
+
+		static StaticConstructor6 ()
+		{
+			try {
+				Setup6 ();
+			} finally {
+				Driver.got_to_the_end_of_outer_finally = true;
+			}
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static void Setup6 () {
+			try {
+			} finally {
+				Driver.sema1.Release ();
+				Thread.Sleep (1000); /* hopefully we get woken up here */
+				Driver.got_to_the_end_of_inner_finally = true;
+			}
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void IsStaticConstructor6Viable () {
+		Console.WriteLine ("IsStaticConstructor6Viable? got to inner finally? {0} got to outer finally? {1}",
+				   Driver.got_to_the_end_of_inner_finally,
+				   Driver.got_to_the_end_of_outer_finally);
+		new StaticConstructor6 ();
+		if (!Driver.got_to_the_end_of_inner_finally)
+			Environment.Exit (17);
+		if (!Driver.got_to_the_end_of_outer_finally)
+			Environment.Exit (18);
+	}
+
+	public static void Test6 ()
+	{
+		Thread thread = new Thread (() => {
+				new StaticConstructor6 ();
+			});
+
+		thread.Start ();
+		Driver.sema1.Wait ();
+		thread.Abort ();
+		thread.Join ();
+		try {
+			IsStaticConstructor6Viable ();
+			Console.WriteLine ("StaticConstructor6 is viable");
+		} catch (TypeInitializationException e) {
+			Console.WriteLine ("StaticConstructor6 is not viable");
+			Environment.Exit (19);
+		}
+	}
+
 	public static int Main ()
 	{
 		Test1 ();
@@ -374,6 +431,7 @@ class Driver
 		Test3 ();
 		Test4 ();
 		Test5 ();
+		Test6 ();
 		Console.WriteLine ("done, all things good");
 		return 0;
 	}
