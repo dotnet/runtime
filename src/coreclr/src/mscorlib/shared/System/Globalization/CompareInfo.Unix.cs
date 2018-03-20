@@ -241,6 +241,7 @@ namespace System.Globalization
                 return index;
             }
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 index = IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
@@ -251,6 +252,7 @@ namespace System.Globalization
                 }
                 return index;
             }
+#endif
 
             fixed (char* pSource = source)
             {
@@ -431,10 +433,12 @@ namespace System.Globalization
                 return LastIndexOfOrdinalCore(source, target, startIndex, count, ignoreCase: false);
             }
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
                 return LastIndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
             }
+#endif
 
             // startIndex is the index into source where we start search backwards from. leftStartIndex is the index into source
             // of the start of the string that is count characters away from startIndex.
@@ -456,10 +460,12 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && prefix.IsFastSort())
             {
                 return IsPrefix(source, prefix, GetOrdinalCompareOptions(options));
             }
+#endif
 
             return Interop.Globalization.StartsWith(_sortHandle, prefix, prefix.Length, source, source.Length, options);
         }
@@ -587,10 +593,12 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(suffix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
+#if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && suffix.IsFastSort())
             {
                 return IsSuffix(source, suffix, GetOrdinalCompareOptions(options));
             }
+#endif
 
             return Interop.Globalization.EndsWith(_sortHandle, suffix, suffix.Length, source, source.Length, options);
         }
@@ -602,7 +610,7 @@ namespace System.Globalization
             Debug.Assert(!source.IsEmpty);
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-            
+
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
                 if (source.Length < suffix.Length)
