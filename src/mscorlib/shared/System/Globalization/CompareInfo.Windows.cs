@@ -16,9 +16,6 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-            m_name = culture._name;
-            _sortName = culture.SortName;
-
             if (_invariantMode)
             {
                 _sortHandle = IntPtr.Zero;
@@ -26,6 +23,7 @@ namespace System.Globalization
             else
             {
                 const uint LCMAP_SORTHANDLE = 0x20000000;
+
                 IntPtr handle;
                 int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
                 _sortHandle = ret > 0 ? handle : IntPtr.Zero;
@@ -200,7 +198,7 @@ namespace System.Globalization
 
                 if (result == 0)
                 {
-                    Environment.FailFast("CompareStringEx failed");
+                    throw new ArgumentException(SR.Arg_ExternalException);
                 }
 
                 // Map CompareStringEx return value to -1, 0, 1.
@@ -232,7 +230,7 @@ namespace System.Globalization
 
                 if (result == 0)
                 {
-                    Environment.FailFast("CompareStringEx failed");
+                    throw new ArgumentException(SR.Arg_ExternalException);
                 }
 
                 // Map CompareStringEx return value to -1, 0, 1.
@@ -366,10 +364,8 @@ namespace System.Globalization
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
 
-            // TODO: Consider moving this up to the relevent APIs we need to ensure this behavior for
-            // and add a precondition that target is not empty. 
             if (target.Length == 0)
-                return startIndex;       // keep Whidbey compatibility
+                return startIndex;
 
             if ((options & CompareOptions.Ordinal) != 0)
             {
@@ -623,7 +619,7 @@ namespace System.Globalization
             Debug.Assert(!_invariantMode);
 
             Interop.Kernel32.NlsVersionInfoEx nlsVersion = new Interop.Kernel32.NlsVersionInfoEx();
-            nlsVersion.dwNLSVersionInfoSize = Marshal.SizeOf(typeof(Interop.Kernel32.NlsVersionInfoEx));
+            nlsVersion.dwNLSVersionInfoSize = sizeof(Interop.Kernel32.NlsVersionInfoEx);
             Interop.Kernel32.GetNLSVersionEx(Interop.Kernel32.COMPARE_STRING, _sortName, &nlsVersion);
             return new SortVersion(
                         nlsVersion.dwNLSVersion,
