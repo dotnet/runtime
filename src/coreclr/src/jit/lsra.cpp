@@ -1958,7 +1958,7 @@ void LinearScan::identifyCandidates()
     {
         // Frame layout is only pre-computed for ARM
         printf("\nlvaTable after IdentifyCandidates\n");
-        compiler->lvaTableDump();
+        compiler->lvaTableDump(Compiler::FrameLayoutState::PRE_REGALLOC_FRAME_LAYOUT);
     }
 #endif // DEBUG
 #endif // _TARGET_ARM_
@@ -2509,6 +2509,17 @@ void LinearScan::setFrameType()
     }
 
     compiler->rpFrameType = frameType;
+
+#ifdef _TARGET_ARMARCH_
+    // Determine whether we need to reserve a register for large lclVar offsets.
+    if (compiler->compRsvdRegCheck(Compiler::REGALLOC_FRAME_LAYOUT))
+    {
+        // We reserve R10/IP1 in this case to hold the offsets in load/store instructions
+        compiler->codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
+        assert(REG_OPT_RSVD != REG_FP);
+        JITDUMP("  Reserved REG_OPT_RSVD (%s) due to large frame\n", getRegName(REG_OPT_RSVD));
+    }
+#endif // _TARGET_ARMARCH_
 }
 
 //------------------------------------------------------------------------
