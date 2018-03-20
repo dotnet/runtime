@@ -4355,7 +4355,13 @@ inline GenTree* Compiler::impCheckForNullPointer(GenTree* obj)
     if (obj->gtOper == GT_CNS_INT)
     {
         assert(obj->gtType == TYP_REF || obj->gtType == TYP_BYREF);
-        assert(obj->gtIntCon.gtIconVal == 0);
+
+        // We can see non-zero byrefs for RVA statics.
+        if (obj->gtIntCon.gtIconVal != 0)
+        {
+            assert(obj->gtType == TYP_BYREF);
+            return obj;
+        }
 
         unsigned tmp = lvaGrabTemp(true DEBUGARG("CheckForNullPointer"));
 
