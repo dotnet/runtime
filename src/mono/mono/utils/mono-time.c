@@ -16,7 +16,12 @@
 #endif
 
 #include <mono/utils/mono-time.h>
+#include <mono/utils/atomic.h>
 
+#if HAVE_MACH_ABSOLUTE_TIME
+#include <mach/mach_time.h>
+static mach_timebase_info_data_t s_TimebaseInfo;
+#endif
 
 #define MTICKS_PER_SEC (10 * 1000 * 1000)
 
@@ -145,7 +150,8 @@ mono_msec_boottime (void)
 {
 	gint64 retval = 0;
 
-#if HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
+	/* clock_gettime () is found by configure but its only present from ios 10 */
+#if (defined(HAVE_CLOCK_MONOTONIC_COARSE) || defined(HAVE_CLOCK_MONOTONIC)) && !defined(TARGET_IOS)
 	clockid_t clockType =
 #if HAVE_CLOCK_MONOTONIC_COARSE
 	CLOCK_MONOTONIC_COARSE; /* good enough resolution, fastest speed */
@@ -160,10 +166,17 @@ mono_msec_boottime (void)
 	retval = (ts.tv_sec * tccSecondsToMillieSeconds) + (ts.tv_nsec / tccMillieSecondsToNanoSeconds);
 
 #elif HAVE_MACH_ABSOLUTE_TIME
-	/* use denom == 0 to indicate that s_TimebaseInfo is uninitialised. */
-	if (s_TimebaseInfo.denom == 0) {
-		g_error ("s_TimebaseInfo is uninitialized.");
-		goto exit;
+	static gboolean timebase_inited;
+
+	if (!timebase_inited) {
+		kern_return_t machRet;
+		mach_timebase_info_data_t tmp;
+		machRet = mach_timebase_info (&tmp);
+		g_assert (machRet == KERN_SUCCESS);
+		/* Assume memcpy works correctly if ran concurrently */
+		memcpy (&s_TimebaseInfo, &tmp, sizeof (mach_timebase_info_data_t));
+		mono_memory_barrier ();
+		timebase_inited = TRUE;
 	}
 	retval = (mach_absolute_time () * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
 
