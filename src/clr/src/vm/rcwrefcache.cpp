@@ -17,9 +17,9 @@
 
 #include "common.h"
 
-#include "rcwrefcache.h"
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"
+#include "rcwrefcache.h"
 
 // SHRINK_TOTAL_THRESHOLD - only shrink when the total number of handles exceed this number
 #ifdef _DEBUG
