@@ -166,37 +166,40 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<long> longTable = new TestTable<long>(new long[4] { long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue }))
+                if (Environment.Is64BitProcess)
                 {
-                    var vf1 = Avx.SetAllVector256<long>(-199);
-                    Unsafe.Write(longTable.outArrayPtr, vf1);
-
-                    if (!longTable.CheckResult((x) => (x == -199)))
+                    using (TestTable<long> longTable = new TestTable<long>(new long[4] { long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue }))
                     {
-                        Console.WriteLine("AVX SetAllVector256 failed on long:");
-                        foreach (var item in longTable.outArray)
+                        var vf1 = Avx.SetAllVector256<long>(-199);
+                        Unsafe.Write(longTable.outArrayPtr, vf1);
+
+                        if (!longTable.CheckResult((x) => (x == -199)))
                         {
-                            Console.Write(item + ", ");
+                            Console.WriteLine("AVX SetAllVector256 failed on long:");
+                            foreach (var item in longTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            testResult = Fail;
                         }
-                        Console.WriteLine();
-                        testResult = Fail;
                     }
-                }
 
-                using (TestTable<ulong> ulongTable = new TestTable<ulong>(new ulong[4] { ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue }))
-                {
-                    Vector256<ulong> vf1 = Avx.SetAllVector256<ulong>(34);
-                    Unsafe.Write(ulongTable.outArrayPtr, vf1);
-
-                    if (!ulongTable.CheckResult((x) => (x == 34)))
+                    using (TestTable<ulong> ulongTable = new TestTable<ulong>(new ulong[4] { ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue }))
                     {
-                        Console.WriteLine("AVX SetAllVector256 failed on ulong:");
-                        foreach (var item in ulongTable.outArray)
+                        Vector256<ulong> vf1 = Avx.SetAllVector256<ulong>(34);
+                       Unsafe.Write(ulongTable.outArrayPtr, vf1);
+    
+                        if (!ulongTable.CheckResult((x) => (x == 34)))
                         {
-                            Console.Write(item + ", ");
+                            Console.WriteLine("AVX SetAllVector256 failed on ulong:");
+                            foreach (var item in ulongTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            testResult = Fail;
                         }
-                        Console.WriteLine();
-                        testResult = Fail;
                     }
                 }
             }
