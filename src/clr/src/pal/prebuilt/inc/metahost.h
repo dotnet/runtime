@@ -1,13 +1,19 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0603 */
+ /* File created by MIDL compiler version 8.01.0622 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for C:/ssd/coreclr/src/inc/metahost.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -23,7 +29,7 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
+#endif /* __RPCNDR_H_VERSION__ */
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
@@ -65,6 +71,13 @@ typedef interface ICLRProfiling ICLRProfiling;
 typedef interface ICLRDebuggingLibraryProvider ICLRDebuggingLibraryProvider;
 
 #endif 	/* __ICLRDebuggingLibraryProvider_FWD_DEFINED__ */
+
+
+#ifndef __ICLRDebuggingLibraryProvider2_FWD_DEFINED__
+#define __ICLRDebuggingLibraryProvider2_FWD_DEFINED__
+typedef interface ICLRDebuggingLibraryProvider2 ICLRDebuggingLibraryProvider2;
+
+#endif 	/* __ICLRDebuggingLibraryProvider2_FWD_DEFINED__ */
 
 
 #ifndef __ICLRDebugging_FWD_DEFINED__
@@ -183,6 +196,7 @@ EXTERN_GUID(CLSID_CLRDebuggingLegacy, 0xDF8395B5, 0xA4BA, 0x450b, 0xA7, 0x7C, 0x
 EXTERN_GUID(CLSID_CLRProfiling, 0xbd097ed8, 0x733e, 0x43fe, 0x8e, 0xd7, 0xa9, 0x5f, 0xf9, 0xa8, 0x44, 0x8c);
 EXTERN_GUID(IID_ICLRProfiling, 0xb349abe3, 0xb56f, 0x4689, 0xbf, 0xcd, 0x76, 0xbf, 0x39, 0xd8, 0x88, 0xea);
 EXTERN_GUID(IID_ICLRDebuggingLibraryProvider, 0x3151c08d, 0x4d09, 0x4f9b, 0x88, 0x38, 0x28, 0x80, 0xbf, 0x18, 0xfe, 0x51);
+EXTERN_GUID(IID_ICLRDebuggingLibraryProvider2, 0xE04E2FF1, 0xDCFD, 0x45D5, 0xBC, 0xD1, 0x16, 0xFF, 0xF2, 0xFA, 0xF7, 0xBA);
 typedef HRESULT ( __stdcall *CLRCreateInstanceFnPtr )( 
     REFCLSID clsid,
     REFIID riid,
@@ -691,6 +705,92 @@ EXTERN_C const IID IID_ICLRDebuggingLibraryProvider;
 
 
 #endif 	/* __ICLRDebuggingLibraryProvider_INTERFACE_DEFINED__ */
+
+
+#ifndef __ICLRDebuggingLibraryProvider2_INTERFACE_DEFINED__
+#define __ICLRDebuggingLibraryProvider2_INTERFACE_DEFINED__
+
+/* interface ICLRDebuggingLibraryProvider2 */
+/* [object][local][helpstring][version][uuid] */ 
+
+
+EXTERN_C const IID IID_ICLRDebuggingLibraryProvider2;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("E04E2FF1-DCFD-45D5-BCD1-16FFF2FAF7BA")
+    ICLRDebuggingLibraryProvider2 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE ProvideLibrary2( 
+            /* [in] */ const WCHAR *pwszFileName,
+            /* [in] */ DWORD dwTimestamp,
+            /* [in] */ DWORD dwSizeOfImage,
+            /* [out] */ LPWSTR *ppResolvedModulePath) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ICLRDebuggingLibraryProvider2Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICLRDebuggingLibraryProvider2 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICLRDebuggingLibraryProvider2 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICLRDebuggingLibraryProvider2 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ProvideLibrary2 )( 
+            ICLRDebuggingLibraryProvider2 * This,
+            /* [in] */ const WCHAR *pwszFileName,
+            /* [in] */ DWORD dwTimestamp,
+            /* [in] */ DWORD dwSizeOfImage,
+            /* [out] */ LPWSTR *ppResolvedModulePath);
+        
+        END_INTERFACE
+    } ICLRDebuggingLibraryProvider2Vtbl;
+
+    interface ICLRDebuggingLibraryProvider2
+    {
+        CONST_VTBL struct ICLRDebuggingLibraryProvider2Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICLRDebuggingLibraryProvider2_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICLRDebuggingLibraryProvider2_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICLRDebuggingLibraryProvider2_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICLRDebuggingLibraryProvider2_ProvideLibrary2(This,pwszFileName,dwTimestamp,dwSizeOfImage,ppResolvedModulePath)	\
+    ( (This)->lpVtbl -> ProvideLibrary2(This,pwszFileName,dwTimestamp,dwSizeOfImage,ppResolvedModulePath) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICLRDebuggingLibraryProvider2_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICLRDebugging_INTERFACE_DEFINED__
@@ -1745,14 +1845,14 @@ EXTERN_C const IID IID_ICLRStrongName3;
 EXTERN_C const IID LIBID_CLRMetaHost;
 #endif /* __CLRMetaHost_LIBRARY_DEFINED__ */
 
-/* interface __MIDL_itf_metahost_0000_0010 */
+/* interface __MIDL_itf_metahost_0000_0011 */
 /* [local] */ 
 
 #endif // WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 
 
-extern RPC_IF_HANDLE __MIDL_itf_metahost_0000_0010_v0_0_c_ifspec;
-extern RPC_IF_HANDLE __MIDL_itf_metahost_0000_0010_v0_0_s_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_metahost_0000_0011_v0_0_c_ifspec;
+extern RPC_IF_HANDLE __MIDL_itf_metahost_0000_0011_v0_0_s_ifspec;
 
 /* Additional Prototypes for ALL interfaces */
 
