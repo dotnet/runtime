@@ -6,13 +6,14 @@ using System;
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
 
-namespace System.Globalization
+namespace System.Text
 {
     //
     // Data table for encoding classes.  Used by System.Text.Encoding.
@@ -63,7 +64,7 @@ namespace System.Globalization
             {
                 index = ((right - left) / 2) + left;
 
-                result = String.nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[index].webName);
+                result = nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[index].webName);
 
                 if (result == 0)
                 {
@@ -85,7 +86,7 @@ namespace System.Globalization
             //Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
-                if (String.nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[left].webName) == 0)
+                if (nativeCompareOrdinalIgnoreCaseWC(name, encodingDataPtr[left].webName) == 0)
                 {
                     return (encodingDataPtr[left].codePage);
                 }
@@ -212,6 +213,11 @@ namespace System.Globalization
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe InternalCodePageDataItem* GetCodePageData();
+
+        //This will not work in case-insensitive mode for any character greater than 0x7F.  
+        //We'll throw an ArgumentException.
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe int nativeCompareOrdinalIgnoreCaseWC(String strA, sbyte* strBBytes);
     }
 
     /*=================================InternalEncodingDataItem==========================
