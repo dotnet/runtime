@@ -80,18 +80,35 @@
     <Compile Include="$(CommonPath)\System\Data\Common\NameValuePair.cs">
       <Link>System\Data\Common\NameValuePair.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionInternal.cs">
+      <Link>Common\System\Data\ProviderBase\DbConnectionInternal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionFactory.cs">
+      <Link>Common\System\Data\ProviderBase\DbConnectionFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionPoolGroup.cs">
+      <Link>Common\System\Data\ProviderBase\DbConnectionPoolGroup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\TimeoutTimer.cs">
+      <Link>Common\System\Data\ProviderBase\TimeoutTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbReferenceCollection.cs">
+      <Link>Common\System\Data\ProviderBase\DbReferenceCollection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbMetaDataFactory.cs">
+      <Link>Common\System\Data\ProviderBase\DbMetaDataFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionClosed.cs">
+      <Link>Common\System\Data\ProviderBase\DbConnectionClosed.cs</Link>
+    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionClosed.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionInternal.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPool.cs" />
-    <Compile Include="System\Data\ProviderBase\DbConnectionPoolGroup.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolGroupProviderInfo.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
-    <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
-    <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
-    <Compile Include="System\Data\ProviderBase\TimeoutTimer.cs" />
     <Compile Include="System\Data\Sql\IBinarySerialize.cs" />
     <Compile Include="System\Data\Sql\InvalidUdtException.cs" />
     <Compile Include="System\Data\Sql\SqlFunctionAttribute.cs" />

@@ -52,24 +52,41 @@
     <Compile Include="Common\System\Data\Common\SafeNativeMethods.cs" />
     <Compile Include="Common\System\Data\DataStorage.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbBuffer.cs" />
-    <Compile Include="Common\System\Data\ProviderBase\DbMetaDataFactory.cs" />
-    <Compile Include="Common\System\Data\ProviderBase\TimeoutTimer.cs" />
     <Compile Include="$(CommonPath)\System\Data\Common\FieldNameLookup.cs">
       <Link>Common\System\Data\ProviderBase\FieldNameLookup.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Data\Common\BasicFieldNameLookup.cs">
       <Link>Common\System\Data\ProviderBase\BasicFieldNameLookup.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionInternal.cs">
+      <Link>System\Data\ProviderBase\DbConnectionInternal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionFactory.cs">
+      <Link>System\Data\ProviderBase\DbConnectionFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionPoolGroup.cs">
+      <Link>System\Data\ProviderBase\DbConnectionPoolGroup.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\TimeoutTimer.cs">
+      <Link>System\Data\ProviderBase\TimeoutTimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbReferenceCollection.cs">
+      <Link>System\Data\ProviderBase\DbReferenceCollection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbMetaDataFactory.cs">
+      <Link>System\Data\ProviderBase\DbMetaDataFactory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Data\ProviderBase\DbConnectionClosed.cs">
+      <Link>System\Data\ProviderBase\DbConnectionClosed.cs</Link>
+    </Compile>
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionClosed.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionFactory.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionInternal.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPool.cs" />
-    <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolGroup.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolGroupProviderInfo.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolIdentity.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
-    <Compile Include="Common\System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\Odbc\DbDataRecord.cs" />
     <Compile Include="System\Data\Odbc\Odbc32.cs" />
     <Compile Include="System\Data\Odbc\OdbcCommand.cs">
@@ -181,6 +198,11 @@
   </ItemGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
     <Reference Include="System.Transactions.Local" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\System.Data.Odbc.OdbcMetaData.xml">
+      <LogicalName>System.Data.Odbc.OdbcMetaData.xml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="DatabaseSetupInstructions.md" />
