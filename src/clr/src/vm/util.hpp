@@ -728,6 +728,15 @@ typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;
 typedef Wrapper<void *, DoNothing, DoNothing> CLRMapViewHolder;
 #endif
 
+#ifdef FEATURE_PAL
+#ifndef DACCESS_COMPILE
+FORCEINLINE void VoidPALUnloadPEFile(void *ptr) { PAL_LOADUnloadPEFile(ptr); }
+typedef Wrapper<void *, DoNothing, VoidPALUnloadPEFile> PALPEFileHolder;
+#else
+typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
+#endif
+#endif // FEATURE_PAL
+
 void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX);
 
 void ProcessEventForHost(EClrEvent event, void *data);
