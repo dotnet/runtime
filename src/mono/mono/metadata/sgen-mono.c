@@ -795,6 +795,16 @@ clear_domain_free_major_pinned_object_callback (GCObject *obj, size_t size, Mono
 		sgen_major_collector.free_pinned_object (obj, size);
 }
 
+static void
+sgen_finish_concurrent_work (const char *reason, gboolean stw)
+{
+	if (sgen_get_concurrent_collection_in_progress ())
+		sgen_perform_collection (0, GENERATION_OLD, reason, TRUE, stw);
+	SGEN_ASSERT (0, !sgen_get_concurrent_collection_in_progress (), "We just ordered a synchronous collection.  Why are we collecting concurrently?");
+
+	sgen_major_collector.finish_sweeping ();
+}
+
 /*
  * When appdomains are unloaded we can easily remove objects that have finalizers,
  * but all the others could still be present in random places on the heap.
@@ -816,11 +826,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 
 	sgen_stop_world (0, FALSE);
 
-	if (sgen_get_concurrent_collection_in_progress ())
-		sgen_perform_collection (0, GENERATION_OLD, "clear domain", TRUE, FALSE);
-	SGEN_ASSERT (0, !sgen_get_concurrent_collection_in_progress (), "We just ordered a synchronous collection.  Why are we collecting concurrently?");
-
-	sgen_major_collector.finish_sweeping ();
+	sgen_finish_concurrent_work ("clear domain", FALSE);
 
 	sgen_process_fin_stage_entries ();
 
@@ -2893,6 +2899,15 @@ mono_gc_base_init (void)
 void
 mono_gc_base_cleanup (void)
 {
+	/*
+	 * Note we don't fully cleanup the GC here, but the threads mainly.
+	 *
+	 * We need to finish any work on the sgen threads before shutting down
+	 * the sgen threadpool. After this point we can still trigger GCs as
+	 * part of domain free, but they should all be forced and not use the
+	 * threadpool.
+	 */
+	sgen_finish_concurrent_work ("cleanup", TRUE);
 	sgen_thread_pool_shutdown ();
 
 	// We should have consumed any outstanding moves.
