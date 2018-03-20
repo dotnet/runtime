@@ -2960,10 +2960,9 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 	/*no matching finally - can't happen, we parallel the logic in find_last_handler_block. */
 	g_assert (i < ji->num_clauses);
 
-	g_message (" installed handler block guard at %p\n", ip);
-        /*Load the spvar*/
-        bp = (guint8*)MONO_CONTEXT_GET_BP (ctx);
-        *(bp + clause->exvar_offset) = 1;
+	/*Load the spvar*/
+	bp = (guint8*)MONO_CONTEXT_GET_BP (ctx);
+	*(bp + clause->exvar_offset) = 1;
 }
 
 /*
