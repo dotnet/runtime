@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Specialized;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Data.Odbc
 {
@@ -48,6 +50,36 @@ namespace System.Data.Odbc
         internal override DbConnectionPoolGroupProviderInfo CreateConnectionPoolGroupProviderInfo(DbConnectionOptions connectionOptions)
         {
             return new OdbcConnectionPoolGroupProviderInfo();
+        }
+
+        protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
+        {
+            Debug.Assert(internalConnection != null, "internalConnection may not be null.");
+            cacheMetaDataFactory = false;
+
+            OdbcConnection odbcOuterConnection = ((OdbcConnectionOpen)internalConnection).OuterConnection;
+            Debug.Assert(odbcOuterConnection != null, "outer connection may not be null.");
+
+            // get the DBMS Name
+            object driverName = null;
+            string stringValue = odbcOuterConnection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME);
+            if (stringValue != null)
+            {
+                driverName = stringValue;
+            }
+            
+            Stream XMLStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("System.Data.Odbc.OdbcMetaData.xml");
+            cacheMetaDataFactory = true;
+            
+
+            Debug.Assert(XMLStream != null, "XMLstream may not be null.");
+
+            String versionString = odbcOuterConnection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DBMS_VER);
+
+            return new OdbcMetaDataFactory(XMLStream,
+                                            versionString,
+                                            versionString,
+                                            odbcOuterConnection);
         }
 
         internal override DbConnectionPoolGroup GetConnectionPoolGroup(DbConnection connection)

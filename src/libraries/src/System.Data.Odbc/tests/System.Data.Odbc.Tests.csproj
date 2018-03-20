@@ -16,6 +16,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="IntegrationTestBase.cs" />
     <Compile Include="CommandBuilderTests.cs" />
+    <Compile Include="OdbcConnectionSchemaTests.cs" />
     <Compile Include="ReaderTests.cs" />
     <Compile Include="SmokeTest.cs" />
     <Compile Include="TestCommon\DataTestUtility.cs" />

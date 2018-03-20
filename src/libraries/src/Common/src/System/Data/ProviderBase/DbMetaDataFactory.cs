@@ -46,29 +46,11 @@ namespace System.Data.ProviderBase
             _normalizedServerVersion = normalizedServerVersion;
         }
 
-        protected DataSet CollectionDataSet
-        {
-            get
-            {
-                return _metaDataCollectionsDataSet;
-            }
-        }
+        protected DataSet CollectionDataSet => _metaDataCollectionsDataSet;
 
-        protected string ServerVersion
-        {
-            get
-            {
-                return _serverVersionString;
-            }
-        }
+        protected string ServerVersion => _serverVersionString;
 
-        protected string ServerVersionNormalized
-        {
-            get
-            {
-                return _normalizedServerVersion;
-            }
-        }
+        protected string ServerVersionNormalized => _normalizedServerVersion;
 
         protected DataTable CloneAndFilterCollection(string collectionName, string[] hiddenColumnNames)
         {
@@ -109,10 +91,7 @@ namespace System.Data.ProviderBase
             return destinationTable;
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         protected virtual void Dispose(bool disposing)
         {
@@ -216,11 +195,6 @@ namespace System.Data.ProviderBase
 
         private DataColumn[] FilterColumns(DataTable sourceTable, string[] hiddenColumnNames, DataColumnCollection destinationColumns)
         {
-
-            DataColumn newDestinationColumn;
-            int currentColumn;
-            DataColumn[] filteredSourceColumns = null;
-
             int columnCount = 0;
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
@@ -235,14 +209,14 @@ namespace System.Data.ProviderBase
                 throw ADP.NoColumns();
             }
 
-            currentColumn = 0;
-            filteredSourceColumns = new DataColumn[columnCount];
+            int currentColumn = 0;
+            DataColumn[] filteredSourceColumns = new DataColumn[columnCount];
 
             foreach (DataColumn sourceColumn in sourceTable.Columns)
             {
                 if (IncludeThisColumn(sourceColumn, hiddenColumnNames) == true)
                 {
-                    newDestinationColumn = new DataColumn(sourceColumn.ColumnName, sourceColumn.DataType);
+                    DataColumn newDestinationColumn = new DataColumn(sourceColumn.ColumnName, sourceColumn.DataType);
                     destinationColumns.Add(newDestinationColumn);
                     filteredSourceColumns[currentColumn] = sourceColumn;
                     currentColumn++;
@@ -375,7 +349,7 @@ namespace System.Data.ProviderBase
             DataColumn parameterName = null;
             DataColumn restrictionName = null;
             DataColumn restrictionNumber = null;
-            ;
+
             string result = null;
 
             restrictionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
@@ -587,6 +561,3 @@ namespace System.Data.ProviderBase
         }
     }
 }
-
-
-
