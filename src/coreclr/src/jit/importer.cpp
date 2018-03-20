@@ -19502,8 +19502,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
     // Fetch method attributes to see if method is marked final.
-    const DWORD derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
-    const bool  derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
+    DWORD      derivedMethodAttribs = info.compCompHnd->getMethodAttribs(derivedMethod);
+    const bool derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
 
 #if defined(DEBUG)
     const char* derivedClassName  = "?derivedClass";
@@ -19597,7 +19597,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         JITDUMP("Now have direct call to boxed entry point, looking for unboxed entry point\n");
 
         // Note for some shared methods the unboxed entry point requires an extra parameter.
-        // We defer optimizing if so.
         bool                  requiresInstMethodTableArg = false;
         CORINFO_METHOD_HANDLE unboxedEntryMethod =
             info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
@@ -19614,9 +19613,57 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             // the copy, we can undo the copy too.
             if (requiresInstMethodTableArg)
             {
-                // We can likely handle this case by grabbing the argument passed to
-                // the newobj in the box. But defer for now.
-                JITDUMP("Found unboxed entry point, but it needs method table arg, deferring\n");
+                // Perform a trial box removal and ask for the type handle tree.
+                JITDUMP("Unboxed entry needs method table arg...\n");
+                GenTree* methodTableArg = gtTryRemoveBoxUpstreamEffects(thisObj, BR_DONT_REMOVE_WANT_TYPE_HANDLE);
+
+                if (methodTableArg != nullptr)
+                {
+                    // If that worked, turn the box into a copy to a local var
+                    JITDUMP("Found suitable method table arg tree [%06u]\n", dspTreeID(methodTableArg));
+                    GenTree* localCopyThis = gtTryRemoveBoxUpstreamEffects(thisObj, BR_MAKE_LOCAL_COPY);
+
+                    if (localCopyThis != nullptr)
+                    {
+                        // Pass the local var as this and the type handle as a new arg
+                        JITDUMP("Success! invoking unboxed entry point on local copy, and passing method table arg\n");
+                        call->gtCallObjp = localCopyThis;
+
+                        // Prepend for R2L arg passing or empty L2R passing
+                        if ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (call->gtCallArgs == nullptr))
+                        {
+                            call->gtCallArgs = gtNewListNode(methodTableArg, call->gtCallArgs);
+                        }
+                        // Append for non-empty L2R
+                        else
+                        {
+                            GenTreeArgList* beforeArg = call->gtCallArgs;
+                            while (beforeArg->Rest() != nullptr)
+                            {
+                                beforeArg = beforeArg->Rest();
+                            }
+
+                            beforeArg->Rest() = gtNewListNode(methodTableArg, nullptr);
+                        }
+
+                        call->gtCallMethHnd = unboxedEntryMethod;
+                        derivedMethod       = unboxedEntryMethod;
+
+                        // Method attributes will differ because unboxed entry point is shared
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
+                        derivedMethodAttribs = unboxedMethodAttribs;
+                    }
+                    else
+                    {
+                        JITDUMP("Sorry, failed to undo the box -- can't convert to local copy\n");
+                    }
+                }
+                else
+                {
+                    JITDUMP("Sorry, failed to undo the box -- can't find method table arg\n");
+                }
             }
             else
             {
