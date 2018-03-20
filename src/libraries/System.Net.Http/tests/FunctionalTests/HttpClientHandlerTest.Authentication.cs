@@ -326,7 +326,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
-                        handler.PreAuthenticate = true;
+                    handler.PreAuthenticate = true;
                     handler.Credentials = s_credentials;
                     client.DefaultRequestHeaders.ExpectContinue = false;
 
@@ -334,7 +334,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         Assert.Equal(statusCode, resp.StatusCode);
                     }
-                    Assert.Equal("hello world 2", await client.GetStringAsync(uri));
+                    Assert.Equal("hello world", await client.GetStringAsync(uri));
                 }
             },
             async server =>
@@ -342,10 +342,10 @@ namespace System.Net.Http.Functional.Tests
                 List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, AuthResponse);
                 Assert.All(headers, header => Assert.DoesNotContain("Authorization", header));
 
-                headers = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode, content: "hello world 1");
+                headers = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode);
                 Assert.Contains(headers, header => header.Contains("Authorization"));
 
-                headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, content: "hello world 2");
+                headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, content: "hello world");
                 Assert.Contains(headers, header => header.Contains("Authorization"));
             });
         }
