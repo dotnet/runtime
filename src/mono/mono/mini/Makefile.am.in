@@ -907,11 +907,11 @@ EXTRA_DIST = TestDriver.cs \
 	Makefile.am.in
 
 version.h: Makefile
-	if test -d $(top_srcdir)/.git; then \
+	if test -e $(top_srcdir)/.git; then \
 		(cd $(top_srcdir); \
 			LANG=C; export LANG; \
 			if test -z "$$ghprbPullId"; then \
-				branch=`git branch | grep '^\*' | sed 's/(detached from .*/explicit/' | cut -d ' ' -f 2`; \
+				branch=`git branch | grep '^\*' | sed 's/.*detached .*/explicit/' | cut -d ' ' -f 2`; \
 			else \
 				branch="pull-request-$$ghprbPullId"; \
 			fi; \
