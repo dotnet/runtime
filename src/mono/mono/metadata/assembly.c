@@ -666,6 +666,39 @@ assembly_names_equal_flags (MonoAssemblyName *l, MonoAssemblyName *r, AssemblyNa
 	return TRUE;
 }
 
+/**
+ * assembly_names_compare_versions:
+ * \param l left assembly name
+ * \param r right assembly name
+ * \param maxcomps how many version components to compare, or -1 to compare all.
+ *
+ * \returns a negative if \p l is a lower version than \p r; a positive value
+ * if \p r is a lower version than \p l, or zero if \p l and \p r are equal
+ * versions (comparing upto \p maxcomps components).
+ *
+ * Components are \c major, \c minor, \c revision, and \c build. \p maxcomps 1 means just compare
+ * majors. 2 means majors then minors. etc.
+ */
+static int
+assembly_names_compare_versions (MonoAssemblyName *l, MonoAssemblyName *r, int maxcomps)
+{
+	int i = 0;
+	if (maxcomps < 0) maxcomps = 4;
+#define CMP(field) do {				\
+		if (l-> field < r-> field && i < maxcomps) return -1;	\
+		if (l-> field > r-> field && i < maxcomps) return 1;	\
+	} while (0)
+	CMP (major);
+	++i;
+	CMP (minor);
+	++i;
+	CMP (revision);
+	++i;
+	CMP (build);
+#undef CMP
+	return 0;
+}
+
 static MonoAssembly *
 load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status, MonoBoolean refonly, MonoAssemblyCandidatePredicate predicate, gpointer user_data)
 {
@@ -3582,10 +3615,19 @@ framework_assembly_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *ca
 			return result;
 		} else {
 			/* For facades, the name and public key token should
-			 * match, but the version doesn't matter. */
+			 * match, but the version doesn't matter as long as the
+			 * candidate is not older. */
 			gboolean result = assembly_names_equal_flags (wanted_name, candidate_name, ANAME_EQ_IGNORE_VERSION);
-			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match, returning TRUE" : "don't match, returning FALSE");
-			return result;
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s (ignoring version)", result ? "match" : "don't match, returning FALSE");
+			if (result) {
+				// compare major of candidate and wanted
+				int c = assembly_names_compare_versions (candidate_name, wanted_name, 1);
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate major version is %s wanted major version, returning %s\n", c == 0 ? "the same as" : (c < 0 ? "lower than" : "greater than"),
+					    (c >= 0) ? "TRUE" : "FALSE");
+				return (c >= 0);  // don't accept a candidate that's older than wanted.
+			} else {
+				return FALSE;
+			}
 		}
 	}
 #endif
