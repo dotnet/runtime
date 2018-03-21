@@ -46,7 +46,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return (hash << 5) - hash + (_pKey2 == null ? 0 : _pKey2.GetHashCode());
             }
         }
-
+        
+        // The RuntimeBinder uses a global lock when Binding that keeps these dictionary safe.
         // Two way hashes
         private static readonly Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType> s_aggregateTable =
                 new Dictionary<KeyPair<AggregateSymbol, KeyPair<AggregateType, TypeArray>>, AggregateType>();
@@ -66,12 +67,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static AggregateType LookupAggregate(AggregateSymbol aggregate, AggregateType outer, TypeArray args)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             s_aggregateTable.TryGetValue(MakeKey(aggregate, MakeKey(outer, args)), out AggregateType result);
             return result;
         }
 
         public static void InsertAggregate(AggregateSymbol aggregate, AggregateType outer, TypeArray args, AggregateType ats)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             Debug.Assert(LookupAggregate(aggregate, outer, args) == null);
             s_aggregateTable.Add(MakeKey(aggregate, MakeKey(outer, args)), ats);
         }
@@ -79,24 +82,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // rankNum is 0 for SZ arrays, equal to rank otherwise.
         public static ArrayType LookupArray(CType elementType, int rankNum)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             s_arrayTable.TryGetValue(new KeyPair<CType, int>(elementType, rankNum), out ArrayType result);
             return result;
         }
 
         public static void InsertArray(CType elementType, int rankNum, ArrayType pArray)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             Debug.Assert(LookupArray(elementType, rankNum) == null);
             s_arrayTable.Add(new KeyPair<CType, int>(elementType, rankNum), pArray);
         }
 
         public static ParameterModifierType LookupParameterModifier(CType elementType, bool isOut)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             s_parameterModifierTable.TryGetValue(new KeyPair<CType, bool>(elementType, isOut), out ParameterModifierType result);
             return result;
         }
 
         public static void InsertParameterModifier(CType elementType, bool isOut, ParameterModifierType parameterModifier)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             Debug.Assert(LookupParameterModifier(elementType, isOut) == null);
             s_parameterModifierTable.Add(new KeyPair<CType, bool>(elementType, isOut), parameterModifier);
         }
