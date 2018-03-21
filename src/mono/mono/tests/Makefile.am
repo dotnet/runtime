@@ -535,6 +535,7 @@ TESTS_CS_SRC=		\
 	threads-init.cs \
 	bug-60848.cs \
 	bug-59400.cs \
+	tailcall-interface.cs \
 	sizeof-empty-structs.cs
 
 if AMD64
@@ -569,6 +570,8 @@ TESTS_IL_SRC=			\
 	tailcall-rgctxa.il 	\
 	tailcall-rgctxb.il 	\
 	tailcall-mrgctx.il 	\
+	tailcall-interface-conservestack.il \
+	tailcall-interface-justrun.il \
 	field-access.il		\
 	method-access.il	\
 	ldftn-access.il		\
@@ -702,6 +705,7 @@ TESTS_GSHARED_SRC = \
 	generic-type-builder.2.cs
 
 PLATFORM_DISABLED_TESTS=\
+	tailcall-interface-conservestack.exe \
 	tailcall-rgctxb.exe
 
 # tailcall-virt only currently implemented on AMD64 (JIT, AOT, LLVM).
