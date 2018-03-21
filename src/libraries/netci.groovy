@@ -346,68 +346,6 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
 } // isPR
 
 // **************************
-// Define Linux ARM64 cross builds. These jobs run on every merge.
-// Some jobs run on every PR. The ones that don't run per PR can be requested via a phrase.
-// **************************
-[true, false].each { isPR ->
-    ['netcoreapp'].each { targetGroup ->
-        ['Debug', 'Release'].each { configurationGroup ->
-            def osGroup = "Linux"
-            def archGroup = 'arm64'
-            def osName = 'Ubuntu16.04'
-
-            def newJobName = "${osName.toLowerCase()}_arm64_cross_${configurationGroup.toLowerCase()}"
-
-            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                steps {
-                    // Call the arm64_ci_script.sh script to perform the cross build of native corefx
-                    def script = "./cross/arm64_ci_script.sh --buildConfig=${configurationGroup.toLowerCase()}"
-                    shell(script)
-
-                    // Tar up the appropriate bits.
-                    shell("tar -czf bin/build.tar.gz --directory=\"bin/Linux.${archGroup}.${configurationGroup}/native\" .")
-                }
-            }
-
-            // The cross build jobs run on Ubuntu. The arm-cross-latest version
-            // contains the packages needed for cross building corefx
-            Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
-
-            // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-
-            // Add archival for the built binaries
-            def archiveContents = "bin/build.tar.gz"
-            Utilities.addArchival(newJob, archiveContents)
-
-            newJob.with {
-                publishers {
-                    azureVMAgentPostBuildAction {
-                        agentPostBuildAction('Delete agent after build execution (when idle).')
-                    }
-                }
-            }
-
-            // Set up triggers
-            if (isPR) {
-                if (configurationGroup == "Release") {
-                    // Run Arm64 Linux Release job automatically for PR builds
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} arm64 ${configurationGroup} Build")
-                }
-                else {
-                    // Add Arm64 Linux Debug job hook
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} arm64 ${configurationGroup} Build", "(?i).*test\\W+${osName}\\W+arm64\\W+${configurationGroup}.*")
-                }
-            }
-            else {
-                // Set a push trigger
-                Utilities.addGithubPushTrigger(newJob)
-            }
-        } // configurationGroup
-    } // targetGroup
-} // isPR
-
-// **************************
 // Define Linux x86 builds. These jobs run daily and results will be used for CoreCLR test
 // TODO: innerloop & outerloop testing & merge to general job generation routine
 // **************************
