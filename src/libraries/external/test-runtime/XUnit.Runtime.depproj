@@ -182,16 +182,10 @@
           SkipUnchangedFiles="true"/>
   </Target>
 
-<!--
-  
-  Disable this check until we get the CoreCLR and TFS versions of System.Private.CoreLib back in sync after recent breaking changes.
-  https://github.com/dotnet/corefx/issues/27619
-
   <Target Name="VerifyMatchingProjectNVersions"
           BeforeTargets="Build">
     <Error Condition="'$(ProjectNTfsExpectedPrerelease)' != '$(ProjectNTfsTestILCExpectedPrerelease)'" Text="The versions of ProjectN Targeting pack and TestILC have gone out of sync. Please make sure both of the prerelease versions on dependencies.props match." />
   </Target>
--->
 
   <Target Name="CopyTestILCToolsToTestHost"
           AfterTargets="RestorePackages"
