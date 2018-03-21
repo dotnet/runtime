@@ -1524,7 +1524,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			ainfo->storage = RegTypeStructByVal;
 			ainfo->struct_size = size;
 			ainfo->align = align;
-			/* FIXME: align stack_size if needed */
+
 			if (eabi_supported) {
 				if (align >= 8 && (gr & 1))
 					gr ++;
@@ -1542,9 +1542,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				gr += n_in_regs;
 				nwords -= n_in_regs;
 			}
-			if (sig->call_convention == MONO_CALL_VARARG)
-				/* This matches the alignment in mono_ArgIterator_IntGetNextArg () */
-				stack_size = ALIGN_TO (stack_size, align);
+			stack_size = ALIGN_TO (stack_size, align);
+
 			ainfo->offset = stack_size;
 			/*g_print ("offset for arg %d at %d\n", n, stack_size);*/
 			stack_size += nwords * sizeof (gpointer);

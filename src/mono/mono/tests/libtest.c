@@ -280,6 +280,25 @@ mono_return_nested_float (void)
 	return f;
 }
 
+struct Scalar4 {
+	double val[4];
+};
+
+struct Rect {
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
+LIBTEST_API char * STDCALL
+mono_return_struct_4_double (void *ptr, struct Rect rect, struct Scalar4 sc4, int a, int b, int c)
+{
+	char *buffer = (char *) malloc (1024 * sizeof (char));
+	sprintf (buffer, "sc4 = {%.1f, %.1f, %.1f, %.1f }, a=%x, b=%x, c=%x\n", (float) sc4.val [0], (float) sc4.val [1], (float) sc4.val [2], (float) sc4.val [3], a, b, c);
+	return buffer;
+}
+
 LIBTEST_API int STDCALL  
 mono_test_many_int_arguments (int a, int b, int c, int d, int e,
 							  int f, int g, int h, int i, int j);

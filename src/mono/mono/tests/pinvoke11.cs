@@ -60,6 +60,39 @@ public struct NestedFloat {
 	public float f4;
 }
 
+[Serializable]
+[StructLayout(LayoutKind.Sequential)]
+public struct Rectangle
+{
+	public int X;
+	public int Y;
+	public int Width;
+	public int Height;
+
+	public Rectangle(int x, int y, int width, int height)
+	{
+		X = x;
+		Y = y;
+		Width = width;
+		Height = height;
+	}
+}
+
+[Serializable]
+public struct Scalar4 {
+	public double Val0;
+	public double Val1;
+	public double Val2;
+	public double Val3;
+
+	public Scalar4 (double v0, double v1, double v2, double v3) {
+		Val0 = v0;
+		Val1 = v1;
+		Val2 = v2;
+		Val3 = v3;
+	}
+}
+
 public class Test
 {
 	[DllImport ("libtest")]
@@ -88,6 +121,10 @@ public class Test
 
 	[DllImport ("libtest", EntryPoint="mono_return_nested_float")]
 	public static extern NestedFloat mono_return_nested_float ();
+
+	[DllImport("libtest", EntryPoint="mono_return_struct_4_double")]
+	[return: MarshalAs(UnmanagedType.LPStr)]
+	public static extern string mono_return_struct_4_double (IntPtr ptr, Rectangle rect, Scalar4 sc4, int a, int b, int c);
 
         static int Main()
         {
@@ -158,6 +195,14 @@ public class Test
 		var f = mono_return_nested_float ();
 		if (f.fi.f1 != 1.0)
 			return 12;
+
+		Rectangle rect = new Rectangle (10, 10, 100, 20);
+		Scalar4 sc4 = new Scalar4 (32, 64, 128, 256);
+		var sc4_ret = mono_return_struct_4_double (IntPtr.Zero, rect, sc4, 0x1337, 0x1234, 0x9876);
+		if (sc4_ret != "sc4 = {32.0, 64.0, 128.0, 256.0 }, a=1337, b=1234, c=9876\n") {
+			Console.WriteLine ("sc4_ret = " + sc4_ret);
+			return 13;
+		}
 
 		return 0;
         }
