@@ -122,6 +122,12 @@ namespace System.MemoryTests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop framework doesn't support large arrays by default.")]
         public static void OwnedMemoryPinLargeArray()
         {
+            // Early-out: we can only run this test on 64-bit platforms.
+            if (IntPtr.Size == 4)
+            {
+                return;
+            }
+
             int[] array = new int[0x2000_0000]; // will produce array with total byte length > 2 GB
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
             Assert.Throws<ArgumentOutOfRangeException>(() => owner.Pin(int.MinValue));
