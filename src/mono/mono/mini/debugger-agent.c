@@ -5101,9 +5101,9 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	
 	if (ss_reqs->len > 0)
 		ss_events = create_event_list (EVENT_KIND_STEP, ss_reqs, ji, NULL, &suspend_policy);
-	if (bp_reqs->len > 0)
+	else if (bp_reqs->len > 0)
 		bp_events = create_event_list (EVENT_KIND_BREAKPOINT, bp_reqs, ji, NULL, &suspend_policy);
-	if (kind != EVENT_KIND_BREAKPOINT)
+	else if (kind != EVENT_KIND_BREAKPOINT)
 		enter_leave_events = create_event_list (kind, NULL, ji, NULL, &suspend_policy);
 
 	mono_loader_unlock ();
