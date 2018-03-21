@@ -995,10 +995,6 @@
       "value": null,
       "isSecret": true
     },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
-      "allowOverride": true
-    },
     "DOTNET_BUILD_CONTAINER_TAG": {
       "value": "core-setup-$(PB_DockerOS)-$(Build.BuildId)"
     },
