@@ -5,10 +5,6 @@
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <FilePackageDependency Include="System.Collections.Immutable">
-      <TargetFramework>portable-net45+win8</TargetFramework>
-      <Version>1.1.37</Version>
-    </FilePackageDependency>
     
     <!-- Since UAP and .NETCoreApp are package based we still want to enable
          OOBing libraries that happen to overlap with their framework package.
