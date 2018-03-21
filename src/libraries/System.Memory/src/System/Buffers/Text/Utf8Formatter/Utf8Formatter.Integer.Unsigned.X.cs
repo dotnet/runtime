@@ -9,14 +9,14 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatUInt64X(ulong value, byte precision, bool useLower, Span<byte> buffer, out int bytesWritten)
+        private static bool TryFormatUInt64X(ulong value, byte precision, bool useLower, Span<byte> destination, out int bytesWritten)
         {
             int actualDigitCount = FormattingHelpers.CountHexDigits(value);
             int computedOutputLength = (precision == StandardFormat.NoPrecision)
                 ? actualDigitCount
                 : Math.Max(precision, actualDigitCount);
 
-            if (buffer.Length < computedOutputLength)
+            if (destination.Length < computedOutputLength)
             {
                 bytesWritten = 0;
                 return false;
@@ -35,9 +35,9 @@ namespace System.Buffers.Text
             // casing output lengths of 2, 4, 8, and 16 and running them down optimized
             // code paths.
 
-            while ((uint)(--computedOutputLength) < (uint)buffer.Length)
+            while ((uint)(--computedOutputLength) < (uint)destination.Length)
             {
-                buffer[computedOutputLength] = (byte)hexTable[(int)value & 0xf];
+                destination[computedOutputLength] = (byte)hexTable[(int)value & 0xf];
                 value >>= 4;
             }
             return true;

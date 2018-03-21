@@ -14,13 +14,13 @@ namespace System.Buffers.Text
             AllowExponent = 0x00000001,
         }
 
-        private static bool TryParseNumber(ReadOnlySpan<byte> text, ref NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation)
+        private static bool TryParseNumber(ReadOnlySpan<byte> source, ref NumberBuffer number, out int bytesConsumed, ParseNumberOptions options, out bool textUsedExponentNotation)
         {
             Debug.Assert(number.Digits[0] == 0 && number.Scale == 0 && !number.IsNegative, "Number not initialized to default(NumberBuffer)");
 
             textUsedExponentNotation = false;
 
-            if (text.Length == 0)
+            if (source.Length == 0)
             {
                 bytesConsumed = 0;
                 return false;
@@ -32,7 +32,7 @@ namespace System.Buffers.Text
             int dstIndex = 0;
 
             // Consume the leading sign if any.
-            byte c = text[srcIndex];
+            byte c = source[srcIndex];
             switch (c)
             {
                 case Utf8Constants.Minus:
@@ -41,12 +41,12 @@ namespace System.Buffers.Text
 
                 case Utf8Constants.Plus:
                     srcIndex++;
-                    if (srcIndex == text.Length)
+                    if (srcIndex == source.Length)
                     {
                         bytesConsumed = 0;
                         return false;
                     }
-                    c = text[srcIndex];
+                    c = source[srcIndex];
                     break;
 
                 default:
@@ -56,15 +56,15 @@ namespace System.Buffers.Text
             int startIndexDigitsBeforeDecimal = srcIndex;
 
             // Throw away any leading zeroes
-            while (srcIndex != text.Length)
+            while (srcIndex != source.Length)
             {
-                c = text[srcIndex];
+                c = source[srcIndex];
                 if (c != '0')
                     break;
                 srcIndex++;
             }
 
-            if (srcIndex == text.Length)
+            if (srcIndex == source.Length)
             {
                 digits[0] = 0;
                 number.Scale = 0;
@@ -74,9 +74,9 @@ namespace System.Buffers.Text
             }
 
             int startIndexNonLeadingDigitsBeforeDecimal = srcIndex;
-            while (srcIndex != text.Length)
+            while (srcIndex != source.Length)
             {
-                c = text[srcIndex];
+                c = source[srcIndex];
                 if ((c - 48u) > 9)
                     break;
                 srcIndex++;
@@ -87,11 +87,11 @@ namespace System.Buffers.Text
 
             Debug.Assert(dstIndex == 0);
             int numNonLeadingDigitsBeforeDecimalToCopy = Math.Min(numNonLeadingDigitsBeforeDecimal, NumberBuffer.BufferSize - 1);
-            text.Slice(startIndexNonLeadingDigitsBeforeDecimal, numNonLeadingDigitsBeforeDecimalToCopy).CopyTo(digits);
+            source.Slice(startIndexNonLeadingDigitsBeforeDecimal, numNonLeadingDigitsBeforeDecimalToCopy).CopyTo(digits);
             dstIndex = numNonLeadingDigitsBeforeDecimalToCopy;
             number.Scale = numNonLeadingDigitsBeforeDecimal;
 
-            if (srcIndex == text.Length)
+            if (srcIndex == source.Length)
             {
                 bytesConsumed = srcIndex;
                 number.CheckConsistency();
@@ -107,9 +107,9 @@ namespace System.Buffers.Text
 
                 srcIndex++;
                 int startIndexDigitsAfterDecimal = srcIndex;
-                while (srcIndex != text.Length)
+                while (srcIndex != source.Length)
                 {
-                    c = text[srcIndex];
+                    c = source[srcIndex];
                     if ((c - 48u) > 9)
                         break;
                     srcIndex++;
@@ -120,7 +120,7 @@ namespace System.Buffers.Text
                 if (dstIndex == 0)
                 {
                     // Not copied any digits to the Number struct yet. This means we must continue discarding leading zeroes even though they appeared after the decimal point.
-                    while (startIndexOfDigitsAfterDecimalToCopy < srcIndex && text[startIndexOfDigitsAfterDecimalToCopy] == '0')
+                    while (startIndexOfDigitsAfterDecimalToCopy < srcIndex && source[startIndexOfDigitsAfterDecimalToCopy] == '0')
                     {
                         number.Scale--;
                         startIndexOfDigitsAfterDecimalToCopy++;
@@ -128,11 +128,11 @@ namespace System.Buffers.Text
                 }
 
                 int numDigitsAfterDecimalToCopy = Math.Min(srcIndex - startIndexOfDigitsAfterDecimalToCopy, NumberBuffer.BufferSize - dstIndex - 1);
-                text.Slice(startIndexOfDigitsAfterDecimalToCopy, numDigitsAfterDecimalToCopy).CopyTo(digits.Slice(dstIndex));
+                source.Slice(startIndexOfDigitsAfterDecimalToCopy, numDigitsAfterDecimalToCopy).CopyTo(digits.Slice(dstIndex));
                 dstIndex += numDigitsAfterDecimalToCopy;
                 // We "should" really NUL terminate, but there are multiple places we'd have to do this and it is a precondition that the caller pass in a fully zero=initialized Number.
 
-                if (srcIndex == text.Length)
+                if (srcIndex == source.Length)
                 {
                     if (numDigitsBeforeDecimal == 0 && numDigitsAfterDecimal == 0)
                     {
@@ -172,14 +172,14 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            if (srcIndex == text.Length)
+            if (srcIndex == source.Length)
             {
                 bytesConsumed = 0;
                 return false;
             }
 
             bool exponentIsNegative = false;
-            c = text[srcIndex];
+            c = source[srcIndex];
             switch (c)
             {
                 case Utf8Constants.Minus:
@@ -188,19 +188,19 @@ namespace System.Buffers.Text
 
                 case Utf8Constants.Plus:
                     srcIndex++;
-                    if (srcIndex == text.Length)
+                    if (srcIndex == source.Length)
                     {
                         bytesConsumed = 0;
                         return false;
                     }
-                    c = text[srcIndex];
+                    c = source[srcIndex];
                     break;
 
                 default:
                     break;
             }
 
-            if (!Utf8Parser.TryParseUInt32D(text.Slice(srcIndex), out uint absoluteExponent, out int bytesConsumedByExponent))
+            if (!Utf8Parser.TryParseUInt32D(source.Slice(srcIndex), out uint absoluteExponent, out int bytesConsumedByExponent))
             {
                 bytesConsumed = 0;
                 return false;

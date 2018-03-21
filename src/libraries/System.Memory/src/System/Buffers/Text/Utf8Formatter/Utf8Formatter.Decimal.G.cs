@@ -9,7 +9,7 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatDecimalG(ref NumberBuffer number, Span<byte> buffer, out int bytesWritten)
+        private static bool TryFormatDecimalG(ref NumberBuffer number, Span<byte> destination, out int bytesWritten)
         {
             int scale = number.Scale;
             ReadOnlySpan<byte> digits = number.Digits;
@@ -35,7 +35,7 @@ namespace System.Buffers.Text
                 numBytesNeeded++; // And the minus sign.
             }
 
-            if (buffer.Length < numBytesNeeded)
+            if (destination.Length < numBytesNeeded)
             {
                 bytesWritten = 0;
                 return false;
@@ -46,7 +46,7 @@ namespace System.Buffers.Text
 
             if (number.IsNegative)
             {
-                buffer[dstIndex++] = Utf8Constants.Minus;
+                destination[dstIndex++] = Utf8Constants.Minus;
             }
 
             //
@@ -54,7 +54,7 @@ namespace System.Buffers.Text
             //
             if (scale <= 0)
             {
-                buffer[dstIndex++] = (byte)'0';  // The integer portion is 0 and not stored. The formatter, however, needs to emit it.
+                destination[dstIndex++] = (byte)'0';  // The integer portion is 0 and not stored. The formatter, however, needs to emit it.
             }
             else
             {
@@ -66,19 +66,19 @@ namespace System.Buffers.Text
                         int numTrailingZeroes = scale - srcIndex;
                         for (int i = 0; i < numTrailingZeroes; i++)
                         {
-                            buffer[dstIndex++] = (byte)'0';
+                            destination[dstIndex++] = (byte)'0';
                         }
                         break;
                     }
 
-                    buffer[dstIndex++] = digit;
+                    destination[dstIndex++] = digit;
                     srcIndex++;
                 }
             }
 
             if (isFraction)
             {
-                buffer[dstIndex++] = Utf8Constants.Period;
+                destination[dstIndex++] = Utf8Constants.Period;
 
                 //
                 // Emit digits after the decimal point.
@@ -88,14 +88,14 @@ namespace System.Buffers.Text
                     int numLeadingZeroesToEmit = -scale;
                     for (int i = 0; i < numLeadingZeroesToEmit; i++)
                     {
-                        buffer[dstIndex++] = (byte)'0';
+                        destination[dstIndex++] = (byte)'0';
                     }
                 }
 
                 byte digit;
                 while ((digit = digits[srcIndex++]) != 0)
                 {
-                    buffer[dstIndex++] = digit;
+                    destination[dstIndex++] = digit;
                 }
             }
 

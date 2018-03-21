@@ -8,7 +8,7 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatDecimalE(ref NumberBuffer number, Span<byte> buffer, out int bytesWritten, byte precision, byte exponentSymbol)
+        private static bool TryFormatDecimalE(ref NumberBuffer number, Span<byte> destination, out int bytesWritten, byte precision, byte exponentSymbol)
         {
             const int NumExponentDigits = 3;
 
@@ -22,7 +22,7 @@ namespace System.Buffers.Text
                 + 2  // 'E' or 'e' followed by '+' or '-'
                 + NumExponentDigits; // exponent digits
 
-            if (buffer.Length < numBytesNeeded)
+            if (destination.Length < numBytesNeeded)
             {
                 bytesWritten = 0;
                 return false;
@@ -32,7 +32,7 @@ namespace System.Buffers.Text
             int srcIndex = 0;
             if (number.IsNegative)
             {
-                buffer[dstIndex++] = Utf8Constants.Minus;
+                destination[dstIndex++] = Utf8Constants.Minus;
             }
 
             //
@@ -42,19 +42,19 @@ namespace System.Buffers.Text
             byte firstDigit = digits[srcIndex];
             if (firstDigit == 0)
             {
-                buffer[dstIndex++] = (byte)'0';  // Special case: number before the decimal point is exactly 0: Number does not store the zero in this case.
+                destination[dstIndex++] = (byte)'0';  // Special case: number before the decimal point is exactly 0: Number does not store the zero in this case.
                 exponent = 0;
             }
             else
             {
-                buffer[dstIndex++] = firstDigit;
+                destination[dstIndex++] = firstDigit;
                 srcIndex++;
                 exponent = scale - 1;
             }
 
             if (precision > 0)
             {
-                buffer[dstIndex++] = Utf8Constants.Period;
+                destination[dstIndex++] = Utf8Constants.Period;
 
                 //
                 // Emit digits after the decimal point.
@@ -67,34 +67,34 @@ namespace System.Buffers.Text
                     {
                         while (numDigitsEmitted++ < precision)
                         {
-                            buffer[dstIndex++] = (byte)'0';
+                            destination[dstIndex++] = (byte)'0';
                         }
                         break;
                     }
-                    buffer[dstIndex++] = digit;
+                    destination[dstIndex++] = digit;
                     srcIndex++;
                     numDigitsEmitted++;
                 }
             }
 
             // Emit the exponent symbol
-            buffer[dstIndex++] = exponentSymbol;
+            destination[dstIndex++] = exponentSymbol;
             if (exponent >= 0)
             {
-                buffer[dstIndex++] = Utf8Constants.Plus;
+                destination[dstIndex++] = Utf8Constants.Plus;
             }
             else
             {
-                buffer[dstIndex++] = Utf8Constants.Minus;
+                destination[dstIndex++] = Utf8Constants.Minus;
                 exponent = -exponent;
             }
 
             Debug.Assert(exponent < Number.DECIMAL_PRECISION, "If you're trying to reuse this routine for double/float, you'll need to review the code carefully for Decimal-specific assumptions.");
 
             // Emit exactly three digits for the exponent.
-            buffer[dstIndex++] = (byte)'0'; // The exponent for Decimal can never exceed 28 (let alone 99)
-            buffer[dstIndex++] = (byte)((exponent / 10) + '0');
-            buffer[dstIndex++] = (byte)((exponent % 10) + '0');
+            destination[dstIndex++] = (byte)'0'; // The exponent for Decimal can never exceed 28 (let alone 99)
+            destination[dstIndex++] = (byte)((exponent / 10) + '0');
+            destination[dstIndex++] = (byte)((exponent % 10) + '0');
 
             Debug.Assert(dstIndex == numBytesNeeded);
             bytesWritten = numBytesNeeded;

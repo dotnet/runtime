@@ -9,7 +9,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a Guid at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -27,19 +27,19 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out Guid value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out Guid value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
                 case default(char):
                 case 'D':
-                    return TryParseGuidCore(text, false, ' ', ' ', out value, out bytesConsumed);
+                    return TryParseGuidCore(source, false, ' ', ' ', out value, out bytesConsumed);
                 case 'B':
-                    return TryParseGuidCore(text, true, '{', '}', out value, out bytesConsumed);
+                    return TryParseGuidCore(source, true, '{', '}', out value, out bytesConsumed);
                 case 'P':
-                    return TryParseGuidCore(text, true, '(', ')', out value, out bytesConsumed);
+                    return TryParseGuidCore(source, true, '(', ')', out value, out bytesConsumed);
                 case 'N':
-                    return TryParseGuidN(text, out value, out bytesConsumed);
+                    return TryParseGuidN(source, out value, out bytesConsumed);
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
             }
@@ -97,11 +97,11 @@ namespace System.Buffers.Text
         }
 
         // {8-4-4-4-12}, where number is the number of hex digits, and {/} are ends.
-        private static bool TryParseGuidCore(ReadOnlySpan<byte> text, bool ends, char begin, char end, out Guid value, out int bytesConsumed)
+        private static bool TryParseGuidCore(ReadOnlySpan<byte> source, bool ends, char begin, char end, out Guid value, out int bytesConsumed)
         {
             int expectedCodingUnits = 36 + (ends ? 2 : 0); // 32 hex digits + 4 delimiters + 2 optional ends
 
-            if (text.Length < expectedCodingUnits)
+            if (source.Length < expectedCodingUnits)
             {
                 value = default;
                 bytesConsumed = 0;
@@ -110,17 +110,17 @@ namespace System.Buffers.Text
 
             if (ends)
             {
-                if (text[0] != begin)
+                if (source[0] != begin)
                 {
                     value = default;
                     bytesConsumed = 0;
                     return false;
                 }
 
-                text = text.Slice(1); // skip begining
+                source = source.Slice(1); // skip begining
             }
 
-            if (!TryParseUInt32X(text, out uint i1, out int justConsumed))
+            if (!TryParseUInt32X(source, out uint i1, out int justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -134,39 +134,16 @@ namespace System.Buffers.Text
                 return false; // 8 digits
             }
 
-            if (text[justConsumed] != '-')
+            if (source[justConsumed] != '-')
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            text = text.Slice(9); // justConsumed + 1 for delimiter
+            source = source.Slice(9); // justConsumed + 1 for delimiter
 
-            if (!TryParseUInt16X(text, out ushort i2, out justConsumed))
-            {
-                value = default;
-                bytesConsumed = 0;
-                return false;
-            }
-
-            if (justConsumed != 4)
-            {
-                value = default;
-                bytesConsumed = 0;
-                return false; // 4 digits
-            }
-
-            if (text[justConsumed] != '-')
-            {
-                value = default;
-                bytesConsumed = 0;
-                return false;
-            }
-
-            text = text.Slice(5); // justConsumed + 1 for delimiter
-
-            if (!TryParseUInt16X(text, out ushort i3, out justConsumed))
+            if (!TryParseUInt16X(source, out ushort i2, out justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -180,16 +157,16 @@ namespace System.Buffers.Text
                 return false; // 4 digits
             }
 
-            if (text[justConsumed] != '-')
+            if (source[justConsumed] != '-')
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            text = text.Slice(5); // justConsumed + 1 for delimiter
+            source = source.Slice(5); // justConsumed + 1 for delimiter
 
-            if (!TryParseUInt16X(text, out ushort i4, out justConsumed))
+            if (!TryParseUInt16X(source, out ushort i3, out justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -203,16 +180,39 @@ namespace System.Buffers.Text
                 return false; // 4 digits
             }
 
-            if (text[justConsumed] != '-')
+            if (source[justConsumed] != '-')
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            text = text.Slice(5);// justConsumed + 1 for delimiter
+            source = source.Slice(5); // justConsumed + 1 for delimiter
 
-            if (!TryParseUInt64X(text, out ulong i5, out justConsumed))
+            if (!TryParseUInt16X(source, out ushort i4, out justConsumed))
+            {
+                value = default;
+                bytesConsumed = 0;
+                return false;
+            }
+
+            if (justConsumed != 4)
+            {
+                value = default;
+                bytesConsumed = 0;
+                return false; // 4 digits
+            }
+
+            if (source[justConsumed] != '-')
+            {
+                value = default;
+                bytesConsumed = 0;
+                return false;
+            }
+
+            source = source.Slice(5);// justConsumed + 1 for delimiter
+
+            if (!TryParseUInt64X(source, out ulong i5, out justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -226,7 +226,7 @@ namespace System.Buffers.Text
                 return false; // 12 digits
             }
 
-            if (ends && text[justConsumed] != end)
+            if (ends && source[justConsumed] != end)
             {
                 value = default;
                 bytesConsumed = 0;

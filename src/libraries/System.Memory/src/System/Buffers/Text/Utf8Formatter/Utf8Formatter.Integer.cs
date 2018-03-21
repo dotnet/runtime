@@ -13,7 +13,7 @@ namespace System.Buffers.Text
         /// Formats a Byte as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -30,14 +30,14 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(byte value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, buffer, out bytesWritten, format);
+        public static bool TryFormat(byte value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatUInt64(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an SByte as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -55,14 +55,14 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(sbyte value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xff, buffer, out bytesWritten, format);
+        public static bool TryFormat(sbyte value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatInt64(value, 0xff, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats a Unt16 as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -80,14 +80,14 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(ushort value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, buffer, out bytesWritten, format);
+        public static bool TryFormat(ushort value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatUInt64(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an Int16 as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -104,14 +104,14 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(short value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xffff, buffer, out bytesWritten, format);
+        public static bool TryFormat(short value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatInt64(value, 0xffff, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats a UInt32 as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -129,14 +129,14 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(uint value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, buffer, out bytesWritten, format);
+        public static bool TryFormat(uint value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatUInt64(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an Int32 as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -153,14 +153,14 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(int value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xffffffff, buffer, out bytesWritten, format);
+        public static bool TryFormat(int value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatInt64(value, 0xffffffff, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats a UInt64 as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -178,14 +178,14 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryFormat(ulong value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatUInt64(value, buffer, out bytesWritten, format);
+        public static bool TryFormat(ulong value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatUInt64(value, destination, out bytesWritten, format);
 
         /// <summary>
         /// Formats an Int64 as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -202,7 +202,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(long value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-            => TryFormatInt64(value, 0xffffffffffffffff, buffer, out bytesWritten, format);
+        public static bool TryFormat(long value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+            => TryFormatInt64(value, 0xffffffffffffffff, destination, out bytesWritten, format);
     }
 }

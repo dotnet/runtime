@@ -19,7 +19,7 @@ namespace System.Buffers.Text
         //    --------------------------
         //    05/25/2017 10:30:15 -08:00
         //
-        private static bool TryFormatDateTimeG(DateTime value, TimeSpan offset, Span<byte> buffer, out int bytesWritten)
+        private static bool TryFormatDateTimeG(DateTime value, TimeSpan offset, Span<byte> destination, out int bytesWritten)
         {
             const int MinimumBytesNeeded = 19;
 
@@ -30,7 +30,7 @@ namespace System.Buffers.Text
                 bytesRequired += 7; // Space['+'|'-']hh:mm
             }
 
-            if (buffer.Length < bytesRequired)
+            if (destination.Length < bytesRequired)
             {
                 bytesWritten = 0;
                 return false;
@@ -39,28 +39,28 @@ namespace System.Buffers.Text
             bytesWritten = bytesRequired;
 
             // Hoist most of the bounds checks on buffer.
-            { var unused = buffer[MinimumBytesNeeded - 1]; }
+            { var unused = destination[MinimumBytesNeeded - 1]; }
 
             // TODO: Introduce an API which can parse DateTime instances efficiently, pulling out
             // all their properties (Month, Day, etc.) in one shot. This would help avoid the
             // duplicate work that implicitly results from calling these properties individually.
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Month, buffer, 0);
-            buffer[2] = Utf8Constants.Slash;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Month, destination, 0);
+            destination[2] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, buffer, 3);
-            buffer[5] = Utf8Constants.Slash;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, destination, 3);
+            destination[5] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, buffer, 6);
-            buffer[10] = Utf8Constants.Space;
+            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, destination, 6);
+            destination[10] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, buffer, 11);
-            buffer[13] = Utf8Constants.Colon;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, destination, 11);
+            destination[13] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, buffer, 14);
-            buffer[16] = Utf8Constants.Colon;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, destination, 14);
+            destination[16] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, buffer, 17);
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, destination, 17);
 
             if (offset != Utf8Constants.s_nullUtcOffset)
             {
@@ -79,11 +79,11 @@ namespace System.Buffers.Text
                 // Writing the value backward allows the JIT to optimize by
                 // performing a single bounds check against buffer.
 
-                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Minutes, buffer, 24);
-                buffer[23] = Utf8Constants.Colon;
-                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Hours, buffer, 21);
-                buffer[20] = sign;
-                buffer[19] = Utf8Constants.Space;
+                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Minutes, destination, 24);
+                destination[23] = Utf8Constants.Colon;
+                FormattingHelpers.WriteTwoDecimalDigits((uint)offset.Hours, destination, 21);
+                destination[20] = sign;
+                destination[19] = Utf8Constants.Space;
             }
 
             return true;

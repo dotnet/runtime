@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
     public static partial class MemoryMarshal
     {
         /// <summary>Creates a <see cref="Memory{T}"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
-        /// <param name="readOnlyMemory">The <see cref="ReadOnlyMemory{T}"/>.</param>
+        /// <param name="memory">The <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <returns>A <see cref="Memory{T}"/> representing the same memory as the <see cref="ReadOnlyMemory{T}"/>, but writable.</returns>
         /// <remarks>
         /// <see cref="AsMemory{T}(ReadOnlyMemory{T})"/> must be used with extreme caution.  <see cref="ReadOnlyMemory{T}"/> is used
@@ -21,8 +21,8 @@ namespace System.Runtime.InteropServices
         /// by <see cref="AsMemory{T}(ReadOnlyMemory{T})"/> should not be written to.  The method exists to enable variables typed
         /// as <see cref="Memory{T}"/> but only used for reading to store a <see cref="ReadOnlyMemory{T}"/>.
         /// </remarks>
-        public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> readOnlyMemory) =>
-            Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref readOnlyMemory);
+        public static Memory<T> AsMemory<T>(ReadOnlyMemory<T> memory) =>
+            Unsafe.As<ReadOnlyMemory<T>, Memory<T>>(ref memory);
 
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to the location where the 0th element
@@ -55,11 +55,11 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// Supported only for platforms that support misaligned memory access.
         /// </remarks>
-        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
+        /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
-        public static Span<TTo> Cast<TFrom, TTo>(Span<TFrom> source)
+        public static Span<TTo> Cast<TFrom, TTo>(Span<TFrom> span)
             where TFrom : struct
             where TTo : struct
         {
@@ -69,8 +69,8 @@ namespace System.Runtime.InteropServices
             if (SpanHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TTo));
 
-            int newLength = checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
-            return new Span<TTo>(Unsafe.As<Pinnable<TTo>>(source.Pinnable), source.ByteOffset, newLength);
+            int newLength = checked((int)((long)span.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
+            return new Span<TTo>(Unsafe.As<Pinnable<TTo>>(span.Pinnable), span.ByteOffset, newLength);
         }
 
         /// <summary>
@@ -80,11 +80,11 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// Supported only for platforms that support misaligned memory access.
         /// </remarks>
-        /// <param name="source">The source slice, of type <typeparamref name="TFrom"/>.</param>
+        /// <param name="span">The source slice, of type <typeparamref name="TFrom"/>.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
-        public static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> source)
+        public static ReadOnlySpan<TTo> Cast<TFrom, TTo>(ReadOnlySpan<TFrom> span)
             where TFrom : struct
             where TTo : struct
         {
@@ -94,8 +94,8 @@ namespace System.Runtime.InteropServices
             if (SpanHelpers.IsReferenceOrContainsReferences<TTo>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(TTo));
 
-            int newLength = checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
-            return new ReadOnlySpan<TTo>(Unsafe.As<Pinnable<TTo>>(source.Pinnable), source.ByteOffset, newLength);
+            int newLength = checked((int)((long)span.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>()));
+            return new ReadOnlySpan<TTo>(Unsafe.As<Pinnable<TTo>>(span.Pinnable), span.ByteOffset, newLength);
         }
     }
 }

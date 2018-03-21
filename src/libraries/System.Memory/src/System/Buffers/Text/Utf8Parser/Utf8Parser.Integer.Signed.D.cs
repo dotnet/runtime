@@ -6,28 +6,28 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
     {
-        private static bool TryParseSByteD(ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed)
+        private static bool TryParseSByteD(ReadOnlySpan<byte> source, out sbyte value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
                 goto FalseExit;
 
             int sign = 1;
             int index = 0;
-            int num = text[index];
+            int num = source[index];
             if (num == '-')
             {
                 sign = -1;
                 index++;
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto FalseExit;
-                num = text[index];
+                num = source[index];
             }
             else if (num == '+')
             {
                 index++;
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto FalseExit;
-                num = text[index];
+                num = source[index];
             }
 
             int answer = 0;
@@ -39,9 +39,9 @@ namespace System.Buffers.Text
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)text.Length)
+                        if ((uint)index >= (uint)source.Length)
                             goto Done;
-                        num = text[index];
+                        num = source[index];
                     } while (num == '0');
                     if (!ParserHelpers.IsDigit(num))
                         goto Done;
@@ -50,18 +50,18 @@ namespace System.Buffers.Text
                 answer = num - '0';
                 index++;
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
                 // Potential overflow
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
@@ -71,9 +71,9 @@ namespace System.Buffers.Text
                 if ((uint)answer > (uint)sbyte.MaxValue + (-1 * sign + 1) / 2)
                     goto FalseExit; // Overflow
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                if (!ParserHelpers.IsDigit(text[index]))
+                if (!ParserHelpers.IsDigit(source[index]))
                     goto Done;
 
                 // Guaranteed overflow
@@ -91,28 +91,28 @@ namespace System.Buffers.Text
             return true;
         }
 
-        private static bool TryParseInt16D(ReadOnlySpan<byte> text, out short value, out int bytesConsumed)
+        private static bool TryParseInt16D(ReadOnlySpan<byte> source, out short value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
                 goto FalseExit;
 
             int sign = 1;
             int index = 0;
-            int num = text[index];
+            int num = source[index];
             if (num == '-')
             {
                 sign = -1;
                 index++;
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto FalseExit;
-                num = text[index];
+                num = source[index];
             }
             else if (num == '+')
             {
                 index++;
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto FalseExit;
-                num = text[index];
+                num = source[index];
             }
 
             int answer = 0;
@@ -124,9 +124,9 @@ namespace System.Buffers.Text
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)text.Length)
+                        if ((uint)index >= (uint)source.Length)
                             goto Done;
-                        num = text[index];
+                        num = source[index];
                     } while (num == '0');
                     if (!ParserHelpers.IsDigit(num))
                         goto Done;
@@ -135,34 +135,34 @@ namespace System.Buffers.Text
                 answer = num - '0';
                 index++;
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
                 // Potential overflow
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
@@ -172,9 +172,9 @@ namespace System.Buffers.Text
                 if ((uint)answer > (uint)short.MaxValue + (-1 * sign + 1) / 2)
                     goto FalseExit; // Overflow
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                if (!ParserHelpers.IsDigit(text[index]))
+                if (!ParserHelpers.IsDigit(source[index]))
                     goto Done;
 
                 // Guaranteed overflow
@@ -192,28 +192,28 @@ namespace System.Buffers.Text
             return true;
         }
 
-        private static bool TryParseInt32D(ReadOnlySpan<byte> text, out int value, out int bytesConsumed)
+        private static bool TryParseInt32D(ReadOnlySpan<byte> source, out int value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
                 goto FalseExit;
 
             int sign = 1;
             int index = 0;
-            int num = text[index];
+            int num = source[index];
             if (num == '-')
             {
                 sign = -1;
                 index++;
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto FalseExit;
-                num = text[index];
+                num = source[index];
             }
             else if (num == '+')
             {
                 index++;
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto FalseExit;
-                num = text[index];
+                num = source[index];
             }
 
             int answer = 0;
@@ -225,9 +225,9 @@ namespace System.Buffers.Text
                     do
                     {
                         index++;
-                        if ((uint)index >= (uint)text.Length)
+                        if ((uint)index >= (uint)source.Length)
                             goto Done;
-                        num = text[index];
+                        num = source[index];
                     } while (num == '0');
                     if (!ParserHelpers.IsDigit(num))
                         goto Done;
@@ -236,74 +236,74 @@ namespace System.Buffers.Text
                 answer = num - '0';
                 index++;
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
                 answer = 10 * answer + num - '0';
 
                 // Potential overflow
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                num = text[index];
+                num = source[index];
                 if (!ParserHelpers.IsDigit(num))
                     goto Done;
                 index++;
@@ -315,9 +315,9 @@ namespace System.Buffers.Text
                 if ((uint)answer > (uint)int.MaxValue + (-1 * sign + 1) / 2)
                     goto FalseExit; // Overflow
 
-                if ((uint)index >= (uint)text.Length)
+                if ((uint)index >= (uint)source.Length)
                     goto Done;
-                if (!ParserHelpers.IsDigit(text[index]))
+                if (!ParserHelpers.IsDigit(source[index]))
                     goto Done;
 
                 // Guaranteed overflow
@@ -335,9 +335,9 @@ namespace System.Buffers.Text
             return true;
         }
 
-        private static bool TryParseInt64D(ReadOnlySpan<byte> text, out long value, out int bytesConsumed)
+        private static bool TryParseInt64D(ReadOnlySpan<byte> source, out long value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -346,23 +346,23 @@ namespace System.Buffers.Text
 
             int indexOfFirstDigit = 0;
             int sign = 1;
-            if (text[0] == '-')
+            if (source[0] == '-')
             {
                 indexOfFirstDigit = 1;
                 sign = -1;
 
-                if (text.Length <= indexOfFirstDigit)
+                if (source.Length <= indexOfFirstDigit)
                 {
                     bytesConsumed = 0;
                     value = default;
                     return false;
                 }
             }
-            else if (text[0] == '+')
+            else if (source[0] == '+')
             {
                 indexOfFirstDigit = 1;
 
-                if (text.Length <= indexOfFirstDigit)
+                if (source.Length <= indexOfFirstDigit)
                 {
                     bytesConsumed = 0;
                     value = default;
@@ -373,7 +373,7 @@ namespace System.Buffers.Text
             int overflowLength = ParserHelpers.Int64OverflowLength + indexOfFirstDigit;
 
             // Parse the first digit separately. If invalid here, we need to return false.
-            long firstDigit = text[indexOfFirstDigit] - 48; // '0'
+            long firstDigit = source[indexOfFirstDigit] - 48; // '0'
             if (firstDigit < 0 || firstDigit > 9)
             {
                 bytesConsumed = 0;
@@ -382,12 +382,12 @@ namespace System.Buffers.Text
             }
             ulong parsedValue = (ulong)firstDigit;
 
-            if (text.Length < overflowLength)
+            if (source.Length < overflowLength)
             {
                 // Length is less than Parsers.Int64OverflowLength; overflow is not possible
-                for (int index = indexOfFirstDigit + 1; index < text.Length; index++)
+                for (int index = indexOfFirstDigit + 1; index < source.Length; index++)
                 {
-                    long nextDigit = text[index] - 48; // '0'
+                    long nextDigit = source[index] - 48; // '0'
                     if (nextDigit < 0 || nextDigit > 9)
                     {
                         bytesConsumed = index;
@@ -403,7 +403,7 @@ namespace System.Buffers.Text
                 // digits. There may be no overflow after Parsers.Int64OverflowLength if there are leading zeroes.
                 for (int index = indexOfFirstDigit + 1; index < overflowLength - 1; index++)
                 {
-                    long nextDigit = text[index] - 48; // '0'
+                    long nextDigit = source[index] - 48; // '0'
                     if (nextDigit < 0 || nextDigit > 9)
                     {
                         bytesConsumed = index;
@@ -412,9 +412,9 @@ namespace System.Buffers.Text
                     }
                     parsedValue = parsedValue * 10 + (ulong)nextDigit;
                 }
-                for (int index = overflowLength - 1; index < text.Length; index++)
+                for (int index = overflowLength - 1; index < source.Length; index++)
                 {
-                    long nextDigit = text[index] - 48; // '0'
+                    long nextDigit = source[index] - 48; // '0'
                     if (nextDigit < 0 || nextDigit > 9)
                     {
                         bytesConsumed = index;
@@ -435,7 +435,7 @@ namespace System.Buffers.Text
                 }
             }
 
-            bytesConsumed = text.Length;
+            bytesConsumed = source.Length;
             value = ((long)parsedValue) * sign;
             return true;
         }

@@ -387,20 +387,20 @@ namespace System.Buffers
             return true;
         }
 
-        internal bool TryGetArray(out ArraySegment<T> array)
+        internal bool TryGetArray(out ArraySegment<T> segment)
         {
             GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);
 
             if (type != SequenceType.Array)
             {
-                array = default;
+                segment = default;
                 return false;
             }
 
             Debug.Assert(Start.GetObject() != null);
             Debug.Assert(Start.GetObject() is T[]);
 
-            array = new ArraySegment<T>(Unsafe.As<T[]>(Start.GetObject()), startIndex, endIndex - startIndex);
+            segment = new ArraySegment<T>(Unsafe.As<T[]>(Start.GetObject()), startIndex, endIndex - startIndex);
             return true;
         }
 

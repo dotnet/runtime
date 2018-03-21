@@ -18,7 +18,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a SByte at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -37,7 +37,7 @@ namespace System.Buffers.Text
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
         [CLSCompliant(false)]
-        public static bool TryParse(ReadOnlySpan<byte> text, out sbyte value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out sbyte value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
@@ -46,16 +46,16 @@ namespace System.Buffers.Text
                 case 'G':
                 case 'd':
                 case 'D':
-                    return TryParseSByteD(text, out value, out bytesConsumed);
+                    return TryParseSByteD(source, out value, out bytesConsumed);
 
                 case 'n':
                 case 'N':
-                    return TryParseSByteN(text, out value, out bytesConsumed);
+                    return TryParseSByteN(source, out value, out bytesConsumed);
 
                 case 'x':
                 case 'X':
                     value = default;
-                    return TryParseByteX(text, out Unsafe.As<sbyte, byte>(ref value), out bytesConsumed);
+                    return TryParseByteX(source, out Unsafe.As<sbyte, byte>(ref value), out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
@@ -65,7 +65,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses an Int16 at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -83,7 +83,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out short value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out short value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
@@ -92,16 +92,16 @@ namespace System.Buffers.Text
                 case 'G':
                 case 'd':
                 case 'D':
-                    return TryParseInt16D(text, out value, out bytesConsumed);
+                    return TryParseInt16D(source, out value, out bytesConsumed);
 
                 case 'n':
                 case 'N':
-                    return TryParseInt16N(text, out value, out bytesConsumed);
+                    return TryParseInt16N(source, out value, out bytesConsumed);
 
                 case 'x':
                 case 'X':
                     value = default;
-                    return TryParseUInt16X(text, out Unsafe.As<short, ushort>(ref value), out bytesConsumed);
+                    return TryParseUInt16X(source, out Unsafe.As<short, ushort>(ref value), out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
@@ -111,7 +111,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses an Int32 at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -129,7 +129,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out int value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out int value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
@@ -138,16 +138,16 @@ namespace System.Buffers.Text
                 case 'G':
                 case 'd':
                 case 'D':
-                    return TryParseInt32D(text, out value, out bytesConsumed);
+                    return TryParseInt32D(source, out value, out bytesConsumed);
 
                 case 'n':
                 case 'N':
-                    return TryParseInt32N(text, out value, out bytesConsumed);
+                    return TryParseInt32N(source, out value, out bytesConsumed);
 
                 case 'x':
                 case 'X':
                     value = default;
-                    return TryParseUInt32X(text, out Unsafe.As<int, uint>(ref value), out bytesConsumed);
+                    return TryParseUInt32X(source, out Unsafe.As<int, uint>(ref value), out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
@@ -157,7 +157,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses an Int64 at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -175,7 +175,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out long value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out long value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
@@ -184,16 +184,16 @@ namespace System.Buffers.Text
                 case 'G':
                 case 'd':
                 case 'D':
-                    return TryParseInt64D(text, out value, out bytesConsumed);
+                    return TryParseInt64D(source, out value, out bytesConsumed);
 
                 case 'n':
                 case 'N':
-                    return TryParseInt64N(text, out value, out bytesConsumed);
+                    return TryParseInt64N(source, out value, out bytesConsumed);
 
                 case 'x':
                 case 'X':
                     value = default;
-                    return TryParseUInt64X(text, out Unsafe.As<long, ulong>(ref value), out bytesConsumed);
+                    return TryParseUInt64X(source, out Unsafe.As<long, ulong>(ref value), out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);

@@ -12,11 +12,11 @@ namespace System.Buffers.Text
         //   -----------------------------
         //   Tue, 03 Jan 2017 08:08:05 GMT
         //
-        private static bool TryFormatDateTimeR(DateTime value, Span<byte> buffer, out int bytesWritten)
+        private static bool TryFormatDateTimeR(DateTime value, Span<byte> destination, out int bytesWritten)
         {
             // Writing the check in this fashion elides all bounds checks on 'buffer'
             // for the remainder of the method.
-            if ((uint)28 >= (uint)buffer.Length)
+            if ((uint)28 >= (uint)destination.Length)
             {
                 bytesWritten = 0;
                 return false;
@@ -24,40 +24,40 @@ namespace System.Buffers.Text
 
             var dayAbbrev = DayAbbreviations[(int)value.DayOfWeek];
 
-            buffer[0] = (byte)dayAbbrev;
+            destination[0] = (byte)dayAbbrev;
             dayAbbrev >>= 8;
-            buffer[1] = (byte)dayAbbrev;
+            destination[1] = (byte)dayAbbrev;
             dayAbbrev >>= 8;
-            buffer[2] = (byte)dayAbbrev;
-            buffer[3] = Utf8Constants.Comma;
-            buffer[4] = Utf8Constants.Space;
+            destination[2] = (byte)dayAbbrev;
+            destination[3] = Utf8Constants.Comma;
+            destination[4] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, buffer, 5);
-            buffer[7] = Utf8Constants.Space;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Day, destination, 5);
+            destination[7] = Utf8Constants.Space;
 
             var monthAbbrev = MonthAbbreviations[value.Month - 1];
-            buffer[8] = (byte)monthAbbrev;
+            destination[8] = (byte)monthAbbrev;
             monthAbbrev >>= 8;
-            buffer[9] = (byte)monthAbbrev;
+            destination[9] = (byte)monthAbbrev;
             monthAbbrev >>= 8;
-            buffer[10] = (byte)monthAbbrev;
-            buffer[11] = Utf8Constants.Space;
+            destination[10] = (byte)monthAbbrev;
+            destination[11] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, buffer, 12);
-            buffer[16] = Utf8Constants.Space;
+            FormattingHelpers.WriteFourDecimalDigits((uint)value.Year, destination, 12);
+            destination[16] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, buffer, 17);
-            buffer[19] = Utf8Constants.Colon;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Hour, destination, 17);
+            destination[19] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, buffer, 20);
-            buffer[22] = Utf8Constants.Colon;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Minute, destination, 20);
+            destination[22] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, buffer, 23);
-            buffer[25] = Utf8Constants.Space;
+            FormattingHelpers.WriteTwoDecimalDigits((uint)value.Second, destination, 23);
+            destination[25] = Utf8Constants.Space;
 
-            buffer[26] = GMT1;
-            buffer[27] = GMT2;
-            buffer[28] = GMT3;
+            destination[26] = GMT1;
+            destination[27] = GMT2;
+            destination[28] = GMT3;
 
             bytesWritten = 29;
             return true;

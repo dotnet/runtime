@@ -19,8 +19,8 @@ namespace System.Buffers.Text
         ///
         /// <param name="utf8">The input span which contains UTF-8 encoded text in base 64 that needs to be decoded.</param>
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
-        /// <param name="consumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
-        /// <param name="written">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
+        /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
         /// <param name="isFinalBlock">True (default) when the input span contains the entire data to decode. 
         /// Set to false only if it is known that the input span contains partial data with more data to follow.</param>
         /// <returns>It returns the OperationStatus enum values:
@@ -30,7 +30,7 @@ namespace System.Buffers.Text
         /// - InvalidData - if the input contains bytes outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
         ///   or if the input is incomplete (i.e. not a multiple of 4) and isFinalBlock is true.</returns>
         /// </summary> 
-        public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int consumed, out int written, bool isFinalBlock = true)
+        public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
             ref byte srcBytes = ref MemoryMarshal.GetReference(utf8);
             ref byte destBytes = ref MemoryMarshal.GetReference(bytes);
@@ -148,25 +148,25 @@ namespace System.Buffers.Text
                 goto InvalidExit;
 
         DoneExit:
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.Done;
 
         DestinationSmallExit:
             if (srcLength != utf8.Length && isFinalBlock)
                 goto InvalidExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.DestinationTooSmall;
 
         NeedMoreExit:
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.NeedMoreData;
 
         InvalidExit:
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.InvalidData;
         }
 
@@ -191,7 +191,7 @@ namespace System.Buffers.Text
         /// If the input is not a multiple of 4, it will not decode any.
         ///
         /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
-        /// <param name="written">The number of bytes written into the buffer.</param>
+        /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
         /// <returns>It returns the OperationStatus enum values:
         /// - Done - on successful processing of the entire input span
         /// - InvalidData - if the input contains bytes outside of the expected base 64 range, or if it contains invalid/more than two padding characters, 
@@ -200,7 +200,7 @@ namespace System.Buffers.Text
         /// It does not return NeedMoreData since this method tramples the data in the buffer and 
         /// hence can only be called once with all the data in the buffer.</returns>
         /// </summary> 
-        public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int written)
+        public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten)
         {
             int bufferLength = buffer.Length;
             int sourceIndex = 0;
@@ -277,11 +277,11 @@ namespace System.Buffers.Text
             }
 
         DoneExit:
-            written = destIndex;
+            bytesWritten = destIndex;
             return OperationStatus.Done;
 
         InvalidExit:
-            written = destIndex;
+            bytesWritten = destIndex;
             return OperationStatus.InvalidData;
         }
 
