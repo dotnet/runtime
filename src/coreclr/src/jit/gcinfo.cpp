@@ -231,8 +231,6 @@ void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 
 GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree* assignVal)
 {
-#if FEATURE_WRITE_BARRIER
-
     /* Are we storing a GC ptr? */
 
     if (!varTypeIsGC(tgt->TypeGet()))
@@ -292,7 +290,6 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
     }
 
     assert(!"Missing case in gcIsWriteBarrierCandidate");
-#endif
 
     return WBF_NoBarrier;
 }
