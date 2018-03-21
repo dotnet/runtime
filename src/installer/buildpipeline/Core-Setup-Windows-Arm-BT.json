@@ -408,12 +408,6 @@
     "STORAGE_CONTAINER": {
       "value": "dotnet"
     },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true"
-    },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
     },
