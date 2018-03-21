@@ -28,35 +28,35 @@ namespace System
         }
 
         /// <summary>
-        /// Determines whether this <paramref name="span"/> and the specified <paramref name="value"/> span have the same characters
+        /// Determines whether this <paramref name="span"/> and the specified <paramref name="other"/> span have the same characters
         /// when compared using the specified <paramref name="comparisonType"/> option.
         /// <param name="span">The source span.</param>
-        /// <param name="value">The value to compare with the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        /// <param name="other">The value to compare with the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
         /// </summary>
-        public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
 
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return (CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, value) == 0);
+                    return (CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, other) == 0);
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return (CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, value) == 0);
+                    return (CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, other) == 0);
 
                 case StringComparison.InvariantCulture:
-                    return (CompareInfo.Invariant.CompareOptionNone(span, value) == 0);
+                    return (CompareInfo.Invariant.CompareOptionNone(span, other) == 0);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return (CompareInfo.Invariant.CompareOptionIgnoreCase(span, value) == 0);
+                    return (CompareInfo.Invariant.CompareOptionIgnoreCase(span, other) == 0);
 
                 case StringComparison.Ordinal:
-                    return EqualsOrdinal(span, value);
+                    return EqualsOrdinal(span, other);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return EqualsOrdinalIgnoreCase(span, value);
+                    return EqualsOrdinalIgnoreCase(span, other);
             }
 
             Debug.Fail("StringComparison outside range");
@@ -98,37 +98,37 @@ namespace System
         }
 
         /// <summary>
-        /// Compares the specified <paramref name="span"/> and <paramref name="value"/> using the specified <paramref name="comparisonType"/>,
+        /// Compares the specified <paramref name="span"/> and <paramref name="other"/> using the specified <paramref name="comparisonType"/>,
         /// and returns an integer that indicates their relative position in the sort order.
         /// <param name="span">The source span.</param>
-        /// <param name="value">The value to compare with the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        /// <param name="other">The value to compare with the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
         /// </summary>
-        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             string.CheckStringComparison(comparisonType);
 
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
-                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, value);
+                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionNone(span, other);
 
                 case StringComparison.CurrentCultureIgnoreCase:
-                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, value);
+                    return CultureInfo.CurrentCulture.CompareInfo.CompareOptionIgnoreCase(span, other);
 
                 case StringComparison.InvariantCulture:
-                    return CompareInfo.Invariant.CompareOptionNone(span, value);
+                    return CompareInfo.Invariant.CompareOptionNone(span, other);
 
                 case StringComparison.InvariantCultureIgnoreCase:
-                    return CompareInfo.Invariant.CompareOptionIgnoreCase(span, value);
+                    return CompareInfo.Invariant.CompareOptionIgnoreCase(span, other);
 
                 case StringComparison.Ordinal:
-                    if (span.Length == 0 || value.Length == 0)
-                        return span.Length - value.Length;
-                    return string.CompareOrdinal(span, value);
+                    if (span.Length == 0 || other.Length == 0)
+                        return span.Length - other.Length;
+                    return string.CompareOrdinal(span, other);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return CompareInfo.CompareOrdinalIgnoreCase(span, value);
+                    return CompareInfo.CompareOrdinalIgnoreCase(span, other);
             }
 
             Debug.Fail("StringComparison outside range");
@@ -360,7 +360,7 @@ namespace System
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
-        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
@@ -368,22 +368,22 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> AsBytes<T>(this Span<T> source)
+        public static Span<byte> AsBytes<T>(this Span<T> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
             return new Span<byte>(
-                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(source)),
-                checked(source.Length * Unsafe.SizeOf<T>()));
+                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                checked(span.Length * Unsafe.SizeOf<T>()));
         }
 
         /// <summary>
         /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
-        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
@@ -391,15 +391,15 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
             return new ReadOnlySpan<byte>(
-                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(source)),
-                checked(source.Length * Unsafe.SizeOf<T>()));
+                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                checked(span.Length * Unsafe.SizeOf<T>()));
         }
 
         /// <summary>
