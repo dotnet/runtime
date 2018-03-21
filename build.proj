@@ -28,12 +28,11 @@
 
   <Target Name="RestoreOptData">
     <PropertyGroup>
-      <OptDataRestoreCommand>"$(DotnetToolCommand)"</OptDataRestoreCommand>
-      <OptDataRestoreCommand>$(OptDataRestoreCommand) restore</OptDataRestoreCommand>
-      <OptDataRestoreCommand>$(OptDataRestoreCommand) --packages "$(PackagesDir.TrimEnd('/').TrimEnd('\'))"</OptDataRestoreCommand>
+      <_OptimizationDataFeed Condition="'$(DotNetBuildOffline)' != 'true'">--source https://dotnet.myget.org/F/dotnet-core-optimization-data/api/v3/index.json</_OptimizationDataFeed>
     </PropertyGroup>
-    <Exec Command="$(OptDataRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj" 
-	  StandardOutputImportance="Low" />
+
+    <Exec Command="$(DotnetRestoreCommand) $(_OptimizationDataFeed) $(SourceDir).nuget/optdata/optdata.csproj"
+          StandardOutputImportance="Low" />
   </Target>
 
   <!--
@@ -52,5 +51,5 @@
     <Message Condition="Exists($(RootBinDir))" Importance="High" Text="Removing $(RootBinDir)"/>
     <RemoveDir Directories="$(RootBinDir)" />
   </Target>
-  
+
 </Project>

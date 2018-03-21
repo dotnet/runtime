@@ -53,7 +53,7 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    },    
+    },
     "ContainerName": {
       "description": "Container name for Azure upload.",
       "valueType": "property",
@@ -587,6 +587,12 @@
             "Project": "./build.proj",
             "RestoreDuringBuild": true,
             "RestoreOptData": "default"
+          }
+        },
+        "priority": {
+          "description": "Sets CLRTestPriorityToBuild property.",
+          "settings": {
+            "CLRTestPriorityToBuild": "default"
           }
         },
         "ab": {
