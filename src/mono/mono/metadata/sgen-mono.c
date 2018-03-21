@@ -1197,10 +1197,6 @@ sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext
 		mword desc = (mword)m_class_get_gc_descr (m_class_get_element_class (klass));
 		int elem_size = mono_array_element_size (klass);
 
-#ifdef SGEN_HAVE_OVERLAPPING_CARDS
-		guint8 *overflow_scan_end = NULL;
-#endif
-
 #ifdef SGEN_OBJECT_LAYOUT_STATISTICS
 		if (m_class_is_valuetype (m_class_get_element_class (klass)))
 			sgen_object_layout_scanned_vtype_array ();
@@ -1215,17 +1211,22 @@ sgen_client_cardtable_scan_object (GCObject *obj, guint8 *cards, ScanCopyContext
 
 		card_base = card_data;
 		card_count = sgen_card_table_number_of_cards_in_range ((mword)obj, obj_size);
-		card_data_end = card_data + card_count;
-
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-		/*Check for overflow and if so, setup to scan in two steps*/
+LOOP_HEAD:
+		card_data_end = card_base + card_count;
+
+		/*
+		 * Check for overflow and if so, scan only until the end of the shadow
+		 * card table, leaving the rest for next iterations.
+		 */
 		if (!cards && card_data_end >= SGEN_SHADOW_CARDTABLE_END) {
-			overflow_scan_end = sgen_shadow_cardtable + (card_data_end - SGEN_SHADOW_CARDTABLE_END);
 			card_data_end = SGEN_SHADOW_CARDTABLE_END;
 		}
+		card_count -= (card_data_end - card_base);
 
-LOOP_HEAD:
+#else
+		card_data_end = card_data + card_count;
 #endif
 
 		card_data = sgen_find_next_card (card_data, card_data_end);
@@ -1266,11 +1267,10 @@ LOOP_HEAD:
 		}
 
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
-		if (overflow_scan_end) {
-			extra_idx = card_data - card_base;
+		if (card_count > 0) {
+			SGEN_ASSERT (0, card_data == SGEN_SHADOW_CARDTABLE_END, "Why we didn't stop at shadow cardtable end ?");
+			extra_idx += card_data - card_base;
 			card_base = card_data = sgen_shadow_cardtable;
-			card_data_end = overflow_scan_end;
-			overflow_scan_end = NULL;
 			goto LOOP_HEAD;
 		}
 #endif
