@@ -175,6 +175,6 @@ namespace System.Diagnostics.Tracing
         internal static extern unsafe void WriteEvent(IntPtr eventHandle, uint eventID, void* pData, uint length, Guid* activityId, Guid* relatedActivityId);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe void WriteEventData(IntPtr eventHandle, uint eventID, EventProvider.EventData** pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
+        internal static extern unsafe void WriteEventData(IntPtr eventHandle, uint eventID, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId);
     }
 }
