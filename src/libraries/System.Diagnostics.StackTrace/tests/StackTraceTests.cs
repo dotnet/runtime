@@ -274,20 +274,20 @@ namespace System.Diagnostics.Tests
         {
             // Debug mode and Release mode give different results.
 #if DEBUG
-            yield return new object[] { new StackTrace(InvokeException()), "   at System.Diagnostics.Tests.StackTraceTests.ThrowException()" };
+            yield return new object[] { new StackTrace(InvokeException()), "System.Diagnostics.Tests.StackTraceTests.ThrowException()" };
             yield return new object[] { new StackTrace(new Exception()), "" };
-            yield return new object[] { NoParameters(), "   at System.Diagnostics.Tests.StackTraceTests.NoParameters()" };
-            yield return new object[] { OneParameter(1), "   at System.Diagnostics.Tests.StackTraceTests.OneParameter(Int32 x)" };
-            yield return new object[] { TwoParameters(1, null), "   at System.Diagnostics.Tests.StackTraceTests.TwoParameters(Int32 x, String y)" };
-            yield return new object[] { Generic<int>(), "   at System.Diagnostics.Tests.StackTraceTests.Generic[T]()" };
-            yield return new object[] { Generic<int, string>(), "   at System.Diagnostics.Tests.StackTraceTests.Generic[T,U]()" };
-            yield return new object[] { new ClassWithConstructor().StackTrace, "   at System.Diagnostics.Tests.StackTraceTests.ClassWithConstructor..ctor()" };
+            yield return new object[] { NoParameters(), "System.Diagnostics.Tests.StackTraceTests.NoParameters()" };
+            yield return new object[] { OneParameter(1), "System.Diagnostics.Tests.StackTraceTests.OneParameter(Int32 x)" };
+            yield return new object[] { TwoParameters(1, null), "System.Diagnostics.Tests.StackTraceTests.TwoParameters(Int32 x, String y)" };
+            yield return new object[] { Generic<int>(), "System.Diagnostics.Tests.StackTraceTests.Generic[T]()" };
+            yield return new object[] { Generic<int, string>(), "System.Diagnostics.Tests.StackTraceTests.Generic[T,U]()" };
+            yield return new object[] { new ClassWithConstructor().StackTrace, "System.Diagnostics.Tests.StackTraceTests.ClassWithConstructor..ctor()" };
 
             // Methods belonging to the System.Diagnostics namespace are ignored.
-            yield return new object[] { InvokeIgnoredMethod(), "   at System.Diagnostics.Tests.StackTraceTests.InvokeIgnoredMethod()" };
+            yield return new object[] { InvokeIgnoredMethod(), "System.Diagnostics.Tests.StackTraceTests.InvokeIgnoredMethod()" };
 #endif
 
-            yield return new object[] { InvokeIgnoredMethodWithException(), "   at System.Diagnostics.Ignored.MethodWithException()" };
+            yield return new object[] { InvokeIgnoredMethodWithException(), "System.Diagnostics.Ignored.MethodWithException()" };
         }
 
         [Fact]
@@ -309,7 +309,7 @@ namespace System.Diagnostics.Tests
             else
             {
                 string toString = stackTrace.ToString();
-                Assert.StartsWith(expectedToString, toString);
+                Assert.Contains(expectedToString, toString);
                 Assert.EndsWith(Environment.NewLine, toString);
 
                 string[] frames = toString.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
