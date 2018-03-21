@@ -75,7 +75,7 @@ namespace System.Diagnostics.Tracing
                     userDataCount = userDataCount - 3;
                     Debug.Assert(userDataCount >= 0);
                 }
-                EventPipeInternal.WriteEventData(eventHandle, eventID, &userData, (uint) userDataCount, activityId, relatedActivityId);
+                EventPipeInternal.WriteEventData(eventHandle, eventID, userData, (uint) userDataCount, activityId, relatedActivityId);
             }
             return 0;
         }
