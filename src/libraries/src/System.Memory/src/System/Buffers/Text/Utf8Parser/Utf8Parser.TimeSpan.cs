@@ -32,7 +32,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case (default):
+                case default(char):
                 case 'c':
                 case 't':
                 case 'T':
