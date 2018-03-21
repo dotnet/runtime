@@ -296,13 +296,35 @@ def main(args):
     # runtime with the runtime built in the coreclr build. The result will be that perhaps
     # some, hopefully few, corefx tests will fail, but the builds will never fail.
 
-    command = ' '.join(('build.cmd' if Is_windows else './build.sh',
-                        config_args))
+    if not Is_windows and arch == 'arm64' :
+        # Cross build corefx for arm64 on x64
+        command = ' '.join(('./build-native.sh', config_args))
+        log(command)
+        returncode = 0 if testing else os.system(command)
+        if returncode != 0:
+            sys.exit(1)
 
-    log(command)
-    returncode = 0 if testing else os.system(command)
-    if returncode != 0:
-        sys.exit(1)
+        command = ' '.join(('./build-managed.sh', '-release'))
+        log(command)
+        returncode = 0 if testing else os.system(command)
+        if returncode != 0:
+            sys.exit(1)
+
+        # Rename runtime to arm64
+        os.rename(os.path.join(fx_root,'bin','runtime', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'x64')),
+                  os.path.join(fx_root,'bin','runtime', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'arm64')))
+
+        os.rename(os.path.join(fx_root,'bin','testhost', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'x64')),
+                  os.path.join(fx_root,'bin','testhost', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', 'arm64')))
+
+    else:
+        command = ' '.join(('build.cmd' if Is_windows else './build.sh',
+                            config_args))
+        log(command)
+        returncode = 0 if testing else os.system(command)
+        if returncode != 0:
+            sys.exit(1)
+
 
     # Override the built corefx runtime (which it picked up by copying from packages determined
     # by its dependencies.props file). Note that we always build Release corefx.
@@ -321,6 +343,22 @@ def main(args):
 
     log('Updating CoreCLR: %s => %s' % (core_root, fx_runtime))
     copy_files(core_root, fx_runtime)
+
+    if not Is_windows and arch == 'arm64' :
+        fx_arm64_native = os.path.join(fx_root,
+                                       'bin',
+                                       '%s.%s.%s' % (clr_os, 'arm64', 'Release'),
+                                       'native')
+        log('Copying CoreFx Arm64 Native libraries: %s => %s' % (fx_arm64_native, fx_runtime))
+        copy_files(fx_arm64_native, fx_runtime)
+
+        # Replace dotnet binary with corerun softlink, to make run-test.sh work as is on ARM64 platform
+        # with the built runtime.
+        dotnet_base= os.path.join(fx_root,'bin','testhost', 'netcoreapp-%s-%s-%s' % (clr_os, 'Release', arch))
+        os.remove(os.path.join(dotnet_base,'dotnet'))
+        os.chdir(dotnet_base)
+        os.symlink(os.path.join('shared','Microsoft.NETCore.App','9.9.9','corerun'), 'dotnet')
+        os.chdir(fx_root)
 
     # Build the build-tests command line.
 
