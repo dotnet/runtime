@@ -88,8 +88,8 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
-        public static implicit operator ReadOnlySpan<T>(ArraySegment<T> arraySegment)
-            => new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        public static implicit operator ReadOnlySpan<T>(ArraySegment<T> segment)
+            => new ReadOnlySpan<T>(segment.Array, segment.Offset, segment.Count);
 
         /// <summary>
         /// Returns a 0-length read-only span whose base is the null pointer.
