@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Enumeration;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +15,6 @@ namespace System.IO
     ///    Listens to the system directory change notifications and
     ///    raises events when a directory or file within a directory changes.
     /// </devdoc>
-
     public partial class FileSystemWatcher : Component, ISupportInitialize
     {
         /// <devdoc>
@@ -81,14 +81,14 @@ namespace System.IO
         public FileSystemWatcher()
         {
             _directory = string.Empty;
-            _filter = "*.*";
+            _filter = "*";
         }
 
         /// <devdoc>
         ///    Initializes a new instance of the <see cref='System.IO.FileSystemWatcher'/> class,
         ///    given the specified directory to monitor.
         /// </devdoc>
-        public FileSystemWatcher(string path) : this(path, "*.*")
+        public FileSystemWatcher(string path) : this(path, "*")
         {
         }
 
@@ -101,9 +101,6 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (filter == null)
-                throw new ArgumentNullException(nameof(filter));
-
             // Early check for directory parameter so that an exception can be thrown as early as possible.
             if (path.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidDirName, path), nameof(path));
@@ -112,7 +109,10 @@ namespace System.IO
                 throw new ArgumentException(SR.Format(SR.InvalidDirName_NotExists, path), nameof(path));
 
             _directory = path;
-            _filter = filter;
+            _filter = filter ?? throw new ArgumentNullException(nameof(filter));
+
+            if (_filter == "*.*")
+                _filter = "*";
         }
 
         /// <devdoc>
@@ -185,13 +185,13 @@ namespace System.IO
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    // Skip the string compare for "*.*" since it has no case-insensitive representation that differs from
+                    // Skip the string compare for "*" since it has no case-insensitive representation that differs from
                     // the case-sensitive representation.
-                    _filter = "*.*";
+                    _filter = "*";
                 }
                 else if (!string.Equals(_filter, value, PathInternal.StringComparison))
                 {
-                    _filter = value;
+                    _filter = value == "*.*" ? "*" : value;
                 }
             }
         }
@@ -259,7 +259,7 @@ namespace System.IO
 
         /// <devdoc>
         ///    Gets or sets the path of the directory to watch.
-        /// </devdoc>        
+        /// </devdoc>
         public string Path
         {
             get
@@ -396,10 +396,10 @@ namespace System.IO
         /// <internalonly/>
         private bool MatchPattern(string relativePath)
         {
-            string name = System.IO.Path.GetFileName(relativePath);
-            return name != null ?
-                PatternMatcher.StrictMatchPattern(_filter, name) :
-                false;
+            ReadOnlySpan<char> name = IO.Path.GetFileName(relativePath.AsSpan());
+            return name.Length > 0
+                ? FileSystemName.MatchesSimpleExpression(_filter, name, ignoreCase: !PathInternal.IsCaseSensitive)
+                : false;
         }
 
         /// <devdoc>
@@ -648,7 +648,6 @@ namespace System.IO
             {
                 return _synchronizingObject;
             }
-
             set
             {
                 _synchronizingObject = value;
