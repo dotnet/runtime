@@ -1473,7 +1473,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (intrinsicID == NI_AVX_ExtractVector128 || intrinsicID == NI_AVX2_ExtractVector128)
                     {
-                        emit->emitIns_R_AR_I(ins, attr, op2Reg, op1Reg, 0, (int)i);
+                        emit->emitIns_AR_R_I(ins, attr, op1Reg, 0, op2Reg, (int)i);
                     }
                     else if (op2->TypeGet() == TYP_I_IMPL)
                     {
