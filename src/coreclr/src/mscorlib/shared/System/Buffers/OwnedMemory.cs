@@ -48,7 +48,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns an array segment.
         /// </summary>
-        protected internal abstract bool TryGetArray(out ArraySegment<T> arraySegment);
+        protected internal abstract bool TryGetArray(out ArraySegment<T> segment);
 
         /// <summary>
         /// Implements IDisposable.
