@@ -268,9 +268,9 @@ namespace System.Collections.Generic
                 _count = 0;
                 _freeList = -1;
                 _freeCount = 0;
-                _version++;
                 Array.Clear(_entries, 0, count);
             }
+            _version++;
         }
 
         public bool ContainsKey(TKey key)
@@ -440,6 +440,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
+            _version++;
             if (_buckets == null)
             {
                 Initialize(0);
@@ -471,7 +472,6 @@ namespace System.Collections.Generic
                         if (behavior == InsertionBehavior.OverwriteExisting)
                         {
                             entries[i].value = value;
-                            _version++;
                             return true;
                         }
 
@@ -509,7 +509,6 @@ namespace System.Collections.Generic
                         if (behavior == InsertionBehavior.OverwriteExisting)
                         {
                             entries[i].value = value;
-                            _version++;
                             return true;
                         }
 
@@ -571,7 +570,6 @@ namespace System.Collections.Generic
             entry.value = value;
             // Value in _buckets is 1-based
             targetBucket = index + 1;
-            _version++;
 
             // Value types never rehash
             if (default(TKey) == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
