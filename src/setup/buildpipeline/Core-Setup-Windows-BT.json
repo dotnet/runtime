@@ -608,9 +608,6 @@
     "CertificateId": {
       "value": "400"
     },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
     "COREHOST_TRACE": {
       "value": "0",
       "allowOverride": true
@@ -698,9 +695,6 @@
       "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
     },
     "PUBLISH_RID_AGNOSTIC_PACKAGES": {
-      "value": "true"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
       "value": "true"
     },
     "SourceVersion": {
