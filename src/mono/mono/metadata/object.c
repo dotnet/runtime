@@ -1157,11 +1157,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 		g_free (bitmap);
 
 	/* Publish the data */
-	mono_loader_lock ();
-	klass->gc_descr = gc_descr;
-	mono_memory_barrier ();
-	klass->gc_descr_inited = TRUE;
-	mono_loader_unlock ();
+	mono_class_publish_gc_descriptor (klass, gc_descr);
 }
 
 /**
