@@ -51,13 +51,17 @@ EventPipeFile::EventPipeFile(
 
     m_samplingRateInNs = SampleProfiler::GetSamplingRate();
 
-    m_pSerializer = new FastSerializer(outputFilePath); // it creates the file stream and writes the header
+    // Create the file stream and write the header.
+    m_pSerializer = new FastSerializer(outputFilePath);
+
     m_serializationLock.Init(LOCK_TYPE_DEFAULT);
     m_pMetadataIds = new MapSHashWithRemove<EventPipeEvent*, unsigned int>();
 
-    m_metadataIdCounter = 0; // we start with 0, it's always gets incremented by generator so the first id will be 1, as specified in the docs
+    // Start and 0 - The value is always incremented prior to use, so the first ID will be 1.
+    m_metadataIdCounter = 0;
 
-    m_pSerializer->WriteObject(this); // this is the first object in the file
+    // Write the first object to the file.
+    m_pSerializer->WriteObject(this);
 }
 
 EventPipeFile::~EventPipeFile()

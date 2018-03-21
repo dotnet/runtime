@@ -43,6 +43,7 @@
 #endif // !FEATURE_PAL
 
 #include "stringarraylist.h"
+#include "eventpipe.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "winrttypenameconverter.h"
@@ -368,6 +369,10 @@ void SetCommandLineArgs(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR* argv)
     }
     CONTRACTL_END;
 
+    // Send the command line to EventPipe.
+    EventPipe::SaveCommandLine(pwzAssemblyPath, argc, argv);
+
+    // Send the command line to System.Environment.
     struct _gc
     {
         PTRARRAYREF cmdLineArgs;

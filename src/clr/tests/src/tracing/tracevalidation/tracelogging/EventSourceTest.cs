@@ -72,6 +72,11 @@ namespace Tracing.Tests.Common
                         return;
                     }
 
+                    if(data.ProviderName.Equals("Microsoft-DotNETCore-EventPipe"))
+                    {
+                        return;
+                    }
+
                     Assert.True($"m_nextTestVerificationIndex({m_nextTestVerificationIndex}) < m_tests.Count({m_tests.Count})", m_nextTestVerificationIndex < m_tests.Count);
                     try
                     {
