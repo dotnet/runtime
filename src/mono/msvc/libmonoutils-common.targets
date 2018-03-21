@@ -102,9 +102,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-uri.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-stdlib.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\valgrind.h" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mach-support.c">
-      <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mach-support.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\memcheck.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-context.c" />

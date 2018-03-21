@@ -24,10 +24,6 @@ typedef _STRUCT_MCONTEXT *mcontext_t;
 typedef _STRUCT_MCONTEXT64 *mcontext_t;
 #endif
 
-// We need to define this here since we need _XOPEN_SOURCE for mono
-// and the pthread header guards against this
-extern pthread_t pthread_from_mach_thread_np(mach_port_t);
-
 int mono_mach_arch_get_mcontext_size (void);
 void mono_mach_arch_thread_states_to_mcontext (thread_state_t state, thread_state_t fpstate, void *context);
 void mono_mach_arch_mcontext_to_thread_states (void *context, thread_state_t state, thread_state_t fpstate);
@@ -36,8 +32,6 @@ void mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_
 /* FIXME: Should return size_t, not int. */
 int mono_mach_arch_get_thread_state_size (void);
 int mono_mach_arch_get_thread_fpstate_size (void);
-kern_return_t mono_mach_get_threads (thread_act_array_t *threads, guint32 *count);
-kern_return_t mono_mach_free_threads (thread_act_array_t threads, guint32 count);
 kern_return_t mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count, thread_state_t fpstate, mach_msg_type_number_t *fpcount);
 kern_return_t mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count, thread_state_t fpstate, mach_msg_type_number_t fpcount);
 

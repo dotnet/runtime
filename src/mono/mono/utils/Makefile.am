@@ -113,7 +113,6 @@ monoutils_sources = \
 	mono-uri.h	\
 	mono-stdlib.h	\
 	valgrind.h	\
-	mach-support.c	\
 	mach-support.h  \
 	memcheck.h	\
 	mono-context.c	\
