@@ -24,6 +24,7 @@ namespace System.Threading
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext(isDefault: true);
+        internal static readonly ExecutionContext DefaultFlowSuppressed = new ExecutionContext(AsyncLocalValueMap.Empty, Array.Empty<IAsyncLocal>(), isFlowSuppressed: true);
 
         private readonly IAsyncLocalValueMap m_localValues;
         private readonly IAsyncLocal[] m_localChangeNotifications;
@@ -63,15 +64,15 @@ namespace System.Threading
         {
             Debug.Assert(isFlowSuppressed != m_isFlowSuppressed);
 
-            if (!isFlowSuppressed &&
-                (m_localValues == null ||
-                 m_localValues.GetType() == typeof(AsyncLocalValueMap.EmptyAsyncLocalValueMap))
-               )
+            if (m_localValues == null ||
+                m_localValues.GetType() == typeof(AsyncLocalValueMap.EmptyAsyncLocalValueMap))
             {
-                return null; // implies the default context
+                return isFlowSuppressed ?
+                    DefaultFlowSuppressed :
+                    null; // implies the default context
             }
-            // Flow suppressing a Default context will have null values, set them to Empty
-            return new ExecutionContext(m_localValues ?? AsyncLocalValueMap.Empty, m_localChangeNotifications ?? Array.Empty<IAsyncLocal>(), isFlowSuppressed);
+
+            return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
         }
 
         public static AsyncFlowControl SuppressFlow()
