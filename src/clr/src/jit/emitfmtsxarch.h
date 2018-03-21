@@ -139,6 +139,8 @@ IF_DEF(MRD_CNS,     IS_GM_RD,                   DSP_CNS)  // read  [mem], const
 IF_DEF(MWR_CNS,     IS_GM_WR,                   DSP_CNS)  // write [mem], const
 IF_DEF(MRW_CNS,     IS_GM_RW,                   DSP_CNS)  // r/w   [mem], const
 
+IF_DEF(MWR_RRD_CNS, IS_GM_WR|IS_R1_RD,          DSP_CNS)  // write [mem], read reg, const
+
 IF_DEF(MRW_SHF,     IS_GM_RW,                   DSP_CNS)  // shift [mem], const
 
 //----------------------------------------------------------------------------
@@ -193,6 +195,8 @@ IF_DEF(ARW_RRD,     IS_AM_RW|IS_R1_RD,          AMD )     // r/w   [adr], read  
 IF_DEF(ARD_CNS,     IS_AM_RD,                   AMD_CNS)  // read  [adr], const
 IF_DEF(AWR_CNS,     IS_AM_WR,                   AMD_CNS)  // write [adr], const
 IF_DEF(ARW_CNS,     IS_AM_RW,                   AMD_CNS)  // r/w   [adr], const
+
+IF_DEF(AWR_RRD_CNS, IS_AM_WR|IS_R1_RD,          AMD_CNS)  // write [adr], read reg, const
 
 IF_DEF(ARW_SHF,     IS_AM_RW,                   AMD_CNS)  // shift [adr], const
 
