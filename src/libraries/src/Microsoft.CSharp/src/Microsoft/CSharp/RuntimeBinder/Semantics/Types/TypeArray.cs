@@ -79,6 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             public override int GetHashCode() => _hashCode;
         }
 
+        // The RuntimeBinder uses a global lock when Binding that keeps this dictionary safe.
         private static readonly Dictionary<TypeArrayKey, TypeArray> s_tableTypeArrays =
             new Dictionary<TypeArrayKey, TypeArray>();
 
@@ -127,6 +128,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (types?.Length > 0)
             {
+                RuntimeBinder.EnsureLockIsTaken();
                 TypeArrayKey key = new TypeArrayKey(types);
                 if (!s_tableTypeArrays.TryGetValue(key, out TypeArray result))
                 {

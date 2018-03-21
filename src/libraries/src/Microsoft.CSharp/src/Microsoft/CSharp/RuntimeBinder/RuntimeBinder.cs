@@ -118,6 +118,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         #region Helpers
 
+        [ConditionalAttribute("DEBUG")]
+        internal static void EnsureLockIsTaken()
+        {
+            // Make sure that the binder lock is taken
+            Debug.Assert(System.Threading.Monitor.IsEntered(s_bindLock));
+        }
+
         private bool DeferBinding(
             ICSharpBinder payload,
             ArgumentObject[] arguments,
