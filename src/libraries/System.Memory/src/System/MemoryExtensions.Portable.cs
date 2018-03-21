@@ -43,21 +43,21 @@ namespace System
             }
             else if (comparisonType == StringComparison.OrdinalIgnoreCase)
             {
-                if (span.Length != value.Length)
+                if (span.Length != other.Length)
                     return false;
-                return EqualsOrdinalIgnoreCase(span, value);
+                return EqualsOrdinalIgnoreCase(span, other);
             }
 
             return span.ToString().Equals(other.ToString(), comparisonType);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool EqualsOrdinalIgnoreCase(ReadOnlySpan<char> span, ReadOnlySpan<char> value)
+        private static bool EqualsOrdinalIgnoreCase(ReadOnlySpan<char> span, ReadOnlySpan<char> other)
         {
-            Debug.Assert(span.Length == value.Length);
-            if (value.Length == 0)  // span.Length == value.Length == 0
+            Debug.Assert(span.Length == other.Length);
+            if (other.Length == 0)  // span.Length == other.Length == 0
                 return true;
-            return (CompareToOrdinalIgnoreCase(span, value) == 0);
+            return (CompareToOrdinalIgnoreCase(span, other) == 0);
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace System
             }
             else if (comparisonType == StringComparison.OrdinalIgnoreCase)
             {
-                return CompareToOrdinalIgnoreCase(span, value);
+                return CompareToOrdinalIgnoreCase(span, other);
             }
 
             return string.Compare(span.ToString(), other.ToString(), comparisonType);
@@ -230,16 +230,16 @@ namespace System
             => ToUpper(source, destination, CultureInfo.InvariantCulture);
 
         /// <summary>
-        /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="other"/> when compared using the specified <paramref name="comparisonType"/> option.
+        /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
         /// <param name="span">The source span.</param>
-        /// <param name="other">The sequence to compare to the end of the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
-        public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
+        /// <param name="value">The sequence to compare to the end of the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             if (comparisonType == StringComparison.Ordinal)
             {
-                return span.EndsWith<char>(other);
+                return span.EndsWith<char>(value);
             }
             else if (comparisonType == StringComparison.OrdinalIgnoreCase)
             {
@@ -247,21 +247,21 @@ namespace System
             }
 
             string sourceString = span.ToString();
-            string valueString = other.ToString();
+            string valueString = value.ToString();
             return sourceString.EndsWith(valueString, comparisonType);
         }
 
         /// <summary>
-        /// Determines whether the beginning of the <paramref name="span"/> matches the specified <paramref name="other"/> when compared using the specified <paramref name="comparisonType"/> option.
+        /// Determines whether the beginning of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
         /// <param name="span">The source span.</param>
-        /// <param name="other">The sequence to compare to the beginning of the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
-        public static bool StartsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
+        /// <param name="value">The sequence to compare to the beginning of the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        public static bool StartsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
         {
             if (comparisonType == StringComparison.Ordinal)
             {
-                return span.StartsWith<char>(other);
+                return span.StartsWith<char>(value);
             }
             else if (comparisonType == StringComparison.OrdinalIgnoreCase)
             {
@@ -269,7 +269,7 @@ namespace System
             }
 
             string sourceString = span.ToString();
-            string valueString = other.ToString();
+            string valueString = value.ToString();
             return sourceString.StartsWith(valueString, comparisonType);
         }
 
