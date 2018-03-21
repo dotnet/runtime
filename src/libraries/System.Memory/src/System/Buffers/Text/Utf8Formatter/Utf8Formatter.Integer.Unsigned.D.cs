@@ -9,7 +9,7 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatUInt64D(ulong value, byte precision, Span<byte> buffer, bool insertNegationSign, out int bytesWritten)
+        private static bool TryFormatUInt64D(ulong value, byte precision, Span<byte> destination, bool insertNegationSign, out int bytesWritten)
         {
             // Calculate the actual digit count and the number of padding zeroes requested.
             // From all of this we can get the required buffer length.
@@ -28,7 +28,7 @@ namespace System.Buffers.Text
                 requiredBufferLength++;
             }
 
-            if (requiredBufferLength > buffer.Length)
+            if (requiredBufferLength > destination.Length)
             {
                 bytesWritten = 0;
                 return false;
@@ -38,15 +38,15 @@ namespace System.Buffers.Text
 
             if (insertNegationSign)
             {
-                buffer[0] = Utf8Constants.Minus;
-                buffer = buffer.Slice(1);
+                destination[0] = Utf8Constants.Minus;
+                destination = destination.Slice(1);
             }
 
             if (leadingZeroCount > 0)
             {
-                FormattingHelpers.FillWithAsciiZeros(buffer.Slice(0, leadingZeroCount));
+                FormattingHelpers.FillWithAsciiZeros(destination.Slice(0, leadingZeroCount));
             }
-            FormattingHelpers.WriteDigits(value, buffer.Slice(leadingZeroCount, digitCount));
+            FormattingHelpers.WriteDigits(value, destination.Slice(leadingZeroCount, digitCount));
 
             return true;
         }

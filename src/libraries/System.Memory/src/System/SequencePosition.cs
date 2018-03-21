@@ -48,7 +48,7 @@ namespace System
         public static bool operator !=(SequencePosition left, SequencePosition right) => !(left == right);
 
         /// <inheritdoc />
-        public bool Equals(SequencePosition position) => this == position;
+        public bool Equals(SequencePosition other) => this == other;
 
         /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]

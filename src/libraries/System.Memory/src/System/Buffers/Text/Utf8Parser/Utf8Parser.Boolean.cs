@@ -9,7 +9,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a Boolean at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -25,29 +25,29 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out bool value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out bool value, out int bytesConsumed, char standardFormat = default)
         {
             if (!(standardFormat == default(char) || standardFormat == 'G' || standardFormat == 'l'))
                 return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
 
-            if (text.Length >= 4)
+            if (source.Length >= 4)
             {
-                if ((text[0] == 'T' || text[0] == 't') &&
-                    (text[1] == 'R' || text[1] == 'r') &&
-                    (text[2] == 'U' || text[2] == 'u') &&
-                    (text[3] == 'E' || text[3] == 'e'))
+                if ((source[0] == 'T' || source[0] == 't') &&
+                    (source[1] == 'R' || source[1] == 'r') &&
+                    (source[2] == 'U' || source[2] == 'u') &&
+                    (source[3] == 'E' || source[3] == 'e'))
                 {
                     bytesConsumed = 4;
                     value = true;
                     return true;
                 }
-                if (text.Length >= 5)
+                if (source.Length >= 5)
                 {
-                    if ((text[0] == 'F' || text[0] == 'f') &&
-                        (text[1] == 'A' || text[1] == 'a') &&
-                        (text[2] == 'L' || text[2] == 'l') &&
-                        (text[3] == 'S' || text[3] == 's') &&
-                        (text[4] == 'E' || text[4] == 'e'))
+                    if ((source[0] == 'F' || source[0] == 'f') &&
+                        (source[1] == 'A' || source[1] == 'a') &&
+                        (source[2] == 'L' || source[2] == 'l') &&
+                        (source[3] == 'S' || source[3] == 's') &&
+                        (source[4] == 'E' || source[4] == 'e'))
                     {
                         bytesConsumed = 5;
                         value = false;

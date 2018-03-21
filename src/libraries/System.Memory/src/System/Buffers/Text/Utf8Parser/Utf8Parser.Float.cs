@@ -9,7 +9,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a Single at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -26,9 +26,9 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out float value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
         {
-            if (TryParseNormalAsFloatingPoint(text, out double d, out bytesConsumed, standardFormat))
+            if (TryParseNormalAsFloatingPoint(source, out double d, out bytesConsumed, standardFormat))
             {
                 value = (float)d;
                 if (float.IsInfinity(value))
@@ -40,13 +40,13 @@ namespace System.Buffers.Text
                 return true;
             }
 
-            return TryParseAsSpecialFloatingPoint<float>(text, float.PositiveInfinity, float.NegativeInfinity, float.NaN, out value, out bytesConsumed);
+            return TryParseAsSpecialFloatingPoint<float>(source, float.PositiveInfinity, float.NegativeInfinity, float.NaN, out value, out bytesConsumed);
         }
 
         /// <summary>
         /// Parses a Double at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -63,18 +63,18 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out double value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
         {
-            if (TryParseNormalAsFloatingPoint(text, out value, out bytesConsumed, standardFormat))
+            if (TryParseNormalAsFloatingPoint(source, out value, out bytesConsumed, standardFormat))
                 return true;
 
-            return TryParseAsSpecialFloatingPoint<double>(text, double.PositiveInfinity, double.NegativeInfinity, double.NaN, out value, out bytesConsumed);
+            return TryParseAsSpecialFloatingPoint<double>(source, double.PositiveInfinity, double.NegativeInfinity, double.NaN, out value, out bytesConsumed);
         }
 
         //
         // Attempt to parse the regular floating points (the ones without names like "Infinity" and "NaN")
         //
-        private static bool TryParseNormalAsFloatingPoint(ReadOnlySpan<byte> text, out double value, out int bytesConsumed, char standardFormat)
+        private static bool TryParseNormalAsFloatingPoint(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat)
         {
             ParseNumberOptions options;
             switch (standardFormat)
@@ -97,7 +97,7 @@ namespace System.Buffers.Text
             }
 
             NumberBuffer number = default;
-            if (!TryParseNumber(text, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
+            if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
             {
                 value = default;
                 return false;
@@ -128,29 +128,29 @@ namespace System.Buffers.Text
         //
         // Assuming the text doesn't look like a normal floating point, we attempt to parse it as one the special floating point values.
         //
-        private static bool TryParseAsSpecialFloatingPoint<T>(ReadOnlySpan<byte> text, T positiveInfinity, T negativeInfinity, T nan, out T value, out int bytesConsumed)
+        private static bool TryParseAsSpecialFloatingPoint<T>(ReadOnlySpan<byte> source, T positiveInfinity, T negativeInfinity, T nan, out T value, out int bytesConsumed)
         {
-            if (text.Length >= 8 &&
-                text[0] == 'I' && text[1] == 'n' && text[2] == 'f' && text[3] == 'i' &&
-                text[4] == 'n' && text[5] == 'i' && text[6] == 't' && text[7] == 'y')
+            if (source.Length >= 8 &&
+                source[0] == 'I' && source[1] == 'n' && source[2] == 'f' && source[3] == 'i' &&
+                source[4] == 'n' && source[5] == 'i' && source[6] == 't' && source[7] == 'y')
             {
                 value = positiveInfinity;
                 bytesConsumed = 8;
                 return true;
             }
 
-            if (text.Length >= 9 &&
-                text[0] == Utf8Constants.Minus &&
-                text[1] == 'I' && text[2] == 'n' && text[3] == 'f' && text[4] == 'i' &&
-                text[5] == 'n' && text[6] == 'i' && text[7] == 't' && text[8] == 'y')
+            if (source.Length >= 9 &&
+                source[0] == Utf8Constants.Minus &&
+                source[1] == 'I' && source[2] == 'n' && source[3] == 'f' && source[4] == 'i' &&
+                source[5] == 'n' && source[6] == 'i' && source[7] == 't' && source[8] == 'y')
             {
                 value = negativeInfinity;
                 bytesConsumed = 9;
                 return true;
             }
 
-            if (text.Length >= 3 &&
-                text[0] == 'N' && text[1] == 'a' && text[2] == 'N')
+            if (source.Length >= 3 &&
+                source[0] == 'N' && source[1] == 'a' && source[2] == 'N')
             {
                 value = nan;
                 bytesConsumed = 3;

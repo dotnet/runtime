@@ -132,7 +132,7 @@ namespace System.Buffers.Binary
         /// Reads a structure of type T out of a read-only span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ReadMachineEndian<T>(ReadOnlySpan<byte> buffer)
+        public static T ReadMachineEndian<T>(ReadOnlySpan<byte> source)
             where T : struct
         {
 #if netstandard
@@ -146,11 +146,11 @@ namespace System.Buffers.Binary
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
             }
 #endif
-            if (Unsafe.SizeOf<T>() > buffer.Length)
+            if (Unsafe.SizeOf<T>() > source.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
-            return Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(buffer));
+            return Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(source));
         }
 
         /// <summary>
@@ -158,7 +158,7 @@ namespace System.Buffers.Binary
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryReadMachineEndian<T>(ReadOnlySpan<byte> buffer, out T value)
+        public static bool TryReadMachineEndian<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
         {
 #if netstandard
@@ -172,12 +172,12 @@ namespace System.Buffers.Binary
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
             }
 #endif
-            if (Unsafe.SizeOf<T>() > (uint)buffer.Length)
+            if (Unsafe.SizeOf<T>() > (uint)source.Length)
             {
                 value = default;
                 return false;
             }
-            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(buffer));
+            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(source));
             return true;
         }
     }

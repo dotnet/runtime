@@ -8,7 +8,7 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatDecimalF(ref NumberBuffer number, Span<byte> buffer, out int bytesWritten, byte precision)
+        private static bool TryFormatDecimalF(ref NumberBuffer number, Span<byte> destination, out int bytesWritten, byte precision)
         {
             int scale = number.Scale;
             ReadOnlySpan<byte> digits = number.Digits;
@@ -18,7 +18,7 @@ namespace System.Buffers.Text
                 + ((scale <= 0) ? 1 : scale)  // digits before the decimal point (minimum 1)
                 + ((precision == 0) ? 0 : (precision + 1)); // if specified precision != 0, the decimal point and the digits after the decimal point (padded with zeroes if needed)
 
-            if (buffer.Length < numBytesNeeded)
+            if (destination.Length < numBytesNeeded)
             {
                 bytesWritten = 0;
                 return false;
@@ -28,7 +28,7 @@ namespace System.Buffers.Text
             int dstIndex = 0;
             if (number.IsNegative)
             {
-                buffer[dstIndex++] = Utf8Constants.Minus;
+                destination[dstIndex++] = Utf8Constants.Minus;
             }
 
             //
@@ -36,7 +36,7 @@ namespace System.Buffers.Text
             //
             if (scale <= 0)
             {
-                buffer[dstIndex++] = (byte)'0';  // The integer portion is 0 and not stored. The formatter, however, needs to emit it.
+                destination[dstIndex++] = (byte)'0';  // The integer portion is 0 and not stored. The formatter, however, needs to emit it.
             }
             else
             {
@@ -48,19 +48,19 @@ namespace System.Buffers.Text
                         int numTrailingZeroes = scale - srcIndex;
                         for (int i = 0; i < numTrailingZeroes; i++)
                         {
-                            buffer[dstIndex++] = (byte)'0';
+                            destination[dstIndex++] = (byte)'0';
                         }
                         break;
                     }
 
-                    buffer[dstIndex++] = digit;
+                    destination[dstIndex++] = digit;
                     srcIndex++;
                 }
             }
 
             if (precision > 0)
             {
-                buffer[dstIndex++] = Utf8Constants.Period;
+                destination[dstIndex++] = Utf8Constants.Period;
 
                 //
                 // Emit digits after the decimal point.
@@ -71,7 +71,7 @@ namespace System.Buffers.Text
                     int numLeadingZeroesToEmit = Math.Min((int)precision, -scale);
                     for (int i = 0; i < numLeadingZeroesToEmit; i++)
                     {
-                        buffer[dstIndex++] = (byte)'0';
+                        destination[dstIndex++] = (byte)'0';
                     }
                     numDigitsEmitted += numLeadingZeroesToEmit;
                 }
@@ -83,11 +83,11 @@ namespace System.Buffers.Text
                     {
                         while (numDigitsEmitted++ < precision)
                         {
-                            buffer[dstIndex++] = (byte)'0';
+                            destination[dstIndex++] = (byte)'0';
                         }
                         break;
                     }
-                    buffer[dstIndex++] = digit;
+                    destination[dstIndex++] = digit;
                     srcIndex++;
                     numDigitsEmitted++;
                 }

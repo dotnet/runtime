@@ -105,7 +105,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
-        public static implicit operator ReadOnlyMemory<T>(ArraySegment<T> arraySegment) => new ReadOnlyMemory<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        public static implicit operator ReadOnlyMemory<T>(ArraySegment<T> segment) => new ReadOnlyMemory<T>(segment.Array, segment.Offset, segment.Count);
 
         /// <summary>
         /// Returns an empty <see cref="ReadOnlyMemory{T}"/>

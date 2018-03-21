@@ -28,37 +28,37 @@ namespace System
             => (IndexOf(span, value, comparisonType) >= 0);
 
         /// <summary>
-        /// Determines whether this <paramref name="span"/> and the specified <paramref name="value"/> span have the same characters
+        /// Determines whether this <paramref name="span"/> and the specified <paramref name="other"/> span have the same characters
         /// when compared using the specified <paramref name="comparisonType"/> option.
         /// <param name="span">The source span.</param>
-        /// <param name="value">The value to compare with the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        /// <param name="other">The value to compare with the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
         /// </summary>
-        public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        public static bool Equals(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             if (comparisonType == StringComparison.Ordinal)
             {
-                return span.SequenceEqual<char>(value);
+                return span.SequenceEqual<char>(other);
             }
 
-            return span.ToString().Equals(value.ToString(), comparisonType);
+            return span.ToString().Equals(other.ToString(), comparisonType);
         }
 
         /// <summary>
-        /// Compares the specified <paramref name="span"/> and <paramref name="value"/> using the specified <paramref name="comparisonType"/>,
+        /// Compares the specified <paramref name="span"/> and <paramref name="other"/> using the specified <paramref name="comparisonType"/>,
         /// and returns an integer that indicates their relative position in the sort order.
         /// <param name="span">The source span.</param>
-        /// <param name="value">The value to compare with the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
+        /// <param name="other">The value to compare with the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
         /// </summary>
-        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        public static int CompareTo(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             if (comparisonType == StringComparison.Ordinal)
             {
-                return span.SequenceCompareTo(value);
+                return span.SequenceCompareTo(other);
             }
 
-            return string.Compare(span.ToString(), value.ToString(), comparisonType);
+            return string.Compare(span.ToString(), other.ToString(), comparisonType);
         }
 
         /// <summary>
@@ -164,38 +164,38 @@ namespace System
             => ToUpper(source, destination, CultureInfo.InvariantCulture);
 
         /// <summary>
-        /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
+        /// Determines whether the end of the <paramref name="span"/> matches the specified <paramref name="other"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
         /// <param name="span">The source span.</param>
-        /// <param name="value">The sequence to compare to the end of the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
-        public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        /// <param name="other">The sequence to compare to the end of the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
+        public static bool EndsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             if (comparisonType == StringComparison.Ordinal)
             {
-                return span.EndsWith<char>(value);
+                return span.EndsWith<char>(other);
             }
 
             string sourceString = span.ToString();
-            string valueString = value.ToString();
+            string valueString = other.ToString();
             return sourceString.EndsWith(valueString, comparisonType);
         }
 
         /// <summary>
-        /// Determines whether the beginning of the <paramref name="span"/> matches the specified <paramref name="value"/> when compared using the specified <paramref name="comparisonType"/> option.
+        /// Determines whether the beginning of the <paramref name="span"/> matches the specified <paramref name="other"/> when compared using the specified <paramref name="comparisonType"/> option.
         /// </summary>
         /// <param name="span">The source span.</param>
-        /// <param name="value">The sequence to compare to the beginning of the source span.</param>
-        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="value"/> are compared.</param>
-        public static bool StartsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> value, StringComparison comparisonType)
+        /// <param name="other">The sequence to compare to the beginning of the source span.</param>
+        /// <param name="comparisonType">One of the enumeration values that determines how the <paramref name="span"/> and <paramref name="other"/> are compared.</param>
+        public static bool StartsWith(this ReadOnlySpan<char> span, ReadOnlySpan<char> other, StringComparison comparisonType)
         {
             if (comparisonType == StringComparison.Ordinal)
             {
-                return span.StartsWith<char>(value);
+                return span.StartsWith<char>(other);
             }
 
             string sourceString = span.ToString();
-            string valueString = value.ToString();
+            string valueString = other.ToString();
             return sourceString.StartsWith(valueString, comparisonType);
         }
 
@@ -203,7 +203,7 @@ namespace System
         /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
-        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
@@ -211,21 +211,21 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> AsBytes<T>(this Span<T> source)
+        public static Span<byte> AsBytes<T>(this Span<T> span)
             where T : struct
         {
             if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
 
-            int newLength = checked(source.Length * Unsafe.SizeOf<T>());
-            return new Span<byte>(Unsafe.As<Pinnable<byte>>(source.Pinnable), source.ByteOffset, newLength);
+            int newLength = checked(span.Length * Unsafe.SizeOf<T>());
+            return new Span<byte>(Unsafe.As<Pinnable<byte>>(span.Pinnable), span.ByteOffset, newLength);
         }
 
         /// <summary>
         /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
         /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
         /// </summary>
-        /// <param name="source">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
@@ -233,14 +233,14 @@ namespace System
         /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
+        public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> span)
             where T : struct
         {
             if (SpanHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
 
-            int newLength = checked(source.Length * Unsafe.SizeOf<T>());
-            return new ReadOnlySpan<byte>(Unsafe.As<Pinnable<byte>>(source.Pinnable), source.ByteOffset, newLength);
+            int newLength = checked(span.Length * Unsafe.SizeOf<T>());
+            return new ReadOnlySpan<byte>(Unsafe.As<Pinnable<byte>>(span.Pinnable), span.ByteOffset, newLength);
         }
 
         /// <summary>

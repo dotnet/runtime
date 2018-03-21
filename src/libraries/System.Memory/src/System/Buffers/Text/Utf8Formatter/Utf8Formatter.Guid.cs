@@ -24,7 +24,7 @@ namespace System.Buffers.Text
         /// Formats a Guid as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -41,7 +41,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(Guid value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
+        public static bool TryFormat(Guid value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
             const int INSERT_DASHES = unchecked((int)0x80000000);
             const int NO_DASHES = 0;
@@ -86,7 +86,7 @@ namespace System.Buffers.Text
 
             // At this point, the low byte of flags contains the minimum required length
 
-            if ((byte)flags > buffer.Length)
+            if ((byte)flags > destination.Length)
             {
                 bytesWritten = 0;
                 return false;
@@ -99,8 +99,8 @@ namespace System.Buffers.Text
 
             if ((byte)flags != 0)
             {
-                buffer[0] = (byte)flags;
-                buffer = buffer.Slice(1);
+                destination[0] = (byte)flags;
+                destination = destination.Slice(1);
             }
             flags >>= 8;
 
@@ -117,75 +117,75 @@ namespace System.Buffers.Text
             // because it may have an observeable side effect (throwing).
             // We use 8 instead of 7 so that we also capture the dash if we're asked to insert one.
 
-            { var unused = buffer[8]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte03, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte02, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte01, buffer, 4, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte00, buffer, 6, FormattingHelpers.HexCasing.Lowercase);
+            { var unused = destination[8]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte03, destination, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte02, destination, 2, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte01, destination, 4, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte00, destination, 6, FormattingHelpers.HexCasing.Lowercase);
 
             if (flags < 0 /* use dash? */)
             {
-                buffer[8] = Dash;
-                buffer = buffer.Slice(9);
+                destination[8] = Dash;
+                destination = destination.Slice(9);
             }
             else
             {
-                buffer = buffer.Slice(8);
+                destination = destination.Slice(8);
             }
 
-            { var unused = buffer[4]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte05, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte04, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+            { var unused = destination[4]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte05, destination, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte04, destination, 2, FormattingHelpers.HexCasing.Lowercase);
 
             if (flags < 0 /* use dash? */)
             {
-                buffer[4] = Dash;
-                buffer = buffer.Slice(5);
+                destination[4] = Dash;
+                destination = destination.Slice(5);
             }
             else
             {
-                buffer = buffer.Slice(4);
+                destination = destination.Slice(4);
             }
 
-            { var unused = buffer[4]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte07, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte06, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+            { var unused = destination[4]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte07, destination, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte06, destination, 2, FormattingHelpers.HexCasing.Lowercase);
 
             if (flags < 0 /* use dash? */)
             {
-                buffer[4] = Dash;
-                buffer = buffer.Slice(5);
+                destination[4] = Dash;
+                destination = destination.Slice(5);
             }
             else
             {
-                buffer = buffer.Slice(4);
+                destination = destination.Slice(4);
             }
 
-            { var unused = buffer[4]; }
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte08, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte09, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
+            { var unused = destination[4]; }
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte08, destination, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte09, destination, 2, FormattingHelpers.HexCasing.Lowercase);
 
             if (flags < 0 /* use dash? */)
             {
-                buffer[4] = Dash;
-                buffer = buffer.Slice(5);
+                destination[4] = Dash;
+                destination = destination.Slice(5);
             }
             else
             {
-                buffer = buffer.Slice(4);
+                destination = destination.Slice(4);
             }
 
-            { var unused = buffer[11]; } // can't hoist bounds check on the final brace (if exists)
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte10, buffer, 0, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte11, buffer, 2, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte12, buffer, 4, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte13, buffer, 6, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte14, buffer, 8, FormattingHelpers.HexCasing.Lowercase);
-            FormattingHelpers.WriteHexByte(guidAsBytes.Byte15, buffer, 10, FormattingHelpers.HexCasing.Lowercase);
+            { var unused = destination[11]; } // can't hoist bounds check on the final brace (if exists)
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte10, destination, 0, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte11, destination, 2, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte12, destination, 4, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte13, destination, 6, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte14, destination, 8, FormattingHelpers.HexCasing.Lowercase);
+            FormattingHelpers.WriteHexByte(guidAsBytes.Byte15, destination, 10, FormattingHelpers.HexCasing.Lowercase);
 
             if ((byte)flags != 0)
             {
-                buffer[12] = (byte)flags;
+                destination[12] = (byte)flags;
             }
 
             return true;

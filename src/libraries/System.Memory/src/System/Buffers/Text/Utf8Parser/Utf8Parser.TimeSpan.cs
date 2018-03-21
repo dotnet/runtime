@@ -11,7 +11,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a TimeSpan at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -28,7 +28,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out TimeSpan value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out TimeSpan value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
@@ -36,13 +36,13 @@ namespace System.Buffers.Text
                 case 'c':
                 case 't':
                 case 'T':
-                    return TryParseTimeSpanC(text, out value, out bytesConsumed);
+                    return TryParseTimeSpanC(source, out value, out bytesConsumed);
 
                 case 'G':
-                    return TryParseTimeSpanBigG(text, out value, out bytesConsumed);
+                    return TryParseTimeSpanBigG(source, out value, out bytesConsumed);
 
                 case 'g':
-                    return TryParseTimeSpanLittleG(text, out value, out bytesConsumed);
+                    return TryParseTimeSpanLittleG(source, out value, out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
@@ -53,18 +53,18 @@ namespace System.Buffers.Text
         /// Parse the fraction portion of a TimeSpan. Must be 1..7 digits. If fewer than 7, zeroes are implied to the right. If more than 7, the TimeSpan
         /// parser rejects the string (even if the extra digits are all zeroes.)
         /// </summary>
-        private static bool TryParseTimeSpanFraction(ReadOnlySpan<byte> text, out uint value, out int bytesConsumed)
+        private static bool TryParseTimeSpanFraction(ReadOnlySpan<byte> source, out uint value, out int bytesConsumed)
         {
             int srcIndex = 0;
 
-            if (srcIndex == text.Length)
+            if (srcIndex == source.Length)
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            uint digit = text[srcIndex] - 48u; // '0'
+            uint digit = source[srcIndex] - 48u; // '0'
             if (digit > 9)
             {
                 value = default;
@@ -76,9 +76,9 @@ namespace System.Buffers.Text
             uint fraction = digit;
             int digitCount = 1;
 
-            while (srcIndex != text.Length)
+            while (srcIndex != source.Length)
             {
-                digit = text[srcIndex] - 48u; // '0'
+                digit = source[srcIndex] - 48u; // '0'
                 if (digit > 9)
                     break;
                 srcIndex++;
