@@ -755,26 +755,26 @@ namespace System
 
         public override String ToString()
         {
-            return DateTimeFormat.Format(ClockDateTime, null, DateTimeFormatInfo.CurrentInfo, Offset);
+            return DateTimeFormat.Format(ClockDateTime, null, null, Offset);
         }
 
         public String ToString(String format)
         {
-            return DateTimeFormat.Format(ClockDateTime, format, DateTimeFormatInfo.CurrentInfo, Offset);
+            return DateTimeFormat.Format(ClockDateTime, format, null, Offset);
         }
 
         public String ToString(IFormatProvider formatProvider)
         {
-            return DateTimeFormat.Format(ClockDateTime, null, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
+            return DateTimeFormat.Format(ClockDateTime, null, formatProvider, Offset);
         }
 
         public String ToString(String format, IFormatProvider formatProvider)
         {
-            return DateTimeFormat.Format(ClockDateTime, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
+            return DateTimeFormat.Format(ClockDateTime, format, formatProvider, Offset);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider formatProvider = null) =>
-            DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, DateTimeFormatInfo.GetInstance(formatProvider), Offset);
+            DateTimeFormat.TryFormat(ClockDateTime, destination, out charsWritten, format, formatProvider, Offset);
 
         public DateTimeOffset ToUniversalTime()
         {
