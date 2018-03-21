@@ -264,7 +264,7 @@ public:
                         W("*.dll"),
                         W("*.ni.exe"),
                         W("*.exe"),
-                        W("*.ni.winmd")
+                        W("*.ni.winmd"),
                         W("*.winmd")
                         };
 
