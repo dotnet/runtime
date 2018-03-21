@@ -16,6 +16,7 @@ class EventPipeFile;
 class EventPipeJsonFile;
 class EventPipeBuffer;
 class EventPipeBufferManager;
+class EventPipeEventSource;
 class EventPipeProvider;
 class MethodDesc;
 class SampleProfilerEventInstance;
@@ -35,7 +36,7 @@ typedef void (*EventPipeCallback)(
 struct EventData
 {
 public:
-    unsigned long Ptr;
+    UINT64 Ptr;
     unsigned int Size;
     unsigned int Reserved;
 };
@@ -44,7 +45,7 @@ class EventPipeEventPayload
 {
 private:
     BYTE *m_pData;
-    EventData **m_pEventData;
+    EventData *m_pEventData;
     unsigned int m_eventDataCount;
     unsigned int m_size;
     bool m_allocatedData;
@@ -57,7 +58,7 @@ public:
     EventPipeEventPayload(BYTE *pData, unsigned int length);
 
     // Build this payload to contain an array of EventData objects
-    EventPipeEventPayload(EventData **pEventData, unsigned int eventDataCount);
+    EventPipeEventPayload(EventData *pEventData, unsigned int eventDataCount);
 
     // If a buffer was allocated internally, delete it
     ~EventPipeEventPayload();
@@ -87,7 +88,7 @@ public:
         return m_size;
     }
 
-    EventData** GetEventDataArray() const
+    EventData* GetEventDataArray() const
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -258,7 +259,7 @@ class EventPipe
 
         // Write out an event from an EventData array.
         // Data is written as a serialized blob matching the ETW serialization conventions.
-        static void WriteEvent(EventPipeEvent &event, EventData **pEventData, unsigned int eventDataCount, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
+        static void WriteEvent(EventPipeEvent &event, EventData *pEventData, unsigned int eventDataCount, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
 
         // Write out a sample profile event.
         static void WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent *pEvent, Thread *pTargetThread, StackContents &stackContents, BYTE *pData = NULL, unsigned int length = 0);
@@ -268,6 +269,9 @@ class EventPipe
 
         // Get the managed call stack for the specified thread.
         static bool WalkManagedStackForThread(Thread *pThread, StackContents &stackContents);
+
+        // Save the command line for the current process.
+        static void SaveCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
 
     protected:
 
@@ -299,6 +303,8 @@ class EventPipe
         static EventPipeSession *s_pSession;
         static EventPipeBufferManager *s_pBufferManager;
         static EventPipeFile *s_pFile;
+        static EventPipeEventSource *s_pEventSource;
+        static LPCWSTR s_pCommandLine;
 #ifdef _DEBUG
         static EventPipeFile *s_pSyncFile;
         static EventPipeJsonFile *s_pJsonFile;
@@ -408,7 +414,7 @@ public:
     static void QCALLTYPE WriteEventData(
         INT_PTR eventHandle,
         UINT32 eventID,
-        EventData **pEventData,
+        EventData *pEventData,
         UINT32 eventDataCount,
         LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 };
