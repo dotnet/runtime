@@ -12,6 +12,8 @@ namespace System.IO.Tests
 
         public override DirectoryInfo GetMissingItem() => new DirectoryInfo(GetTestFilePath());
 
+        public override string GetItemPath(DirectoryInfo item) => item.FullName;
+
         public override void InvokeCreate(DirectoryInfo item) => item.Create();
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)

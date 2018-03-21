@@ -10,6 +10,8 @@ namespace System.IO.Tests
     {
         public override string GetMissingItem() => GetTestFilePath();
 
+        public override string GetItemPath(string item) => item;
+
         [Fact]
         public void NullPath_ThrowsArgumentNullException()
         {
