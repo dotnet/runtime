@@ -20,38 +20,6 @@
 // For reg numbers
 #include <mono/arch/amd64/amd64-codegen.h>
 
-/* Known offsets used for TLS storage*/
-
-/* All OSX versions up to 10.8 */
-#define TLS_VECTOR_OFFSET_CATS 0x48
-#define TLS_VECTOR_OFFSET_10_9 0xb0
-#define TLS_VECTOR_OFFSET_10_11 0x100
-
-
-/* This is 2 slots less than the known low */
-#define TLS_PROBE_LOW_WATERMARK 0x40
-/* This is 28 slots above the know high, which is more than the known high-low*/
-#define TLS_PROBE_HIGH_WATERMARK 0x120
-
-
-static int tls_vector_offset;
-
-void *
-mono_mach_arch_get_ip (thread_state_t state)
-{
-	x86_thread_state32_t *arch_state = (x86_thread_state32_t *) state;
-
-	return (void *) arch_state->__eip;
-}
-
-void *
-mono_mach_arch_get_sp (thread_state_t state)
-{
-	x86_thread_state32_t *arch_state = (x86_thread_state32_t *) state;
-
-	return (void *) arch_state->__esp;
-}
-
 int
 mono_mach_arch_get_mcontext_size ()
 {
@@ -149,66 +117,6 @@ mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, ma
 	ret = thread_set_state (thread, x86_FLOAT_STATE32, fpstate, fpcount);
 	return ret;
 #endif	
-}
-
-void *
-mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key)
-{
-	/* OSX stores TLS values in a hidden array inside the pthread_t structure
-	 * They are keyed off a giant array from a known offset into the pointer.  This value
-	 * is baked into their pthread_getspecific implementation
-	 */
-	intptr_t *p = (intptr_t *) thread;
-	intptr_t **tsd = (intptr_t **) ((char*)p + tls_vector_offset);
-	g_assert (tls_vector_offset != -1);
-
-	return (void *) &tsd [key];	
-}
-
-void *
-mono_mach_arch_get_tls_value_from_thread (pthread_t thread, guint32 key)
-{
-	return *(void**)mono_mach_get_tls_address_from_thread (thread, key);
-}
-
-void
-mono_mach_init (pthread_key_t key)
-{
-	int i;
-	void *old_value = pthread_getspecific (key);
-	void *canary = (void*)0xDEADBEEFu;
-
-	pthread_key_create (&key, NULL);
-	g_assert (old_value != canary);
-
-	pthread_setspecific (key, canary);
-
-	/*First we probe for cats*/
-	tls_vector_offset = TLS_VECTOR_OFFSET_CATS;
-	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
-		goto ok;
-
-	tls_vector_offset = TLS_VECTOR_OFFSET_10_9;
-	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
-		goto ok;
-
-	tls_vector_offset = TLS_VECTOR_OFFSET_10_11;
-	if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary)
-		goto ok;
-
-	/*Fallback to scanning a large range of offsets*/
-	for (i = TLS_PROBE_LOW_WATERMARK; i <= TLS_PROBE_HIGH_WATERMARK; i += 4) {
-		tls_vector_offset = i;
-		if (mono_mach_arch_get_tls_value_from_thread (pthread_self (), key) == canary) {
-			g_warning ("Found new TLS offset at %d", i);
-			goto ok;
-		}
-	}
-
-	tls_vector_offset = -1;
-	g_warning ("could not discover the mach TLS offset");
-ok:
-	pthread_setspecific (key, old_value);
 }
 
 #endif

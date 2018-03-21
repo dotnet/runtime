@@ -771,10 +771,6 @@ mono_thread_info_init (size_t info_size)
 	mono_threads_coop_init ();
 	mono_threads_platform_init ();
 
-#if defined(__MACH__)
-	mono_mach_init (thread_info_key);
-#endif
-
 	mono_threads_inited = TRUE;
 
 	g_assert (sizeof (MonoNativeThreadId) <= sizeof (uintptr_t));
