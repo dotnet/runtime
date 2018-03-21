@@ -688,68 +688,17 @@ namespace System
             Out.Write(value);
         }
 
-        private sealed class ControlCDelegateData
-        {
-            private readonly ConsoleSpecialKey _controlKey;
-            private readonly ConsoleCancelEventHandler _cancelCallbacks;
-
-            internal bool Cancel;
-            internal bool DelegateStarted;
-
-            internal ControlCDelegateData(ConsoleSpecialKey controlKey, ConsoleCancelEventHandler cancelCallbacks)
-            {
-                _controlKey = controlKey;
-                _cancelCallbacks = cancelCallbacks;
-            }
-
-            // This is the worker delegate that is called on the Threadpool thread to fire the actual events. It sets the DelegateStarted flag so
-            // the thread that queued the work to the threadpool knows it has started (since it does not want to block indefinitely on the task
-            // to start).
-            internal void HandleBreakEvent()
-            {
-                DelegateStarted = true;
-                var args = new ConsoleCancelEventArgs(_controlKey);
-                _cancelCallbacks(null, args);
-                Cancel = args.Cancel;
-            }
-        }
-
         internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
         {
-            // The thread that this gets called back on has a very small stack on some systems. There is
-            // not enough space to handle a managed exception being caught and thrown. So, run a task
-            // on the threadpool for the actual event callback.
-
-            // To avoid the race condition between remove handler and raising the event
-            ConsoleCancelEventHandler cancelCallbacks = Console._cancelCallbacks;
-            if (cancelCallbacks == null)
+            ConsoleCancelEventHandler handler = _cancelCallbacks;
+            if (handler == null)
             {
                 return false;
             }
 
-            var delegateData = new ControlCDelegateData(controlKey, cancelCallbacks);
-            Task callBackTask = Task.Factory.StartNew(
-                d => ((ControlCDelegateData)d).HandleBreakEvent(),
-                delegateData,
-                CancellationToken.None,
-                TaskCreationOptions.DenyChildAttach,
-                TaskScheduler.Default);
-
-            // Block until the delegate is done. We need to be robust in the face of the task not executing
-            // but we also want to get control back immediately after it is done and we don't want to give the
-            // handler a fixed time limit in case it needs to display UI. Wait on the task twice, once with a
-            // timeout and a second time without if we are sure that the handler actually started.
-            TimeSpan controlCWaitTime = new TimeSpan(0, 0, 30); // 30 seconds
-            callBackTask.Wait(controlCWaitTime);
-            
-            if (!delegateData.DelegateStarted)
-            {
-                Debug.Assert(false, "The task to execute the handler did not start within 30 seconds.");
-                return false;
-            }
-
-            callBackTask.Wait();
-            return delegateData.Cancel;
+            var args = new ConsoleCancelEventArgs(controlKey);
+            handler(null, args);
+            return args.Cancel;
         }
     }
 }
