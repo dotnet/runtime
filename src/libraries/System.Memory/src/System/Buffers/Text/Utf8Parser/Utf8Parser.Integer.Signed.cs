@@ -41,7 +41,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case (default):
+                case default(char):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -87,7 +87,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case (default):
+                case default(char):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -133,7 +133,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case (default):
+                case default(char):
                 case 'g':
                 case 'G':
                 case 'd':
@@ -179,7 +179,7 @@ namespace System.Buffers.Text
         {
             switch (standardFormat)
             {
-                case (default):
+                case default(char):
                 case 'g':
                 case 'G':
                 case 'd':

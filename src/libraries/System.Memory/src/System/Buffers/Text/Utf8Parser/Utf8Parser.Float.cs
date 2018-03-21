@@ -79,7 +79,7 @@ namespace System.Buffers.Text
             ParseNumberOptions options;
             switch (standardFormat)
             {
-                case (default):
+                case default(char):
                 case 'G':
                 case 'g':
                 case 'E':
