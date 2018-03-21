@@ -320,7 +320,7 @@ REM ============================================================================
 
 if %__RestoreOptData% EQU 1 if %__BuildTypeRelease% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
-    @call %__ProjectDir%\run.cmd sync -optdata
+    @call %__ProjectDir%\run.cmd sync -optdata %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Failed to restore the optimization data package.
         exit /b 1
