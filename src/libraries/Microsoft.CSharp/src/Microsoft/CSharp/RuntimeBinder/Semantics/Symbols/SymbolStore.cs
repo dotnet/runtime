@@ -15,11 +15,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal static class SymbolStore
     {
+        // The RuntimeBinder uses a global lock when Binding that keeps this dictionary safe.
         private static readonly Dictionary<Key, Symbol> s_dictionary = new Dictionary<Key, Symbol>();
 
-        public static Symbol LookupSym(Name name, ParentSymbol parent, symbmask_t kindmask) =>
-            s_dictionary.TryGetValue(new Key(name, parent), out Symbol sym) ? FindCorrectKind(sym, kindmask) : null;
-
+        public static Symbol LookupSym(Name name, ParentSymbol parent, symbmask_t kindmask) 
+        {
+            RuntimeBinder.EnsureLockIsTaken();
+            return s_dictionary.TryGetValue(new Key(name, parent), out Symbol sym) ? FindCorrectKind(sym, kindmask) : null;
+        }
+        
         public static void InsertChild(ParentSymbol parent, Symbol child)
         {
             Debug.Assert(child.nextSameName == null);
@@ -39,6 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return;
             }
 
+            RuntimeBinder.EnsureLockIsTaken();
             if (s_dictionary.TryGetValue(new Key(child.name, child.parent), out Symbol sym))
             {
                 // Link onto the end of the symbol chain here.

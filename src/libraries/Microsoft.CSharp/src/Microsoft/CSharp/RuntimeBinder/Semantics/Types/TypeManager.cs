@@ -15,6 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal static class TypeManager
     {
+        // The RuntimeBinder uses a global lock when Binding that keeps this dictionary safe.
         private static readonly Dictionary<(Assembly, Assembly), bool> s_internalsVisibleToCache =
             new Dictionary<(Assembly, Assembly), bool>();
 
@@ -745,6 +746,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         internal static bool InternalsVisibleTo(Assembly assemblyThatDefinesAttribute, Assembly assemblyToCheck)
         {
+            RuntimeBinder.EnsureLockIsTaken();
             (Assembly, Assembly) key = (assemblyThatDefinesAttribute, assemblyToCheck);
             if (!s_internalsVisibleToCache.TryGetValue(key, out bool result))
             {
