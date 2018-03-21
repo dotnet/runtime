@@ -6358,15 +6358,8 @@ mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length,
 	return o;
 }
 
-/**
- * mono_string_new:
- * \param text a pointer to a UTF-8 string
- * \deprecated Use \c mono_string_new_checked in new code.
- * This function asserts if it cannot allocate a new string.
- * \returns A newly created string object which contains \p text.
- */
-MonoString*
-mono_string_new (MonoDomain *domain, const char *text)
+static MonoString*
+mono_string_new_internal (MonoDomain *domain, const char *text)
 {
 	ERROR_DECL (error);
 	MonoString *res = NULL;
@@ -6381,6 +6374,19 @@ mono_string_new (MonoDomain *domain, const char *text)
 			mono_error_cleanup (error);
 	}
 	return res;
+}
+
+/**
+ * mono_string_new:
+ * \param text a pointer to a UTF-8 string
+ * \deprecated Use \c mono_string_new_checked in new code.
+ * This function asserts if it cannot allocate a new string.
+ * \returns A newly created string object which contains \p text.
+ */
+MonoString*
+mono_string_new (MonoDomain *domain, const char *text)
+{
+	return mono_string_new_internal (domain, text);
 }
 
 /**
@@ -6486,16 +6492,7 @@ mono_string_new_wrapper (const char *text)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoDomain *domain = mono_domain_get ();
-
-	if (text) {
-		ERROR_DECL (error);
-		MonoString *result = mono_string_new_checked (domain, text, error);
-		mono_error_assert_ok (error);
-		return result;
-	}
-
-	return NULL;
+	return mono_string_new_internal (mono_domain_get (), text);
 }
 
 /**
