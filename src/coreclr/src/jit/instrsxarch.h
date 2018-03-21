@@ -474,8 +474,8 @@ INST3( vpbroadcastb, "pbroadcastb" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( vpbroadcastw, "pbroadcastw" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x79))   // Broadcast int16 value from reg/memory to entire ymm register
 INST3( vpbroadcastd, "pbroadcastd" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x58))   // Broadcast int32 value from reg/memory to entire ymm register
 INST3( vpbroadcastq, "pbroadcastq" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x59))   // Broadcast int64 value from reg/memory to entire ymm register
-INST3( vextractf128, "extractf128" , 0, IUM_WR, 0, 0, SSE3A(0x19),  BAD_CODE, BAD_CODE)      // Extract 128-bit packed floating point values
-INST3( vextracti128, "extracti128" , 0, IUM_WR, 0, 0, SSE3A(0x39),  BAD_CODE, BAD_CODE)      // Extract 128-bit packed integer values
+INST3( vextractf128, "extractf128" , 0, IUM_WR, 0, 0, SSE3A(0x19),  BAD_CODE, SSE3A(0x19))   // Extract 128-bit packed floating point values
+INST3( vextracti128, "extracti128" , 0, IUM_WR, 0, 0, SSE3A(0x39),  BAD_CODE, SSE3A(0x39))   // Extract 128-bit packed integer values
 INST3( vinsertf128,  "insertf128"  , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x18))   // Insert 128-bit packed floating point values
 INST3( vinserti128,  "inserti128"  , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x38))   // Insert 128-bit packed integer values
 INST3( vzeroupper,   "zeroupper"   , 0, IUM_WR, 0, 0, 0xC577F8,     BAD_CODE, BAD_CODE)      // Zero upper 128-bits of all YMM regs (includes 2-byte fixed VEX prefix)
@@ -493,7 +493,13 @@ INST3( vpsllvd,      "psllvd"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SS
 INST3( vpsllvq,      "psllvq"      , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x47))   // Variable Bit Shift Left Logical
 INST3( vpermilps,    "permilps"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x04))   // Permute In-Lane of Quadruples of Single-Precision Floating-Point Values
 INST3( vpermilpd,    "permilpd"    , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x05))   // Permute In-Lane of Quadruples of Double-Precision Floating-Point Values
-
+INST3( vpermilpsvar, "permilpsvar" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x0C))   // Permute In-Lane of Quadruples of Single-Precision Floating-Point Values
+INST3( vpermilpdvar, "permilpdvar" , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x0D))   // Permute In-Lane of Quadruples of Double-Precision Floating-Point Values
+INST3( vperm2f128,   "perm2f128"   , 0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE3A(0x06))   // Permute Floating-Point Values
+INST3(vbroadcastf128,"broadcastf128",0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x1A))   // Broadcast packed float values read from memory to entire ymm register
+INST3(vbroadcasti128,"broadcasti128",0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x5A))   // Broadcast packed integer values read from memory to entire ymm register
+INST3(vmaskmovps,    "maskmovps"    ,0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2C))   // Conditional SIMD Packed Loads Float
+INST3(vmaskmovpd,    "maskmovpd"    ,0, IUM_WR, 0, 0, BAD_CODE,     BAD_CODE, SSE38(0x2D))   // Conditional SIMD Packed Loads Double
 INST3(LAST_AVX_INSTRUCTION, "LAST_AVX_INSTRUCTION",  0, IUM_WR, 0, 0, BAD_CODE, BAD_CODE, BAD_CODE)
 
 // Scalar instructions in SSE4.2
