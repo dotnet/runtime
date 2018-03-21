@@ -22,8 +22,8 @@ namespace System
         private static bool s_isOutTextWriterRedirected = false;
         private static bool s_isErrorTextWriterRedirected = false;
 
-        private static ConsoleCancelEventHandler _cancelCallbacks;
-        private static ConsolePal.ControlCHandlerRegistrar _registrar;
+        private static ConsoleCancelEventHandler s_cancelCallbacks;
+        private static ConsolePal.ControlCHandlerRegistrar s_registrar;
 
         internal static T EnsureInitialized<T>(ref T field, Func<T> initializer) where T : class =>
             LazyInitializer.EnsureInitialized(ref field, ref InternalSyncObject, initializer);
@@ -334,13 +334,13 @@ namespace System
             {
                 lock (InternalSyncObject)
                 {
-                    _cancelCallbacks += value;
+                    s_cancelCallbacks += value;
 
                     // If we haven't registered our control-C handler, do it.
-                    if (_registrar == null)
+                    if (s_registrar == null)
                     {
-                        _registrar = new ConsolePal.ControlCHandlerRegistrar();
-                        _registrar.Register();
+                        s_registrar = new ConsolePal.ControlCHandlerRegistrar();
+                        s_registrar.Register();
                     }
                 }
             }
@@ -348,11 +348,11 @@ namespace System
             {
                 lock (InternalSyncObject)
                 {
-                    _cancelCallbacks -= value;
-                    if (_registrar != null && _cancelCallbacks == null)
+                    s_cancelCallbacks -= value;
+                    if (s_registrar != null && s_cancelCallbacks == null)
                     {
-                        _registrar.Unregister();
-                        _registrar = null;
+                        s_registrar.Unregister();
+                        s_registrar = null;
                     }
                 }
             }
@@ -690,7 +690,7 @@ namespace System
 
         internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
         {
-            ConsoleCancelEventHandler handler = _cancelCallbacks;
+            ConsoleCancelEventHandler handler = s_cancelCallbacks;
             if (handler == null)
             {
                 return false;
