@@ -2730,6 +2730,9 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
         case IF_ARW_CNS:
             return IF_MRW_CNS;
 
+        case IF_AWR_RRD_CNS:
+            return IF_MWR_RRD_CNS;
+
         case IF_ARW_SHF:
             return IF_MRW_SHF;
 
@@ -5066,6 +5069,32 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 
     emitAdjustStackDepthPushPop(ins);
 }
+
+#ifndef LEGACY_BACKEND
+void emitter::emitIns_AR_R_I(instruction ins, emitAttr attr, regNumber base, int disp, regNumber ireg, int ival)
+{
+    assert(ins == INS_vextracti128 || ins == INS_vextractf128);
+    assert(base != REG_NA);
+    assert(ireg != REG_NA);
+    UNATIVE_OFFSET sz;
+    instrDesc*     id = emitNewInstrAmdCns(attr, disp, ival);
+
+    id->idIns(ins);
+    id->idInsFmt(IF_AWR_RRD_CNS);
+    id->idAddr()->iiaAddrMode.amBaseReg = base;
+    id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+    id->idReg1(ireg);
+
+    assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
+
+    // the code size of "vextracti/f128 [mem], ymm, imm8" is 6 byte
+    sz = 6;
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+#endif
 
 void emitter::emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp)
 {
@@ -7790,6 +7819,32 @@ void emitter::emitDispIns(
             break;
         }
 
+        case IF_AWR_RRD_CNS:
+        {
+            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
+            // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
+            sstr = codeGen->genSizeStr(EA_ATTR(16));
+            printf(sstr);
+            emitDispAddrMode(id);
+            printf(", %s", emitRegName(id->idReg1(), attr));
+
+            emitGetInsAmdCns(id, &cnsVal);
+
+            val = cnsVal.cnsVal;
+            printf(", ");
+
+            if (cnsVal.cnsReloc)
+            {
+                emitDispReloc(val);
+            }
+            else
+            {
+                goto PRINT_CONSTANT;
+            }
+
+            break;
+        }
+
         case IF_RWR_RRD_ARD:
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
@@ -8163,6 +8218,32 @@ void emitter::emitDispIns(
             {
                 goto PRINT_CONSTANT;
             }
+            break;
+        }
+
+        case IF_MWR_RRD_CNS:
+        {
+            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
+            // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
+            sstr = codeGen->genSizeStr(EA_ATTR(16));
+            printf(sstr);
+            offs = emitGetInsDsp(id);
+            emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            printf(", %s", emitRegName(id->idReg1(), attr));
+            emitGetInsDcmCns(id, &cnsVal);
+
+            val = cnsVal.cnsVal;
+            printf(", ");
+
+            if (cnsVal.cnsReloc)
+            {
+                emitDispReloc(val);
+            }
+            else
+            {
+                goto PRINT_CONSTANT;
+            }
+
             break;
         }
 
@@ -12218,6 +12299,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz = emitSizeOfInsDsc(id);
             break;
 
+        case IF_AWR_RRD_CNS:
+            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
+            assert(UseVEXEncoding());
+            emitGetInsAmdCns(id, &cnsVal);
+            code = insCodeMR(ins);
+            dst  = emitOutputAM(dst, id, code, &cnsVal);
+            sz   = emitSizeOfInsDsc(id);
+            break;
+
         case IF_RRD_ARD:
         case IF_RWR_ARD:
         case IF_RRW_ARD:
@@ -12528,6 +12618,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             sz = emitSizeOfInsDsc(id);
+            break;
+
+        case IF_MWR_RRD_CNS:
+            assert(ins == INS_vextracti128 || ins == INS_vextractf128);
+            assert(UseVEXEncoding());
+            emitGetInsDcmCns(id, &cnsVal);
+            code = insCodeMR(ins);
+            // only AVX2 vextracti128 and AVX vextractf128 can reach this path,
+            // they do not need VEX.vvvv to encode the register operand
+            dst = emitOutputCV(dst, id, code, &cnsVal);
+            sz  = emitSizeOfInsDsc(id);
             break;
 
         case IF_RRD_MRD:
