@@ -115,9 +115,12 @@ namespace System.SpanTests
                     var secondSpan = new ReadOnlySpan<char>(second);
                     Assert.True(0 > firstSpan.CompareTo(secondSpan, StringComparison.Ordinal));
 
+                    // Due to differences in the implementation, the exact result of CompareTo will not necessarily match with string.Compare.
+                    // However, the sign will match, which is what defines correctness.
                     Assert.Equal(
-                        string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase),
-                        firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase));
+                        Math.Sign(string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.OrdinalIgnoreCase)),
+                        Math.Sign(firstSpan.CompareTo(secondSpan, StringComparison.OrdinalIgnoreCase)));
+
                     Assert.Equal(
                         string.Compare(firstSpan.ToString(), secondSpan.ToString(), StringComparison.CurrentCulture),
                         firstSpan.CompareTo(secondSpan, StringComparison.CurrentCulture));
