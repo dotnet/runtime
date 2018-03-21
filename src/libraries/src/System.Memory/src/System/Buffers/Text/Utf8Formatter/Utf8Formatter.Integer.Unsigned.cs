@@ -15,11 +15,11 @@ namespace System.Buffers.Text
         // Common worker for all unsigned integer TryFormat overloads
         //
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatUInt64(ulong value, Span<byte> buffer, out int bytesWritten, StandardFormat format)
+        private static bool TryFormatUInt64(ulong value, Span<byte> destination, out int bytesWritten, StandardFormat format)
         {
             if (format.IsDefault)
             {
-                return TryFormatUInt64Default(value, buffer, out bytesWritten);
+                return TryFormatUInt64Default(value, destination, out bytesWritten);
             }
 
             switch (format.Symbol)
@@ -28,21 +28,21 @@ namespace System.Buffers.Text
                 case 'g':
                     if (format.HasPrecision)
                         throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported); // With a precision, 'G' can produce exponential format, even for integers.
-                    return TryFormatUInt64D(value, format.Precision, buffer, insertNegationSign: false, out bytesWritten);
+                    return TryFormatUInt64D(value, format.Precision, destination, insertNegationSign: false, out bytesWritten);
 
                 case 'd':
                 case 'D':
-                    return TryFormatUInt64D(value, format.Precision, buffer, insertNegationSign: false, out bytesWritten);
+                    return TryFormatUInt64D(value, format.Precision, destination, insertNegationSign: false, out bytesWritten);
 
                 case 'n':
                 case 'N':
-                    return TryFormatUInt64N(value, format.Precision, buffer, insertNegationSign: false, out bytesWritten);
+                    return TryFormatUInt64N(value, format.Precision, destination, insertNegationSign: false, out bytesWritten);
 
                 case 'x':
-                    return TryFormatUInt64X(value, format.Precision, true /* useLower */, buffer, out bytesWritten);
+                    return TryFormatUInt64X(value, format.Precision, true /* useLower */, destination, out bytesWritten);
 
                 case 'X':
-                    return TryFormatUInt64X(value, format.Precision, false /* useLower */, buffer, out bytesWritten);
+                    return TryFormatUInt64X(value, format.Precision, false /* useLower */, destination, out bytesWritten);
 
                 default:
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);

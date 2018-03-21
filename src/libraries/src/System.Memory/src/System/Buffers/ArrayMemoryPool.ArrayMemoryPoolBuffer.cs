@@ -57,12 +57,12 @@ namespace System.Buffers
                 // in a different assembly. Except in the netstandard config where the base class is in the same assembly.
             internal
 #endif
-            sealed override bool TryGetArray(out ArraySegment<T> arraySegment)
+            sealed override bool TryGetArray(out ArraySegment<T> segment)
             {
                 if (IsDisposed)
                     ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
 
-                arraySegment = new ArraySegment<T>(_array);
+                segment = new ArraySegment<T>(_array);
                 return true;
             }
 

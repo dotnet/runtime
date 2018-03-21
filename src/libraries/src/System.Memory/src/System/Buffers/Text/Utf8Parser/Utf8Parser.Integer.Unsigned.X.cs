@@ -6,9 +6,9 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
     {
-        private static bool TryParseByteX(ReadOnlySpan<byte> text, out byte value, out int bytesConsumed)
+        private static bool TryParseByteX(ReadOnlySpan<byte> source, out byte value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -21,7 +21,7 @@ namespace System.Buffers.Text
             byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
-            nextCharacter = text[0];
+            nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
             if (nextDigit == 0xFF)
             {
@@ -31,12 +31,12 @@ namespace System.Buffers.Text
             }
             uint parsedValue = nextDigit;
 
-            if (text.Length <= ParserHelpers.ByteOverflowLengthHex)
+            if (source.Length <= ParserHelpers.ByteOverflowLengthHex)
             {
                 // Length is less than or equal to Parsers.ByteOverflowLengthHex; overflow is not possible
-                for (int index = 1; index < text.Length; index++)
+                for (int index = 1; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -53,7 +53,7 @@ namespace System.Buffers.Text
                 // digits. There may be no overflow after Parsers.ByteOverflowLengthHex if there are leading zeroes.
                 for (int index = 1; index < ParserHelpers.ByteOverflowLengthHex; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -63,9 +63,9 @@ namespace System.Buffers.Text
                     }
                     parsedValue = (parsedValue << 4) + nextDigit;
                 }
-                for (int index = ParserHelpers.ByteOverflowLengthHex; index < text.Length; index++)
+                for (int index = ParserHelpers.ByteOverflowLengthHex; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -84,14 +84,14 @@ namespace System.Buffers.Text
                 }
             }
 
-            bytesConsumed = text.Length;
+            bytesConsumed = source.Length;
             value = (byte)(parsedValue);
             return true;
         }
 
-        private static bool TryParseUInt16X(ReadOnlySpan<byte> text, out ushort value, out int bytesConsumed)
+        private static bool TryParseUInt16X(ReadOnlySpan<byte> source, out ushort value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -104,7 +104,7 @@ namespace System.Buffers.Text
             byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
-            nextCharacter = text[0];
+            nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
             if (nextDigit == 0xFF)
             {
@@ -114,12 +114,12 @@ namespace System.Buffers.Text
             }
             uint parsedValue = nextDigit;
 
-            if (text.Length <= ParserHelpers.Int16OverflowLengthHex)
+            if (source.Length <= ParserHelpers.Int16OverflowLengthHex)
             {
                 // Length is less than or equal to Parsers.Int16OverflowLengthHex; overflow is not possible
-                for (int index = 1; index < text.Length; index++)
+                for (int index = 1; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -136,7 +136,7 @@ namespace System.Buffers.Text
                 // digits. There may be no overflow after Parsers.Int16OverflowLengthHex if there are leading zeroes.
                 for (int index = 1; index < ParserHelpers.Int16OverflowLengthHex; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -146,9 +146,9 @@ namespace System.Buffers.Text
                     }
                     parsedValue = (parsedValue << 4) + nextDigit;
                 }
-                for (int index = ParserHelpers.Int16OverflowLengthHex; index < text.Length; index++)
+                for (int index = ParserHelpers.Int16OverflowLengthHex; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -167,14 +167,14 @@ namespace System.Buffers.Text
                 }
             }
 
-            bytesConsumed = text.Length;
+            bytesConsumed = source.Length;
             value = (ushort)(parsedValue);
             return true;
         }
 
-        private static bool TryParseUInt32X(ReadOnlySpan<byte> text, out uint value, out int bytesConsumed)
+        private static bool TryParseUInt32X(ReadOnlySpan<byte> source, out uint value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -187,7 +187,7 @@ namespace System.Buffers.Text
             byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
-            nextCharacter = text[0];
+            nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
             if (nextDigit == 0xFF)
             {
@@ -197,12 +197,12 @@ namespace System.Buffers.Text
             }
             uint parsedValue = nextDigit;
 
-            if (text.Length <= ParserHelpers.Int32OverflowLengthHex)
+            if (source.Length <= ParserHelpers.Int32OverflowLengthHex)
             {
                 // Length is less than or equal to Parsers.Int32OverflowLengthHex; overflow is not possible
-                for (int index = 1; index < text.Length; index++)
+                for (int index = 1; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -219,7 +219,7 @@ namespace System.Buffers.Text
                 // digits. There may be no overflow after Parsers.Int32OverflowLengthHex if there are leading zeroes.
                 for (int index = 1; index < ParserHelpers.Int32OverflowLengthHex; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -229,9 +229,9 @@ namespace System.Buffers.Text
                     }
                     parsedValue = (parsedValue << 4) + nextDigit;
                 }
-                for (int index = ParserHelpers.Int32OverflowLengthHex; index < text.Length; index++)
+                for (int index = ParserHelpers.Int32OverflowLengthHex; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -250,14 +250,14 @@ namespace System.Buffers.Text
                 }
             }
 
-            bytesConsumed = text.Length;
+            bytesConsumed = source.Length;
             value = parsedValue;
             return true;
         }
 
-        private static bool TryParseUInt64X(ReadOnlySpan<byte> text, out ulong value, out int bytesConsumed)
+        private static bool TryParseUInt64X(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
         {
-            if (text.Length < 1)
+            if (source.Length < 1)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -270,7 +270,7 @@ namespace System.Buffers.Text
             byte[] hexLookup = ParserHelpers.s_hexLookup;
 
             // Parse the first digit separately. If invalid here, we need to return false.
-            nextCharacter = text[0];
+            nextCharacter = source[0];
             nextDigit = hexLookup[nextCharacter];
             if (nextDigit == 0xFF)
             {
@@ -280,12 +280,12 @@ namespace System.Buffers.Text
             }
             ulong parsedValue = nextDigit;
 
-            if (text.Length <= ParserHelpers.Int64OverflowLengthHex)
+            if (source.Length <= ParserHelpers.Int64OverflowLengthHex)
             {
                 // Length is less than or equal to Parsers.Int64OverflowLengthHex; overflow is not possible
-                for (int index = 1; index < text.Length; index++)
+                for (int index = 1; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -302,7 +302,7 @@ namespace System.Buffers.Text
                 // digits. There may be no overflow after Parsers.Int64OverflowLengthHex if there are leading zeroes.
                 for (int index = 1; index < ParserHelpers.Int64OverflowLengthHex; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -312,9 +312,9 @@ namespace System.Buffers.Text
                     }
                     parsedValue = (parsedValue << 4) + nextDigit;
                 }
-                for (int index = ParserHelpers.Int64OverflowLengthHex; index < text.Length; index++)
+                for (int index = ParserHelpers.Int64OverflowLengthHex; index < source.Length; index++)
                 {
-                    nextCharacter = text[index];
+                    nextCharacter = source[index];
                     nextDigit = hexLookup[nextCharacter];
                     if (nextDigit == 0xFF)
                     {
@@ -333,7 +333,7 @@ namespace System.Buffers.Text
                 }
             }
 
-            bytesConsumed = text.Length;
+            bytesConsumed = source.Length;
             value = parsedValue;
             return true;
         }

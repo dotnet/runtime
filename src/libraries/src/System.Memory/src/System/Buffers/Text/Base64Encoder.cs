@@ -21,8 +21,8 @@ namespace System.Buffers.Text
         ///
         /// <param name="bytes">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="utf8">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in base 64.</param>
-        /// <param name="consumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
-        /// <param name="written">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
+        /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
         /// <param name="isFinalBlock">True (default) when the input span contains the entire data to decode. 
         /// Set to false only if it is known that the input span contains partial data with more data to follow.</param>
         /// <returns>It returns the OperationStatus enum values:
@@ -31,7 +31,7 @@ namespace System.Buffers.Text
         /// - NeedMoreData - only if isFinalBlock is false, otherwise the output is padded if the input is not a multiple of 3
         /// It does not return InvalidData since that is not possible for base 64 encoding.</returns>
         /// </summary> 
-        public static OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int consumed, out int written, bool isFinalBlock = true)
+        public static OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
             ref byte srcBytes = ref MemoryMarshal.GetReference(bytes);
             ref byte destBytes = ref MemoryMarshal.GetReference(utf8);
@@ -84,18 +84,18 @@ namespace System.Buffers.Text
                 sourceIndex += 2;
             }
 
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.Done;
 
         NeedMoreDataExit:
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.NeedMoreData;
 
         DestinationSmallExit:
-            consumed = sourceIndex;
-            written = destIndex;
+            bytesConsumed = sourceIndex;
+            bytesWritten = destIndex;
             return OperationStatus.DestinationTooSmall;
         }
 
@@ -122,14 +122,14 @@ namespace System.Buffers.Text
         /// It needs to be large enough to fit the result of the operation.</param>
         /// <param name="dataLength">The amount of binary data contained within the buffer that needs to be encoded 
         /// (and needs to be smaller than the buffer length).</param>
-        /// <param name="written">The number of bytes written into the buffer.</param>
+        /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
         /// <returns>It returns the OperationStatus enum values:
         /// - Done - on successful processing of the entire buffer
         /// - DestinationTooSmall - if there is not enough space in the buffer beyond dataLength to fit the result of encoding the input
         /// It does not return NeedMoreData since this method tramples the data in the buffer and hence can only be called once with all the data in the buffer.
         /// It does not return InvalidData since that is not possible for base 64 encoding.</returns>
         /// </summary> 
-        public static OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int written)
+        public static OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int bytesWritten)
         {
             int encodedLength = GetMaxEncodedToUtf8Length(dataLength);
             if (buffer.Length < encodedLength)
@@ -170,11 +170,11 @@ namespace System.Buffers.Text
                 sourceIndex -= 3;
             }
 
-            written = encodedLength;
+            bytesWritten = encodedLength;
             return OperationStatus.Done;
 
         FalseExit:
-            written = 0;
+            bytesWritten = 0;
             return OperationStatus.DestinationTooSmall;
         }
 

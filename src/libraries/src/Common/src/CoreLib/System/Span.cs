@@ -89,8 +89,8 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Span{T}"/>
         /// </summary>
-        public static implicit operator Span<T>(ArraySegment<T> arraySegment)
-            => new Span<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        public static implicit operator Span<T>(ArraySegment<T> segment)
+            => new Span<T>(segment.Array, segment.Offset, segment.Count);
 
         /// <summary>
         /// Returns an empty <see cref="Span{T}"/>

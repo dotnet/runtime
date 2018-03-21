@@ -33,21 +33,21 @@ namespace System.Buffers.Text
             // (So a value of 0x01010200 means the string parsed as "nn:nn:nn.nnnnnnn")
             public uint Separators;
 
-            public bool TrySplitTimeSpan(ReadOnlySpan<byte> text, bool periodUsedToSeparateDay, out int bytesConsumed)
+            public bool TrySplitTimeSpan(ReadOnlySpan<byte> source, bool periodUsedToSeparateDay, out int bytesConsumed)
             {
                 int srcIndex = 0;
                 byte c = default;
 
                 // Unlike many other data types, TimeSpan allow leading whitespace.
-                while (srcIndex != text.Length)
+                while (srcIndex != source.Length)
                 {
-                    c = text[srcIndex];
+                    c = source[srcIndex];
                     if (!(c == ' ' || c == '\t'))
                         break;
                     srcIndex++;
                 }
 
-                if (srcIndex == text.Length)
+                if (srcIndex == source.Length)
                 {
                     bytesConsumed = 0;
                     return false;
@@ -58,7 +58,7 @@ namespace System.Buffers.Text
                 {
                     IsNegative = true;
                     srcIndex++;
-                    if (srcIndex == text.Length)
+                    if (srcIndex == source.Length)
                     {
                         bytesConsumed = 0;
                         return false;
@@ -71,7 +71,7 @@ namespace System.Buffers.Text
                 //
                 // Timespan has to start with a number - parse the first one.
                 //
-                if (!TryParseUInt32D(text.Slice(srcIndex), out V1, out int justConsumed))
+                if (!TryParseUInt32D(source.Slice(srcIndex), out V1, out int justConsumed))
                 {
                     bytesConsumed = 0;
                     return false;
@@ -85,7 +85,7 @@ namespace System.Buffers.Text
                 // the fraction is always the fourth component at earliest, so if we do see a period at this stage, always parse the integer as a regular integer, not as
                 // a fraction.
                 //
-                result = ParseComponent(text, neverParseAsFraction: periodUsedToSeparateDay, ref srcIndex, out V2);
+                result = ParseComponent(source, neverParseAsFraction: periodUsedToSeparateDay, ref srcIndex, out V2);
                 if (result == ComponentParseResult.ParseFailure)
                 {
                     bytesConsumed = 0;
@@ -105,7 +105,7 @@ namespace System.Buffers.Text
                 //
                 // Split out the third number (if any)
                 //
-                result = ParseComponent(text, false, ref srcIndex, out V3);
+                result = ParseComponent(source, false, ref srcIndex, out V3);
                 if (result == ComponentParseResult.ParseFailure)
                 {
                     bytesConsumed = 0;
@@ -125,7 +125,7 @@ namespace System.Buffers.Text
                 //
                 // Split out the fourth number (if any)
                 //
-                result = ParseComponent(text, false, ref srcIndex, out V4);
+                result = ParseComponent(source, false, ref srcIndex, out V4);
                 if (result == ComponentParseResult.ParseFailure)
                 {
                     bytesConsumed = 0;
@@ -145,7 +145,7 @@ namespace System.Buffers.Text
                 //
                 // Split out the fifth number (if any)
                 //
-                result = ParseComponent(text, false, ref srcIndex, out V5);
+                result = ParseComponent(source, false, ref srcIndex, out V5);
                 if (result == ComponentParseResult.ParseFailure)
                 {
                     bytesConsumed = 0;
@@ -166,7 +166,7 @@ namespace System.Buffers.Text
                 // There cannot legally be a sixth number. If the next character is a period or colon, treat this as a error as it's likely
                 // to indicate the start of a sixth number. Otherwise, treat as end of parse with data left over.
                 //
-                if (srcIndex != text.Length && (text[srcIndex] == Utf8Constants.Period || text[srcIndex] == Utf8Constants.Colon))
+                if (srcIndex != source.Length && (source[srcIndex] == Utf8Constants.Period || source[srcIndex] == Utf8Constants.Colon))
                 {
                     bytesConsumed = 0;
                     return false;
@@ -179,20 +179,20 @@ namespace System.Buffers.Text
             //
             // Look for a separator followed by an unsigned integer.
             //
-            private static ComponentParseResult ParseComponent(ReadOnlySpan<byte> text, bool neverParseAsFraction, ref int srcIndex, out uint value)
+            private static ComponentParseResult ParseComponent(ReadOnlySpan<byte> source, bool neverParseAsFraction, ref int srcIndex, out uint value)
             {
-                if (srcIndex == text.Length)
+                if (srcIndex == source.Length)
                 {
                     value = default;
                     return ComponentParseResult.NoMoreData;
                 }
 
-                byte c = text[srcIndex];
+                byte c = source[srcIndex];
                 if (c == Utf8Constants.Colon || (c == Utf8Constants.Period && neverParseAsFraction))
                 {
                     srcIndex++;
 
-                    if (!TryParseUInt32D(text.Slice(srcIndex), out value, out int bytesConsumed))
+                    if (!TryParseUInt32D(source.Slice(srcIndex), out value, out int bytesConsumed))
                     {
                         value = default;
                         return ComponentParseResult.ParseFailure;
@@ -205,7 +205,7 @@ namespace System.Buffers.Text
                 {
                     srcIndex++;
 
-                    if (!TryParseTimeSpanFraction(text.Slice(srcIndex), out value, out int bytesConsumed))
+                    if (!TryParseTimeSpanFraction(source.Slice(srcIndex), out value, out int bytesConsumed))
                     {
                         value = default;
                         return ComponentParseResult.ParseFailure;

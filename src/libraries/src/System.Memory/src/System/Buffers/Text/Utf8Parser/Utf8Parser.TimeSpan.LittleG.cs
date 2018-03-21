@@ -6,10 +6,10 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
     {
-        private static bool TryParseTimeSpanLittleG(ReadOnlySpan<byte> text, out TimeSpan value, out int bytesConsumed)
+        private static bool TryParseTimeSpanLittleG(ReadOnlySpan<byte> source, out TimeSpan value, out int bytesConsumed)
         {
             TimeSpanSplitter s = default;
-            if (!s.TrySplitTimeSpan(text, periodUsedToSeparateDay: false, out bytesConsumed))
+            if (!s.TrySplitTimeSpan(source, periodUsedToSeparateDay: false, out bytesConsumed))
             {
                 value = default;
                 return false;

@@ -15,11 +15,11 @@ namespace System.Buffers.Text
         // Common worker for all signed integer TryFormat overloads
         //
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatInt64(long value, ulong mask, Span<byte> buffer, out int bytesWritten, StandardFormat format)
+        private static bool TryFormatInt64(long value, ulong mask, Span<byte> destination, out int bytesWritten, StandardFormat format)
         {
             if (format.IsDefault)
             {
-                return TryFormatInt64Default(value, buffer, out bytesWritten);
+                return TryFormatInt64Default(value, destination, out bytesWritten);
             }
 
             switch (format.Symbol)
@@ -28,21 +28,21 @@ namespace System.Buffers.Text
                 case 'g':
                     if (format.HasPrecision)
                         throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported); // With a precision, 'G' can produce exponential format, even for integers.
-                    return TryFormatInt64D(value, format.Precision, buffer, out bytesWritten);
+                    return TryFormatInt64D(value, format.Precision, destination, out bytesWritten);
 
                 case 'd':
                 case 'D':
-                    return TryFormatInt64D(value, format.Precision, buffer, out bytesWritten);
+                    return TryFormatInt64D(value, format.Precision, destination, out bytesWritten);
 
                 case 'n':
                 case 'N':
-                    return TryFormatInt64N(value, format.Precision, buffer, out bytesWritten);
+                    return TryFormatInt64N(value, format.Precision, destination, out bytesWritten);
 
                 case 'x':
-                    return TryFormatUInt64X((ulong)value & mask, format.Precision, true, buffer, out bytesWritten);
+                    return TryFormatUInt64X((ulong)value & mask, format.Precision, true, destination, out bytesWritten);
 
                 case 'X':
-                    return TryFormatUInt64X((ulong)value & mask, format.Precision, false, buffer, out bytesWritten);
+                    return TryFormatUInt64X((ulong)value & mask, format.Precision, false, destination, out bytesWritten);
 
                 default:
                     return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);

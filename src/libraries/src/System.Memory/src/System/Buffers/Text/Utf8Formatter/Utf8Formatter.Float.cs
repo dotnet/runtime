@@ -13,7 +13,7 @@ namespace System.Buffers.Text
         /// Formats a Double as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -29,16 +29,16 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(double value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
+        public static bool TryFormat(double value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
-            return TryFormatFloatingPoint<double>(value, buffer, out bytesWritten, format);
+            return TryFormatFloatingPoint<double>(value, destination, out bytesWritten, format);
         }
 
         /// <summary>
         /// Formats a Single as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -54,9 +54,9 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(float value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
+        public static bool TryFormat(float value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
-            return TryFormatFloatingPoint<float>(value, buffer, out bytesWritten, format);
+            return TryFormatFloatingPoint<float>(value, destination, out bytesWritten, format);
         }
 
         //
@@ -65,7 +65,7 @@ namespace System.Buffers.Text
         // be preferable not to have another version of that lying around. Until we really hit a scenario where floating point formatting needs the perf, we'll
         // make do with this.
         //
-        private static bool TryFormatFloatingPoint<T>(T value, Span<byte> buffer, out int bytesWritten, StandardFormat format) where T : IFormattable
+        private static bool TryFormatFloatingPoint<T>(T value, Span<byte> destination, out int bytesWritten, StandardFormat format) where T : IFormattable
         {
             if (format.IsDefault)
             {
@@ -93,7 +93,7 @@ namespace System.Buffers.Text
             string formatString = format.ToString();
             string utf16Text = value.ToString(formatString, CultureInfo.InvariantCulture);
             int length = utf16Text.Length;
-            if (length > buffer.Length)
+            if (length > destination.Length)
             {
                 bytesWritten = 0;
                 return false;
@@ -102,7 +102,7 @@ namespace System.Buffers.Text
             for (int i = 0; i < length; i++)
             {
                 Debug.Assert(utf16Text[i] < 128, "A culture-invariant ToString() of a floating point expected to produce ASCII characters only.");
-                buffer[i] = (byte)(utf16Text[i]);
+                destination[i] = (byte)(utf16Text[i]);
             }
 
             bytesWritten = length;

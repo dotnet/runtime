@@ -116,23 +116,23 @@ namespace System.Buffers
         /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the <see cref="ReadOnlyMemory{T}"/>.
         /// Consumer is expected to manage lifetime of memory until <see cref="ReadOnlySequence{T}"/> is not used anymore.
         /// </summary>
-        public ReadOnlySequence(ReadOnlyMemory<T> readOnlyMemory)
+        public ReadOnlySequence(ReadOnlyMemory<T> memory)
         {
-            if (MemoryMarshal.TryGetOwnedMemory(readOnlyMemory, out OwnedMemory<T> ownedMemory, out int index, out int length))
+            if (MemoryMarshal.TryGetOwnedMemory(memory, out OwnedMemory<T> ownedMemory, out int index, out int length))
             {
                 _sequenceStart = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceStart(index));
                 _sequenceEnd = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceEnd(length));
             }
-            else if (MemoryMarshal.TryGetArray(readOnlyMemory, out ArraySegment<T> arraySegment))
+            else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
             {
-                T[] array = arraySegment.Array;
-                int start = arraySegment.Offset;
+                T[] array = segment.Array;
+                int start = segment.Offset;
                 _sequenceStart = new SequencePosition(array, ReadOnlySequence.ArrayToSequenceStart(start));
-                _sequenceEnd = new SequencePosition(array, ReadOnlySequence.ArrayToSequenceEnd(start + arraySegment.Count));
+                _sequenceEnd = new SequencePosition(array, ReadOnlySequence.ArrayToSequenceEnd(start + segment.Count));
             }
             else if (typeof(T) == typeof(char))
             {
-                if (!MemoryMarshal.TryGetString(((ReadOnlyMemory<char>)(object)readOnlyMemory), out string text, out int start, out length))
+                if (!MemoryMarshal.TryGetString(((ReadOnlyMemory<char>)(object)memory), out string text, out int start, out length))
                     ThrowHelper.ThrowInvalidOperationException();
 
                 _sequenceStart = new SequencePosition(text, ReadOnlySequence.StringToSequenceStart(start));
@@ -327,13 +327,13 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Tries to retrieve next segment after <paramref name="position"/> and return its contents in <paramref name="data"/>.
+        /// Tries to retrieve next segment after <paramref name="position"/> and return its contents in <paramref name="memory"/>.
         /// Returns <code>false</code> if end of <see cref="ReadOnlySequence{T}"/> was reached otherwise <code>true</code>.
         /// Sets <paramref name="position"/> to the beginning of next segment if <paramref name="advance"/> is set to <code>true</code>.
         /// </summary>
-        public bool TryGet(ref SequencePosition position, out ReadOnlyMemory<T> data, bool advance = true)
+        public bool TryGet(ref SequencePosition position, out ReadOnlyMemory<T> memory, bool advance = true)
         {
-            bool result = TryGetBuffer(position, End, out data, out SequencePosition next);
+            bool result = TryGetBuffer(position, End, out memory, out SequencePosition next);
             if (advance)
             {
                 position = next;

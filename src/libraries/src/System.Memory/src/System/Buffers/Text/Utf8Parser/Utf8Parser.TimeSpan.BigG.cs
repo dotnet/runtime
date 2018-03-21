@@ -6,19 +6,19 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
     {
-        private static bool TryParseTimeSpanBigG(ReadOnlySpan<byte> text, out TimeSpan value, out int bytesConsumed)
+        private static bool TryParseTimeSpanBigG(ReadOnlySpan<byte> source, out TimeSpan value, out int bytesConsumed)
         {
             int srcIndex = 0;
             byte c = default;
-            while (srcIndex != text.Length)
+            while (srcIndex != source.Length)
             {
-                c = text[srcIndex];
+                c = source[srcIndex];
                 if (!(c == ' ' || c == '\t'))
                     break;
                 srcIndex++;
             }
 
-            if (srcIndex == text.Length)
+            if (srcIndex == source.Length)
             {
                 value = default;
                 bytesConsumed = 0;
@@ -30,7 +30,7 @@ namespace System.Buffers.Text
             {
                 isNegative = true;
                 srcIndex++;
-                if (srcIndex == text.Length)
+                if (srcIndex == source.Length)
                 {
                     value = default;
                     bytesConsumed = 0;
@@ -38,7 +38,7 @@ namespace System.Buffers.Text
                 }
             }
 
-            if (!TryParseUInt32D(text.Slice(srcIndex), out uint days, out int justConsumed))
+            if (!TryParseUInt32D(source.Slice(srcIndex), out uint days, out int justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -46,29 +46,14 @@ namespace System.Buffers.Text
             }
             srcIndex += justConsumed;
 
-            if (srcIndex == text.Length || text[srcIndex++] != Utf8Constants.Colon)
+            if (srcIndex == source.Length || source[srcIndex++] != Utf8Constants.Colon)
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            if (!TryParseUInt32D(text.Slice(srcIndex), out uint hours, out justConsumed))
-            {
-                value = default;
-                bytesConsumed = 0;
-                return false;
-            }
-            srcIndex += justConsumed;
-
-            if (srcIndex == text.Length || text[srcIndex++] != Utf8Constants.Colon)
-            {
-                value = default;
-                bytesConsumed = 0;
-                return false;
-            }
-
-            if (!TryParseUInt32D(text.Slice(srcIndex), out uint minutes, out justConsumed))
+            if (!TryParseUInt32D(source.Slice(srcIndex), out uint hours, out justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -76,14 +61,14 @@ namespace System.Buffers.Text
             }
             srcIndex += justConsumed;
 
-            if (srcIndex == text.Length || text[srcIndex++] != Utf8Constants.Colon)
+            if (srcIndex == source.Length || source[srcIndex++] != Utf8Constants.Colon)
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            if (!TryParseUInt32D(text.Slice(srcIndex), out uint seconds, out justConsumed))
+            if (!TryParseUInt32D(source.Slice(srcIndex), out uint minutes, out justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -91,14 +76,29 @@ namespace System.Buffers.Text
             }
             srcIndex += justConsumed;
 
-            if (srcIndex == text.Length || text[srcIndex++] != Utf8Constants.Period)
+            if (srcIndex == source.Length || source[srcIndex++] != Utf8Constants.Colon)
             {
                 value = default;
                 bytesConsumed = 0;
                 return false;
             }
 
-            if (!TryParseTimeSpanFraction(text.Slice(srcIndex), out uint fraction, out justConsumed))
+            if (!TryParseUInt32D(source.Slice(srcIndex), out uint seconds, out justConsumed))
+            {
+                value = default;
+                bytesConsumed = 0;
+                return false;
+            }
+            srcIndex += justConsumed;
+
+            if (srcIndex == source.Length || source[srcIndex++] != Utf8Constants.Period)
+            {
+                value = default;
+                bytesConsumed = 0;
+                return false;
+            }
+
+            if (!TryParseTimeSpanFraction(source.Slice(srcIndex), out uint fraction, out justConsumed))
             {
                 value = default;
                 bytesConsumed = 0;
@@ -118,7 +118,7 @@ namespace System.Buffers.Text
             // There cannot legally be a sixth number. If the next character is a period or colon, treat this as a error as it's likely
             // to indicate the start of a sixth number. Otherwise, treat as end of parse with data left over.
             //
-            if (srcIndex != text.Length && (text[srcIndex] == Utf8Constants.Period || text[srcIndex] == Utf8Constants.Colon))
+            if (srcIndex != source.Length && (source[srcIndex] == Utf8Constants.Period || source[srcIndex] == Utf8Constants.Colon))
             {
                 value = default;
                 bytesConsumed = 0;

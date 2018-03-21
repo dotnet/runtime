@@ -14,30 +14,30 @@ namespace System.Buffers.Text
         // --------------------------
         // 05/25/2017 10:30:15 -08:00
         //
-        private static bool TryParseDateTimeOffsetDefault(ReadOnlySpan<byte> text, out DateTimeOffset value, out int bytesConsumed)
+        private static bool TryParseDateTimeOffsetDefault(ReadOnlySpan<byte> source, out DateTimeOffset value, out int bytesConsumed)
         {
-            if (text.Length < 26)
+            if (source.Length < 26)
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
 
-            if (!TryParseDateTimeG(text, out DateTime dateTime, out _, out _))
+            if (!TryParseDateTimeG(source, out DateTime dateTime, out _, out _))
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
 
-            if (text[19] != Utf8Constants.Space)
+            if (source[19] != Utf8Constants.Space)
             {
                 bytesConsumed = 0;
                 value = default;
                 return false;
             }
 
-            byte sign = text[20];
+            byte sign = source[20];
             if (sign != Utf8Constants.Plus && sign != Utf8Constants.Minus)
             {
                 bytesConsumed = 0;
@@ -47,8 +47,8 @@ namespace System.Buffers.Text
 
             int offsetHours;
             {
-                uint digit1 = text[21] - 48u; // '0'
-                uint digit2 = text[22] - 48u; // '0'
+                uint digit1 = source[21] - 48u; // '0'
+                uint digit2 = source[22] - 48u; // '0'
 
                 if (digit1 > 9 || digit2 > 9)
                 {
@@ -60,7 +60,7 @@ namespace System.Buffers.Text
                 offsetHours = (int)(digit1 * 10 + digit2);
             }
 
-            if (text[23] != Utf8Constants.Colon)
+            if (source[23] != Utf8Constants.Colon)
             {
                 bytesConsumed = 0;
                 value = default;
@@ -69,8 +69,8 @@ namespace System.Buffers.Text
 
             int offsetMinutes;
             {
-                uint digit1 = text[24] - 48u; // '0'
-                uint digit2 = text[25] - 48u; // '0'
+                uint digit1 = source[24] - 48u; // '0'
+                uint digit2 = source[25] - 48u; // '0'
 
                 if (digit1 > 9 || digit2 > 9)
                 {

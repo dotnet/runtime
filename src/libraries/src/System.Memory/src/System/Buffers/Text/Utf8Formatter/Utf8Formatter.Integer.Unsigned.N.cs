@@ -9,7 +9,7 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatUInt64N(ulong value, byte precision, Span<byte> buffer, bool insertNegationSign, out int bytesWritten)
+        private static bool TryFormatUInt64N(ulong value, byte precision, Span<byte> destination, bool insertNegationSign, out int bytesWritten)
         {
             // Calculate the actual digit count, number of group separators required, and the
             // number of trailing zeros requested. From all of this we can get the required
@@ -30,7 +30,7 @@ namespace System.Buffers.Text
                 requiredBufferLength++;
             }
 
-            if (requiredBufferLength > buffer.Length)
+            if (requiredBufferLength > destination.Length)
             {
                 bytesWritten = 0;
                 return false;
@@ -40,16 +40,16 @@ namespace System.Buffers.Text
 
             if (insertNegationSign)
             {
-                buffer[0] = Utf8Constants.Minus;
-                buffer = buffer.Slice(1);
+                destination[0] = Utf8Constants.Minus;
+                destination = destination.Slice(1);
             }
 
-            FormattingHelpers.WriteDigitsWithGroupSeparator(value, buffer.Slice(0, digitCount + commaCount));
+            FormattingHelpers.WriteDigitsWithGroupSeparator(value, destination.Slice(0, digitCount + commaCount));
 
             if (trailingZeroCount > 0)
             {
-                buffer[digitCount + commaCount] = Utf8Constants.Period;
-                FormattingHelpers.FillWithAsciiZeros(buffer.Slice(digitCount + commaCount + 1, trailingZeroCount));
+                destination[digitCount + commaCount] = Utf8Constants.Period;
+                FormattingHelpers.FillWithAsciiZeros(destination.Slice(digitCount + commaCount + 1, trailingZeroCount));
             }
 
             return true;

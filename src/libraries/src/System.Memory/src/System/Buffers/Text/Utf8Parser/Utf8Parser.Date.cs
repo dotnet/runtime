@@ -11,7 +11,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a DateTime at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -30,13 +30,13 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out DateTime value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out DateTime value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
                 case 'R':
                     {
-                        if (!TryParseDateTimeOffsetR(text, NoFlipCase, out DateTimeOffset dateTimeOffset, out bytesConsumed))
+                        if (!TryParseDateTimeOffsetR(source, NoFlipCase, out DateTimeOffset dateTimeOffset, out bytesConsumed))
                         {
                             value = default;
                             return false;
@@ -47,7 +47,7 @@ namespace System.Buffers.Text
 
                 case 'l':
                     {
-                        if (!TryParseDateTimeOffsetR(text, FlipCase, out DateTimeOffset dateTimeOffset, out bytesConsumed))
+                        if (!TryParseDateTimeOffsetR(source, FlipCase, out DateTimeOffset dateTimeOffset, out bytesConsumed))
                         {
                             value = default;
                             return false;
@@ -65,7 +65,7 @@ namespace System.Buffers.Text
                         //         2017-06-12T05:30:45.7680000+00:00 - Local
                         //         2017-06-12T05:30:45.7680000Z      - Utc
 
-                        if (!TryParseDateTimeOffsetO(text, out DateTimeOffset dateTimeOffset, out bytesConsumed, out DateTimeKind kind))
+                        if (!TryParseDateTimeOffsetO(source, out DateTimeOffset dateTimeOffset, out bytesConsumed, out DateTimeKind kind))
                         {
                             value = default;
                             bytesConsumed = 0;
@@ -91,7 +91,7 @@ namespace System.Buffers.Text
 
                 case default(char):
                 case 'G':
-                    return TryParseDateTimeG(text, out value, out _, out bytesConsumed);
+                    return TryParseDateTimeG(source, out value, out _, out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
@@ -101,7 +101,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Parses a DateTimeOffset at the start of a Utf8 string.
         /// </summary>
-        /// <param name="text">The Utf8 string to parse</param>
+        /// <param name="source">The Utf8 string to parse</param>
         /// <param name="value">Receives the parsed value</param>
         /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
         /// <param name="standardFormat">Expected format of the Utf8 string</param>
@@ -119,24 +119,24 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> text, out DateTimeOffset value, out int bytesConsumed, char standardFormat = default)
+        public static bool TryParse(ReadOnlySpan<byte> source, out DateTimeOffset value, out int bytesConsumed, char standardFormat = default)
         {
             switch (standardFormat)
             {
                 case 'R':
-                    return TryParseDateTimeOffsetR(text, NoFlipCase, out value, out bytesConsumed);
+                    return TryParseDateTimeOffsetR(source, NoFlipCase, out value, out bytesConsumed);
 
                 case 'l':
-                    return TryParseDateTimeOffsetR(text, FlipCase, out value, out bytesConsumed);
+                    return TryParseDateTimeOffsetR(source, FlipCase, out value, out bytesConsumed);
 
                 case 'O':
-                    return TryParseDateTimeOffsetO(text, out value, out bytesConsumed, out _);
+                    return TryParseDateTimeOffsetO(source, out value, out bytesConsumed, out _);
 
                 case default(char):
-                    return TryParseDateTimeOffsetDefault(text, out value, out bytesConsumed);
+                    return TryParseDateTimeOffsetDefault(source, out value, out bytesConsumed);
 
                 case 'G':
-                    return TryParseDateTimeG(text, out DateTime _, out value, out bytesConsumed);
+                    return TryParseDateTimeG(source, out DateTime _, out value, out bytesConsumed);
 
                 default:
                     return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);

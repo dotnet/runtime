@@ -12,7 +12,7 @@ namespace System.Buffers.Text
         /// Formats a Decimal as a UTF8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="buffer">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -28,7 +28,7 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryFormat(decimal value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
+        public static bool TryFormat(decimal value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
             if (format.IsDefault)
             {
@@ -48,7 +48,7 @@ namespace System.Buffers.Text
                         {
                             number.IsNegative = false; // For Decimals, -0 must print as normal 0.
                         }
-                        bool success = TryFormatDecimalG(ref number, buffer, out bytesWritten);
+                        bool success = TryFormatDecimalG(ref number, destination, out bytesWritten);
 #if DEBUG
                         // This DEBUG segment exists to close a code coverage hole inside TryFormatDecimalG(). Because we don't call RoundNumber() on this path, we have no way to feed
                         // TryFormatDecimalG() a number where trailing zeros before the decimal point have been cropped. So if the chance comes up, we'll crop the zeroes
@@ -67,13 +67,13 @@ namespace System.Buffers.Text
 
                                 number.CheckConsistency();
 
-                                byte[] buffer2 = new byte[buffer.Length];
+                                byte[] buffer2 = new byte[destination.Length];
                                 bool success2 = TryFormatDecimalG(ref number, buffer2, out int bytesWritten2);
                                 Debug.Assert(success2);
                                 Debug.Assert(bytesWritten2 == bytesWritten);
                                 for (int i = 0; i < bytesWritten; i++)
                                 {
-                                    Debug.Assert(buffer[i] == buffer2[i]);
+                                    Debug.Assert(destination[i] == buffer2[i]);
                                 }
                             }
 
@@ -90,7 +90,7 @@ namespace System.Buffers.Text
                         byte precision = (format.Precision == StandardFormat.NoPrecision) ? (byte)2 : format.Precision;
                         Number.RoundNumber(ref number, number.Scale + precision);
                         Debug.Assert(!(number.Digits[0] == 0 && number.IsNegative));   // For Decimals, -0 must print as normal 0. As it happens, Number.RoundNumber already ensures this invariant.
-                        return TryFormatDecimalF(ref number, buffer, out bytesWritten, precision);
+                        return TryFormatDecimalF(ref number, destination, out bytesWritten, precision);
                     }
 
                 case 'e':
@@ -101,7 +101,7 @@ namespace System.Buffers.Text
                         byte precision = (format.Precision == StandardFormat.NoPrecision) ? (byte)6 : format.Precision;
                         Number.RoundNumber(ref number, precision + 1);
                         Debug.Assert(!(number.Digits[0] == 0 && number.IsNegative));   // For Decimals, -0 must print as normal 0. As it happens, Number.RoundNumber already ensures this invariant.
-                        return TryFormatDecimalE(ref number, buffer, out bytesWritten, precision, exponentSymbol: (byte)format.Symbol);
+                        return TryFormatDecimalE(ref number, destination, out bytesWritten, precision, exponentSymbol: (byte)format.Symbol);
                     }
 
                 default:
