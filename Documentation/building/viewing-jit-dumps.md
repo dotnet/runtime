@@ -8,8 +8,9 @@ To make sense of the results, it is recommended you also read the [Reading a Jit
 
 The first thing we want to do is setup the .NET Core app we want to dump. Here are the steps to do this, if you don't have one ready:
 
-* Perform a debug build of the CoreCLR repo. You don't need to build tests, so you can pass `skiptests` to the build command to make it faster.
-* Install the [.NET CLI 2.0 preview](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md), which we'll use to compile/publish our app.
+* Perform a release build of the CoreCLR repo by passing `release` to the build command. You don't need to build tests, so you can pass `skiptests` to the build command to make it faster. Note: the release build can be skipped, but in order to see optimized in the core library it is needed.
+* Perform a debug build of the CoreCLR repo. Tests aren't needed as in the release build, so you can pass `skiptests` to the build command. Note: the debug build is necessary, so that the JIT recognizes the configuration knobs.
+* Install the [.NET CLI 2.1 preview](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md), which we'll use to compile/publish our app.
 * `cd` to where you want your app to be placed, and run `dotnet new console`.
 * Modify your `csproj` file so that it contains a RID (runtime ID) corresponding to the OS you're using in the `<RuntimeIdentifier>` tag. For example, for Windows 10 x64 machine, the project file is:
 
@@ -61,10 +62,12 @@ The first thing we want to do is setup the .NET Core app we want to dump. Here a
 
     ```shell
     # Windows
-    robocopy /e <coreclr path>\bin\Product\Windows_NT.<arch>.Debug <app root>\bin\Release\netcoreapp2.0\<rid>\publish > NUL
+    robocopy /e <coreclr path>\bin\Product\Windows_NT.<arch>.Release <app root>\bin\Release\netcoreapp2.0\<rid>\publish > NUL
+    copy <coreclr path>\bin\Product\Windows_NT.<arch>.Debug\clrjit.dll <app root>\bin\Release\netcoreapp2.0\<rid>\publish > NUL
 
     # Unix
-    cp -rT <coreclr path>/bin/Product/<OS>.<arch>.Debug <app root>/bin/Release/netcoreapp2.0/<rid>/publish
+    cp -rT <coreclr path>/bin/Product/<OS>.<arch>.Release <app root>/bin/Release/netcoreapp2.0/<rid>/publish
+    cp <coreclr path>/bin/Product/<OS>.<arch>.Debug/libclrjit.so <app root>/bin/Release/netcoreapp2.0/<rid>/publish
     ```
 
 * Set the configuration knobs you need (see below) and run your published app. The info you want should be dumped to stdout.
