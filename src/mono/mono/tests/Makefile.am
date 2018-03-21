@@ -536,7 +536,8 @@ TESTS_CS_SRC=		\
 	bug-60848.cs \
 	bug-59400.cs \
 	tailcall-interface.cs \
-	sizeof-empty-structs.cs
+	sizeof-empty-structs.cs \
+	bug-60843.cs
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
@@ -1040,10 +1041,12 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	sitail1.exe \
 	tailcall-mrgctx.exe \
 	tailcall-virt.exe   \
-	tailcall-rgctxa.exe
+	tailcall-rgctxa.exe \
+	bug-60843.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
+# bug-60843.exe: something goes wrong when turning the decoded enum value into a boxed enum, so the loaded value ends up being random bytes
 
 if ARM
 INTERP_DISABLED_TESTS += \

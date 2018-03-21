@@ -39,6 +39,11 @@
 #define ADDP_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADDP_OVERFLOW_UN (a, b))
 #define ADD_IS_GREATER_OR_OVF(a, b, c) (((a) + (b) > (c)) || CHECK_ADD4_OVERFLOW_UN (a, b))
 
+#define CATTR_TYPE_SYSTEM_TYPE 0x50
+#define CATTR_BOXED_VALUETYPE_PREFIX 0x51
+#define CATTR_TYPE_FIELD 0x53
+#define CATTR_TYPE_PROPERTY 0x54
+
 static gboolean type_is_reference (MonoType *type);
 
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, "System.Reflection", "CustomAttributeTypedArgument");
@@ -215,6 +220,44 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char *boundp, const
 	return mono_class_from_mono_type (t);
 }
 
+static MonoReflectionType*
+load_cattr_type_object (MonoImage *image, MonoType *t, const char *p, const char *boundp, const char **end, MonoError *error, guint32 *slen)
+{
+	MonoReflectionType *rt;
+	char *n;
+
+	if (!decode_blob_value_checked (p, boundp, slen, &p, error))
+		return NULL;
+	if (*slen > 0 && !bcheck_blob (p, *slen - 1, boundp, error))
+		return NULL;
+	n = (char *)g_memdup (p, *slen + 1);
+	n [*slen] = 0;
+	t = cattr_type_from_name (n, image, FALSE, error);
+	g_free (n);
+	return_val_if_nok (error, NULL);
+
+	rt = mono_type_get_object_checked (mono_domain_get (), t, error);
+	if (!is_ok (error))
+		return NULL;
+
+	*end = p + *slen;
+
+	return rt;
+}
+
+static MonoReflectionType*
+load_cattr_type_object_with_header (MonoImage *image, MonoType *t, const char *p, const char *boundp, const char **end, MonoError *error, guint32 *slen)
+{
+	if (!bcheck_blob (p, 0, boundp, error))
+		return NULL;
+	if (*p == (char)0xFF) {
+		*end = p + 1;
+		return NULL;
+	}
+
+	return load_cattr_type_object (image, t, p, boundp, end, error, slen);
+}
+
 static void*
 load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char *boundp, const char **end, MonoError *error)
 {
@@ -224,6 +267,18 @@ load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char *boun
 
 	g_assert (boundp);
 	error_init (error);
+
+	if (type == MONO_TYPE_GENERICINST) {
+		MonoGenericClass * mgc = t->data.generic_class;
+		MonoClass * cc = mgc->container_class;
+		if (m_class_is_enumtype (cc)) {
+			tklass = m_class_get_element_class (cc);
+			t = m_class_get_byval_arg (tklass);
+			type = t->type;
+		} else {
+			g_error ("Unhandled type of generic instance in load_cattr_value: %s", m_class_get_name (cc));
+		}
+	}
 
 handle_enum:
 	switch (type) {
@@ -321,32 +376,7 @@ handle_enum:
 		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
 		return mono_string_new_wtf8_len_checked (mono_domain_get (), p, slen, error);
 	case MONO_TYPE_CLASS: {
-		MonoReflectionType *rt;
-		char *n;
-		MonoType *t;
-		if (!bcheck_blob (p, 0, boundp, error))
-			return NULL;
-		if (*p == (char)0xFF) {
-			*end = p + 1;
-			return NULL;
-		}
-handle_type:
-		if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
-			return NULL;
-		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
-			return NULL;
-		n = (char *)g_memdup (p, slen + 1);
-		n [slen] = 0;
-		t = cattr_type_from_name (n, image, FALSE, error);
-		g_free (n);
-		return_val_if_nok (error, NULL);
-		*end = p + slen;
-
-		rt = mono_type_get_object_checked (mono_domain_get (), t, error);
-		if (!mono_error_ok (error))
-			return NULL;
-
-		return rt;
+		return load_cattr_type_object_with_header (image, t, p, boundp, end, error, &slen);
 	}
 	case MONO_TYPE_OBJECT: {
 		if (!bcheck_blob (p, 0, boundp, error))
@@ -356,8 +386,8 @@ handle_type:
 		MonoClass *subc = NULL;
 		void *val;
 
-		if (subt == 0x50) {
-			goto handle_type;
+		if (subt == CATTR_TYPE_SYSTEM_TYPE) {
+			return load_cattr_type_object (image, t, p, boundp, end, error, &slen);
 		} else if (subt == 0x0E) {
 			type = MONO_TYPE_STRING;
 			goto handle_enum;
@@ -369,21 +399,21 @@ handle_type:
 			p ++;
 
 			type = MONO_TYPE_SZARRAY;
-			if (etype == 0x50) {
+			if (etype == CATTR_TYPE_SYSTEM_TYPE) {
 				tklass = mono_defaults.systemtype_class;
-			} else if (etype == 0x55) {
+			} else if (etype == MONO_TYPE_ENUM) {
 				tklass = load_cattr_enum_type (image, p, boundp, &p, error);
 				if (!is_ok (error))
 					return NULL;
 			} else {
-				if (etype == 0x51)
+				if (etype == CATTR_BOXED_VALUETYPE_PREFIX)
 					/* See Partition II, Appendix B3 */
 					etype = MONO_TYPE_OBJECT;
 				simple_type.type = (MonoTypeEnum)etype;
 				tklass = mono_class_from_mono_type (&simple_type);
 			}
 			goto handle_enum;
-		} else if (subt == 0x55) {
+		} else if (subt == MONO_TYPE_ENUM) {
 			char *n;
 			MonoType *t;
 			if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
@@ -432,6 +462,17 @@ handle_type:
 		basetype = m_class_get_byval_arg (tklass)->type;
 		if (basetype == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tklass))
 			basetype = mono_class_enum_basetype (tklass)->type;
+
+		if (basetype == MONO_TYPE_GENERICINST) {
+			MonoGenericClass * mgc = m_class_get_byval_arg (tklass)->data.generic_class;
+			MonoClass * cc = mgc->container_class;
+			if (m_class_is_enumtype (cc)) {
+				basetype = m_class_get_byval_arg (m_class_get_element_class (cc))->type;
+			} else {
+				g_error ("Unhandled type of generic instance in load_cattr_value: %s[]", m_class_get_name (cc));
+			}
+		}
+
 		switch (basetype)
 		{
 			case MONO_TYPE_U1:
@@ -838,7 +879,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		memcpy (name, named, name_len);
 		name [name_len] = 0;
 		named += name_len;
-		if (named_type == 0x53) {
+		if (named_type == CATTR_TYPE_FIELD) {
 			MonoClassField *field;
 			void *val;
 
@@ -861,7 +902,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			mono_field_set_value (attr, field, val);
 			if (!type_is_reference (field->type))
 				g_free (val);
-		} else if (named_type == 0x54) {
+		} else if (named_type == CATTR_TYPE_PROPERTY) {
 			MonoProperty *prop;
 			void *pparams [1];
 			MonoType *prop_type;
@@ -1022,7 +1063,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		memcpy (name, named, name_len);
 		name [name_len] = 0;
 		named += name_len;
-		if (named_type == 0x53) {
+		if (named_type == CATTR_TYPE_FIELD) {
 			/* Named arg is a field. */
 			MonoObject *obj;
 			MonoClassField *field = mono_class_get_field_from_name (attrklass, name);
@@ -1042,7 +1083,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			}
 			mono_array_setref (namedargs, j, obj);
 
-		} else if (named_type == 0x54) {
+		} else if (named_type == CATTR_TYPE_PROPERTY) {
 			/* Named arg is a property */
 			MonoObject *obj;
 			MonoType *prop_type;
