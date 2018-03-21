@@ -19,6 +19,8 @@ namespace System.IO.Tests
 
         public override FileInfo GetMissingItem() => new FileInfo(GetTestFilePath());
 
+        public override string GetItemPath(FileInfo item) => item.FullName;
+
         public override void InvokeCreate(FileInfo item) => item.Create();
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)

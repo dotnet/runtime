@@ -16,6 +16,8 @@ namespace System.IO.Tests
         public abstract T GetExistingItem();
         public abstract T GetMissingItem();
 
+        public abstract string GetItemPath(T item);
+
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
 
         public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind>
@@ -69,8 +71,47 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // OSX does not currently support millisec granularity
-        public void TimesIncludeMillisecondPart()
+        [PlatformSpecific(TestPlatforms.Linux)] // Windows tested below, and OSX does not currently support millisec granularity
+        public void TimesIncludeMillisecondPart_Linux()
+        {
+            T item = GetExistingItem();
+
+            string driveFormat = new DriveInfo(GetItemPath(item)).DriveFormat;
+
+            Assert.All(TimeFunctions(), (function) =>
+            {
+                var msec = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    DateTime time = function.Getter(item);
+                    msec = time.Millisecond;
+
+                    //if (msec != 0)
+                    //    break;
+
+                    // This case should only happen 1/1000 times, unless the OS/Filesystem does
+                    // not support millisecond granularity.
+
+                    // If it's 1/1000, or low granularity, this may help:
+                    Thread.Sleep(1234);
+
+                    // If it's the OS/Filesystem often returns 0 for the millisecond part, this may
+                    // help prove it. This should only be written 1/1000 runs, unless the test is going to
+                    // fail.
+                    //Console.WriteLine($"TimesIncludeMillisecondPart got a file time of {time.ToString("o")}");
+                    Console.WriteLine($"## TimesIncludeMillisecondPart got a file time of {time.ToString("o")} on {driveFormat}");
+
+                    item = GetExistingItem(); // try a new file/directory
+                }
+
+                Assert.NotEqual(0, msec);
+            });
+        }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Breaking out Windows as it passes no problem there
+        public void TimesIncludeMillisecondPart_Windows()
         {
             T item = GetExistingItem();
             Assert.All(TimeFunctions(), (function) =>
