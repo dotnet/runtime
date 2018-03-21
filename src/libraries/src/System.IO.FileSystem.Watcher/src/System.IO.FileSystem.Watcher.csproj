@@ -24,7 +24,6 @@
     </Compile>
     <Compile Include="System\IO\InternalBufferOverflowException.cs" />
     <Compile Include="System\IO\NotifyFilters.cs" />
-    <Compile Include="System\IO\PatternMatcher.cs" />
     <Compile Include="System\IO\RenamedEventArgs.cs" />
     <Compile Include="System\IO\RenamedEventHandler.cs" />
     <Compile Include="System\IO\WatcherChangeTypes.cs" />
