@@ -10,14 +10,14 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>7f7b58aabe1b73a13daa4d43e48298f8f1fa6e46</CoreFxCurrentRef>
-    <CoreClrCurrentRef>bbebbb9af3ef8966599574747a84f869250f0226</CoreClrCurrentRef>
+    <CoreClrCurrentRef>1eb5fa130d6a2015126f406d5833f5f230b10e74</CoreClrCurrentRef>
     <CoreSetupCurrentRef>ed0849ea1a02cf6a6870fb03c535238f71725ccf</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>d17bec32bd9e1e9335aaf7ae4dc98c8441f67d6e</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>d17bec32bd9e1e9335aaf7ae4dc98c8441f67d6e</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
-    <BuildToolsCurrentRef>91233f5f85ad8dc86ee7052672e19d6af3f02f79</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>1eb5fa130d6a2015126f406d5833f5f230b10e74</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -33,7 +33,7 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview3-26319-04</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview3-26319-04</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview3-26321-11</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview3-26322-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-26321-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-26321-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-26321-00</ProjectNTfsTestILCPackageVersion>
@@ -48,13 +48,13 @@
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
     <XunitPerfAnalysisPackageVersion>1.0.0-beta-build0018</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <XunitNetcoreExtensionsVersion>2.1.0-preview3-02620-10</XunitNetcoreExtensionsVersion>
+    <XunitNetcoreExtensionsVersion>2.1.0-preview3-02622-01</XunitNetcoreExtensionsVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-preview3-02620-10</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>2.1.0-preview3-02622-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
