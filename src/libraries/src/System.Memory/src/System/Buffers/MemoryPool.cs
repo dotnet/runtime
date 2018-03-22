@@ -30,7 +30,7 @@ namespace System.Buffers
         /// <summary>
         /// Constructs a new instance of a memory pool.
         /// </summary>
-        protected MemoryPool() {}
+        protected MemoryPool() { }
 
         /// <summary>
         /// Frees all resources used by the memory pool.

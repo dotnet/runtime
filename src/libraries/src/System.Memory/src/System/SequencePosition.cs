@@ -40,7 +40,7 @@ namespace System
         /// <summary>
         /// Returns true if left and right point at the same segment and have the same index.
         /// </summary>
-        public static bool operator ==(SequencePosition left, SequencePosition right) => left._integer== right._integer && left._object == right._object;
+        public static bool operator ==(SequencePosition left, SequencePosition right) => left._integer == right._integer && left._object == right._object;
 
         /// <summary>
         /// Returns true if left and right do not point at the same segment and have the same index.
