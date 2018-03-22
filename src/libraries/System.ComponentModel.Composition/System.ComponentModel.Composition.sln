@@ -7,6 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Compo
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A} = {2D694AC8-A12F-4622-9405-74E20EC40C3A}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Composition.Noop.Assembly", "tests\System.ComponentModel.Composition.Noop.Assembly\System.ComponentModel.Composition.Noop.Assembly.csproj", "{396D6EBF-60BD-4DAF-8783-FB403E070A56}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2D694AC8-A12F-4622-9405-74E20EC40C3A} = {2D694AC8-A12F-4622-9405-74E20EC40C3A}
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.ComponentModel.Composition", "src\System.ComponentModel.Composition.csproj", "{2D694AC8-A12F-4622-9405-74E20EC40C3A}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DD3B8052-CE03-4159-8311-1CE1382C51B0} = {DD3B8052-CE03-4159-8311-1CE1382C51B0}
@@ -30,6 +35,10 @@ Global
 		{59F4682D-C41D-45A7-9798-16C75525BB1D}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{59F4682D-C41D-45A7-9798-16C75525BB1D}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{59F4682D-C41D-45A7-9798-16C75525BB1D}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{396D6EBF-60BD-4DAF-8783-FB403E070A56}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
@@ -44,6 +53,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{59F4682D-C41D-45A7-9798-16C75525BB1D} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{396D6EBF-60BD-4DAF-8783-FB403E070A56} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2D694AC8-A12F-4622-9405-74E20EC40C3A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{DD3B8052-CE03-4159-8311-1CE1382C51B0} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
