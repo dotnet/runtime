@@ -34,7 +34,7 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public TExport GetExport<TExport>()
         {
-            return GetExport<TExport>((string)null);
+            return GetExport<TExport>(null);
         }
 
         /// <summary>
@@ -55,13 +55,12 @@ namespace System.Composition
         /// <see cref="CompositionContext"/>.
         /// </summary>
         /// <param name="exportType">The type of the export to retrieve.</param>
-        /// <param name="contractName">Optionally, a discriminator that constrains the selection of the export.</param>
         /// <returns>An instance of the export.</returns>
         /// <param name="export">The export if available, otherwise, null.</param>
         /// <exception cref="CompositionFailedException" />
-        public bool TryGetExport(Type exportType, string contractName, out object export)
+        public bool TryGetExport(Type exportType, out object export)
         {
-            return TryGetExport(new CompositionContract(exportType, contractName), out export);
+            return TryGetExport(exportType, null, out export);
         }
 
         /// <summary>
@@ -69,12 +68,17 @@ namespace System.Composition
         /// <see cref="CompositionContext"/>.
         /// </summary>
         /// <param name="exportType">The type of the export to retrieve.</param>
+        /// <param name="contractName">Optionally, a discriminator that constrains the selection of the export.</param>
         /// <returns>An instance of the export.</returns>
         /// <param name="export">The export if available, otherwise, null.</param>
         /// <exception cref="CompositionFailedException" />
-        public bool TryGetExport(Type exportType, out object export)
+        public bool TryGetExport(Type exportType, string contractName, out object export)
         {
-            return TryGetExport(exportType, null, out export);
+            if (TryGetExport(new CompositionContract(exportType, contractName), out export))
+                return true;
+
+            export = default;
+            return false;
         }
 
         /// <summary>
@@ -87,7 +91,7 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public bool TryGetExport<TExport>(out TExport export)
         {
-            return TryGetExport<TExport>(null, out export);
+            return TryGetExport(null, out export);
         }
 
         /// <summary>
@@ -101,10 +105,9 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public bool TryGetExport<TExport>(string contractName, out TExport export)
         {
-            object untypedExport;
-            if (!TryGetExport(typeof(TExport), contractName, out untypedExport))
+            if (!TryGetExport(typeof(TExport), contractName, out object untypedExport))
             {
-                export = default(TExport);
+                export = default;
                 return false;
             }
 
@@ -121,7 +124,7 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public object GetExport(Type exportType)
         {
-            return GetExport(exportType, (string)null);
+            return GetExport(exportType, null);
         }
 
         /// <summary>
@@ -146,12 +149,10 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public object GetExport(CompositionContract contract)
         {
-            object export;
-            if (!TryGetExport(contract, out export))
-                throw new CompositionFailedException(
-                    string.Format(SR.CompositionContext_NoExportFoundForContract, contract));
+            if (TryGetExport(contract, out object export))
+                return export;
 
-            return export;
+            throw new CompositionFailedException(SR.Format(SR.CompositionContext_NoExportFoundForContract, contract));
         }
 
         /// <summary>
@@ -162,7 +163,7 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public IEnumerable<object> GetExports(Type exportType)
         {
-            return GetExports(exportType, (string)null);
+            return GetExports(exportType, null);
         }
 
         /// <summary>
@@ -192,7 +193,7 @@ namespace System.Composition
         /// <exception cref="CompositionFailedException" />
         public IEnumerable<TExport> GetExports<TExport>()
         {
-            return GetExports<TExport>((string)null);
+            return GetExports<TExport>(null);
         }
 
         /// <summary>

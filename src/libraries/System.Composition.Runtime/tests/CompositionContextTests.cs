@@ -61,9 +61,8 @@ namespace System.Composition.Tests
                     Assert.False(context.TryGetExport(out int export1));
                     Assert.Equal(0, export1);
 
-                    // Failure leaks through.
                     Assert.False(context.TryGetExport(typeof(int), out object export2));
-                    Assert.Equal(10, export2);
+                    Assert.Equal(null, export2);
                 }
                 else
                 {
@@ -73,9 +72,8 @@ namespace System.Composition.Tests
                     Assert.False(context.TryGetExport(contractName, out int export1));
                     Assert.Equal(0, export1);
 
-                    // Failure leaks through.
                     Assert.False(context.TryGetExport(typeof(int), contractName, out object export2));
-                    Assert.Equal(10, export2);
+                    Assert.Equal(null, export2);
                 }
             }
         }
