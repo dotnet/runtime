@@ -292,9 +292,6 @@
       "value": "-ConfigurationGroup=$(BuildConfiguration) $(PB_AdditionalBuildArguments)",
       "allowOverride": true
     },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
     "DEB_REPO_PASSWORD": {
       "value": null,
       "isSecret": true
@@ -314,10 +311,6 @@
     "PB_DebianId_ubuntu1610-x64": {
       "value": null,
       "isSecret": true
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
-      "allowOverride": true
     },
     "DOTNET_BUILD_CONTAINER_TAG": {
       "value": "core-setup-$(PB_DockerOS)-$(Build.BuildId)"
