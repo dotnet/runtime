@@ -335,14 +335,21 @@ namespace System.Tests
         [Fact]
         public void toString()
         {
-            string actual = AppDomain.CurrentDomain.ToString();
+            // Workaround issue: UWP culture is process wide
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 
-            // NetFx has additional line endings
-            if (PlatformDetection.IsFullFramework)
-                actual = actual.Trim();
+                string actual = AppDomain.CurrentDomain.ToString();
 
-            string expected = "Name:" + AppDomain.CurrentDomain.FriendlyName + Environment.NewLine + "There are no context policies.";
-            Assert.Equal(expected, actual);
+                // NetFx has additional line endings
+                if (PlatformDetection.IsFullFramework)
+                    actual = actual.Trim();
+
+                string expected = "Name:" + AppDomain.CurrentDomain.FriendlyName + Environment.NewLine + "There are no context policies.";
+                Assert.Equal(expected, actual);
+
+            }).Dispose();
         }
 
         [Fact]
