@@ -36,6 +36,19 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        public static void TryFormat_MatchesExpected(DateTime dateTime, string format, string expected)
+        {
+            var destination = new char[expected.Length];
+
+            Assert.False(dateTime.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format));
+
+            Assert.True(dateTime.TryFormat(destination, out int charsWritten, format));
+            Assert.Equal(destination.Length, charsWritten);
+            Assert.Equal(expected, new string(destination));
+        }
+
+        [Theory]
         [MemberData(nameof(Parse_ValidInput_Suceeds_MemberData))]
         public static void Parse_Span_ValidInput_Suceeds(string input, CultureInfo culture, DateTime? expected)
         {
