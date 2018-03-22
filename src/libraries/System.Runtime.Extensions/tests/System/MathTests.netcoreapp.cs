@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Math.Clamp is not in CoreRT yet.")]
     public static partial class MathTests
     {
         public static IEnumerable<object[]> Clamp_UnsignedInt_TestData()
