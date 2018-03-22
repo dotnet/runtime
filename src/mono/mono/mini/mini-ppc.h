@@ -255,6 +255,10 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_OP_TAIL_CALL 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 
+// Does the ABI have a volatile non-parameter register, so tailcall
+// can pass context to generics or interfaces?
+#define MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0 // FIXME?
+
 #if defined(_AIX)
 /*
  * HACK: AIX always allows accessing page 0! We can't rely on SIGSEGV

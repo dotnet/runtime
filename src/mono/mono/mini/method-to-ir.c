@@ -65,6 +65,7 @@
 #include <mono/metadata/mono-basic-block.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/mono-utils-debug.h>
 
 #include "trace.h"
 
@@ -80,6 +81,11 @@
 
 #define BRANCH_COST 10
 #define INLINE_LENGTH_LIMIT 20
+
+static const gboolean debug_tailcall_break_compile = FALSE; // break in method_to_ir
+static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
+static const gboolean debug_tailcall_try_all = FALSE;       // consider any call followed by ret
+static const gboolean debug_tailcall = FALSE;               // logging
 
 /* These have 'cfg' as an implicit argument */
 #define INLINE_FAILURE(msg) do {									\
@@ -2172,6 +2178,19 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 
 	if (cfg->llvm_only)
 		tail = FALSE;
+
+	if (tail && (debug_tailcall_break_compile || debug_tailcall_break_run)
+		&& mono_is_usermode_native_debugger_present ()) {
+
+		if (debug_tailcall_break_compile)
+			G_BREAKPOINT ();
+
+		if (tail && debug_tailcall_break_run) { // Can change tail in debugger.
+			MonoInst *brk;
+			MONO_INST_NEW (cfg, brk, OP_BREAK);
+			MONO_ADD_INS (cfg->cbb, brk);
+		}
+	}
 
 	if (tail) {
 		mini_profiler_emit_tail_call (cfg, target);
@@ -7000,7 +7019,24 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 		|| (cmethod->wrapper_type && cmethod->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		|| call_opcode == CEE_CALLI
 		|| (virtual_ && !cfg->backend->have_op_tail_call_membase)
-		|| vtable_arg // FIXME
+
+		// Passing vtable_arg uses (requires?) a volatile non-parameter register,
+		// such as AMD64 rax, r10, r11, or the return register on many architectures.
+		// ARM32 does not always clearly have such a register. ARM32's return register
+		// is a parameter register.
+		// iPhone could use r9 except on ancient systems. iPhone/ARM32 is not particularly
+		// important. Linux/arm32 is less clear.
+		// ARM32's scratch r12 is likely not viable.
+		//
+		// Imagine F1 calls F2, and F2 tailcalls F3.
+		// F2 and F3 are managed. F1 is native.
+		// Without a tailcall, F2 can save and restore everything needed for F1.
+		// However if the extra parameter were in a non-volatile, such as ARM32 V5/R8,
+		// F3 cannot easily restore it for F1, in the current scheme. The current
+		// scheme where the extra parameter is not merely an extra parameter, but
+		// passed "outside of the ABI".
+		|| (vtable_arg && !cfg->backend->have_volatile_non_param_register)
+
 		|| ((vtable_arg || cfg->gshared) && !cfg->backend->have_op_tail_call)
 		|| !mono_arch_tail_call_supported (cfg, mono_method_signature (method), mono_method_signature (cmethod)))
 		return FALSE;
@@ -9040,7 +9076,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto call_end;
 
 			gboolean inst_tailcall;
-			inst_tailcall = (ins_flag & MONO_INST_TAILCALL) != 0;
+			if (debug_tailcall_try_all)
+				inst_tailcall = ip [5] == CEE_RET;
+			else
+				inst_tailcall = (ins_flag & MONO_INST_TAILCALL) != 0;
 
 			/* Tail prefix / tail call optimization */
 
@@ -9056,7 +9095,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			// 2. a Non-generic static methods of reference types and b. non-generic methods
 			//    of value types need to be passed a pointer to the caller’s class’s VTable in the MONO_ARCH_RGCTX_REG register.
 			// 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
-			if (inst_tailcall && cfg->verbose_level >= 2)
+			if (inst_tailcall && (debug_tailcall ? cfg->verbose_level : (cfg->verbose_level >= 2)))
 				g_print ("tail.%s %s -> %s supported_tail_call:%d gshared:%d vtable_arg:%d\n",
 					mono_opcode_name (*ip), method->name, cmethod->name,
 					(int)supported_tail_call, (int)cfg->gshared, !!vtable_arg);
@@ -9174,6 +9213,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			ip += 5;
 			if (skip_ret) {
+				// FIXME When not followed by CEE_RET, correct behavior is to raise an exception.
 				g_assert (*ip == CEE_RET);
 				ip += 1;
 			}

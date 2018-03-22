@@ -732,10 +732,6 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 		need_rgctx_tramp = FALSE;
 	}
 
-	/* Calls made through delegates on platforms without delegate trampolines */
-	if (!code && mono_method_needs_static_rgctx_invoke (m, FALSE))
-		need_rgctx_tramp = TRUE;
-
 	addr = compiled_method = mono_jit_compile_method (m, error);
 	if (!addr)
 		return NULL;
