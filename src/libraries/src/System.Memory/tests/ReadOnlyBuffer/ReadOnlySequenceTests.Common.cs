@@ -163,6 +163,147 @@ namespace System.Memory.Tests
         }
 
         [Fact]
+        public void TryGetReturnsEmptySegments()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[0]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
+            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
+            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[0]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment3, 0);
+
+            var start = buffer.Start;
+            Assert.True(buffer.TryGet(ref start, out var memory));
+            Assert.Equal(0, memory.Length);
+            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.Equal(0, memory.Length);
+            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.Equal(0, memory.Length);
+            Assert.False(buffer.TryGet(ref start, out memory));
+        }
+
+        [Fact]
+        public void TryGetStopsAtEnd()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment5 = bufferSegment4.Append(new byte[100]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment3, 100);
+
+            var start = buffer.Start;
+            Assert.True(buffer.TryGet(ref start, out var memory));
+            Assert.Equal(100, memory.Length);
+            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.Equal(100, memory.Length);
+            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.Equal(100, memory.Length);
+            Assert.False(buffer.TryGet(ref start, out memory));
+        }
+
+        [Fact]
+        public void TryGetStopsAtEndWhenEndIsLastByteOfFull()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment1, 100);
+
+            var start = buffer.Start;
+            Assert.True(buffer.TryGet(ref start, out var memory));
+            Assert.Equal(100, memory.Length);
+            Assert.False(buffer.TryGet(ref start, out memory));
+        }
+
+        [Fact]
+        public void TryGetStopsAtEndWhenEndIsFirstByteOfFull()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
+
+            var start = buffer.Start;
+            Assert.True(buffer.TryGet(ref start, out var memory));
+            Assert.Equal(100, memory.Length);
+            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.Equal(0, memory.Length);
+            Assert.False(buffer.TryGet(ref start, out memory));
+        }
+
+        [Fact]
+        public void TryGetStopsAtEndWhenEndIsFirstByteOfEmpty()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
+
+            var start = buffer.Start;
+            Assert.True(buffer.TryGet(ref start, out var memory));
+            Assert.Equal(100, memory.Length);
+            Assert.True(buffer.TryGet(ref start, out memory));
+            Assert.Equal(0, memory.Length);
+            Assert.False(buffer.TryGet(ref start, out memory));
+        }
+
+        [Fact]
+        public void EnumerableStopsAtEndWhenEndIsLastByteOfFull()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment1, 100);
+
+            List<int> sizes = new List<int>();
+            foreach (var memory in buffer)
+            {
+                sizes.Add(memory.Length);
+            }
+
+            Assert.Equal(1, sizes.Count);
+            Assert.Equal(new [] { 100 }, sizes);
+        }
+
+        [Fact]
+        public void EnumerableStopsAtEndWhenEndIsFirstByteOfFull()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[100]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
+
+            List<int> sizes = new List<int>();
+            foreach (var memory in buffer)
+            {
+                sizes.Add(memory.Length);
+            }
+
+            Assert.Equal(2, sizes.Count);
+            Assert.Equal(new [] { 100, 0 }, sizes);
+        }
+
+        [Fact]
+        public void EnumerableStopsAtEndWhenEndIsFirstByteOfEmpty()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
+
+            List<int> sizes = new List<int>();
+            foreach (var memory in buffer)
+            {
+                sizes.Add(memory.Length);
+            }
+
+            Assert.Equal(2, sizes.Count);
+            Assert.Equal(new [] { 100, 0 }, sizes);
+        }
+
+        [Fact]
         public void SeekEmptySkipDoesNotCrossPastEnd()
         {
             var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
@@ -212,104 +353,6 @@ namespace System.Memory.Tests
             // Go out of bounds for segment
             Assert.Throws<ArgumentOutOfRangeException>(() => c1 = buffer.GetPosition(150, buffer.Start));
             Assert.Throws<ArgumentOutOfRangeException>(() => c1 = buffer.GetPosition(250, buffer.Start));
-        }
-
-        [Fact]
-        public void TryGetSkipsEmptyForNextUsingGetPositionWithOffset()
-        {
-            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
-            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[100]);
-
-            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment4, 100);
-            SequencePosition c1 = buffer.GetPosition(0);
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(bufferSegment1, c1.GetObject());
-
-            ReadOnlyMemory<byte> data;
-            Assert.True(buffer.TryGet(ref c1, out data, advance: true));
-
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(bufferSegment4, c1.GetObject());
-
-            Assert.True(buffer.TryGet(ref c1, out data, advance: true));
-
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(null, c1.GetObject());
-
-            Assert.False(buffer.TryGet(ref c1, out data, advance: true));
-        }
-
-        [Fact]
-        public void TryGetSkipsEmptyForNextUsingGetPositionWithOffsetAndOrigin()
-        {
-            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
-            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[100]);
-
-            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment4, 100);
-            SequencePosition c1 = buffer.GetPosition(0, buffer.Start);
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(bufferSegment1, c1.GetObject());
-
-            ReadOnlyMemory<byte> data;
-            Assert.True(buffer.TryGet(ref c1, out data, advance: true));
-
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(bufferSegment4, c1.GetObject());
-
-            Assert.True(buffer.TryGet(ref c1, out data, advance: true));
-
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(null, c1.GetObject());
-
-            Assert.False(buffer.TryGet(ref c1, out data, advance: true));
-        }
-
-        [Fact]
-        public void TryGetSkipDoesNotCrossPastEndUsingGetPositionWithOffset()
-        {
-            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
-            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[100]);
-
-            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
-            SequencePosition c1 = buffer.GetPosition(0);
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(bufferSegment1, c1.GetObject());
-
-            ReadOnlyMemory<byte> data;
-            Assert.True(buffer.TryGet(ref c1, out data, advance: true));
-
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(null, c1.GetObject());
-
-            Assert.False(buffer.TryGet(ref c1, out data, advance: true));
-        }
-
-        [Fact]
-        public void TryGetSkipDoesNotCrossPastEndUsingGetPositionWithOffsetAndOrigin()
-        {
-            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
-            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
-            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[100]);
-
-            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
-            SequencePosition c1 = buffer.GetPosition(0, buffer.Start);
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(bufferSegment1, c1.GetObject());
-
-            ReadOnlyMemory<byte> data;
-            Assert.True(buffer.TryGet(ref c1, out data, advance: true));
-
-            Assert.Equal(0, c1.GetInteger());
-            Assert.Equal(null, c1.GetObject());
-
-            Assert.False(buffer.TryGet(ref c1, out data, advance: true));
         }
 
         [Fact]
