@@ -31,7 +31,6 @@ check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 check_include_files(sys/lwp.h HAVE_SYS_LWP_H)
 check_include_files(lwp.h HAVE_LWP_H)
-check_include_files(libunwind.h HAVE_LIBUNWIND_H)
 check_include_files(runetype.h HAVE_RUNETYPE_H)
 check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
@@ -975,23 +974,24 @@ int main()
 
   return 1;
 }" FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL)
-set(CMAKE_REQUIRED_DEFINITIONS)
 
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
 set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
 
-check_cxx_source_compiles("
+list(INSERT CMAKE_REQUIRED_INCLUDES 0 ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include)
+
+check_c_source_compiles("
 #include <libunwind.h>
 #include <ucontext.h>
-
 int main(int argc, char **argv)
 {
         unw_context_t libUnwindContext;
         ucontext_t uContext;
-
         libUnwindContext = uContext;
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
+
+list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 
 check_cxx_source_compiles("
 #include <sys/param.h>
@@ -1272,10 +1272,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  if(NOT HAVE_LIBUNWIND_H)
-    unset(HAVE_LIBUNWIND_H CACHE)
-    message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
-  endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1286,10 +1282,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   set(BSD_REGS_STYLE "((reg).r_##rr)")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-  if(NOT HAVE_LIBUNWIND_H)
-    unset(HAVE_LIBUNWIND_H CACHE)
-    message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
-  endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1301,10 +1293,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
-  if(NOT HAVE_LIBUNWIND_H)
-    unset(HAVE_LIBUNWIND_H CACHE)
-    message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
-  endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
   set(PAL_PT_ATTACH PT_ATTACH)
@@ -1313,10 +1301,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
   set(PAL_PT_WRITE_D PT_WRITE_D)
   set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
 else() # Anything else is Linux
-  if(NOT HAVE_LIBUNWIND_H)
-    unset(HAVE_LIBUNWIND_H CACHE)
-    message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8 and libunwind8-dev (or the appropriate packages for your platform)")
-  endif()
   if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
     unset(HAVE_LTTNG_TRACEPOINT_H CACHE)
     message(FATAL_ERROR "Cannot find liblttng-ust-dev. Try installing liblttng-ust-dev  (or the appropriate packages for your platform)")
