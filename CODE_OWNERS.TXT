@@ -15,8 +15,8 @@ N: Mike McLaughlin
 G: mikem8361
 D: Debugging APIs and implementation (anything under the debug directory), sos
 
-N: Kshama Pawar
-G: kspawa
+N: Noah Falk, David Mason
+G: noahfalk, davmason
 D: Profiling APIs and implementation
 
 N: Gaurav Khanna
