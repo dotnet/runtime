@@ -52,9 +52,10 @@ namespace System.Buffers
                 }
             }
 
+            // TryGetArray is exposed as "protected internal". Normally, the rules of C# dictate we override it as "protected" because the base class is
+            // in a different assembly. Except in the netstandard config where the base class is in the same assembly.
             protected
-#if netstandard // TryGetArray is exposed as "protected internal". Normally, the rules of C# dictate we override it as "protected" because the base class is
-                // in a different assembly. Except in the netstandard config where the base class is in the same assembly.
+#if netstandard  
             internal
 #endif
             sealed override bool TryGetArray(out ArraySegment<T> segment)
@@ -96,8 +97,10 @@ namespace System.Buffers
                 while (true)
                 {
                     int currentCount = Volatile.Read(ref _refCount);
-                    if (currentCount <= 0) ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
-                    if (Interlocked.CompareExchange(ref _refCount, currentCount + 1, currentCount) == currentCount) break;
+                    if (currentCount <= 0)
+                        ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
+                    if (Interlocked.CompareExchange(ref _refCount, currentCount + 1, currentCount) == currentCount)
+                        break;
                 }
             }
 
@@ -106,7 +109,8 @@ namespace System.Buffers
                 while (true)
                 {
                     int currentCount = Volatile.Read(ref _refCount);
-                    if (currentCount <= 0) ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
+                    if (currentCount <= 0)
+                        ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
                     if (Interlocked.CompareExchange(ref _refCount, currentCount - 1, currentCount) == currentCount)
                     {
                         if (currentCount == 1)

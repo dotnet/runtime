@@ -82,7 +82,7 @@ namespace System.Memory.Tests
         [MemberData(nameof(ValidSliceCases))]
         public void Slice_Works(Func<ReadOnlySequence<byte>, ReadOnlySequence<byte>> func)
         {
-            ReadOnlySequence<byte> buffer = Factory.CreateWithContent(new byte[] { 0, 1, 2 ,3 ,4, 5, 6, 7, 8, 9 });
+            ReadOnlySequence<byte> buffer = Factory.CreateWithContent(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
             ReadOnlySequence<byte> slice = func(buffer);
             Assert.Equal(new byte[] { 5, 6, 7, 8, 9 }, slice.ToArray());
         }
@@ -196,7 +196,7 @@ namespace System.Memory.Tests
         public void Create_WorksWithArray()
         {
             var buffer = new ReadOnlySequence<byte>(new byte[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(buffer.ToArray(), new byte[] {  1, 2, 3, 4, 5 });
+            Assert.Equal(buffer.ToArray(), new byte[] { 1, 2, 3, 4, 5 });
         }
 
         [Fact]

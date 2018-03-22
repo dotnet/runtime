@@ -181,6 +181,37 @@ namespace System.Memory.Tests
 
             Assert.Equal(0, c1.GetInteger());
             Assert.Equal(bufferSegment2, c1.GetObject());
+
+            // Go out of bounds for segment
+            Assert.Throws<ArgumentOutOfRangeException>(() => c1 = buffer.GetPosition(150, buffer.Start));
+            Assert.Throws<ArgumentOutOfRangeException>(() => c1 = buffer.GetPosition(250, buffer.Start));
+        }
+
+        [Fact]
+        public void SeekEmptySkipDoesNotCrossPastEndWithExtraChainedBlocks()
+        {
+            var bufferSegment1 = new BufferSegment<byte>(new byte[100]);
+            BufferSegment<byte> bufferSegment2 = bufferSegment1.Append(new byte[0]);
+            BufferSegment<byte> bufferSegment3 = bufferSegment2.Append(new byte[0]);
+            BufferSegment<byte> bufferSegment4 = bufferSegment3.Append(new byte[100]);
+            BufferSegment<byte> bufferSegment5 = bufferSegment4.Append(new byte[0]);
+            BufferSegment<byte> bufferSegment6 = bufferSegment5.Append(new byte[100]);
+
+            var buffer = new ReadOnlySequence<byte>(bufferSegment1, 0, bufferSegment2, 0);
+
+            SequencePosition c1 = buffer.GetPosition(100);
+
+            Assert.Equal(0, c1.GetInteger());
+            Assert.Equal(bufferSegment2, c1.GetObject());
+
+            c1 = buffer.GetPosition(100, buffer.Start);
+
+            Assert.Equal(0, c1.GetInteger());
+            Assert.Equal(bufferSegment2, c1.GetObject());
+
+            // Go out of bounds for segment
+            Assert.Throws<ArgumentOutOfRangeException>(() => c1 = buffer.GetPosition(150, buffer.Start));
+            Assert.Throws<ArgumentOutOfRangeException>(() => c1 = buffer.GetPosition(250, buffer.Start));
         }
 
         [Fact]
@@ -285,7 +316,7 @@ namespace System.Memory.Tests
         public void Create_WorksWithArray()
         {
             var buffer = new ReadOnlySequence<byte>(new byte[] { 1, 2, 3, 4, 5 });
-            Assert.Equal(buffer.ToArray(), new byte[] {  1, 2, 3, 4, 5 });
+            Assert.Equal(buffer.ToArray(), new byte[] { 1, 2, 3, 4, 5 });
         }
 
         [Fact]
@@ -369,7 +400,7 @@ namespace System.Memory.Tests
 
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySequence<byte>(null, 5, segment, 0));
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySequence<byte>(segment, 5, null, 0));
-        } 
+        }
 
         [Fact]
         public void HelloWorldAcrossTwoBlocks()
@@ -380,7 +411,7 @@ namespace System.Memory.Tests
 
             byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
             byte[] firstBytes = Enumerable.Repeat((byte)'a', blockSize - 5).Concat(bytes.Take(5)).ToArray();
-            byte[] secondBytes = bytes.Skip(5).Concat( Enumerable.Repeat((byte)'a', blockSize - (bytes.Length - 5))).ToArray();
+            byte[] secondBytes = bytes.Skip(5).Concat(Enumerable.Repeat((byte)'a', blockSize - (bytes.Length - 5))).ToArray();
 
             BufferSegment<byte> firstSegement = new BufferSegment<byte>(firstBytes);
             BufferSegment<byte> secondSegement = firstSegement.Append(secondBytes);
