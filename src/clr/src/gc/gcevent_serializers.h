@@ -106,33 +106,33 @@ struct EventSerializationTraits<uint32_t>
  * Given a list of arguments , returns the total size of
  * the buffer required to fully serialize the list of arguments.
  */
-template<class Head, class... Tail>
-size_t SerializedSize(Head head, Tail... tail)
-{
-    return EventSerializationTraits<Head>::SerializedSize(head) + SerializedSize(tail...);
-}
-
 template<class Head>
 size_t SerializedSize(Head head)
 {
     return EventSerializationTraits<Head>::SerializedSize(head);
 }
 
+template<class Head, class... Tail>
+size_t SerializedSize(Head head, Tail... tail)
+{
+    return EventSerializationTraits<Head>::SerializedSize(head) + SerializedSize(tail...);
+}
+
 /*
  * Given a list of arguments and a list of actual parameters, serialize
  * the arguments into the buffer that's given to us.
  */
+template<class Head>
+void Serialize(uint8_t** buf, Head head)
+{
+    EventSerializationTraits<Head>::Serialize(head, buf);
+}
+
 template<class Head, class... Tail>
 void Serialize(uint8_t** buf, Head head, Tail... tail)
 {
     EventSerializationTraits<Head>::Serialize(head, buf);
     Serialize(buf, tail...);
-}
-
-template<class Head>
-void Serialize(uint8_t** buf, Head head)
-{
-    EventSerializationTraits<Head>::Serialize(head, buf);
 }
 
 } // namespace gc_event
