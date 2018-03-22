@@ -59,4 +59,10 @@ mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, ma
 	g_assert_not_reached ();
 }
 
+kern_return_t
+mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count, thread_state_t fpstate, mach_msg_type_number_t fpcount)
+{
+       g_assert_not_reached ();
+}
+
 #endif
