@@ -163,13 +163,6 @@
       "value": "-ConfigurationGroup=$(BuildConfiguration) $(PB_AdditionalBuildArguments)",
       "allowOverride": true
     },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true",
-      "allowOverride": true
-    },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
     },
