@@ -41,12 +41,18 @@ namespace System.Buffers
                 Debug.Assert(startObject is ReadOnlySequenceSegment<T>);
                 ReadOnlySequenceSegment<T> startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
 
+                data = startSegment.Memory;
+
                 if (startSegment != endObject)
                 {
-                    next = GetBufferCrossSegment(startIndex, endObject, ref startSegment, ref length);
-                }
+                    ReadOnlySequenceSegment<T> nextSegment = startSegment.Next;
 
-                data = startSegment.Memory;
+                    if (nextSegment == null && startSegment != endObject)
+                        ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+                    next = new SequencePosition(nextSegment, 0);
+                    length = data.Length - startIndex;
+                }
             }
             else if (type == SequenceType.Array)
             {
@@ -133,47 +139,6 @@ namespace System.Buffers
             }
 
             return memory.Slice(startIndex, length);
-        }
-
-        private static SequencePosition GetBufferCrossSegment(int startIndex, object endObject, ref ReadOnlySequenceSegment<T> startSegment, ref int length)
-        {
-            Debug.Assert(startSegment != null);
-
-            ReadOnlySequenceSegment<T> nextSegment = startSegment.Next;
-            int currentLength = startSegment.Memory.Length - startIndex;
-
-            while (currentLength == 0 && nextSegment != endObject && nextSegment != null)
-            {
-                // startSegment is at the end of a segment; move it to start of the next.
-                // However, skip any empty segments, else the caller will immedately run out of data and call back
-                startSegment = nextSegment;
-                nextSegment = nextSegment.Next;
-                currentLength = startSegment.Memory.Length;
-            }
-
-            length = currentLength;
-            while (nextSegment != null && nextSegment.Memory.Length == 0)
-            {
-                // nextSegment is an empty segment, skip until one is found with data.
-                if (nextSegment == endObject)
-                {
-                    // Reached the end and no segment with data found,
-                    // set nextSegment to null as if there were no following segments. 
-                    endObject = nextSegment = null;
-                    break;
-                }
-
-                nextSegment = nextSegment.Next;
-            }
-
-            if (nextSegment != null)
-            {
-                return new SequencePosition(nextSegment, 0);
-            }
-            else if (endObject != null)
-                ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
-
-            return default;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
