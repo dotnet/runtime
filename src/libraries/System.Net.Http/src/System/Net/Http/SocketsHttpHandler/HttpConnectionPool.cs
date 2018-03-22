@@ -86,6 +86,13 @@ namespace System.Net.Http
                     Debug.Assert(proxyUri != null);
                     break;
 
+                case HttpConnectionKind.ProxyTunnel:
+                    Debug.Assert(host != null);
+                    Debug.Assert(port != 0);
+                    Debug.Assert(sslHostName == null);
+                    Debug.Assert(proxyUri != null);
+                    break;
+
                 case HttpConnectionKind.SslProxyTunnel:
                     Debug.Assert(host != null);
                     Debug.Assert(port != 0);
@@ -322,6 +329,7 @@ namespace System.Net.Http
                         (socket, stream) = await ConnectHelper.ConnectAsync(_proxyUri.IdnHost, _proxyUri.Port, cancellationToken).ConfigureAwait(false);
                         break;
 
+                    case HttpConnectionKind.ProxyTunnel:
                     case HttpConnectionKind.SslProxyTunnel:
                         HttpResponseMessage response;
                         (stream, response) = await EstablishProxyTunnel(cancellationToken).ConfigureAwait(false);
