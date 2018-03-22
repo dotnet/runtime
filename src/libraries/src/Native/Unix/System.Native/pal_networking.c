@@ -44,6 +44,10 @@
 #elif HAVE_SENDFILE_6
 #include <sys/uio.h>
 #endif
+#if !HAVE_IN_PKTINFO
+#include <net/if.h>
+#include <ifaddrs.h>
+#endif
 
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
@@ -779,11 +783,23 @@ static int32_t GetIPv4PacketInformation(struct cmsghdr* controlMessage, struct I
 #if HAVE_IN_PKTINFO
     packetInfo->InterfaceIndex = (int32_t)pktinfo->ipi_ifindex;
 #else
-    // TODO (#7855): Figure out how to get interface index with in_addr.
-    // One option is http://www.unix.com/man-page/freebsd/3/if_nametoindex
-    // which requires interface name to be known.
-    // Meanwhile:
     packetInfo->InterfaceIndex = 0;
+
+    struct ifaddrs* addrs;
+    if (getifaddrs(&addrs) == 0)
+    {
+        struct ifaddrs* addrs_head = addrs;
+        while (addrs != NULL)
+        {
+            if (addrs->ifa_addr->sa_family == AF_INET && ((struct sockaddr_in*)addrs->ifa_addr)->sin_addr.s_addr == pktinfo->ipi_addr.s_addr)
+            {
+                packetInfo->InterfaceIndex = (int32_t)if_nametoindex(addrs->ifa_name);
+                break;
+            }
+            addrs = addrs->ifa_next;
+        }
+        freeifaddrs(addrs_head);
+    }
 #endif
 
     return 1;
@@ -2430,7 +2446,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
-#else    
+#else
     // If we ever need to run on a platform that doesn't have sendfile,
     // we can implement this with a simple read/send loop.  For now,
     // we just mark it as not supported.
