@@ -29,10 +29,16 @@ namespace System.Net.Http
             IsSupportedSecureScheme(scheme);
 
         internal static bool IsSupportedNonSecureScheme(string scheme) =>
-            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase);
+            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || IsNonSecureWebSocketScheme(scheme);
 
         internal static bool IsSupportedSecureScheme(string scheme) =>
-            string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase);
+            string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase) || IsSecureWebSocketScheme(scheme);
+
+        internal static bool IsNonSecureWebSocketScheme(string scheme) =>
+            string.Equals(scheme, "ws", StringComparison.OrdinalIgnoreCase);
+
+        internal static bool IsSecureWebSocketScheme(string scheme) =>
+            string.Equals(scheme, "wss", StringComparison.OrdinalIgnoreCase);
 
         // Always specify TaskScheduler.Default to prevent us from using a user defined TaskScheduler.Current.
         //

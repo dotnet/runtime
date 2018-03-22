@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -166,10 +167,18 @@ namespace System.Net.Http
                 Debug.Assert(HttpUtilities.IsSupportedNonSecureScheme(proxyUri.Scheme));
                 if (sslHostName == null)
                 {
-                    // Standard HTTP proxy usage for non-secure requests
-                    // The destination host and port are ignored here, since these connections
-                    // will be shared across any requests that use the proxy.
-                    return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri);
+                    if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
+                    {
+                        // Non-secure websocket connection through proxy to the destination.
+                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri);
+                    }
+                    else
+                    {
+                        // Standard HTTP proxy usage for non-secure requests
+                        // The destination host and port are ignored here, since these connections
+                        // will be shared across any requests that use the proxy.
+                        return new HttpConnectionKey(HttpConnectionKind.Proxy, null, 0, null, proxyUri);
+                    }
                 }
                 else
                 {

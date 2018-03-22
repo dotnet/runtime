@@ -78,8 +78,6 @@ namespace System.Net.WebSockets
             bool disposeHandler = true;
             try
             {
-                // Create the request message, including a uri with ws{s} switched to http{s}.
-                uri = new UriBuilder(uri) { Scheme = (uri.Scheme == UriScheme.Ws) ? UriScheme.Http : UriScheme.Https }.Uri;
                 var request = new HttpRequestMessage(HttpMethod.Get, uri);
                 if (options._requestHeaders?.Count > 0) // use field to avoid lazily initializing the collection
                 {

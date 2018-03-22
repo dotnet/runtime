@@ -9,7 +9,8 @@ namespace System.Net.Http
         Http,
         Https,
         Proxy,
-        SslProxyTunnel,     // SSL connection tunneled through proxy
-        ProxyConnect        // Connection used for proxy CONNECT.  Tunnel will be established on top of this.
+        ProxyTunnel,        // Non-secure connection tunneled through proxy.
+        SslProxyTunnel,     // SSL connection tunneled through proxy.
+        ProxyConnect        // Connection used for proxy CONNECT. Tunnel will be established on top of this.
     }
 }
