@@ -2870,6 +2870,34 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static unsafe void ConstructorsTest_InvalidArguments ()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 0, 1, Encoding.Default));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 1, 1, Encoding.Default));
+
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 0, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new String ((sbyte*) null, 1, 1, null));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static unsafe void ConstructorsTest_Empty ()
+        {
+            Assert.Equal(string.Empty, new String((sbyte*) null));
+
+            Assert.Equal(string.Empty, new String((char*) null, 0, 0));
+
+            Assert.Equal(string.Empty, new String((sbyte*) null, 0, 0));
+
+            Assert.Equal(string.Empty, new String((sbyte*) null, 0, 0, Encoding.Default));
+            Assert.Equal(string.Empty, new String((sbyte*) null, 1, 0, Encoding.Default));
+
+            Assert.Equal(string.Empty, new String((sbyte*) null, 0, 0, null));
+            Assert.Equal(string.Empty, new String((sbyte*) null, 1, 0, null));
+        }
+
+        [Fact]
         public static unsafe void CloneTest()
         {
             string s = "some string to clone";
