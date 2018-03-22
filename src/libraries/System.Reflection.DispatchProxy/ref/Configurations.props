@@ -3,6 +3,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard;
+      uap10.0.16299;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
