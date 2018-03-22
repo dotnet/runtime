@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -88,7 +89,7 @@ namespace System.Net.NetworkInformation
             int msIndex = pingOutput.IndexOf("ms", afterTime);
             int numLength = msIndex - afterTime - 1;
             string timeSubstring = pingOutput.Substring(afterTime, numLength);
-            double parsedRtt = double.Parse(timeSubstring);
+            double parsedRtt = double.Parse(timeSubstring, CultureInfo.InvariantCulture);
             return (long)Math.Round(parsedRtt);
         }
     }
