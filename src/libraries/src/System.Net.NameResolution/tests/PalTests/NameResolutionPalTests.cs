@@ -35,7 +35,6 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostEntry.Aliases);
         }
 
-        [ActiveIssue(20245, TestPlatforms.AnyUnix)]
         [Fact]
         public void TryGetAddrInfo_HostName()
         {
@@ -45,6 +44,13 @@ namespace System.Net.NameResolution.PalTests
             IPHostEntry hostEntry;
             int nativeErrorCode;
             SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, out hostEntry, out nativeErrorCode);
+            if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+            {
+                // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the 
+                // machine configurations, which varies by distro and is often inconsistent.
+                return;
+            }
+            
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(hostEntry);
             Assert.NotNull(hostEntry.HostName);
