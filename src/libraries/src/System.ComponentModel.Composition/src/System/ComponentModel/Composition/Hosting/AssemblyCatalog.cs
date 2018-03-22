@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using Microsoft.Internal;
@@ -566,7 +567,15 @@ namespace System.ComponentModel.Composition.Hosting
                 assemblyName.CodeBase = codeBase;
             }
 
-            return Assembly.Load(assemblyName);
+            try
+            {
+                return Assembly.Load(assemblyName);
+            }
+            //fallback attempt issue https://github.com/dotnet/corefx/issues/27433
+            catch (FileNotFoundException)
+            {
+                return Assembly.LoadFrom(codeBase);
+            }
         }
     }
 }
