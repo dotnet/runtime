@@ -5,6 +5,7 @@
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Tests;
@@ -13,7 +14,7 @@ using Xunit;
 
 namespace System.CodeDom.Tests
 {
-    public abstract class CodeGenerationTests
+    public abstract class CodeGenerationTests : RemoteExecutorTestBase
     {
         [Fact]
         public void Roundtrip_Extension()
