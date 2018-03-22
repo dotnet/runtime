@@ -112,6 +112,40 @@ namespace System.Net.Tests
             Assert.Equal(Text, Encoding.ASCII.GetString(receivedBytes));
         }
 
+        [ConditionalTheory(nameof(IsNotWindows7))]
+        [InlineData(300)]
+        [InlineData(500)]
+        [InlineData(1000)]
+        [InlineData(1300)]
+        public async Task ReceiveAsync_DetectEndOfMessage_Success(int bufferSize)
+        {
+            const int StringLength = 1000;
+            string sendString = new string('A', StringLength);
+            byte[] sentBytes = Encoding.ASCII.GetBytes(sendString);
+
+            HttpListenerWebSocketContext context = await GetWebSocketContext();
+            await ClientConnectTask;
+
+            await Client.SendAsync(new ArraySegment<byte>(sentBytes), WebSocketMessageType.Text, true, new CancellationToken());
+
+            byte[] receivedBytes = new byte[bufferSize];
+            List<byte> compoundBuffer = new List<byte>();
+
+            WebSocketReceiveResult result = new WebSocketReceiveResult(0, WebSocketMessageType.Close, false);
+            while (!result.EndOfMessage)
+            {
+                result = await (context.WebSocket).ReceiveAsync(new ArraySegment<byte>(receivedBytes), new CancellationToken());
+
+                byte[] readBytes = new byte[result.Count];
+                Array.Copy(receivedBytes, readBytes, result.Count);
+                compoundBuffer.AddRange(readBytes);
+            }
+
+            Assert.True(result.EndOfMessage);
+            string msg = Encoding.UTF8.GetString(compoundBuffer.ToArray());
+            Assert.Equal(sendString, msg);
+        }
+
         [ConditionalFact(nameof(IsNotWindows7))]
         public async Task ReceiveAsync_NoInnerBuffer_ThrowsArgumentNullException()
         {

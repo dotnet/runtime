@@ -39,7 +39,7 @@ namespace System.Net.WebSockets
         private readonly ArraySegment<byte> _propertyBuffer;
         private readonly int _sendBufferSize;
         private volatile int _payloadOffset;
-        private volatile WebSocketReceiveResult _bufferedPayloadReceiveResult;
+        private volatile PayloadReceiveResult _bufferedPayloadReceiveResult;
         private long _pinnedSendBufferStartAddress;
         private long _pinnedSendBufferEndAddress;
         private ArraySegment<byte> _pinnedSendBuffer;
@@ -305,7 +305,7 @@ namespace System.Net.WebSockets
             Debug.Assert(_payloadOffset == 0,
                 "'m_PayloadOffset' MUST be '0' at this point.");
             Debug.Assert(_bufferedPayloadReceiveResult == null || _bufferedPayloadReceiveResult.Count == 0,
-                "'m_BufferedPayloadReceiveResult.Count' MUST be '0' at this point.");
+                "'_bufferedPayloadReceiveResult.Count' MUST be '0' at this point.");
 
             Buffer.BlockCopy(payload.Array,
                 payload.Offset + unconsumedDataOffset,
@@ -314,7 +314,7 @@ namespace System.Net.WebSockets
                 bytesBuffered);
 
             _bufferedPayloadReceiveResult =
-                new WebSocketReceiveResult(bytesBuffered, messageType, endOfMessage);
+                new PayloadReceiveResult(bytesBuffered, messageType, endOfMessage);
 
             this.ValidateBufferedPayload();
         }
@@ -326,12 +326,12 @@ namespace System.Net.WebSockets
 
             int bytesTransferred = Math.Min(buffer.Count, _bufferedPayloadReceiveResult.Count);
 
+            _bufferedPayloadReceiveResult.Count -= bytesTransferred;
+
             receiveResult = new WebSocketReceiveResult(
                 bytesTransferred,
                 _bufferedPayloadReceiveResult.MessageType,
-                bytesTransferred == 0 && _bufferedPayloadReceiveResult.EndOfMessage,
-                _bufferedPayloadReceiveResult.CloseStatus,
-                _bufferedPayloadReceiveResult.CloseStatusDescription);
+                _bufferedPayloadReceiveResult.Count == 0 && _bufferedPayloadReceiveResult.EndOfMessage);
 
             Buffer.BlockCopy(_payloadBuffer.Array,
                 _payloadBuffer.Offset + _payloadOffset,
@@ -558,9 +558,9 @@ namespace System.Net.WebSockets
         private void ValidateBufferedPayload()
         {
             Debug.Assert(_bufferedPayloadReceiveResult != null,
-                "'m_BufferedPayloadReceiveResult' MUST NOT be NULL.");
+                "'_bufferedPayloadReceiveResult' MUST NOT be NULL.");
             Debug.Assert(_bufferedPayloadReceiveResult.Count >= 0,
-                "'m_BufferedPayloadReceiveResult.Count' MUST NOT be negative.");
+                "'_bufferedPayloadReceiveResult.Count' MUST NOT be negative.");
             Debug.Assert(_payloadOffset >= 0, "'m_PayloadOffset' MUST NOT be smaller than 0.");
             Debug.Assert(_payloadOffset <= _payloadBuffer.Count,
                 "'m_PayloadOffset' MUST NOT be bigger than 'm_PayloadBuffer.Count'.");
@@ -684,6 +684,25 @@ namespace System.Net.WebSockets
         {
             public const int None = 0;
             public const int SendPayloadSpecified = 1;
+        }
+
+        private class PayloadReceiveResult
+        {
+            public int Count { get; set; }
+            public bool EndOfMessage { get; }
+            public WebSocketMessageType MessageType { get; }
+
+            public PayloadReceiveResult(int count, WebSocketMessageType messageType, bool endOfMessage)
+            {
+                if (count < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(count));
+                }
+
+                Count = count;
+                EndOfMessage = endOfMessage;
+                MessageType = messageType;
+            }
         }
     }
 }
