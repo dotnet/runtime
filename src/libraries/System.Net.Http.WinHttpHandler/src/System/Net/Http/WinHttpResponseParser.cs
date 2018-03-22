@@ -127,7 +127,7 @@ namespace System.Net.Http
                 ref resultSize,
                 IntPtr.Zero))
             {
-                WinHttpException.ThrowExceptionUsingLastError();
+                WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpQueryHeaders));
             }
 
             return result;
@@ -189,7 +189,7 @@ namespace System.Net.Http
                 return GetResponseHeader(requestHandle, infoLevel, ref buffer, ref index, out headerValue);
             }
 
-            throw WinHttpException.CreateExceptionUsingError(lastError);
+            throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
         }
 
         /// <summary>
@@ -216,7 +216,7 @@ namespace System.Net.Http
 
                     Debug.Assert(lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER, "buffer must be of sufficient size.");
 
-                    throw WinHttpException.CreateExceptionUsingError(lastError);
+                    throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
                 }
             }
 
@@ -240,7 +240,7 @@ namespace System.Net.Http
 
                 if (lastError != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
                 {
-                    throw WinHttpException.CreateExceptionUsingError(lastError);
+                    throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpQueryHeaders));
                 }
             }
 

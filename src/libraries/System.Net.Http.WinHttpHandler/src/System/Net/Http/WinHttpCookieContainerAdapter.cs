@@ -61,7 +61,7 @@ namespace System.Net.Http
                 int lastError = Marshal.GetLastWin32Error();
                 if (lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND)
                 {
-                    throw WinHttpException.CreateExceptionUsingError(lastError);
+                    throw WinHttpException.CreateExceptionUsingError(lastError, nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
                 }
             }
 
@@ -76,7 +76,7 @@ namespace System.Net.Http
                     (uint)cookieHeader.Length,
                     Interop.WinHttp.WINHTTP_ADDREQ_FLAG_ADD))
                 {
-                    WinHttpException.ThrowExceptionUsingLastError();
+                    WinHttpException.ThrowExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpAddRequestHeaders));
                 }
             }
         }

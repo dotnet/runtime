@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -39,37 +40,41 @@ namespace System.Net.Http
             }
         }
 
-        public static void ThrowExceptionUsingLastError()
+        public static void ThrowExceptionUsingLastError(string nameOfCalledFunction)
         {
-            throw CreateExceptionUsingLastError();
+            throw CreateExceptionUsingLastError(nameOfCalledFunction);
         }
 
-        public static WinHttpException CreateExceptionUsingLastError()
+        public static WinHttpException CreateExceptionUsingLastError(string nameOfCalledFunction)
         {
             int lastError = Marshal.GetLastWin32Error();
-            return CreateExceptionUsingError(lastError);
+            return CreateExceptionUsingError(lastError, nameOfCalledFunction);
         }
 
-        public static WinHttpException CreateExceptionUsingError(int error)
+        public static WinHttpException CreateExceptionUsingError(int error, string nameOfCalledFunction)
         {
-            var e = new WinHttpException(error, GetErrorMessage(error));
+            var e = new WinHttpException(error, GetErrorMessage(error, nameOfCalledFunction));
             ExceptionStackTrace.AddCurrentStack(e);
             return e;
         }
 
-        public static WinHttpException CreateExceptionUsingError(int error, Exception innerException)
+        public static WinHttpException CreateExceptionUsingError(int error, string nameOfCalledFunction, Exception innerException)
         {
-            var e = new WinHttpException(error, GetErrorMessage(error), innerException);
+            var e = new WinHttpException(error, GetErrorMessage(error, nameOfCalledFunction), innerException);
             ExceptionStackTrace.AddCurrentStack(e);
             return e;
         }
 
-        public static string GetErrorMessage(int error)
+        public static string GetErrorMessage(int error, string nameOfCalledFunction)
         {
+            Debug.Assert(!string.IsNullOrEmpty(nameOfCalledFunction));
+
             // Look up specific error message in WINHTTP.DLL since it is not listed in default system resources
             // and thus can't be found by default .Net interop.
             IntPtr moduleHandle = Interop.Kernel32.GetModuleHandle(Interop.Libraries.WinHttp);
-            return Interop.Kernel32.GetMessage(moduleHandle, error);
+            string httpError = Interop.Kernel32.GetMessage(moduleHandle, error);
+
+            return SR.Format(SR.net_http_winhttp_error, error, nameOfCalledFunction, httpError);
         }
     }
 }

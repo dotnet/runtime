@@ -138,14 +138,14 @@ namespace System.Net.Http
 
             uint apiIndex = (uint)asyncResult.dwResult.ToInt32();
             uint error = asyncResult.dwError;
-
+            string apiName = GetNameFromApiIndex(apiIndex);
             WriteLine(
                 "{0}: api={1}, error={2}({3}) \"{4}\"",
                 message,
-                GetNameFromApiIndex(apiIndex),
+                apiName,
                 GetNameFromError(error),
                 error,
-                WinHttpException.GetErrorMessage((int)error));
+                WinHttpException.GetErrorMessage((int)error, apiName));
         }
 
         private static void WriteLine(string message)
