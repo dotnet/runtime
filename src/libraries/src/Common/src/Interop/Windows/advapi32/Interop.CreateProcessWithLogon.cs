@@ -21,8 +21,8 @@ internal partial class Interop
             int creationFlags,
             IntPtr environmentBlock,
             string lpCurrentDirectory,
-            Interop.Kernel32.STARTUPINFO lpStartupInfo,
-            [Out] Interop.Kernel32.PROCESS_INFORMATION lpProcessInformation);
+            ref Interop.Kernel32.STARTUPINFO lpStartupInfo,
+            ref Interop.Kernel32.PROCESS_INFORMATION lpProcessInformation);
 
         [Flags]
         internal enum LogonFlags

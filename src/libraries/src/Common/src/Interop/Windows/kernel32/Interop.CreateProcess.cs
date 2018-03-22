@@ -21,68 +21,40 @@ internal partial class Interop
             int dwCreationFlags,
             IntPtr lpEnvironment,
             string lpCurrentDirectory,
-            STARTUPINFO lpStartupInfo,
-            [Out] PROCESS_INFORMATION lpProcessInformation
+            ref STARTUPINFO lpStartupInfo,
+            ref PROCESS_INFORMATION lpProcessInformation
         );
 
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class PROCESS_INFORMATION
+        internal struct PROCESS_INFORMATION
         {
-            internal IntPtr hProcess = IntPtr.Zero;
-            internal IntPtr hThread = IntPtr.Zero;
-            internal int dwProcessId = 0;
-            internal int dwThreadId = 0;
+            internal IntPtr hProcess;
+            internal IntPtr hThread;
+            internal int dwProcessId;
+            internal int dwThreadId;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal sealed class STARTUPINFO : IDisposable
+        internal struct STARTUPINFO
         {
             internal int cb;
-            internal IntPtr lpReserved = IntPtr.Zero;
-            internal IntPtr lpDesktop = IntPtr.Zero;
-            internal IntPtr lpTitle = IntPtr.Zero;
-            internal int dwX = 0;
-            internal int dwY = 0;
-            internal int dwXSize = 0;
-            internal int dwYSize = 0;
-            internal int dwXCountChars = 0;
-            internal int dwYCountChars = 0;
-            internal int dwFillAttribute = 0;
-            internal int dwFlags = 0;
-            internal short wShowWindow = 0;
-            internal short cbReserved2 = 0;
-            internal IntPtr lpReserved2 = IntPtr.Zero;
-            internal SafeFileHandle hStdInput = new SafeFileHandle(IntPtr.Zero, false);
-            internal SafeFileHandle hStdOutput = new SafeFileHandle(IntPtr.Zero, false);
-            internal SafeFileHandle hStdError = new SafeFileHandle(IntPtr.Zero, false);
-
-            internal
-                STARTUPINFO()
-            {
-                cb = Marshal.SizeOf<STARTUPINFO>();
-            }
-
-            public void Dispose()
-            {
-                // close the handles created for child process
-                if (hStdInput != null && !hStdInput.IsInvalid)
-                {
-                    hStdInput.Dispose();
-                    hStdInput = null;
-                }
-
-                if (hStdOutput != null && !hStdOutput.IsInvalid)
-                {
-                    hStdOutput.Dispose();
-                    hStdOutput = null;
-                }
-
-                if (hStdError != null && !hStdError.IsInvalid)
-                {
-                    hStdError.Dispose();
-                    hStdError = null;
-                }
-            }
+            internal IntPtr lpReserved;
+            internal IntPtr lpDesktop;
+            internal IntPtr lpTitle;
+            internal int dwX;
+            internal int dwY;
+            internal int dwXSize;
+            internal int dwYSize;
+            internal int dwXCountChars;
+            internal int dwYCountChars;
+            internal int dwFillAttribute;
+            internal int dwFlags;
+            internal short wShowWindow;
+            internal short cbReserved2;
+            internal IntPtr lpReserved2;
+            internal IntPtr hStdInput;
+            internal IntPtr hStdOutput;
+            internal IntPtr hStdError;
         }
     }
 }
