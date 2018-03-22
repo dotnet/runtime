@@ -259,7 +259,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(EmptyData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "This causes assertion failure on UAPAoT")]
         public static void Empty<T>(T def)
         {
             Assert.Empty(ParallelEnumerable.Empty<T>());

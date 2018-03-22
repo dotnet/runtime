@@ -103,7 +103,6 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Decode_TestData))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20525", TargetFrameworkMonikers.UapAot)]
         public void Decode(byte[] bytes, int index, int count, string expected)
         {
             EncodingHelpers.Decode(new UTF8Encoding(true, false), bytes, index, count, expected);
