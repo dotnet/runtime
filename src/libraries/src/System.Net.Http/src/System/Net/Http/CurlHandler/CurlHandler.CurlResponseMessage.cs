@@ -332,7 +332,7 @@ namespace System.Net.Http
                         // the cancellation token.  Dispose on the registration won't return until the action
                         // associated with the registration has completed, but if that action is currently
                         // executing and is blocked on the lock that's held while calling Dispose... deadlock.
-                        var crs = new CancelableReadState(destination, this);
+                        var crs = new CancelableReadState(destination, this, cancellationToken);
                         crs._registration = cancellationToken.Register(s1 =>
                         {
                             ((CancelableReadState)s1)._stream.EventSourceTrace("Cancellation invoked. Queueing work item to cancel read state");
@@ -341,11 +341,11 @@ namespace System.Net.Http
                                 var crsRef = (CancelableReadState)s2;
                                 lock (crsRef._stream._lockObject)
                                 {
-                                    Debug.Assert(crsRef._registration.Token.IsCancellationRequested, "We should only be here if cancellation was requested.");
+                                    Debug.Assert(crsRef._token.IsCancellationRequested, "We should only be here if cancellation was requested.");
                                     if (crsRef._stream._pendingReadRequest == crsRef)
                                     {
                                         crsRef._stream.EventSourceTrace("Canceling");
-                                        crsRef.TrySetCanceled(crsRef._registration.Token);
+                                        crsRef.TrySetCanceled(crsRef._token);
                                         crsRef._stream.ClearPendingReadRequest();
                                     }
                                 }
@@ -516,11 +516,13 @@ namespace System.Net.Http
             private sealed class CancelableReadState : ReadState
             {
                 internal readonly CurlResponseStream _stream;
+                internal readonly CancellationToken _token;
                 internal CancellationTokenRegistration _registration;
 
-                internal CancelableReadState(Memory<byte> buffer, CurlResponseStream responseStream) : base(buffer)
+                internal CancelableReadState(Memory<byte> buffer, CurlResponseStream responseStream, CancellationToken cancellationToken) : base(buffer)
                 {
                     _stream = responseStream;
+                    _token = cancellationToken;
                 }
             }
         }
