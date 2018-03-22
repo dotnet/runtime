@@ -629,7 +629,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [ActiveIssue("TFS 444333 - Should ExceptionMiniaturizer exempt CultureNotFoundException.InvalidCultureName from being optimized away?", TargetFrameworkMonikers.UapAot)]
         public void CultureNotFoundExceptionTest()
         {
             AssertExtensions.Throws<CultureNotFoundException>("name", () => new CultureInfo("!@#$%^&*()"));

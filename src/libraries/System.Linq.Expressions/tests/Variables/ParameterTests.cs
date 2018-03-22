@@ -310,7 +310,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "This test causes a fail fast on uapaot: https://github.com/dotnet/corefx/issues/19129")]
         [MemberData(nameof(ReadAndWriteRefCases))]
         public void ReadAndWriteRefParameters(bool useInterpreter, object value, object increment, object result)
         {
