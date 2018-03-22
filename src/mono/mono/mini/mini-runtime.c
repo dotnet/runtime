@@ -939,6 +939,7 @@ free_jit_tls_data (MonoJitTlsData *jit_tls)
 	mono_free_altstack (jit_tls);
 
 	g_free (jit_tls->first_lmf);
+	g_free (jit_tls->interp_context);
 	g_free (jit_tls);
 }
 
