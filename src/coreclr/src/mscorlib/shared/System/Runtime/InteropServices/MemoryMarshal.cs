@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices
         /// Reads a structure of type T out of a read-only span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ReadMachineEndian<T>(ReadOnlySpan<byte> source)
+        public static T Read<T>(ReadOnlySpan<byte> source)
             where T : struct
         {
 #if netstandard
@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryReadMachineEndian<T>(ReadOnlySpan<byte> source, out T value)
+        public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
         {
 #if netstandard
@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void WriteMachineEndian<T>(Span<byte> destination, ref T value)
+        public static void Write<T>(Span<byte> destination, ref T value)
             where T : struct
         {
 #if netstandard
@@ -210,7 +210,7 @@ namespace System.Runtime.InteropServices
         /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryWriteMachineEndian<T>(Span<byte> destination, ref T value)
+        public static bool TryWrite<T>(Span<byte> destination, ref T value)
             where T : struct
         {
 #if netstandard
