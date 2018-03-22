@@ -27,18 +27,13 @@ Abstract:
 #include "pal.h"
 #include <dlfcn.h>
  
-#if HAVE_LIBUNWIND_H
-#ifndef __linux__
 #define UNW_LOCAL_ONLY
-#endif // !__linux__       
 #include <libunwind.h>
-#endif // HAVE_LIBUNWIND_H
 
 //----------------------------------------------------------------------
 // Virtual Unwinding
 //----------------------------------------------------------------------
 
-#if HAVE_LIBUNWIND_H
 #if UNWIND_CONTEXT_IS_UCONTEXT_T
 
 #if defined(_AMD64_)
@@ -346,10 +341,6 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     }
     return TRUE;
 }
-
-#else
-#error don't know how to unwind on this platform
-#endif
 
 struct ExceptionRecords
 {

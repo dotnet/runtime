@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 2.8.12.2)
 
 include_directories(SYSTEM /usr/local/include)
+include_directories(libunwind/include)
+
+add_compile_options(-fPIC)
+
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  add_subdirectory(libunwind)
+endif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 include(configure.cmake)
 
@@ -108,8 +115,6 @@ endif(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
-
-add_compile_options(-fPIC)
 
 set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/context2.S
@@ -235,11 +240,17 @@ set(SOURCES
   thread/tls.cpp
 )
 
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  # On OSX, we use the libunwind that's part of the OS
+  set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
+endif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+
 add_library(coreclrpal
   STATIC
   ${SOURCES}
   ${ARCH_SOURCES}
   ${PLATFORM_SOURCES}
+  ${LIBUNWIND_OBJECTS}
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
@@ -256,29 +267,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
 if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  find_library(UNWIND unwind)
   find_library(INTL intl)
   target_link_libraries(coreclrpal
     pthread
     rt
-    ${UNWIND}
     ${INTL}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-  if(PAL_CMAKE_PLATFORM_ARCH_ARM)
-    find_library(UNWIND_ARCH NAMES unwind-arm)
-  endif()
-
-  if(PAL_CMAKE_PLATFORM_ARCH_ARM64)
-    find_library(UNWIND_ARCH NAMES unwind-aarch64)
-  endif()
-
-  if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
-    find_library(UNWIND_ARCH NAMES unwind-x86_64)
-  endif()
-
   if(CLR_CMAKE_PLATFORM_ALPINE_LINUX OR CLR_CMAKE_PLATFORM_ANDROID)
     find_library(INTL intl)
   endif()
@@ -306,22 +303,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
       ${LZMA})
   endif()
 
-  find_library(UNWIND NAMES unwind)
-
-  if(UNWIND STREQUAL UNWIND-NOTFOUND)
-    message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev and libunwind8.")
-  endif(UNWIND STREQUAL UNWIND-NOTFOUND)
-
-  target_link_libraries(coreclrpal ${UNWIND})
 
   if(CLR_MAKE_PLATFORM_ANDROID)
     find_library(ANDROID_SUPPORT NAMES android-support)
     find_library(ANDROID_GLOB NAMES android-glob)
     find_library(INTL NAMES intl)
-
-    if(UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libunwind.")
-    endif()
 
     if(ANDROID_SUPPORT STREQUAL ANDROID_SUPPORT-NOTFOUND)
       message(FATAL_ERROR "Cannot find android-support.")
@@ -336,19 +322,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     endif()
   endif()
 
-  find_library(UNWIND_GENERIC NAMES unwind-generic)
-
   target_link_libraries(coreclrpal
     dl
   )
 
-  if(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
-    target_link_libraries(coreclrpal ${UNWIND_GENERIC})
-  endif(NOT UNWIND_GENERIC STREQUAL UNWIND_GENERIC-NOTFOUND)
-
-  if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
-    target_link_libraries(coreclrpal ${UNWIND_ARCH})
-  endif(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
 
   if(NOT INTL STREQUAL INTL-NOTFOUND)
     target_link_libraries(coreclrpal ${INTL})
@@ -358,13 +335,11 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
 if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   add_definitions(-D_KMEMUSER)
-  find_library(UNWIND unwind)
   find_library(INTL intl)
   find_library(KVM kvm)
   target_link_libraries(coreclrpal
     pthread
     rt
-    ${UNWIND}
     ${INTL}
     ${KVM}
   )
