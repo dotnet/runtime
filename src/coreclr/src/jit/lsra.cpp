@@ -8260,10 +8260,35 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             location[sourceReg]        = REG_NA;
 
             // Do we have a free targetReg?
-            if (fromReg == sourceReg && source[fromReg] != REG_NA)
+            if (fromReg == sourceReg)
             {
-                regMaskTP fromRegMask = genRegMask(fromReg);
-                targetRegsReady |= fromRegMask;
+                if (source[fromReg] != REG_NA)
+                {
+                    regMaskTP fromRegMask = genRegMask(fromReg);
+                    targetRegsReady |= fromRegMask;
+#ifdef _TARGET_ARM_
+                    if (genIsValidDoubleReg(fromReg))
+                    {
+                        // Ensure that the other half is free.
+                        Interval* otherInterval = sourceIntervals[source[fromReg]];
+                        regNumber upperHalfReg  = REG_NEXT(fromReg);
+                        if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
+                        {
+                            targetRegsReady &= ~fromRegMask;
+                        }
+                    }
+                }
+                else if (genIsValidFloatReg(fromReg) && !genIsValidDoubleReg(fromReg))
+                {
+                    // We may have freed up the other half of a double where the lower half
+                    // was already free.
+                    regNumber lowerHalfReg = REG_PREV(fromReg);
+                    if (location[lowerHalfReg] == REG_NA)
+                    {
+                        targetRegsReady |= genRegMask(lowerHalfReg);
+                    }
+#endif // _TARGET_ARM_
+                }
             }
         }
         if (targetRegsToDo != RBM_NONE)
