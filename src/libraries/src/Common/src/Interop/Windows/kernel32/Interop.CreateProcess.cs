@@ -13,20 +13,20 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateProcessW")]
         internal static extern bool CreateProcess(
-            [MarshalAs(UnmanagedType.LPTStr)] string lpApplicationName,
+            string lpApplicationName,
             StringBuilder lpCommandLine,
             ref SECURITY_ATTRIBUTES procSecAttrs,
             ref SECURITY_ATTRIBUTES threadSecAttrs,
             bool bInheritHandles,
             int dwCreationFlags,
             IntPtr lpEnvironment,
-            [MarshalAs(UnmanagedType.LPTStr)] string lpCurrentDirectory,
+            string lpCurrentDirectory,
             STARTUPINFO lpStartupInfo,
             [Out] PROCESS_INFORMATION lpProcessInformation
         );
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class PROCESS_INFORMATION
+        internal sealed class PROCESS_INFORMATION
         {
             internal IntPtr hProcess = IntPtr.Zero;
             internal IntPtr hThread = IntPtr.Zero;
@@ -35,7 +35,7 @@ internal partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class STARTUPINFO : IDisposable
+        internal sealed class STARTUPINFO : IDisposable
         {
             internal int cb;
             internal IntPtr lpReserved = IntPtr.Zero;
@@ -59,7 +59,7 @@ internal partial class Interop
             internal
                 STARTUPINFO()
             {
-                cb = Marshal.SizeOf(this);
+                cb = Marshal.SizeOf<STARTUPINFO>();
             }
 
             public void Dispose()

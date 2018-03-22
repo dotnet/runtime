@@ -758,7 +758,7 @@ namespace System.Diagnostics
                     // get the threads for current process
                     processInfos[processInfo.ProcessId] = processInfo;
 
-                    currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(pi));
+                    currentPtr = (IntPtr)((long)currentPtr + sizeof(SystemProcessInformation));
                     int i = 0;
                     while (i < pi.NumberOfThreads)
                     {
@@ -774,7 +774,7 @@ namespace System.Diagnostics
                         threadInfo._threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason);
 
                         processInfo._threadInfoList.Add(threadInfo);
-                        currentPtr = (IntPtr)((long)currentPtr + Marshal.SizeOf(ti));
+                        currentPtr = (IntPtr)((long)currentPtr + sizeof(SystemThreadInformation));
                         i++;
                     }
                 }
