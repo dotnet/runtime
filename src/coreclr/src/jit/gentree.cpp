@@ -6648,7 +6648,8 @@ GenTreeCall* Compiler::gtNewCallNode(
 #endif // LEGACY_BACKEND
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    node->gtEntryPoint.addr = nullptr;
+    node->gtEntryPoint.addr       = nullptr;
+    node->gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
 #if defined(DEBUG) || defined(INLINE_DATA)
