@@ -373,6 +373,9 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs">
       <Link>ProductionCode\System\Net\Http\HttpSystemProxy.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpException.cs">
+      <Link>ProductionCode\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinInetProxyHelper.cs">
       <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
     </Compile>
@@ -393,9 +396,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs">
       <Link>Common\Interop\Windows\winhttp\Interop.SafeWinHttpHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
-      <Link>Common\System\Net\Http\WinHttpException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
       <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>

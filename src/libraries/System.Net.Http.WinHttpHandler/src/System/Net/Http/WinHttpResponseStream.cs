@@ -121,7 +121,7 @@ namespace System.Net.Http
                     {
                         if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                         {
-                            throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                            throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpQueryDataAvailable)));
                         }
                     }
                     int bytesAvailable = await _state.LifecycleAwaitable;
@@ -137,7 +137,7 @@ namespace System.Net.Http
                     {
                         if (!Interop.WinHttp.WinHttpReadData(_requestHandle, Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0), (uint)Math.Min(bytesAvailable, buffer.Length), IntPtr.Zero))
                         {
-                            throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                            throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpReadData)));
                         }
                     }
                     int bytesRead = await _state.LifecycleAwaitable;
@@ -222,7 +222,7 @@ namespace System.Net.Http
                     Debug.Assert(!_requestHandle.IsInvalid);
                     if (!Interop.WinHttp.WinHttpQueryDataAvailable(_requestHandle, IntPtr.Zero))
                     {
-                        throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                        throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpQueryDataAvailable)));
                     }
                 }
 
@@ -237,7 +237,7 @@ namespace System.Net.Http
                         (uint)Math.Min(bytesAvailable, count),
                         IntPtr.Zero))
                     {
-                        throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError());
+                        throw new IOException(SR.net_http_io_read, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpReadData)));
                     }
                 }
 
