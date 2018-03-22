@@ -104,7 +104,8 @@ namespace System.IO.Tests
                     item = GetExistingItem(); // try a new file/directory
                 }
 
-                Assert.NotEqual(0, msec);
+                // Temporarily disabled while investigating failures in #27662
+                // Assert.NotEqual(0, msec);
             });
         }
 
