@@ -95,7 +95,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Bug that will be fixed along with the rest of UAPAOT issues here")]
         public void PointerFieldSetNullValue()
         {
             var obj = new PointerHolder();
@@ -141,7 +140,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerPropertySetValue(int value)
         {
             var obj = new PointerHolder();
@@ -152,7 +150,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void IntPtrPropertySetValue(int value)
         {
             var obj = new PointerHolder();
@@ -163,7 +160,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerPropertySetValue_InvalidType(int value)
         {
             var obj = new PointerHolder();
@@ -176,7 +172,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerPropertyGetValue(int value)
         {
             var obj = new PointerHolder();
@@ -190,7 +185,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerMethodParameter(int value)
         {
             var obj = new PointerHolder();
@@ -199,7 +193,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerNullMethodParameter()
         {
             var obj = new PointerHolder();
@@ -209,7 +202,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void IntPtrMethodParameter(int value)
         {
             var obj = new PointerHolder();
@@ -219,7 +211,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerMethodParameter_InvalidType(int value)
         {
             var obj = new PointerHolder();
@@ -232,7 +223,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerMethodReturn(int value)
         {
             var obj = new PointerHolder();
@@ -245,7 +235,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerMethodDelegateParameter(int value)
         {
             var obj = new PointerHolder();
@@ -254,7 +243,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerNullMethodDelegateParameter()
         {
             var obj = new PointerHolder();
@@ -264,7 +252,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void IntPtrMethodDelegateParameter(int value)
         {
             var obj = new PointerHolder();
@@ -274,7 +261,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerMethodDelegateParameter_InvalidType(int value)
         {
             var obj = new PointerHolder();
@@ -287,7 +273,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Pointers through Invoke not implemented: https://github.com/dotnet/corert/issues/2113")]
         public void PointerMethodDelegateReturn(int value)
         {
             var obj = new PointerHolder();
