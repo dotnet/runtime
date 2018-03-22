@@ -48,12 +48,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pal.h"
 #include <dlfcn.h>
 
-#if HAVE_LIBUNWIND_H
-#ifndef __linux__
 #define UNW_LOCAL_ONLY
-#endif // !__linux__       
 #include <libunwind.h>
-#endif // HAVE_LIBUNWIND_H
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 

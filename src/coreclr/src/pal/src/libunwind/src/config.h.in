@@ -1,0 +1,16 @@
+#ifndef __LIBUNWIND_CONFIG_H__
+#define __LIBUNWIND_CONFIG_H__
+
+#cmakedefine HAVE_ELF_H
+#cmakedefine HAVE_SYS_ELF_H
+
+#cmakedefine HAVE_ENDIAN_H
+#cmakedefine HAVE_SYS_ENDIAN_H
+
+#cmakedefine HAVE_LINK_H
+#cmakedefine HAVE_SYS_LINK_H
+
+#cmakedefine HAVE__BUILTIN_UNREACHABLE
+#cmakedefine HAVE_SYNC_ATOMICS
+
+#endif
