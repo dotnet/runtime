@@ -831,7 +831,7 @@ void LinearScan::RemoveRegistersFromMasks(regMaskTP removeMask)
     if (VERBOSE)
     {
         JITDUMP("Removing registers from LSRA register masks: ");
-        dumpRegMask(removeMask);
+        INDEBUG(dumpRegMask(removeMask));
         JITDUMP("\n");
     }
 
