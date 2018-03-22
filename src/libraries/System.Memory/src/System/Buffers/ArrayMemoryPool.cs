@@ -25,6 +25,6 @@ namespace System.Buffers
             return new ArrayMemoryPoolBuffer(minimumBufferSize);
         }
 
-        protected sealed override void Dispose(bool disposing) {}  // ArrayMemoryPool is a shared pool so Dispose() would be a nop even if there were native resources to dispose.
+        protected sealed override void Dispose(bool disposing) { }  // ArrayMemoryPool is a shared pool so Dispose() would be a nop even if there were native resources to dispose.
     }
 }

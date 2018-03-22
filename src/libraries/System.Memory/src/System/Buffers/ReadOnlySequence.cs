@@ -20,10 +20,11 @@ namespace System.Buffers
         /// Returns empty <see cref="ReadOnlySequence{T}"/>
         /// </summary>
 #if FEATURE_PORTABLE_SPAN
-        public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(SpanHelpers.PerTypeValues<T>.EmptyArray); 
+        public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(SpanHelpers.PerTypeValues<T>.EmptyArray);
 #else
-        public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(Array.Empty<T>()); 
+        public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(Array.Empty<T>());
 #endif // FEATURE_PORTABLE_SPAN 
+
         /// <summary>
         /// Length of the <see cref="ReadOnlySequence{T}"/>.
         /// </summary>

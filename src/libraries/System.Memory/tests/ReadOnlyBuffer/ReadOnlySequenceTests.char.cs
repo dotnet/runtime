@@ -87,7 +87,7 @@ namespace System.Memory.Tests
         [MemberData(nameof(ValidSliceCases))]
         public void Slice_Works(Func<ReadOnlySequence<char>, ReadOnlySequence<char>> func)
         {
-            ReadOnlySequence<char> buffer = Factory.CreateWithContent(new char[] { (char)0, (char)1, (char)2 , (char)3 , (char)4, (char)5, (char)6, (char)7, (char)8, (char)9 });
+            ReadOnlySequence<char> buffer = Factory.CreateWithContent(new char[] { (char)0, (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9 });
             ReadOnlySequence<char> slice = func(buffer);
             Assert.Equal(new char[] { (char)5, (char)6, (char)7, (char)8, (char)9 }, slice.ToArray());
         }
