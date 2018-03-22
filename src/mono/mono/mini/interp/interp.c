@@ -1593,9 +1593,8 @@ interp_entry (InterpEntryData *data)
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
 		set_context (context);
-	} else {
-		old_frame = context->current_frame;
 	}
+	old_frame = context->current_frame;
 
 	args = alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
 	if (sig->hasthis)
