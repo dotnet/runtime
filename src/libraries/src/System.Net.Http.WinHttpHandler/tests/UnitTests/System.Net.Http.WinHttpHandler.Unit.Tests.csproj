@@ -73,9 +73,6 @@
     <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
       <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
-      <Link>Common\System\Net\Http\WinHttpException.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
       <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
     </Compile>
@@ -102,6 +99,9 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs">
       <Link>ProductionCode\WinHttpCookieContainerAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs">
+      <Link>ProductionCode\WinHttpException.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpHandler.cs">
       <Link>ProductionCode\WinHttpHandler.cs</Link>

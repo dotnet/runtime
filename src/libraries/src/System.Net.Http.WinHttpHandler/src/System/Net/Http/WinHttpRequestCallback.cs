@@ -110,8 +110,19 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                Interop.WinHttp.WinHttpCloseHandle(handle);
                 state.SavedException = ex;
+                if (state.RequestHandle != null)
+                {
+                    // Since we got a fatal error processing the request callback,
+                    // we need to close the WinHttp request handle in order to
+                    // abort the currently executing WinHttp async operation.
+                    //
+                    // We must always call Dispose() against the SafeWinHttpHandle
+                    // wrapper and never close directly the raw WinHttp handle.
+                    // The SafeWinHttpHandle wrapper is thread-safe and guarantees
+                    // calling the underlying WinHttpCloseHandle() function only once.
+                    state.RequestHandle.Dispose();
+                }
             }
         }
 
@@ -260,7 +271,7 @@ namespace System.Net.Http
                         return;
                     }
 
-                    throw WinHttpException.CreateExceptionUsingError(lastError);
+                    throw WinHttpException.CreateExceptionUsingError(lastError, "WINHTTP_CALLBACK_STATUS_SENDING_REQUEST/WinHttpQueryOption");
                 }
 
                 // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
@@ -295,7 +306,7 @@ namespace System.Net.Http
                 catch (Exception ex)
                 {
                     throw WinHttpException.CreateExceptionUsingError(
-                        (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE, ex);
+                        (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE, "X509Chain.Build", ex);
                 }
                 finally
                 {
@@ -310,7 +321,7 @@ namespace System.Net.Http
                 if (!result)
                 {
                     throw WinHttpException.CreateExceptionUsingError(
-                        (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE);
+                        (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE, "ServerCertificateValidationCallback");
                 }
             }
         }
@@ -321,7 +332,7 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
+            Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError), "WINHTTP_CALLBACK_STATUS_REQUEST_ERROR");
 
             switch (unchecked((uint)asyncResult.dwResult.ToInt32()))
             {
@@ -424,7 +435,7 @@ namespace System.Net.Http
                 int lastError = Marshal.GetLastWin32Error();
                 if (lastError != Interop.WinHttp.ERROR_WINHTTP_HEADER_NOT_FOUND)
                 {
-                    throw WinHttpException.CreateExceptionUsingError(lastError);
+                    throw WinHttpException.CreateExceptionUsingError(lastError, "WINHTTP_CALLBACK_STATUS_REDIRECT/WinHttpAddRequestHeaders");
                 }
             }
         }
