@@ -9,10 +9,14 @@
 
 // @dbgtodo- once we port Funceval, use the ExceptionHijack stub instead of this func-eval stub.
 NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
+#define STK_ALIGN_PADDING 12
+        sub  esp, STK_ALIGN_PADDING
         push eax        // the ptr to the DebuggerEval
+        CHECK_STACK_ALIGNMENT
         call C_FUNC(FuncEvalHijackWorker)
+        add  esp, (4 + STK_ALIGN_PADDING)
         jmp  eax        // return is the patch addresss to jmp to
-
+#undef STK_ALIGN_PADDING
 NESTED_END FuncEvalHijack, _TEXT
 
 //
