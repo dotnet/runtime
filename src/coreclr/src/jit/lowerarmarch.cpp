@@ -63,31 +63,15 @@ bool Lowering::IsCallTargetInRange(void* addr)
 // Return Value:
 //    True if the immediate can be folded into an instruction,
 //    for example small enough and non-relocatable.
+//
+// TODO-CQ: we can contain a floating point 0.0 constant in a compare instruction
+// (vcmp on arm, fcmp on arm64).
+//
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 {
     if (varTypeIsFloating(parentNode->TypeGet()))
     {
-        // We can contain a floating point 0.0 constant in a compare instruction
-        switch (parentNode->OperGet())
-        {
-            default:
-                return false;
-
-            case GT_EQ:
-            case GT_NE:
-            case GT_LT:
-            case GT_LE:
-            case GT_GE:
-            case GT_GT:
-                if (childNode->IsIntegralConst(0))
-                {
-                    // TODO-ARM-Cleanup: not tested yet.
-                    NYI_ARM("ARM IsContainableImmed for floating point type");
-
-                    return true;
-                }
-                break;
-        }
+        return false;
     }
     else
     {
