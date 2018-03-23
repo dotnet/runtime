@@ -38,7 +38,6 @@
     <Compile Include="System\Buffers\Binary\Reader.cs" />
     <Compile Include="System\Buffers\Binary\ReaderBigEndian.cs" />
     <Compile Include="System\Buffers\Binary\ReaderLittleEndian.cs" />
-    <Compile Include="System\Buffers\Binary\Writer.cs" />
     <Compile Include="System\Buffers\Binary\WriterBigEndian.cs" />
     <Compile Include="System\Buffers\Binary\WriterLittleEndian.cs" />
     <Compile Include="System\Buffers\Text\Base64Decoder.cs" />

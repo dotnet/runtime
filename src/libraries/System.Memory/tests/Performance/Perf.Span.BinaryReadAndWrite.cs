@@ -5,6 +5,7 @@
 using Microsoft.Xunit.Performance;
 using Xunit;
 using System.Net;
+using System.Runtime.InteropServices;
 
 using static System.Buffers.Binary.BinaryPrimitives;
 
@@ -26,7 +27,7 @@ namespace System.Buffers.Binary.Tests
                 {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        readStruct = ReadMachineEndian<TestHelpers.TestStructExplicit>(spanBE);
+                        readStruct = MemoryMarshal.Read<TestHelpers.TestStructExplicit>(spanBE);
                         if (BitConverter.IsLittleEndian)
                         {
                             readStruct.S0 = ReverseEndianness(readStruct.S0);
@@ -61,7 +62,7 @@ namespace System.Buffers.Binary.Tests
                 {
                     for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        readStruct = ReadMachineEndian<TestHelpers.TestStructExplicit>(spanLE);
+                        readStruct = MemoryMarshal.Read<TestHelpers.TestStructExplicit>(spanLE);
                         if (!BitConverter.IsLittleEndian)
                         {
                             readStruct.S0 = ReverseEndianness(readStruct.S0);

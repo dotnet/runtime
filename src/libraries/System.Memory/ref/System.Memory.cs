@@ -366,7 +366,6 @@ namespace System.Buffers.Binary
         public static int ReadInt32LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static long ReadInt64BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static long ReadInt64LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
-        public static T ReadMachineEndian<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort ReadUInt16BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -397,7 +396,6 @@ namespace System.Buffers.Binary
         public static bool TryReadInt32LittleEndian(System.ReadOnlySpan<byte> source, out int value) { throw null; }
         public static bool TryReadInt64BigEndian(System.ReadOnlySpan<byte> source, out long value) { throw null; }
         public static bool TryReadInt64LittleEndian(System.ReadOnlySpan<byte> source, out long value) { throw null; }
-        public static bool TryReadMachineEndian<T>(System.ReadOnlySpan<byte> source, out T value) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryReadUInt16BigEndian(System.ReadOnlySpan<byte> source, out ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -416,7 +414,6 @@ namespace System.Buffers.Binary
         public static bool TryWriteInt32LittleEndian(System.Span<byte> destination, int value) { throw null; }
         public static bool TryWriteInt64BigEndian(System.Span<byte> destination, long value) { throw null; }
         public static bool TryWriteInt64LittleEndian(System.Span<byte> destination, long value) { throw null; }
-        public static bool TryWriteMachineEndian<T>(System.Span<byte> destination, ref T value) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteUInt16BigEndian(System.Span<byte> destination, ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -435,7 +432,6 @@ namespace System.Buffers.Binary
         public static void WriteInt32LittleEndian(System.Span<byte> destination, int value) { }
         public static void WriteInt64BigEndian(System.Span<byte> destination, long value) { }
         public static void WriteInt64LittleEndian(System.Span<byte> destination, long value) { }
-        public static void WriteMachineEndian<T>(System.Span<byte> destination, ref T value) where T : struct { }
         [System.CLSCompliantAttribute(false)]
         public static void WriteUInt16BigEndian(System.Span<byte> destination, ushort value) { }
         [System.CLSCompliantAttribute(false)]
@@ -512,6 +508,8 @@ namespace System.Runtime.InteropServices
 {
     public static partial class MemoryMarshal
     {
+        public static System.ReadOnlySpan<byte> AsBytes<T>(System.ReadOnlySpan<T> span) where T : struct { throw null; }
+        public static System.Span<byte> AsBytes<T>(System.Span<T> span) where T : struct { throw null; }
         public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
@@ -521,6 +519,7 @@ namespace System.Runtime.InteropServices
 #endif
         public static ref T GetReference<T>(System.ReadOnlySpan<T> span) { throw null; }
         public static ref T GetReference<T>(System.Span<T> span) { throw null; }
+        public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
         public static System.Collections.Generic.IEnumerable<T> ToEnumerable<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static bool TryGetArray<T>(System.ReadOnlyMemory<T> memory, out System.ArraySegment<T> segment) { throw null; }
         public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> memory, out TOwner owner)
@@ -528,6 +527,9 @@ namespace System.Runtime.InteropServices
         public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> memory, out TOwner owner, out int start, out int length)
             where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
         public static bool TryGetString(System.ReadOnlyMemory<char> memory, out string text, out int start, out int length) { throw null; }
+        public static bool TryRead<T>(System.ReadOnlySpan<byte> source, out T value) where T : struct { throw null; }
+        public static bool TryWrite<T>(System.Span<byte> destination, ref T value) where T : struct { throw null; }
+        public static void Write<T>(System.Span<byte> destination, ref T value) where T : struct { }
     }
 
     public static partial class SequenceMarshal

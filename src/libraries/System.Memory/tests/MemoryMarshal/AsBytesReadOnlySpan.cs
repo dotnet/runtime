@@ -8,24 +8,24 @@ using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
-    public static partial class ReadOnlySpanTests
+    public static partial class MemoryMarshalTests
     {
         [Fact]
-        public static void AsBytesUIntToByte()
+        public static void ReadOnlySpan_AsBytesUIntToByte()
         {
             uint[] a = { 0x44332211, 0x88776655 };
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(a);
-            ReadOnlySpan<byte> asBytes = span.AsBytes<uint>();
+            ReadOnlySpan<byte> asBytes = MemoryMarshal.AsBytes<uint>(span);
 
             Assert.True(Unsafe.AreSame(ref Unsafe.As<uint, byte>(ref Unsafe.AsRef(in MemoryMarshal.GetReference(span))), ref Unsafe.AsRef(in MemoryMarshal.GetReference(asBytes))));
             asBytes.Validate<byte>(0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88);
         }
 
         [Fact]
-        public static void AsBytesContainsReferences()
+        public static void ReadOnlySpan_AsBytesContainsReferences()
         {
-            ReadOnlySpan<StructWithReferences> span = new ReadOnlySpan<StructWithReferences>(Array.Empty<StructWithReferences>());
-            TestHelpers.AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.AsBytes().DontBox());
+            ReadOnlySpan<TestHelpers.StructWithReferences> span = new ReadOnlySpan<TestHelpers.StructWithReferences>(Array.Empty<TestHelpers.StructWithReferences>());
+            TestHelpers.AssertThrows<ArgumentException, TestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.AsBytes(_span).DontBox());
         }
     }
 }

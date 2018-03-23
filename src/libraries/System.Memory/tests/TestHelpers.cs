@@ -176,7 +176,7 @@ namespace System
 
         public static void Validate<T>(Span<byte> span, T value) where T : struct
         {
-            T read = ReadMachineEndian<T>(span);
+            T read = MemoryMarshal.Read<T>(span);
             Assert.Equal(value, read);
             span.Clear();
         }
@@ -296,6 +296,20 @@ namespace System
             public int I;
             public string S;
         }
+
+#pragma warning disable 0649 //Field 'SpanTests.InnerStruct.J' is never assigned to, and will always have its default value 0
+        internal struct StructWithReferences
+        {
+            public int I;
+            public InnerStruct Inner;
+        }
+
+        internal struct InnerStruct
+        {
+            public int J;
+            public object O;
+        }
+#pragma warning restore 0649 //Field 'SpanTests.InnerStruct.J' is never assigned to, and will always have its default value 0
 
         public enum TestEnum
         {

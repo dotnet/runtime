@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Buffers.Binary
 {
@@ -18,7 +19,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            WriteMachineEndian(destination, ref value);
+            MemoryMarshal.Write(destination, ref value);
         }
 
         /// <summary>
@@ -31,7 +32,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            WriteMachineEndian(destination, ref value);
+            MemoryMarshal.Write(destination, ref value);
         }
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            WriteMachineEndian(destination, ref value);
+            MemoryMarshal.Write(destination, ref value);
         }
 
         /// <summary>
@@ -58,7 +59,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            WriteMachineEndian(destination, ref value);
+            MemoryMarshal.Write(destination, ref value);
         }
 
         /// <summary>
@@ -72,7 +73,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            WriteMachineEndian(destination, ref value);
+            MemoryMarshal.Write(destination, ref value);
         }
 
         /// <summary>
@@ -86,7 +87,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            WriteMachineEndian(destination, ref value);
+            MemoryMarshal.Write(destination, ref value);
         }
 
         /// <summary>
@@ -100,7 +101,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            return TryWriteMachineEndian(destination, ref value);
+            return MemoryMarshal.TryWrite(destination, ref value);
         }
 
         /// <summary>
@@ -114,7 +115,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            return TryWriteMachineEndian(destination, ref value);
+            return MemoryMarshal.TryWrite(destination, ref value);
         }
 
         /// <summary>
@@ -128,7 +129,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            return TryWriteMachineEndian(destination, ref value);
+            return MemoryMarshal.TryWrite(destination, ref value);
         }
 
         /// <summary>
@@ -143,7 +144,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            return TryWriteMachineEndian(destination, ref value);
+            return MemoryMarshal.TryWrite(destination, ref value);
         }
 
         /// <summary>
@@ -158,7 +159,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            return TryWriteMachineEndian(destination, ref value);
+            return MemoryMarshal.TryWrite(destination, ref value);
         }
 
         /// <summary>
@@ -173,7 +174,7 @@ namespace System.Buffers.Binary
             {
                 value = ReverseEndianness(value);
             }
-            return TryWriteMachineEndian(destination, ref value);
+            return MemoryMarshal.TryWrite(destination, ref value);
         }
     }
 }

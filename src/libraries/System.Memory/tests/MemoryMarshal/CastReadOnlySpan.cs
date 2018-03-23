@@ -45,14 +45,14 @@ namespace System.SpanTests
         public static void CastReadOnlySpanToTypeContainsReferences()
         {
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(Array.Empty<uint>());
-            TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => MemoryMarshal.Cast<uint, SpanTests.StructWithReferences>(_span).DontBox());
+            TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => MemoryMarshal.Cast<uint, TestHelpers.StructWithReferences>(_span).DontBox());
         }
 
         [Fact]
         public static void CastReadOnlySpanFromTypeContainsReferences()
         {
-            ReadOnlySpan<SpanTests.StructWithReferences> span = new ReadOnlySpan<SpanTests.StructWithReferences>(Array.Empty<SpanTests.StructWithReferences>());
-            TestHelpers.AssertThrows<ArgumentException, SpanTests.StructWithReferences>(span, (_span) => MemoryMarshal.Cast<SpanTests.StructWithReferences, uint>(_span).DontBox());
+            ReadOnlySpan<TestHelpers.StructWithReferences> span = new ReadOnlySpan<TestHelpers.StructWithReferences>(Array.Empty<TestHelpers.StructWithReferences>());
+            TestHelpers.AssertThrows<ArgumentException, TestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.Cast<TestHelpers.StructWithReferences, uint>(_span).DontBox());
         }
     }
 }
