@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
@@ -18,12 +19,15 @@ namespace System.Net.Tests
         private HttpListenerFactory _factory;
         private HttpListener _listener;
         private GetContextHelper _helper;
+        private const int TimeoutMilliseconds = 60*1000;
+        private readonly ITestOutputHelper _output;
 
-        public HttpRequestStreamTests()
+        public HttpRequestStreamTests(ITestOutputHelper output)
         {
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
             _helper = new GetContextHelper(_listener, _factory.ListeningUrl);
+            _output = output;
         }
 
         public void Dispose()
@@ -32,8 +36,59 @@ namespace System.Net.Tests
             _helper.Dispose();
         }
 
+        // Try to read 'length' bytes from stream or fail after timeout.
+        private async Task<int> ReadLengthAsync(Stream stream, byte[] array, int offset, int length)
+        {
+            int remaining = length;
+            int readLength;
+
+            do
+            {
+                readLength = await TaskTimeoutExtensions.TimeoutAfter(stream.ReadAsync(array, offset, remaining), TimeoutMilliseconds);
+                if (readLength <= 0)
+                {
+                    break;
+                }
+                remaining -= readLength;
+                offset += readLength;
+            }
+            while (remaining > 0);
+
+            if (remaining != 0)
+            {
+                _output.WriteLine("Expected {0} bytes but got {1}", length, length-remaining);
+            }
+
+            return length - remaining;
+        }
+
+        // Synchronous version of ReadLengthAsync above.
+        private int ReadLength(Stream stream, byte[] array, int offset, int length)
+        {
+            int remaining = length;
+            int readLength;
+
+            do
+            {
+                readLength = stream.Read(array, offset, remaining);
+                if (readLength <= 0)
+                {
+                    break;
+                }
+                remaining -= readLength;
+                offset += readLength;
+            }
+            while (remaining > 0);
+
+            if (remaining != 0)
+            {
+                _output.WriteLine("Expected {0} bytes but got {1}", length, length-remaining);
+            }
+
+            return length - remaining;
+        }
+
         [Theory]
-        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -61,7 +116,7 @@ namespace System.Net.Tests
                 }
 
                 byte[] buffer = new byte[expected.Length];
-                int bytesRead = await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length);
+                int bytesRead = await ReadLengthAsync(context.Request.InputStream, buffer, 0, expected.Length);
                 Assert.Equal(expected.Length, bytesRead);
                 Assert.Equal(expected, buffer);
 
@@ -78,7 +133,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -109,7 +163,7 @@ namespace System.Net.Tests
 
                 // Add padding at beginning and end to test for correct offset/size handling
                 byte[] buffer = new byte[pad + expected.Length + pad];
-                int bytesRead = await context.Request.InputStream.ReadAsync(buffer, pad, expected.Length);
+                int bytesRead = await ReadLengthAsync(context.Request.InputStream, buffer, pad, expected.Length);
                 Assert.Equal(expected.Length, bytesRead);
                 Assert.Equal(expected, buffer.Skip(pad).Take(bytesRead));
 
@@ -125,7 +179,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -153,7 +206,7 @@ namespace System.Net.Tests
                 }
 
                 byte[] buffer = new byte[expected.Length];
-                int bytesRead = context.Request.InputStream.Read(buffer, 0, buffer.Length);
+                int bytesRead = ReadLength(context.Request.InputStream, buffer, 0, buffer.Length);
                 Assert.Equal(expected.Length, bytesRead);
                 Assert.Equal(expected, buffer);
 
@@ -250,7 +303,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_TooMuchAsynchronous_Success(bool transferEncodingChunked)
@@ -267,7 +319,7 @@ namespace System.Net.Tests
                 HttpListenerContext context = await contextTask;
 
                 byte[] buffer = new byte[expected.Length + 5];
-                int bytesRead = await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length);
+                int bytesRead = await ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length);
                 Assert.Equal(expected.Length, bytesRead);
                 Assert.Equal(expected.Concat(new byte[5]), buffer);
 
@@ -277,7 +329,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_TooMuchSynchronous_Success(bool transferEncodingChunked)
@@ -294,7 +345,7 @@ namespace System.Net.Tests
                 HttpListenerContext context = await contextTask;
 
                 byte[] buffer = new byte[expected.Length + 5];
-                int bytesRead = context.Request.InputStream.Read(buffer, 0, buffer.Length);
+                int bytesRead = ReadLength(context.Request.InputStream, buffer, 0, buffer.Length);
                 Assert.Equal(expected.Length, bytesRead);
                 Assert.Equal(expected.Concat(new byte[5]), buffer);
 
@@ -304,7 +355,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(27996, TestPlatforms.OSX)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_NotEnoughThenCloseAsynchronous_Success(bool transferEncodingChunked)
@@ -321,7 +371,7 @@ namespace System.Net.Tests
                 HttpListenerContext context = await contextTask;
 
                 byte[] buffer = new byte[expected.Length - 5];
-                int bytesRead = await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length);
+                int bytesRead = await ReadLengthAsync(context.Request.InputStream, buffer, 0, buffer.Length);
                 Assert.Equal(buffer.Length, bytesRead);
 
                 context.Response.Close();
