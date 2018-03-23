@@ -24,9 +24,15 @@ namespace System.Net.Test.Common
             List<string> lines = null;
             await AcceptConnectionAsync(async connection =>
             {
-                await connection.ReadRequestHeaderAndSendResponseAsync(HttpStatusCode.Unauthorized, authenticateHeaders);
-
+                string headerName = _options.IsProxy ? "Proxy-Authorization" : "Authorization";
                 lines = await connection.ReadRequestHeaderAsync();
+                if (GetRequestHeaderValue(lines, headerName) == null)
+                {
+                    await connection.SendResponseAsync( _options.IsProxy ?
+                                    HttpStatusCode.ProxyAuthenticationRequired : HttpStatusCode.Unauthorized, authenticateHeaders);
+
+                    lines = await connection.ReadRequestHeaderAsync();
+                }
                 Debug.Assert(lines.Count > 0);
 
                 int index = lines[0] != null ? lines[0].IndexOf(' ') : -1;
@@ -41,7 +47,7 @@ namespace System.Net.Test.Common
                 string clientResponse = null;
                 for (int i = 1; i < lines.Count; i++)
                 {
-                    if (lines[i].StartsWith("Authorization"))
+                    if (lines[i].StartsWith(headerName))
                     {
                         clientResponse = lines[i];
                         if (lines[i].Contains(nameof(AuthenticationProtocols.Basic)))
