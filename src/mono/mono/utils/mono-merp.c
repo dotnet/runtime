@@ -90,7 +90,7 @@ typedef struct {
 	gboolean log;
 } MerpOptions;
 
-MerpOptions config;
+static MerpOptions config;
 
 static void
 append_merp_arch (GString *output, MerpArch arch)
@@ -114,7 +114,8 @@ append_merp_arch (GString *output, MerpArch arch)
 }
 
 static MerpArch
-get_merp_arch () {
+get_merp_arch (void)
+{
 #ifdef TARGET_X86
 	return MerpArchx86;
 #elif defined(TARGET_AMD64)
@@ -272,9 +273,10 @@ mono_encode_merp (GString *output, MERPStruct *merp)
 static void
 mono_arch_memory_info (size_t *resOut, size_t *vmOut)
 {
-	struct task_basic_info t_info = {0};
+	struct task_basic_info t_info;
+	memset (&t_info, 0, sizeof (t_info));
 	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
-	task_name_t task = mach_task_self();
+	task_name_t task = mach_task_self ();
 
 	task_info(task, TASK_BASIC_INFO, (task_info_t) &t_info, &t_info_count);
 
@@ -292,7 +294,6 @@ write_file (GString *str, const char *fileName)
 	fclose (outfile);
 }
 
-
 /*
  * This struct is the wire protocol between MERP
  * and mono
@@ -309,12 +310,14 @@ typedef struct {
 } MerpRequest;
 
 static void
-send_mach_message (mach_port_t *mach_port) {
-	task_name_t task = mach_task_self();
+send_mach_message (mach_port_t *mach_port)
+{
+	task_name_t task = mach_task_self ();
 
 	// Setup request
 	MerpRequest req;
-	req.head.msgh_bits = MACH_MSGH_BITS_COMPLEX| MACH_MSGH_BITS(19, 0);
+	memset (&req, 0, sizeof (req));
+	req.head.msgh_bits = MACH_MSGH_BITS_COMPLEX | MACH_MSGH_BITS(19, 0);
 	req.task.name = task;
 	req.task.disposition = 19;
 	req.task.type = MACH_MSG_PORT_DESCRIPTOR;
@@ -336,7 +339,8 @@ send_mach_message (mach_port_t *mach_port) {
 }
 
 static void
-connect_to_merp (const char *serviceName, mach_port_t *merp_port) {
+connect_to_merp (const char *serviceName, mach_port_t *merp_port)
+{
 	// // Create process to launch merp gui application
 	const char *argvOpen[] = {"/usr/bin/open", "-a", config.merpGUIPath, NULL};
 	int status = posix_spawn(NULL, "/usr/bin/open", NULL, NULL, (char *const*)(argvOpen), NULL);
@@ -348,7 +352,7 @@ connect_to_merp (const char *serviceName, mach_port_t *merp_port) {
 	// BOOTSTRAP_UNKNOWN_SERVICE is returned while the service doesn't exist.
 	// We rely on MERP to make the service with serviceName for us
 	kern_return_t kernErr = bootstrap_look_up(bootstrap_port, serviceName, merp_port);
-	while (true) {
+	while (TRUE) {
 		for (int i = 0; BOOTSTRAP_UNKNOWN_SERVICE == kernErr && i < 5000; i++)
 			kernErr = bootstrap_look_up(bootstrap_port, serviceName, merp_port);
 
@@ -446,7 +450,8 @@ mono_merp_invoke (pid_t crashed_pid, intptr_t thread_pointer, const char *signal
 	// This unique service name is used to communicate with merp over mach service ports
 	char *serviceName = g_strdup_printf ("com.mono.merp.%.8x", crashed_pid);
 
-	MERPStruct merp = {0};
+	MERPStruct merp;
+	memset (&merp, 0, sizeof (merp));
 	mono_init_merp (serviceName, signal, crashed_pid, thread_pointer, &merp);
 
 	GString *output = g_string_new ("");
@@ -468,15 +473,15 @@ mono_merp_disable (void)
 	if (!config.enable_merp)
 		return;
 
-	g_free (config.appBundleID);
-	g_free (config.appSignature);
-	g_free (config.appVersion);
-	g_free (config.merpGUIPath);
-	memset ((void *)&config, 0, sizeof (MerpOptions));
+	g_free ((char*)config.appBundleID); // cast away const
+	g_free ((char*)config.appSignature);
+	g_free ((char*)config.appVersion);
+	g_free ((char*)config.merpGUIPath);
+	memset (&config, 0, sizeof (config));
 }
 
 void
-mono_merp_enable (char *appBundleID, char *appSignature, char *appVersion, char *merpGUIPath)
+mono_merp_enable (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath)
 {
 	g_assert (!config.enable_merp);
 
@@ -497,4 +502,3 @@ mono_merp_enabled (void)
 }
 
 #endif // TARGET_OSX
-

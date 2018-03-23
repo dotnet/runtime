@@ -289,7 +289,7 @@ mono_exception_from_name_two_strings_checked (MonoImage *image, const char *name
  *
  * \returns the initialized exception instance.
  */
-MonoExceptionHandle
+static MonoExceptionHandle
 mono_exception_new_by_name_msg (MonoImage *image, const char *name_space,
 			      const char *name, const char *msg, MonoError *error)
 {
@@ -518,12 +518,6 @@ mono_get_exception_invalid_operation (const char *msg)
 {
 	return mono_exception_from_name_msg (mono_get_corlib (), "System",
 					"InvalidOperationException", msg);
-}
-
-MonoExceptionHandle
-mono_exception_new_invalid_operation (const char *msg, MonoError *error)
-{
-	return mono_exception_new_by_name_msg (mono_get_corlib (), "System", "InvalidOperationException", msg, error);
 }
 
 /**
