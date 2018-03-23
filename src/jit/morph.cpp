@@ -85,7 +85,8 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgLi
 #endif // DEBUG
 
 #ifdef FEATURE_READYTORUN_COMPILER
-    tree->gtCall.gtEntryPoint.addr = nullptr;
+    tree->gtCall.gtEntryPoint.addr       = nullptr;
+    tree->gtCall.gtEntryPoint.accessType = IAT_VALUE;
 #endif
 
 #if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(LEGACY_BACKEND)
