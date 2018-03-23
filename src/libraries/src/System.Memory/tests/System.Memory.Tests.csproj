@@ -60,7 +60,11 @@
     <Compile Include="Span\LastIndexOfSequence.T.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\Reverse.cs" />
+    <Compile Include="Span\SequenceCompareTo.bool.cs" />
     <Compile Include="Span\SequenceCompareTo.byte.cs" />
+    <Compile Include="Span\SequenceCompareTo.char.cs" />
+    <Compile Include="Span\SequenceCompareTo.int.cs" />
+    <Compile Include="Span\SequenceCompareTo.long.cs" />
     <Compile Include="Span\SequenceCompareTo.T.cs" />
     <Compile Include="Span\SequenceEqual.byte.cs" />
     <Compile Include="Span\SequenceEqual.char.cs" />
@@ -125,6 +129,12 @@
     <Compile Include="ReadOnlySpan\LastIndexOfSequence.T.cs" />
     <Compile Include="ReadOnlySpan\Overflow.cs" />
     <Compile Include="ReadOnlySpan\Overlaps.cs" />
+    <Compile Include="ReadOnlySpan\SequenceCompareTo.bool.cs" />
+    <Compile Include="ReadOnlySpan\SequenceCompareTo.byte.cs" />
+    <Compile Include="ReadOnlySpan\SequenceCompareTo.char.cs" />
+    <Compile Include="ReadOnlySpan\SequenceCompareTo.int.cs" />
+    <Compile Include="ReadOnlySpan\SequenceCompareTo.long.cs" />
+    <Compile Include="ReadOnlySpan\SequenceCompareTo.T.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.byte.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.char.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.long.cs" />
