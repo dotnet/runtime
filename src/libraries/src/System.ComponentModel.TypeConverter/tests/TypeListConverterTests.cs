@@ -36,12 +36,17 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            ConvertTo_WithContext(new object[2, 3]
-                {
-                    { typeof(char), "System.Char", null },   // the base class is not verifying if this type is not in the list
-                    { null, "(none)", CultureInfo.InvariantCulture }
-                },
-                TypeListConverterTests.s_converter);
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+
+                ConvertTo_WithContext(new object[2, 3]
+                    {
+                        { typeof(char), "System.Char", null },   // the base class is not verifying if this type is not in the list
+                        { null, "(none)", CultureInfo.InvariantCulture }
+                    },
+                    TypeListConverterTests.s_converter);
+            }).Dispose();
         }
 
         [Fact]
