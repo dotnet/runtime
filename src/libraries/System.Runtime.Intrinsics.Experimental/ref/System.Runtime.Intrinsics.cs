@@ -442,8 +442,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> UnpackLow(Vector256<double> left, Vector256<double> right) { throw null; }
         public static Vector256<float> Xor(Vector256<float> left, Vector256<float> right) { throw null; }
         public static Vector256<double> Xor(Vector256<double> left, Vector256<double> right) { throw null; }
-        public static void ZeroAll() { throw null; }
-        public static void ZeroUpper() { throw null; }
     }
     public static class Avx2
     {
