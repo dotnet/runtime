@@ -642,7 +642,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	int struct_size;
 
 	klass = mono_class_from_mono_type (type);
-	size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
+	size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
 
 	if (!sig->pinvoke && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
@@ -664,7 +664,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	 * handle nested structures.
 	 */
 	fields_array = g_array_new (FALSE, TRUE, sizeof (StructFieldInfo));
-	collect_field_info_nested (klass, fields_array, 0, sig->pinvoke, klass->unicode);
+	collect_field_info_nested (klass, fields_array, 0, sig->pinvoke, m_class_is_unicode (klass));
 	fields = (StructFieldInfo*)fields_array->data;
 	nfields = fields_array->len;
 
@@ -1853,7 +1853,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	sig_ret = mini_get_underlying_type (sig->ret);
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedvtVariableInReg) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -1864,15 +1864,15 @@ mono_arch_create_vars (MonoCompile *cfg)
 		MonoInst *ins;
 
 		if (cfg->compile_aot) {
-			MonoInst *ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			MonoInst *ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_info_var = ins;
 		}
-		ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.ss_tramp_var = ins;
 
-		ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.bp_tramp_var = ins;
 	}
@@ -1958,7 +1958,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	 * passed on the stack after the signature. So compensate by 
 	 * passing a different signature.
 	 */
-	tmp_sig = mono_metadata_signature_dup_full (cfg->method->klass->image, call->signature);
+	tmp_sig = mono_metadata_signature_dup_full (m_class_get_image (cfg->method->klass), call->signature);
 	tmp_sig->param_count -= call->signature->sentinelpos;
 	tmp_sig->sentinelpos = 0;
 	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
@@ -2052,7 +2052,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = &mono_defaults.int_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.int_class);
 		t = mini_type_get_underlying_type (t);
 
 		linfo->args [i].storage = LLVMArgNone;
@@ -2133,7 +2133,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 
 		if (sig->hasthis && i == 0)
-			t = &mono_defaults.object_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.object_class);
 		else
 			t = sig->params [i - sig->hasthis];
 
@@ -2179,7 +2179,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 
 		if (sig->hasthis && i == 0)
-			t = &mono_defaults.object_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.object_class);
 		else
 			t = sig->params [i - sig->hasthis];
 		t = mini_get_underlying_type (t);
@@ -2280,7 +2280,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			 * access it.
 			 */
 			if (!cfg->arch.vret_addr_loc) {
-				cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+				cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 				/* Prevent it from being register allocated or optimized away */
 				((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
 			}
@@ -2362,7 +2362,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 		g_assert (ainfo->storage == ArgValuetypeAddrInIReg || (ainfo->storage == ArgValuetypeAddrOnStack && ainfo->pair_storage [0] == ArgNone));
 		
-		vtaddr = mono_compile_create_var (cfg, &ins->klass->byval_arg, OP_LOCAL);
+		vtaddr = mono_compile_create_var (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL);
 		vtaddr->backend.is_pinvoke = call->signature->pinvoke;
 
 		MONO_INST_NEW (cfg, load, OP_LDADDR);
@@ -2409,7 +2409,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 
 		if (cfg->compute_gc_maps) {
 			MonoInst *def;
-			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, &ins->klass->byval_arg);
+			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, m_class_get_byval_arg (ins->klass));
 		}
 	}
 }
@@ -2878,7 +2878,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 			near_call = TRUE;
 
 			if ((patch_type == MONO_PATCH_INFO_METHOD) || (patch_type == MONO_PATCH_INFO_METHOD_JUMP)) {
-				if (((MonoMethod*)data)->klass->image->aot_module)
+				if (m_class_get_image (((MonoMethod*)data)->klass)->aot_module)
 					/* The callee might be an AOT method */
 					near_call = FALSE;
 				if (((MonoMethod*)data)->dynamic)
@@ -3724,7 +3724,7 @@ amd64_handle_varargs_call (MonoCompile *cfg, guint8 *code, MonoCallInst *call, g
 	guint32 nregs = 0;
 	if (call->signature->call_convention == MONO_CALL_VARARG && call->signature->pinvoke) {
 		// deliberatly nothing -- but nreg = 0 and do not return
-	} else if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && cfg->method->klass->image != mono_defaults.corlib) {
+	} else if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && m_class_get_image (cfg->method->klass) != mono_defaults.corlib) {
 		/*
 		 * Since the unmanaged calling convention doesn't contain a
 		 * 'vararg' entry, we have to treat every pinvoke call as a
@@ -7402,7 +7402,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 					exc_classes [nthrows] = exc_class;
 					exc_throw_start [nthrows] = code;
 				}
-				amd64_mov_reg_imm (code, AMD64_ARG_REG1, exc_class->type_token - MONO_TOKEN_TYPE_DEF);
+				amd64_mov_reg_imm (code, AMD64_ARG_REG1, m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF);
 
 				patch_info->type = MONO_PATCH_INFO_NONE;
 

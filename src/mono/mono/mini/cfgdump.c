@@ -137,7 +137,7 @@ add_pool_entry (MonoCompile *cfg, ConstantPoolEntry *entry)
 		case PT_KLASS: {
 			MonoClass *klass = (MonoClass *) entry->data;
 			write_byte (cfg, POOL_KLASS);
-			write_string (cfg, klass->name);
+			write_string (cfg, m_class_get_name (klass));
 			write_byte (cfg, KLASS);
 			break;
 		}
@@ -242,7 +242,7 @@ mono_cfg_dump_begin_group (MonoCompile *cfg)
 		return;
 	write_byte (cfg, BEGIN_GROUP);
 	char *title = (char *) mono_mempool_alloc0 (cfg->mempool, 0x2000);
-	sprintf (title, "%s::%s", cfg->method->klass->name, cfg->method->name);
+	sprintf (title, "%s::%s", m_class_get_name (cfg->method->klass), cfg->method->name);
 	write_pool (cfg, create_cp_entry (cfg, (void *) title, PT_STRING));
 	write_pool (cfg, create_cp_entry (cfg, (void *) cfg->method->name, PT_STRING));
 	write_pool (cfg, create_cp_entry (cfg, (void *) cfg->method, PT_METHOD));
@@ -433,7 +433,7 @@ constant_pool_hash (ConstantPoolEntry *entry)
 			return g_str_hash (method->name) ^ g_str_hash (method->klass);
 		}
 		case PT_KLASS:
-			return g_str_hash (((MonoClass *) entry->data)->name);
+			return g_str_hash (m_class_get_name ((MonoClass *) entry->data));
 		case PT_OPTYPE:
 			return instruction_hash ((MonoInst *) entry->data);
 		case PT_SIGNATURE: {
@@ -503,7 +503,7 @@ void mono_cfg_dump_create_context (MonoCompile *cfg)
 		if (strcmp (cfg->method->name, name) != 0)
 			return;
 
-	g_debug ("cfg_dump: create context for \"%s::%s\"", cfg->method->klass->name, cfg->method->name);
+	g_debug ("cfg_dump: create context for \"%s::%s\"", m_class_get_name (cfg->method->klass), cfg->method->name);
 	int fd = create_socket (DEFAULT_HOST, DEFAULT_PORT);
 	if (fd < 0) {
 		g_warning ("cfg_dump: couldn't create socket: %s::%d", DEFAULT_HOST, DEFAULT_PORT);

@@ -43,12 +43,12 @@ static gboolean
 lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 {
 	MonoInst *var = (MonoInst *)ldaddr->inst_p0;
-	MonoType *type = &var->klass->byval_arg;
+	MonoType *type = m_class_get_byval_arg (var->klass);
 	int replaced_op = mono_type_to_load_membase (cfg, type);
 
 	if (load->opcode == OP_LOADV_MEMBASE && load->klass != var->klass) {
 		if (cfg->verbose_level > 2)
-			printf ("Incompatible load_vtype classes %s x %s\n", load->klass->name, var->klass->name);
+			printf ("Incompatible load_vtype classes %s x %s\n", m_class_get_name (load->klass), m_class_get_name (var->klass));
 		return FALSE;
 	}
 
@@ -73,12 +73,12 @@ static gboolean
 lower_store (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 {
 	MonoInst *var = (MonoInst *)ldaddr->inst_p0;
-	MonoType *type = &var->klass->byval_arg;
+	MonoType *type = m_class_get_byval_arg (var->klass);
 	int replaced_op = mono_type_to_store_membase (cfg, type);
 
 	if (store->opcode == OP_STOREV_MEMBASE && store->klass != var->klass) {
 		if (cfg->verbose_level > 2)
-			printf ("Incompatible store_vtype classes %s x %s\n", store->klass->name, store->klass->name);
+			printf ("Incompatible store_vtype classes %s x %s\n", m_class_get_name (store->klass), m_class_get_name (store->klass));
 		return FALSE;
 	}
 
@@ -108,7 +108,7 @@ static gboolean
 lower_store_imm (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 {
 	MonoInst *var = (MonoInst *)ldaddr->inst_p0;
-	MonoType *type = &var->klass->byval_arg;
+	MonoType *type = m_class_get_byval_arg (var->klass);
 	int store_op = mono_type_to_store_membase (cfg, type);
 	if (store_op == OP_STOREV_MEMBASE || store_op == OP_STOREX_MEMBASE)
 		return FALSE;

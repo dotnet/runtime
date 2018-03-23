@@ -246,13 +246,13 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
-		foffset = klass->valuetype ? field->offset - sizeof (MonoObject): field->offset;
+		foffset = m_class_is_valuetype (klass) ? field->offset - sizeof (MonoObject): field->offset;
 		if (mini_type_is_reference (mono_field_get_type (field))) {
 			g_assert ((foffset % SIZEOF_VOID_P) == 0);
 			*wb_bitmap |= 1 << ((offset + foffset) / SIZEOF_VOID_P);
 		} else {
 			MonoClass *field_class = mono_class_from_mono_type (field->type);
-			if (field_class->has_references)
+			if (m_class_has_references (field_class))
 				create_write_barrier_bitmap (cfg, field_class, wb_bitmap, offset + foffset);
 		}
 	}
@@ -353,7 +353,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 	*/
 
 	if (cfg->gshared)
-		klass = mono_class_from_mono_type (mini_get_underlying_type (&klass->byval_arg));
+		klass = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (klass)));
 
 	/*
 	 * This check breaks with spilled vars... need to handle it during verification anyway.
@@ -376,7 +376,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 	if (explicit_align)
 		align = explicit_align;
 
-	if (mini_type_is_reference (&klass->byval_arg)) { // Refs *MUST* be naturally aligned
+	if (mini_type_is_reference (m_class_get_byval_arg (klass))) { // Refs *MUST* be naturally aligned
 		MonoInst *store, *load;
 		int dreg = alloc_ireg_ref (cfg);
 
@@ -389,7 +389,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 		mini_emit_write_barrier (cfg, dest, src);
 		return;
 
-	} else if (cfg->gen_write_barriers && (klass->has_references || size_ins) && !native) { 	/* if native is true there should be no references in the struct */
+	} else if (cfg->gen_write_barriers && (m_class_has_references (klass) || size_ins) && !native) { 	/* if native is true there should be no references in the struct */
 		/* Avoid barriers when storing to the stack */
 		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
 			  (dest->opcode == OP_LDADDR))) {

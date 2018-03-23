@@ -84,7 +84,7 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 
 	g_assert (mb != NULL);
 
-	image = mb->method->klass->image;
+	image = m_class_get_image (mb->method->klass);
 
 	if (mb->dynamic) {
 		method = mb->method;

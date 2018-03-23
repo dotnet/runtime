@@ -4069,9 +4069,9 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		/* local 4, dummy local used to get a stack address for suspend funcs */
-		coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		coop_gc_stack_dummy = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 		/* local 5, the local to be used when calling the suspend funcs */
-		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		coop_gc_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 	}
 
 	/* clear exception arg */

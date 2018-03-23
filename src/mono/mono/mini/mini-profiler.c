@@ -204,7 +204,7 @@ mini_profiler_context_get_this (MonoProfilerCallContext *ctx)
 		return NULL;
 
 	if (ctx->interp_frame)
-		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_this (ctx->interp_frame), &ctx->method->klass->this_arg);
+		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_this (ctx->interp_frame), m_class_get_this_arg (ctx->method->klass));
 
 	MonoDebugMethodJitInfo *info = mono_debug_find_method (ctx->method, mono_domain_get ());
 

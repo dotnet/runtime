@@ -616,7 +616,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 						continue;
 
 					MonoClass *klass = centry->ctor->klass;
-					if (strcmp (klass->name, "CategoryAttribute"))
+					if (strcmp (m_class_get_name (klass), "CategoryAttribute"))
 						continue;
 
 					MonoObject *obj = mono_custom_attrs_get_attr_checked (ainfo, klass, error);

@@ -183,7 +183,7 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 	/* This has to be variance aware since imt_method can be from an interface that vt->klass doesn't directly implement */
 	interface_offset = mono_class_interface_offset_with_variance (vt->klass, imt_method->klass, &variance_used);
 	if (interface_offset < 0)
-		g_error ("%s doesn't implement interface %s\n", mono_type_get_name_full (&vt->klass->byval_arg, MONO_TYPE_NAME_FORMAT_IL), mono_type_get_name_full (&imt_method->klass->byval_arg, MONO_TYPE_NAME_FORMAT_IL));
+		g_error ("%s doesn't implement interface %s\n", mono_type_get_name_full (m_class_get_byval_arg (vt->klass), MONO_TYPE_NAME_FORMAT_IL), mono_type_get_name_full (m_class_get_byval_arg (imt_method->klass), MONO_TYPE_NAME_FORMAT_IL));
 
 	*variant_iface = NULL;
 	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
@@ -219,7 +219,7 @@ mini_resolve_imt_method (MonoVTable *vt, gpointer *vtable_slot, MonoMethod *imt_
 	} else {
 
 		/* Avoid loading metadata or creating a generic vtable if possible */
-		if (lookup_aot && !vt->klass->valuetype) {
+		if (lookup_aot && !m_class_is_valuetype (vt->klass)) {
 			aot_addr = (guint8 *)mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, interface_offset + mono_method_get_vtable_slot (imt_method), error);
 			return_val_if_nok (error, NULL);
 		} else {
@@ -600,7 +600,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 			}
 
 			/* We must handle magic interfaces on rank 1 arrays of ref types as if they were variant */
-			if (!variant_iface && vt->klass->rank == 1 && !vt->klass->element_class->valuetype && imt_method->klass->is_array_special_interface)
+			if (!variant_iface && m_class_get_rank (vt->klass) == 1 && !m_class_is_valuetype (m_class_get_element_class (vt->klass)) && m_class_is_array_special_interface (imt_method->klass))
 				variant_iface = imt_method;
 
 			/* This is the vcall slot which gets called through the IMT trampoline */
@@ -664,7 +664,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 
 			klass = mrgctx->class_vtable->klass;
 			method_inst = mrgctx->method_inst;
-		} else if ((m->flags & METHOD_ATTRIBUTE_STATIC) || m->klass->valuetype) {
+		} else if ((m->flags & METHOD_ATTRIBUTE_STATIC) || m_class_is_valuetype (m->klass)) {
 			MonoVTable *vtable = mono_arch_find_static_call_vtable (regs, code);
 
 			klass = vtable->klass;
@@ -674,11 +674,11 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 			vt = this_argument->vtable;
 			vtable_slot = orig_vtable_slot;
 
-			g_assert (this_argument->vtable->klass->inited);
+			g_assert (m_class_is_inited (this_argument->vtable->klass));
 
 			if (!vtable_slot) {
 				mono_class_setup_supertypes (this_argument->vtable->klass);
-				klass = this_argument->vtable->klass->supertypes [m->klass->idepth - 1];
+				klass = m_class_get_supertypes (this_argument->vtable->klass) [m_class_get_idepth (m->klass) - 1];
 			}
 		}
 
@@ -691,7 +691,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 
 			g_assert (displacement > 0);
 
-			actual_method = vt->klass->vtable [displacement];
+			actual_method = m_class_get_vtable (vt->klass) [displacement];
 		}
 
 		if (method_inst || m->wrapper_type) {
@@ -737,10 +737,10 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 		return NULL;
 
 	if (generic_virtual || variant_iface) {
-		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
+		if (m_class_is_valuetype (vt->klass)) /*FIXME is this required variant iface?*/
 			need_unbox_tramp = TRUE;
 	} else if (orig_vtable_slot) {
-		if (m->klass->valuetype)
+		if (m_class_is_valuetype (m->klass))
 			need_unbox_tramp = TRUE;
 	}
 
@@ -916,7 +916,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 		/* Avoid loading metadata or creating a generic vtable if possible */
 		addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, error);
 		goto_if_nok (error, leave);
-		if (addr && !vt->klass->valuetype) {
+		if (addr && !m_class_is_valuetype (vt->klass)) {
 			if (mono_domain_owns_vtable_slot (mono_domain_get (), vtable_slot))
 				*vtable_slot = addr;
 
@@ -1179,7 +1179,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 				}
 			}
 
-			if (sig->hasthis && method->klass->valuetype) {
+			if (sig->hasthis && m_class_is_valuetype (method->klass)) {
 				gboolean need_unbox = TRUE;
 
 				if (tramp_info->invoke_sig->param_count > sig->param_count && tramp_info->invoke_sig->params [0]->byref)

@@ -358,7 +358,7 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return OP_STORER8_MEMBASE_REG;
 	case MONO_TYPE_VALUETYPE:
-		if (type->data.klass->enumtype) {
+		if (m_class_is_enumtype (type->data.klass)) {
 			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		}
@@ -370,7 +370,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
 			return OP_STOREX_MEMBASE;
-		type = &type->data.generic_class->container_class->byval_arg;
+		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -669,7 +669,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		if (type->byref) {
 			mono_mark_vreg_as_mp (cfg, vreg);
 		} else {
-			if ((MONO_TYPE_ISSTRUCT (type) && inst->klass->has_references) || mini_type_is_reference (type)) {
+			if ((MONO_TYPE_ISSTRUCT (type) && m_class_has_references (inst->klass)) || mini_type_is_reference (type)) {
 				inst->flags |= MONO_INST_GC_TRACK;
 				mono_mark_vreg_as_ref (cfg, vreg);
 			}
@@ -724,7 +724,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
 		tree->type = STACK_I4;
-		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
+		tree->inst_vtype = m_class_get_byval_arg (mono_defaults.int32_class);
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
 		set_vreg_to_inst (cfg, MONO_LVREG_LS (inst->dreg), tree);
@@ -736,7 +736,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			tree->flags = MONO_INST_VOLATILE;
 		tree->inst_c0 = num;
 		tree->type = STACK_I4;
-		tree->inst_vtype = &mono_defaults.int32_class->byval_arg;
+		tree->inst_vtype = m_class_get_byval_arg (mono_defaults.int32_class);
 		tree->klass = mono_class_from_mono_type (tree->inst_vtype);
 
 		set_vreg_to_inst (cfg, MONO_LVREG_MS (inst->dreg), tree);
@@ -815,28 +815,28 @@ static MonoType*
 type_from_stack_type (MonoInst *ins)
 {
 	switch (ins->type) {
-	case STACK_I4: return &mono_defaults.int32_class->byval_arg;
-	case STACK_I8: return &mono_defaults.int64_class->byval_arg;
-	case STACK_PTR: return &mono_defaults.int_class->byval_arg;
-	case STACK_R8: return &mono_defaults.double_class->byval_arg;
+	case STACK_I4: return m_class_get_byval_arg (mono_defaults.int32_class);
+	case STACK_I8: return m_class_get_byval_arg (mono_defaults.int64_class);
+	case STACK_PTR: return m_class_get_byval_arg (mono_defaults.int_class);
+	case STACK_R8: return m_class_get_byval_arg (mono_defaults.double_class);
 	case STACK_MP:
 		/* 
 		 * this if used to be commented without any specific reason, but
 		 * it breaks #80235 when commented
 		 */
 		if (ins->klass)
-			return &ins->klass->this_arg;
+			return m_class_get_this_arg (ins->klass);
 		else
-			return &mono_defaults.object_class->this_arg;
+			return m_class_get_this_arg (mono_defaults.object_class);
 	case STACK_OBJ:
 		/* ins->klass may not be set for ldnull.
 		 * Also, if we have a boxed valuetype, we want an object lass,
 		 * not the valuetype class
 		 */
-		if (ins->klass && !ins->klass->valuetype)
-			return &ins->klass->byval_arg;
-		return &mono_defaults.object_class->byval_arg;
-	case STACK_VTYPE: return &ins->klass->byval_arg;
+		if (ins->klass && !m_class_is_valuetype (ins->klass))
+			return m_class_get_byval_arg (ins->klass);
+		return m_class_get_byval_arg (mono_defaults.object_class);
+	case STACK_VTYPE: return m_class_get_byval_arg (ins->klass);
 	default:
 		g_error ("stack type %d to montype not handled\n", ins->type);
 	}
@@ -959,11 +959,12 @@ mono_get_array_new_va_signature (int arity)
 	res->call_convention = MONO_CALL_C;
 #endif
 
-	res->params [0] = &mono_defaults.int_class->byval_arg;	
+	MonoType *int_type = m_class_get_byval_arg (mono_defaults.int_class);
+	res->params [0] = int_type;
 	for (i = 0; i < arity; i++)
-		res->params [i + 1] = &mono_defaults.int_class->byval_arg;
+		res->params [i + 1] = int_type;
 
-	res->ret = &mono_defaults.object_class->byval_arg;
+	res->ret = m_class_get_byval_arg (mono_defaults.object_class);
 
 	g_hash_table_insert (sighash, GINT_TO_POINTER (arity), res);
 	mono_jit_unlock ();
@@ -997,7 +998,7 @@ mono_get_array_new_va_icall (int rank)
 gboolean
 mini_assembly_can_skip_verification (MonoDomain *domain, MonoMethod *method)
 {
-	MonoAssembly *assembly = method->klass->image->assembly;
+	MonoAssembly *assembly = m_class_get_image (method->klass)->assembly;
 	if (method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		return FALSE;
 	if (assembly->in_gac || assembly->image == mono_defaults.corlib)
@@ -1077,7 +1078,7 @@ gboolean
 mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean fail_compile)
 {
 	MonoMethod *method_definition = method;
-	gboolean dont_verify = method->klass->image->assembly->corlib_internal;
+	gboolean dont_verify = m_class_get_image (method->klass)->assembly->corlib_internal;
 
 	while (method_definition->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method_definition;
@@ -2038,7 +2039,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 	cfg->args = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, (sig->param_count + sig->hasthis) * sizeof (MonoInst*));
 
 	if (sig->hasthis) {
-		cfg->args [0] = mono_compile_create_var (cfg, &cfg->method->klass->this_arg, OP_ARG);
+		cfg->args [0] = mono_compile_create_var (cfg, m_class_get_this_arg (cfg->method->klass), OP_ARG);
 		cfg->this_arg = cfg->args [0];
 	}
 
@@ -2088,7 +2089,7 @@ mono_compile_create_vars (MonoCompile *cfg)
 #endif
 
 	if (cfg->method->save_lmf && cfg->create_lmf_var) {
-		MonoInst *lmf_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		MonoInst *lmf_var = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 		lmf_var->flags |= MONO_INST_VOLATILE;
 		lmf_var->flags |= MONO_INST_LMF;
 		cfg->lmf_var = lmf_var;
@@ -2529,7 +2530,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method_to_compile)->method_inst ||
-				method_to_compile->klass->valuetype) {
+				m_class_is_valuetype (method_to_compile->klass)) {
 			g_assert (cfg->rgctx_var);
 		}
 
@@ -2537,7 +2538,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
 				mini_method_get_context (method_to_compile)->method_inst ||
-				method_to_compile->klass->valuetype) {
+				m_class_is_valuetype (method_to_compile->klass)) {
 			inst = cfg->rgctx_var;
 			if (!COMPILE_LLVM (cfg))
 				g_assert (inst->opcode == OP_REGOFFSET);
@@ -3892,14 +3893,14 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	if ((gboolean)mono_atomic_load_i32 ((gint32*)&mono_jit_stats.enabled)) {
 		if (code_size_ratio > mono_atomic_load_i32 (&mono_jit_stats.biggest_method_size)) {
 			mono_atomic_store_i32 (&mono_jit_stats.biggest_method_size, code_size_ratio);
-			char *biggest_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
+			char *biggest_method = g_strdup_printf ("%s::%s)", m_class_get_name (method->klass), method->name);
 			biggest_method = mono_atomic_xchg_ptr ((gpointer*)&mono_jit_stats.biggest_method, biggest_method);
 			g_free (biggest_method);
 		}
 		code_size_ratio = (code_size_ratio * 100) / header->code_size;
 		if (code_size_ratio > mono_atomic_load_i32 (&mono_jit_stats.max_code_size_ratio)) {
 			mono_atomic_store_i32 (&mono_jit_stats.max_code_size_ratio, code_size_ratio);
-			char *max_ratio_method = g_strdup_printf ("%s::%s)", method->klass->name, method->name);
+			char *max_ratio_method = g_strdup_printf ("%s::%s)", m_class_get_name (method->klass), method->name);
 			max_ratio_method = mono_atomic_xchg_ptr ((gpointer*)&mono_jit_stats.max_ratio_method, max_ratio_method);
 			g_free (max_ratio_method);
 		}
@@ -4060,9 +4061,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 				piinfo->addr = mono_lookup_internal_call (method);
 			else if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
 #ifdef HOST_WIN32
-				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
+				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono in modules loaded from byte arrays. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #else
-				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), method->klass->image->name);
+				g_warning ("Method '%s' in assembly '%s' contains native code that cannot be executed by Mono on this platform. The assembly was probably created using C++/CLI.\n", mono_method_full_name (method, TRUE), m_class_get_image (method->klass)->name);
 #endif
 			else
 				mono_lookup_pinvoke_call (method, NULL, NULL);
@@ -4082,7 +4083,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		char *full_name, *msg;
 		MonoMethod *nm;
 
-		if (method->klass->parent == mono_defaults.multicastdelegate_class) {
+		if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
 			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("ves_icall_mono_delegate_ctor");
 				g_assert (mi);
@@ -4402,7 +4403,7 @@ mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpoin
 gboolean
 mini_class_is_system_array (MonoClass *klass)
 {
-	if (klass->parent == mono_defaults.array_class)
+	if (m_class_get_parent (klass) == mono_defaults.array_class)
 		return TRUE;
 	else
 		return FALSE;

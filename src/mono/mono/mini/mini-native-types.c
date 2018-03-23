@@ -325,7 +325,7 @@ MonoInst*
 mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	if (mono_class_is_magic_int (cmethod->klass)) {
-		const char *class_name = cmethod->klass->name;
+		const char *class_name = m_class_get_name (cmethod->klass);
 		if (!strcmp ("nint", class_name))
 			return emit_intrinsics (cfg, cmethod, fsig, args, &type_info [0]);
 		else
@@ -341,18 +341,19 @@ mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 static inline gboolean
 mono_class_is_magic_assembly (MonoClass *klass)
 {
-	if (!klass->image->assembly_name)
+	const char *aname = m_class_get_image (klass)->assembly_name;
+	if (!aname)
 		return FALSE;
-	if (!strcmp ("Xamarin.iOS", klass->image->assembly_name))
+	if (!strcmp ("Xamarin.iOS", aname))
 		return TRUE;
-	if (!strcmp ("Xamarin.Mac", klass->image->assembly_name))
+	if (!strcmp ("Xamarin.Mac", aname))
 		return TRUE;
-	if (!strcmp ("Xamarin.WatchOS", klass->image->assembly_name))
+	if (!strcmp ("Xamarin.WatchOS", aname))
 		return TRUE;
 	/* regression test suite */
-	if (!strcmp ("builtin-types", klass->image->assembly_name))
+	if (!strcmp ("builtin-types", aname))
 		return TRUE;
-	if (!strcmp ("mini_tests", klass->image->assembly_name))
+	if (!strcmp ("mini_tests", aname))
 		return TRUE;
 	return FALSE;
 }
@@ -375,15 +376,15 @@ mono_class_is_magic_int (MonoClass *klass)
 	if (!mono_class_is_magic_assembly (klass))
 		return FALSE;
 
-	if (strcmp ("System", klass->name_space) != 0)
+	if (strcmp ("System", m_class_get_name_space (klass)) != 0)
 		return FALSE;
 
-	if (strcmp ("nint", klass->name) == 0) {
+	if (strcmp ("nint", m_class_get_name (klass)) == 0) {
 		magic_nint_class = klass;
 		return TRUE;
 	}
 
-	if (strcmp ("nuint", klass->name) == 0){
+	if (strcmp ("nuint", m_class_get_name (klass)) == 0){
 		magic_nuint_class = klass;
 		return TRUE;
 	}
@@ -404,19 +405,19 @@ mono_class_is_magic_float (MonoClass *klass)
 	if (!mono_class_is_magic_assembly (klass))
 		return FALSE;
 
-	if (strcmp ("System", klass->name_space) != 0)
+	if (strcmp ("System", m_class_get_name_space (klass)) != 0)
 		return FALSE;
 
-	if (strcmp ("nfloat", klass->name) == 0) {
+	if (strcmp ("nfloat", m_class_get_name (klass)) == 0) {
 		magic_nfloat_class = klass;
 
 		/* Assert that we are using the matching assembly */
 		MonoClassField *value_field = mono_class_get_field_from_name (klass, "v");
 		g_assert (value_field);
 		MonoType *t = mono_field_get_type (value_field);
-		MonoType *native = mini_native_type_replace_type (&klass->byval_arg);
+		MonoType *native = mini_native_type_replace_type (m_class_get_byval_arg (klass));
 		if (t->type != native->type)
-			g_error ("Assembly used for native types '%s' doesn't match this runtime, %s is mapped to %s, expecting %s.\n", klass->image->name, klass->name, mono_type_full_name (t), mono_type_full_name (native));
+			g_error ("Assembly used for native types '%s' doesn't match this runtime, %s is mapped to %s, expecting %s.\n", m_class_get_image (klass)->name, m_class_get_name (klass), mono_type_full_name (t), mono_type_full_name (native));
 		return TRUE;
 	}
 	return FALSE;
@@ -448,12 +449,12 @@ mini_native_type_replace_type (MonoType *type)
 	klass = type->data.klass;
 
 	if (mono_class_is_magic_int (klass))
-		return type->byref ? &mono_defaults.int_class->this_arg : &mono_defaults.int_class->byval_arg;
+		return type->byref ? m_class_get_this_arg (mono_defaults.int_class) : m_class_get_byval_arg (mono_defaults.int_class);
 	if (mono_class_is_magic_float (klass))
 #if SIZEOF_VOID_P == 8
-		return type->byref ? &mono_defaults.double_class->this_arg : &mono_defaults.double_class->byval_arg;
+		return type->byref ? m_class_get_this_arg (mono_defaults.double_class) : m_class_get_byval_arg (mono_defaults.double_class);
 #else
-		return type->byref ? &mono_defaults.single_class->this_arg : &mono_defaults.single_class->byval_arg;
+		return type->byref ? m_class_get_this_arg (mono_defaults.single_class) : m_class_get_byval_arg (mono_defaults.single_class);
 #endif
 	return type;
 }

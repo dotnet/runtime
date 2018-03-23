@@ -114,7 +114,7 @@ mono_helper_stelem_ref_check (MonoArray *array, MonoObject *val)
 		mono_set_pending_exception (mono_get_exception_null_reference ());
 		return;
 	}
-	if (val && !mono_object_isinst_checked (val, array->obj.vtable->klass->element_class, error)) {
+	if (val && !mono_object_isinst_checked (val, m_class_get_element_class (mono_object_class (array)), error)) {
 		if (mono_error_set_pending_exception (error))
 			return;
 		mono_set_pending_exception (mono_get_exception_array_type_mismatch ());
@@ -685,7 +685,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 	int i, d;
 
 	pcount = mono_method_signature (cm)->param_count;
-	rank = cm->klass->rank;
+	rank = m_class_get_rank (cm->klass);
 
 	va_start (ap, cm);
 	
@@ -695,7 +695,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 
 	if (rank == pcount) {
 		/* Only lengths provided. */
-		if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+		if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 			lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 		} else {
@@ -732,13 +732,13 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 	int rank;
 
 	pcount = mono_method_signature (cm)->param_count;
-	rank = cm->klass->rank;
+	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length;
 
 	g_assert (rank == pcount);
 
-	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
@@ -767,14 +767,14 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 	int rank;
 
 	pcount = mono_method_signature (cm)->param_count;
-	rank = cm->klass->rank;
+	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length1;
 	lengths [1] = length2;
 
 	g_assert (rank == pcount);
 
-	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
@@ -803,7 +803,7 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	int rank;
 
 	pcount = mono_method_signature (cm)->param_count;
-	rank = cm->klass->rank;
+	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length1;
 	lengths [1] = length2;
@@ -811,7 +811,7 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 
 	g_assert (rank == pcount);
 
-	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
@@ -840,7 +840,7 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	int rank;
 
 	pcount = mono_method_signature (cm)->param_count;
-	rank = cm->klass->rank;
+	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length1;
 	lengths [1] = length2;
@@ -849,7 +849,7 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 
 	g_assert (rank == pcount);
 
-	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 		lower_bounds = (intptr_t *)alloca (sizeof (intptr_t) * rank);
 		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
 	} else {
@@ -1118,7 +1118,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	addr = mini_add_method_trampoline (vmethod, addr, mono_method_needs_static_rgctx_invoke (vmethod, FALSE), FALSE);
 
 	/* Since this is a virtual call, have to unbox vtypes */
-	if (obj->vtable->klass->valuetype)
+	if (m_class_is_valuetype (obj->vtable->klass))
 		*this_arg = mono_object_unbox (obj);
 	else
 		*this_arg = obj;
@@ -1222,7 +1222,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 		return NULL;
 
 	oklass = obj->vtable->klass;
-	if ((klass->enumtype && oklass == klass->element_class) || (oklass->enumtype && klass == oklass->element_class))
+	if ((m_class_is_enumtype (klass) && oklass == m_class_get_element_class (klass)) || (m_class_is_enumtype (oklass) && klass == m_class_get_element_class (oklass)))
 		return obj;
 	if (mono_object_isinst_checked (obj, klass, error))
 		return obj;
@@ -1352,26 +1352,26 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 	} else {
 		/* Lookup the virtual method */
 		mono_class_setup_vtable (klass);
-		g_assert (klass->vtable);
+		g_assert (m_class_get_vtable (klass));
 		vt_slot = mono_method_get_vtable_slot (cmethod);
 		if (mono_class_is_interface (cmethod->klass)) {
 			iface_offset = mono_class_interface_offset (klass, cmethod->klass);
 			g_assert (iface_offset != -1);
 			vt_slot += iface_offset;
 		}
-		m = klass->vtable [vt_slot];
+		m = m_class_get_vtable (klass) [vt_slot];
 		if (cmethod->is_inflated) {
 			m = mono_class_inflate_generic_method_full_checked (m, NULL, mono_method_get_context (cmethod), error);
 			return_val_if_nok (error, NULL);
 		}
 	}
 
-	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class)) {
+	if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
 		/*
 		 * Calling a non-vtype method with a vtype receiver, has to box.
 		 */
 		*this_arg = mono_value_box_checked (mono_domain_get (), klass, mp, error);
-	} else if (klass->valuetype) {
+	} else if (m_class_is_valuetype (klass)) {
 		if (is_iface) {
 			/*
 			 * The original type is an interface, so the receiver is a ref,
@@ -1442,7 +1442,7 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 void
 mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 {
-	if (klass->valuetype)
+	if (m_class_is_valuetype (klass))
 		mono_value_copy (dest, src, klass);
 	else
         mono_gc_wbarrier_generic_store (dest, *(MonoObject**)src);
@@ -1544,10 +1544,10 @@ resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, 
 		generic_virtual = imt_method;
 
 	if (generic_virtual || variant_iface) {
-		if (vt->klass->valuetype) /*FIXME is this required variant iface?*/
+		if (m_class_is_valuetype (vt->klass)) /*FIXME is this required variant iface?*/
 			need_unbox_tramp = TRUE;
 	} else {
-		if (impl_method->klass->valuetype)
+		if (m_class_is_valuetype (impl_method->klass))
 			need_unbox_tramp = TRUE;
 	}
 
@@ -1614,7 +1614,7 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	/* Avoid loading metadata or creating a generic vtable if possible */
 	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, error);
 	return_val_if_nok (error, NULL);
-	if (addr && !vt->klass->valuetype)
+	if (addr && !m_class_is_valuetype (vt->klass))
 		return mono_create_ftnptr (mono_domain_get (), addr);
 
 	m = mono_class_get_vtable_entry (vt->klass, slot);
@@ -1643,10 +1643,10 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 	}
 
 	if (generic_virtual) {
-		if (vt->klass->valuetype)
+		if (m_class_is_valuetype (vt->klass))
 			need_unbox_tramp = TRUE;
 	} else {
-		if (m->klass->valuetype)
+		if (m_class_is_valuetype (m->klass))
 			need_unbox_tramp = TRUE;
 	}
 
@@ -1723,7 +1723,7 @@ mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic
 	m = mono_class_inflate_generic_method_checked (declaring, &context, error);
 	g_assert (mono_error_ok (error));
 
-	if (vt->klass->valuetype)
+	if (m_class_is_valuetype (vt->klass))
 		need_unbox_tramp = TRUE;
 
 	// FIXME: This can throw exceptions
@@ -1771,7 +1771,7 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 		mono_llvm_throw_exception ((MonoObject*)ex);
 	}
 
-	if (vt->klass->valuetype)
+	if (m_class_is_valuetype (vt->klass))
 		need_unbox_tramp = TRUE;
 
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
@@ -1850,7 +1850,7 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 		if (mono_error_set_pending_exception (error))
 			return;
 
-		if (m->klass->valuetype && mono_method_signature (m)->hasthis)
+		if (m_class_is_valuetype (m->klass) && mono_method_signature (m)->hasthis)
 		    addr = mono_aot_get_unbox_trampoline (m);
 
 		gpointer arg = mini_get_delegate_arg (del->method, addr);
@@ -1879,7 +1879,7 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 	del->method_ptr = mono_compile_method_checked (method, error);
 	if (mono_error_set_pending_exception (error))
 		return;
-	if (method->klass->valuetype)
+	if (m_class_is_valuetype (method->klass))
 		del->method_ptr = mono_aot_get_unbox_trampoline (method);
 	del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
