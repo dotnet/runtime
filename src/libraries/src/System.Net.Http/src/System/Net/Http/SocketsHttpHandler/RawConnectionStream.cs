@@ -16,17 +16,17 @@ namespace System.Net.Http
             {
             }
 
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                if (_connection == null || destination.Length == 0)
+                if (_connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
-                ValueTask<int> readTask = _connection.ReadAsync(destination);
+                ValueTask<int> readTask = _connection.ReadAsync(buffer);
                 int bytesRead;
                 if (readTask.IsCompletedSuccessfully)
                 {
@@ -120,7 +120,7 @@ namespace System.Net.Http
                 _connection = null;
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -132,12 +132,12 @@ namespace System.Net.Http
                     return new ValueTask(Task.FromException(new IOException(SR.net_http_io_write)));
                 }
 
-                if (source.Length == 0)
+                if (buffer.Length == 0)
                 {
                     return default;
                 }
 
-                ValueTask writeTask = _connection.WriteWithoutBufferingAsync(source);
+                ValueTask writeTask = _connection.WriteWithoutBufferingAsync(buffer);
                 return writeTask.IsCompleted ?
                     writeTask :
                     new ValueTask(WaitWithConnectionCancellationAsync(writeTask, cancellationToken));

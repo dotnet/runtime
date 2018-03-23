@@ -70,25 +70,25 @@ namespace System.IO
             return Read(new Span<byte>(buffer, offset, count));
         }
 
-        public override int Read(Span<byte> destination)
+        public override int Read(Span<byte> buffer)
         {
             int remaining = _content.Length - _position;
 
-            if (remaining <= 0 || destination.Length == 0)
+            if (remaining <= 0 || buffer.Length == 0)
             {
                 return 0;
             }
-            else if (remaining <= destination.Length)
+            else if (remaining <= buffer.Length)
             {
-                _content.Span.Slice(_position).CopyTo(destination);
+                _content.Span.Slice(_position).CopyTo(buffer);
                 _position = _content.Length;
                 return remaining;
             }
             else
             {
-                _content.Span.Slice(_position, destination.Length).CopyTo(destination);
-                _position += destination.Length;
-                return destination.Length;
+                _content.Span.Slice(_position, buffer.Length).CopyTo(buffer);
+                _position += buffer.Length;
+                return buffer.Length;
             }
         }
 
@@ -100,10 +100,10 @@ namespace System.IO
                 Task.FromResult(Read(new Span<byte>(buffer, offset, count)));
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken)) =>
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken)) =>
             cancellationToken.IsCancellationRequested ?
                 new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
-                new ValueTask<int>(Read(destination.Span));
+                new ValueTask<int>(Read(buffer.Span));
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);

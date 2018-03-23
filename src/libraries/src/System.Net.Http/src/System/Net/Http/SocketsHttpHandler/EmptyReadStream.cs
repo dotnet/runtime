@@ -22,9 +22,9 @@ namespace System.Net.Http
 
             public override int ReadByte() => -1;
 
-            public override int Read(Span<byte> destination) => 0;
+            public override int Read(Span<byte> buffer) => 0;
 
-            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken) =>
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
                 cancellationToken.IsCancellationRequested ? new ValueTask<int>(Task.FromCanceled<int>(cancellationToken)) :
                 new ValueTask<int>(0);
         }

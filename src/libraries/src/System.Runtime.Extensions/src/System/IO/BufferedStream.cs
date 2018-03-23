@@ -644,7 +644,7 @@ namespace System.IO
                 cancellationToken, bytesFromBuffer, semaphoreLockTask).AsTask();
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -662,8 +662,8 @@ namespace System.IO
                 bool completeSynchronously = true;
                 try
                 {
-                    bytesFromBuffer = ReadFromBuffer(destination.Span);
-                    completeSynchronously = bytesFromBuffer == destination.Length;
+                    bytesFromBuffer = ReadFromBuffer(buffer.Span);
+                    completeSynchronously = bytesFromBuffer == buffer.Length;
                     if (completeSynchronously)
                     {
                         // If we satisfied enough data from the buffer, we can complete synchronously.
@@ -680,7 +680,7 @@ namespace System.IO
             }
 
             // Delegate to the async implementation.
-            return ReadFromUnderlyingStreamAsync(destination.Slice(bytesFromBuffer), cancellationToken, bytesFromBuffer, semaphoreLockTask);
+            return ReadFromUnderlyingStreamAsync(buffer.Slice(bytesFromBuffer), cancellationToken, bytesFromBuffer, semaphoreLockTask);
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want ReadAsync to delegate to
@@ -796,13 +796,13 @@ namespace System.IO
             offset += bytesToWrite;
         }
 
-        private int WriteToBuffer(ReadOnlySpan<byte> source)
+        private int WriteToBuffer(ReadOnlySpan<byte> buffer)
         {
-            int bytesToWrite = Math.Min(_bufferSize - _writePos, source.Length);
+            int bytesToWrite = Math.Min(_bufferSize - _writePos, buffer.Length);
             if (bytesToWrite > 0)
             {
                 EnsureBufferAllocated();
-                source.Slice(0, bytesToWrite).CopyTo(new Span<byte>(_buffer, _writePos, bytesToWrite));
+                buffer.Slice(0, bytesToWrite).CopyTo(new Span<byte>(_buffer, _writePos, bytesToWrite));
                 _writePos += bytesToWrite;
             }
             return bytesToWrite;
@@ -957,7 +957,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(ReadOnlySpan<byte> source)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
             EnsureNotClosed();
             EnsureCanWrite();
@@ -973,21 +973,21 @@ namespace System.IO
             checked
             {
                 // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
-                totalUserbytes = _writePos + source.Length;
-                useBuffer = (totalUserbytes + source.Length < (_bufferSize + _bufferSize));
+                totalUserbytes = _writePos + buffer.Length;
+                useBuffer = (totalUserbytes + buffer.Length < (_bufferSize + _bufferSize));
             }
 
             if (useBuffer)
             {
                 // Copy as much data to the buffer as will fit.  If there's still room in the buffer,
                 // everything must have fit.
-                int bytesWritten = WriteToBuffer(source);
+                int bytesWritten = WriteToBuffer(buffer);
                 if (_writePos < _bufferSize)
                 {
-                    Debug.Assert(bytesWritten == source.Length);
+                    Debug.Assert(bytesWritten == buffer.Length);
                     return;
                 }
-                source = source.Slice(bytesWritten);
+                buffer = buffer.Slice(bytesWritten);
 
                 Debug.Assert(_writePos == _bufferSize);
                 Debug.Assert(_buffer != null);
@@ -997,8 +997,8 @@ namespace System.IO
                 _writePos = 0;
 
                 // Now write the remainder.  It must fit, as we're only on this path if that's true.
-                bytesWritten = WriteToBuffer(source);
-                Debug.Assert(bytesWritten == source.Length);
+                bytesWritten = WriteToBuffer(buffer);
+                Debug.Assert(bytesWritten == buffer.Length);
 
                 Debug.Assert(_writePos < _bufferSize);
             }
@@ -1014,7 +1014,7 @@ namespace System.IO
                     if (totalUserbytes <= (_bufferSize + _bufferSize) && totalUserbytes <= MaxShadowBufferSize)
                     {
                         EnsureShadowBufferAllocated();
-                        source.CopyTo(new Span<byte>(_buffer, _writePos, source.Length));
+                        buffer.CopyTo(new Span<byte>(_buffer, _writePos, buffer.Length));
                         _stream.Write(_buffer, 0, totalUserbytes);
                         _writePos = 0;
                         return;
@@ -1025,7 +1025,7 @@ namespace System.IO
                 }
 
                 // Write out user data.
-                _stream.Write(source);
+                _stream.Write(buffer);
             }
         }
 
@@ -1043,7 +1043,7 @@ namespace System.IO
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             // Fast path check for cancellation already requested
             if (cancellationToken.IsCancellationRequested)
@@ -1070,11 +1070,11 @@ namespace System.IO
                     Debug.Assert(_writePos < _bufferSize);
 
                     // If the write completely fits into the buffer, we can complete synchronously:
-                    completeSynchronously = source.Length < _bufferSize - _writePos;
+                    completeSynchronously = buffer.Length < _bufferSize - _writePos;
                     if (completeSynchronously)
                     {
-                        int bytesWritten = WriteToBuffer(source.Span);
-                        Debug.Assert(bytesWritten == source.Length);
+                        int bytesWritten = WriteToBuffer(buffer.Span);
+                        Debug.Assert(bytesWritten == buffer.Length);
                         return default;
                     }
                 }
@@ -1086,7 +1086,7 @@ namespace System.IO
             }
 
             // Delegate to the async implementation.
-            return new ValueTask(WriteToUnderlyingStreamAsync(source, cancellationToken, semaphoreLockTask));
+            return new ValueTask(WriteToUnderlyingStreamAsync(buffer, cancellationToken, semaphoreLockTask));
         }
 
         /// <summary>BufferedStream should be as thin a wrapper as possible. We want WriteAsync to delegate to
@@ -1095,7 +1095,7 @@ namespace System.IO
         /// little as possible.
         /// </summary>
         private async Task WriteToUnderlyingStreamAsync(
-            ReadOnlyMemory<byte> source, CancellationToken cancellationToken, Task semaphoreLockTask)
+            ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, Task semaphoreLockTask)
         {
             Debug.Assert(_stream != null);
             Debug.Assert(_stream.CanWrite);
@@ -1118,29 +1118,29 @@ namespace System.IO
                 checked
                 {
                     // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
-                    totalUserBytes = _writePos + source.Length;
-                    useBuffer = (totalUserBytes + source.Length < (_bufferSize + _bufferSize));
+                    totalUserBytes = _writePos + buffer.Length;
+                    useBuffer = (totalUserBytes + buffer.Length < (_bufferSize + _bufferSize));
                 }
 
                 if (useBuffer)
                 {
-                    source = source.Slice(WriteToBuffer(source.Span));
+                    buffer = buffer.Slice(WriteToBuffer(buffer.Span));
 
                     if (_writePos < _bufferSize)
                     {
-                        Debug.Assert(source.Length == 0);
+                        Debug.Assert(buffer.Length == 0);
                         return;
                     }
 
-                    Debug.Assert(source.Length >= 0);
+                    Debug.Assert(buffer.Length >= 0);
                     Debug.Assert(_writePos == _bufferSize);
                     Debug.Assert(_buffer != null);
                    
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
                     _writePos = 0;
 
-                    int bytesWritten = WriteToBuffer(source.Span);
-                    Debug.Assert(bytesWritten == source.Length);
+                    int bytesWritten = WriteToBuffer(buffer.Span);
+                    Debug.Assert(bytesWritten == buffer.Length);
 
                     Debug.Assert(_writePos < _bufferSize);
 
@@ -1157,7 +1157,7 @@ namespace System.IO
                         if (totalUserBytes <= (_bufferSize + _bufferSize) && totalUserBytes <= MaxShadowBufferSize)
                         {
                             EnsureShadowBufferAllocated();
-                            source.Span.CopyTo(new Span<byte>(_buffer, _writePos, source.Length));
+                            buffer.Span.CopyTo(new Span<byte>(_buffer, _writePos, buffer.Length));
 
                             await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, totalUserBytes), cancellationToken).ConfigureAwait(false);
                             _writePos = 0;
@@ -1169,7 +1169,7 @@ namespace System.IO
                     }
 
                     // Write out user data.
-                    await _stream.WriteAsync(source, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
