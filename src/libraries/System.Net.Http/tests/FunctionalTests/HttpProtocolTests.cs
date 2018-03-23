@@ -546,6 +546,12 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly_MemberData))]
         public async Task GetAsync_Chunked_VaryingSizeChunks_ReceivedCorrectly(int maxChunkSize, string lineEnding, bool useCopyToAsync)
         {
+            if (IsWinHttpHandler)
+            {
+                // [ActiveIssue(28423)]
+                return;
+            }
+
             if (!UseSocketsHttpHandler && lineEnding != "\r\n")
             {
                 // Some handlers don't deal well with "\n" alone as the line ending
