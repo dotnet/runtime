@@ -69,7 +69,6 @@ ICALL_TYPE(CLR_INTEROP, "Interop/RunLoop", CLR_INTEROP_1)
 ICALL(CLR_INTEROP_1, "CFRunLoopRun", ves_icall_CoreFX_Interop_RunLoop_CFRunLoopRun)
 #endif
 
-#ifndef DISABLE_PROCESS_HANDLING
 ICALL_TYPE(NATIVEMETHODS, "Microsoft.Win32.NativeMethods", NATIVEMETHODS_1)
 ICALL(NATIVEMETHODS_1, "CloseProcess", ves_icall_Microsoft_Win32_NativeMethods_CloseProcess)
 ICALL(NATIVEMETHODS_2, "GetCurrentProcess", ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcess)
@@ -82,7 +81,6 @@ ICALL(NATIVEMETHODS_8, "SetPriorityClass", ves_icall_Microsoft_Win32_NativeMetho
 ICALL(NATIVEMETHODS_9, "SetProcessWorkingSetSize", ves_icall_Microsoft_Win32_NativeMethods_SetProcessWorkingSetSize)
 ICALL(NATIVEMETHODS_10, "TerminateProcess", ves_icall_Microsoft_Win32_NativeMethods_TerminateProcess)
 ICALL(NATIVEMETHODS_11, "WaitForInputIdle", ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle)
-#endif /* !DISABLE_PROCESS_HANDLING */
 
 #ifndef DISABLE_COM
 ICALL_TYPE(COMPROX, "Mono.Interop.ComInteropProxy", COMPROX_1)
@@ -229,7 +227,6 @@ ICALL(TRACEL_1, "WriteWindowsDebugString", ves_icall_System_Diagnostics_DefaultT
 ICALL_TYPE(FILEV, "System.Diagnostics.FileVersionInfo", FILEV_1)
 ICALL(FILEV_1, "GetVersionInfo_internal(string)", ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal)
 
-#ifndef DISABLE_PROCESS_HANDLING
 ICALL_TYPE(PERFCTR, "System.Diagnostics.PerformanceCounter", PERFCTR_1)
 ICALL(PERFCTR_1, "FreeData", mono_perfcounter_free_data)
 ICALL(PERFCTR_2, "GetImpl", mono_perfcounter_get_impl)
@@ -254,7 +251,6 @@ ICALL(PROCESS_6, "GetProcess_internal(int)", ves_icall_System_Diagnostics_Proces
 ICALL(PROCESS_7, "GetProcesses_internal()", ves_icall_System_Diagnostics_Process_GetProcesses_internal)
 ICALL(PROCESS_10, "ProcessName_internal(intptr)", ves_icall_System_Diagnostics_Process_ProcessName_internal)
 ICALL(PROCESS_13, "ShellExecuteEx_internal(System.Diagnostics.ProcessStartInfo,System.Diagnostics.Process/ProcInfo&)", ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal)
-#endif /* !DISABLE_PROCESS_HANDLING */
 
 ICALL_TYPE(STOPWATCH, "System.Diagnostics.Stopwatch", STOPWATCH_1)
 ICALL(STOPWATCH_1, "GetTimestamp", mono_100ns_ticks)
