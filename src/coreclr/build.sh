@@ -164,7 +164,7 @@ restore_optdata()
 
     if [[ ( $__SkipRestoreOptData == 0 ) && ( $__isMSBuildOnNETCoreSupported == 1 ) ]]; then
         echo "Restoring the OptimizationData package"
-        "$__ProjectRoot/run.sh" sync -optdata
+        "$__ProjectRoot/run.sh" sync -optdata $__UnprocessedBuildArgs
         if [ $? != 0 ]; then
             echo "Failed to restore the optimization data package."
             exit 1
