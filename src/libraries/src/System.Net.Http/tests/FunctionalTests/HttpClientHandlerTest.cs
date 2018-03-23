@@ -2978,6 +2978,47 @@ namespace System.Net.Http.Functional.Tests
             await proxy;
         }
 
+        [ActiveIssue(23702, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public async Task ProxyAuth_Digest_Succeeds()
+        {
+            if (IsCurlHandler)
+            {
+                // Issue #27870 curl HttpHandler can only do basic auth to proxy
+                return;
+            }
+
+            const string expectedUsername = "testusername";
+            const string expectedPassword = "testpassword";
+            const string authHeader = "Proxy-Authenticate: Digest realm=\"NetCore\", nonce=\"PwOnWgAAAAAAjnbW438AAJSQi1kAAAAA\", qop=\"auth\", stale=false\r\n";
+            LoopbackServer.Options options = new LoopbackServer.Options { IsProxy = true, Username = expectedUsername, Password = expectedPassword };
+            var proxyCreds = new NetworkCredential(expectedUsername, expectedPassword);
+
+            await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUrl) =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, proxyCreds);
+
+                    // URL does not matter. We will get response from "proxy" code bellow.
+                    Task<HttpResponseMessage> responseTask = client.GetAsync("http://notatrealserver.com/");
+
+                    //  Send Digest challenge.
+                    await proxyServer.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.ProxyAuthenticationRequired, authHeader);
+                    // Verify user & password.
+                    var task = proxyServer.AcceptConnectionPerformAuthenticationAndCloseAsync("");
+                    await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(TestHelper.PassingTestTimeoutMilliseconds, task);
+
+                    await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(TestHelper.PassingTestTimeoutMilliseconds, responseTask);
+                    HttpResponseMessage response = responseTask.Result;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }, options);
+
+        }
+
         private static IEnumerable<object[]> BypassedProxies()
         {
             yield return new object[] { null };

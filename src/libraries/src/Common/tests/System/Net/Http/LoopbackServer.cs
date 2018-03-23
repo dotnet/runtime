@@ -147,6 +147,30 @@ namespace System.Net.Test.Common
             return lines;
         }
 
+        public static string GetRequestHeaderValue(List<string> headers, string name)
+        {
+            var sep = new char[] { ':' };
+            foreach (string line in headers)
+            {
+                string[] tokens = line.Split(sep , 2);
+                if (name.Equals(tokens[0], StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return tokens[1].Trim();
+                }
+            }
+            return null;
+        }
+
+        public static string GetRequestMethod(List<string> headers)
+        {
+
+            if (headers != null && headers.Count > 1)
+            {
+                return headers[0].Split()[1].Trim();
+            }
+            return null;
+        }
+
         // Stolen from HttpStatusDescription code in the product code
         private static string GetStatusDescription(HttpStatusCode code)
         {
@@ -295,6 +319,7 @@ namespace System.Net.Test.Common
             public string Username { get; set; }
             public string Domain { get; set; }
             public string Password { get; set; }
+            public bool IsProxy  { get; set; } = false;
         }
 
         public sealed class Connection : IDisposable
