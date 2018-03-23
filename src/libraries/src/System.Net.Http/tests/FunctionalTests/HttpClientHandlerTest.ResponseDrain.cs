@@ -208,6 +208,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(4000000, 1000000, ContentMode.BytePerChunk)]
         public async Task GetAsyncWithMaxConnections_DisposeBeforeReadingToEnd_KillsConnection(int totalSize, int readSize, ContentMode mode)
         {
+            if (IsWinHttpHandler)
+            {
+                // [ActiveIssue(28424)]
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
                 {
