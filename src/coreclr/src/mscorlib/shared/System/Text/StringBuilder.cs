@@ -462,13 +462,10 @@ namespace System.Text
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 }
 
-                int originalCapacity = Capacity;
-
                 if (value == 0 && m_ChunkPrevious == null)
                 {
                     m_ChunkLength = 0;
                     m_ChunkOffset = 0;
-                    Debug.Assert(Capacity >= originalCapacity);
                     return;
                 }
 
@@ -485,7 +482,10 @@ namespace System.Text
                     {
                         // We crossed a chunk boundary when reducing the Length. We must replace this middle-chunk with a new larger chunk,
                         // to ensure the original capacity is preserved.
-                        int newLen = originalCapacity - chunk.m_ChunkOffset;
+
+                        // Avoid possible infinite capacity growth.  See https://github.com/dotnet/coreclr/pull/16926
+                        int capacityToPreserve = Math.Min(Capacity, Math.Max(Length * 6 / 5, m_ChunkChars.Length));
+                        int newLen = capacityToPreserve - chunk.m_ChunkOffset;
                         char[] newArray = new char[newLen];
 
                         Debug.Assert(newLen > chunk.m_ChunkChars.Length, "The new chunk should be larger than the one it is replacing.");
@@ -498,7 +498,6 @@ namespace System.Text
                     m_ChunkLength = value - chunk.m_ChunkOffset;
                     AssertInvariants();
                 }
-                Debug.Assert(Capacity >= originalCapacity);
             }
         }
 
