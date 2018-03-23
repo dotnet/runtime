@@ -1234,26 +1234,5 @@ namespace System.Runtime.Intrinsics.X86
         ///   VXORPS ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<double> Xor(Vector256<double> left, Vector256<double> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// void _mm256_zeroall (void)
-        ///   VZEROALL
-        /// </summary>
-        public static void ZeroAll() { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// void _mm256_zeroupper (void)
-        ///   VZEROUPPER
-        /// </summary>
-        public static void ZeroUpper() { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m256d _mm256_zextpd128_pd256 (__m128d a)
-        ///   HELPER - No Codegen
-        /// __m256 _mm256_zextps128_ps256 (__m128 a)
-        ///   HELPER - No Codegen
-        /// __m256i _mm256_zextsi128_si256 (__m128i a)
-        ///   HELPER - No Codegen
-        /// </summary>
-        public static Vector256<T> ZeroExtendToVector256<T>(Vector128<T> value) where T : struct { throw new PlatformNotSupportedException(); }
     }
 }
