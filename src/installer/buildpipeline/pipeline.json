@@ -78,6 +78,23 @@
           }
         },
         {
+          "Name": "Core-Setup-Linux-Arm-BT",
+          "Parameters": {
+            "PB_DockerTag": "ubuntu-16.04-cross-arm64-a3ae44b-20180316023254",
+            "PB_TargetArchitecture": "arm64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm64 -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
+            "PB_AdditionalMSBuildArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_CrossBuildArgs": "-e ROOTFS_DIR=$(ROOTFS_DIR) ",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Ubuntu 16.04",
+            "Type": "build/product/",
+            "Platform": "arm64"
+          }
+        },
+        {
           "Name": "Core-Setup-OSX-BT",
           "Parameters": {
             "PB_AdditionalBuildArguments": "-PortableBuild=true -strip-symbols -SkipTests=$(PB_SkipTests)",
