@@ -1404,10 +1404,12 @@ namespace System.Configuration.Internal
         public virtual System.Type GetConfigType(string typeName, bool throwOnError) { throw null; }
         public virtual string GetConfigTypeName(System.Type t) { throw null; }
         public virtual void GetRestrictedPermissions(IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady) { throw null; }
-
         public virtual string GetStreamName(string configPath) { throw null; }
         public virtual string GetStreamNameForConfigSource(string streamName, string configSource) { throw null; }
         public virtual object GetStreamVersion(string streamName) { throw null; }
+        public virtual bool HasLocalConfig { get; }
+        public virtual bool HasRoamingConfig { get; }
+        public virtual bool IsAppConfigHttp { get; }
         public virtual System.IDisposable Impersonate() { throw null; }
         public virtual void Init(System.Configuration.Internal.IInternalConfigRoot configRoot, params object[] hostInitParams) { }
         public virtual void InitForConfiguration(ref string locationSubPath, out string configPath, out string locationConfigPath, System.Configuration.Internal.IInternalConfigRoot configRoot, params object[] hostInitConfigurationParams) { configPath = default(string); locationConfigPath = default(string); }
@@ -1427,6 +1429,7 @@ namespace System.Configuration.Internal
         public virtual bool PrefetchAll(string configPath, string streamName) { throw null; }
         public virtual bool PrefetchSection(string sectionGroupName, string sectionName) { throw null; }
         public virtual void RequireCompleteInit(System.Configuration.Internal.IInternalConfigRecord configRecord) { }
+        public virtual void RefreshConfigPaths() { }
         public virtual object StartMonitoringStreamForChanges(string streamName, System.Configuration.Internal.StreamChangeCallback callback) { throw null; }
         public virtual void StopMonitoringStreamForChanges(string streamName, System.Configuration.Internal.StreamChangeCallback callback) { }
         public virtual void VerifyDefinitionAllowed(string configPath, System.Configuration.ConfigurationAllowDefinition allowDefinition, System.Configuration.ConfigurationAllowExeDefinition allowExeDefinition, System.Configuration.Internal.IConfigErrorInfo errorInfo) { }
