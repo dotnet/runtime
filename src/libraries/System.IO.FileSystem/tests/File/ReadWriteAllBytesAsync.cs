@@ -134,5 +134,57 @@ namespace System.IO.Tests
                 File.SetAttributes(path, FileAttributes.Normal);
             }
         }
+
+        [Fact]
+        public async Task EmptyFile_ReturnsEmptyArray()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.Equal(0, (await File.ReadAllBytesAsync(path)).Length);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData("/proc/cmdline")]
+        [InlineData("/proc/version")]
+        [InlineData("/proc/filesystems")]
+        public async Task ProcFs_EqualsReadAllText(string path)
+        {
+            byte[] bytes = null;
+            string text = null;
+
+            const int NumTries = 3; // some of these could theoretically change between reads, so allow retries just in case
+            for (int i = 1; i <= NumTries; i++)
+            {
+                try
+                {
+                    bytes = await File.ReadAllBytesAsync(path);
+                    text = await File.ReadAllTextAsync(path);
+                    Assert.Equal(text, Encoding.UTF8.GetString(bytes));
+                }
+                catch when (i < NumTries) { }
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task ReadAllBytes_ProcFs_Uptime_ContainsTwoNumbers()
+        {
+            string text = Encoding.UTF8.GetString(await File.ReadAllBytesAsync("/proc/uptime"));
+            string[] parts = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            Assert.Equal(2, parts.Length);
+            Assert.True(double.TryParse(parts[0].Trim(), out _));
+            Assert.True(double.TryParse(parts[1].Trim(), out _));
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData("/proc/meminfo")]
+        [InlineData("/proc/stat")]
+        [InlineData("/proc/cpuinfo")]
+        public async Task ProcFs_NotEmpty(string path)
+        {
+            Assert.InRange((await File.ReadAllBytesAsync(path)).Length, 1, int.MaxValue);
+        }
     }
 }
