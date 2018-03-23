@@ -3413,37 +3413,33 @@ building and deploying the assemblies with the application.
   </data>
   <data name="HelpUsage" xml:space="preserve">
     <value>
-Usage: dotnet {0} [[/assembly:&lt;assembly name&gt;] | [&lt;assembly file location&gt;]]
-      [/type:] [/debug].
-    </value>
+Usage: dotnet {0} [[--assembly &lt;assembly name&gt;] | [&lt;assembly file location&gt;]] [--type] [--debug]</value>
   </data>
   <data name="HelpDevOptions" xml:space="preserve">
-    <value>  Developer options:</value>
+    <value>  
+  Developer options:</value>
   </data>
   <data name="HelpAssembly" xml:space="preserve">
-    <value>     {0}   Assembly location or display name. Short form is '{1}'.</value>
+    <value>     {0}|{1}   Assembly location or display name.</value>
   </data>
   <data name="HelpType" xml:space="preserve">
-    <value>     {0}       Generate code for serialization/deserialization of the
-                  specified type from the input assembly. Short form is '{1}'.</value>
+    <value>     {0}          Generate code for serialization/deserialization of the specified type from the input assembly.</value>
   </data>
   <data name="HelpForce" xml:space="preserve">
-    <value>     {0}       Forces overwrite of a previously generated assembly.
-                  Short form is '{1}'.</value>
+    <value>     {0}         Forces overwrite of a previously generated assembly.</value>
   </data>
   <data name="HelpProxy" xml:space="preserve">
-    <value>     {0}  Generate serialization code only for proxy classes and web
-                  method parameters. Short form is '{1}'.</value>
+    <value>     {0}    Generate serialization code only for proxy classes and web method parameters.</value>
   </data>
   <data name="HelpOut" xml:space="preserve">
-    <value>     {0}        Output directory name (default: target assembly location).
-                  Short form is '{1}'.</value>
+    <value>     {0}|{1}        Output directory name (default: target assembly location).</value>
   </data>
   <data name="HelpMiscOptions" xml:space="preserve">
-    <value>  Miscellaneous options:</value>
+    <value>  
+  Miscellaneous options:</value>
   </data>
   <data name="HelpHelp" xml:space="preserve">
-    <value>     {0} or {1}  Show this message</value>
+    <value>     {0}|{1}       Show help.</value>
   </data>
   <data name="MoreHelp" xml:space="preserve">
     <value>If you would like more help, please type "sgen {0}".</value>

@@ -19,7 +19,7 @@ namespace Microsoft.XmlSerializer.Generator.Tests
             string codefile = "Microsoft.XmlSerializer.Generator.Tests.XmlSerializers.cs";
             var type = Type.GetType("Microsoft.XmlSerializer.Generator.Sgen, dotnet-Microsoft.XmlSerializer.Generator");
             MethodInfo md = type.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
-            string[] args = new string[] { "Microsoft.XmlSerializer.Generator.Tests.dll", "/force", "/quiet" };
+            string[] args = new string[] { "Microsoft.XmlSerializer.Generator.Tests.dll", "--force", "--quiet" };
             int n = (int)md.Invoke(null, new object[] { args });
             Assert.Equal(0, n);
             Assert.True(File.Exists(codefile), string.Format("Fail to generate {0}.", codefile));
