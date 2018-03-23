@@ -21,6 +21,7 @@ namespace System
         public static bool IsOpenSUSE => false;
         public static bool IsUbuntu => false;
         public static bool IsDebian => false;
+        public static bool IsAlpine => false;
         public static bool IsDebian8 => false;
         public static bool IsUbuntu1404 => false;
         public static bool IsUbuntu1604 => false;
