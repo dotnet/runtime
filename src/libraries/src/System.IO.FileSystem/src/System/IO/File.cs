@@ -15,6 +15,7 @@ namespace System.IO
     // routines such as Delete, etc.
     public static class File
     {
+        private const int MaxByteArrayLength = 0x7FFFFFC7;
         private static Encoding s_UTF8NoBOM;
 
         internal const int DefaultBufferSize = 4096;
@@ -324,7 +325,15 @@ namespace System.IO
             {
                 long fileLength = fs.Length;
                 if (fileLength > int.MaxValue)
+                {
                     throw new IOException(SR.IO_FileTooLong2GB);
+                }
+                else if (fileLength == 0)
+                {
+                    // Some file systems (e.g. procfs on Linux) return 0 for length even when there's content.
+                    // Thus we need to assume 0 doesn't mean empty.
+                    return ReadAllBytesUnknownLength(fs);
+                }
 
                 int index = 0;
                 int count = (int)fileLength;
@@ -338,6 +347,50 @@ namespace System.IO
                     count -= n;
                 }
                 return bytes;
+            }
+        }
+
+        private static byte[] ReadAllBytesUnknownLength(FileStream fs)
+        {
+            byte[] rentedArray = null;
+            Span<byte> buffer = stackalloc byte[512];
+            try
+            {
+                int bytesRead = 0;
+                while (true)
+                {
+                    if (bytesRead == buffer.Length)
+                    {
+                        uint newLength = (uint)buffer.Length * 2;
+                        if (newLength > MaxByteArrayLength)
+                        {
+                            newLength = (uint)Math.Max(MaxByteArrayLength, buffer.Length + 1);
+                        }
+
+                        byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
+                        buffer.CopyTo(tmp);
+                        if (rentedArray != null)
+                        {
+                            ArrayPool<byte>.Shared.Return(rentedArray);
+                        }
+                        buffer = rentedArray = tmp;
+                    }
+
+                    Debug.Assert(bytesRead < buffer.Length);
+                    int n = fs.Read(buffer.Slice(bytesRead));
+                    if (n == 0)
+                    {
+                        return buffer.Slice(0, bytesRead).ToArray();
+                    }
+                    bytesRead += n;
+                }
+            }
+            finally
+            {
+                if (rentedArray != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedArray);
+                }
             }
         }
 
@@ -709,31 +762,23 @@ namespace System.IO
                 return Task.FromCanceled<byte[]>(cancellationToken);
             }
 
-            FileStream fs = new FileStream(
-                path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultBufferSize,
+            var fs = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, // bufferSize == 1 used to avoid unnecessary buffer in FileStream
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
 
             bool returningInternalTask = false;
             try
             {
                 long fileLength = fs.Length;
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return Task.FromCanceled<byte[]>(cancellationToken);
-                }
-
                 if (fileLength > int.MaxValue)
                 {
                     return Task.FromException<byte[]>(new IOException(SR.IO_FileTooLong2GB));
                 }
 
-                if (fileLength == 0)
-                {
-                    return Task.FromResult(Array.Empty<byte>());
-                }
-
                 returningInternalTask = true;
-                return InternalReadAllBytesAsync(fs, (int)fileLength, cancellationToken);
+                return fileLength > 0 ?
+                    InternalReadAllBytesAsync(fs, (int)fileLength, cancellationToken) :
+                    InternalReadAllBytesUnknownLengthAsync(fs, cancellationToken);
             }
             finally
             {
@@ -762,6 +807,44 @@ namespace System.IO
                 } while (index < count);
 
                 return bytes;
+            }
+        }
+
+        private static async Task<byte[]> InternalReadAllBytesUnknownLengthAsync(FileStream fs, CancellationToken cancellationToken)
+        {
+            byte[] rentedArray = ArrayPool<byte>.Shared.Rent(512);
+            try
+            {
+                int bytesRead = 0;
+                while (true)
+                {
+                    if (bytesRead == rentedArray.Length)
+                    {
+                        uint newLength = (uint)rentedArray.Length * 2;
+                        if (newLength > MaxByteArrayLength)
+                        {
+                            newLength = (uint)Math.Max(MaxByteArrayLength, rentedArray.Length + 1);
+                        }
+
+                        byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
+                        Buffer.BlockCopy(rentedArray, 0, tmp, 0, bytesRead);
+                        ArrayPool<byte>.Shared.Return(rentedArray);
+                        rentedArray = tmp;
+                    }
+
+                    Debug.Assert(bytesRead < rentedArray.Length);
+                    int n = await fs.ReadAsync(rentedArray.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
+                    if (n == 0)
+                    {
+                        return rentedArray.AsSpan().Slice(0, bytesRead).ToArray();
+                    }
+                    bytesRead += n;
+                }
+            }
+            finally
+            {
+                fs.Dispose();
+                ArrayPool<byte>.Shared.Return(rentedArray);
             }
         }
 
