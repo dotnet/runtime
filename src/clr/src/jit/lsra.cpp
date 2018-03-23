@@ -5359,10 +5359,8 @@ void LinearScan::allocateRegisters()
                 // Update overlapping floating point register for TYP_DOUBLE
                 if (assignedInterval->registerType == TYP_DOUBLE)
                 {
-                    regRecord        = getSecondHalfRegRec(regRecord);
-                    assignedInterval = regRecord->assignedInterval;
-
-                    assert(assignedInterval != nullptr && !assignedInterval->isActive && assignedInterval->isConstant);
+                    regRecord = findAnotherHalfRegRec(regRecord);
+                    assert(regRecord->assignedInterval == assignedInterval);
                     regRecord->assignedInterval = nullptr;
                 }
 #endif
