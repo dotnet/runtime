@@ -1609,7 +1609,7 @@ no_delegate_trampoline (void)
 gpointer
 mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 {
-	if (mono_llvm_only || mono_use_interpreter)
+	if (mono_llvm_only || (mono_use_interpreter && !mono_aot_only))
 		return no_delegate_trampoline;
 
 	return mono_create_delegate_trampoline_info (domain, klass, NULL)->invoke_impl;

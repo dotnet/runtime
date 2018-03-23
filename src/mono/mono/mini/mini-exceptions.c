@@ -2215,7 +2215,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 */
 						mini_get_interp_callbacks ()->set_resume_state (jit_tls, mono_ex, ei, frame.interp_frame, ei->handler_start);
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
-						mono_arch_undo_ip_adjustment (ctx);
+						/* ip == 0 means an interpreter frame */
+						if (MONO_CONTEXT_GET_IP (ctx) != 0)
+							mono_arch_undo_ip_adjustment (ctx);
 					} else {
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					}

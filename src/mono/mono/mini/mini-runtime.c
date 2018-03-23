@@ -135,6 +135,7 @@ GList* mono_aot_paths;
 static GPtrArray *profile_options;
 
 static GSList *tramp_infos;
+GSList *mono_interp_only_classes;
 
 static void register_icalls (void);
 
@@ -2065,10 +2066,19 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	MonoJitInfo *ji;
 	MonoJitICallInfo *callinfo = NULL;
 	WrapperInfo *winfo = NULL;
+	gboolean use_interp = FALSE;
 
 	error_init (error);
 
-	if (mono_use_interpreter && !jit_only) {
+	if (mono_use_interpreter && !mono_aot_only && !jit_only)
+		use_interp = TRUE;
+	if (!use_interp && mono_interp_only_classes) {
+		for (GSList *l = mono_interp_only_classes; l; l = l->next) {
+			if (!strcmp (method->klass->name, (char*)l->data))
+				use_interp = TRUE;
+		}
+	}
+	if (use_interp) {
 		code = mini_get_interp_callbacks ()->create_method_pointer (method, error);
 		if (code)
 			return code;
@@ -2706,7 +2716,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
 
-	if (mono_use_interpreter)
+	if (mono_use_interpreter && !mono_aot_only)
 		return mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
 
 	error_init (error);

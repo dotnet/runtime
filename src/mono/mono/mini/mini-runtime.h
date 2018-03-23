@@ -333,6 +333,7 @@ extern GSList *mono_single_method_list;
 extern GHashTable *mono_single_method_hash;
 extern GList* mono_aot_paths;
 extern MonoDebugOptions mini_debug_options;
+extern GSList *mono_interp_only_classes;
 
 static inline MonoMethod*
 jinfo_get_method (MonoJitInfo *ji)

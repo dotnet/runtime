@@ -774,6 +774,10 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (method->string_ctor)
 		return FALSE;
 
+	if (mono_aot_only && method->klass->image->aot_module)
+		/* The AOTed version of the called method is assumed to be available in full-aot mode */
+		return TRUE;
+
 	for (l = mono_interp_jit_classes; l; l = l->next) {
 		char *class_name = l->data;
 		// FIXME: Namespaces

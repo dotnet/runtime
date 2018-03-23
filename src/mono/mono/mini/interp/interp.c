@@ -702,6 +702,11 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 	 * pushed above, which points to our frames.
 	 */
 	mono_handle_exception (&ctx, (MonoObject*)ex);
+	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
+		/* We need to unwind into non-interpreter code */
+		mono_restore_context (&ctx);
+		g_assert_not_reached ();
+	}
 
 	interp_pop_lmf (&ext);
 
@@ -1628,6 +1633,7 @@ interp_entry (InterpEntryData *data)
 		}
 	}
 
+	memset (&result, 0, sizeof (result));
 	init_frame (&frame, NULL, data->rmethod, args, &result);
 
 	type = rmethod->rtype;
@@ -5188,6 +5194,8 @@ interp_parse_options (const char *options)
 
 		if (strncmp (arg, "jit=", 4) == 0)
 			mono_interp_jit_classes = g_slist_prepend (mono_interp_jit_classes, arg + 4);
+		if (strncmp (arg, "interp-only=", 4) == 0)
+			mono_interp_only_classes = g_slist_prepend (mono_interp_only_classes, arg + strlen ("interp-only="));
 	}
 }
 
