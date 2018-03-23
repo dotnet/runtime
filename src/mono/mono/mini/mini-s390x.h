@@ -30,9 +30,9 @@ struct MonoLMF {
 };
 
 typedef struct MonoCompileArch {
-	gpointer    litpool;
-	glong	    litsize;
 	int         bkchain_reg;
+	uint32_t    used_fp_regs;
+	int	    fpSize;
 } MonoCompileArch;
 
 typedef struct
@@ -64,6 +64,8 @@ typedef struct
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD		1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT		1
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK		1
+#define MONO_ARCH_HAVE_TRACK_FPREGS			1
+#define MONO_ARCH_HAVE_OP_TAIL_CALL			1
 
 #define S390_STACK_ALIGNMENT		 8
 #define S390_FIRST_ARG_REG 		s390_r2

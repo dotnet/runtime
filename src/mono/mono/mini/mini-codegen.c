@@ -1039,6 +1039,9 @@ alloc_general_reg (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, MonoIn
 	if (val < 0)
 		val = get_register_spilling (cfg, bb, last, ins, dest_mask, sym_reg, bank);
 
+#ifdef MONO_ARCH_HAVE_TRACK_FPREGS
+	cfg->arch.used_fp_regs |= 1 << val;
+#endif
 	return val;
 }
 

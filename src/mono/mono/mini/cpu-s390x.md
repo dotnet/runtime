@@ -95,6 +95,7 @@ fcall: dest:g len:26 clob:c
 fcall_membase: dest:g src1:b len:14 clob:c
 fcall_reg: dest:g src1:i len:10 clob:c
 fcompare: src1:f src2:f len:14
+rcompare: src1:f src2:f len:14
 float_add: dest:f src1:f src2:f len:6
 
 float_beq: len:10
@@ -136,6 +137,31 @@ float_not: dest:f src1:f len:6
 float_rem: dest:f src1:f src2:f len:16
 float_rem_un: dest:f src1:f src2:f len:16
 float_sub: dest:f src1:f src2:f len:6
+
+# R4 opcodes
+r4_conv_to_i1: dest:i src1:f len:32
+r4_conv_to_u1: dest:i src1:f len:32
+r4_conv_to_i2: dest:i src1:f len:32
+r4_conv_to_u2: dest:i src1:f len:32
+r4_conv_to_i4: dest:i src1:f len:16
+r4_conv_to_u4: dest:i src1:f len:32
+r4_conv_to_i8: dest:i src1:f len:32
+r4_conv_to_r8: dest:f src1:f len:17
+r4_conv_to_r4: dest:f src1:f len:17
+r4_add: dest:f src1:f src2:f clob:1 len:5
+r4_sub: dest:f src1:f src2:f clob:1 len:5
+r4_mul: dest:f src1:f src2:f clob:1 len:5
+r4_div: dest:f src1:f src2:f clob:1 len:5
+r4_neg: dest:f src1:f clob:1 len:23
+r4_ceq: dest:i src1:f src2:f len:35
+r4_cgt: dest:i src1:f src2:f len:35
+r4_cgt_un: dest:i src1:f src2:f len:48
+r4_clt: dest:i src1:f src2:f len:35
+r4_clt_un: dest:i src1:f src2:f len:42
+r4_cneq: dest:i src1:f src2:f len:42
+r4_cge: dest:i src1:f src2:f len:35
+r4_cle: dest:i src1:f src2:f len:35
+
 fmove: dest:f src1:f len:4
 move_f_to_i4: dest:i src1:f len:14
 move_i4_to_f: dest:f src1:i len:14
@@ -145,7 +171,6 @@ i8const: dest:i len:20
 icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:18
 iconst: dest:i len:40
-jmp: len:50
 label: len:0
 lcall: dest:o len:22 clob:c
 lcall_membase: dest:o src1:b len:12 clob:c
@@ -177,6 +202,9 @@ or_imm: dest:i src1:i len:24
 r4const: dest:f len:26
 r8const: dest:f len:24
 rem_imm: dest:i src1:i len:24
+rcall: dest:f len:26 clob:c
+rcall_reg: dest:f src1:i len:8 clob:c
+rcall_membase: dest:f src1:b len:12 clob:c
 rem_un_imm: dest:i src1:i len:24
 s390_bkchain: len:8 dest:i src1:i
 s390_move: len:48 dest:b src1:b
@@ -208,6 +236,7 @@ sub_imm: dest:i src1:i len:18
 sub_ovf_carry: dest:i src1:1 src2:i len:28
 sub_ovf_un_carry: dest:i src1:1 src2:i len:12
 subcc: dest:i src1:i src2:i len:12
+tailcall: len:120 clob:c
 throw: src1:i len:26
 tls_get: dest:1 len:32
 tls_set: src1:1 len:32
