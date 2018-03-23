@@ -24,7 +24,6 @@
     <Compile Include="TestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Span\AsBytes.cs" />
     <Compile Include="Span\AsSpan.cs" />
     <Compile Include="Span\Fill.cs" />
     <Compile Include="Span\Clear.cs" />
@@ -89,7 +88,6 @@
     <Compile Include="ReadOnlyBuffer\SequencePosition.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ReadOnlySpan\AsBytes.cs" />
     <Compile Include="ReadOnlySpan\AsReadOnlySpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
     <Compile Include="ReadOnlySpan\CompareTo.cs" />
@@ -173,6 +171,8 @@
     <Compile Include="Memory\ToString.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MemoryMarshal\AsBytesReadOnlySpan.cs" />
+    <Compile Include="MemoryMarshal\AsBytesSpan.cs" />
     <Compile Include="MemoryMarshal\AsMemory.cs" />
     <Compile Include="MemoryMarshal\CastReadOnlySpan.cs" />
     <Compile Include="MemoryMarshal\CastSpan.cs" />

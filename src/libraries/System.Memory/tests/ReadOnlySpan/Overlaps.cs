@@ -50,9 +50,8 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
-                    a.AsReadOnlySpan().AsBytes()
-                    .Slice(2, 5 * sizeof(int)));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(a.AsReadOnlySpan());
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(bytes.Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan(0, 5);
 
@@ -63,9 +62,8 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
-                    a.AsReadOnlySpan().AsBytes()
-                    .Slice(2, 5 * sizeof(int)));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(a.AsReadOnlySpan());
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(bytes.Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan(1, 5);
 
@@ -114,8 +112,8 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
-                    a.AsReadOnlySpan().AsBytes().Slice(2, 5 * sizeof(int)));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(a.AsReadOnlySpan());
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(bytes.Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan(0, 5);
 
@@ -126,8 +124,8 @@ namespace System.SpanTests
             {
                 int[] a = new int[] { 1, 2, 3, 4, 5, 6 };
 
-                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(
-                    a.AsReadOnlySpan().AsBytes().Slice(2, 5 * sizeof(int)));
+                ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(a.AsReadOnlySpan());
+                ReadOnlySpan<int> source = MemoryMarshal.Cast<byte, int>(bytes.Slice(2, 5 * sizeof(int)));
 
                 Span<int> actual = a.AsSpan(1, 5);
 
