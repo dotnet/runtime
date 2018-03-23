@@ -2861,6 +2861,7 @@ Constants.allScenarios.each { scenario ->
                                 // HACK -- Arm64 does not have corefx jobs yet.
                                 // Clone corefx and build the native packages overwriting the x64 packages.
                                 if (architecture == 'arm64') {
+                                    shell("mkdir -p ./bin/CoreFxBinDir")
                                     shell("cp ./bin/Product/Linux.arm64.${configuration}/corefxNative/* ./bin/CoreFxBinDir")
                                     shell("chmod +x ./bin/Product/Linux.arm64.${configuration}/corerun")
                                 }
