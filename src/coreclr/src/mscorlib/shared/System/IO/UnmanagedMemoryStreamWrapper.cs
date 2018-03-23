@@ -112,9 +112,9 @@ namespace System.IO
             return _unmanagedStream.Read(buffer, offset, count);
         }
 
-        public override int Read(Span<byte> destination)
+        public override int Read(Span<byte> buffer)
         {
-            return _unmanagedStream.Read(destination);
+            return _unmanagedStream.Read(buffer);
         }
 
         public override int ReadByte()
@@ -139,9 +139,9 @@ namespace System.IO
             _unmanagedStream.Write(buffer, offset, count);
         }
 
-        public override void Write(ReadOnlySpan<byte> source)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            _unmanagedStream.Write(source);
+            _unmanagedStream.Write(buffer);
         }
 
         public override void WriteByte(byte value)
@@ -206,9 +206,9 @@ namespace System.IO
             return _unmanagedStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return _unmanagedStream.ReadAsync(destination, cancellationToken);
+            return _unmanagedStream.ReadAsync(buffer, cancellationToken);
         }
 
 
@@ -217,9 +217,9 @@ namespace System.IO
             return _unmanagedStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return _unmanagedStream.WriteAsync(source, cancellationToken);
+            return _unmanagedStream.WriteAsync(buffer, cancellationToken);
         }
     }  // class UnmanagedMemoryStreamWrapper
 }  // namespace
