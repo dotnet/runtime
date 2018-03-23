@@ -763,7 +763,7 @@ namespace System.Data.SqlClient
 
         internal abstract bool IsPacketEmpty(object readPacket);
 
-        internal abstract object ReadSyncOverAsync(int timeoutRemaining, bool isMarsOn, out uint error);
+        internal abstract object ReadSyncOverAsync(int timeoutRemaining, out uint error);
 
         internal abstract object ReadAsync(out uint error, ref object handle);
 
@@ -2079,7 +2079,7 @@ namespace System.Data.SqlClient
                 Interlocked.Increment(ref _readingCount);
                 shouldDecrement = true;
 
-                readPacket = ReadSyncOverAsync(GetTimeoutRemaining(), false, out error);
+                readPacket = ReadSyncOverAsync(GetTimeoutRemaining(), out error);
 
                 Interlocked.Decrement(ref _readingCount);
                 shouldDecrement = false;
@@ -2520,7 +2520,7 @@ namespace System.Data.SqlClient
                                 Interlocked.Increment(ref _readingCount);
                                 shouldDecrement = true;
 
-                                syncReadPacket = ReadSyncOverAsync(stateObj.GetTimeoutRemaining(), _parser.MARSOn, out error);
+                                syncReadPacket = ReadSyncOverAsync(stateObj.GetTimeoutRemaining(), out error);
 
                                 Interlocked.Decrement(ref _readingCount);
                                 shouldDecrement = false;
