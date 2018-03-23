@@ -1,12 +1,5 @@
 Compat issues with assembly System.Configuration.ConfigurationManager:
-MembersMustExist : Member 'System.Configuration.ConfigurationSettings..ctor()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.DateTimeConfigurationCollection' does not exist in the implementation but it does exist in the contract.
+# Cannot remove the serialization constructors because they are needed for serialization
 MembersMustExist : Member 'System.Configuration.SettingsAttributeDictionary..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Configuration.SettingsContext..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.Internal.DelegatingConfigHost' does not implement interface 'System.Configuration.Internal.IInternalConfigHostPaths' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.HasLocalConfig.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.HasRoamingConfig.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.IsAppConfigHttp.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Configuration.Internal.DelegatingConfigHost.RefreshConfigPaths()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.Internal.IInternalConfigHostPaths' does not exist in the implementation but it does exist in the contract.
-Total Issues: 10
+Total Issues: 2

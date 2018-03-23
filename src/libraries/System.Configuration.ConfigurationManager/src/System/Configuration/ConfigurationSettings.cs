@@ -8,7 +8,7 @@ namespace System.Configuration
 {
     public sealed class ConfigurationSettings
     {
-        public ConfigurationSettings() { }
+        internal ConfigurationSettings() { }
 
         [Obsolete("This method is obsolete, it has been replaced by System.Configuration!System.Configuration.ConfigurationManager.AppSettings")]
         public static NameValueCollection AppSettings
