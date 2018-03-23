@@ -1337,6 +1337,12 @@ public class Driver {
 			}
 		}
 
+		foreach (var csprojFile in projects.Values.Select (x => x.GetProjectFilename ()).Distinct ())
+		{
+			Console.WriteLine ("Deduplicating: " + csprojFile);
+			DeduplicateSources (csprojFile);
+		}
+
 		Func<MsbuildGenerator.VsCsproj, bool> additionalFilter;
 		additionalFilter = fullSolutions ? (Func<MsbuildGenerator.VsCsproj, bool>)null : IsCommonLibrary;
 
@@ -1380,6 +1386,86 @@ public class Driver {
 		// The following may be useful if lacking visual studio or MonoDevelop, to bootstrap mono compiler self-hosting
 		//WriteSolution (basic_sln_gen, "mcs_basic.sln");
 		//WriteSolution (build_sln_gen, "mcs_build.sln");
+	}
+
+	static void DeduplicateSources (string csprojFilename)
+	{
+		XmlDocument doc = new XmlDocument ();
+		doc.Load (csprojFilename);
+		XmlNamespaceManager mgr = new XmlNamespaceManager (doc.NameTable);
+		mgr.AddNamespace ("x", "http://schemas.microsoft.com/developer/msbuild/2003");
+
+		XmlNode root = doc.DocumentElement;
+		var allSources = new Dictionary<string, List<string>> ();
+
+		// grab all sources across all platforms
+		ProcessCompileItems (mgr, root, (source, platform) =>
+		{
+			if (!allSources.ContainsKey (platform))
+				allSources[platform] = new List<string> ();
+			allSources[platform].Add (source.Attributes["Include"].Value);
+		});
+
+		if (allSources.Count > 1)
+		{
+			// find the sources which are common across all platforms
+			var commonSources = allSources.Values.First ();
+			foreach (var l in allSources.Values.Skip (1))
+				commonSources = commonSources.Intersect (l).ToList ();
+
+			if (commonSources.Count > 0)
+			{
+				// remove common sources from the individual platforms
+				ProcessCompileItems (mgr, root, (source, platform) =>
+				{
+					var parent = source.ParentNode;
+					if (commonSources.Contains (source.Attributes["Include"].Value))
+						parent.RemoveChild (source);
+
+					if (!parent.HasChildNodes)
+						parent.ParentNode.RemoveChild (parent);
+				});
+
+				// add common sources as ItemGroup
+				XmlNode commonSourcesComment = root.SelectSingleNode ("//comment()[. = ' @COMMON_SOURCES@ ']");
+				XmlElement commonSourcesElement = doc.CreateElement ("ItemGroup", root.NamespaceURI);
+
+				foreach (var s in commonSources)
+				{
+					var c = doc.CreateElement ("Compile", root.NamespaceURI);
+					var v = doc.CreateAttribute ("Include");
+					v.Value = s;
+					c.Attributes.Append (v);
+
+					commonSourcesElement.AppendChild (c);
+				}
+				root.ReplaceChild (commonSourcesElement, commonSourcesComment);
+			}
+		}
+
+		doc.Save (csprojFilename);
+	}
+
+	static void ProcessCompileItems (XmlNamespaceManager mgr, XmlNode x, Action<XmlNode, string> action)
+	{
+		foreach (XmlNode n in x.SelectNodes("//x:ItemGroup[@Condition]", mgr))
+		{
+			if (n.Attributes.Count == 0)
+				continue;
+
+			var platform = n.Attributes["Condition"].Value;
+
+			if (!platform.Contains("$(Platform)"))
+				continue;
+
+			var compileItems = n.SelectNodes("./x:Compile[@Include]", mgr);
+
+			if (compileItems.Count == 0)
+				continue;
+
+			foreach (XmlNode source in compileItems)
+				action(source, platform);
+		}
 	}
 
 	// Rebases a path, assuming that execution is taking place in the "class" subdirectory,
