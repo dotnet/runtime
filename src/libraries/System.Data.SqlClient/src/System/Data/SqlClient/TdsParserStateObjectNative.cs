@@ -169,7 +169,7 @@ namespace System.Data.SqlClient
 
         internal override bool IsFailedHandle() => _sessionHandle.Status != TdsEnums.SNI_SUCCESS;
 
-        internal override object ReadSyncOverAsync(int timeoutRemaining, bool isMarsOn, out uint error)
+        internal override object ReadSyncOverAsync(int timeoutRemaining, out uint error)
         {
             SNIHandle handle = Handle;
             if (handle == null)
