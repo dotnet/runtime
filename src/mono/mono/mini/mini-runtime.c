@@ -1910,8 +1910,15 @@ typedef struct {
 	MonoCoopMutex lock;
 } JitCompilationData;
 
+/*
+Timeout, in millisecounds, that we wait other threads to finish JITing.
+This value can't be too small or we won't see enough methods being reused and it can't be too big to cause massive stalls due to unforseable circunstances.
+*/
+#define MAX_JIT_TIMEOUT_MS 1000
+
+
 static JitCompilationData compilation_data;
-static int jit_methods_waited, jit_methods_multiple, jit_methods_overload, jit_spurious_wakeups;
+static int jit_methods_waited, jit_methods_multiple, jit_methods_overload, jit_spurious_wakeups_or_timeouts;
 
 static void
 mini_jit_init_job_control (void)
@@ -1976,7 +1983,7 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 		mono_counters_register ("JIT compile waited others", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_waited);
 		mono_counters_register ("JIT compile 1+ jobs", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_multiple);
 		mono_counters_register ("JIT compile overload wait", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_methods_overload);
-		mono_counters_register ("JIT compile spurious wakeups", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_spurious_wakeups);
+		mono_counters_register ("JIT compile spurious wakeups or timeouts", MONO_COUNTER_INT|MONO_COUNTER_JIT, &jit_spurious_wakeups_or_timeouts);
 		inited = TRUE;
 	}
 
@@ -1993,9 +2000,14 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 
 		unlock_compilation_data ();
 		return FALSE;
-	} else if (jit_tls->active_jit_methods > 0) {
+	} else if (jit_tls->active_jit_methods > 0 || mono_threads_is_current_thread_in_protected_block ()) {
 		//We can't suspend the current thread if it's already JITing a method.
 		//Dependency management is too compilated and we want to get rid of this anyways.
+
+		//We can't suspend the current thread if it's running a protected block (such as a cctor)
+		//We can't rely only on JIT nesting as cctor's can be run from outside the JIT.
+
+		//Finally, he hit a timeout or spurious wakeup. We're better off just giving up and keep recompiling
 		++entry->compilation_count;
 		++jit_methods_multiple;
 		++jit_tls->active_jit_methods;
@@ -2015,7 +2027,7 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 			++entry->threads_waiting;
 
 			g_assert (entry->has_cond);
-			mono_coop_cond_wait (&entry->cond, &compilation_data.lock);
+			mono_coop_cond_timedwait (&entry->cond, &compilation_data.lock, MAX_JIT_TIMEOUT_MS);
 			--entry->threads_waiting;
 
 			if (entry->done) {
@@ -2023,7 +2035,17 @@ wait_or_register_method_to_compile (MonoMethod *method, MonoDomain *domain)
 				unlock_compilation_data ();
 				return TRUE;
 			} else {
-				++jit_spurious_wakeups;
+				//We hit the timeout or a spurious wakeup, fallback to JITing
+				g_assert (entry->ref_count > 1);
+				unref_jit_entry (entry);
+				++jit_spurious_wakeups_or_timeouts;
+
+				++entry->compilation_count;
+				++jit_methods_multiple;
+				++jit_tls->active_jit_methods;
+
+				unlock_compilation_data ();
+				return FALSE;
 			}
 		}
 	}

@@ -257,6 +257,14 @@ mono_thread_get_abort_prot_block_count (MonoInternalThread *thread)
 	return (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
 }
 
+gboolean
+mono_threads_is_current_thread_in_protected_block (void)
+{
+	MonoInternalThread *thread = mono_thread_internal_current ();
+
+	return mono_thread_get_abort_prot_block_count (thread) > 0;
+}
+
 void
 mono_threads_begin_abort_protected_block (void)
 {

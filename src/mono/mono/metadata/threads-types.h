@@ -292,4 +292,7 @@ mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
 gboolean
 mono_thread_internal_is_current (MonoInternalThread *internal);
 
+gboolean
+mono_threads_is_current_thread_in_protected_block (void);
+
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */
