@@ -6,24 +6,24 @@ using Xunit;
 
 namespace System.SpanTests
 {
-    public static partial class SpanTests
+    public static partial class ReadOnlySpanTests
     {
         [Fact]
         public static void OnSequenceCompareToOfEqualSpansMakeSureEveryElementIsCompared()
         {
             for (int length = 0; length < 100; length++)
             {
-                TIntLog log = new TIntLog();
+                var log = new TIntLog();
 
-                TInt[] first = new TInt[length];
-                TInt[] second = new TInt[length];
+                var first = new TInt[length];
+                var second = new TInt[length];
                 for (int i = 0; i < length; i++)
                 {
                     first[i] = second[i] = new TInt(10 * (i + 1), log);
                 }
 
-                Span<TInt> firstSpan = new Span<TInt>(first);
-                ReadOnlySpan<TInt> secondSpan = new ReadOnlySpan<TInt>(second);
+                var firstSpan = new ReadOnlySpan<TInt>(first);
+                var secondSpan = new ReadOnlySpan<TInt>(second);
                 int result = firstSpan.SequenceCompareTo(secondSpan);
                 Assert.Equal(0, result);
 
@@ -46,10 +46,10 @@ namespace System.SpanTests
             {
                 for (int mismatchIndex = 0; mismatchIndex < length; mismatchIndex++)
                 {
-                    TIntLog log = new TIntLog();
+                    var log = new TIntLog();
 
-                    TInt[] first = new TInt[length];
-                    TInt[] second = new TInt[length];
+                    var first = new TInt[length];
+                    var second = new TInt[length];
                     for (int i = 0; i < length; i++)
                     {
                         first[i] = second[i] = new TInt(10 * (i + 1), log);
@@ -57,8 +57,8 @@ namespace System.SpanTests
 
                     second[mismatchIndex] = new TInt(second[mismatchIndex].Value + 1, log);
 
-                    Span<TInt> firstSpan = new Span<TInt>(first);
-                    ReadOnlySpan<TInt> secondSpan = new ReadOnlySpan<TInt>(second);
+                    var firstSpan = new ReadOnlySpan<TInt>(first);
+                    var secondSpan = new ReadOnlySpan<TInt>(second);
                     int result = firstSpan.SequenceCompareTo(secondSpan);
                     Assert.True(result < 0);
                     Assert.Equal(1, log.CountCompares(first[mismatchIndex].Value, second[mismatchIndex].Value));
@@ -75,10 +75,10 @@ namespace System.SpanTests
         {
             for (int length = 1; length < 32; length++)
             {
-                TIntLog log = new TIntLog();
+                var log = new TIntLog();
 
-                TInt[] first = new TInt[length];
-                TInt[] second = new TInt[length];
+                var first = new TInt[length];
+                var second = new TInt[length];
                 
                 for (int i = 0; i < length; i++)
                 {
@@ -86,8 +86,8 @@ namespace System.SpanTests
                     second[i] = new TInt(length + i + 1, log);
                 }
 
-                Span<TInt> firstSpan = new Span<TInt>(first);
-                ReadOnlySpan<TInt> secondSpan = new ReadOnlySpan<TInt>(second);
+                var firstSpan = new ReadOnlySpan<TInt>(first);
+                var secondSpan = new ReadOnlySpan<TInt>(second);
                 int result = firstSpan.SequenceCompareTo(secondSpan);
                 Assert.True(result < 0);
                 Assert.Equal(1, log.CountCompares(firstSpan[0].Value, secondSpan[0].Value));
@@ -113,8 +113,8 @@ namespace System.SpanTests
 
             for (int length = 0; length < 100; length++)
             {
-                TInt[] first = new TInt[GuardLength + length + GuardLength];
-                TInt[] second = new TInt[GuardLength + length + GuardLength];
+                var first = new TInt[GuardLength + length + GuardLength];
+                var second = new TInt[GuardLength + length + GuardLength];
                 for (int i = 0; i < first.Length; i++)
                 {
                     first[i] = second[i] = new TInt(GuardValue, checkForOutOfRangeAccess);
@@ -125,8 +125,8 @@ namespace System.SpanTests
                     first[GuardLength + i] = second[GuardLength + i] = new TInt(10 * (i + 1), checkForOutOfRangeAccess);
                 }
 
-                Span<TInt> firstSpan = new Span<TInt>(first, GuardLength, length);
-                Span<TInt> secondSpan = new Span<TInt>(second, GuardLength, length);
+                var firstSpan = new ReadOnlySpan<TInt>(first, GuardLength, length);
+                var secondSpan = new ReadOnlySpan<TInt>(second, GuardLength, length);
                 int result = firstSpan.SequenceCompareTo(secondSpan);
                 Assert.Equal(0, result);
             }
@@ -137,8 +137,8 @@ namespace System.SpanTests
         {
             var a = new string[3];
 
-            var first = new Span<string>(a, 1, 0);
-            var second = new Span<string>(a, 2, 0);
+            var first = new ReadOnlySpan<string>(a, 1, 0);
+            var second = new ReadOnlySpan<string>(a, 2, 0);
             int result = first.SequenceCompareTo<string>(second);
             Assert.Equal(0, result);
         }
@@ -147,7 +147,7 @@ namespace System.SpanTests
         public static void SameSpanSequenceCompareTo_String()
         {
             string[] a = { "fourth", "fifth", "sixth" };
-            var span = new Span<string>(a);
+            var span = new ReadOnlySpan<string>(a);
             int result = span.SequenceCompareTo<string>(span);
             Assert.Equal(0, result);
         }
@@ -156,7 +156,7 @@ namespace System.SpanTests
         public static void SequenceCompareToArrayImplicit_String()
         {
             string[] a = { "fourth", "fifth", "sixth" };
-            var first = new Span<string>(a, 0, 3);
+            var first = new ReadOnlySpan<string>(a, 0, 3);
             int result = first.SequenceCompareTo<string>(a);
             Assert.Equal(0, result);
         }
@@ -168,7 +168,7 @@ namespace System.SpanTests
             string[] dst = { "fifth", "first", "second", "third", "tenth" };
             var segment = new ArraySegment<string>(dst, 1, 3);
 
-            var first = new Span<string>(src, 0, 3);
+            var first = new ReadOnlySpan<string>(src, 0, 3);
             int result = first.SequenceCompareTo<string>(segment);
             Assert.Equal(0, result);
         }
@@ -177,8 +177,8 @@ namespace System.SpanTests
         public static void LengthMismatchSequenceCompareTo_String()
         {
             string[] a = { "fourth", "fifth", "sixth" };
-            var first = new Span<string>(a, 0, 2);
-            var second = new Span<string>(a, 0, 3);
+            var first = new ReadOnlySpan<string>(a, 0, 2);
+            var second = new ReadOnlySpan<string>(a, 0, 3);
             int result = first.SequenceCompareTo<string>(second);
             Assert.True(result < 0);
 
@@ -211,7 +211,7 @@ namespace System.SpanTests
 
                     second[mismatchIndex] = (string)(second[mismatchIndex] + 1);
 
-                    var firstSpan = new Span<string>(first);
+                    var firstSpan = new ReadOnlySpan<string>(first);
                     var secondSpan = new ReadOnlySpan<string>(second);
                     int result = firstSpan.SequenceCompareTo<string>(secondSpan);
                     Assert.True(result < 0);
@@ -236,7 +236,7 @@ namespace System.SpanTests
                     second[i] = $"item {int.MaxValue - i}";
                 }
 
-                var firstSpan = new Span<string>(first);
+                var firstSpan = new ReadOnlySpan<string>(first);
                 var secondSpan = new ReadOnlySpan<string>(second);
                 int result = firstSpan.SequenceCompareTo<string>(secondSpan);
                 Assert.True(result < 0);
@@ -263,7 +263,7 @@ namespace System.SpanTests
                     second[k] = string.Empty;
                 second[length + 1] = "100";
 
-                var span1 = new Span<string>(first, 1, length);
+                var span1 = new ReadOnlySpan<string>(first, 1, length);
                 var span2 = new ReadOnlySpan<string>(second, 1, length);
                 int result = span1.SequenceCompareTo<string>(span2);
                 Assert.Equal(0, result);
