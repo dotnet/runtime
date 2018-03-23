@@ -6,6 +6,12 @@
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Packaging.csproj" />
+
+    <!-- 
+      Suppress NETStandard.Library collpasing as it add more dependencies then needed in some 
+      scenarios like .NET Framework which adds an unecessary amount of package dependencies to download 
+    -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
