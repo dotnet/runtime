@@ -12,6 +12,50 @@ namespace System.Runtime.InteropServices
     /// </summary>
     public static partial class MemoryMarshal
     {
+        /// <summary>
+        /// Casts a Span of one primitive type <typeparamref name="T"/> to Span of bytes.
+        /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> contains pointers.
+        /// </exception>
+        /// <exception cref="System.OverflowException">
+        /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<byte> AsBytes<T>(Span<T> span)
+            where T : struct
+        {
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+
+            int newLength = checked(span.Length * Unsafe.SizeOf<T>());
+            return new Span<byte>(Unsafe.As<Pinnable<byte>>(span.Pinnable), span.ByteOffset, newLength);
+        }
+
+        /// <summary>
+        /// Casts a ReadOnlySpan of one primitive type <typeparamref name="T"/> to ReadOnlySpan of bytes.
+        /// That type may not contain pointers or references. This is checked at runtime in order to preserve type safety.
+        /// </summary>
+        /// <param name="span">The source slice, of type <typeparamref name="T"/>.</param>
+        /// <exception cref="System.ArgumentException">
+        /// Thrown when <typeparamref name="T"/> contains pointers.
+        /// </exception>
+        /// <exception cref="System.OverflowException">
+        /// Thrown if the Length property of the new Span would exceed Int32.MaxValue.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)
+            where T : struct
+        {
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+
+            int newLength = checked(span.Length * Unsafe.SizeOf<T>());
+            return new ReadOnlySpan<byte>(Unsafe.As<Pinnable<byte>>(span.Pinnable), span.ByteOffset, newLength);
+        }
+
         /// <summary>Creates a <see cref="Memory{T}"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
         /// <param name="memory">The <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <returns>A <see cref="Memory{T}"/> representing the same memory as the <see cref="ReadOnlyMemory{T}"/>, but writable.</returns>

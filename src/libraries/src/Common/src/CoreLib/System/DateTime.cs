@@ -1255,46 +1255,46 @@ namespace System
 
         public String ToLongDateString()
         {
-            return DateTimeFormat.Format(this, "D", DateTimeFormatInfo.CurrentInfo);
+            return DateTimeFormat.Format(this, "D", null);
         }
 
         public String ToLongTimeString()
         {
-            return DateTimeFormat.Format(this, "T", DateTimeFormatInfo.CurrentInfo);
+            return DateTimeFormat.Format(this, "T", null);
         }
 
         public String ToShortDateString()
         {
-            return DateTimeFormat.Format(this, "d", DateTimeFormatInfo.CurrentInfo);
+            return DateTimeFormat.Format(this, "d", null);
         }
 
         public String ToShortTimeString()
         {
-            return DateTimeFormat.Format(this, "t", DateTimeFormatInfo.CurrentInfo);
+            return DateTimeFormat.Format(this, "t", null);
         }
 
         public override String ToString()
         {
-            return DateTimeFormat.Format(this, null, DateTimeFormatInfo.CurrentInfo);
+            return DateTimeFormat.Format(this, null, null);
         }
 
         public String ToString(String format)
         {
-            return DateTimeFormat.Format(this, format, DateTimeFormatInfo.CurrentInfo);
+            return DateTimeFormat.Format(this, format, null);
         }
 
         public String ToString(IFormatProvider provider)
         {
-            return DateTimeFormat.Format(this, null, DateTimeFormatInfo.GetInstance(provider));
+            return DateTimeFormat.Format(this, null, provider);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
-            return DateTimeFormat.Format(this, format, DateTimeFormatInfo.GetInstance(provider));
+            return DateTimeFormat.Format(this, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null) =>
-            DateTimeFormat.TryFormat(this, destination, out charsWritten, format, DateTimeFormatInfo.GetInstance(provider));
+            DateTimeFormat.TryFormat(this, destination, out charsWritten, format, provider);
 
         public DateTime ToUniversalTime()
         {

@@ -3,11 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-#if !netstandard
-using Internal.Runtime.CompilerServices;
-#endif
 
 namespace System.Buffers.Binary
 {
@@ -126,59 +121,6 @@ namespace System.Buffers.Binary
 
             return ((ulong)ReverseEndianness((uint)value) << 32)
                 + ReverseEndianness((uint)(value >> 32));
-        }
-
-        /// <summary>
-        /// Reads a structure of type T out of a read-only span of bytes.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ReadMachineEndian<T>(ReadOnlySpan<byte> source)
-            where T : struct
-        {
-#if netstandard
-            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#else
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#endif
-            if (Unsafe.SizeOf<T>() > source.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
-            }
-            return Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(source));
-        }
-
-        /// <summary>
-        /// Reads a structure of type T out of a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryReadMachineEndian<T>(ReadOnlySpan<byte> source, out T value)
-            where T : struct
-        {
-#if netstandard
-            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#else
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
-            }
-#endif
-            if (Unsafe.SizeOf<T>() > (uint)source.Length)
-            {
-                value = default;
-                return false;
-            }
-            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(source));
-            return true;
         }
     }
 }

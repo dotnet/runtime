@@ -6,6 +6,10 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 
+#if !netstandard
+using Internal.Runtime.CompilerServices;
+#endif
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -121,6 +125,111 @@ namespace System.Runtime.InteropServices
                 length = 0;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Reads a structure of type T out of a read-only span of bytes.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Read<T>(ReadOnlySpan<byte> source)
+            where T : struct
+        {
+#if netstandard
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#else
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#endif
+            if (Unsafe.SizeOf<T>() > source.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
+            return Unsafe.ReadUnaligned<T>(ref GetReference(source));
+        }
+
+        /// <summary>
+        /// Reads a structure of type T out of a span of bytes.
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
+            where T : struct
+        {
+#if netstandard
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#else
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#endif
+            if (Unsafe.SizeOf<T>() > (uint)source.Length)
+            {
+                value = default;
+                return false;
+            }
+            value = Unsafe.ReadUnaligned<T>(ref GetReference(source));
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a structure of type T into a span of bytes.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Write<T>(Span<byte> destination, ref T value)
+            where T : struct
+        {
+#if netstandard
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#else
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#endif
+            if ((uint)Unsafe.SizeOf<T>() > (uint)destination.Length)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
+            Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
+        }
+
+        /// <summary>
+        /// Writes a structure of type T into a span of bytes.
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWrite<T>(Span<byte> destination, ref T value)
+            where T : struct
+        {
+#if netstandard
+            if (SpanHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowArgumentException_InvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#else
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+#endif
+            if (Unsafe.SizeOf<T>() > (uint)destination.Length)
+            {
+                return false;
+            }
+            Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
+            return true;
         }
     }
 }
