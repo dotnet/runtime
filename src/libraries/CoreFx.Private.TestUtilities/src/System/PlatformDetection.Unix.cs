@@ -25,6 +25,7 @@ namespace System
         public static int WindowsVersion => -1;
 
         public static bool IsCentos6 => IsDistroAndVersion("centos", 6);
+        public static bool IsAlpine => IsDistroAndVersion("alpine");
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
         public static bool IsDebian => IsDistroAndVersion("debian");
