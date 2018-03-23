@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Common.Tests;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -51,8 +53,16 @@ namespace System.Net.WebSockets.Client.Tests
         {
             using (var cws = new ClientWebSocket())
             {
-                var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                    () => cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()));
+                InvalidOperationException exception;
+                using (var tcc = new ThreadCultureChange())
+                {
+                    // The .Net Native toolchain optimizes away exception messages.
+                    if (!PlatformDetection.IsNetNative)
+                        tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
+
+                    exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                        () => cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()));
+                }
 
                 // The .Net Native toolchain optimizes away exception messages.
                 if (!PlatformDetection.IsNetNative)
@@ -90,8 +100,17 @@ namespace System.Net.WebSockets.Client.Tests
                 var segment = new ArraySegment<byte>(buffer);
                 var ct = new CancellationToken();
 
-                var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                    () => cws.ReceiveAsync(segment, ct));
+                InvalidOperationException exception;
+
+                using (var tcc = new ThreadCultureChange())
+                {
+                    // The .Net Native toolchain optimizes away exception messages.
+                    if (!PlatformDetection.IsNetNative)
+                        tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
+
+                    exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                        () => cws.ReceiveAsync(segment, ct));
+                }
 
                 // The .Net Native toolchain optimizes away exception messages.
                 if (!PlatformDetection.IsNetNative)
@@ -129,8 +148,16 @@ namespace System.Net.WebSockets.Client.Tests
                 var segment = new ArraySegment<byte>(buffer);
                 var ct = new CancellationToken();
 
-                var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                    () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct));
+                InvalidOperationException exception;
+                using (var tcc = new ThreadCultureChange())
+                {
+                    // The .Net Native toolchain optimizes away exception messages.
+                    if (!PlatformDetection.IsNetNative)
+                        tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
+
+                    exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                        () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct));
+                }
 
                 // The .Net Native toolchain optimizes away exception messages.
                 if (!PlatformDetection.IsNetNative)
