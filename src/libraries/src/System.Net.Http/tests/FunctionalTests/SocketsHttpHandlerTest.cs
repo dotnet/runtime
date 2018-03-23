@@ -433,7 +433,7 @@ namespace System.Net.Http.Functional.Tests
                     handler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
                     var sw = Stopwatch.StartNew();
-                    await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                    await Assert.ThrowsAsync<TaskCanceledException>(() =>
                         invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get,
                             new UriBuilder(uri) { Scheme = "https" }.ToString()), default));
                     sw.Stop();

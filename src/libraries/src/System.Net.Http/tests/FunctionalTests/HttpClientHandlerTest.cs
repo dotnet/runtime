@@ -438,7 +438,7 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer);
-                OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
                     client.SendAsync(request, cts.Token));
                 Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
                 if (!PlatformDetection.IsFullFramework)
@@ -2035,8 +2035,8 @@ namespace System.Net.Http.Functional.Tests
                         } // Dispose the handler while requests are still outstanding
 
                         // Requests 1 and 2 should be canceled as we haven't finished receiving their headers
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => get1);
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => get2);
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => get1);
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => get2);
 
                         // Request 3 should still be active, and we should be able to receive all of the data.
                         unblockServers.SetResult(true);

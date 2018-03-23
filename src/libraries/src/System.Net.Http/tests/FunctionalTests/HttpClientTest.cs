@@ -267,11 +267,11 @@ namespace System.Net.Http.Functional.Tests
 
                 cts.Cancel();
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t2);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t3);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t4);
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t5);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t2);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t3);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t4);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t5);
             }
         }
 
@@ -383,7 +383,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri())).ToArray();
                 client.CancelPendingRequests();
-                Assert.All(tasks, task => Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult()));
+                Assert.All(tasks, task => Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult()));
             }
         }
 
@@ -394,7 +394,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 client.Timeout = TimeSpan.FromMilliseconds(1);
                 Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri())).ToArray();
-                Assert.All(tasks, task => Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult()));
+                Assert.All(tasks, task => Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult()));
             }
         }
 

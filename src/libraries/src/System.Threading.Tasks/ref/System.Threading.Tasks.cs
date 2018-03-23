@@ -116,6 +116,7 @@ namespace System.Threading.Tasks
         public TaskCanceledException() { }
         public TaskCanceledException(string message) { }
         public TaskCanceledException(string message, System.Exception innerException) { }
+        public TaskCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) : base(message, innerException, token) { }
         public TaskCanceledException(System.Threading.Tasks.Task task) { }
         protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Threading.Tasks.Task Task { get { throw null; } }
