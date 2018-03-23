@@ -29,7 +29,9 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
-  </ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="BinaryFormatterTests.rd.xml" />
   </ItemGroup>
