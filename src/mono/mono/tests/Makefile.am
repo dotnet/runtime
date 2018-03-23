@@ -557,6 +557,7 @@ endif
 endif
 
 TESTS_IL_SRC=			\
+	tailcall/fsharp.il	\
 	gptail1.il		\
 	itail1.il		\
 	itaili1.il		\
@@ -717,6 +718,7 @@ PLATFORM_DISABLED_TESTS=\
 
 if !AMD64
 PLATFORM_DISABLED_TESTS += tailcall-virt.exe
+PLATFORM_DISABLED_TESTS += tailcall/fsharp.exe
 endif
 
 if HOST_WIN32
@@ -959,16 +961,24 @@ PROFILE_DISABLED_TESTS += \
 # https://bugzilla.xamarin.com/show_bug.cgi?id=60973
 PROFILE_DISABLED_TESTS += \
 	weak-fields.exe
+
+PROFILE_DISABLED_TESTS += tailcall/fsharp.exe
 endif
 
 if HYBRID_AOT_TESTS
 PROFILE_DISABLED_TESTS += \
 	bug-80307.exe \
 	namedmutex-destroy-race.exe
+
+PROFILE_DISABLED_TESTS += tailcall/fsharp.exe
 endif
 
 AOT_DISABLED_TESTS= \
 	constraints-load.exe
+
+# tailcall/fsharp.exe AOT hangs
+# tailcall/fsharp.exe FullAOT stack overflow in CI but not locally.
+AOT_DISABLED_TESTS += tailcall/fsharp.exe
 
 CI_DISABLED_TESTS = \
 	main-returns-background-resetabort.exe \
@@ -1055,6 +1065,7 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	tailcall-virt.exe   \
 	tailcall-rgctxa.exe \
 	tailcall-generic-cast-conservestack-il.exe \
+	tailcall/fsharp.exe \
 	bug-60843.exe
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
