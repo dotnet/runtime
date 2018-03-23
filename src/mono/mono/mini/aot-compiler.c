@@ -12391,6 +12391,7 @@ static const char* interp_in_static_sigs[] = {
 	"int32 ptr int32 ptr&",
 	"int32 ptr ptr&",
 	"object object ptr ptr ptr",
+	"object",
 	"ptr int32 ptr&",
 	"ptr ptr int32 ptr ptr ptr&",
 	"ptr ptr int32 ptr ptr&",
