@@ -4,12 +4,14 @@
 
 using System.Collections;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.Design.Tests
 {
-    public class DesignerOptionServiceTests
+    public class DesignerOptionServiceTests : RemoteExecutorTestBase
     {
         [Fact]
         public void CreateOptionCollection_CreateMultipleTimes_ReturnsExpected()
@@ -266,8 +268,13 @@ namespace System.ComponentModel.Design.Tests
         [Fact]
         public void DesignerOptionConverter_ConvertToString_ReturnsExpected()
         {
-            TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
-            Assert.Equal("(Collection)", converter.ConvertToString(null));
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
+
+                TypeConverter converter = TypeDescriptor.GetConverter(typeof(DesignerOptionService.DesignerOptionCollection));
+                Assert.Equal("(Collection)", converter.ConvertToString(null));
+            }).Dispose();
         }
 
         [Fact]
