@@ -1,0 +1,39 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.Serialization;
+
+namespace System.Text
+{
+    public sealed partial class StringBuilder
+    {
+        private void ShowChunks(int maxChunksToShow = 10)
+        {
+            int count = 0;
+            StringBuilder head = this, current = this;
+            while (current != null)
+            {
+                if (count < maxChunksToShow)
+                {
+                    count++;
+                }
+                else
+                {
+                    head = head.m_ChunkPrevious;
+                }
+                current = current.m_ChunkPrevious;
+            }
+            current = head;
+            string[] chunks = new string[count];
+            for (int i = count; i > 0; i--)
+            {
+                chunks[i - 1] = new string(current.m_ChunkChars).Replace('\0', '.');
+                current = current.m_ChunkPrevious;
+            }
+            Debug.WriteLine('|' + string.Join('|', chunks) + '|');
+        }
+    }
+}
