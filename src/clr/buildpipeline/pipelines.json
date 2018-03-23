@@ -130,7 +130,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
           "Parameters": {
-            "DockerTag": "ubuntu-14.04-cross-e435274-20180317125300",
+            "DockerTag": "ubuntu-14.04-cross-e435274-20180323032140",
             "Architecture": "arm",
             "Rid": "linux",
             "CrossArchitecture": "x86",
