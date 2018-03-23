@@ -50,8 +50,9 @@ namespace System.Diagnostics
         private string _machineName;
         private string _perfLcid;
 
-        private Hashtable _customCategoryTable;
+
         private static volatile Hashtable s_libraryTable;
+        private Hashtable _customCategoryTable;
         private Hashtable _categoryTable;
         private Hashtable _nameTable;
         private Hashtable _helpTable;
@@ -299,10 +300,17 @@ namespace System.Diagnostics
         {
             if (s_libraryTable != null)
             {
-                foreach (PerformanceCounterLib library in s_libraryTable.Values)
-                    library.Close();
+                //race with GetPerformanceCounterLib
+                lock (InternalSyncObject)
+                {
+                    if (s_libraryTable != null)
+                    {
+                        foreach (PerformanceCounterLib library in s_libraryTable.Values)
+                            library.Close();
 
-                s_libraryTable = null;
+                        s_libraryTable = null;
+                    }
+                }
             }
         }
 
@@ -638,14 +646,14 @@ namespace System.Diagnostics
             RegistryKey baseKey = null;
             categoryType = PerformanceCounterCategoryType.Unknown;
 
-            if (_customCategoryTable == null)
-            {
-                Interlocked.CompareExchange(ref _customCategoryTable, new Hashtable(StringComparer.OrdinalIgnoreCase), null);
-            }
+            Hashtable table =
+                _customCategoryTable ??
+                Interlocked.CompareExchange(ref _customCategoryTable, new Hashtable(StringComparer.OrdinalIgnoreCase), null) ??
+                _customCategoryTable;
 
-            if (_customCategoryTable.ContainsKey(category))
+            if (table.ContainsKey(category))
             {
-                categoryType = (PerformanceCounterCategoryType)_customCategoryTable[category];
+                categoryType = (PerformanceCounterCategoryType)table[category];
                 return true;
             }
             else
@@ -674,7 +682,10 @@ namespace System.Diagnostics
                                 // In this case we return an 'Unknown' category type and 'false' to indicate the category is *not* custom.
                                 //
                                 categoryType = PerformanceCounterCategoryType.Unknown;
-                                _customCategoryTable[category] = categoryType;
+                                lock (table)
+                                {
+                                    table[category] = categoryType;
+                                }
                                 return false;
                             }
                         }
@@ -702,8 +713,10 @@ namespace System.Diagnostics
                             if (objectID != null)
                             {
                                 int firstID = (int)objectID;
-
-                                _customCategoryTable[category] = categoryType;
+                                lock (table)
+                                {
+                                    table[category] = categoryType;
+                                }
                                 return true;
                             }
                         }
@@ -717,6 +730,7 @@ namespace System.Diagnostics
                         baseKey.Close();
                 }
             }
+
             return false;
         }
 
@@ -974,23 +988,21 @@ namespace System.Diagnostics
 
             machineName = (machineName == "." ? ComputerName : machineName).ToLowerInvariant();
 
-            if (PerformanceCounterLib.s_libraryTable == null)
+            //race with CloseAllLibraries
+            lock (InternalSyncObject)
             {
-                lock (InternalSyncObject)
-                {
-                    if (PerformanceCounterLib.s_libraryTable == null)
-                        PerformanceCounterLib.s_libraryTable = new Hashtable();
-                }
-            }
+                if (PerformanceCounterLib.s_libraryTable == null)
+                    PerformanceCounterLib.s_libraryTable = new Hashtable();
 
-            string libraryKey = machineName + ":" + lcidString;
-            if (PerformanceCounterLib.s_libraryTable.Contains(libraryKey))
-                return (PerformanceCounterLib)PerformanceCounterLib.s_libraryTable[libraryKey];
-            else
-            {
-                PerformanceCounterLib library = new PerformanceCounterLib(machineName, lcidString);
-                PerformanceCounterLib.s_libraryTable[libraryKey] = library;
-                return library;
+                string libraryKey = machineName + ":" + lcidString;
+                if (PerformanceCounterLib.s_libraryTable.Contains(libraryKey))
+                    return (PerformanceCounterLib)PerformanceCounterLib.s_libraryTable[libraryKey];
+                else
+                {
+                    PerformanceCounterLib library = new PerformanceCounterLib(machineName, lcidString);
+                    PerformanceCounterLib.s_libraryTable[libraryKey] = library;
+                    return library;
+                }
             }
         }
 
