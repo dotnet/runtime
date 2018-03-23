@@ -8,14 +8,6 @@
     <RuntimeIdentifiers>win7-x64;win7-x86;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
-  <!-- Add optimization data package restore source. -->
-  <PropertyGroup>
-    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
-      https://dotnet.myget.org/F/dotnet-core-optimization-data/api/v3/index.json;
-      $(RestoreSources)
-    </RestoreSources>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="optimization.PGO.CoreCLR" Version="$(PgoDataPackageVersion)" Condition="'$(PgoDataPackageVersion)'!=''" />
     <PackageReference Include="optimization.IBC.CoreCLR" Version="$(IbcDataPackageVersion)" Condition="'$(IbcDataPackageVersion)'!=''" />
