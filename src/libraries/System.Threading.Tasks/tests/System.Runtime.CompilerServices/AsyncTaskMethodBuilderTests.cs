@@ -544,7 +544,7 @@ namespace System.Threading.Tasks.Tests
         {
             Assert.NotNull(e);
             Assert.NotNull(e.StackTrace);
-            Assert.Contains("End of stack trace", e.StackTrace);
+            Assert.Matches(@"---.+---", e.StackTrace);
         }
 
         private class TrackOperationsSynchronizationContext : SynchronizationContext
