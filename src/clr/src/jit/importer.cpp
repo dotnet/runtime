@@ -1879,7 +1879,8 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
             }
             else
             {
-                op1->gtFptrVal.gtEntryPoint.addr = nullptr;
+                op1->gtFptrVal.gtEntryPoint.addr       = nullptr;
+                op1->gtFptrVal.gtEntryPoint.accessType = IAT_VALUE;
             }
 #endif
             break;
@@ -7173,7 +7174,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                     else
                     {
-                        call->gtIntrinsic.gtEntryPoint.addr = nullptr;
+                        call->gtIntrinsic.gtEntryPoint.addr       = nullptr;
+                        call->gtIntrinsic.gtEntryPoint.accessType = IAT_VALUE;
                     }
                 }
 #endif

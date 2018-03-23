@@ -3965,7 +3965,8 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
                     // stash the address for codegen
                     call->gtDirectCallAddress = addr;
 #ifdef FEATURE_READYTORUN_COMPILER
-                    call->gtEntryPoint.addr = nullptr;
+                    call->gtEntryPoint.addr       = nullptr;
+                    call->gtEntryPoint.accessType = IAT_VALUE;
 #endif
                 }
                 break;
