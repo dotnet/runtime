@@ -41,7 +41,9 @@ namespace System.IO.Pipes
             // We don't have a good way to enforce maxNumberOfServerInstances across processes; we only factor it in
             // for streams created in this process.  Between processes, we behave similarly to maxNumberOfServerInstances == 1,
             // in that the second process to come along and create a stream will find the pipe already in existence and will fail.
-            _instance = SharedServer.Get(GetPipePath(".", pipeName), maxNumberOfServerInstances);
+            _instance = SharedServer.Get(
+                GetPipePath(".", pipeName),
+                (maxNumberOfServerInstances == MaxAllowedServerInstances) ? int.MaxValue : maxNumberOfServerInstances);
 
             _direction = direction;
             _options = options;
