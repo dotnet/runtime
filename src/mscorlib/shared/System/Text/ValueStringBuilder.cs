@@ -27,6 +27,7 @@ namespace System.Text
             get => _pos;
             set
             {
+                Debug.Assert(value >= 0);
                 Debug.Assert(value <= _chars.Length);
                 _pos = value;
             }
@@ -69,6 +70,9 @@ namespace System.Text
             Dispose();
             return s;
         }
+
+        /// <summary>Returns the underlying storage of the builder.</summary>
+        public Span<char> RawChars => _chars;
 
         /// <summary>
         /// Returns a span around the contents of the builder.
