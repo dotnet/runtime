@@ -1318,7 +1318,7 @@ namespace System.IO.Compression
         }
         #if STREAM_MEMORY_OVERLOADS_AVAILABLE
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             ReadHit = true;
 
@@ -1330,10 +1330,10 @@ namespace System.IO.Compression
             {
                 await Task.Run(() => manualResetEvent.Wait(cancellationToken)).ConfigureAwait(false);
             }
-            return await base.ReadAsync(destination, cancellationToken);
+            return await base.ReadAsync(buffer, cancellationToken);
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             WriteHit = true;
 
@@ -1346,7 +1346,7 @@ namespace System.IO.Compression
                 await Task.Run(() => manualResetEvent.Wait(cancellationToken)).ConfigureAwait(false);
             }
 
-            await base.WriteAsync(source, cancellationToken);
+            await base.WriteAsync(buffer, cancellationToken);
         }
         #endif
     }

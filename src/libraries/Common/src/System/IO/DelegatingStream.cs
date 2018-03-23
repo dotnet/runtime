@@ -88,9 +88,9 @@ namespace System.Net.Http
             return _innerStream.Read(buffer, offset, count);
         }
 
-        public override int Read(Span<byte> destination)
+        public override int Read(Span<byte> buffer)
         {
-            return _innerStream.Read(destination);
+            return _innerStream.Read(buffer);
         }
 
         public override int ReadByte()
@@ -103,9 +103,9 @@ namespace System.Net.Http
             return _innerStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return _innerStream.ReadAsync(destination, cancellationToken);
+            return _innerStream.ReadAsync(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
@@ -142,9 +142,9 @@ namespace System.Net.Http
             _innerStream.Write(buffer, offset, count);
         }
 
-        public override void Write(ReadOnlySpan<byte> source)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            _innerStream.Write(source);
+            _innerStream.Write(buffer);
         }
 
         public override void WriteByte(byte value)
@@ -157,9 +157,9 @@ namespace System.Net.Http
             return _innerStream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return _innerStream.WriteAsync(source, cancellationToken);
+            return _innerStream.WriteAsync(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)

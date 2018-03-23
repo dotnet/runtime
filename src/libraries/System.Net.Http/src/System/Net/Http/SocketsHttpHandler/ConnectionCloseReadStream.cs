@@ -16,17 +16,17 @@ namespace System.Net.Http
             {
             }
 
-            public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                if (_connection == null || destination.Length == 0)
+                if (_connection == null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
-                ValueTask<int> readTask = _connection.ReadAsync(destination);
+                ValueTask<int> readTask = _connection.ReadAsync(buffer);
                 int bytesRead;
                 if (readTask.IsCompletedSuccessfully)
                 {
