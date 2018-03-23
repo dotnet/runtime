@@ -69,8 +69,8 @@ namespace System.Tests
         [InlineData(GCCollectionMode.Optimized + 1)]
         public static void Collection_InvalidCollectionMode_ThrowsArgumentOutOfRangeException(GCCollectionMode mode)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", "Enum value was out of legal range.", () => GC.Collect(2, mode));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", "Enum value was out of legal range.", () => GC.Collect(2, mode, false)); 
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", null, () => GC.Collect(2, mode));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", null, () => GC.Collect(2, mode, false)); 
         }
 
         [Fact]
