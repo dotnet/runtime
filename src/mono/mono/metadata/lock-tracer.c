@@ -22,6 +22,7 @@
 #endif
 
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-threads.h>
 
 #include "lock-tracer.h"
 
