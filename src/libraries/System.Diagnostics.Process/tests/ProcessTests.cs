@@ -716,6 +716,20 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] 
+        public void ProcessStartTime_Deterministic_Across_Instances()
+        {
+            CreateDefaultProcess();
+            for (int i = 0; i < 10; ++i)
+            {
+                using (var p = Process.GetProcessById(_process.Id))
+                {
+                    Assert.Equal(_process.StartTime, p.StartTime);
+                }
+            }
+        }
+
+        [Fact]
         public void ExitTime_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
