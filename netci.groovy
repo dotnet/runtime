@@ -1530,6 +1530,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
 
                 case 'Windows_NT':
+                    if (architecture == "armlb") {
+                        // Disable armlb windows jobs
+                        break
+                    }
+
                     // Triggers on the non-flow jobs aren't necessary here
                     if (!isFlowJob) {
                         break
@@ -2251,9 +2256,8 @@ Constants.allScenarios.each { scenario ->
                             }
                             break
                         case 'armlb':
-                            if (os != 'Windows_NT') {
-                                return
-                            }
+                            // Do not create armlb jobs
+                            return
                             break
                         case 'x86':
                             if ((os != 'Ubuntu') && (os != 'Windows_NT')) {
@@ -2534,10 +2538,13 @@ Constants.allScenarios.each { scenario ->
                     if (os != "Ubuntu" && os != "Windows_NT") {
                         return
                     }
-                } else if (architecture == 'arm' || architecture == 'armlb') {
+                } else if (architecture == 'arm') {
                     if (os != 'Windows_NT') {
                         return
                     }
+                } else if (architecture == 'armlb') {
+                  // Do not create armlb windows jobs.
+                  return  
                 } else if (architecture == 'x86') {
                     if (os != "Ubuntu") {
                         return
