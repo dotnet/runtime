@@ -745,7 +745,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
             if (_cleanedUp)
@@ -760,7 +760,7 @@ namespace System.Net.Sockets
             try
             {
                 return _streamSocket.ReceiveAsync(
-                    destination,
+                    buffer,
                     SocketFlags.None,
                     fromNetworkStream: true,
                     cancellationToken: cancellationToken);
@@ -829,7 +829,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
             if (_cleanedUp)
@@ -844,7 +844,7 @@ namespace System.Net.Sockets
             try
             {
                 return _streamSocket.SendAsyncForNetworkStream(
-                    source,
+                    buffer,
                     SocketFlags.None,
                     cancellationToken: cancellationToken);
             }
