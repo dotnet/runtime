@@ -42,6 +42,9 @@
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
     <Compile Include="AbortTest.cs" />
     <Compile Include="CancelTest.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
