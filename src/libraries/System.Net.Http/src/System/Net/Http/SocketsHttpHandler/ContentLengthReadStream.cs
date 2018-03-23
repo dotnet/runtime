@@ -23,7 +23,7 @@ namespace System.Net.Http
 
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 if (_connection == null || destination.Length == 0)
                 {
@@ -51,9 +51,9 @@ namespace System.Net.Http
                     {
                         bytesRead = await readTask.ConfigureAwait(false);
                     }
-                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                    catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
                     {
-                        throw CreateOperationCanceledException(exc, cancellationToken);
+                        throw CancellationHelper.CreateOperationCanceledException(exc, cancellationToken);
                     }
                     finally
                     {
@@ -64,7 +64,7 @@ namespace System.Net.Http
                 if (bytesRead <= 0)
                 {
                     // A cancellation request may have caused the EOF.
-                    cancellationToken.ThrowIfCancellationRequested();
+                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // Unexpected end of response stream.
                     throw new IOException(SR.net_http_invalid_response);
@@ -115,9 +115,9 @@ namespace System.Net.Http
                 {
                     await copyTask.ConfigureAwait(false);
                 }
-                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    throw CreateOperationCanceledException(exc, cancellationToken);
+                    throw CancellationHelper.CreateOperationCanceledException(exc, cancellationToken);
                 }
                 finally
                 {
@@ -198,7 +198,7 @@ namespace System.Net.Http
                             // (e.g. if a timer is used and has already queued its callback but the
                             // callback hasn't yet run).
                             ctr.Dispose();
-                            ctr.Token.ThrowIfCancellationRequested();
+                            CancellationHelper.ThrowIfCancellationRequested(ctr.Token);
 
                             Finish();
                             return true;
