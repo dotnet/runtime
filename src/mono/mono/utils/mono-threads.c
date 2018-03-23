@@ -655,6 +655,7 @@ gboolean
 mono_thread_info_try_get_internal_thread_gchandle (MonoThreadInfo *info, guint32 *gchandle)
 {
 	g_assert (info);
+	g_assert (mono_thread_info_is_current (info));
 
 	if (info->internal_thread_gchandle == G_MAXUINT32)
 		return FALSE;
@@ -667,6 +668,7 @@ void
 mono_thread_info_set_internal_thread_gchandle (MonoThreadInfo *info, guint32 gchandle)
 {
 	g_assert (info);
+	g_assert (mono_thread_info_is_current (info));
 	g_assert (gchandle != G_MAXUINT32);
 	info->internal_thread_gchandle = gchandle;
 }
@@ -675,6 +677,7 @@ void
 mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info)
 {
 	g_assert (info);
+	g_assert (mono_thread_info_is_current (info));
 	info->internal_thread_gchandle = G_MAXUINT32;
 }
 

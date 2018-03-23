@@ -3126,14 +3126,13 @@ thread_detach (MonoThreadInfo *info)
 	 * the thread */
 
 	g_assert (info);
+	g_assert (mono_thread_info_is_current (info));
 
 	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
 		return;
 
 	internal = (MonoInternalThread*) mono_gchandle_get_target (gchandle);
 	g_assert (internal);
-
-	mono_gchandle_free (gchandle);
 
 	mono_thread_detach_internal (internal);
 }
