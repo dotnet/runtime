@@ -1009,6 +1009,26 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
 				td->ip += 5;
 				return;
+			} else if (!strcmp ("op_Increment", tm)) {
+				g_assert (type_index != 2); // no nfloat
+#if SIZEOF_VOID_P == 8
+				ADD_CODE (td, MINT_ADD1_I8);
+#else
+				ADD_CODE (td, MINT_ADD1_I4);
+#endif
+				SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
+				td->ip += 5;
+				return;
+			} else if (!strcmp ("op_Decrement", tm)) {
+				g_assert (type_index != 2); // no nfloat
+#if SIZEOF_VOID_P == 8
+				ADD_CODE (td, MINT_SUB1_I8);
+#else
+				ADD_CODE (td, MINT_SUB1_I4);
+#endif
+				SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
+				td->ip += 5;
+				return;
 			} else if (!strcmp (".cctor", tm)) {
 				/* white list */
 				goto no_intrinsic;

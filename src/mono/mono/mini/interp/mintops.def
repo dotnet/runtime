@@ -330,12 +330,14 @@ OPDEF(MINT_ADD_I8, "add.i8", 1, MintOpNoArgs)
 OPDEF(MINT_ADD_R8, "add.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_ADD1_I4, "add1.i4", 1, MintOpNoArgs)
+OPDEF(MINT_ADD1_I8, "add1.i8", 1, MintOpNoArgs)
 
 OPDEF(MINT_SUB_I4, "sub.i4", 1, MintOpNoArgs)
 OPDEF(MINT_SUB_I8, "sub.i8", 1, MintOpNoArgs)
 OPDEF(MINT_SUB_R8, "sub.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_SUB1_I4, "sub1.i4", 1, MintOpNoArgs)
+OPDEF(MINT_SUB1_I8, "sub1.i8", 1, MintOpNoArgs)
 
 OPDEF(MINT_MUL_I4, "mul.i4", 1, MintOpNoArgs)
 OPDEF(MINT_MUL_I8, "mul.i8", 1, MintOpNoArgs)
