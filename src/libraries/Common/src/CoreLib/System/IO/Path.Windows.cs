@@ -165,20 +165,15 @@ namespace System.IO
             Span<char> initialBuffer = stackalloc char[PathInternal.MaxShortPath];
             var builder = new ValueStringBuilder(initialBuffer);
 
-            uint result = 0;
-            while ((result = Interop.Kernel32.GetTempFileNameW(
-                ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference())) > builder.Capacity)
-            {
-                // Reported size is greater than the buffer size. Increase the capacity.
-                builder.EnsureCapacity(checked((int)result));
-            }
+            uint result = Interop.Kernel32.GetTempFileNameW(
+                ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference());
 
             tempPathBuilder.Dispose();
 
             if (result == 0)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
 
-            builder.Length = (int)result;
+            builder.Length = builder.RawChars.IndexOf('\0');
 
             string path = PathHelper.Normalize(ref builder);
             builder.Dispose();
