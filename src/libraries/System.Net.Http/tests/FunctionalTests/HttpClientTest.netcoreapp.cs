@@ -23,7 +23,7 @@ namespace System.Net.Http.Functional.Tests
 
                 cts.Cancel();
                 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t1);
+                await Assert.ThrowsAsync<TaskCanceledException>(() => t1);
             }
         }
 

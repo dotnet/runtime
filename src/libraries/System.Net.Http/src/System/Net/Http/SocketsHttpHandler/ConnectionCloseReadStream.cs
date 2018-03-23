@@ -18,7 +18,7 @@ namespace System.Net.Http
 
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 if (_connection == null || destination.Length == 0)
                 {
@@ -39,9 +39,9 @@ namespace System.Net.Http
                     {
                         bytesRead = await readTask.ConfigureAwait(false);
                     }
-                    catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                    catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
                     {
-                        throw CreateOperationCanceledException(exc, cancellationToken);
+                        throw CancellationHelper.CreateOperationCanceledException(exc, cancellationToken);
                     }
                     finally
                     {
@@ -57,7 +57,7 @@ namespace System.Net.Http
                     // early due to cancellation.  So we prioritize cancellation in this race condition, and
                     // if we read 0 bytes and then find that cancellation has requested, we assume cancellation
                     // was the cause and throw.
-                    cancellationToken.ThrowIfCancellationRequested();
+                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // We cannot reuse this connection, so close it.
                     _connection.Dispose();
@@ -100,9 +100,9 @@ namespace System.Net.Http
                 {
                     await copyTask.ConfigureAwait(false);
                 }
-                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    throw CreateOperationCanceledException(exc, cancellationToken);
+                    throw CancellationHelper.CreateOperationCanceledException(exc, cancellationToken);
                 }
                 finally
                 {
@@ -113,7 +113,7 @@ namespace System.Net.Http
                 // to end early but think it ended successfully. So we prioritize cancellation in this
                 // race condition, and if we find after the copy has completed that cancellation has
                 // been requested, we assume the copy completed due to cancellation and throw.
-                cancellationToken.ThrowIfCancellationRequested();
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 Finish();
             }

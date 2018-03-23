@@ -41,7 +41,6 @@ namespace System.Net.Http
         private static readonly byte[] s_http1DotBytes = Encoding.ASCII.GetBytes("HTTP/1.");
         private static readonly ulong s_http10Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.0"));
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64(Encoding.ASCII.GetBytes("HTTP/1.1"));
-        private static readonly string s_cancellationMessage = new OperationCanceledException().Message; // use same message as the default ctor
 
         private readonly HttpConnectionPool _pool;
         private readonly Socket _socket; // used for polling; _stream should be used for all reading/writing. _stream owns disposal.
@@ -537,7 +536,7 @@ namespace System.Net.Http
                 // here (if an exception has occurred or does occur while creating/returning the stream,
                 // we'll still dispose of it in the catch below as part of Dispose'ing the connection).
                 cancellationRegistration.Dispose();
-                cancellationToken.ThrowIfCancellationRequested(); // in case cancellation may have disposed of the stream
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken); // in case cancellation may have disposed of the stream
 
                 // Create the response stream.
                 HttpContentStream responseStream;
@@ -607,7 +606,7 @@ namespace System.Net.Http
                 // At this point, we're going to throw an exception; we just need to
                 // determine which exception to throw.
 
-                if (ShouldWrapInOperationCanceledException(error, cancellationToken))
+                if (CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken))
                 {
                     // Cancellation was requested, so assume that the failure is due to
                     // the cancellation request. This is a bit unorthodox, as usually we'd
@@ -618,7 +617,7 @@ namespace System.Net.Http
                     // exceptions (argument exceptions, object disposed exceptions, socket exceptions,
                     // etc.), as a middle ground we treat it as cancellation, but still propagate the
                     // original information as the inner exception, for diagnostic purposes.
-                    throw CreateOperationCanceledException(error, cancellationToken);
+                    throw CancellationHelper.CreateOperationCanceledException(error, cancellationToken);
                 }
                 else if (error is InvalidOperationException || error is IOException)
                 {
@@ -683,12 +682,6 @@ namespace System.Net.Http
                 }
             }, _weakThisRef);
         }
-
-        internal static bool ShouldWrapInOperationCanceledException(Exception error, CancellationToken cancellationToken) =>
-            !(error is OperationCanceledException) && cancellationToken.IsCancellationRequested;
-
-        internal static Exception CreateOperationCanceledException(Exception error, CancellationToken cancellationToken) =>
-            new OperationCanceledException(s_cancellationMessage, error, cancellationToken);
 
         private static bool LineIsEmpty(ArraySegment<byte> line) => line.Count == 0;
 

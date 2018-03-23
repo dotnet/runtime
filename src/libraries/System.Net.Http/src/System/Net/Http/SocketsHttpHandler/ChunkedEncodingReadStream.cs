@@ -115,9 +115,9 @@ namespace System.Net.Http
                         }
                     }
                 }
-                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    throw new OperationCanceledException(s_cancellationMessage, exc, cancellationToken);
+                    throw CancellationHelper.CreateOperationCanceledException(exc, cancellationToken);
                 }
                 finally
                 {
@@ -161,9 +161,9 @@ namespace System.Net.Http
                         await _connection.FillAsync().ConfigureAwait(false);
                     }
                 }
-                catch (Exception exc) when (ShouldWrapInOperationCanceledException(exc, cancellationToken))
+                catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
                 {
-                    throw new OperationCanceledException(s_cancellationMessage, exc, cancellationToken);
+                    throw CancellationHelper.CreateOperationCanceledException(exc, cancellationToken);
                 }
                 finally
                 {
@@ -295,7 +295,7 @@ namespace System.Net.Http
                                     // (e.g. if a timer is used and has already queued its callback but the
                                     // callback hasn't yet run).
                                     cancellationRegistration.Dispose();
-                                    cancellationRegistration.Token.ThrowIfCancellationRequested();
+                                    CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
