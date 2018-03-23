@@ -1445,16 +1445,5 @@ namespace System.Runtime.Intrinsics.X86
         ///   VXORPS ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<double> Xor(Vector256<double> left, Vector256<double> right) => Xor(left, right);
-
-        /// <summary>
-        /// void _mm256_zeroall (void)
-        ///   VZEROALL
-        /// </summary>
-        public static void ZeroAll() => ZeroAll();
-        /// <summary>
-        /// void _mm256_zeroupper (void)
-        ///   VZEROUPPER
-        /// </summary>
-        public static void ZeroUpper() => ZeroUpper();
     }
 }
