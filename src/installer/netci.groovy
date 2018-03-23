@@ -100,7 +100,7 @@ platformList.each { platform ->
     Utilities.setMachineAffinity(newJob, os, version)
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-    if (!(architecture == 'arm' || architecture == 'armel') ) {
+    if (!(architecture == 'arm' || architecture == 'armel' || architecture == 'arm64')) {
         Utilities.addMSTestResults(newJob, '**/*-testResults.trx')
     }
 
