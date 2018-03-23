@@ -1163,7 +1163,7 @@ namespace System.Net
 
                 if (_hostUri != null)
                 {
-                    request.Headers.Host = _hostUri.Host;
+                    request.Headers.Host = Host;
                 }
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
