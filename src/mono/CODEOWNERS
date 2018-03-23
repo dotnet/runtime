@@ -116,6 +116,9 @@
 /scripts/ci/run-test-profiler-stress-tests.sh @alexrp
 
 /sdks @marek-safar @luhenry
+/sdks/builds/android* @luhenry @jonpryor
+/sdks/builds/mxe* @luhenry @jonpryor
+/sdks/builds/ios* @vargaz @rolfbjarne
 /sdks/wasm @kumpera @lrz
 /sdks/ios @vargaz @rolfbjarne
 /sdks/android @luhenry @jonpryor
