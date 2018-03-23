@@ -38,9 +38,9 @@ namespace System.IO
                 Initialize(ptr, len, len, FileAccess.Read);
         }
 
-        public override int Read(Span<byte> destination) => ReadCore(destination);
+        public override int Read(Span<byte> buffer) => ReadCore(buffer);
 
-        public override void Write(ReadOnlySpan<byte> source) => WriteCore(source);
+        public override void Write(ReadOnlySpan<byte> buffer) => WriteCore(buffer);
 
         ~PinnedBufferMemoryStream()
         {

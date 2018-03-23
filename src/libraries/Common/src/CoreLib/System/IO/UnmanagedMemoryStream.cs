@@ -379,22 +379,22 @@ namespace System.IO
             return ReadCore(new Span<byte>(buffer, offset, count));
         }
 
-        public override int Read(Span<byte> destination)
+        public override int Read(Span<byte> buffer)
         {
             if (GetType() == typeof(UnmanagedMemoryStream))
             {
-                return ReadCore(destination);
+                return ReadCore(buffer);
             }
             else
             {
                 // UnmanagedMemoryStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
                 // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
                 // should use the behavior of Read(byte[],int,int) overload.
-                return base.Read(destination);
+                return base.Read(buffer);
             }
         }
 
-        internal int ReadCore(Span<byte> destination)
+        internal int ReadCore(Span<byte> buffer)
         {
             EnsureNotClosed();
             EnsureReadable();
@@ -403,7 +403,7 @@ namespace System.IO
             // changes our position after we decide we can read some bytes.
             long pos = Interlocked.Read(ref _position);
             long len = Interlocked.Read(ref _length);
-            long n = Math.Min(len - pos, destination.Length);
+            long n = Math.Min(len - pos, buffer.Length);
             if (n <= 0)
             {
                 return 0;
@@ -418,7 +418,7 @@ namespace System.IO
 
             unsafe
             {
-                fixed (byte* pBuffer = &MemoryMarshal.GetReference(destination))
+                fixed (byte* pBuffer = &MemoryMarshal.GetReference(buffer))
                 {
                     if (_buffer != null)
                     {
@@ -486,9 +486,9 @@ namespace System.IO
         /// <summary>
         /// Reads bytes from stream and puts them into the buffer
         /// </summary>
-        /// <param name="destination">Buffer to read the bytes to.</param>
+        /// <param name="buffer">Buffer to read the bytes to.</param>
         /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
-        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -510,9 +510,9 @@ namespace System.IO
                 // something other than an array and this is an UnmanagedMemoryStream-derived type that doesn't override Read(Span<byte>) will
                 // it then fall back to doing the ArrayPool/copy behavior.
                 return new ValueTask<int>(
-                    MemoryMarshal.TryGetArray(destination, out ArraySegment<byte> destinationArray) ?
+                    MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> destinationArray) ?
                         Read(destinationArray.Array, destinationArray.Offset, destinationArray.Count) :
-                        Read(destination.Span));
+                        Read(buffer.Span));
             }
             catch (Exception ex)
             {
@@ -659,29 +659,29 @@ namespace System.IO
             WriteCore(new Span<byte>(buffer, offset, count));
         }
 
-        public override void Write(ReadOnlySpan<byte> source)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
             if (GetType() == typeof(UnmanagedMemoryStream))
             {
-                WriteCore(source);
+                WriteCore(buffer);
             }
             else
             {
                 // UnmanagedMemoryStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
                 // to this Write(Span<byte>) overload being introduced.  In that case, this Write(Span<byte>) overload
                 // should use the behavior of Write(byte[],int,int) overload.
-                base.Write(source);
+                base.Write(buffer);
             }
         }
 
-        internal unsafe void WriteCore(ReadOnlySpan<byte> source)
+        internal unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
             EnsureNotClosed();
             EnsureWriteable();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
-            long n = pos + source.Length;
+            long n = pos + buffer.Length;
             // Check for overflow
             if (n < 0)
             {
@@ -709,12 +709,12 @@ namespace System.IO
                 }
             }
 
-            fixed (byte* pBuffer = &MemoryMarshal.GetReference(source))
+            fixed (byte* pBuffer = &MemoryMarshal.GetReference(buffer))
             {
                 if (_buffer != null)
                 {
                     long bytesLeft = _capacity - pos;
-                    if (bytesLeft < source.Length)
+                    if (bytesLeft < buffer.Length)
                     {
                         throw new ArgumentException(SR.Arg_BufferTooSmall);
                     }
@@ -724,7 +724,7 @@ namespace System.IO
                     try
                     {
                         _buffer.AcquirePointer(ref pointer);
-                        Buffer.Memcpy(pointer + pos + _offset, pBuffer, source.Length);
+                        Buffer.Memcpy(pointer + pos + _offset, pBuffer, buffer.Length);
                     }
                     finally
                     {
@@ -736,7 +736,7 @@ namespace System.IO
                 }
                 else
                 {
-                    Buffer.Memcpy(_mem + pos, pBuffer, source.Length);
+                    Buffer.Memcpy(_mem + pos, pBuffer, buffer.Length);
                 }
             }
 
@@ -783,7 +783,7 @@ namespace System.IO
         /// </summary>
         /// <param name="buffer">Buffer that will be written.</param>
         /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -794,13 +794,13 @@ namespace System.IO
             {
                 // See corresponding comment in ReadAsync for why we don't just always use Write(ReadOnlySpan<byte>).
                 // Unlike ReadAsync, we could delegate to WriteAsync(byte[], ...) here, but we don't for consistency.
-                if (MemoryMarshal.TryGetArray(source, out ArraySegment<byte> sourceArray))
+                if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> sourceArray))
                 {
                     Write(sourceArray.Array, sourceArray.Offset, sourceArray.Count);
                 }
                 else
                 {
-                    Write(source.Span);
+                    Write(buffer.Span);
                 }
                 return default;
             }
