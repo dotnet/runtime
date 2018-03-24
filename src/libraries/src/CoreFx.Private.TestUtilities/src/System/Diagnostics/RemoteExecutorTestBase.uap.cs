@@ -36,6 +36,7 @@ namespace System.Diagnostics
             // that the method to invoke is available because we're already running in this assembly.
             Type t = method.DeclaringType;
             Assembly a = t.GetTypeInfo().Assembly;
+            int exitCode;
 
             using (AppServiceConnection remoteExecutionService = new AppServiceConnection())
             {
@@ -65,12 +66,13 @@ namespace System.Diagnostics
                 AppServiceResponse response = remoteExecutionService.SendMessageAsync(message).GetAwaiter().GetResult();
 
                 Assert.True(response.Status == AppServiceResponseStatus.Success, $"response.Status = {response.Status}");
-                int res = (int)response.Message["Results"];
-                Assert.True(!options.CheckExitCode || res == options.ExpectedExitCode, (string)response.Message["Log"] + Environment.NewLine + $"Returned Error code: {res}");
+                exitCode = (int)response.Message["Results"];
+                Assert.True(!options.CheckExitCode || exitCode == options.ExpectedExitCode, (string)response.Message["Log"] + Environment.NewLine + $"Returned Error code: {exitCode}");
             }
-
             // RemoteInvokeHandle is not really needed in the UAP scenario but we use it just to have consistent interface as non UAP
-            return new RemoteInvokeHandle(null, options, null, null, null);
+            var handle = new RemoteInvokeHandle(null, options, null, null, null);
+            handle.ExitCode = exitCode;
+            return handle;
         }
     }
 }
