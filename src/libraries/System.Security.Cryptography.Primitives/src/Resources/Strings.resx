@@ -79,6 +79,9 @@
   <data name="Cryptography_CryptoStream_FlushFinalBlockTwice" xml:space="preserve">
     <value>FlushFinalBlock() method was called twice on a CryptoStream. It can only be called once.</value>
   </data>
+  <data name="Cryptography_DefaultAlgorithm_NotSupported" xml:space="preserve">
+    <value>This platform does not allow the automatic selection of an algorithm.</value>
+  </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>

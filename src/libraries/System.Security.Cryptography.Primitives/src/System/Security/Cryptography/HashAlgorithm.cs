@@ -16,9 +16,11 @@ namespace System.Security.Cryptography
 
         protected HashAlgorithm() { }
 
-        public static HashAlgorithm Create() => Create("System.Security.Cryptography.HashAlgorithm");
+        public static HashAlgorithm Create() =>
+            throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
-        public static HashAlgorithm Create(string hashName) => throw new PlatformNotSupportedException();
+        public static HashAlgorithm Create(string hashName) =>
+            (HashAlgorithm)CryptoConfigForwarder.CreateFromName(hashName);
 
         public virtual int HashSize => HashSizeValue;
 

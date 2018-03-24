@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="System\Security\Cryptography\AsymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\CipherMode.cs" />
+    <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
     <Compile Include="System\Security\Cryptography\CryptoStream.cs" />
