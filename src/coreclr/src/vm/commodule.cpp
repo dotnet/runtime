@@ -8,7 +8,6 @@
 #include "comdynamic.h"
 #include "reflectclasswriter.h"
 #include "class.h"
-#include "corpolicy.h"
 #include "ceesectionstring.h"
 #include <cor.h>
 #include "typeparse.h"

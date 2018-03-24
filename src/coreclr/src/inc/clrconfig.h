@@ -19,7 +19,6 @@
 
 #include "utilcode.h"
 #include "holder.h"
-#include "quirksapi.h"
 
 #ifndef __CLRConfig_h__
 #define __CLRConfig_h__
@@ -65,9 +64,6 @@ public:
         REGUTIL_default = IgnoreConfigFiles,
         // Legacy EEConfig-style lookup.
         EEConfig_default = 0,
-
-        // If set, Ignore windows quirk DB lookup
-        IgnoreWindowsQuirkDB = 0x400,
     };
 
     // Function pointer definition used for calling EEConfig::GetConfigValueCallback .

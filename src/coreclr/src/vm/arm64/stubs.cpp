@@ -10,7 +10,6 @@
 #include "common.h"
 #include "dllimportcallback.h"
 #include "comdelegate.h"
-#include "tls.h"
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 #include "jitinterface.h"

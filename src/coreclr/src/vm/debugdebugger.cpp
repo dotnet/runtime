@@ -16,7 +16,6 @@
 
 #include <object.h>
 #include "ceeload.h"
-#include "corpermp.h"
 
 #include "excep.h"
 #include "frames.h"

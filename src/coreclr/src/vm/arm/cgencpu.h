@@ -12,7 +12,6 @@
 #define __cgencpu_h__
 
 #include "utilcode.h"
-#include "tls.h"
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
