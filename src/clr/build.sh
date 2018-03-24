@@ -394,34 +394,29 @@ isMSBuildOnNETCoreSupported()
 
 build_CoreLib_ni()
 {
-    if [ $__SkipCrossgen == 1 ]; then
-        echo "Skipping generating native image"
-        return
+    local __CrossGenExec=$1
+
+    echo "Generating native image for System.Private.CoreLib.dll"
+    echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll"
+    $__CrossGenExec /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll
+    if [ $? -ne 0 ]; then
+        echo "Failed to generate native image for System.Private.CoreLib."
+        exit 1
     fi
 
-    if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
-        echo "Generating native image for System.Private.CoreLib."
-        echo "$__BinDir/crossgen /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll"
-        $__BinDir/crossgen /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll
+    if [ "$__BuildOS" == "Linux" ]; then
+        echo "Generating symbol file for System.Private.CoreLib.dll"
+        echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
+        $__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll
         if [ $? -ne 0 ]; then
-            echo "Failed to generate native image for System.Private.CoreLib."
+            echo "Failed to generate symbol file for System.Private.CoreLib."
             exit 1
-        fi
-
-        if [ "$__BuildOS" == "Linux" ]; then
-            echo "Generating symbol file for System.Private.CoreLib."
-            $__BinDir/crossgen /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll
-            if [ $? -ne 0 ]; then
-                echo "Failed to generate symbol file for System.Private.CoreLib."
-                exit 1
-            fi
         fi
     fi
 }
 
 build_CoreLib()
 {
-
     if [ $__isMSBuildOnNETCoreSupported == 0 ]; then
         echo "System.Private.CoreLib.dll build unsupported."
         return
@@ -447,17 +442,30 @@ build_CoreLib()
         exit 1
     fi
 
+    if [ $__SkipCrossgen == 1 ]; then
+        echo "Skipping generating native image"
+        return
+    fi
+
     # The cross build generates a crossgen with the target architecture.
-    if [ $__CrossBuild != 1 ]; then
+    if [ $__CrossBuild == 0 ]; then
+       if [ $__SkipCoreCLR == 1 ]; then
+           return
+       fi
+
        # The architecture of host pc must be same architecture with target.
        if [[ ( "$__HostArch" == "$__BuildArch" ) ]]; then
-           build_CoreLib_ni
+           build_CoreLib_ni "$__BinDir/crossgen"
        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
-           build_CoreLib_ni
+           build_CoreLib_ni "$__BinDir/crossgen"
        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni
+           build_CoreLib_ni "$__BinDir/crossgen"
        else
            exit 1
+       fi
+    elif [ $__DoCrossArchBuild == 1 ]; then
+       if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
+           build_CoreLib_ni "$__CrossComponentBinDir/crossgen"
        fi
     fi
 }
