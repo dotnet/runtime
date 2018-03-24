@@ -3,19 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    static partial class MonitorTests
+    public static class MonitorTests
     {
         private const int FailTimeoutMilliseconds = 30000;
 
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
-        public static void BasicRecursion(ref string message)
+        public static void BasicRecursion()
         {
             var obj = new object();
             Assert.True(Monitor.TryEnter(obj));
@@ -32,7 +33,7 @@ namespace System.Threading.Tests
 
         // Attempts to overflow the recursion count of a newly-created lock.
         [Fact]
-        public static void DeepRecursion(ref string message)
+        public static void DeepRecursion()
         {
             var obj = new object();
             var hc = obj.GetHashCode();
@@ -51,7 +52,7 @@ namespace System.Threading.Tests
             }
 
             Monitor.Exit(obj);
-            Assert.True(Monitor.IsEntered(obj));
+            Assert.False(Monitor.IsEntered(obj));
         }
 
         [Fact]
@@ -98,7 +99,7 @@ namespace System.Threading.Tests
             Monitor.Enter(obj, ref lockTaken);
             Assert.True(lockTaken);
             Monitor.Exit(obj);
-            Assert.False(lockTaken);
+            Assert.True(lockTaken);
         }
 
         [Fact]
@@ -107,13 +108,13 @@ namespace System.Threading.Tests
             bool lockTaken = false;
             var obj = new object();
 
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Enter(null));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Enter(null, ref lockTaken));
+            Assert.Throws<ArgumentNullException>(() => Monitor.Enter(null));
+            Assert.Throws<ArgumentNullException>(() => Monitor.Enter(null, ref lockTaken));
             Assert.False(lockTaken);
 
             lockTaken = true;
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.Enter(obj, ref lockTaken));
-            Assert.False(lockTaken);
+            Assert.True(lockTaken);
         }
 
         [Fact]
@@ -121,7 +122,7 @@ namespace System.Threading.Tests
         {
             var obj = new object();
             int valueType = 1;
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Exit(null));
+            Assert.Throws<ArgumentNullException>(() => Monitor.Exit(null));
 
             Assert.Throws<SynchronizationLockException>(() => Monitor.Exit(obj));
             Assert.Throws<SynchronizationLockException>(() => Monitor.Exit(new object()));
@@ -180,7 +181,7 @@ namespace System.Threading.Tests
             Monitor.TryEnter(obj, ref lockTaken);
             Assert.True(lockTaken);
             Monitor.Exit(obj);
-            Assert.False(lockTaken);
+            Assert.True(lockTaken);
         }
 
         [Fact]
@@ -189,35 +190,217 @@ namespace System.Threading.Tests
             bool lockTaken = false;
             var obj = new object();
 
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, ref lockTaken));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, 1));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, 1, ref lockTaken));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, TimeSpan.Zero));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.TryEnter(null, TimeSpan.Zero, ref lockTaken));
+            Assert.Throws<ArgumentNullException>(() => Monitor.TryEnter(null));
+            Assert.Throws<ArgumentNullException>(() => Monitor.TryEnter(null, ref lockTaken));
+            Assert.Throws<ArgumentNullException>(() => Monitor.TryEnter(null, 1));
+            Assert.Throws<ArgumentNullException>(() => Monitor.TryEnter(null, 1, ref lockTaken));
+            Assert.Throws<ArgumentNullException>(() => Monitor.TryEnter(null, TimeSpan.Zero));
+            Assert.Throws<ArgumentNullException>(() => Monitor.TryEnter(null, TimeSpan.Zero, ref lockTaken));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.TryEnter(null, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.TryEnter(null, -1, ref lockTaken));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(null, TimeSpan.FromMilliseconds(-1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(null, TimeSpan.FromMilliseconds(-1), ref lockTaken));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.TryEnter(obj, -2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.TryEnter(obj, -2, ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2), ref lockTaken));
 
             lockTaken = true;
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, ref lockTaken));
-            lockTaken = true;
+            Assert.True(lockTaken);
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, 0, ref lockTaken));
-            lockTaken = true;
+            Assert.True(lockTaken);
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, TimeSpan.Zero, ref lockTaken));
+        }
+
+        [Fact]
+        public static void Enter_HasToWait()
+        {
+            var thinLock = new object();
+            var awareLock = new object();
+
+            // Actually transition the aware lock to an aware lock by having a background thread wait for a lock
+            {
+                Action waitForThread;
+                Thread t =
+                    ThreadTestHelpers.CreateGuardedThread(out waitForThread, () =>
+                        Assert.False(Monitor.TryEnter(awareLock, ThreadTestHelpers.ExpectedTimeoutMilliseconds)));
+                t.IsBackground = true;
+                lock (awareLock)
+                {
+                    t.Start();
+                    waitForThread();
+                }
+            }
+
+            // When the current thread has the lock, have background threads wait for the lock in various ways. After a short
+            // duration, release the lock and allow the background threads to acquire the lock.
+            {
+                var backgroundTestDelegates = new List<Action<object>>();
+                Barrier readyBarrier = null;
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    Monitor.Enter(lockObj);
+                    Monitor.Exit(lockObj);
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    bool lockTaken = false;
+                    Monitor.Enter(lockObj, ref lockTaken);
+                    Assert.True(lockTaken);
+                    Monitor.Exit(lockObj);
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    lock (lockObj)
+                    {
+                    }
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    Assert.True(Monitor.TryEnter(lockObj, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                    Monitor.Exit(lockObj);
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    Assert.True(
+                        Monitor.TryEnter(lockObj, TimeSpan.FromMilliseconds(ThreadTestHelpers.UnexpectedTimeoutMilliseconds)));
+                    Monitor.Exit(lockObj);
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    bool lockTaken = false;
+                    Monitor.TryEnter(lockObj, ThreadTestHelpers.UnexpectedTimeoutMilliseconds, ref lockTaken);
+                    Assert.True(lockTaken);
+                    Monitor.Exit(lockObj);
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    bool lockTaken = false;
+                    Monitor.TryEnter(
+                        lockObj,
+                        TimeSpan.FromMilliseconds(ThreadTestHelpers.UnexpectedTimeoutMilliseconds),
+                        ref lockTaken);
+                    Assert.True(lockTaken);
+                    Monitor.Exit(lockObj);
+                });
+
+                int testCount = backgroundTestDelegates.Count * 2; // two iterations each, one for thin lock and one for aware lock
+                readyBarrier = new Barrier(testCount + 1); // plus main thread
+                var waitForThreadArray = new Action[testCount];
+                for (int i = 0; i < backgroundTestDelegates.Count; ++i)
+                {
+                    int icopy = i; // for use in delegates
+                    Thread t =
+                        ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i * 2],
+                            () => backgroundTestDelegates[icopy](thinLock));
+                    t.IsBackground = true;
+                    t.Start();
+                    t = ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i * 2 + 1],
+                            () => backgroundTestDelegates[icopy](awareLock));
+                    t.IsBackground = true;
+                    t.Start();
+                }
+
+                lock (thinLock)
+                {
+                    lock (awareLock)
+                    {
+                        readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                        Thread.Sleep(ThreadTestHelpers.ExpectedTimeoutMilliseconds);
+                    }
+                }
+                foreach (Action waitForThread in waitForThreadArray)
+                    waitForThread();
+            }
+
+            // When the current thread has the lock, have background threads wait for the lock in various ways and time out
+            // after a short duration
+            {
+                var backgroundTestDelegates = new List<Action<object>>();
+                Barrier readyBarrier = null;
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    Assert.False(Monitor.TryEnter(lockObj, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    Assert.False(
+                        Monitor.TryEnter(lockObj, TimeSpan.FromMilliseconds(ThreadTestHelpers.ExpectedTimeoutMilliseconds)));
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    bool lockTaken = false;
+                    Monitor.TryEnter(lockObj, ThreadTestHelpers.ExpectedTimeoutMilliseconds, ref lockTaken);
+                    Assert.False(lockTaken);
+                });
+
+                backgroundTestDelegates.Add(lockObj =>
+                {
+                    readyBarrier.SignalAndWait();
+                    bool lockTaken = false;
+                    Monitor.TryEnter(
+                        lockObj,
+                        TimeSpan.FromMilliseconds(ThreadTestHelpers.ExpectedTimeoutMilliseconds),
+                        ref lockTaken);
+                    Assert.False(lockTaken);
+                });
+
+                int testCount = backgroundTestDelegates.Count * 2; // two iterations each, one for thin lock and one for aware lock
+                readyBarrier = new Barrier(testCount + 1); // plus main thread
+                var waitForThreadArray = new Action[testCount];
+                for (int i = 0; i < backgroundTestDelegates.Count; ++i)
+                {
+                    int icopy = i; // for use in delegates
+                    Thread t =
+                        ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i * 2],
+                            () => backgroundTestDelegates[icopy](thinLock));
+                    t.IsBackground = true;
+                    t.Start();
+                    t = ThreadTestHelpers.CreateGuardedThread(out waitForThreadArray[i * 2 + 1],
+                            () => backgroundTestDelegates[icopy](awareLock));
+                    t.IsBackground = true;
+                    t.Start();
+                }
+
+                lock (thinLock)
+                {
+                    lock (awareLock)
+                    {
+                        readyBarrier.SignalAndWait(ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
+                        foreach (Action waitForThread in waitForThreadArray)
+                            waitForThread();
+                    }
+                }
+            }
         }
 
         [Fact]
         public static void Wait_Invalid()
         {
             var obj = new object();
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null, 1));
-            AssertExtensions.Throws<ArgumentNullException>("obj", () => Monitor.Wait(null, TimeSpan.Zero));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecondsTimeout", () => Monitor.Wait(null, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(null, TimeSpan.FromMilliseconds(-1)));
+            Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null));
+            Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, 1));
+            Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, TimeSpan.Zero));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, -2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(-2)));
         }
 
         [Fact]
