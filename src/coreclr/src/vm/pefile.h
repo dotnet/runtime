@@ -17,7 +17,6 @@
 
 #include <windef.h>
 
-#include <corpolicy.h>
 #include "sstring.h"
 #include "peimage.h"
 #include "metadata.h"
@@ -32,7 +31,6 @@
 #include "stackwalktypes.h"
 #include <specstrings.h>
 #include "slist.h"
-#include "corperm.h"
 #include "eventtrace.h"
 
 #include "clrprivbinderutil.h"

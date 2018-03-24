@@ -37,7 +37,6 @@
 #include "eetoprofinterfaceimpl.inl"
 #include "profilepriv.h"
 #endif
-#include "tls.h"
 #include "ecall.h"
 #include "generics.h"
 #include "typestring.h"

@@ -16,7 +16,6 @@
 #define __RegMeta__h__
 
 #include <metamodelrw.h>
-#include <corperm.h>
 #include "../inc/mdlog.h"
 #include "utsem.h"
 

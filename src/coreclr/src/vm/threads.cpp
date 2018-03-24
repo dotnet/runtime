@@ -11,7 +11,6 @@
 
 #include "common.h"
 
-#include "tls.h"
 #include "frames.h"
 #include "threads.h"
 #include "stackwalk.h"
