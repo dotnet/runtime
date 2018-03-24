@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography
 {
@@ -28,6 +29,8 @@ namespace System.Security.Cryptography
         private const string OID_OIWSEC_SHA384 = "2.16.840.1.101.3.4.2.2";
         private const string OID_OIWSEC_SHA512 = "2.16.840.1.101.3.4.2.3";
         private const string OID_OIWSEC_RIPEMD160 = "1.3.36.3.2.1";
+
+        private const string ECDsaIdentifier = "ECDsa";
 
         private static volatile Dictionary<string, string> s_defaultOidHT = null;
         private static volatile Dictionary<string, object> s_defaultNameHT = null;
@@ -184,7 +187,12 @@ namespace System.Security.Cryptography
                 ht.Add("DSA", DSACryptoServiceProviderType);
                 ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
 
-                ht.Add("ECDsa", ECDsaCngType);
+                // Windows will register the public ECDsaCng type.  Non-Windows gets a special handler.
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    ht.Add(ECDsaIdentifier, ECDsaCngType);
+                }
+
                 ht.Add("ECDsaCng", ECDsaCngType);
                 ht.Add("System.Security.Cryptography.ECDsaCng", ECDsaCngType);
 
@@ -355,6 +363,15 @@ namespace System.Security.Cryptography
                 {
                     Debug.Fail("Unsupported Dictionary value:" + retvalObj.ToString());
                 }
+            }
+
+            // Special case asking for "ECDsa" since the default map from .NET Framework uses
+            // a Windows-only type.
+            if (retvalType == null &&
+                (args == null || args.Length == 1) &&
+                name == ECDsaIdentifier)
+            {
+                return ECDsa.Create();
             }
 
             // Maybe they gave us a classname.

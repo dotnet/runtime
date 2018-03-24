@@ -192,7 +192,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
                 yield return new object[] { "System.Security.Cryptography.AsymmetricAlgorithm", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                 yield return new object[] { "DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
                 yield return new object[] { "System.Security.Cryptography.DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
-                yield return new object[] { "ECDsa", "System.Security.Cryptography.ECDsaCng", false };
+                yield return new object[] { "ECDsa", "System.Security.Cryptography.ECDsaCng", true };
                 yield return new object[] { "ECDsaCng", "System.Security.Cryptography.ECDsaCng", false };
                 yield return new object[] { "System.Security.Cryptography.ECDsaCng", null, false };
                 yield return new object[] { "DES", "System.Security.Cryptography.DESCryptoServiceProvider", true };
@@ -256,7 +256,9 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Theory, MemberData(nameof(AllValidNames))]
         public static void CreateFromName_AllValidNames(string name, string typeName, bool supportsUnixMac)
         {
-            if (supportsUnixMac || RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+            if (supportsUnixMac || isWindows)
             {
                 object obj = CryptoConfig.CreateFromName(name);
                 Assert.NotNull(obj);
@@ -266,7 +268,15 @@ namespace System.Security.Cryptography.CryptoConfigTests
                     typeName = name;
                 }
 
-                Assert.Equal(typeName, obj.GetType().FullName);
+                // ECDsa is special on non-Windows
+                if (isWindows || name != "ECDsa")
+                {
+                    Assert.Equal(typeName, obj.GetType().FullName);
+                }
+                else
+                {
+                    Assert.NotEqual(typeName, obj.GetType().FullName);
+                }
 
                 if (obj is IDisposable)
                 {
