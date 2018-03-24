@@ -5989,7 +5989,20 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 unsigned fieldVarNum            = varDsc->lvFieldLclStart;
                 lvaTable[fieldVarNum].lvStkOffs = varDsc->lvStkOffs;
             }
-#endif
+#endif // _TARGET_ARM64_
+#ifdef _TARGET_ARM_
+            // If we have an incoming register argument that has a promoted long
+            // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
+            //
+            if (varDsc->lvIsRegArg && varDsc->lvPromoted)
+            {
+                assert(varTypeIsLong(varDsc) && (varDsc->lvFieldCnt == 2));
+
+                unsigned fieldVarNum                = varDsc->lvFieldLclStart;
+                lvaTable[fieldVarNum].lvStkOffs     = varDsc->lvStkOffs;
+                lvaTable[fieldVarNum + 1].lvStkOffs = varDsc->lvStkOffs + 4;
+            }
+#endif // _TARGET_ARM_
         }
     }
 

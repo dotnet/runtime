@@ -695,7 +695,7 @@ public:
 
     RegMaskIndex GetIndexForRegMask(regMaskTP mask);
     regMaskTP GetRegMaskForIndex(RegMaskIndex index);
-    void RemoveRegisterFromMasks(regNumber reg);
+    void RemoveRegistersFromMasks(regMaskTP removeMask);
 
     static bool isSingleRegister(regMaskTP regMask)
     {
