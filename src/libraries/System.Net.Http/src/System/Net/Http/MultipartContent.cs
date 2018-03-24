@@ -417,9 +417,9 @@ namespace System.Net.Http
                 }
             }
 
-            public override int Read(Span<byte> destination)
+            public override int Read(Span<byte> buffer)
             {
-                if (destination.Length == 0)
+                if (buffer.Length == 0)
                 {
                     return 0;
                 }
@@ -428,7 +428,7 @@ namespace System.Net.Http
                 {
                     if (_current != null)
                     {
-                        int bytesRead = _current.Read(destination);
+                        int bytesRead = _current.Read(buffer);
                         if (bytesRead != 0)
                         {
                             _position += bytesRead;
@@ -453,8 +453,8 @@ namespace System.Net.Http
                 return ReadAsyncPrivate(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default) =>
-                ReadAsyncPrivate(destination, cancellationToken);
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+                ReadAsyncPrivate(buffer, cancellationToken);
 
             public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
                 TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
@@ -462,9 +462,9 @@ namespace System.Net.Http
             public override int EndRead(IAsyncResult asyncResult) =>
                 TaskToApm.End<int>(asyncResult);
 
-            public async ValueTask<int> ReadAsyncPrivate(Memory<byte> destination, CancellationToken cancellationToken)
+            public async ValueTask<int> ReadAsyncPrivate(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (destination.Length == 0)
+                if (buffer.Length == 0)
                 {
                     return 0;
                 }
@@ -473,7 +473,7 @@ namespace System.Net.Http
                 {
                     if (_current != null)
                     {
-                        int bytesRead = await _current.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+                        int bytesRead = await _current.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                         if (bytesRead != 0)
                         {
                             _position += bytesRead;
@@ -581,9 +581,9 @@ namespace System.Net.Http
             public override void Flush() { }
             public override void SetLength(long value) { throw new NotSupportedException(); }
             public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
-            public override void Write(ReadOnlySpan<byte> source) { throw new NotSupportedException(); }
+            public override void Write(ReadOnlySpan<byte> buffer) { throw new NotSupportedException(); }
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) { throw new NotSupportedException(); }
         }
         #endregion Serialization
     }

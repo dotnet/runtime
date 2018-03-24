@@ -18,7 +18,7 @@ namespace System.Net.Http
             {
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken ignored)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored)
             {
                 Debug.Assert(_connection._currentRequest != null);
 
@@ -26,23 +26,23 @@ namespace System.Net.Http
                 // here are those that are already covered by the token having been registered with
                 // to close the connection.
 
-                ValueTask task = source.Length == 0 ?
+                ValueTask task = buffer.Length == 0 ?
                     // Don't write if nothing was given, especially since we don't want to accidentally send a 0 chunk,
                     // which would indicate end of body.  Instead, just ensure no content is stuck in the buffer.
                     _connection.FlushAsync() :
-                    new ValueTask(WriteChunkAsync(source));
+                    new ValueTask(WriteChunkAsync(buffer));
 
                 return task;
             }
 
-            private async Task WriteChunkAsync(ReadOnlyMemory<byte> source)
+            private async Task WriteChunkAsync(ReadOnlyMemory<byte> buffer)
             {
                 // Write chunk length in hex followed by \r\n
-                await _connection.WriteHexInt32Async(source.Length).ConfigureAwait(false);
+                await _connection.WriteHexInt32Async(buffer.Length).ConfigureAwait(false);
                 await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
 
                 // Write chunk contents followed by \r\n
-                await _connection.WriteAsync(source).ConfigureAwait(false);
+                await _connection.WriteAsync(buffer).ConfigureAwait(false);
                 await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n').ConfigureAwait(false);
             }
             

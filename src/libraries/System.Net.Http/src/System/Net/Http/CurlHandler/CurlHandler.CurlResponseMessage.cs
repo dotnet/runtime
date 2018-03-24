@@ -253,11 +253,11 @@ namespace System.Net.Http
                 return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
-            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 CheckDisposed();
 
-                EventSourceTrace("Buffer: {0}", destination.Length);
+                EventSourceTrace("Buffer: {0}", buffer.Length);
 
                 // Check for cancellation
                 if (cancellationToken.IsCancellationRequested)
@@ -290,7 +290,7 @@ namespace System.Net.Http
 
                     // Quick check for if no data was actually requested.  We do this after the check
                     // for errors so that we can still fail the read and transfer the exception if we should.
-                    if (destination.Length == 0)
+                    if (buffer.Length == 0)
                     {
                         return new ValueTask<int>(0);
                     }
@@ -298,8 +298,8 @@ namespace System.Net.Http
                     // If there's any data left over from a previous call, grab as much as we can.
                     if (_remainingDataCount > 0)
                     {
-                        int bytesToCopy = Math.Min(destination.Length, _remainingDataCount);
-                        new Span<byte>(_remainingData, _remainingDataOffset, bytesToCopy).CopyTo(destination.Span);
+                        int bytesToCopy = Math.Min(buffer.Length, _remainingDataCount);
+                        new Span<byte>(_remainingData, _remainingDataOffset, bytesToCopy).CopyTo(buffer.Span);
 
                         _remainingDataOffset += bytesToCopy;
                         _remainingDataCount -= bytesToCopy;
@@ -332,7 +332,7 @@ namespace System.Net.Http
                         // the cancellation token.  Dispose on the registration won't return until the action
                         // associated with the registration has completed, but if that action is currently
                         // executing and is blocked on the lock that's held while calling Dispose... deadlock.
-                        var crs = new CancelableReadState(destination, this, cancellationToken);
+                        var crs = new CancelableReadState(buffer, this, cancellationToken);
                         crs._registration = cancellationToken.Register(s1 =>
                         {
                             ((CancelableReadState)s1)._stream.EventSourceTrace("Cancellation invoked. Queueing work item to cancel read state");
@@ -356,7 +356,7 @@ namespace System.Net.Http
                     else
                     {
                         // The token isn't cancelable.  Just create a normal read state.
-                        _pendingReadRequest = new ReadState(destination);
+                        _pendingReadRequest = new ReadState(buffer);
                     }
 
                     _easy._associatedMultiAgent.RequestUnpause(_easy);

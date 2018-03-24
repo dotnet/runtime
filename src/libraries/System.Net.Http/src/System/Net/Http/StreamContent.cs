@@ -152,7 +152,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
 
-            public override void Write(ReadOnlySpan<byte> source)
+            public override void Write(ReadOnlySpan<byte> buffer)
             {
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
@@ -167,7 +167,7 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
