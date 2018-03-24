@@ -3278,7 +3278,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 			if (cfg->disable_llvm) {
 				if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
 					//nm = mono_method_full_name (cfg->method, TRUE);
-					printf ("LLVM failed for '%s.%s': %s\n", method->klass->name, method->name, cfg->exception_message);
+					printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 					//g_free (nm);
 				}
 				if (cfg->llvm_only) {
@@ -3813,7 +3813,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (cfg->disable_llvm) {
 			if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
 				//nm = mono_method_full_name (cfg->method, TRUE);
-				printf ("LLVM failed for '%s.%s': %s\n", method->klass->name, method->name, cfg->exception_message);
+				printf ("LLVM failed for '%s.%s': %s\n", m_class_get_name (method->klass), method->name, cfg->exception_message);
 				//g_free (nm);
 			}
 			if (cfg->llvm_only) {

@@ -2096,7 +2096,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 		use_interp = TRUE;
 	if (!use_interp && mono_interp_only_classes) {
 		for (GSList *l = mono_interp_only_classes; l; l = l->next) {
-			if (!strcmp (method->klass->name, (char*)l->data))
+			if (!strcmp (m_class_get_name (method->klass), (char*)l->data))
 				use_interp = TRUE;
 		}
 	}
