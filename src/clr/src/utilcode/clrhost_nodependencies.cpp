@@ -14,7 +14,6 @@
 #include "hostimpl.h"
 #include "clrnt.h"
 #include "contract.h"
-#include "tls.h"
 
 #if defined __llvm__
 #  if defined(__has_feature) && __has_feature(address_sanitizer)

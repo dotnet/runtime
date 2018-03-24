@@ -36,7 +36,6 @@
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
 #endif
-#include "tls.h"
 #include "ecall.h"
 #include "generics.h"
 #include "typestring.h"

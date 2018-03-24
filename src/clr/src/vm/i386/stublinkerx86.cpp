@@ -16,7 +16,6 @@
 #include "field.h"
 #include "stublink.h"
 
-#include "tls.h"
 #include "frames.h"
 #include "excep.h"
 #include "dllimport.h"

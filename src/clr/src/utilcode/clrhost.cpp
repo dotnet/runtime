@@ -14,7 +14,6 @@
 #include "hostimpl.h"
 #include "clrnt.h"
 #include "contract.h"
-#include "tls.h"
 
 CoreClrCallbacks g_CoreClrCallbacks;
 

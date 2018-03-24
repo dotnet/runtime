@@ -23,7 +23,6 @@
 #include "gcdump.h"
 #include "rtlfunctions.h"
 #include "codeman.h"
-#include "tls.h"
 #include "ecall.h"
 #include "threadsuspend.h"
 
