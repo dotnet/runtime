@@ -166,23 +166,6 @@ private:
     static CustomAttributeManagedValues GetManagedCaValue(CaValue* pCaVal);
 };
 
-class CORSEC_ATTRSET_ARRAY: public StackSArray<CORSEC_ATTRSET> 
-{
-public:
-    CORSEC_ATTRSET_ARRAY()
-    {
-    }
-    ~CORSEC_ATTRSET_ARRAY()
-    {
-        WRAPPER_NO_CONTRACT;
-        for (COUNT_T i = 0; i < GetCount(); i++)
-        {
-            (*this)[i].CORSEC_ATTRSET::~CORSEC_ATTRSET();
-        }
-
-    }
-};
-
 class COMCustomAttribute
 {
 public:
