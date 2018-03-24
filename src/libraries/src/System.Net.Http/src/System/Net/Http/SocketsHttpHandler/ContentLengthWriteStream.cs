@@ -16,14 +16,14 @@ namespace System.Net.Http
             {
             }
 
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken ignored) // token ignored as it comes from SendAsync
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored) // token ignored as it comes from SendAsync
             {
                 Debug.Assert(_connection._currentRequest != null);
 
                 // Have the connection write the data, skipping the buffer. Importantly, this will
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
-                return new ValueTask(_connection.WriteAsync(source));
+                return new ValueTask(_connection.WriteAsync(buffer));
             }
 
             public override Task FinishAsync()

@@ -24,12 +24,12 @@ namespace System.IO.Compression
             WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
-        public override void Write(ReadOnlySpan<byte> source)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            WriteCore(source);
+            WriteCore(buffer);
         }
 
-        internal void WriteCore(ReadOnlySpan<byte> source, bool isFinalBlock = false)
+        internal void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false)
         {
             if (_mode != CompressionMode.Compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
@@ -41,13 +41,13 @@ namespace System.IO.Compression
             {
                 int bytesConsumed = 0;
                 int bytesWritten = 0;
-                lastResult = _encoder.Compress(source, output, out bytesConsumed, out bytesWritten, isFinalBlock);
+                lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock);
                 if (lastResult == OperationStatus.InvalidData)
                     throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
                 if (bytesWritten > 0)
                     _stream.Write(output.Slice(0, bytesWritten));
                 if (bytesConsumed > 0)
-                    source = source.Slice(bytesConsumed);
+                    buffer = buffer.Slice(bytesConsumed);
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.IO.Compression
             return WriteAsync(new ReadOnlyMemory<byte>(array, offset, count), cancellationToken).AsTask();
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_mode != CompressionMode.Compress)
                 throw new InvalidOperationException(SR.BrotliStream_Decompress_UnsupportedOperation);
@@ -72,10 +72,10 @@ namespace System.IO.Compression
 
             return new ValueTask(cancellationToken.IsCancellationRequested ?
                 Task.FromCanceled<int>(cancellationToken) :
-                WriteAsyncMemoryCore(source, cancellationToken));
+                WriteAsyncMemoryCore(buffer, cancellationToken));
         }
 
-        private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
             AsyncOperationStarting();
             try
@@ -86,11 +86,11 @@ namespace System.IO.Compression
                     Memory<byte> output = new Memory<byte>(_buffer);
                     int bytesConsumed = 0;
                     int bytesWritten = 0;
-                    lastResult = _encoder.Compress(source, output, out bytesConsumed, out bytesWritten, isFinalBlock: false);
+                    lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock: false);
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
                     if (bytesConsumed > 0)
-                        source = source.Slice(bytesConsumed);
+                        buffer = buffer.Slice(bytesConsumed);
                     if (bytesWritten > 0)
                         await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
                 }

@@ -9,16 +9,16 @@ namespace System.IO.Compression
 {
     internal sealed partial class PositionPreservingWriteOnlyStreamWrapper : Stream
     {
-        public override void Write(ReadOnlySpan<byte> source)
+        public override void Write(ReadOnlySpan<byte> buffer)
         {
-            _position += source.Length;
-            _stream.Write(source);
+            _position += buffer.Length;
+            _stream.Write(buffer);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
-            _position += source.Length;
-            return _stream.WriteAsync(source, cancellationToken);
+            _position += buffer.Length;
+            return _stream.WriteAsync(buffer, cancellationToken);
         }
     }
 }
