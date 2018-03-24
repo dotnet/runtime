@@ -24,23 +24,19 @@
 
 #undef DEBUG_REFS
 
-#define SLOT_MAX		(2048)
+#define HANDLES_PER_SLOT 240
 
-/* must be a power of 2 */
-#define HANDLE_PER_SLOT	(4096)
+typedef struct _MonoW32HandleSlot MonoW32HandleSlot;
+struct _MonoW32HandleSlot {
+	MonoW32HandleSlot *next;
+	MonoW32Handle handles[HANDLES_PER_SLOT];
+};
 
 static MonoW32HandleCapability handle_caps [MONO_W32TYPE_COUNT];
 static MonoW32HandleOps *handle_ops [MONO_W32TYPE_COUNT];
 
-/*
- * We can hold SLOT_MAX * HANDLE_PER_SLOT handles.
- * If 4M handles are not enough... Oh, well... we will crash.
- */
-#define SLOT_INDEX(x)	(x / HANDLE_PER_SLOT)
-#define SLOT_OFFSET(x)	(x % HANDLE_PER_SLOT)
-
-static MonoW32Handle **private_handles;
-static guint32 private_handles_size = 0;
+static MonoW32HandleSlot *handles_slots_first;
+static MonoW32HandleSlot *handles_slots_last;
 
 /*
  * This is an internal handle which is used for handling waiting for multiple handles.
@@ -163,7 +159,7 @@ mono_w32handle_init (void)
 	mono_coop_cond_init (&global_signal_cond);
 	mono_coop_mutex_init (&global_signal_mutex);
 
-	private_handles = g_new0 (MonoW32Handle*, SLOT_MAX);
+	handles_slots_first = handles_slots_last = g_new0 (MonoW32HandleSlot, 1);
 
 	initialized = TRUE;
 }
@@ -171,15 +167,15 @@ mono_w32handle_init (void)
 void
 mono_w32handle_cleanup (void)
 {
-	int i;
+	MonoW32HandleSlot *slot, *slot_next;
 
 	g_assert (!shutting_down);
 	shutting_down = TRUE;
 
-	for (i = 0; i < SLOT_MAX; ++i)
-		g_free (private_handles [i]);
-
-	g_free (private_handles);
+	for (slot = handles_slots_first; slot; slot = slot_next) {
+		slot_next = slot->next;
+		g_free (slot);
+	}
 }
 
 static gsize
@@ -196,62 +192,71 @@ mono_w32handle_ops_typesize (MonoW32Type type);
 static MonoW32Handle*
 mono_w32handle_new_internal (MonoW32Type type, gpointer handle_specific)
 {
-	guint32 i, k, count;
-	static guint32 last = 0;
-	gboolean retry = FALSE;
-	
-	/* A linear scan should be fast enough.  Start from the last
-	 * allocation, assuming that handles are allocated more often
-	 * than they're freed. Leave the space reserved for file
-	 * descriptors
-	 */
+	static MonoW32HandleSlot *slot_last = NULL;
+	static guint32 index_last = 0;
+	MonoW32HandleSlot *slot;
+	guint32 index;
+	gboolean retried;
 
-	if (last == 0) {
-		/* We need to go from 1 since a handle of value 0 can be considered invalid in managed code */
-		last = 1;
-	} else {
-		retry = TRUE;
+	if (!slot_last) {
+		slot_last = handles_slots_first;
+		g_assert (slot_last);
 	}
 
-again:
-	count = last;
-	for(i = SLOT_INDEX (count); i < private_handles_size; i++) {
-		if (private_handles [i]) {
-			for (k = SLOT_OFFSET (count); k < HANDLE_PER_SLOT; k++) {
-				MonoW32Handle *handle_data = &private_handles [i][k];
+	/* A linear scan should be fast enough. Start from the last allocation, assuming that handles are allocated more
+	 * often than they're freed. */
 
-				if (handle_data->type == MONO_W32TYPE_UNUSED) {
-					last = count + 1;
+retry_from_beginning:
+	retried = FALSE;
 
-					g_assert (handle_data->ref == 0);
+	slot = slot_last;
+	g_assert (slot);
 
-					handle_data->type = type;
-					handle_data->signalled = FALSE;
-					handle_data->ref = 1;
+	index = index_last;
+	g_assert (index >= 0);
+	g_assert (index <= HANDLES_PER_SLOT);
 
-					mono_coop_cond_init (&handle_data->signal_cond);
-					mono_coop_mutex_init (&handle_data->signal_mutex);
+retry:
+	for(; slot; slot = slot->next) {
+		for (; index < HANDLES_PER_SLOT; index++) {
+			MonoW32Handle *handle_data = &slot->handles [index];
 
-					if (handle_specific)
-						handle_data->specific = g_memdup (handle_specific, mono_w32handle_ops_typesize (type));
+			if (handle_data->type == MONO_W32TYPE_UNUSED) {
+				slot_last = slot;
+				index_last = index + 1;
 
-					return handle_data;
-				}
-				count++;
+				g_assert (handle_data->ref == 0);
+
+				handle_data->type = type;
+				handle_data->signalled = FALSE;
+				handle_data->ref = 1;
+
+				mono_coop_cond_init (&handle_data->signal_cond);
+				mono_coop_mutex_init (&handle_data->signal_mutex);
+
+				if (handle_specific)
+					handle_data->specific = g_memdup (handle_specific, mono_w32handle_ops_typesize (type));
+
+				return handle_data;
 			}
 		}
+		index = 0;
 	}
 
-	if (retry) {
+	if (!retried) {
 		/* Try again from the beginning */
-		last = 1;
-		retry = FALSE;
-		goto again;
+		slot = handles_slots_first;
+		index = 0;
+		retried = TRUE;
+		goto retry;
 	}
 
-	/* Will need to expand the array.  The caller will sort it out */
+	handles_slots_last = (handles_slots_last->next = g_new0 (MonoW32HandleSlot, 1));
+	goto retry_from_beginning;
 
-	return GINT_TO_POINTER (-1);
+	/* We already went around and didn't find a slot, so let's put ourselves on the empty slot we just allocated */
+	slot_last = handles_slots_last;
+	index_last = 0;
 }
 
 gpointer
@@ -263,18 +268,8 @@ mono_w32handle_new (MonoW32Type type, gpointer handle_specific)
 
 	mono_coop_mutex_lock (&scan_mutex);
 
-	while ((handle_data = mono_w32handle_new_internal (type, handle_specific)) == GINT_TO_POINTER (-1)) {
-		/* Try and expand the array, and have another go */
-		if (private_handles_size >= SLOT_MAX) {
-			mono_coop_mutex_unlock (&scan_mutex);
-
-			/* We ran out of slots */
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_HANDLE, "%s: failed to create %s handle", __func__, mono_w32handle_ops_typename (type));
-			return INVALID_HANDLE_VALUE;
-		}
-
-		private_handles [private_handles_size ++] = g_new0 (MonoW32Handle, HANDLE_PER_SLOT);
-	}
+	handle_data = mono_w32handle_new_internal (type, handle_specific);
+	g_assert (handle_data);
 
 	mono_coop_mutex_unlock (&scan_mutex);
 
@@ -346,21 +341,20 @@ mono_w32handle_lookup_and_ref (gpointer handle, MonoW32Handle **handle_data)
 void
 mono_w32handle_foreach (gboolean (*on_each)(MonoW32Handle *handle_data, gpointer user_data), gpointer user_data)
 {
+	MonoW32HandleSlot *slot;
 	GPtrArray *handles_to_destroy;
-	guint32 i, k;
+	guint32 i;
 
 	handles_to_destroy = NULL;
 
 	mono_coop_mutex_lock (&scan_mutex);
 
-	for (i = SLOT_INDEX (0); i < private_handles_size; i++) {
-		if (!private_handles [i])
-			continue;
-		for (k = SLOT_OFFSET (0); k < HANDLE_PER_SLOT; k++) {
+	for (slot = handles_slots_first; slot; slot = slot->next) {
+		for (i = 0; i < HANDLES_PER_SLOT; i++) {
 			MonoW32Handle *handle_data;
 			gboolean destroy, finished;
 
-			handle_data = &private_handles [i][k];
+			handle_data = &slot->handles [i];
 			if (handle_data->type == MONO_W32TYPE_UNUSED)
 				continue;
 
