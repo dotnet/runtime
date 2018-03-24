@@ -664,6 +664,11 @@ def static setJobTimeout(newJob, isPR, architecture, configuration, scenario, is
         // Debug runs can be very slow. Add an hour.
         timeout += 60
     }
+	
+	if (architecture == 'x86_arm_altjit' || architecture == 'x64_arm64_altjit') {
+		// AltJit runs compile all methods twice.
+		timeout *= 2
+	}
 
     // If we've changed the timeout from the default, set it in the job.
 
