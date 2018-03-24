@@ -113,6 +113,46 @@ void LinearScan::BuildLclHeap(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// BuildShiftLongCarry: Set the node info for GT_LSH_HI or GT_RSH_LO.
+//
+// Arguments:
+//    tree      - The node of interest
+//
+// Note: these operands have uses that interfere with the def and need the special handling.
+//
+void LinearScan::BuildShiftLongCarry(GenTree* tree)
+{
+    assert(tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO);
+
+    GenTree* source = tree->gtOp.gtOp1;
+    assert((source->OperGet() == GT_LONG) && source->isContained());
+
+    TreeNodeInfo* info = currentNodeInfo;
+    info->srcCount     = 2;
+
+    LocationInfoListNode* sourceLoInfo = getLocationInfo(source->gtOp.gtOp1);
+    LocationInfoListNode* sourceHiInfo = getLocationInfo(source->gtOp.gtOp2);
+    if (tree->OperGet() == GT_LSH_HI)
+    {
+        sourceLoInfo->info.isDelayFree = true;
+    }
+    else
+    {
+        sourceHiInfo->info.isDelayFree = true;
+    }
+    useList.Append(sourceLoInfo);
+    useList.Append(sourceHiInfo);
+    info->hasDelayFreeSrc = true;
+
+    GenTree* shiftBy = tree->gtOp.gtOp2;
+    if (!shiftBy->isContained())
+    {
+        appendLocationInfoToList(shiftBy);
+        info->srcCount += 1;
+    }
+}
+
+//------------------------------------------------------------------------
 // BuildNode: Set the register requirements for RA.
 //
 // Notes:
@@ -335,9 +375,20 @@ void LinearScan::BuildNode(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+        case GT_ROR:
             assert(info->dstCount == 1);
             info->srcCount = appendBinaryLocationInfoToList(tree->AsOp());
             assert(info->srcCount == (tree->gtOp.gtOp2->isContained() ? 1 : 2));
+            break;
+
+        case GT_LSH_HI:
+        case GT_RSH_LO:
+            assert(info->dstCount == 1);
+            BuildShiftLongCarry(tree);
+            assert(info->srcCount == (tree->gtOp.gtOp2->isContained() ? 2 : 3));
             break;
 
         case GT_RETURNTRAP:
@@ -551,15 +602,6 @@ void LinearScan::BuildNode(GenTree* tree)
             info->srcCount = 1;
             assert(info->dstCount == 1);
             appendLocationInfoToList(tree->gtOp.gtOp1);
-            break;
-
-        case GT_LSH:
-        case GT_RSH:
-        case GT_RSZ:
-        case GT_ROR:
-        case GT_LSH_HI:
-        case GT_RSH_LO:
-            BuildShiftRotate(tree);
             break;
 
         case GT_EQ:
