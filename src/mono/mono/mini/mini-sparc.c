@@ -912,7 +912,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			ArgStorage storage;
 
 			if (sig->hasthis && (i == 0))
-				arg_type = &mono_defaults.object_class->byval_arg;
+				arg_type = m_class_get_byval_arg (mono_defaults.object_class);
 			else
 				arg_type = sig->params [i - sig->hasthis];
 
@@ -1030,7 +1030,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (MONO_TYPE_ISSTRUCT ((sig->ret))) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -1046,7 +1046,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	}
 
 	/* Add a properly aligned dword for use by int<->float conversion opcodes */
-	cfg->arch.float_spill_slot = mono_compile_create_var (cfg, &mono_defaults.double_class->byval_arg, OP_ARG);
+	cfg->arch.float_spill_slot = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.double_class), OP_ARG);
 	((MonoInst*)cfg->arch.float_spill_slot)->flags |= MONO_INST_VOLATILE;
 }
 
@@ -1173,7 +1173,7 @@ emit_pass_vtype (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo, ArgInfo 
 		align = sizeof (gpointer);
 	}
 	else if (pinvoke)
-		size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
+		size = mono_type_native_stack_size (m_class_get_byval_arg (in->klass), &align);
 	else {
 		/* 
 		 * Other backends use mono_type_stack_size (), but that
@@ -1303,7 +1303,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		in = call->args [i];
 
 		if (sig->hasthis && (i == 0))
-			arg_type = &mono_defaults.object_class->byval_arg;
+			arg_type = m_class_get_byval_arg (mono_defaults.object_class);
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
@@ -2130,7 +2130,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 		inst = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
-			arg_type = &mono_defaults.object_class->byval_arg;
+			arg_type = m_class_get_byval_arg (mono_defaults.object_class);
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
@@ -3959,7 +3959,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		inst = cfg->args [i];
 
 		if (sig->hasthis && (i == 0))
-			arg_type = &mono_defaults.object_class->byval_arg;
+			arg_type = m_class_get_byval_arg (mono_defaults.object_class);
 		else
 			arg_type = sig->params [i - sig->hasthis];
 
@@ -4225,7 +4225,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			sparc_patch ((guint32*)(cfg->native_code + patch_info->ip.i), code);
 
 			exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", patch_info->data.name);
-			type_idx = exc_class->type_token - MONO_TOKEN_TYPE_DEF;
+			type_idx = m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF;
 			throw_ip = patch_info->ip.i;
 
 			/* Find a throw sequence for the same exception class */

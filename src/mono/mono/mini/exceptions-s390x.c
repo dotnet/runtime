@@ -312,7 +312,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	s390_lgr  (code, s390_r3, s390_r2);
 	if (corlib) {
 		S390_SET  (code, s390_r1, (guint8 *)mono_exception_from_token);
-		S390_SET  (code, s390_r2, (guint8 *)mono_defaults.exception_class->image);
+		S390_SET  (code, s390_r2, (guint8 *)m_class_get_image (mono_defaults.exception_class));
 		s390_basr (code, s390_r14, s390_r1);
 	}
 

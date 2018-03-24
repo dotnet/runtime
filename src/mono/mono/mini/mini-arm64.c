@@ -1130,9 +1130,9 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 			if (!is_hfa (ftype, &nested_nfields, &nested_esize, nested_field_offsets))
 				return FALSE;
 			if (nested_esize == 4)
-				ftype = &mono_defaults.single_class->byval_arg;
+				ftype = m_class_get_byval_arg (mono_defaults.single_class);
 			else
-				ftype = &mono_defaults.double_class->byval_arg;
+				ftype = m_class_get_byval_arg (mono_defaults.double_class);
 			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
 			prev_ftype = ftype;
@@ -1337,7 +1337,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->gr = PARAM_REGS;
 			cinfo->fr = FP_PARAM_REGS;
 			/* Emit the signature cookie just before the implicit arguments */
-			add_param (cinfo, &cinfo->sig_cookie, &mono_defaults.int_class->byval_arg);
+			add_param (cinfo, &cinfo->sig_cookie, m_class_get_byval_arg (mono_defaults.int_class));
 		}
 
 		add_param (cinfo, ainfo, sig->params [pindex]);
@@ -1362,7 +1362,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		cinfo->gr = PARAM_REGS;
 		cinfo->fr = FP_PARAM_REGS;
 		/* Emit the signature cookie just before the implicit arguments */
-		add_param (cinfo, &cinfo->sig_cookie, &mono_defaults.int_class->byval_arg);
+		add_param (cinfo, &cinfo->sig_cookie, m_class_get_byval_arg (mono_defaults.int_class));
 	}
 
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
@@ -1991,7 +1991,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	cinfo = cfg->arch.cinfo;
 
 	if (cinfo->ret.storage == ArgVtypeByRef) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 		cfg->vret_addr->flags |= MONO_INST_VOLATILE;
 	}
 
@@ -1999,16 +1999,16 @@ mono_arch_create_vars (MonoCompile *cfg)
 		MonoInst *ins;
 
 		if (cfg->compile_aot) {
-			ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_info_var = ins;
 		}
 
-		ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.ss_tramp_var = ins;
 
-		ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+		ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 		ins->flags |= MONO_INST_VOLATILE;
 		cfg->arch.bp_tramp_var = ins;
 	}
@@ -2457,7 +2457,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		 * the location pointed to by it after call in emit_move_return_value ().
 		 */
 		if (!cfg->arch.vret_addr_loc) {
-			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			/* Prevent it from being register allocated or optimized away */
 			((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
 		}
@@ -2597,7 +2597,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			load = src;
 		} else {
 			/* Make a copy of the argument */
-			vtaddr = mono_compile_create_var (cfg, &ins->klass->byval_arg, OP_LOCAL);
+			vtaddr = mono_compile_create_var (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL);
 
 			MONO_INST_NEW (cfg, load, OP_LDADDR);
 			load->inst_p0 = vtaddr;
@@ -5075,7 +5075,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 		/* r0 = type token */
 		exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", ji->data.name);
-		code = emit_imm (code, ARMREG_R0, exc_class->type_token - MONO_TOKEN_TYPE_DEF);
+		code = emit_imm (code, ARMREG_R0, m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF);
 		/* r1 = throw ip */
 		arm_movx (code, ARMREG_R1, ARMREG_IP1);
 		/* Branch to the corlib exception throwing trampoline */
@@ -5112,7 +5112,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	guint8 *buf, *code;
 
 #if DEBUG_IMT
-	printf ("building IMT trampoline for class %s %s entries %d code size %d code at %p end %p vtable %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable);
+	printf ("building IMT trampoline for class %s %s entries %d code size %d code at %p end %p vtable %p\n", m_class_get_name_space (vtable->klass), m_class_get_name (vtable->klass), count, size, start, ((guint8*)start) + size, vtable);
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		printf ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, item->key->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);

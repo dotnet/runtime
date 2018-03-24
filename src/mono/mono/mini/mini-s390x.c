@@ -920,7 +920,7 @@ enum_parmtype:
 							obj, *(gint32 *)((char *)obj + sizeof (MonoObject)));
 					} else
 						fprintf (trFd, "[%s.%s:%p]", 
-						       klass->name_space, klass->name, obj);
+							m_class_get_name_space (klass), m_class_get_name (klass), obj);
 					fprintf (trFd, "], ");
 				} else {
 					fprintf (trFd, "[OBJECT:null], ");
@@ -952,7 +952,7 @@ enum_parmtype:
 				int i;
 				MonoMarshalType *info;
 
-				if (type->data.klass->enumtype) {
+				if (m_class_is_enumtype (type->data.klass)) {
 					simpleType = mono_class_enum_basetype (type->data.klass)->type;
 					fprintf (trFd, "{VALUETYPE} - ");
 					goto enum_parmtype;
@@ -1046,7 +1046,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	if (sig->hasthis) {
 		gpointer *this_arg = (gpointer *) rParm->gr[iParm];
 		obj = (MonoObject *) this_arg;
-		switch(method->klass->this_arg.type) {
+		switch(m_class_get_this_arg (method->klass)->type) {
 		case MONO_TYPE_VALUETYPE:
 			if (obj) {
 				guint64 *value = (guint64 *) ((uintptr_t)this_arg + sizeof(MonoObject));
@@ -1063,7 +1063,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 						decodeParmString((MonoString *)obj);
 					} else {
 						fprintf (trFd, "this:%p[%s.%s], ", 
-							obj, klass->name_space, klass->name);
+							obj, m_class_get_name_space (klass), m_class_get_name (klass));
 					}
 				} else 
 					fprintf (trFd, "vtable:[NULL], ");
@@ -1071,7 +1071,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				fprintf (trFd, "this:[NULL], ");
 			break;
 		default :
-			fprintf (trFd, "this[%s]: %p, ",cvtMonoType(method->klass->this_arg.type),this_arg);
+			fprintf (trFd, "this[%s]: %p, ",cvtMonoType(m_class_get_this_arg (method->klass)->type),this_arg);
 		}
 		oParm++;
 	}
@@ -1233,7 +1233,7 @@ handle_enum:
 			} else if  (o->vtable->klass == mono_defaults.int64_class) {
 				fprintf (trFd, "[INT64:%p:%ld]", o, *((gint64 *)((char *)o + sizeof (MonoObject))));	
 			} else
-				fprintf (trFd, "[%s.%s:%p]", o->vtable->klass->name_space, o->vtable->klass->name, o);
+				fprintf (trFd, "[%s.%s:%p]", m_class_get_name_space (o->vtable->klass), m_class_get_name (o->vtable->klass), o);
 		} else
 			fprintf (trFd, "[OBJECT:%p]", o);
 	       
@@ -1269,7 +1269,7 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE: {
 		MonoMarshalType *info;
-		if (type->data.klass->enumtype) {
+		if (m_class_is_enumtype (type->data.klass)) {
 			type = mono_class_enum_basetype (type->data.klass);
 			goto handle_enum;
 		} else {
@@ -1750,11 +1750,11 @@ enum_retvalue:
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
-			if (klass->enumtype) {
+			if (m_class_is_enumtype (klass)) {
 				simpleType = mono_class_enum_basetype (klass)->type;
 				goto enum_retvalue;
 			}
-			size = mini_type_stack_size_full (&klass->byval_arg, NULL, sig->pinvoke);
+			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
 	
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -2307,7 +2307,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	cinfo = get_call_info (cfg->mempool, sig);
 
 	if (cinfo->struct_ret) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -2449,7 +2449,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = &mono_defaults.int_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.int_class);
 		t = mini_get_underlying_type (t);
 
 		in = call->args [i];
@@ -2487,7 +2487,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			else
 				if (sig->pinvoke)
-					size = mono_type_native_stack_size (&in->klass->byval_arg, &align);
+					size = mono_type_native_stack_size (m_class_get_byval_arg (in->klass), &align);
 				else {
 					/* 
 					 * Other backends use mono_type_stack_size (), but that
@@ -2631,7 +2631,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		if (cfg->compute_gc_maps) {
 			MonoInst *def;
 
-			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, &ins->klass->byval_arg);
+			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, m_class_get_byval_arg (ins->klass));
 		}
 	}
 }
@@ -2762,7 +2762,7 @@ handle_enum:
 		save_mode = SAVE_R8;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (mono_method_signature (method)->ret->data.klass->enumtype) {
+		if (m_class_is_enumtype (mono_method_signature (method)->ret->data.klass)) {
 			rtype = mono_class_enum_basetype (mono_method_signature (method)->ret->data.klass)->type;
 			goto handle_enum;
 		}
@@ -6648,7 +6648,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				/*---------------------------------------------*/
 				/* Patch the parameter passed to the handler   */ 
 				/*---------------------------------------------*/
-				S390_SET  (code, s390_r2, exc_class->type_token);
+				S390_SET  (code, s390_r2, m_class_get_type_token (exc_class));
 				/*---------------------------------------------*/
 				/* Load return address & parameter register    */
 				/*---------------------------------------------*/

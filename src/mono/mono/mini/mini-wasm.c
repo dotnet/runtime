@@ -804,7 +804,7 @@ list_frames (MonoStackFrameInfo *info, MonoContext *ctx, gpointer data)
 	while (method->is_inflated)
 		method = ((MonoMethodInflated*)method)->declaring;
 
-	char *assembly_name = g_strdup (method->klass->image->module_name);
+	char *assembly_name = g_strdup (m_class_get_image (method->klass)->module_name);
 	inplace_tolower (assembly_name);
 
 	if (method->wrapper_type == MONO_WRAPPER_NONE) {

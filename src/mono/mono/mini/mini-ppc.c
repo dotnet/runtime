@@ -903,9 +903,9 @@ is_struct_returnable_via_regs  (MonoClass *klass, gboolean is_pinvoke)
 		gpointer iter = NULL;
 		MonoClassField *f;
 		if (is_pinvoke)
-			size = mono_type_native_stack_size (&klass->byval_arg, 0);
+			size = mono_type_native_stack_size (m_class_get_byval_arg (klass), 0);
 		else
-			size = mini_type_stack_size (&klass->byval_arg, 0);
+			size = mini_type_stack_size (m_class_get_byval_arg (klass), 0);
 		if (size == 0)
 			return TRUE;
 		if (size > PPC_LARGEST_STRUCT_SIZE_TO_RETURN_VIA_REGISTERS)
@@ -1565,7 +1565,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig = mono_method_signature (cfg->method);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
 	}
 }
 
@@ -1606,7 +1606,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = &mono_defaults.int_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.int_class);
 		t = mini_get_underlying_type (t);
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos))
@@ -1814,16 +1814,16 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, dreg, tmpr);
 		mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, TRUE);
 	} else {
-		MonoInst *vtcopy = mono_compile_create_var (cfg, &src->klass->byval_arg, OP_LOCAL);
+		MonoInst *vtcopy = mono_compile_create_var (cfg, m_class_get_byval_arg (src->klass), OP_LOCAL);
 		MonoInst *load;
 		guint32 size;
 
 		/* FIXME: alignment? */
 		if (call->signature->pinvoke) {
-			size = mono_type_native_stack_size (&src->klass->byval_arg, NULL);
+			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
-			size = mini_type_stack_size (&src->klass->byval_arg, NULL);
+			size = mini_type_stack_size (m_class_get_byval_arg (src->klass), NULL);
 		}
 		if (size > 0)
 			g_assert (ovf_size > 0);
@@ -5551,7 +5551,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 			ppc_patch (ip, code);
 			/*mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC_NAME, patch_info->data.target);*/
-			ppc_load (code, ppc_r3, exc_class->type_token);
+			ppc_load (code, ppc_r3, m_class_get_type_token (exc_class));
 			/* we got here from a conditional call, so the calling ip is set in lr */
 			ppc_mflr (code, ppc_r4);
 			patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;

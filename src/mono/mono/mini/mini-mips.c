@@ -205,7 +205,7 @@ mips_emit_exc_by_name(guint8 *code, const char *name)
 
 	exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", name);
 
-	mips_load_const (code, mips_a0, exc_class->type_token);
+	mips_load_const (code, mips_a0, m_class_get_type_token (exc_class));
 	addr = mono_get_throw_corlib_exception ();
 	mips_call (code, mips_t9, addr);
 	return code;
@@ -1560,7 +1560,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			MonoType *arg_type;
 		 
 			if (sig->hasthis && (i == 0))
-				arg_type = &mono_defaults.object_class->byval_arg;
+				arg_type = m_class_get_byval_arg (mono_defaults.object_class);
 			else
 				arg_type = sig->params [i - sig->hasthis];
 
@@ -1611,7 +1611,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	sig = mono_method_signature (cfg->method);
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -1684,7 +1684,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = &mono_defaults.int_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.int_class);
 		t = mini_get_underlying_type (t);
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
@@ -1894,16 +1894,16 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, dreg, tmpr);
 		mono_call_inst_add_outarg_reg (cfg, call, dreg, ainfo->reg, TRUE);
 	} else {
-		MonoInst *vtcopy = mono_compile_create_var (cfg, &src->klass->byval_arg, OP_LOCAL);
+		MonoInst *vtcopy = mono_compile_create_var (cfg, m_class_get_byval_arg (src->klass), OP_LOCAL);
 		MonoInst *load;
 		guint32 size;
 
 		/* FIXME: alignment? */
 		if (call->signature->pinvoke) {
-			size = mono_type_native_stack_size (&src->klass->byval_arg, NULL);
+			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
-			size = mini_type_stack_size (&src->klass->byval_arg, NULL);
+			size = mini_type_stack_size (m_class_get_byval_arg (src->klass), NULL);
 		}
 		if (size > 0)
 			g_assert (ovf_size > 0);

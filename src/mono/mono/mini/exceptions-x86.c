@@ -499,7 +499,7 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 	MonoException *ex;
 
-	ex = mono_exception_from_token (mono_defaults.exception_class->image, ex_token);
+	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
 
 	eip -= pc_offset;
 

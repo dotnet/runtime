@@ -303,7 +303,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 
 	sparc_set (code, MONO_TOKEN_TYPE_DEF, sparc_o7);
 	sparc_add (code, FALSE, sparc_i0, sparc_o7, sparc_o1);
-	sparc_set (code, mono_defaults.exception_class->image, sparc_o0);
+	sparc_set (code, m_class_get_image (mono_defaults.exception_class), sparc_o0);
 	sparc_set (code, mono_exception_from_token, sparc_o7);
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
 	sparc_nop (code);

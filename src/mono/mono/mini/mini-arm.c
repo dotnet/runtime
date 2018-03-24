@@ -1226,9 +1226,9 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 			if (!is_hfa (ftype, &nested_nfields, &nested_esize))
 				return FALSE;
 			if (nested_esize == 4)
-				ftype = &mono_defaults.single_class->byval_arg;
+				ftype = m_class_get_byval_arg (mono_defaults.single_class);
 			else
-				ftype = &mono_defaults.double_class->byval_arg;
+				ftype = m_class_get_byval_arg (mono_defaults.double_class);
 			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
 			prev_ftype = ftype;
@@ -2142,7 +2142,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (IS_HARD_FLOAT) {
 		for (i = 0; i < 2; i++) {
-			MonoInst *inst = mono_compile_create_var (cfg, &mono_defaults.double_class->byval_arg, OP_LOCAL);
+			MonoInst *inst = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.double_class), OP_LOCAL);
 			inst->flags |= MONO_INST_VOLATILE;
 
 			cfg->arch.vfp_scratch_slots [i] = (gpointer) inst;
@@ -2153,7 +2153,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 		cfg->ret_var_is_local = TRUE;
 
 	if (cinfo->ret.storage == RegTypeStructByAddr) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
+		cfg->vret_addr = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			g_print ("vret_addr = ");
 			mono_print_ins (cfg->vret_addr);
@@ -2162,13 +2162,13 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cfg->gen_sdb_seq_points) {
 		if (cfg->compile_aot) {
-			MonoInst *ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			MonoInst *ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_info_var = ins;
 
 			if (!cfg->soft_breakpoints) {
 				/* Allocate a separate variable for this to save 1 load per seq point */
-				ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+				ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 				ins->flags |= MONO_INST_VOLATILE;
 				cfg->arch.ss_trigger_page_var = ins;
 			}
@@ -2176,11 +2176,11 @@ mono_arch_create_vars (MonoCompile *cfg)
 		if (cfg->soft_breakpoints) {
 			MonoInst *ins;
 
-			ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_ss_method_var = ins;
 
-			ins = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			ins = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			ins->flags |= MONO_INST_VOLATILE;
 			cfg->arch.seq_point_bp_method_var = ins;
 		}
@@ -2343,7 +2343,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		 * the location pointed to by it after call in emit_move_return_value ().
 		 */
 		if (!cfg->arch.vret_addr_loc) {
-			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.int_class), OP_LOCAL);
 			/* Prevent it from being register allocated or optimized away */
 			((MonoInst*)cfg->arch.vret_addr_loc)->flags |= MONO_INST_VOLATILE;
 		}
@@ -2371,7 +2371,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
-			t = &mono_defaults.int_class->byval_arg;
+			t = m_class_get_byval_arg (mono_defaults.int_class);
 		t = mini_get_underlying_type (t);
 
 		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
@@ -2535,7 +2535,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				 * This is not very nice, and we should really try to fix the allocator.
 				 */
 
-				MonoInst *float_arg = mono_compile_create_var (cfg, &mono_defaults.single_class->byval_arg, OP_LOCAL);
+				MonoInst *float_arg = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.single_class), OP_LOCAL);
 
 				/* Make sure the instruction isn't seen as pointless and removed.
 				 */
@@ -2626,7 +2626,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 				FloatArgData *fad;
 
 				/* See RegTypeFP in mono_arch_emit_call () */
-				MonoInst *float_arg = mono_compile_create_var (cfg, &mono_defaults.single_class->byval_arg, OP_LOCAL);
+				MonoInst *float_arg = mono_compile_create_var (cfg, m_class_get_byval_arg (mono_defaults.single_class), OP_LOCAL);
 				float_arg->flags |= MONO_INST_VOLATILE;
 				MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, float_arg->dreg, load->dreg);
 
@@ -6863,7 +6863,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			patch_info->ip.i = code - cfg->native_code;
 			ARM_BL (code, 0);
 			cfg->thunk_area += THUNK_SIZE;
-			*(guint32*)(gpointer)code = exc_class->type_token - MONO_TOKEN_TYPE_DEF;
+			*(guint32*)(gpointer)code = m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF;
 			code += 4;
 			break;
 		}
@@ -7026,7 +7026,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	unwind_ops = mono_arch_get_cie_program ();
 
 #ifdef DEBUG_IMT
-	g_print ("Building IMT trampoline for class %s %s entries %d code size %d code at %p end %p vtable %p fail_tramp %p\n", vtable->klass->name_space, vtable->klass->name, count, size, start, ((guint8*)start) + size, vtable, fail_tramp);
+	g_print ("Building IMT trampoline for class %s %s entries %d code size %d code at %p end %p vtable %p fail_tramp %p\n", m_class_get_name_space (vtable->klass), m_class_get_name (vtable->klass), count, size, start, ((guint8*)start) + size, vtable, fail_tramp);
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
 		g_print ("method %d (%p) %s vtable slot %p is_equals %d chunk size %d\n", i, item->key, ((MonoMethod*)item->key)->name, &vtable->vtable [item->value.vtable_slot], item->is_equals, item->chunk_size);
@@ -7182,7 +7182,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 
 #ifdef DEBUG_IMT
 	{
-		char *buff = g_strdup_printf ("thunk_for_class_%s_%s_entries_%d", vtable->klass->name_space, vtable->klass->name, count);
+		char *buff = g_strdup_printf ("thunk_for_class_%s_%s_entries_%d", m_class_get_name_space (vtable->klass), m_class_get_name (vtable->klass), count);
 		mono_disassemble_code (NULL, (guint8*)start, size, buff);
 		g_free (buff);
 	}
