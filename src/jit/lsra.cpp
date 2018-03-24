@@ -824,19 +824,24 @@ LinearScan::RegMaskIndex LinearScan::GetIndexForRegMask(regMaskTP mask)
     return result;
 }
 
-// We've decided that we can't use a register during register allocation (probably FPBASE),
+// We've decided that we can't use one or more registers during register allocation (probably FPBASE),
 // but we've already added it to the register masks. Go through the masks and remove it.
-void LinearScan::RemoveRegisterFromMasks(regNumber reg)
+void LinearScan::RemoveRegistersFromMasks(regMaskTP removeMask)
 {
-    JITDUMP("Removing register %s from LSRA register masks\n", getRegName(reg));
+    if (VERBOSE)
+    {
+        JITDUMP("Removing registers from LSRA register masks: ");
+        INDEBUG(dumpRegMask(removeMask));
+        JITDUMP("\n");
+    }
 
-    regMaskTP mask = ~genRegMask(reg);
+    regMaskTP mask = ~removeMask;
     for (int i = 0; i < nextFreeMask; i++)
     {
         regMaskTable[i] &= mask;
     }
 
-    JITDUMP("After removing register:\n");
+    JITDUMP("After removing registers:\n");
     DBEXEC(VERBOSE, dspRegisterMaskTable());
 }
 
@@ -1958,7 +1963,7 @@ void LinearScan::identifyCandidates()
     {
         // Frame layout is only pre-computed for ARM
         printf("\nlvaTable after IdentifyCandidates\n");
-        compiler->lvaTableDump();
+        compiler->lvaTableDump(Compiler::FrameLayoutState::PRE_REGALLOC_FRAME_LAYOUT);
     }
 #endif // DEBUG
 #endif // _TARGET_ARM_
@@ -2493,22 +2498,36 @@ void LinearScan::setFrameType()
     // used during lowering. Luckily, the TreeNodeInfo only stores an index to
     // the masks stored in the LinearScan class, so we only need to walk the
     // unique masks and remove FPBASE.
+    regMaskTP removeMask = RBM_NONE;
     if (frameType == FT_EBP_FRAME)
     {
-        if ((availableIntRegs & RBM_FPBASE) != 0)
-        {
-            RemoveRegisterFromMasks(REG_FPBASE);
-
-            // We know that we're already in "read mode" for availableIntRegs. However,
-            // we need to remove the FPBASE register, so subsequent users (like callers
-            // to allRegs()) get the right thing. The RemoveRegisterFromMasks() code
-            // fixes up everything that already took a dependency on the value that was
-            // previously read, so this completes the picture.
-            availableIntRegs.OverrideAssign(availableIntRegs & ~RBM_FPBASE);
-        }
+        removeMask |= RBM_FPBASE;
     }
 
     compiler->rpFrameType = frameType;
+
+#ifdef _TARGET_ARMARCH_
+    // Determine whether we need to reserve a register for large lclVar offsets.
+    if (compiler->compRsvdRegCheck(Compiler::REGALLOC_FRAME_LAYOUT))
+    {
+        // We reserve R10/IP1 in this case to hold the offsets in load/store instructions
+        compiler->codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
+        assert(REG_OPT_RSVD != REG_FP);
+        JITDUMP("  Reserved REG_OPT_RSVD (%s) due to large frame\n", getRegName(REG_OPT_RSVD));
+        removeMask |= RBM_OPT_RSVD;
+    }
+#endif // _TARGET_ARMARCH_
+
+    if ((removeMask != RBM_NONE) && ((availableIntRegs & removeMask) != 0))
+    {
+        RemoveRegistersFromMasks(removeMask);
+        // We know that we're already in "read mode" for availableIntRegs. However,
+        // we need to remove these registers, so subsequent users (like callers
+        // to allRegs()) get the right thing. The RemoveRegistersFromMasks() code
+        // fixes up everything that already took a dependency on the value that was
+        // previously read, so this completes the picture.
+        availableIntRegs.OverrideAssign(availableIntRegs & ~removeMask);
+    }
 }
 
 //------------------------------------------------------------------------
