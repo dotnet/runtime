@@ -12,15 +12,11 @@ namespace System.Security.Cryptography
             PaddingValue = PaddingMode.PKCS7;
         }
 
-        public static SymmetricAlgorithm Create()
-        {
-            return Create("System.Security.Cryptography.SymmetricAlgorithm");
-        }
+        public static SymmetricAlgorithm Create() =>
+            throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
-        public static SymmetricAlgorithm Create(string algName)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public static SymmetricAlgorithm Create(string algName) =>
+            (SymmetricAlgorithm)CryptoConfigForwarder.CreateFromName(algName);
 
         public virtual int FeedbackSize
         {

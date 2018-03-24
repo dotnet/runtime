@@ -8,15 +8,11 @@ namespace System.Security.Cryptography
     {
         protected KeyedHashAlgorithm() { }
 
-        public static new KeyedHashAlgorithm Create()
-        {
-            return Create("System.Security.Cryptography.KeyedHashAlgorithm");
-        }
+        public static new KeyedHashAlgorithm Create() =>
+            throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
-        public static new KeyedHashAlgorithm Create(string algName)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public static new KeyedHashAlgorithm Create(string algName) =>
+            (KeyedHashAlgorithm)CryptoConfigForwarder.CreateFromName(algName);
 
         public virtual byte[] Key
         {
