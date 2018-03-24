@@ -10041,7 +10041,7 @@ RelativePath=JIT\jit64\opt\cse\hugeexpr1\hugeexpr1.cmd
 WorkingDir=JIT\jit64\opt\cse\hugeexpr1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;JITSTRESS_FAIL;16587
 HostStyle=0
 
 [GCSimulator_101.cmd_1262]
