@@ -342,7 +342,7 @@ namespace System.Threading
             bool lockTaken = false;
 
             //Register for cancellation outside of the main lock.
-            //NOTE: Register/deregister inside the lock can deadlock as different lock acquisition orders could
+            //NOTE: Register/unregister inside the lock can deadlock as different lock acquisition orders could
             //      occur for (1)this.m_lockObj and (2)cts.internalLock
             CancellationTokenRegistration cancellationTokenRegistration = cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCanceledEventHandler, this);
             try
