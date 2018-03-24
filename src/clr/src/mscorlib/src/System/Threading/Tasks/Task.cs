@@ -275,11 +275,11 @@ namespace System.Threading.Tasks
             }
 
             /// <summary>
-            /// Checks if we registered a CT callback during construction, and deregisters it. 
+            /// Checks if we registered a CT callback during construction, and unregisters it.
             /// This should be called when we know the registration isn't useful anymore. Specifically from Finish() if the task has completed
             /// successfully or with an exception.
             /// </summary>
-            internal void DeregisterCancellationCallback()
+            internal void UnregisterCancellationCallback()
             {
                 if (m_cancellationRegistration != null)
                 {
@@ -2160,7 +2160,7 @@ namespace System.Threading.Tasks
             if (cp != null)
             {
                 cp.SetCompleted();
-                cp.DeregisterCancellationCallback();
+                cp.UnregisterCancellationCallback();
             }
 
             // ready to run continuations and notify parent.
@@ -3196,7 +3196,7 @@ namespace System.Threading.Tasks
             if (cp != null)
             {
                 cp.SetCompleted();
-                cp.DeregisterCancellationCallback();
+                cp.UnregisterCancellationCallback();
             }
 
             if (AsyncCausalityTracer.LoggingOn)

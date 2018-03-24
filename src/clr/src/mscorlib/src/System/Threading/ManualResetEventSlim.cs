@@ -575,7 +575,7 @@ namespace System.Threading
                 // Now enter the lock and wait.
                 EnsureLockObjectCreated();
 
-                // We must register and deregister the token outside of the lock, to avoid deadlocks.
+                // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCallback, this))
                 {
                     lock (m_lock)
@@ -629,7 +629,7 @@ namespace System.Threading
                         }
                     }
                 }
-            } // automatically disposes (and deregisters) the callback 
+            } // automatically disposes (and unregisters) the callback
 
             return true; //done. The wait was satisfied.
         }

@@ -24,8 +24,8 @@ namespace System.Threading
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated 
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
-        /// If the target callback is currently executing this method will wait until it completes, except
-        /// in the degenerate cases where a callback method deregisters itself.
+        /// If the target callback is currently executing, this method will wait until it completes, except
+        /// in the degenerate cases where a callback method unregisters itself.
         /// </summary>
         public void Dispose()
         {
@@ -47,7 +47,7 @@ namespace System.Threading
         /// Disposes of the registration and unregisters the target callback from the associated 
         /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
         /// </summary>
-        internal bool TryDeregister() // corefx currently has an InternalsVisibleTo dependency on this
+        internal bool Unregister() // corefx currently has an InternalsVisibleTo dependency on this
         {
             CancellationTokenSource.CallbackNode node = _node;
             return node != null && node.Partition.Unregister(_id, node);
@@ -62,8 +62,8 @@ namespace System.Threading
             //    1. If we are called in the context of an executing callback, no need to wait (determined by tracking callback-executor threadID)
             //       - if the currently executing callback is this CTR, then waiting would deadlock. (We choose to return rather than deadlock)
             //       - if not, then this CTR cannot be the one executing, hence no need to wait
-            //    2. If deregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
-            //       => poll until cts.ExecutingCallback is not the one we are trying to deregister.
+            //    2. If unregistration failed, and we are on a different thread, then the callback may be running under control of cts.Cancel()
+            //       => poll until cts.ExecutingCallback is not the one we are trying to unregister.
             CancellationTokenSource source = _node.Partition.Source;
             if (source.IsCancellationRequested && // Running callbacks has commenced.
                 !source.IsCancellationCompleted && // Running callbacks hasn't finished.
