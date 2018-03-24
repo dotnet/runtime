@@ -343,14 +343,6 @@ WszCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     );
 
-DWORD
-WszGetWorkingSet(
-    VOID
-    );
-
-SIZE_T WszGetPagefileUsage();
-DWORD  WszGetProcessHandleCount();
-
 #if defined(_X86_) && defined(_MSC_VER)
 
 //
