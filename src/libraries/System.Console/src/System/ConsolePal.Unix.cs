@@ -99,6 +99,16 @@ namespace System
 
             bool previouslyProcessed;
             ConsoleKeyInfo keyInfo = StdInReader.ReadKey(out previouslyProcessed);
+
+            // Replace the '\n' char for Enter by '\r' to match Windows behavior.
+            if (keyInfo.Key == ConsoleKey.Enter && keyInfo.KeyChar == '\n')
+            {
+                bool shift   = (keyInfo.Modifiers & ConsoleModifiers.Shift)   != 0;
+                bool alt     = (keyInfo.Modifiers & ConsoleModifiers.Alt)     != 0;
+                bool control = (keyInfo.Modifiers & ConsoleModifiers.Control) != 0;
+                keyInfo = new ConsoleKeyInfo('\r', keyInfo.Key, shift, alt, control);
+            }
+
             if (!intercept && !previouslyProcessed) Console.Write(keyInfo.KeyChar);
             return keyInfo;
         }
