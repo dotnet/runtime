@@ -20,7 +20,7 @@ namespace System.Tests
         [MemberData(nameof(GetHashCode_TestData))]
         public void GetHashCodeWithStringComparer_UseSameStringInTwoProcesses_ReturnsDifferentHashCodes(int getHashCodeIndex)
         {
-            Func<string, string, int> method = (parentHash, i) => { return int.Parse(parentHash) != s_GetHashCodes[int.Parse(i)]() ? SuccessExitCode : -1; };
+            Func<string, string, int> method = (parentHash, i) => int.Parse(parentHash) != s_GetHashCodes[int.Parse(i)]() ? SuccessExitCode : -1;
             int parentHashCode = s_GetHashCodes[getHashCodeIndex]();
             int exitCode, retry = 0;
             do
@@ -28,9 +28,7 @@ namespace System.Tests
                 // very small chance the child and parent hashcode are the same. To further reduce chance of collision we try up to 3 times
                 using (RemoteInvokeHandle handle = RemoteInvoke(method, parentHashCode.ToString(), getHashCodeIndex.ToString(), new RemoteInvokeOptions { CheckExitCode = false }))
                 {
-                    Process p = handle.Process;
-                    p.WaitForExit();
-                    exitCode = p.ExitCode;
+                    exitCode = handle.ExitCode;
                     retry++;
                 }
             } while (exitCode != SuccessExitCode && retry < 3);

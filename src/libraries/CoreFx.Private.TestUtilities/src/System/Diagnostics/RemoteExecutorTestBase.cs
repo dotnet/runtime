@@ -195,6 +195,27 @@ namespace System.Diagnostics
                 MethodName = methodName;
             }
 
+            private int _exitCode;
+            public int ExitCode
+            {
+                get
+                {
+                    if (!PlatformDetection.IsUap)
+                    {
+                        Process.WaitForExit();
+                        return Process.ExitCode;
+                    }
+                    return _exitCode;
+                }
+                internal set
+                {
+                    if (!PlatformDetection.IsUap)
+                    {
+                        throw new PlatformNotSupportedException("ExitCode property can only be set in UWP");
+                    }
+                    _exitCode = value;
+                }
+            }
             public Process Process { get; set; }
             public RemoteInvokeOptions Options { get; private set; }
             public string AssemblyName { get; private set; }
