@@ -112,59 +112,6 @@ void LinearScan::BuildIndir(GenTreeIndir* indirTree)
 }
 
 //------------------------------------------------------------------------
-// BuildShiftRotate: Set the NodeInfo for a shift or rotate.
-//
-// Arguments:
-//    tree      - The node of interest
-//
-// Return Value:
-//    None.
-//
-int LinearScan::BuildShiftRotate(GenTree* tree)
-{
-    TreeNodeInfo* info    = currentNodeInfo;
-    GenTree*      source  = tree->gtOp.gtOp1;
-    GenTree*      shiftBy = tree->gtOp.gtOp2;
-    assert(info->dstCount == 1);
-    if (!shiftBy->isContained())
-    {
-        appendLocationInfoToList(shiftBy);
-        info->srcCount = 1;
-    }
-
-#ifdef _TARGET_ARM_
-
-    // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
-    // we can have a three operand form. Increment the srcCount.
-    if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
-    {
-        assert((source->OperGet() == GT_LONG) && source->isContained());
-        info->srcCount += 2;
-
-        LocationInfoListNode* sourceLoInfo = getLocationInfo(source->gtOp.gtOp1);
-        useList.Append(sourceLoInfo);
-        LocationInfoListNode* sourceHiInfo = getLocationInfo(source->gtOp.gtOp2);
-        useList.Append(sourceHiInfo);
-        if (tree->OperGet() == GT_LSH_HI)
-        {
-            sourceLoInfo->info.isDelayFree = true;
-        }
-        else
-        {
-            sourceHiInfo->info.isDelayFree = true;
-        }
-        info->hasDelayFreeSrc = true;
-    }
-    else
-#endif // _TARGET_ARM_
-    {
-        appendLocationInfoToList(source);
-        info->srcCount++;
-    }
-    return info->srcCount;
-}
-
-//------------------------------------------------------------------------
 // BuildCall: Set the NodeInfo for a call.
 //
 // Arguments:
