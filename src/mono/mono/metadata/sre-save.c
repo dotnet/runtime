@@ -1275,7 +1275,6 @@ mono_image_fill_export_table (MonoDomain *domain, MonoReflectionTypeBuilder *tb,
 	if (m_class_get_type_token (klass) != tb_token) {
 		g_error ("TypeBuilder token %08x does not match klass token %08x", tb_token, m_class_get_type_token (klass));
 	}
-	klass->type_token = tb_token; /* FIXME: shouldn't this already be set? Why is this assignment here? */
 
 	idx = mono_image_fill_export_table_from_class (domain, klass, module_index, 
 												   parent_index, assembly);
