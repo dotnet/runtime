@@ -2495,7 +2495,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // Class info matched. Are we updating exactness?
     if (isExact)
     {
-        JITDUMP("\nlvaUpdateClass: Updating class for V%02i (%p) %s to be exact\n", varNum, varDsc->lvClassHnd,
+        JITDUMP("\nlvaUpdateClass: Updating class for V%02i (%p) %s to be exact\n", varNum, dspPtr(varDsc->lvClassHnd),
                 info.compCompHnd->getClassName(varDsc->lvClassHnd));
 
         varDsc->lvClassIsExact = isExact;
