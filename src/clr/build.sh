@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+# Work around Jenkins CI + msbuild problem: Jenkins sometimes creates very large environment
+# variables, and msbuild can't handle environment blocks with such large variables. So clear
+# out the variables that might be too large.
+export ghprbCommentBody=
+
 # resolve python-version to use
 if [ "$PYTHON" == "" ] ; then
     if ! PYTHON=$(command -v python2.7 || command -v python2 || command -v python)
