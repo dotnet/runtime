@@ -181,6 +181,8 @@ namespace System.Globalization
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(string1 != null);
+            Debug.Assert(string2 != null);
 
             return Interop.Globalization.CompareStringOrdinalIgnoreCase(string1, count1, string2, count2);
         }
