@@ -69,11 +69,7 @@ bool Lowering::IsCallTargetInRange(void* addr)
 //
 bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 {
-    if (varTypeIsFloating(parentNode->TypeGet()))
-    {
-        return false;
-    }
-    else
+    if (!varTypeIsFloating(parentNode->TypeGet()))
     {
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
@@ -90,9 +86,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 
         switch (parentNode->OperGet())
         {
-            default:
-                return false;
-
             case GT_ADD:
             case GT_SUB:
 #ifdef _TARGET_ARM64_
@@ -113,18 +106,15 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_GE:
             case GT_GT:
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
-                break;
             case GT_AND:
             case GT_OR:
             case GT_XOR:
             case GT_TEST_EQ:
             case GT_TEST_NE:
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
-                break;
             case GT_JCMP:
                 assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
                 return true;
-                break;
 #elif defined(_TARGET_ARM_)
             case GT_EQ:
             case GT_NE:
@@ -137,7 +127,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_OR:
             case GT_XOR:
                 return emitter::emitIns_valid_imm_for_alu(immVal);
-                break;
 #endif // _TARGET_ARM_
 
 #ifdef _TARGET_ARM64_
@@ -147,6 +136,9 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
                     return true;
                 break;
 #endif
+
+            default:
+                break;
         }
     }
 
