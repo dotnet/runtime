@@ -1110,8 +1110,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     }
                     else {
                         // Currently no push triggers, with limited arm Linux hardware.
+                        // TODO: If we have enough machine capacity, add some arm Linux push triggers.
                         assert os == 'Ubuntu'
-                        addPeriodicTriggerHelper(job, '@daily')
+                        if (isFlowJob) {
+                            addPeriodicTriggerHelper(job, '@daily')
+                        }
                     }
                     break
                 case 'armem':
@@ -1289,22 +1292,34 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'corefx_jitstressregs0x80':
         case 'corefx_jitstressregs0x1000':
         case 'zapdisable':
-            if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
-                assert (os == 'Windows_NT') || (os in Constants.crossList)
-                if (jobRequiresLimitedHardware(architecture, os)) {
-                    addPeriodicTriggerHelper(job, '@weekly')
-                }
-                else {
-                    addPeriodicTriggerHelper(job, '@daily')
-                }
+            if (os == 'CentOS7.1') {
+                break
+            }
+            if (os in bidailyCrossList) {
+                break
+            }
+            assert (os == 'Windows_NT') || (os in Constants.crossList)
+            if (jobRequiresLimitedHardware(architecture, os)) {
+                addPeriodicTriggerHelper(job, '@weekly')
+            }
+            else {
+                addPeriodicTriggerHelper(job, '@daily')
             }
             break
         case 'heapverify1':
         case 'gcstress0x3':
-            if (os != 'CentOS7.1' && !(os in bidailyCrossList)) {
-                assert (os == 'Windows_NT') || (os in Constants.crossList)
-                addPeriodicTriggerHelper(job, '@weekly')
+            if (os == 'CentOS7.1') {
+                break
             }
+            if (os in bidailyCrossList) {
+                break
+            }
+            if ((architecture == 'arm64') && (os != 'Windows_NT')) {
+                // TODO: should we have cron jobs for arm64 Linux GCStress?
+                break
+            }
+            assert (os == 'Windows_NT') || (os in Constants.crossList)
+            addPeriodicTriggerHelper(job, '@weekly')
             break
         case 'gcstress0xc':
         case 'gcstress0xc_zapdisable':
@@ -1313,11 +1328,22 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'gcstress0xc_jitstress1':
         case 'gcstress0xc_jitstress2':
         case 'gcstress0xc_minopts_heapverify1':
-            // GCStress=C is currently not supported on OS X
-            if (os != 'CentOS7.1' && os != 'OSX10.12' && !(os in bidailyCrossList)) {
-                assert (os == 'Windows_NT') || (os in Constants.crossList)
-                addPeriodicTriggerHelper(job, '@weekly')
+            if (os == 'CentOS7.1') {
+                break
             }
+            if (os == 'OSX10.12') {
+                // GCStress=C is currently not supported on OS X
+                break
+            }
+            if (os in bidailyCrossList) {
+                break
+            }
+            if ((architecture == 'arm64') && (os != 'Windows_NT')) {
+                // TODO: should we have cron jobs for arm64 Linux GCStress?
+                break
+            }
+            assert (os == 'Windows_NT') || (os in Constants.crossList)
+            addPeriodicTriggerHelper(job, '@weekly')
             break
 
         case 'illink':
@@ -3221,11 +3247,6 @@ def static CreateTestJob(def dslFactory, def project, def branch, def architectu
 // Returns the new flow job.
 def static CreateFlowJob(def dslFactory, def project, def branch, def architecture, def os, def configuration, def scenario, def isPR, def fullTestJobName, def inputCoreCLRBuildName, def inputTestsBuildName)
 {
-    if (os == 'RHEL7.2' || os == 'Debian8.4') {
-        // Do not create the flow job for RHEL jobs.
-        return
-    }
-
     // Windows CoreCLR build and Linux CoreCLR build (in parallel) ->
     // Linux CoreCLR test
     def flowJobName = getJobName(configuration, architecture, os, scenario, false) + "_flow"
@@ -3521,6 +3542,11 @@ Constants.allScenarios.each { scenario ->
                     // =============================================================================================
                     // Create a build flow to join together the build and tests required to run this test.
                     // =============================================================================================
+
+                    if (os == 'RHEL7.2' || os == 'Debian8.4') {
+                        // Do not create the flow job for RHEL jobs.
+                        return
+                    }
 
                     def fullTestJobName = projectFolder + '/' + testJob.name
                     def flowJob = CreateFlowJob(this, project, branch, architecture, os, configuration, scenario, isPR, fullTestJobName, inputCoreCLRBuildName, inputTestsBuildName)

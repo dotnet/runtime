@@ -22,6 +22,11 @@ if defined VS150COMNTOOLS (
   set __VSVersion=vs2015
 )
 
+:: Work around Jenkins CI + msbuild problem: Jenkins sometimes creates very large environment
+:: variables, and msbuild can't handle environment blocks with such large variables. So clear
+:: out the variables that might be too large.
+set ghprbCommentBody=
+
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
