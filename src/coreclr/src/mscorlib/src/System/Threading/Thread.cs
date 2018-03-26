@@ -213,7 +213,7 @@ namespace System.Threading
             IntPtr thread = DONT_USE_InternalThread;
 
             // This should never happen under normal circumstances. m_assembly is always assigned before it is handed out to the user.
-            // There are ways how to create an unitialized objects through remoting, etc. Avoid AVing in the EE by throwing a nice
+            // There are ways how to create an uninitialized objects through remoting, etc. Avoid AVing in the EE by throwing a nice
             // exception here.
             if (thread == IntPtr.Zero)
                 throw new ArgumentException(null, SR.Argument_InvalidHandle);
@@ -257,7 +257,7 @@ namespace System.Threading
             if (m_Delegate != null)
             {
                 // If we reach here with a null delegate, something is broken. But we'll let the StartInternal method take care of
-                // reporting an error. Just make sure we dont try to dereference a null delegate.
+                // reporting an error. Just make sure we don't try to dereference a null delegate.
                 ThreadHelper t = (ThreadHelper)(m_Delegate.Target);
                 ExecutionContext ec = ExecutionContext.Capture();
                 t.SetExecutionContextHelper(ec);
@@ -290,7 +290,7 @@ namespace System.Threading
 
         /*=========================================================================
         ** Suspends the current thread for timeout milliseconds. If timeout == 0,
-        ** forces the thread to give up the remainer of its timeslice.  If timeout
+        ** forces the thread to give up the remainder of its timeslice.  If timeout
         ** == Timeout.Infinite, no timeout will occur.
         **
         ** Exceptions: ArgumentException if timeout < 0.
@@ -313,9 +313,9 @@ namespace System.Threading
         }
 
 
-        /* wait for a length of time proportial to 'iterations'.  Each iteration is should
+        /* wait for a length of time proportional to 'iterations'.  Each iteration is should
            only take a few machine instructions.  Calling this API is preferable to coding
-           a explict busy loop because the hardware can be informed that it is busy waiting. */
+           a explicit busy loop because the hardware can be informed that it is busy waiting. */
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SpinWaitInternal(int iterations);
@@ -528,7 +528,7 @@ namespace System.Threading
     } // End of class Thread
 
     // declaring a local var of this enum type and passing it by ref into a function that needs to do a
-    // stack crawl will both prevent inlining of the calle and pass an ESP point to stack crawl to
+    // stack crawl will both prevent inlining of the callee and pass an ESP point to stack crawl to
     // Declaring these in EH clauses is illegal; they must declared in the main method body
     internal enum StackCrawlMark
     {
