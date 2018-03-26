@@ -241,7 +241,7 @@ namespace System.Threading
 
                             // And then check to see if we can fix up the indexes (if we're at
                             // the edge).  If we can't, we just leave nulls in the array and they'll
-                            // get filtered out eventually (but may lead to superflous resizing).
+                            // get filtered out eventually (but may lead to superfluous resizing).
                             if (i == m_tailIndex)
                                 m_tailIndex -= 1;
                             else if (i == m_headIndex)
@@ -655,7 +655,7 @@ namespace System.Threading
         }
     }
 
-    // Holds a WorkStealingQueue, and remmoves it from the list when this object is no longer referened.
+    // Holds a WorkStealingQueue, and removes it from the list when this object is no longer referenced.
     internal sealed class ThreadPoolWorkQueueThreadLocals
     {
         [ThreadStatic]
@@ -866,7 +866,7 @@ namespace System.Threading
 
     public delegate void WaitCallback(Object state);
 
-    public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signalled or timed out
+    public delegate void WaitOrTimerCallback(Object state, bool timedOut);  // signaled or timed out
 
     //
     // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
