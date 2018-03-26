@@ -8282,9 +8282,23 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg = REG_PREV(fromReg);
-                    if (location[lowerHalfReg] == REG_NA)
+                    regNumber lowerHalfReg    = REG_PREV(fromReg);
+                    regNumber lowerHalfSrcReg = (regNumber)source[lowerHalfReg];
+                    regNumber lowerHalfSrcLoc = (regNumber)location[lowerHalfReg];
+                    // Necessary conditions:
+                    // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
+                    // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
+                    // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
+                    // - It's not in the ready set               ((targetRegsReady & genRegMask(lowerHalfReg)) ==
+                    //                                            RBM_NONE)
+                    //
+                    if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
+                        (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
+                        ((targetRegsReady & genRegMask(lowerHalfReg)) == RBM_NONE))
                     {
+                        // This must be a double interval, otherwise it would be in targetRegsReady, or already
+                        // completed.
+                        assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
                         targetRegsReady |= genRegMask(lowerHalfReg);
                     }
 #endif // _TARGET_ARM_
