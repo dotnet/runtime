@@ -6354,7 +6354,7 @@ void CodeGen::genIntToIntCast(GenTree* treeNode)
     bool      isUnsignedSrc = varTypeIsUnsigned(srcType);
 
     // if necessary, force the srcType to unsigned when the GT_UNSIGNED flag is set
-    if (!isUnsignedSrc && (treeNode->gtFlags & GTF_UNSIGNED) != 0)
+    if (!isUnsignedSrc && treeNode->IsUnsigned())
     {
         srcType       = genUnsignedType(srcType);
         isUnsignedSrc = true;
@@ -6371,37 +6371,29 @@ void CodeGen::genIntToIntCast(GenTree* treeNode)
 
     if (srcSize < dstSize)
     {
-        // Widening cast
-        // Is this an Overflow checking cast?
-        // We only need to handle one case, as the other casts can never overflow.
-        //   cast from TYP_INT to TYP_ULONG
-        //
-        if (treeNode->gtOverflow() && (srcType == TYP_INT) && (dstType == TYP_ULONG))
+#ifdef _TARGET_X86_
+        // dstType cannot be a long type on x86, such casts should have been decomposed.
+        // srcType cannot be a small type since it's the "actual type" of the cast operand.
+        // This means that widening casts do not actually occur on x86.
+        unreached();
+#else
+        // This is a widening cast from TYP_(U)INT to TYP_(U)LONG.
+        assert(dstSize == EA_8BYTE);
+        assert(srcSize == EA_4BYTE);
+
+        // When widening, overflows can only happen if the source type is signed and the
+        // destination type is unsigned. Since the overflow check ensures that the value
+        // is positive a cheaper mov instruction can be used instead of movsxd.
+        if (treeNode->gtOverflow() && !isUnsignedSrc && isUnsignedDst)
         {
             requiresOverflowCheck = true;
             ins                   = INS_mov;
         }
         else
         {
-            noway_assert(srcSize < EA_PTRSIZE);
-
-            ins = ins_Move_Extend(srcType, false);
-
-            /*
-                Special case: ins_Move_Extend assumes the destination type is no bigger
-                than TYP_INT.  movsx and movzx can already extend all the way to
-                64-bit, and a regular 32-bit mov clears the high 32 bits (like the non-existant movzxd),
-                but for a sign extension from TYP_INT to TYP_LONG, we need to use movsxd opcode.
-            */
-            if (!isUnsignedSrc && !isUnsignedDst)
-            {
-#ifdef _TARGET_X86_
-                NYI_X86("Cast to 64 bit for x86/RyuJIT");
-#else  // !_TARGET_X86_
-                ins = INS_movsxd;
-#endif // !_TARGET_X86_
-            }
+            ins = isUnsignedSrc ? INS_mov : INS_movsxd;
         }
+#endif
     }
     else
     {

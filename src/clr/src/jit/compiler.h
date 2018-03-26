@@ -2128,9 +2128,9 @@ public:
 
     GenTree* gtUnusedValNode(GenTree* expr);
 
-    GenTree* gtNewCastNode(var_types typ, GenTree* op1, var_types castType);
+    GenTreeCast* gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
-    GenTree* gtNewCastNodeL(var_types typ, GenTree* op1, var_types castType);
+    GenTreeCast* gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType);
 
     GenTree* gtNewAllocObjNode(unsigned int helper, CORINFO_CLASS_HANDLE clsHnd, var_types type, GenTree* op1);
 

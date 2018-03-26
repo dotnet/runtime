@@ -748,8 +748,8 @@ void Lowering::LowerCast(GenTree* tree)
 
     if (tmpType != TYP_UNDEF)
     {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_UNSIGNED | GTF_OVERFLOW | GTF_EXCEPT));
+        GenTree* tmp = comp->gtNewCastNode(tmpType, castOp, tree->IsUnsigned(), tmpType);
+        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
 
         tree->gtFlags &= ~GTF_UNSIGNED;
         tree->gtOp.gtOp1 = tmp;

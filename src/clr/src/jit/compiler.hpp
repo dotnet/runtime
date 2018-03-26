@@ -1476,13 +1476,13 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     }
 }
 
-inline GenTree* Compiler::gtNewCastNode(var_types typ, GenTree* op1, var_types castType)
+inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
 {
-    GenTree* res = new (this, GT_CAST) GenTreeCast(typ, op1, castType);
+    GenTreeCast* res = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
     return res;
 }
 
-inline GenTree* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, var_types castType)
+inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
 {
     /* Some casts get transformed into 'GT_CALL' or 'GT_IND' nodes */
 
@@ -1491,7 +1491,8 @@ inline GenTree* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, var_types 
 
     /* Make a big node first and then change it to be GT_CAST */
 
-    GenTree* res = new (this, LargeOpOpcode()) GenTreeCast(typ, op1, castType DEBUGARG(/*largeNode*/ true));
+    GenTreeCast* res =
+        new (this, LargeOpOpcode()) GenTreeCast(typ, op1, fromUnsigned, castType DEBUGARG(/*largeNode*/ true));
     return res;
 }
 
