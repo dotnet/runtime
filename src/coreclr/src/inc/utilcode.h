@@ -5317,7 +5317,7 @@ inline T* InterlockedExchangeT(
     std::nullptr_t value) // When nullptr is provided as argument.
 {
     //STATIC_ASSERT(value == 0);
-    return InterlockedExchangeT(target, reinterpret_cast<T*>(value));
+    return InterlockedExchangeT(target, static_cast<T*>(value));
 }
 
 template <typename T>
@@ -5327,7 +5327,7 @@ inline T* InterlockedCompareExchangeT(
     T*             comparand)
 {
     //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangeT(destination, reinterpret_cast<T*>(exchange), comparand);
+    return InterlockedCompareExchangeT(destination, static_cast<T*>(exchange), comparand);
 }
 
 template <typename T>
@@ -5337,7 +5337,7 @@ inline T* InterlockedCompareExchangeT(
     std::nullptr_t comparand) // When nullptr is provided as argument.
 {
     //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangeT(destination, exchange, reinterpret_cast<T*>(comparand));
+    return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
 }
 
 #undef InterlockedExchangePointer
