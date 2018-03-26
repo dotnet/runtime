@@ -9,6 +9,7 @@ using System.Linq;
 using System.Globalization;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions; 
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XmlDiff;
@@ -3418,8 +3419,12 @@ namespace CoreXml.Test.XLinq
                         Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
                         if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
                         {
-                            string expectedMsg = "Cannot have ']]>' inside an XML CDATA block.";
-                            Assert.Equal(expectedMsg, exception.Message);
+                            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                            Assert.True(Regex.IsMatch(exception.Message, @"[\p{Pi}\p{Po}]" + Regex.Escape("]]>") + @"[\p{Pf}\p{Po}]"));
+                            Assert.True(Regex.IsMatch(exception.Message, @"\b" + "XML" + @"\b"));
+                            Assert.True(Regex.IsMatch(exception.Message, @"\b" + "CDATA" + @"\b"));
                         }
                     }
                 }
@@ -3612,8 +3617,13 @@ namespace CoreXml.Test.XLinq
                         Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
                         if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
                         {
-                            string expectedMsg = "An XML comment cannot contain '--', and '-' cannot be the last character.";
-                            Assert.Equal(expectedMsg, exception.Message);
+                            // \b word boundary
+                            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                            Assert.True(Regex.IsMatch(exception.Message, @"\b" + "XML" + @"\b"));
+                            Assert.True(Regex.IsMatch(exception.Message, @"[\p{Pi}\p{Po}]" + Regex.Escape("--") + @"[\p{Pf}\p{Po}]"));
+                            Assert.True(Regex.IsMatch(exception.Message, @"[\p{Pi}\p{Po}]" + Regex.Escape("-") + @"[\p{Pf}\p{Po}]"));
                         }
                     }
                 }
@@ -4215,8 +4225,12 @@ namespace CoreXml.Test.XLinq
                         Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
                         if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
                         {
-                            string expectedMsg = "Cannot have '?>' inside an XML processing instruction.";
-                            Assert.Equal(expectedMsg, exception.Message);
+                            // \b word boundary
+                            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                            Assert.True(Regex.IsMatch(exception.Message, @"[\p{Pi}\p{Po}]" + Regex.Escape("?>") + @"[\p{Pf}\p{Po}]"));
+                            Assert.True(Regex.IsMatch(exception.Message, @"\b" + "XML" + @"\b"));
                         }
                     }
                 }
