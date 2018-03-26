@@ -84,8 +84,8 @@
       "values": [ "Windows_NT", "Linux", "Unix", "OSX", "Android" ],
       "defaultValue": "${OSName}"
     },
-    "RestoreNETCorePlatforms": {
-      "description": "MsBuild target that restores the NETCore packages.",
+    "Sync": {
+      "description": "MsBuild target that restores the packages.",
       "valueType": "target",
       "values": [],
       "defaultValue": ""
@@ -527,6 +527,13 @@
           "settings": {
             "Build": "default"
           }
+        },
+        "optdata": {
+          "description": "Restores optimization profile data for the repository.",
+          "settings": {
+            "Project": "./build.proj",
+            "RestoreOptData": "default"
+          }
         }
       },
       "defaultValues": {
@@ -578,21 +585,7 @@
           "settings": {
             "Project": "./build.proj",
             "RestoreDuringBuild": true,
-            "RestoreNETCorePlatforms": "default"
-          }
-        },
-        "optdata": {
-          "description": "Restores optimization profile data for the repository.",
-          "settings": {
-            "Project": "./build.proj",
-            "RestoreDuringBuild": true,
-            "RestoreOptData": "default"
-          }
-        },
-        "priority": {
-          "description": "Sets CLRTestPriorityToBuild property.",
-          "settings": {
-            "CLRTestPriorityToBuild": "default"
+            "Sync": "default"
           }
         },
         "ab": {
@@ -654,6 +647,12 @@
           "description": "To download a specific group of product packages, specify build number. The value for -BuildMajor required.",
           "settings": {
             "BuildNumberMinor": "default"
+          }
+        },
+        "buildType": {
+          "description": "Sets buildtype.",
+          "settings": {
+            "__BuildType": "default"
           }
         }
       },
