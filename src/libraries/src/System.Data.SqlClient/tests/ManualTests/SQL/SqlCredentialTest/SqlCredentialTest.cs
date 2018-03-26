@@ -125,7 +125,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static void createTestUser(string username, string password)
         {
             // Creates a test user with read permissions.
-            string createUserCmd = $"CREATE LOGIN {username} WITH PASSWORD = '{password}';"
+            string createUserCmd = $"CREATE LOGIN {username} WITH PASSWORD = '{password}', CHECK_POLICY=OFF;"
                                     + $"EXEC sp_adduser '{username}', '{username}', 'db_datareader';";
 
             using (var conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -139,9 +139,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static void dropTestUser(string username)
         {
             // Removes a created test user.
-            string dropUserCmd = $"DROP SCHEMA IF EXISTS {username};" 
-                                    + $"DROP USER IF EXISTS {username};"
-                                    + $"DROP LOGIN {username}";
+            string dropUserCmd = $"IF EXISTS (SELECT * FROM sys.schemas WHERE name = '{username}') BEGIN DROP SCHEMA {username} END;"
+                                + $"IF EXISTS (SELECT * FROM sys.database_principals WHERE type = 'S' AND name = '{username}') BEGIN DROP USER {username} END;"
+                                + $"DROP LOGIN {username}";
 
             // Pool must be cleared to prevent DROP LOGIN failure.
             SqlConnection.ClearAllPools();
