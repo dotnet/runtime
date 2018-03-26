@@ -337,7 +337,7 @@ namespace System.Threading
                 // Did not acquire lock as owned and timeout is 0 so fail fast
                 return;
             }
-            else //failed to acquire the lock,then try to update the waiters. If the waiters count reached the maximum, jsut break the loop to avoid overflow
+            else //failed to acquire the lock, then try to update the waiters. If the waiters count reached the maximum, just break the loop to avoid overflow
             {
                 if ((observedOwner & WAITERS_MASK) != MAXIMUM_WAITERS)
                 {
