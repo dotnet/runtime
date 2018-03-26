@@ -338,7 +338,7 @@ usage()
     echo "BuildType can be: debug, checked, release"
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
     echo "ninja - target ninja instead of GNU make"
-    echo "clangx.y - optional argument to build using clang version x.y."
+    echo "clangx.y - optional argument to build using clang version x.y - supported version 3.5 - 6.0"
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "crosscomponent - optional argument to build cross-architecture component,"
@@ -543,29 +543,44 @@ while :; do
         __VerboseBuild=1
         ;;
 
-        clang3.5)
+        clang3.5|-clang3.5)
             __ClangMajorVersion=3
             __ClangMinorVersion=5
             ;;
 
-        clang3.6)
+        clang3.6|-clang3.6)
             __ClangMajorVersion=3
             __ClangMinorVersion=6
             ;;
 
-        clang3.7)
+        clang3.7|-clang3.7)
             __ClangMajorVersion=3
             __ClangMinorVersion=7
             ;;
 
-        clang3.8)
+        clang3.8|-clang3.8)
             __ClangMajorVersion=3
             __ClangMinorVersion=8
             ;;
 
-        clang3.9)
+        clang3.9|-clang3.9)
             __ClangMajorVersion=3
             __ClangMinorVersion=9
+            ;;
+
+        clang4.0|-clang4.0)
+            __ClangMajorVersion=4
+            __ClangMinorVersion=0
+            ;;
+
+        clang5.0|-clang5.0)
+            __ClangMajorVersion=5
+            __ClangMinorVersion=0
+            ;;
+
+        clang6.0|-clang6.0)
+            __ClangMajorVersion=6
+            __ClangMinorVersion=0
             ;;
 
         ninja)
@@ -686,9 +701,9 @@ export __CMakeBinDir="$__BinDir"
 
 if [ ! -d "$__BinDir" ] || [ ! -d "$__BinDir/bin" ]; then
 
-    echo "Cannot find build directory for the CoreCLR Product."
-    echo "Please make sure CoreCLR is built before building tests."
-    echo "Example use: './build.sh $__BuildArch $__BuildType'"
+    echo "Cannot find build directory for the CoreCLR Product or native tests."
+    echo "Please make sure CoreCLR and native tests are built before building managed tests."
+    echo "Example use: './build.sh $__BuildArch $__BuildType' without -skiptests switch"
     exit 1
 fi
 
