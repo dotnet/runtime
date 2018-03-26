@@ -77,7 +77,7 @@
       },
       "inputs": {
         "filename": "sync.cmd",
-        "arguments": "-p",
+        "arguments": "-p -- /p:BuildType=$(PB_BuildType)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
