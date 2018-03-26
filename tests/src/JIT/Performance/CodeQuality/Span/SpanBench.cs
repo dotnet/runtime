@@ -960,7 +960,7 @@ namespace Span
 
             for (int i = 0; i < iterationCount; i++)
             {
-                var byteSpan = span.AsBytes();
+                var byteSpan = MemoryMarshal.AsBytes(span);
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'byteSpan' to make sure it's not dead, and an assignment
                 // to 'span' so the AsBytes call won't get hoisted.
