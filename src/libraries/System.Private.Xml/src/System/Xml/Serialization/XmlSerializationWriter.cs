@@ -4153,6 +4153,15 @@ namespace System.Xml.Serialization
                 Writer.Write(source);
                 Writer.Write(".Length != 0)");
             }
+            else if(value is Double || value is Single)
+            {
+                Writer.Write("!");
+                Writer.Write(source);
+                Writer.Write(".Equals(");
+                Type type= Type.GetType(mapping.TypeDesc.Type.FullName);
+                WriteValue(type != null ? Convert.ChangeType(value, type) : value);
+                Writer.Write(")");
+            }
             else
             {
                 Writer.Write(source);
@@ -4220,9 +4229,17 @@ namespace System.Xml.Serialization
                     Writer.Write(((Int32)value).ToString(null, NumberFormatInfo.InvariantInfo));
                 else if (type == typeof(Double))
                 {
-                    if (double.IsNaN((Double)value))
+                    if (Double.IsNaN((Double)value))
                     {
-                        Writer.Write("double.NaN");
+                        Writer.Write("System.Double.NaN");
+                    }
+                    else if(Double.IsPositiveInfinity((Double)value))
+                    {
+                        Writer.Write("System.Double.PositiveInfinity");
+                    }
+                    else if(Double.IsNegativeInfinity((Double)value))
+                    {
+                        Writer.Write("System.Double.NegativeInfinity");
                     }
                     else
                     {
@@ -4245,6 +4262,14 @@ namespace System.Xml.Serialization
                     if (Single.IsNaN((Single)value))
                     {
                         Writer.Write("System.Single.NaN");
+                    }
+                    else if(Single.IsPositiveInfinity((Single)value))
+                    {
+                        Writer.Write("System.Single.PositiveInfinity");
+                    }
+                    else if (Single.IsNegativeInfinity((Single)value))
+                    {
+                        Writer.Write("System.Single.NegativeInfinity");
                     }
                     else
                     {

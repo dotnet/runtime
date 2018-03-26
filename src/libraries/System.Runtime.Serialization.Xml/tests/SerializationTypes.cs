@@ -1140,11 +1140,11 @@ public class TypeWithVirtualGenericPropertyDerived<T> : TypeWithVirtualGenericPr
 
 public class DefaultValuesSetToNaN
 {
-    [DefaultValue(double.NaN)]
-    public double DoubleProp { get; set; }
+    [DefaultValue(Double.NaN)]
+    public Double DoubleProp { get; set; }
 
-    [DefaultValue(float.NaN)]
-    public float FloatProp { get; set; }
+    [DefaultValue(Single.NaN)]
+    public Single FloatProp { get; set; }
 
     [DefaultValue(Double.NaN)]
     public Double DoubleField;
@@ -1155,6 +1155,64 @@ public class DefaultValuesSetToNaN
     public override bool Equals(object obj)
     {
         var other = obj as DefaultValuesSetToNaN;
+        return other == null ? false :
+            other.DoubleProp == this.DoubleProp && other.FloatProp == this.FloatProp &&
+            other.DoubleField == this.DoubleField && other.SingleField == this.SingleField;
+    }
+
+    public override int GetHashCode()
+    {
+        return this.DoubleProp.GetHashCode() ^ this.FloatProp.GetHashCode() ^
+            this.DoubleField.GetHashCode() ^ this.SingleField.GetHashCode();
+    }
+}
+
+public class DefaultValuesSetToPositiveInfinity
+{
+    [DefaultValue(Double.PositiveInfinity)]
+    public Double DoubleProp { get; set; }
+
+    [DefaultValue(Single.PositiveInfinity)]
+    public Single FloatProp { get; set; }
+
+    [DefaultValue(Double.PositiveInfinity)]
+    public Double DoubleField;
+
+    [DefaultValue(Single.PositiveInfinity)]
+    public Single SingleField;
+
+    public override bool Equals(object obj)
+    {
+        var other = obj as DefaultValuesSetToPositiveInfinity;
+        return other == null ? false :
+            other.DoubleProp == this.DoubleProp && other.FloatProp == this.FloatProp &&
+            other.DoubleField == this.DoubleField && other.SingleField == this.SingleField;
+    }
+
+    public override int GetHashCode()
+    {
+        return this.DoubleProp.GetHashCode() ^ this.FloatProp.GetHashCode() ^
+            this.DoubleField.GetHashCode() ^ this.SingleField.GetHashCode();
+    }
+}
+
+public class DefaultValuesSetToNegativeInfinity
+{
+    [DefaultValue(Double.NegativeInfinity)]
+    public Double DoubleProp { get; set; }
+
+    [DefaultValue(Single.NegativeInfinity)]
+    public Single FloatProp { get; set; }
+
+    [DefaultValue(Double.NegativeInfinity)]
+    public Double DoubleField;
+
+    [DefaultValue(Single.NegativeInfinity)]
+    public Single SingleField;
+
+    public override bool Equals(object obj)
+    {
+        var other = obj as DefaultValuesSetToNegativeInfinity;
         return other == null ? false :
             other.DoubleProp == this.DoubleProp && other.FloatProp == this.FloatProp &&
             other.DoubleField == this.DoubleField && other.SingleField == this.SingleField;
