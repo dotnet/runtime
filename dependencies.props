@@ -45,7 +45,7 @@
     <!-- Scenario tests install this version of Microsoft.NetCore.App, then patch coreclr binaries via xcopy. At the moment it is
          updated manually whenever breaking changes require it to move forward, but it would be nice if we could update it automatically
          as we do with many of the package versions above -->
-    <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview2-26131-06</BaselineMicrosoftNetCoreAppPackageVersion>
+    <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26319-04</BaselineMicrosoftNetCoreAppPackageVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
