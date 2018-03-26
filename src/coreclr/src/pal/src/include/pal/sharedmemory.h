@@ -93,6 +93,7 @@ public:
 class SharedMemoryHelpers
 {
 private:
+    static const mode_t PermissionsMask_CurrentUser_ReadWriteExecute;
     static const mode_t PermissionsMask_AllUsers_ReadWrite;
     static const mode_t PermissionsMask_AllUsers_ReadWriteExecute;
 public:
@@ -110,7 +111,7 @@ public:
     template<SIZE_T DestinationByteCount> static SIZE_T CopyString(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, LPCSTR source, SIZE_T sourceCharCount);
     template<SIZE_T DestinationByteCount> static SIZE_T AppendUInt32String(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, UINT32 value);
 
-    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true);
+    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
 private:
     static int Open(LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
 public:

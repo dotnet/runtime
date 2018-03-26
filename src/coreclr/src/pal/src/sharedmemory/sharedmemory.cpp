@@ -62,6 +62,7 @@ DWORD SharedMemoryException::GetErrorCode() const
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SharedMemoryHelpers
 
+const mode_t SharedMemoryHelpers::PermissionsMask_CurrentUser_ReadWriteExecute = S_IRUSR | S_IWUSR | S_IXUSR;
 const mode_t SharedMemoryHelpers::PermissionsMask_AllUsers_ReadWrite =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 const mode_t SharedMemoryHelpers::PermissionsMask_AllUsers_ReadWriteExecute =
@@ -92,10 +93,16 @@ SIZE_T SharedMemoryHelpers::AlignUp(SIZE_T value, SIZE_T alignment)
     return AlignDown(value + (alignment - 1), alignment);
 }
 
-bool SharedMemoryHelpers::EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist)
+bool SharedMemoryHelpers::EnsureDirectoryExists(
+    const char *path,
+    bool isGlobalLockAcquired,
+    bool createIfNotExist,
+    bool isSystemDirectory)
 {
     _ASSERTE(path != nullptr);
+    _ASSERTE(!(isSystemDirectory && createIfNotExist)); // should not create or change permissions on system directories
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+    _ASSERTE(!isGlobalLockAcquired || SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
     // Check if the path already exists
     struct stat statInfo;
@@ -155,7 +162,24 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(const char *path, bool isGlobalL
         throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
     }
 
-    // Check the directory's permissions and try to update them
+    if (isSystemDirectory)
+    {
+        // For system directories (such as SHARED_MEMORY_TEMP_DIRECTORY_PATH), require sufficient permissions only for the
+        // current user. For instance, "docker run --mount ..." to mount /tmp to some directory on the host mounts the
+        // destination directory with the same permissions as the source directory, which may not include some permissions for
+        // other users. In the docker container, other user permissions are typically not relevant and relaxing the permissions
+        // requirement allows for that scenario to work without having to work around it by first giving sufficient permissions
+        // for all users.
+        if ((statInfo.st_mode & PermissionsMask_CurrentUser_ReadWriteExecute) == PermissionsMask_CurrentUser_ReadWriteExecute)
+        {
+            return true;
+        }
+        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+    }
+
+    // For non-system directories (such as SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_PATH), require sufficient permissions for all
+    // users and try to update them if requested to create the directory, so that shared memory files may be shared by all
+    // processes on the system.
     if ((statInfo.st_mode & PermissionsMask_AllUsers_ReadWriteExecute) == PermissionsMask_AllUsers_ReadWriteExecute)
     {
         return true;
@@ -214,6 +238,8 @@ int SharedMemoryHelpers::CreateOrOpenFile(LPCSTR path, bool createIfNotExist, bo
 {
     _ASSERTE(path != nullptr);
     _ASSERTE(path[0] != '\0');
+    _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
+    _ASSERTE(!createIfNotExist || SharedMemoryManager::IsCreationDeletionFileLockAcquired());
 
     // Try to open the file
     int openFlags = O_RDWR;
@@ -1032,7 +1058,8 @@ void SharedMemoryManager::AcquireCreationDeletionFileLock()
         if (!SharedMemoryHelpers::EnsureDirectoryExists(
                 SHARED_MEMORY_TEMP_DIRECTORY_PATH,
                 false /* isGlobalLockAcquired */,
-                false /* createIfNotExist */))
+                false /* createIfNotExist */,
+                true /* isSystemDirectory */))
         {
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
