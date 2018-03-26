@@ -3031,9 +3031,10 @@ struct GenTreeCast : public GenTreeOp
     }
     var_types gtCastType;
 
-    GenTreeCast(var_types type, GenTree* op, var_types castType DEBUGARG(bool largeNode = false))
+    GenTreeCast(var_types type, GenTree* op, bool fromUnsigned, var_types castType DEBUGARG(bool largeNode = false))
         : GenTreeOp(GT_CAST, type, op, nullptr DEBUGARG(largeNode)), gtCastType(castType)
     {
+        gtFlags |= fromUnsigned ? GTF_UNSIGNED : 0;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCast() : GenTreeOp()
