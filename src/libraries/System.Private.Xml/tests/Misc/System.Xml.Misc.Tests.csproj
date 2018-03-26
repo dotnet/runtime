@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="RandomizedHashing.cs" />
     <Compile Include="..\..\src\System\Xml\Core\SecureStringHasher.cs" />
+    <Compile Include="XmlUrlResolverTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
