@@ -19,8 +19,8 @@ namespace System.Net.Http
 
         private const string s_gzip = "gzip";
         private const string s_deflate = "deflate";
-        private static StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue(s_gzip);
-        private static StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(s_deflate);
+        private static readonly StringWithQualityHeaderValue s_gzipHeaderValue = new StringWithQualityHeaderValue(s_gzip);
+        private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(s_deflate);
 
         public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandler innerHandler)
         {
