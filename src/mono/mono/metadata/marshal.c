@@ -88,10 +88,6 @@ static gboolean use_aot_wrappers;
 
 static int class_marshal_info_count;
 
-static void ftnptr_eh_callback_default (guint32 gchandle);
-
-static MonoFtnPtrEHCallback ftnptr_eh_callback = ftnptr_eh_callback_default;
-
 static MonoMarshalCallbacks *
 get_marshal_cb (void);
 
@@ -267,9 +263,7 @@ mono_marshal_init (void)
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
-		register_icall (mono_gchandle_new, "mono_gchandle_new", "uint32 object bool", TRUE);
 		register_icall (mono_marshal_isinst_with_cache, "mono_marshal_isinst_with_cache", "object object ptr ptr", FALSE);
-		register_icall (mono_marshal_ftnptr_eh_callback, "mono_marshal_ftnptr_eh_callback", "void uint32", TRUE);
 		register_icall (mono_threads_enter_gc_safe_region_unbalanced, "mono_threads_enter_gc_safe_region_unbalanced", "ptr ptr", TRUE);
 		register_icall (mono_threads_exit_gc_safe_region_unbalanced, "mono_threads_exit_gc_safe_region_unbalanced", "void ptr ptr", TRUE);
 		register_icall (mono_threads_enter_gc_unsafe_region_unbalanced, "mono_threads_enter_gc_unsafe_region_unbalanced", "ptr ptr", TRUE);
@@ -6192,43 +6186,6 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();
-}
-
-void
-mono_marshal_ftnptr_eh_callback (guint32 gchandle)
-{
-	g_assert (ftnptr_eh_callback);
-	ftnptr_eh_callback (gchandle);
-}
-
-static void
-ftnptr_eh_callback_default (guint32 gchandle)
-{
-	MonoException *exc;
-	gpointer stackdata;
-
-	mono_threads_enter_gc_unsafe_region_unbalanced (&stackdata);
-
-	exc = (MonoException*) mono_gchandle_get_target (gchandle);
-
-	mono_gchandle_free (gchandle);
-
-	mono_reraise_exception_deprecated (exc);
-}
-
-/*
- * mono_install_ftnptr_eh_callback:
- *
- *   Install a callback that should be called when there is a managed exception
- *   in a native-to-managed wrapper. This is mainly used by iOS to convert a
- *   managed exception to a native exception, to properly unwind the native
- *   stack; this native exception will then be converted back to a managed
- *   exception in their managed-to-native wrapper.
- */
-void
-mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback)
-{
-	ftnptr_eh_callback = callback;
 }
 
 MonoThreadInfo*

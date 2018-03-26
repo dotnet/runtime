@@ -843,11 +843,6 @@ mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack, WrapperInfo *info, gboolean *out_found);
 
-typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
-
-MONO_API void
-mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback);
-
 G_END_DECLS
 
 #endif /* __MONO_MARSHAL_H__ */
