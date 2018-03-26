@@ -10,19 +10,4 @@ extern "C"
     {
         PORTABILITY_ASSERT("Implement for PAL");
     }
-
-    void GenericPInvokeCalliHelper()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
-    void VarargPInvokeStub()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-    
-    void VarargPInvokeStub_RetBuffArg()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
 };
