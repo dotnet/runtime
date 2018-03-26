@@ -346,36 +346,6 @@
       "environment": {},
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Build solution corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
-      "timeoutInMinutes": 0,
-      "condition": "always()",
-      "refName": "Task16",
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "14.0",
-        "msbuildArchitecture": "x86",
-        "msbuildLocation": "",
-        "platform": "",
-        "configuration": "",
-        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": true,
       "alwaysRun": true,
       "displayName": "Run AgentTools/End.ps1",
       "timeoutInMinutes": 0,
