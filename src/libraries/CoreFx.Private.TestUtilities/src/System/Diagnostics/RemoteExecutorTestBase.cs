@@ -224,7 +224,7 @@ namespace System.Diagnostics
 
             public void Dispose()
             {
-                GC.SuppressFinalize(this);
+                GC.SuppressFinalize(this); // before Dispose(true) in case the Dispose call throws
                 Dispose(disposing: true);
             }
 
