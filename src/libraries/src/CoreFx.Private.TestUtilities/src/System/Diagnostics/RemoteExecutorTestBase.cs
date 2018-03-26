@@ -224,8 +224,8 @@ namespace System.Diagnostics
 
             public void Dispose()
             {
-                Dispose(disposing: true);
                 GC.SuppressFinalize(this);
+                Dispose(disposing: true);
             }
 
             private void Dispose(bool disposing)
