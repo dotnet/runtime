@@ -371,7 +371,7 @@ namespace SoDBench
                     {
                         FileName = s_dotnetExe.FullName,
                         // The UserSharedCompiler flag is set to false to prevent handles from being held that will later cause deletion of the installed SDK to fail.
-                        Arguments = $"publish -c Release --runtime {os} --output {publishDir.FullName} /p:UseSharedCompilation=false",
+                        Arguments = $"publish -c Release --runtime {os} --output {publishDir.FullName} /p:UseSharedCompilation=false /p:UseRazorBuildServer=false",
                         UseShellExecute = false,
                         WorkingDirectory = deploymentSandbox.FullName
                     };
