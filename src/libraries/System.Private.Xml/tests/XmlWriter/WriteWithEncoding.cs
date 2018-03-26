@@ -42,38 +42,33 @@ namespace System.Xml.Tests
         [Fact]
         public void WriteWithUtf32EncodingNoBom()
         {
-            // Given
-            var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<breakfast_menu>\n    <food>\n        <name>Belgian Waffles</name>\n        <price>$5.95</price>\n        <description>Two of our famous Belgian Waffles with plenty of real maple syrup</description>\n        <calories>650</calories>\n    </food>\n    <food>\n        <name>Strawberry Belgian Waffles</name>\n        <price>$7.95</price>\n        <description>Light Belgian waffles covered with strawberries and whipped cream</description>\n        <calories>900</calories>\n    </food>\n</breakfast_menu>";
-            var xsl = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<html xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xsl:version=\"1.0\">\n    <body style=\"font-family:Arial;font-size:12pt;background-color:#EEEEEE\">\n        <xsl:for-each select=\"breakfast_menu/food\">\n            <div style=\"background-color:teal;color:white;padding:4px\">\n                <span style=\"font-weight:bold\">\n                    <xsl:value-of select=\"name\" />\n                    -\n                </span>\n                <xsl:value-of select=\"price\" />\n            </div>\n            <div style=\"margin-left:20px;margin-bottom:1em;font-size:10pt\">\n                <p>\n                    <xsl:value-of select=\"description\" />\n                    <span style=\"font-style:italic\">\n                        (\n                        <xsl:value-of select=\"calories\" />\n                        calories per serving)\n                    </span>\n                </p>\n            </div>\n        </xsl:for-each>\n    </body>\n</html>";
-
-            // set encoding to UTF32 with no BOM
+            //Given, encoding set to UTF32 with no BOM
             var settings = new XmlWriterSettings
             {
+                OmitXmlDeclaration = false,
+                ConformanceLevel = ConformanceLevel.Document,
                 Encoding = new UTF32Encoding(false, false, true)
             };
 
             string resultString;
-            using (TextReader xslReader = new StringReader(xsl),
-                              xmlReader = new StringReader(xml))
+            using (var result = new MemoryStream())
             {
-                using (var result = new MemoryStream())
-                {
-                    var xslXmlReader = XmlReader.Create(xslReader);
-                    var xmlXmlReader = XmlReader.Create(xmlReader);
+                // BOM can be written in this call
+                var writer = XmlWriter.Create(result, settings);
 
-                    // BOM can be written in this call 
-                    var resultXmlTextWriter = XmlWriter.Create(result, settings);
-
-                    // When, do work and get result
-                    var xslTransform = new XslCompiledTransform();
-                    xslTransform.Load(xslXmlReader);
-                    xslTransform.Transform(xmlXmlReader, resultXmlTextWriter);
-                    result.Position = 0;
-                    resultString = settings.Encoding.GetString(result.ToArray());
-                }
+                // When, do work and get result
+                writer.WriteStartDocument();
+                writer.WriteStartElement("orders");
+                writer.WriteElementString("orderID", "1-456-ab\u0661");
+                writer.WriteElementString("orderID", "2-36-00a\uD800\uDC00\uD801\uDC01");
+                writer.WriteEndElement();
+                writer.WriteEndDocument();
+                writer.Flush();
+                result.Position = 0;
+                resultString = settings.Encoding.GetString(result.ToArray());
             }
 
-            // Then
+            // Then, last '>' will be cut off in resulting string if BOM is present
             Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-32\"?>", string.Concat(resultString.Take(39)));
         }
     }
