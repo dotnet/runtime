@@ -313,13 +313,16 @@ namespace System.IO.Packaging
 
             // Make sure there is a part to write to and that it contains
             // the expected start markup.
-            EnsureXmlWriter();
+            Stream zipStream = null;
+            EnsureXmlWriter(ref zipStream);
 
             // Write the property elements and clear _dirty.
             SerializeDirtyProperties();
 
             // add closing markup and close the writer.
             CloseXmlWriter();
+            Debug.Assert(_xmlWriter == null);
+            zipStream?.Dispose();
         }
 
         // Invoked from Package.Close.
@@ -670,14 +673,15 @@ namespace System.IO.Packaging
 
         // Make sure there is a part to write to and that it contains
         // the expected start markup.
-        private void EnsureXmlWriter()
+        private void EnsureXmlWriter(ref Stream zipStream)
         {
             if (_xmlWriter != null)
                 return;
 
             EnsurePropertyPart(); // Should succeed or throw an exception.
 
-            Stream writerStream = new IgnoreFlushAndCloseStream(_propertyPart.GetStream(FileMode.Create, FileAccess.Write));
+            zipStream = _propertyPart.GetStream(FileMode.Create, FileAccess.Write);
+            Stream writerStream = new IgnoreFlushAndCloseStream(zipStream);
             _xmlWriter = XmlWriter.Create(writerStream, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 });
             WriteXmlStartTagsForPackageProperties();
         }
