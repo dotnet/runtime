@@ -1249,7 +1249,7 @@ namespace System.Globalization
             int charsWritten = source.AsSpan().ToUpperInvariant(span);
 
             // Slice the array to the size returned by ToUpperInvariant.
-            int hash = Marvin.ComputeHash32(span.Slice(0, charsWritten).AsBytes(), Marvin.DefaultSeed);
+            int hash = Marvin.ComputeHash32(MemoryMarshal.AsBytes(span.Slice(0, charsWritten)), Marvin.DefaultSeed);
 
             // Return the borrowed array if necessary.
             if (borrowedArr != null)
