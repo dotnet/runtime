@@ -901,11 +901,11 @@ GenTreeArgList* Compiler::impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenT
 
             if (corType == CORINFO_TYPE_DOUBLE && args->Current()->TypeGet() == TYP_FLOAT)
             {
-                args->Current() = gtNewCastNode(TYP_DOUBLE, args->Current(), TYP_DOUBLE);
+                args->Current() = gtNewCastNode(TYP_DOUBLE, args->Current(), false, TYP_DOUBLE);
             }
             else if (corType == CORINFO_TYPE_FLOAT && args->Current()->TypeGet() == TYP_DOUBLE)
             {
-                args->Current() = gtNewCastNode(TYP_FLOAT, args->Current(), TYP_FLOAT);
+                args->Current() = gtNewCastNode(TYP_FLOAT, args->Current(), false, TYP_FLOAT);
             }
 
             // insert any widening or narrowing casts for backwards compatibility
@@ -2895,12 +2895,12 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp)
         else if (varTypeIsI(wantedType) && (currType == TYP_INT))
         {
             // Note that this allows TYP_INT to be cast to a TYP_I_IMPL when wantedType is a TYP_BYREF or TYP_REF
-            tree = gtNewCastNode(TYP_I_IMPL, tree, TYP_I_IMPL);
+            tree = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
         }
         else if ((wantedType == TYP_INT) && varTypeIsI(currType))
         {
             // Note that this allows TYP_BYREF or TYP_REF to be cast to a TYP_INT
-            tree = gtNewCastNode(TYP_INT, tree, TYP_INT);
+            tree = gtNewCastNode(TYP_INT, tree, false, TYP_INT);
         }
 #endif // _TARGET_64BIT_
     }
@@ -2919,7 +2919,7 @@ GenTree* Compiler::impImplicitR4orR8Cast(GenTree* tree, var_types dstTyp)
 #ifndef LEGACY_BACKEND
     if (varTypeIsFloating(tree) && varTypeIsFloating(dstTyp) && (dstTyp != tree->gtType))
     {
-        tree = gtNewCastNode(dstTyp, tree, dstTyp);
+        tree = gtNewCastNode(dstTyp, tree, false, dstTyp);
     }
 #endif // !LEGACY_BACKEND
 
@@ -4011,10 +4011,11 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                 noway_assert(varTypeIsFloating(op1));
 
 #else // FEATURE_X87_DOUBLES
+                assert(varTypeIsFloating(op1));
 
                 if (op1->TypeGet() != callType)
                 {
-                    op1 = gtNewCastNode(callType, op1, callType);
+                    op1 = gtNewCastNode(callType, op1, false, callType);
                 }
 
 #endif // FEATURE_X87_DOUBLES
@@ -4035,14 +4036,16 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                 noway_assert(varTypeIsFloating(op1));
 
 #else // FEATURE_X87_DOUBLES
+                assert(varTypeIsFloating(op1));
+                assert(varTypeIsFloating(op2));
 
                 if (op2->TypeGet() != callType)
                 {
-                    op2 = gtNewCastNode(callType, op2, callType);
+                    op2 = gtNewCastNode(callType, op2, false, callType);
                 }
                 if (op1->TypeGet() != callType)
                 {
-                    op1 = gtNewCastNode(callType, op1, callType);
+                    op1 = gtNewCastNode(callType, op1, false, callType);
                 }
 
 #endif // FEATURE_X87_DOUBLES
@@ -5716,7 +5719,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             {
                 assert((varTypeIsFloating(srcTyp) && varTypeIsFloating(dstTyp)) ||
                        (varTypeIsIntegral(srcTyp) && varTypeIsIntegral(dstTyp)));
-                exprToBox = gtNewCastNode(dstTyp, exprToBox, dstTyp);
+                exprToBox = gtNewCastNode(dstTyp, exprToBox, false, dstTyp);
             }
             op1 = gtNewAssignNode(gtNewOperNode(GT_IND, lclTyp, op1), exprToBox);
         }
@@ -8346,7 +8349,7 @@ DONE_CALL:
 
             if (checkForSmallType && varTypeIsIntegral(callRetTyp) && genTypeSize(callRetTyp) < genTypeSize(TYP_INT))
             {
-                call = gtNewCastNode(genActualType(callRetTyp), call, callRetTyp);
+                call = gtNewCastNode(genActualType(callRetTyp), call, false, callRetTyp);
             }
         }
 
@@ -9686,7 +9689,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
             {
                 // insert an explicit upcast
-                op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, (var_types)(fUnsigned ? TYP_U_IMPL : TYP_I_IMPL));
+                op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
             }
 #endif // _TARGET_64BIT_
 
@@ -9701,7 +9704,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             if ((genActualType(op2->TypeGet()) != TYP_I_IMPL))
             {
                 // insert an explicit upcast
-                op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, (var_types)(fUnsigned ? TYP_U_IMPL : TYP_I_IMPL));
+                op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
             }
 #endif // _TARGET_64BIT_
 
@@ -9725,13 +9728,13 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
             {
                 // insert an explicit upcast
-                op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, (var_types)(fUnsigned ? TYP_U_IMPL : TYP_I_IMPL));
+                op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
             }
         }
         else if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, (var_types)(fUnsigned ? TYP_U_IMPL : TYP_I_IMPL));
+            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
         }
 #endif // _TARGET_64BIT_
 
@@ -9749,12 +9752,12 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, (var_types)(fUnsigned ? TYP_U_IMPL : TYP_I_IMPL));
+            op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
         }
         else if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
         {
             // insert an explicit upcast
-            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, (var_types)(fUnsigned ? TYP_U_IMPL : TYP_I_IMPL));
+            op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
         }
 
         type = TYP_I_IMPL;
@@ -10710,7 +10713,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (varTypeIsI(op1->TypeGet()) && (genActualType(lclTyp) == TYP_INT))
                 {
                     assert(!tiVerificationNeeded); // We should have thrown the VerificationException before.
-                    op1 = gtNewCastNode(TYP_INT, op1, TYP_INT);
+                    op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
                 }
 #endif // _TARGET_64BIT_
 
@@ -10801,7 +10804,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1->gtType) &&
                     varTypeIsFloating(op2->gtType))
                 {
-                    op1 = gtNewCastNode(op2->TypeGet(), op1, op2->TypeGet());
+                    op1 = gtNewCastNode(op2->TypeGet(), op1, false, op2->TypeGet());
                 }
 #endif // !FEATURE_X87_DOUBLES
 
@@ -11738,12 +11741,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (op1->TypeGet() != type)
                     {
                         // We insert a cast of op1 to 'type'
-                        op1 = gtNewCastNode(type, op1, type);
+                        op1 = gtNewCastNode(type, op1, false, type);
                     }
                     if (op2->TypeGet() != type)
                     {
                         // We insert a cast of op2 to 'type'
-                        op2 = gtNewCastNode(type, op2, type);
+                        op2 = gtNewCastNode(type, op2, false, type);
                     }
                 }
 #endif // !FEATURE_X87_DOUBLES
@@ -12036,11 +12039,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef _TARGET_64BIT_
                 if (varTypeIsI(op1->TypeGet()) && (genActualType(op2->TypeGet()) == TYP_INT))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, (var_types)(uns ? TYP_U_IMPL : TYP_I_IMPL));
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
                 else if (varTypeIsI(op2->TypeGet()) && (genActualType(op1->TypeGet()) == TYP_INT))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, (var_types)(uns ? TYP_U_IMPL : TYP_I_IMPL));
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
 #endif // _TARGET_64BIT_
 
@@ -12136,11 +12139,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef _TARGET_64BIT_
                 if ((op1->TypeGet() == TYP_I_IMPL) && (genActualType(op2->TypeGet()) == TYP_INT))
                 {
-                    op2 = gtNewCastNode(TYP_I_IMPL, op2, (var_types)(uns ? TYP_U_IMPL : TYP_I_IMPL));
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
                 else if ((op2->TypeGet() == TYP_I_IMPL) && (genActualType(op1->TypeGet()) == TYP_INT))
                 {
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, (var_types)(uns ? TYP_U_IMPL : TYP_I_IMPL));
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
 #endif // _TARGET_64BIT_
 
@@ -12189,12 +12192,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (op1->TypeGet() == TYP_DOUBLE)
                         {
                             // We insert a cast of op2 to TYP_DOUBLE
-                            op2 = gtNewCastNode(TYP_DOUBLE, op2, TYP_DOUBLE);
+                            op2 = gtNewCastNode(TYP_DOUBLE, op2, false, TYP_DOUBLE);
                         }
                         else if (op2->TypeGet() == TYP_DOUBLE)
                         {
                             // We insert a cast of op1 to TYP_DOUBLE
-                            op1 = gtNewCastNode(TYP_DOUBLE, op1, TYP_DOUBLE);
+                            op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
                         }
                     }
                 }
@@ -12485,21 +12488,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #if SMALL_TREE_NODES
                 if (callNode)
                 {
-                    op1 = gtNewCastNodeL(type, op1, lclTyp);
+                    op1 = gtNewCastNodeL(type, op1, uns, lclTyp);
                 }
                 else
 #endif // SMALL_TREE_NODES
                 {
-                    op1 = gtNewCastNode(type, op1, lclTyp);
+                    op1 = gtNewCastNode(type, op1, uns, lclTyp);
                 }
 
                 if (ovfl)
                 {
                     op1->gtFlags |= (GTF_OVERFLOW | GTF_EXCEPT);
-                }
-                if (uns)
-                {
-                    op1->gtFlags |= GTF_UNSIGNED;
                 }
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -12683,14 +12682,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
                     {
                         assert(!tiVerificationNeeded); // We should have thrown the VerificationException before.
-                        op2 = gtNewCastNode(TYP_INT, op2, TYP_INT);
+                        op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                     }
                     // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
                     //
                     if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
                     {
                         assert(!tiVerificationNeeded); // We should have thrown the VerificationException before.
-                        op2 = gtNewCastNode(TYP_I_IMPL, op2, TYP_I_IMPL);
+                        op2 = gtNewCastNode(TYP_I_IMPL, op2, false, TYP_I_IMPL);
                     }
                 }
 #endif // _TARGET_64BIT_
@@ -12814,7 +12813,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (genActualType(op1->gtType) == TYP_INT)
                 {
                     assert(!tiVerificationNeeded); // We should have thrown the VerificationException before.
-                    op1 = gtNewCastNode(TYP_I_IMPL, op1, TYP_I_IMPL);
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, false, TYP_I_IMPL);
                 }
 #endif
 
@@ -14149,7 +14148,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if ((op1->TypeGet() != op2->TypeGet()) && op2->OperIsConst() && varTypeIsIntOrI(op2->TypeGet()) &&
                         varTypeIsLong(op1->TypeGet()))
                     {
-                        op2 = gtNewCastNode(op1->TypeGet(), op2, op1->TypeGet());
+                        op2 = gtNewCastNode(op1->TypeGet(), op2, false, op1->TypeGet());
                     }
 #endif
 
@@ -14165,13 +14164,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //
                         if (varTypeIsI(op2->gtType) && (genActualType(lclTyp) == TYP_INT))
                         {
-                            op2 = gtNewCastNode(TYP_INT, op2, TYP_INT);
+                            op2 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                         }
                         // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
                         //
                         if (varTypeIsI(lclTyp) && (genActualType(op2->gtType) == TYP_INT))
                         {
-                            op2 = gtNewCastNode(TYP_I_IMPL, op2, TYP_I_IMPL);
+                            op2 = gtNewCastNode(TYP_I_IMPL, op2, false, TYP_I_IMPL);
                         }
                     }
 #endif
@@ -14183,7 +14182,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if ((op1->TypeGet() != op2->TypeGet()) && varTypeIsFloating(op1->gtType) &&
                         varTypeIsFloating(op2->gtType))
                     {
-                        op2 = gtNewCastNode(op1->TypeGet(), op2, op1->TypeGet());
+                        op2 = gtNewCastNode(op1->TypeGet(), op2, false, op1->TypeGet());
                     }
 #endif // !FEATURE_X87_DOUBLES
 
@@ -15857,7 +15856,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                         fgCastNeeded(op2, fncRealRetType))
                     {
                         // Small-typed return values are normalized by the callee
-                        op2 = gtNewCastNode(TYP_INT, op2, fncRealRetType);
+                        op2 = gtNewCastNode(TYP_INT, op2, false, fncRealRetType);
                     }
                 }
 
@@ -16646,7 +16645,7 @@ SPILLSTACK:
             {
                 // Spill clique has decided this should be "native int", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique.
-                verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, TYP_I_IMPL);
+                verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
             }
 
             // Consider the case where one branch left a 'byref' on the stack and the other leaves
@@ -16670,7 +16669,7 @@ SPILLSTACK:
                 {
                     // Spill clique has decided this should be "byref", but this block only pushes an "int".
                     // Insert a sign-extension to "native int" so we match the clique size.
-                    verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, TYP_I_IMPL);
+                    verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
                 }
             }
 #endif // _TARGET_64BIT_
@@ -16699,7 +16698,7 @@ SPILLSTACK:
             {
                 // Spill clique has decided this should be "double", but this block only pushes a "float".
                 // Insert a cast to "double" so we match the clique.
-                verCurrentState.esStack[level].val = gtNewCastNode(TYP_DOUBLE, tree, TYP_DOUBLE);
+                verCurrentState.esStack[level].val = gtNewCastNode(TYP_DOUBLE, tree, false, TYP_DOUBLE);
             }
 
 #endif // FEATURE_X87_DOUBLES
@@ -18420,7 +18419,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                         continue;
                     }
 
-                    inlArgNode = inlArgInfo[i].argNode = gtNewCastNode(TYP_INT, inlArgNode, sigType);
+                    inlArgNode = inlArgInfo[i].argNode = gtNewCastNode(TYP_INT, inlArgNode, false, sigType);
 
                     inlArgInfo[i].argIsLclVar = false;
 
@@ -18437,7 +18436,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 else if (genTypeSize(genActualType(inlArgNode->gtType)) < genTypeSize(sigType))
                 {
                     // This should only happen for int -> native int widening
-                    inlArgNode = inlArgInfo[i].argNode = gtNewCastNode(genActualType(sigType), inlArgNode, sigType);
+                    inlArgNode = inlArgInfo[i].argNode =
+                        gtNewCastNode(genActualType(sigType), inlArgNode, false, sigType);
 
                     inlArgInfo[i].argIsLclVar = false;
 

@@ -5790,7 +5790,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         if (srcSize == 8)
                         {
                             assert(tree->gtType == TYP_INT);
-                            op1 = gtNewCastNode(TYP_INT, op1, TYP_INT);
+                            op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
 #ifdef DEBUG
                             op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif

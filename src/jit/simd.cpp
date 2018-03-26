@@ -2513,7 +2513,7 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 else
                 {
                     assert(baseType == TYP_UBYTE || baseType == TYP_USHORT);
-                    t1 = gtNewCastNode(TYP_INT, op2, TYP_INT);
+                    t1 = gtNewCastNode(TYP_INT, op2, false, TYP_INT);
                 }
 
                 assert(t1 != nullptr);
