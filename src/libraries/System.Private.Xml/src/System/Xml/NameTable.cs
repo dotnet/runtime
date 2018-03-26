@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace System.Xml
 {
@@ -234,13 +235,13 @@ namespace System.Xml
 
         private static int ComputeHash32(string key)
         {
-            ReadOnlySpan<byte> bytes = key.AsSpan().AsBytes();
+            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(key.AsSpan());
             return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
         }
 
         private static int ComputeHash32(char[] key, int start, int len)
         {
-            ReadOnlySpan<byte> bytes = key.AsSpan(start, len).AsBytes();
+            ReadOnlySpan<byte> bytes = MemoryMarshal.AsBytes(key.AsSpan(start, len));
             return Marvin.ComputeHash32(bytes, Marvin.DefaultSeed);
         }
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Microsoft.Xunit.Performance;
 using Xunit;
 
@@ -44,7 +45,7 @@ namespace System.Memory.Tests
         {
             Span<char> charSpan = new char[size];
             charSpan[size / 2] = '5';
-            Span<byte> byteSpan = charSpan.AsBytes();
+            Span<byte> byteSpan = MemoryMarshal.AsBytes(charSpan);
 
             int index = 0;
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
@@ -120,7 +121,7 @@ namespace System.Memory.Tests
         {
             Span<char> charSpan = new char[size];
             charSpan[size / 2] = '5';
-            Span<byte> byteSpan = charSpan.AsBytes();
+            Span<byte> byteSpan = MemoryMarshal.AsBytes(charSpan);
 
             int index = 0;
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)

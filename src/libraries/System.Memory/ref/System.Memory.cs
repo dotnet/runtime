@@ -9,8 +9,6 @@ namespace System
 {
     public static partial class MemoryExtensions
     {
-        public static System.ReadOnlySpan<byte> AsBytes<T>(this System.ReadOnlySpan<T> span) where T : struct { throw null; }
-        public static System.Span<byte> AsBytes<T>(this System.Span<T> span) where T : struct { throw null; }
         public static System.Memory<T> AsMemory<T>(this System.ArraySegment<T> segment) { throw null; }
         public static System.Memory<T> AsMemory<T>(this System.ArraySegment<T> segment, int start) { throw null; }
         public static System.Memory<T> AsMemory<T>(this System.ArraySegment<T> segment, int start, int length) { throw null; }
