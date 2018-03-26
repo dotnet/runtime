@@ -31,7 +31,7 @@ namespace System.Threading
         private const int MAX_WAITHANDLES = 64;
 
 #pragma warning disable 414  // Field is not used from managed.
-        private IntPtr waitHandle;  // !!! DO NOT MOVE THIS FIELD. (See defn of WAITHANDLEREF in object.h - has hardcoded access to this field.)
+        private IntPtr waitHandle;  // !!! DO NOT MOVE THIS FIELD. (See defn of WAITHANDLEREF in object.h - has hard-coded access to this field.)
 #pragma warning restore 414
 
         internal volatile SafeWaitHandle safeWaitHandle;
@@ -228,7 +228,7 @@ namespace System.Threading
         ** Waits for signal from all the objects. 
         ** timeout indicates how long to wait before the method returns.
         ** This method will return either when all the object have been pulsed
-        ** or timeout milliseonds have elapsed.
+        ** or timeout milliseconds have elapsed.
         ** If exitContext is true then the synchronization domain for the context 
         ** (if in a synchronized context) is exited before the wait and reacquired 
         ========================================================================*/
@@ -329,7 +329,7 @@ namespace System.Threading
         ** Waits for notification from any of the objects. 
         ** timeout indicates how long to wait before the method returns.
         ** This method will return either when either one of the object have been 
-        ** signalled or timeout milliseonds have elapsed.
+        ** signaled or timeout milliseconds have elapsed.
         ** If exitContext is true then the synchronization domain for the context 
         ** (if in a synchronized context) is exited before the wait and reacquired 
         ========================================================================*/
