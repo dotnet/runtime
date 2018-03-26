@@ -95,7 +95,7 @@ namespace System.Threading
 
                 if (helper == null || helper._executionContext == null || helper._executionContext.IsDefault)
                 {
-                    // We got here because of UnsafePack (or) Pack with EC flow supressed
+                    // We got here because of UnsafePack (or) Pack with EC flow suppressed
                     IOCompletionCallback callback = overlapped.UserCallback;
                     callback(errorCode, numBytes, pOVERLAP);
                 }
