@@ -985,7 +985,7 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
         }
         else if (architecture == 'arm') {
             if (os == 'Ubuntu') {
-                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20170319080304"
+                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180323032140"
             }
         }
     }
