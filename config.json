@@ -532,7 +532,8 @@
           "description": "Restores optimization profile data for the repository.",
           "settings": {
             "Project": "./build.proj",
-            "RestoreOptData": "default"
+            "RestoreOptData": "default",
+            "MsBuildEventLogging": " ",
           }
         }
       },
