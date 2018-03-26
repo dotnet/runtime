@@ -9,9 +9,12 @@ namespace JitBench
 {
     class MusicStoreBenchmark : WebAppBenchmark
     {
-        public MusicStoreBenchmark() : base("MusicStore") { }
+        public MusicStoreBenchmark() : base("MusicStore", "MusicStore.dll") { }
 
-        protected override string ExecutableName => "MusicStore.dll";
+        protected override string GetJitBenchRepoRootDir(string outputDir)
+        {
+            return Path.Combine(outputDir, "K");
+        }
 
         protected override string GetWebAppSrcDirectory(string outputDir)
         {
@@ -21,9 +24,12 @@ namespace JitBench
 
     class AllReadyBenchmark : WebAppBenchmark
     {
-        public AllReadyBenchmark() : base("AllReady") { }
+        public AllReadyBenchmark() : base("AllReady", "AllReady.dll") { }
 
-        protected override string ExecutableName => "AllReady.dll";
+        protected override string GetJitBenchRepoRootDir(string outputDir)
+        {
+            return Path.Combine(outputDir, "J");
+        }
 
         protected override string GetWebAppSrcDirectory(string outputDir)
         {
@@ -35,12 +41,10 @@ namespace JitBench
     {
         private static readonly HashSet<int> DefaultExitCodes = new HashSet<int>(new[] { 0 });
 
-        public WebAppBenchmark(string name) : base(name)
+        public WebAppBenchmark(string name, string executableName) : base(name)
         {
-            ExePath = ExecutableName;
+            ExePath = executableName;
         }
-
-        protected abstract string ExecutableName { get; }
 
         public override async Task Setup(DotNetInstallation dotNetInstall, string outputDir, bool useExistingSetup, ITestOutputHelper output)
         {
@@ -53,7 +57,7 @@ namespace JitBench
                     await Publish(dotNetInstall, outputDir, setupSection);
                 }
             }
-            string webAppSrcDirectory = GetWebAppSrcDirectory(outputDir);
+
             string tfm = DotNetSetup.GetTargetFrameworkMonikerForFrameworkVersion(dotNetInstall.FrameworkVersion);
             WorkingDirPath = GetWebAppPublishDirectory(dotNetInstall, outputDir, tfm);
             EnvironmentVariables.Add("DOTNET_SHARED_STORE", GetWebAppStoreDir(outputDir));
@@ -78,7 +82,7 @@ namespace JitBench
                 throw new Exception($"git {arguments} has failed, the exit code was {exitCode}");
         }
 
-        private static async Task CreateStore(DotNetInstallation dotNetInstall, string outputDir, ITestOutputHelper output)
+        private async Task CreateStore(DotNetInstallation dotNetInstall, string outputDir, ITestOutputHelper output)
         {
             string tfm = DotNetSetup.GetTargetFrameworkMonikerForFrameworkVersion(dotNetInstall.FrameworkVersion);
             string rid = $"win7-{dotNetInstall.Architecture}";
@@ -228,10 +232,7 @@ namespace JitBench
             return true;
         }
 
-        protected static string GetJitBenchRepoRootDir(string outputDir)
-        {
-            return Path.Combine(outputDir, "J"); 
-        }
+        protected abstract string GetJitBenchRepoRootDir(string outputDir);
 
         protected abstract string GetWebAppSrcDirectory(string outputDir);
 
@@ -252,23 +253,16 @@ namespace JitBench
             return null;
         }
 
-        static string GetWebAppStoreDir(string outputDir)
+        string GetWebAppStoreDir(string outputDir)
         {
             return Path.Combine(GetJitBenchRepoRootDir(outputDir), StoreDirName);
         }
 
-        string GetLocalJitBenchRepoDirectory()
-        {
-            return Environment.GetEnvironmentVariable("MUSICSTORE_PRIVATE_REPO");
-        }
-
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
         private const string JitBenchCommitSha1Id = "6bee730486f272d31f23f1033225090511f856f3";
-        private const string EnvironmentFileName = "JitBenchEnvironment.txt";
         private const string StoreDirName = ".store";
         private readonly Metric StartupMetric = new Metric("Startup", "ms");
         private readonly Metric FirstRequestMetric = new Metric("First Request", "ms");
         private readonly Metric MedianResponseMetric = new Metric("Median Response", "ms");
-        private readonly Metric MeanResponseMetric = new Metric("Mean Response", "ms");
     }
 }
