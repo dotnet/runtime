@@ -3515,6 +3515,44 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void OpenPropertyStream()
+        {
+            FileInfo tempGuidFile = GetTempFileInfoWithExtension(".zip");
+
+            using (Package package = Package.Open(tempGuidFile.FullName, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                package.PackageProperties.Subject = "Subject";
+                package.PackageProperties.Creator = "Creator";
+
+                // serialize core properties
+                package.Flush();
+
+                PackageRelationshipCollection corePropsRelations = package.GetRelationshipsByType(
+                    "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties");
+
+                Assert.NotNull(corePropsRelations);
+                PackagePart corePropsPart = package.GetPart(corePropsRelations.Single().TargetUri);
+
+                string firstRead;
+
+                // If the property writer did not close out the stream properly this block will throw.
+                using (Stream stream = corePropsPart.GetStream())
+                using (var reader = new StreamReader(stream))
+                {
+                    firstRead = reader.ReadToEnd();
+                }
+
+                // May as well read it another time, just to prove we can.
+                using (Stream stream = corePropsPart.GetStream())
+                using (var reader = new StreamReader(stream))
+                {
+                    string secondRead = reader.ReadToEnd();
+                    Assert.Equal(firstRead, secondRead);
+                }
+            }
+        }
+
+        [Fact]
         public void SetEmptyPropertyToNull()
         {
             using (var ms = new MemoryStream())
