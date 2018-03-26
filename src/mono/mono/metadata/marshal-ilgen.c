@@ -497,9 +497,11 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 		break;
 	}
-	case MONO_MARSHAL_CONV_ARRAY_LPARRAY:
-		g_error ("Structure field of type %s can't be marshalled as LPArray", m_class_get_name (mono_class_from_mono_type (type)));
+	case MONO_MARSHAL_CONV_ARRAY_LPARRAY: {
+		char *msg = g_strdup_printf ("Structure field of type %s can't be marshalled as LPArray", mono_class_from_mono_type (type)->name);
+		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
+	}
 
 #ifndef DISABLE_COM
 	case MONO_MARSHAL_CONV_OBJECT_INTERFACE:
@@ -704,6 +706,9 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 
 		if (type->type == MONO_TYPE_SZARRAY) {
 			eklass = type->data.klass;
+		} else if (type->type == MONO_TYPE_ARRAY) {
+			eklass = type->data.array->eklass;
+			g_assert(eklass->blittable);
 		} else {
 			g_assert_not_reached ();
 		}
