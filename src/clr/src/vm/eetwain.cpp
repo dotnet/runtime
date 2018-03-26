@@ -3851,8 +3851,27 @@ bool UnwindEbpDoubleAlignFrame(
             baseSP = curESP;
             // Set baseSP as initial SP
             baseSP += GetPushedArgSize(info, table, curOffs);
+
             // 16-byte stack alignment padding (allocated in genFuncletProlog)
-            baseSP += 12;
+            // Current funclet frame layout (see CodeGen::genFuncletProlog() and genFuncletEpilog()):
+            //   prolog: sub esp, 12
+            //   epilog: add esp, 12
+            //           ret
+            // SP alignment padding should be added for all instructions except the first one and the last one.
+            TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
+
+            const ULONG32 funcletLastInstSize = 1; // 0xc3, ret
+            BOOL atFuncletLastInst = (pCodeInfo->GetRelOffset() + funcletLastInstSize) >= info->methodSize;
+            if (!atFuncletLastInst)
+            {
+                EECodeInfo nextCodeInfo;
+                nextCodeInfo.Init(pCodeInfo->GetCodeAddress() + funcletLastInstSize);
+                atFuncletLastInst = !nextCodeInfo.IsValid() || !nextCodeInfo.IsFunclet() ||
+                    nextCodeInfo.GetJitManager()->GetFuncletStartAddress(&nextCodeInfo) != funcletStart;
+            }
+
+            if (!atFuncletLastInst && funcletStart != pCodeInfo->GetCodeAddress())
+                baseSP += 12;
 
             pContext->PCTAddr = baseSP;
             pContext->ControlPC = *PTR_PCODE(pContext->PCTAddr);
