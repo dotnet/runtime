@@ -1168,12 +1168,15 @@ class MsbuildGenerator {
 	
 	void AddProjectReference (StringBuilder refs, VsCsproj result, MsbuildGenerator match, string r, string alias)
 	{
-		refs.AppendFormat ("    <ProjectReference Include=\"{0}\">{1}", GetRelativePath (result.csProjFilename, match.CsprojFilename), NewLine);
-		refs.Append ("      <Project>" + match.projectGuid + "</Project>" + NewLine);
-		refs.Append ("      <Name>" + Path.GetFileNameWithoutExtension (match.CsprojFilename.Replace ('\\', Path.DirectorySeparatorChar)) + "</Name>" + NewLine);
-		if (alias != null)
-			refs.Append ("      <Aliases>" + alias + "</Aliases>");
-		refs.Append ("    </ProjectReference>" + NewLine);
+		refs.AppendFormat ("    <ProjectReference Include=\"{0}\"", GetRelativePath (result.csProjFilename, match.CsprojFilename));
+		if (alias != null) {
+			refs.Append (">" + NewLine);
+			refs.Append ("      <Aliases>" + alias + "</Aliases>" + NewLine);
+			refs.Append ("    </ProjectReference>" + NewLine);
+		}
+		else {
+			refs.Append (" />" + NewLine);
+		}
 		if (!result.projReferences.Contains (match.Csproj))
 			result.projReferences.Add (match.Csproj);
 	}
@@ -1340,7 +1343,7 @@ public class Driver {
 		foreach (var csprojFile in projects.Values.Select (x => x.GetProjectFilename ()).Distinct ())
 		{
 			Console.WriteLine ("Deduplicating: " + csprojFile);
-			DeduplicateSources (csprojFile);
+			DeduplicateSourcesAndProjectReferences (csprojFile);
 		}
 
 		Func<MsbuildGenerator.VsCsproj, bool> additionalFilter;
@@ -1388,7 +1391,7 @@ public class Driver {
 		//WriteSolution (build_sln_gen, "mcs_build.sln");
 	}
 
-	static void DeduplicateSources (string csprojFilename)
+	static void DeduplicateSourcesAndProjectReferences (string csprojFilename)
 	{
 		XmlDocument doc = new XmlDocument ();
 		doc.Load (csprojFilename);
@@ -1397,13 +1400,22 @@ public class Driver {
 
 		XmlNode root = doc.DocumentElement;
 		var allSources = new Dictionary<string, List<string>> ();
+		var allProjectReferences = new Dictionary<string, List<string>> ();
 
+		ProcessCompileOrProjectReferenceItems (mgr, root,
 		// grab all sources across all platforms
-		ProcessCompileItems (mgr, root, (source, platform) =>
+		(source, platform) =>
 		{
 			if (!allSources.ContainsKey (platform))
 				allSources[platform] = new List<string> ();
 			allSources[platform].Add (source.Attributes["Include"].Value);
+		},
+		// grab all project references across all platforms
+		(projRef, platform) =>
+		{
+			if (!allProjectReferences.ContainsKey (platform))
+				allProjectReferences[platform] = new List<string> ();
+			allProjectReferences[platform].Add (projRef.Attributes["Include"].Value);
 		});
 
 		if (allSources.Count > 1)
@@ -1416,7 +1428,7 @@ public class Driver {
 			if (commonSources.Count > 0)
 			{
 				// remove common sources from the individual platforms
-				ProcessCompileItems (mgr, root, (source, platform) =>
+				ProcessCompileOrProjectReferenceItems (mgr, root, (source, platform) =>
 				{
 					var parent = source.ParentNode;
 					if (commonSources.Contains (source.Attributes["Include"].Value))
@@ -1424,7 +1436,7 @@ public class Driver {
 
 					if (!parent.HasChildNodes)
 						parent.ParentNode.RemoveChild (parent);
-				});
+				}, null);
 
 				// add common sources as ItemGroup
 				XmlNode commonSourcesComment = root.SelectSingleNode ("//comment()[. = ' @COMMON_SOURCES@ ']");
@@ -1443,10 +1455,47 @@ public class Driver {
 			}
 		}
 
+		if (allProjectReferences.Count > 1)
+		{
+			// find the project references which are common across all platforms
+			var commonProjectReferences = allProjectReferences.Values.First ();
+			foreach (var l in allProjectReferences.Values.Skip (1))
+				commonProjectReferences = commonProjectReferences.Intersect (l).ToList ();
+
+			if (commonProjectReferences.Count > 0)
+			{
+				// remove common project references from the individual platforms
+				ProcessCompileOrProjectReferenceItems (mgr, root, null, (projRef, platform) =>
+				{
+					var parent = projRef.ParentNode;
+					if (commonProjectReferences.Contains (projRef.Attributes["Include"].Value))
+						parent.RemoveChild (projRef);
+
+					if (!parent.HasChildNodes)
+						parent.ParentNode.RemoveChild (parent);
+				});
+
+				// add common project references as ItemGroup
+				XmlNode commonProjRefsComment = root.SelectSingleNode ("//comment()[. = ' @COMMON_PROJECT_REFERENCES@ ']");
+				XmlElement commonProjRefsElement = doc.CreateElement ("ItemGroup", root.NamespaceURI);
+
+				foreach (var s in commonProjectReferences)
+				{
+					var c = doc.CreateElement ("ProjectReference", root.NamespaceURI);
+					var v = doc.CreateAttribute ("Include");
+					v.Value = s;
+					c.Attributes.Append (v);
+
+					commonProjRefsElement.AppendChild (c);
+				}
+				root.ReplaceChild (commonProjRefsElement, commonProjRefsComment);
+			}
+		}
+
 		doc.Save (csprojFilename);
 	}
 
-	static void ProcessCompileItems (XmlNamespaceManager mgr, XmlNode x, Action<XmlNode, string> action)
+	static void ProcessCompileOrProjectReferenceItems (XmlNamespaceManager mgr, XmlNode x, Action<XmlNode, string> compileAction, Action<XmlNode, string> projRefAction)
 	{
 		foreach (XmlNode n in x.SelectNodes("//x:ItemGroup[@Condition]", mgr))
 		{
@@ -1460,11 +1509,20 @@ public class Driver {
 
 			var compileItems = n.SelectNodes("./x:Compile[@Include]", mgr);
 
-			if (compileItems.Count == 0)
-				continue;
+			if (compileAction != null && compileItems.Count != 0) {
+				foreach (XmlNode source in compileItems)
+					compileAction(source, platform);
+			}
 
-			foreach (XmlNode source in compileItems)
-				action(source, platform);
+			var projRefItems = n.SelectNodes("./x:ProjectReference[@Include]", mgr);
+
+			if (projRefAction != null && projRefItems.Count != 0) {
+				foreach (XmlNode proj in projRefItems) {
+					// we don't bother to process ProjectReferences with Aliases
+					if (!proj.HasChildNodes)
+						projRefAction(proj, platform);
+				}
+			}
 		}
 	}
 
