@@ -320,7 +320,7 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
     return true;
 }
 
-bool deps_json_t::load_portable(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
+bool deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
 {
     if (!process_runtime_targets(json, target_name, rid_fallback_graph, &m_rid_assets))
     {
@@ -367,7 +367,7 @@ bool deps_json_t::load_portable(const pal::string_t& deps_path, const json_value
     return true;
 }
 
-bool deps_json_t::load_standalone(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name)
+bool deps_json_t::load_self_contained(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name)
 {
     if (!process_targets(json, target_name, &m_assets))
     {
@@ -438,7 +438,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 // Load the deps file and parse its "entry" lines which contain the "fields" of
 // the entry. Populate an array of these entries.
 //
-bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
+bool deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
     m_file_exists = pal::file_exists(deps_path);
@@ -473,9 +473,9 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
             runtime_target.as_string():
             runtime_target.at(_X("name")).as_string();
 
-        trace::verbose(_X("Loading deps file... %s as portable=[%d]"), deps_path.c_str(), portable);
+        trace::verbose(_X("Loading deps file... %s as framework dependent=[%d]"), deps_path.c_str(), is_framework_dependent);
 
-        return (portable) ? load_portable(deps_path, json, name, rid_fallback_graph) : load_standalone(deps_path, json, name);
+        return (is_framework_dependent) ? load_framework_dependent(deps_path, json, name, rid_fallback_graph) : load_self_contained(deps_path, json, name);
     }
     catch (const std::exception& je)
     {

@@ -40,6 +40,7 @@ set(SOURCES
     ../breadcrumbs.cpp
     ../args.cpp
     ../hostpolicy.cpp
+    ../host_startup_info.cpp
     ../coreclr.cpp
     ../deps_resolver.cpp
     ../deps_format.cpp

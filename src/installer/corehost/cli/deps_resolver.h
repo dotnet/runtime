@@ -41,9 +41,9 @@ class deps_resolver_t
 public:
     deps_resolver_t(hostpolicy_init_t& init, const arguments_t& args)
         : m_fx_definitions(init.fx_definitions)
-        , m_app_dir(args.app_dir)
+        , m_app_dir(args.app_root)
         , m_managed_app(args.managed_application)
-        , m_portable(init.is_portable)
+        , m_is_framework_dependent(init.is_framework_dependent)
         , m_core_servicing(args.core_servicing)
     {
         int root_framework = m_fx_definitions.size() - 1;
@@ -218,8 +218,8 @@ private:
     // Fallback probe dir
     std::vector<pal::string_t> m_additional_probes;
 
-    // Is the deps file portable app?
-    bool m_portable;
+    // Is the deps file for an app using shared frameworks?
+    bool m_is_framework_dependent;
 };
 
 #endif // DEPS_RESOLVER_H

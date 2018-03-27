@@ -88,7 +88,7 @@ public:
     bool get_patch_roll_fwd() const;
     roll_fwd_on_no_candidate_fx_option get_roll_fwd_on_no_candidate_fx() const;
     void force_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidate_fx_option value);
-    bool get_portable() const;
+    bool get_is_framework_dependent() const;
     bool parse_opts(const json_value& opts);
     void combine_properties(std::unordered_map<pal::string_t, pal::string_t>& combined_properties) const;
 
@@ -115,7 +115,7 @@ private:
 
     pal::string_t m_dev_path;
     pal::string_t m_path;
-    bool m_portable;
+    bool m_is_framework_dependent;
     bool m_valid;
 
 private:

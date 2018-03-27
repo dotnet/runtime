@@ -89,7 +89,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
     string_t path = *in_path;
 
     // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR:
-    //   In portable apps, coreclr would come from another directory than the host,
+    //   In framework-dependent apps, coreclr would come from another directory than the host,
     //   so make sure coreclr dependencies can be resolved from coreclr.dll load dir.
 
     if (LongFile::IsPathNotFullyQualified(path))
@@ -140,22 +140,6 @@ void pal::unload_library(dll_t library)
 }
 
 static
-bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
-{
-    recv->clear();
-    pal::string_t file_path;
-    if (!(pal::getenv(env_key, &file_path) && pal::realpath(&file_path)))
-    {
-        // We should have the path in file_path.
-        trace::verbose(_X("Failed to obtain [%s] directory,[%s]"),env_key, file_path.c_str());
-        return false;
-    }
-
-    recv->assign(file_path);
-    return true;
-}
-
-static
 bool get_wow_mode_program_files(pal::string_t* recv)
 {
 #if defined(_TARGET_AMD64_)
@@ -198,13 +182,33 @@ bool pal::get_default_servicing_directory(string_t* recv)
 bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
 {
     pal::string_t dir;
-    if (!get_file_path_from_env(_X("ProgramFiles"), &dir))
+    if (!get_default_installation_dir(&dir))
     {
         return false;
     }
 
-    append_path(&dir, _X("dotnet"));
     dirs->push_back(dir);
+    return true;
+}
+
+bool pal::get_default_installation_dir(pal::string_t* recv)
+{
+    pal::char_t* program_files_dir;
+    if (pal::is_running_in_wow64())
+    {
+        program_files_dir = _X("ProgramFiles(x86)");
+    }
+    else
+    {
+        program_files_dir = _X("ProgramFiles");
+    }
+
+    if (!get_file_path_from_env(program_files_dir, recv))
+    {
+        return false;
+    }
+
+    append_path(recv, _X("dotnet"));
     return true;
 }
 
@@ -492,4 +496,14 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
     ::readdir(path, _X("*"), true, list);
+}
+
+bool pal::is_running_in_wow64()
+{
+    BOOL fWow64Process = FALSE;
+    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
+    {
+        return false;
+    }
+    return (fWow64Process != FALSE);
 }
