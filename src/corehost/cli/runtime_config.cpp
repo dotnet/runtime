@@ -20,7 +20,7 @@
 runtime_config_t::runtime_config_t()
     : m_patch_roll_fwd(true)
     , m_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidate_fx_option::minor)
-    , m_portable(false)
+    , m_is_framework_dependent(false)
     , m_valid(false)
 {
 }
@@ -134,7 +134,7 @@ bool runtime_config_t::parse_opts(const json_value& opts)
         return true;
     }
 
-    m_portable = true;
+    m_is_framework_dependent = true;
 
     const auto& fx_obj = framework->second.as_object();
 
@@ -383,9 +383,9 @@ void runtime_config_t::force_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidat
     m_fx_readonly.set_roll_fwd_on_no_candidate_fx(value);
 }
 
-bool runtime_config_t::get_portable() const
+bool runtime_config_t::get_is_framework_dependent() const
 {
-    return m_portable;
+    return m_is_framework_dependent;
 }
 
 const std::list<pal::string_t>& runtime_config_t::get_probe_paths() const

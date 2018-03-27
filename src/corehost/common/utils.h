@@ -10,6 +10,7 @@ struct host_option
     pal::string_t option;
     pal::string_t argument;
     pal::string_t description;
+    bool framework_dependent;
 };
 
 #define _STRINGIFY(s) _X(s)
@@ -23,7 +24,7 @@ typedef std::unordered_map<pal::string_t, std::vector<pal::string_t>> opt_map_t;
 
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
-pal::string_t get_executable(const pal::string_t& filename);
+pal::string_t strip_executable_ext(const pal::string_t& filename);
 pal::string_t get_directory(const pal::string_t& path);
 pal::string_t strip_file_ext(const pal::string_t& path);
 pal::string_t get_filename(const pal::string_t& path);
@@ -49,7 +50,8 @@ bool skip_utf8_bom(pal::ifstream_t* stream);
 bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool get_global_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm);
 bool multilevel_lookup_enabled();
-bool get_path_from_argv(pal::string_t *path);
+bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, unsigned i);
 bool try_stou(const pal::string_t& str, unsigned* num);
+pal::string_t get_dotnet_root_env_var_name();
 #endif

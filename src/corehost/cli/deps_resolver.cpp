@@ -542,7 +542,7 @@ bool deps_resolver_t::resolve_tpa_list(
         // A minor\major roll-forward affects which layer wins
         bool is_minor_or_major_roll_forward = m_fx_definitions[i]->did_minor_or_major_roll_forward_occur();
 
-        const auto& deps_entries = m_portable ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
+        const auto& deps_entries = m_is_framework_dependent ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
         for (const auto& entry : deps_entries)
         {
             if (!process_entry(m_fx_definitions[i]->get_dir(), entry, i, is_minor_or_major_roll_forward))
@@ -588,12 +588,12 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
 
 void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
 {
-    if (!m_portable)
+    if (!m_is_framework_dependent)
     {
-        // Additional deps.json support is only available for portable apps due to the following constraints:
+        // Additional deps.json support is only available for framework-dependent apps due to the following constraints:
         //
-        // 1) Unlike Portable Apps, Standalone apps do not have details of the SharedFX and Version they target.
-        // 2) Unlike Portable Apps, Standalone apps do not have RID fallback graph that is required for looking up
+        // 1) Unlike framework-dependent Apps, self-contained apps do not have details of the SharedFX and Version they target.
+        // 2) Unlike framework-dependent Apps, self-contained apps do not have RID fallback graph that is required for looking up
         //    the correct native assets from nuget packages.
 
         return;
@@ -727,7 +727,7 @@ bool deps_resolver_t::resolve_probe_dirs(
         }
         else
         {
-            // For standalone apps, apphost.exe will be renamed. Do not use the full package name
+            // For self-contained apps do not use the full package name
             // because of rid-fallback could happen (ex: CentOS falling back to RHEL)
             if ((entry.asset.name == _X("apphost")) && ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetAppHost"), false))
             {
@@ -797,7 +797,7 @@ bool deps_resolver_t::resolve_probe_dirs(
 // Entrypoint to resolve TPA, native and resources path ordering to pass to CoreCLR.
 //
 //  Parameters:
-//     app_dir           - The application local directory
+//     app_root          - The application local directory
 //     package_dir       - The directory path to where packages are restored
 //     package_cache_dir - The directory path to secondary cache for packages
 //     clr_dir           - The directory where the host loads the CLR

@@ -33,25 +33,25 @@ public:
     {
     }
 
-    deps_json_t(bool portable, const pal::string_t& deps_path)
-        : deps_json_t(portable, deps_path, m_rid_fallback_graph /* dummy */)
+    deps_json_t(bool is_framework_dependent, const pal::string_t& deps_path)
+        : deps_json_t(is_framework_dependent, deps_path, m_rid_fallback_graph /* dummy */)
     {
     }
 
-    deps_json_t(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
+    deps_json_t(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
         : deps_json_t()
     {
-        m_valid = load(portable, deps_path, graph);
+        m_valid = load(is_framework_dependent, deps_path, graph);
     }
 
-    void parse(bool portable, const pal::string_t& deps_path)
+    void parse(bool is_framework_dependent, const pal::string_t& deps_path)
     {
-        m_valid = load(portable, deps_path, m_rid_fallback_graph /* dummy */);
+        m_valid = load(is_framework_dependent, deps_path, m_rid_fallback_graph /* dummy */);
     }
 
-    void parse(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
+    void parse(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& graph)
     {
-        m_valid = load(portable, deps_path, graph);
+        m_valid = load(is_framework_dependent, deps_path, graph);
     }
 
     const std::vector<deps_entry_t>& get_entries(deps_entry_t::asset_types type) const
@@ -85,9 +85,9 @@ public:
     }
 
 private:
-    bool load_standalone(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name);
-    bool load_portable(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
-    bool load(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph);
+    bool load_self_contained(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name);
+    bool load_framework_dependent(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
+    bool load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph);
     bool process_runtime_targets(const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets);
     bool process_targets(const json_value& json, const pal::string_t& target_name, deps_assets_t* p_assets);
 

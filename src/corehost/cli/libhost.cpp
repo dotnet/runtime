@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "trace.h"
 #include "libhost.h"
+#include "host_startup_info.h"
 
 void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* cfg, pal::string_t* dev_cfg)
 {
@@ -48,20 +49,20 @@ void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& na
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
 }
 
-host_mode_t detect_operating_mode(const pal::string_t& own_dir, const pal::string_t& own_dll, const pal::string_t& own_name)
+host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
 {
-    if (coreclr_exists_in_dir(own_dir) || pal::file_exists(own_dll))
+    if (coreclr_exists_in_dir(host_info.dotnet_root) || pal::file_exists(host_info.app_path))
     {
-        pal::string_t own_deps_json = own_dir;
-        pal::string_t own_deps_filename = strip_file_ext(own_name) + _X(".deps.json");
-        pal::string_t own_config_filename = strip_file_ext(own_name) + _X(".runtimeconfig.json");
+        pal::string_t own_deps_json = host_info.dotnet_root;
+        pal::string_t own_deps_filename = host_info.get_app_name() + _X(".deps.json");
+        pal::string_t own_config_filename = host_info.get_app_name() + _X(".runtimeconfig.json");
         append_path(&own_deps_json, own_deps_filename.c_str());
         if (trace::is_enabled())
         {
-            trace::info(_X("Detecting mode... CoreCLR present in own dir [%s] and checking if [%s] file present=[%d]"),
-                own_dir.c_str(), own_deps_filename.c_str(), pal::file_exists(own_deps_json));
+            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
+                host_info.dotnet_root.c_str(), own_deps_filename.c_str(), pal::file_exists(own_deps_json));
         }
-        return ((pal::file_exists(own_deps_json) || !pal::file_exists(own_config_filename)) && pal::file_exists(own_dll)) ? host_mode_t::standalone : host_mode_t::split_fx;
+        return ((pal::file_exists(own_deps_json) || !pal::file_exists(own_config_filename)) && pal::file_exists(host_info.app_path)) ? host_mode_t::apphost : host_mode_t::split_fx;
     }
     else
     {

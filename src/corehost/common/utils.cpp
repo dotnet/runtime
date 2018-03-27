@@ -63,7 +63,7 @@ void append_path(pal::string_t* path1, const pal::char_t* path2)
     }
 }
 
-pal::string_t get_executable(const pal::string_t& filename)
+pal::string_t strip_executable_ext(const pal::string_t& filename)
 {
     pal::string_t exe_suffix = pal::exe_suffix();
     if (exe_suffix.empty())
@@ -92,7 +92,7 @@ pal::string_t strip_file_ext(const pal::string_t& path)
     size_t dot_pos = path.rfind(_X('.'));
     if (sep_pos != pal::string_t::npos && sep_pos > dot_pos)
     {
-	    return path;
+        return path;
     }
     return path.substr(0, dot_pos);
 }
@@ -338,15 +338,18 @@ bool multilevel_lookup_enabled()
     return multilevel_lookup;
 }
 
-// Determine if string is a valid path, and if so then fix up by using realpath()
-bool get_path_from_argv(pal::string_t *path)
+bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
-    // Assume all paths will have at least one separator. We want to detect path vs. file before calling realpath
-    // because realpath will expand a filename into a full path containing the current directory which may be
-    // the wrong location when filename is ends up being found in %PATH% and not the current directory.
-    if (path->find(DIR_SEPARATOR) != pal::string_t::npos)
+    recv->clear();
+    pal::string_t file_path;
+    if (pal::getenv(env_key, &file_path))
     {
-        return pal::realpath(path);
+        if (pal::realpath(&file_path))
+        {
+            recv->assign(file_path);
+            return true;
+        }
+        trace::verbose(_X("Did not find [%s] directory [%s]"), env_key, file_path.c_str());
     }
 
     return false;
@@ -369,4 +372,14 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     }
     *num = (unsigned)std::stoul(str);
     return true;
+}
+
+pal::string_t get_dotnet_root_env_var_name()
+{
+    if (pal::is_running_in_wow64())
+    {
+        return pal::string_t(_X("DOTNET_ROOT(x86)"));
+    }
+
+    return pal::string_t(_X("DOTNET_ROOT"));
 }

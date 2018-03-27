@@ -158,14 +158,29 @@ int execute_host_command(
     return code;
 }
 
+SHARED_API int hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
+{
+    trace::setup();
+
+    trace::info(_X("--- Invoked hostfxr v2 [commit hash: %s] main"), _STRINGIFY(REPO_COMMIT_HASH));
+
+    host_startup_info_t startup_info(host_path, dotnet_root, app_path);
+
+    fx_muxer_t muxer;
+    return muxer.execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
+}
+
 SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
 {
     trace::setup();
 
     trace::info(_X("--- Invoked hostfxr [commit hash: %s] main"), _STRINGIFY(REPO_COMMIT_HASH));
 
+    host_startup_info_t startup_info;
+    startup_info.parse(argc, argv);
+
     fx_muxer_t muxer;
-    return muxer.execute(pal::string_t(), argc, argv, nullptr, 0, nullptr);
+    return muxer.execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
 }
 
 //
@@ -310,7 +325,10 @@ SHARED_API int32_t hostfxr_get_native_search_directories(const int argc, const p
         return InvalidArgFailure;
     }
 
+    host_startup_info_t startup_info;
+    startup_info.parse(argc, argv);
+
     fx_muxer_t muxer;
-    int rc = muxer.execute(_X("get-native-search-directories"), argc, argv, buffer, buffer_size, required_buffer_size);
+    int rc = muxer.execute(_X("get-native-search-directories"), argc, argv, startup_info, buffer, buffer_size, required_buffer_size);
     return rc;
 }
