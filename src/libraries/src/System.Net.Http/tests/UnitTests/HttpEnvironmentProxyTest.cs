@@ -101,6 +101,54 @@ namespace System.Net.Http.Tests
             }).Dispose();
         }
 
+        [Theory]
+        [InlineData("1.1.1.5", "1.1.1.5", "80", null, null)]
+        [InlineData("http://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
+        [InlineData("http://foo@1.1.1.5", "1.1.1.5", "80", "foo", "")]
+        [InlineData("http://[::1]:80", "[::1]", "80", null, null)]
+        [InlineData("foo:bar@[::1]:3128", "[::1]", "3128", "foo", "bar")]
+        [InlineData("foo:Pass$!#\\.$@127.0.0.1:3128", "127.0.0.1", "3128", "foo", "Pass$!#\\.$")]
+        [InlineData("[::1]", "[::1]", "80", null, null)]
+        [InlineData("domain\\foo:bar@1.1.1.1", "1.1.1.1", "80", "foo", "bar")]
+        [InlineData("domain%5Cfoo:bar@1.1.1.1", "1.1.1.1", "80", "foo", "bar")]
+        [InlineData("HTTP://ABC.COM/", "abc.com", "80", null, null)]
+        public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user , string _password)
+        {
+            RemoteInvoke((input, host, port, user, password) =>
+            {
+                // Remote exec does not allow to pass null at this moment.
+                if (user == "null")
+                {
+                    user = null;
+                }
+                if (password == "null")
+                {
+                    password = null;
+                }
+
+                Environment.SetEnvironmentVariable("all_proxy", input);
+                IWebProxy p;
+                Uri u;
+
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
+                Assert.NotNull(p);
+
+                u = p.GetProxy(fooHttp);
+                Assert.Equal(host, u.Host);
+                Assert.Equal(Convert.ToInt32(port), u.Port);
+
+                if (user != null)
+                {
+                    NetworkCredential nc = p.Credentials.GetCredential(u, "Basic");
+                    Assert.NotNull(nc);
+                    Assert.Equal(user, nc.UserName);
+                    Assert.Equal(password, nc.Password);
+                }
+
+                return SuccessExitCode;
+            }, _input, _host, _port, _user ?? "null" , _password ?? "null").Dispose();
+        }
+
         [Fact]
         public void HttpProxy_CredentialParsing_Basic()
         {

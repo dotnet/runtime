@@ -65,16 +65,26 @@ namespace System.Net.Http
             {
                 return null;
             }
-            int idx = value.IndexOf(":");
-            if (idx < 0)
+
+            value = Uri.UnescapeDataString(value);
+
+            string password = "";
+            string domain = null;
+            int idx = value.IndexOf(':');
+            if (idx != -1)
             {
-                // only user name without password
-                return new NetworkCredential(value, "");
+                password = value.Substring(idx+1);
+                value = value.Substring(0, idx);
             }
-            else
+
+            idx = value.IndexOf('\\');
+            if (idx != -1)
             {
-                return new NetworkCredential(value.Substring(0, idx), value.Substring(idx+1, value.Length - idx -1 ));
+                domain = value.Substring(0, idx);
+                value = value.Substring(idx+1);
             }
+
+            return new NetworkCredential(value, password, domain);
         }
     }
 
@@ -168,18 +178,77 @@ namespace System.Net.Http
             {
                 return null;
             }
-
-            if (!value.Contains("://"))
+            if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
             {
-                value = "http://" + value;
+                value = value.Substring(7);
             }
 
-            if (Uri.TryCreate(value, UriKind.Absolute, out Uri uri) &&
-                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            string user = null;
+            string password = null;
+            UInt16 port = 80;
+            string host = null;
+
+            // Check if there is authentication part with user and possibly password.
+            // Curl accepts raw text and that may break URI parser.
+            int separatorIndex = value.LastIndexOf('@');
+            if (separatorIndex != -1)
             {
-                // We only support http and https for now.
-                return uri;
+                string auth = value.Substring(0, separatorIndex);
+
+                // The User and password may or may not be URL encoded.
+                // Curl seems to accept both. To match that,
+                // we do opportunistic decode and we use original string if it fails.
+                try
+                {
+                    auth = Uri.UnescapeDataString(auth);
+                }
+                catch { };
+
+                value = value.Substring(separatorIndex + 1);
+                separatorIndex = auth.IndexOf(':');
+                if (separatorIndex == -1)
+                {
+                    user = auth;
+                }
+                else
+                {
+                    user = auth.Substring(0, separatorIndex);
+                    password = auth.Substring(separatorIndex + 1);
+                }
             }
+
+            int ipV6AddressEnd = value.IndexOf(']');
+            separatorIndex = value.LastIndexOf(':');
+            // No ':' or it is part of IPv6 address.
+            if (separatorIndex == -1 || (ipV6AddressEnd != -1 && separatorIndex < ipV6AddressEnd))
+            {
+                host = value;
+            }
+            else
+            {
+                host = value.Substring(0, separatorIndex);
+                if (!UInt16.TryParse(value.AsSpan().Slice(separatorIndex + 1), out port))
+                {
+                    return null;
+                }
+            }
+
+            try
+            {
+                UriBuilder ub = new UriBuilder("http", host, port);
+                if (user != null)
+                {
+                    ub.UserName = Uri.EscapeDataString(user);
+                }
+
+                if (password != null)
+                {
+                    ub.Password = Uri.EscapeDataString(password);
+                }
+
+                return ub.Uri;
+            }
+            catch { };
             return null;
         }
 
