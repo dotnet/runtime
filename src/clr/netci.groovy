@@ -2397,9 +2397,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // Ubuntu cross-compilation toolset (running on a Ubuntu x64 host).
 
                     def dockerImage = getDockerImageName(architecture, os, true)
-                    def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/arm ${dockerImage} "
+                    def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/arm -e CAC_ROOTFS_DIR=/crossrootfs/x86 ${dockerImage} "
 
-                    buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh ${lowerConfiguration} ${architecture} cross"
+                    buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh ${lowerConfiguration} ${architecture} cross crosscomponent"
 
                     // Then, using the same docker image, generate the CORE_ROOT layout using build-test.sh to
                     // download the appropriate CoreFX packages.
