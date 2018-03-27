@@ -58,25 +58,46 @@ namespace System.IO.Tests
             Directory.Delete(testFile);
         }
 
-        [Benchmark]
-        [InlineData(10, 100)]
-        [InlineData(100, 10)]
-        [InlineData(1000, 1)]
-        [OuterLoop("Takes a lot of time to finish")]
-        public void RecursiveCreateDirectory(int depth, int times)
+        public string GetTestDeepFilePath(int depth)
         {
-            if (!PlatformDetection.IsWindows && depth == 1000)
-                return;
-            
-            // Setup
-            string rootDirectory = GetTestFilePath();
-            StringBuilder sb = new StringBuilder(5000);
+            string directory = Path.DirectorySeparatorChar + "a";
+            StringBuilder sb = new StringBuilder(depth * 2);
             for (int i = 0; i < depth; i++)
             {
-                sb.Append(@"\a");
+                sb.Append(directory);
             }
 
-            string path = sb.ToString();
+            return sb.ToString();
+        }
+
+        public static TheoryData<int, int> RecursiveDepthData
+        {
+            get
+            {
+                var data = new TheoryData<int, int>();
+                data.Add(10, 100);
+
+                // Length of the path can be 260 characters on netfx.
+                if (AreAllLongPathsAvailable)
+                {
+                    data.Add(100, 10);
+                    // Most Unix distributions have a maximum path length of 1024 characters (1024 UTF-8 bytes). 
+                    if (PlatformDetection.IsWindows)
+                        data.Add(1000, 1);
+                }
+
+                return data;
+            }
+        }
+
+        [Benchmark]
+        [MemberData(nameof(RecursiveDepthData))]
+        [OuterLoop("Takes a lot of time to finish")]
+        public void RecursiveCreateDirectoryTest(int depth, int times)
+        {
+            // Setup
+            string rootDirectory = GetTestFilePath();
+            string path = GetTestDeepFilePath(depth);
 
             foreach (var iteration in Benchmark.Iterations)
             {
@@ -84,7 +105,7 @@ namespace System.IO.Tests
                 {
                     for (int i = 0; i < times; i++)
                     {
-                        Directory.CreateDirectory(rootDirectory + @"\" + i + path);
+                        Directory.CreateDirectory(rootDirectory + Path.DirectorySeparatorChar + i + path);
                     }
                 }
                 // TearDown For each iteration
@@ -93,24 +114,13 @@ namespace System.IO.Tests
         }
 
         [Benchmark]
-        [InlineData(10, 100)]
-        [InlineData(100, 10)]
-        [InlineData(1000, 1)]
+        [MemberData(nameof(RecursiveDepthData))]
         [OuterLoop("Takes a lot of time to finish")]
-        public void RecursiveDeleteDirectory(int depth, int times)
+        public void RecursiveDeleteDirectoryTest(int depth, int times)
         {
-            if (!PlatformDetection.IsWindows && depth == 1000)
-                return;
-
             // Setup
             string rootDirectory = GetTestFilePath();
-            StringBuilder sb = new StringBuilder(5000);
-            for (int i = 0; i < depth; i++)
-            {
-                sb.Append(@"\a");
-            }
-
-            string path = sb.ToString();
+            string path = GetTestDeepFilePath(depth);
 
             foreach (var iteration in Benchmark.Iterations)
             {
