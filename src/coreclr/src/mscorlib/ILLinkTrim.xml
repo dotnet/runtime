@@ -19,5 +19,7 @@
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />
     </type>
+    <!-- Accessed via private reflection by tracing controller. -->
+    <type fullname="System.Diagnostics.Tracing.EventPipe*" />
   </assembly>
 </linker>

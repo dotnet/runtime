@@ -1170,9 +1170,7 @@ namespace System.Reflection.Emit
 
         private static Type GetConsoleType()
         {
-            return Type.GetType(
-                "System.Console, System.Console, Version=4.0.0.0, Culture=neutral, PublicKeyToken=" + AssemblyRef.MicrosoftPublicKeyToken,
-                throwOnError: true);
+            return Type.GetType("System.Console, System.Console", throwOnError: true);
         }
 
         public virtual void EmitWriteLine(String value)
