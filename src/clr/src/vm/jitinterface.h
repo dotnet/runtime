@@ -1351,23 +1351,25 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_fAllowRel32 = fAllowRel32;
     }
+#endif
 
-    void SetRel32Overflow(BOOL fRel32Overflow)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+    void SetJumpStubOverflow(BOOL fJumpStubOverflow)
     {
         LIMITED_METHOD_CONTRACT;
-        m_fRel32Overflow = fRel32Overflow;
+        m_fJumpStubOverflow = fJumpStubOverflow;
     }
 
-    BOOL IsRel32Overflow()
+    BOOL IsJumpStubOverflow()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_fRel32Overflow;
+        return m_fJumpStubOverflow;
     }
 
     BOOL JitAgain()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_fRel32Overflow;
+        return m_fJumpStubOverflow;
     }
 
     size_t GetReserveForJumpStubs()
@@ -1411,7 +1413,9 @@ public:
 #endif
 #ifdef _TARGET_AMD64_
           m_fAllowRel32(FALSE),
-          m_fRel32Overflow(FALSE),
+#endif
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+          m_fJumpStubOverflow(FALSE),
           m_reserveForJumpStubs(0),
 #endif
           m_GCinfo_len(0),
@@ -1495,8 +1499,10 @@ protected :
 
 #ifdef _TARGET_AMD64_
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
-    BOOL                    m_fRel32Overflow;   // Overflow while trying to use encode 32-bit PC relative address. 
-                                                // The code will need to be regenerated with m_fRel32Allowed == FALSE.
+#endif
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+    BOOL                    m_fJumpStubOverflow;   // Overflow while trying to alocate jump stub slot within PC relative branch region
+                                                   // The code will need to be regenerated (with m_fRel32Allowed == FALSE for AMD64).
     size_t                  m_reserveForJumpStubs; // Space to reserve for jump stubs when allocating code
 #endif
 
