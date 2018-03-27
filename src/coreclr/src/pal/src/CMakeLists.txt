@@ -11,6 +11,10 @@ add_compile_options(-fPIC)
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(libunwind/include)
+  include_directories(libunwind/include/tdep)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep)
+
   add_subdirectory(libunwind)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
