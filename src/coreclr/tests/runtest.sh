@@ -1333,11 +1333,8 @@ if [ "$ARCH" == "x64" ]
 then
     scriptPath=$(dirname $0)
     ${scriptPath}/setup-stress-dependencies.sh --outputDir=$coreOverlayDir
-else
-    if [ "$ARCH" != "arm64" ]
-    then
-        echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
-    fi
+elif [ "$ARCH" != "arm64" ] && [ "$ARCH" != "arm" ]; then
+    echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
 fi
 
 export __TestEnv=$testEnv
