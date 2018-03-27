@@ -5,6 +5,7 @@
 using Xunit;
 using Xunit.Abstractions;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 
@@ -335,7 +336,12 @@ namespace System.Xml.Tests
 
             StringWriter sw;
             var e = Assert.ThrowsAny<XsltException>(() => sw = Transform());
-            Assert.Contains("Execution of the 'document()' function was prohibited. Use the XsltSettings.EnableDocumentFunction property to enable it.", e.Message);
+
+            // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+            // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+            // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+            Assert.Matches(@"[\p{Pi}\p{Po}]" + Regex.Escape("document()") + @"[\p{Pf}\p{Po}]", e.Message);
+            Assert.Matches(@"\b" + Regex.Escape("XsltSettings.EnableDocumentFunction") + @"\b", e.Message);
         }
     }
 }
