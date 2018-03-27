@@ -236,6 +236,7 @@ $RECYCLE.BIN/
 
 # Common binary extensions on Windows
 *.exe
+*.exe.stackdump
 *.dll
 *.lib
 
