@@ -1012,7 +1012,6 @@ RuntimeTypeHandle::IsVisible(
 } // RuntimeTypeHandle::IsVisible
 
 FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL isGenericCOM) {
-#ifdef FEATURE_COMINTEROP
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -1037,17 +1036,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTy
     HELPER_METHOD_FRAME_END();
 
     FC_RETURN_BOOL(ret);
-#else
-    CONTRACTL {
-        DISABLED(NOTHROW);
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pTypeUNSAFE));
-    }
-    CONTRACTL_END;
-    FCUnique(0x37);
-    FC_RETURN_BOOL(FALSE);
-#endif
 }
 FCIMPLEND
 

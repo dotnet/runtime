@@ -320,10 +320,14 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
         return GetFCallImpl(MscorlibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
     }
 
-#ifdef FEATURE_COMINTEROP
     // COM imported classes have special constructors
-    if (pMT->IsComObjectType() && pMT != g_pBaseCOMObject && pMT != g_pBaseRuntimeClass)
+    if (pMT->IsComObjectType() 
+#ifdef FEATURE_COMINTEROP
+        && pMT != g_pBaseCOMObject && pMT != g_pBaseRuntimeClass
+#endif // FEATURE_COMINTEROP
+    )
     {
+#ifdef FEATURE_COMINTEROP
         if (pfSharedOrDynamicFCallImpl)
             *pfSharedOrDynamicFCallImpl = TRUE;
 
@@ -333,8 +337,10 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
 
         // FCComCtor does not need to be in the fcall hashtable since it does not erect frame.
         return GetEEFuncEntryPoint(FCComCtor);
-    }
+#else
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
 #endif // FEATURE_COMINTEROP
+    }
 
     if (!pMD->GetModule()->IsSystem())
         COMPlusThrow(kSecurityException, BFA_ECALLS_MUST_BE_IN_SYS_MOD);

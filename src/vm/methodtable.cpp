@@ -602,8 +602,6 @@ void MethodTable::SetIsRestored()
 #endif
 }
 
-#ifdef FEATURE_COMINTEROP
-
 //==========================================================================================
 // mark as COM object type (System.__ComObject and types deriving from it)
 void MethodTable::SetComObjectType()
@@ -611,8 +609,6 @@ void MethodTable::SetComObjectType()
     LIMITED_METHOD_CONTRACT;
     SetFlag(enum_flag_ComObject);
 }
-
-#endif // FEATURE_COMINTEROP
 
 #if defined(FEATURE_TYPEEQUIVALENCE)
 void MethodTable::SetHasTypeEquivalence()
