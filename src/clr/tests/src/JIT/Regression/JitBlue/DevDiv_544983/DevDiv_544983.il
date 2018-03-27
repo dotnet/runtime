@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// The bug that this test captures was a case where a call to a divide helper
-// was being removed as dead code, but the GT_FIELD_LIST node for the long
-// argument was left. Such nodes must always be contained, and if they become
-// dead, all of their children must be marked as unused.
+// The bug that this test captures was a case where odd float register became free,
+// the corresponding even register was already free, and there was a double interval
+// waiting for the even/odd pair, which wasn't added yet because the odd half was still occupied.
 
 .assembly extern mscorlib { auto }
 .assembly extern System.Runtime { auto }
