@@ -2394,6 +2394,14 @@ C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/
 
+#ifdef _TARGET_64BIT_
+typedef unsigned __int64 target_size_t;
+#else
+typedef unsigned int target_size_t;
+#endif
+
+C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
+
 /*****************************************************************************/
 #endif // _TARGET_H_
 /*****************************************************************************/
