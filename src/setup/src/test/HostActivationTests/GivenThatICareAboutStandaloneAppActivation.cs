@@ -10,6 +10,7 @@ using Xunit;
 using FluentAssertions;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.DotNet.InternalAbstractions;
@@ -50,13 +51,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var appExe = fixture.TestProject.AppExe;
 
-            // TODO: Use FS.Chmod when build utility project is converted to csproj.
-            // See https://github.com/NuGet/Home/issues/4424
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Command.Create("chmod", "u+x", appExe).Execute().EnsureSuccessful();
-            }
-
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -74,13 +68,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
-
-            // TODO: Use FS.Chmod when build utility project is converted to csproj.
-            // See https://github.com/NuGet/Home/issues/4424
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Command.Create("chmod", "u+x", appExe).Execute().EnsureSuccessful();
-            }
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -107,7 +94,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .ExitCode;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -136,7 +123,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .ExitCode;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -148,6 +135,103 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 // Some Unix flavors filter exit code to ubyte.
                 (exitCode & 0xFF).Should().Be(0x84);
             }
+        }
+
+        [Fact]
+        public void Running_Publish_Output_Standalone_EXE_By_Renaming_apphost_exe_Succeeds()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            var renamedAppExe = fixture.TestProject.AppExe + $"renamed{Constants.ExeSuffix}";
+
+            File.Copy(appExe, renamedAppExe, true);
+
+            Command.Create(renamedAppExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Running_Publish_Output_Standalone_EXE_With_Startupconfig_Succeeds()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+
+            // Move whole directory to a subdirectory
+            string currentOutDir = fixture.TestProject.OutputDirectory;
+            string relativeNewPath = "..";
+            relativeNewPath = Path.Combine(relativeNewPath, "newDir");
+            string newOutDir = Path.Combine(currentOutDir, relativeNewPath);
+            Directory.Move(currentOutDir, newOutDir);
+
+            // Move the apphost exe back to original location
+            string appExeName = Path.GetFileName(appExe);
+            string sourceAppExePath = Path.Combine(newOutDir, appExeName);
+            Directory.CreateDirectory(Path.GetDirectoryName(appExe));
+            File.Move(sourceAppExePath, appExe);
+
+            // Create the startupConfig.json
+            string startupConfigFileName = Path.GetFileNameWithoutExtension(appExe) + ".startupconfig.json";
+            string startupConfigPath = Path.Combine(currentOutDir, startupConfigFileName);
+            SetStartupConfigJson(startupConfigPath, relativeNewPath);
+
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Running_Publish_Output_Standalone_EXE_With_DOTNET_ROOT_Fails()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+
+            // Move whole directory to a subdirectory
+            string currentOutDir = fixture.TestProject.OutputDirectory;
+            string relativeNewPath = "..";
+            relativeNewPath = Path.Combine(relativeNewPath, "newDir2");
+            string newOutDir = Path.Combine(currentOutDir, relativeNewPath);
+            Directory.Move(currentOutDir, newOutDir);
+
+            // Move just the apphost exe back to original location
+            string appExeName = Path.GetFileName(appExe);
+            string sourceAppExePath = Path.Combine(newOutDir, appExeName);
+            Directory.CreateDirectory(Path.GetDirectoryName(appExe));
+            File.Move(sourceAppExePath, appExe);
+
+            // This verifies a self-contained apphost cannot use DOTNET_ROOT to reference a flat
+            // self-contained layout since a flat layout of the shared framework is not supported.
+            Command.Create(appExe)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROOT", newOutDir)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", newOutDir)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute(fExpectedToFail: true)
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining($"Using environment variable DOTNET_ROOT") // use the first part avoiding "(x86)" if present
+                .And
+                .HaveStdErrContaining($"=[{Path.GetFullPath(newOutDir)}] as runtime location.") // use the last part
+                .And
+                .HaveStdErrContaining("A fatal error occurred");
         }
 
         [Fact]
@@ -174,7 +258,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             {
                 // Replace the hash with the managed DLL name.
                 var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
-                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();  
+                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
                 AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll), true);
             }
             File.Copy(appDirHostExe, appExe, true);
@@ -216,5 +300,33 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 File.Copy(dotnetHostFxr, testProjectHostFxr, true);
             }
         }
+
+        // Generated json file:
+        /*
+        {
+            "startupOptions": {
+                "appRoot": "${appRoot}"
+            }
+        }
+        */
+        private void SetStartupConfigJson(string destFile, string appRoot)
+        {
+            JObject startupOptions = new JObject(
+                new JProperty("startupOptions",
+                    new JObject(
+                        new JProperty("appRoot", appRoot)
+                    )
+                )
+            );
+
+            FileInfo file = new FileInfo(destFile);
+            if (!file.Directory.Exists)
+            {
+                file.Directory.Create();
+            }
+
+            File.WriteAllText(destFile, startupOptions.ToString());
+        }
     }
 }
+

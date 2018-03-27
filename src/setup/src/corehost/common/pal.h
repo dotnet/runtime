@@ -212,9 +212,12 @@ namespace pal
     bool get_own_executable_path(string_t* recv);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
+    
     //On Linux, there are no global locations
     //On Windows there will be only one global location
     bool get_global_dotnet_dirs(std::vector<pal::string_t>* recv);
+
+    bool get_default_installation_dir(pal::string_t* recv);
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
@@ -223,6 +226,8 @@ namespace pal
     bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
+
+    bool is_running_in_wow64();
 }
 
 #endif // PAL_H

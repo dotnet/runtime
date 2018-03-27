@@ -5,6 +5,7 @@
 #define __LIBHOST_H__
 #include <stdint.h>
 #include "trace.h"
+#include "host_startup_info.h"
 #include "runtime_config.h"
 #include "fx_definition.h"
 #include "fx_ver.h"
@@ -12,14 +13,14 @@
 enum host_mode_t
 {
     invalid = 0,
-    
-    muxer,          // Invoked as "dotnet.exe".
-    
-    standalone,     // Invoked as "appname.exe" from the application base: either "standalone" or "branded". When implementing branded exes, rename this to "apphost"
 
-    split_fx        // Invoked as "corehost.exe" for xunit scenarios -- this has to be fixed by the CLI to not use this executable and this mode should not be supported.
-                    // Split FX means, the host is operating like "corerun.exe" in a split location from the application base (CORE_ROOT equivalent), but it has its "hostfxr.dll"
-                    // next to it.
+    muxer,          // Invoked as "dotnet.exe".
+
+    apphost,        // Invoked as <appname>.exe from the application base; this is the renamed "apphost.exe".
+
+    split_fx        // Invoked as "corehost.exe" for xunit scenarios. Supported for backwards compat for 1.x apps.
+                    // Split FX means, the host is operating like "corerun.exe" in a split location from the application base (CORE_ROOT equivalent),
+                    // but it has its "hostfxr.dll" next to it.
 };
 
 class fx_ver_t;
@@ -44,7 +45,7 @@ struct host_interface_t
     const pal::char_t* fx_dir;
     const pal::char_t* fx_name;
     const pal::char_t* deps_file;
-    size_t is_portable;
+    size_t is_framework_dependent;
     strarr_t probe_paths;
     size_t patch_roll_forward;
     size_t prerelease_roll_forward;
@@ -57,6 +58,9 @@ struct host_interface_t
     strarr_t fx_requested_versions;
     strarr_t fx_found_versions;
     const pal::char_t* host_command;
+    const pal::char_t* host_info_host_path;
+    const pal::char_t* host_info_dotnet_root;
+    const pal::char_t* host_info_app_path;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -74,7 +78,7 @@ static_assert(offsetof(host_interface_t, config_values) == 4 * sizeof(size_t), "
 static_assert(offsetof(host_interface_t, fx_dir) == 6 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, fx_name) == 7 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, deps_file) == 8 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(offsetof(host_interface_t, is_portable) == 9 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, is_framework_dependent) == 9 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, probe_paths) == 10 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, patch_roll_forward) == 12 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, prerelease_roll_forward) == 13 * sizeof(size_t), "Struct offset breaks backwards compatibility");
@@ -87,7 +91,10 @@ static_assert(offsetof(host_interface_t, fx_dirs) == 20 * sizeof(size_t), "Struc
 static_assert(offsetof(host_interface_t, fx_requested_versions) == 22 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, fx_found_versions) == 24 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_command) == 26 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 27 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, host_info_host_path) == 27 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, host_info_dotnet_root) == 28 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, host_info_app_path) == 29 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 30 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)
@@ -102,7 +109,7 @@ private:
     const pal::string_t m_tfm;
     const pal::string_t m_deps_file;
     const pal::string_t m_additional_deps_serialized;
-    bool m_portable;
+    bool m_is_framework_dependent;
     std::vector<pal::string_t> m_probe_paths;
     std::vector<const pal::char_t*> m_probe_paths_cstr;
     bool m_patch_roll_forward;
@@ -118,18 +125,25 @@ private:
     std::vector<pal::string_t> m_fx_found_versions;
     std::vector<const pal::char_t*> m_fx_found_versions_cstr;
     const pal::string_t m_host_command;
+    const pal::string_t m_host_info_host_path;
+    const pal::string_t m_host_info_dotnet_root;
+    const pal::string_t m_host_info_app_path;
 public:
     corehost_init_t(
         const pal::string_t& host_command,
+        const host_startup_info_t& host_info,
         const pal::string_t& deps_file,
         const pal::string_t& additional_deps_serialized,
         const std::vector<pal::string_t>& probe_paths,
         const host_mode_t mode,
         const fx_definition_vector_t& fx_definitions)
         : m_host_command(host_command)
+        , m_host_info_host_path(host_info.host_path)
+        , m_host_info_dotnet_root(host_info.dotnet_root)
+        , m_host_info_app_path(host_info.app_path)
         , m_deps_file(deps_file)
         , m_additional_deps_serialized(additional_deps_serialized)
-        , m_portable(get_app(fx_definitions).get_runtime_config().get_portable())
+        , m_is_framework_dependent(get_app(fx_definitions).get_runtime_config().get_is_framework_dependent())
         , m_probe_paths(probe_paths)
         , m_host_mode(mode)
         , m_host_interface()
@@ -202,7 +216,7 @@ public:
 
         hi.deps_file = m_deps_file.c_str();
         hi.additional_deps_serialized = m_additional_deps_serialized.c_str();
-        hi.is_portable = m_portable;
+        hi.is_framework_dependent = m_is_framework_dependent;
 
         hi.probe_paths.len = m_probe_paths_cstr.size();
         hi.probe_paths.arr = m_probe_paths_cstr.data();
@@ -226,6 +240,10 @@ public:
         hi.fx_found_versions.arr = m_fx_found_versions_cstr.data();
 
         hi.host_command = m_host_command.c_str();
+
+        hi.host_info_host_path = m_host_info_host_path.c_str();
+        hi.host_info_dotnet_root = m_host_info_dotnet_root.c_str();
+        hi.host_info_app_path = m_host_info_app_path.c_str();
 
         return hi;
     }
@@ -254,8 +272,9 @@ struct hostpolicy_init_t
     host_mode_t host_mode;
     bool patch_roll_forward;
     bool prerelease_roll_forward;
-    bool is_portable;
+    bool is_framework_dependent;
     pal::string_t host_command;
+    host_startup_info_t host_info;
 
     static bool init(host_interface_t* input, hostpolicy_init_t* init)
     {
@@ -279,7 +298,7 @@ struct hostpolicy_init_t
             make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
             init->deps_file = input->deps_file;
-            init->is_portable = input->is_portable;
+            init->is_framework_dependent = input->is_framework_dependent;
 
             make_palstr_arr(input->probe_paths.len, input->probe_paths.arr, &init->probe_paths);
 
@@ -341,7 +360,7 @@ struct hostpolicy_init_t
             auto fx = new fx_definition_t();
             init->fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
 
-            if (init->is_portable)
+            if (init->is_framework_dependent)
             {
                 pal::string_t fx_dir = input->fx_dir;
                 pal::string_t fx_name = input->fx_name;
@@ -362,6 +381,14 @@ struct hostpolicy_init_t
         if (input->version_lo >= offsetof(host_interface_t, host_command) + sizeof(input->host_command))
         {
             init->host_command = input->host_command;
+        }
+
+        if (input->version_lo >= offsetof(host_interface_t, host_info_host_path) + sizeof(input->host_info_host_path))
+        {
+            init->host_info.host_path = input->host_info_host_path;
+            init->host_info.dotnet_root = input->host_info_dotnet_root;
+            init->host_info.app_path = input->host_info_app_path;
+            // For the backwards compat case, this will be later initialized with argv[0]
         }
 
         return true;
@@ -391,7 +418,7 @@ void get_runtime_config_paths_from_app(const pal::string_t& file, pal::string_t*
 void get_runtime_config_paths_from_arg(const pal::string_t& file, pal::string_t* config_file, pal::string_t* dev_config_file);
 void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* config_file, pal::string_t* dev_config_file);
 
-host_mode_t detect_operating_mode(const pal::string_t& own_dir, const pal::string_t& own_dll, const pal::string_t& own_name);
+host_mode_t detect_operating_mode(const host_startup_info_t& host_info);
 bool hostpolicy_exists_in_svc(pal::string_t* resolved_dir);
 
 void try_patch_roll_forward_in_dir(const pal::string_t& cur_dir, const fx_ver_t& start_ver, pal::string_t* max_str);

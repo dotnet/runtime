@@ -188,6 +188,16 @@ bool is_executable(const pal::string_t& file_path)
     return false;
 }
 
+ bool pal::get_default_installation_dir(pal::string_t* recv)
+{
+#if defined(__APPLE__)
+     recv->assign(_X("/usr/local/share/dotnet"));
+#else
+     recv->assign(_X("/usr/share/dotnet"));
+#endif
+     return true;
+}
+
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
 {
     pal::char_t quote_array[2] = {'\"', '\''};
@@ -618,4 +628,9 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
     ::readdir(path, _X("*"), true, list);
+}
+
+bool pal::is_running_in_wow64()
+{
+    return false;
 }

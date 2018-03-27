@@ -90,8 +90,8 @@ struct probe_config_t
 
 struct arguments_t
 {
-    pal::string_t own_path;
-    pal::string_t app_dir;
+    pal::string_t host_path;
+    pal::string_t app_root;
     pal::string_t deps_path;
     pal::string_t core_servicing;
     std::vector<pal::string_t> probe_paths;
@@ -108,8 +108,8 @@ struct arguments_t
     {
         if (trace::is_enabled())
         {
-            trace::verbose(_X("-- arguments_t: own_path='%s' app_dir='%s' deps='%s' core_svc='%s' mgd_app='%s'"),
-                own_path.c_str(), app_dir.c_str(), deps_path.c_str(), core_servicing.c_str(), managed_application.c_str());
+            trace::verbose(_X("-- arguments_t: host_path='%s' app_root='%s' deps='%s' core_svc='%s' mgd_app='%s'"),
+                host_path.c_str(), app_root.c_str(), deps_path.c_str(), core_servicing.c_str(), managed_application.c_str());
             for (const auto& probe : probe_paths)
             {
                 trace::verbose(_X("-- arguments_t: probe dir: '%s'"), probe.c_str());

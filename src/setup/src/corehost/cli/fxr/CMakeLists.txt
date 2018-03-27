@@ -33,6 +33,7 @@ set(SOURCES
     ../libhost.cpp
     ../deps_format.cpp
     ../deps_entry.cpp
+    ../host_startup_info.cpp
     ../runtime_config.cpp
     ../json/casablanca/src/json/json.cpp
     ../json/casablanca/src/json/json_parsing.cpp

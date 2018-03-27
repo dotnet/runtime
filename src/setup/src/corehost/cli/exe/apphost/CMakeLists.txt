@@ -18,8 +18,21 @@ if (NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
 endif()
 
 set(SKIP_VERSIONING 1)
+
+include_directories(./)
+include_directories(../../json/casablanca/include)
+
+set(SOURCES
+    startup_config.cpp
+    ../../json/casablanca/src/json/json.cpp
+    ../../json/casablanca/src/json/json_parsing.cpp
+    ../../json/casablanca/src/json/json_serialization.cpp
+    ../../json/casablanca/src/utilities/asyncrt_utils.cpp
+    ../../fxr/fx_ver.cpp
+)
+
 include(../exe.cmake)
-set(SOURCES)
+
 add_definitions(-DFEATURE_APPHOST=1)
 
 install_library_and_symbols (apphost)

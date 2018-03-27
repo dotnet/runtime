@@ -12,6 +12,7 @@
 #include "libhost.h"
 #include "error_codes.h"
 #include "breadcrumbs.h"
+#include "host_startup_info.h"
 
 hostpolicy_init_t g_init;
 
@@ -108,7 +109,7 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
     // Note: these variables' lifetime should be longer than coreclr_initialize.
     std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
-    pal::pal_clrstring(args.app_dir, &app_base_cstr);
+    pal::pal_clrstring(args.app_root, &app_base_cstr);
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
     pal::pal_clrstring(probe_paths.resources, &resources_dirs_cstr);
 
@@ -228,14 +229,14 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
         }
     }
 
-    std::vector<char> own_path;
-    pal::pal_clrstring(args.own_path, &own_path);
+    std::vector<char> host_path;
+    pal::pal_clrstring(args.host_path, &host_path);
 
     // Initialize CoreCLR
     coreclr::host_handle_t host_handle;
     coreclr::domain_id_t domain_id;
     auto hr = coreclr::initialize(
-        own_path.data(),
+        host_path.data(),
         "clrhost",
         property_keys.data(),
         property_values.data(),
@@ -267,7 +268,7 @@ int run(const arguments_t& args, pal::string_t* out_host_command_result = nullpt
             arg_str.append(cur);
             arg_str.append(_X(","));
         }
-        trace::info(_X("Launch host: %s, app: %s, argc: %d, args: %s"), args.own_path.c_str(),
+        trace::info(_X("Launch host: %s, app: %s, argc: %d, args: %s"), args.host_path.c_str(),
             args.managed_application.c_str(), args.app_argc, arg_str.c_str());
     }
 
@@ -358,6 +359,12 @@ int corehost_main_init(const int argc, const pal::char_t* argv[], const pal::str
     }
 
     // Take care of arguments
+    if (!g_init.host_info.is_valid())
+    {
+        // For backwards compat (older hostfxr), default the host_info
+        g_init.host_info.parse(argc, argv);
+    }
+
     if (!parse_arguments(g_init, argc, argv, &args))
     {
         return StatusCode::LibHostInvalidArgs;
