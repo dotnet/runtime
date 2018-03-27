@@ -2952,14 +2952,6 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
     BOOL fRet = GlobalMemoryStatusEx(pMSEX);
     _ASSERTE (fRet);
-
-
-    // If the machine has more RAM than virtual address limit, let us cap it.
-    // Our GC can never use more than virtual address limit.
-    if (pMSEX->ullAvailPhys > pMSEX->ullTotalVirtual)
-    {
-        pMSEX->ullAvailPhys = pMSEX->ullAvailVirtual;
-    }
 }
 
 // This is the instance that exposes interfaces out to all the other DLLs of the CLR
