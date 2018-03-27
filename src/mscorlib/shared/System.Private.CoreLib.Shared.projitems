@@ -495,6 +495,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\String.Comparison.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Manipulation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Searching.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs" />
