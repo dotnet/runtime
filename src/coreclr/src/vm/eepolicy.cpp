@@ -1176,7 +1176,7 @@ inline void LogCallstackForLogWorker()
 // Return Value:
 //    None
 //
-inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, const WCHAR * argExceptionString)
+inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1205,7 +1205,7 @@ inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pE
                 PrintToStdErrA("\n");
                 PrintToStdErrA("Exception details:");
                 PrintToStdErrA("\n");
-                PrintToStdErrW(argExceptionString);
+                PrintToStdErrW((WCHAR*)argExceptionString);
                 PrintToStdErrA("\n");
             }
         }
@@ -1220,7 +1220,7 @@ inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pE
 // Log an error to the event log if possible, then throw up a dialog box.
 //
 
-void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, const WCHAR * argExceptionString)
+void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -1262,13 +1262,18 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             else if (exitCode == (UINT)COR_E_CODECONTRACTFAILED)
                 failureType = EventReporter::ERT_CodeContractFailed;
             EventReporter reporter(failureType);
-
+            StackSString s(argExceptionString);
 
             if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM))
             {
                 if (pszMessage)
                 {
                     reporter.AddDescription((WCHAR*)pszMessage);
+                }
+
+                if (argExceptionString)
+                {
+                    reporter.AddFailFastStackTrace(s);
                 }
 
                 if (exitCode != (UINT)CLR_E_GC_OOM)
@@ -1486,7 +1491,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     UNREACHABLE();
 }
 
-void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, const WCHAR * argExceptionString /* = NULL */)
+void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
 
