@@ -341,7 +341,7 @@ namespace System.Globalization
             if (_invariantMode)
             {
                 if ((options & CompareOptions.IgnoreCase) != 0)
-                    return CompareOrdinalIgnoreCase(string1, 0, string1.Length, string2, 0, string2.Length);
+                    return CompareOrdinalIgnoreCase(string1, string2);
 
                 return String.CompareOrdinal(string1, string2);
             }
@@ -501,35 +501,23 @@ namespace System.Globalization
                 return (1);
             }
 
+            ReadOnlySpan<char> span1 = string1.AsSpan(offset1, length1);
+            ReadOnlySpan<char> span2 = string2.AsSpan(offset2, length2);
+
             if (options == CompareOptions.Ordinal)
             {
-                return CompareOrdinal(string1, offset1, length1,
-                                      string2, offset2, length2);
+                return string.CompareOrdinal(span1, span2);
             }
 
             if (_invariantMode)
             {
                 if ((options & CompareOptions.IgnoreCase) != 0)
-                    return CompareOrdinalIgnoreCase(string1, offset1, length1, string2, offset2, length2);
+                    return CompareOrdinalIgnoreCase(span1, span2);
 
-                return CompareOrdinal(string1, offset1, length1, string2, offset2, length2);
+                return string.CompareOrdinal(span1, span2);
             }
 
-            return CompareString(
-                string1.AsSpan(offset1, length1),
-                string2.AsSpan(offset2, length2),
-                options);
-        }
-
-        private static int CompareOrdinal(string string1, int offset1, int length1, string string2, int offset2, int length2)
-        {
-            int result = String.CompareOrdinal(string1, offset1, string2, offset2,
-                                                       (length1 < length2 ? length1 : length2));
-            if ((length1 != length2) && result == 0)
-            {
-                return (length1 > length2 ? 1 : -1);
-            }
-            return (result);
+            return CompareString(span1, span2, options);
         }
 
         //
