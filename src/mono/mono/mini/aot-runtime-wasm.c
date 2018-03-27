@@ -77,7 +77,7 @@ handle_enum:
 	case MONO_TYPE_VOID:
 		return 'V';
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enum_type (t->data.klass)) {
+		if (m_class_is_enumtype (t->data.klass)) {
 			t = mono_class_enum_basetype (t->data.klass);
 			goto handle_enum;
 		}
