@@ -1436,6 +1436,15 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_LARGE);
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
+#if defined(_HOST_64BIT_) && !defined(_TARGET_64BIT_)
+    if (gtOper == GT_CNS_LNG && oper == GT_CNS_INT)
+    {
+        // When casting from LONG to INT, we need to force cast of the value,
+        // if the host architecture represents INT and LONG with the same data size.
+        gtLngCon.gtLconVal = (INT64)(INT32)gtLngCon.gtLconVal;
+    }
+#endif // defined(_HOST_64BIT_) && !defined(_TARGET_64BIT_)
+
     SetOperRaw(oper);
 
 #ifdef DEBUG
