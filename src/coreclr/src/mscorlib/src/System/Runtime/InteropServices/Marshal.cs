@@ -1718,11 +1718,7 @@ namespace System.Runtime.InteropServices
         //========================================================================
         private static IntPtr LoadLicenseManager()
         {
-            Assembly sys = Assembly.Load("System, Version=" + ThisAssembly.Version +
-                ", Culture=neutral, PublicKeyToken=" + AssemblyRef.EcmaPublicKeyToken);
-            Type t = sys.GetType("System.ComponentModel.LicenseManager");
-            if (t == null || !t.IsVisible)
-                return IntPtr.Zero;
+            Type t = Type.GetType("System.ComponentModel.LicenseManager, System", throwOnError: true);
             return t.TypeHandle.Value;
         }
 

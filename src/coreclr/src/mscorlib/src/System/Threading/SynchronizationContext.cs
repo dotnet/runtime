@@ -206,7 +206,7 @@ namespace System.Threading
             WinRTSynchronizationContextFactoryBase factory = s_winRTContextFactory;
             if (factory == null)
             {
-                Type factoryType = Type.GetType("System.Threading.WinRTSynchronizationContextFactory, " + AssemblyRef.SystemRuntimeWindowsRuntime, true);
+                Type factoryType = Type.GetType("System.Threading.WinRTSynchronizationContextFactory, System.Runtime.WindowsRuntime", throwOnError: true);
                 s_winRTContextFactory = factory = (WinRTSynchronizationContextFactoryBase)Activator.CreateInstance(factoryType, true);
             }
             return factory;

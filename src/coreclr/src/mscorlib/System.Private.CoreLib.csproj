@@ -624,13 +624,11 @@
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
-    <!-- These are files are preprocessed  -->
-    <Compile Include="$(CommonPath)\Preprocessed\AssemblyRefs.g.cs" />
     <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
     <Compile Include="$(CommonPath)\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\System\SR.cs" />
     <!-- Include Internals visible to file in the compilation -->
-    <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
+    <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" Condition="'$(FeatureCominterop)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />

@@ -147,12 +147,8 @@ namespace System.Diagnostics.Contracts
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-#if CORERT
-    public // On CoreRT this must be public to support binary serialization with type forwarding.
-#else
-    internal
-#endif
-    sealed class ContractException : Exception
+    // Needs to be public to support binary serialization compatibility
+    public sealed class ContractException : Exception
     {
         private readonly ContractFailureKind _kind;
         private readonly string _userMessage;
