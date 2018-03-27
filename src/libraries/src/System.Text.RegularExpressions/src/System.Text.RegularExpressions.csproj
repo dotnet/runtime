@@ -22,7 +22,7 @@
     <Compile Include="System\Text\RegularExpressions\Match.cs" />
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Reference.cs" />
-    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />    
+    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />

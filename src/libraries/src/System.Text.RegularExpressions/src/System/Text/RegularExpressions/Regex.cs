@@ -116,7 +116,7 @@ namespace System.Text.RegularExpressions
                     CultureInfo.InvariantCulture.ToString() :
                     CultureInfo.CurrentCulture.ToString();                        
             var key = new CachedCodeEntryKey(options, cultureKey, pattern);
-            CachedCodeEntry cached = LookupCachedAndUpdate(key);
+            CachedCodeEntry cached = GetCachedCode(key, false);
 
             if (cached == null)
             {
@@ -134,22 +134,22 @@ namespace System.Text.RegularExpressions
 
                 tree = null;
                 if (addToCache)
-                    cached = CacheCode(key);
+                    cached = GetCachedCode(key, true);
             }
             else
             {
-                caps = cached._caps;
-                capnames = cached._capnames;
-                capslist = cached._capslist;
-                capsize = cached._capsize;
-                _code = cached._code;
+                caps = cached.Caps;
+                capnames = cached.Capnames;
+                capslist = cached.Capslist;
+                capsize = cached.Capsize;
+                _code = cached.Code;
 #if FEATURE_COMPILED
-                factory = cached._factory;
+                factory = cached.Factory;
 #endif
 
                 // Cache runner and replacement
-                _runnerref = cached._runnerref;
-                _replref = cached._replref;
+                _runnerref = cached.Runnerref;
+                _replref = cached.ReplRef;
                 _refsInitialized = true;
             }
 
