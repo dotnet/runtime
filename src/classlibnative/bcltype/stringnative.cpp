@@ -109,44 +109,6 @@ FCIMPL2(INT32, COMString::FCCompareOrdinalIgnoreCaseWC, StringObject* strA, __in
 }
 FCIMPLEND
 
-/*================================CompareOrdinalEx===============================
-**Args: typedef struct {STRINGREF thisRef; INT32 options; INT32 length; INT32 valueOffset;\
-        STRINGREF value; INT32 thisOffset;} _compareOrdinalArgsEx;
-==============================================================================*/
-
-FCIMPL6(INT32, COMString::CompareOrdinalEx, StringObject* strA, INT32 indexA, INT32 countA, StringObject* strB, INT32 indexB, INT32 countB)
-{
-    FCALL_CONTRACT;
-
-    VALIDATEOBJECT(strA);
-    VALIDATEOBJECT(strB);
-    DWORD *strAChars, *strBChars;
-    int strALength, strBLength;
-
-    // These runtime tests are handled in the managed wrapper.
-    _ASSERTE(strA != NULL && strB != NULL);
-    _ASSERTE(indexA >= 0 && indexB >= 0);
-    _ASSERTE(countA >= 0 && countB >= 0);
-
-    strA->RefInterpretGetStringValuesDangerousForGC((WCHAR **) &strAChars, &strALength);
-    strB->RefInterpretGetStringValuesDangerousForGC((WCHAR **) &strBChars, &strBLength);
-
-    _ASSERTE(countA <= strALength - indexA);
-    _ASSERTE(countB <= strBLength - indexB);
-
-    // Set up the loop variables.
-    strAChars = (DWORD *) ((WCHAR *) strAChars + indexA);
-    strBChars = (DWORD *) ((WCHAR *) strBChars + indexB);
-
-    INT32 result = StringObject::FastCompareStringHelper(strAChars, countA, strBChars, countB);
-
-    FC_GC_POLL_RET();
-    return result;
-
-}
-FCIMPLEND
-
-
 /*==================================GETCHARAT===================================
 **Returns the character at position index.  Thows IndexOutOfRangeException as
 **appropriate.
