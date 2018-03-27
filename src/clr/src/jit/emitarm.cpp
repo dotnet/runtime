@@ -1673,7 +1673,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
  */
 
 void emitter::emitIns_R_I(
-    instruction ins, emitAttr attr, regNumber reg, int imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
+    instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insFlags flags /* = INS_FLAGS_DONT_CARE */)
 
 {
     insFormat fmt = IF_NONE;
