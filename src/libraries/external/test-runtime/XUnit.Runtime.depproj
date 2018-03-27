@@ -83,6 +83,9 @@
     <PackageReference Include="System.Drawing.Common.TestData">
       <Version>1.0.6</Version>
     </PackageReference>
+    <PackageReference Include="System.Text.RegularExpressions.TestData">
+      <Version>1.0.2</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <PackageReference Include="xunit.runner.console">

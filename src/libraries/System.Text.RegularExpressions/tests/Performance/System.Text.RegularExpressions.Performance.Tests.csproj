@@ -10,9 +10,15 @@
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="Perf.Regex.cs" />
+    <Compile Include="Perf.RegexRedux.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)system.text.regularexpressions.testdata\1.0.2\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
