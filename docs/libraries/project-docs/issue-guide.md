@@ -97,7 +97,8 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Text.Encodings.Web](https://github.com/dotnet/corefx/labels/area-System.Text.Encodings.Web)     | **[@GrabYourPitchforks](https://github.com/GrabYourPitchforks)**, [@krwq](https://github.com/krwq), [@tarekgh](https://github.com/tarekgh) |  |
 | [System.Text.RegularExpressions](https://github.com/dotnet/corefx/labels/area-System.Text.RegularExpressions) | [@ViktorHofer](https://github.com/ViktorHofer) |  |
 | [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | **[@kouvel](https://github.com/kouvel)**|  |
-| [System.Threading.Channels](https://github.com/dotnet/corefx/labels/area-System.Threading.Channels)             | **[@tarekgh](https://github.com/tarekgh)**|  |
+| [System.Threading.Channels](https://github.com/dotnet/corefx/labels/area-System.Threading.Channels)   | **[@tarekgh](https://github.com/tarekgh)**|  |
+| [System.Threading.Tasks](https://github.com/dotnet/corefx/labels/area-System.Threading.Tasks) | **[@tarekgh](https://github.com/tarekgh)**|  |
 | [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       | [@jimcarley](https://github.com/jimcarley), [@qizhanMS](https://github.com/qizhanMS), [@dmetzgar](https://github.com/dmetzgar) |  |
 | [System.Xml](https://github.com/dotnet/corefx/labels/area-System.Xml)                         | **[@krwq](https://github.com/krwq)**, [@pjanotti](https://github.com/pjanotti) |  |
 | **Microsoft contract assemblies** | | |
