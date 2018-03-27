@@ -114,6 +114,7 @@
     <Compile Include="$(CommonPath)\CoreLib\System\SpanDebugView.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.BinarySearch.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.Byte.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.Char.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.T.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IRetainable.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\MemoryHandle.cs" />
