@@ -27,8 +27,6 @@ if exist "%BUILD_TOOLS_SEMAPHORE%" (
 
 if exist "%TOOLRUNTIME_DIR%" rmdir /S /Q "%TOOLRUNTIME_DIR%"
 
-if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
-
 if exist "%DotNetBuildToolsDir%" (
   echo Using tools from '%DotNetBuildToolsDir%'.
   mklink /j "%TOOLRUNTIME_DIR%" "%DotNetBuildToolsDir%"
@@ -39,6 +37,7 @@ if exist "%DotNetBuildToolsDir%" (
   )
 
   echo Done initializing tools.
+  if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
   echo Using tools from '%DotNetBuildToolsDir%'. > "%BUILD_TOOLS_SEMAPHORE%"
   exit /b 0
 )
@@ -64,8 +63,8 @@ if NOT exist "%DOTNET_LOCAL_PATH%" (
 
 if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
 echo Restoring BuildTools version %BUILDTOOLS_VERSION%...
-echo Running: "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% >> "%INIT_TOOLS_LOG%"
-call "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% >> "%INIT_TOOLS_LOG%"
+echo Running: "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% /p:ToolsDir=%TOOLRUNTIME_DIR% >> "%INIT_TOOLS_LOG%"
+call "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages %PACKAGES_DIR% --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% /p:ToolsDir=%TOOLRUNTIME_DIR% >> "%INIT_TOOLS_LOG%"
 if NOT exist "%BUILD_TOOLS_PATH%init-tools.cmd" (
   echo ERROR: Could not restore build tools correctly. 1>&2
   goto :error
@@ -87,6 +86,7 @@ if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
 
 :: Create semaphore file
 echo Done initializing tools.
+if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
 echo Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
 exit /b 0
 
