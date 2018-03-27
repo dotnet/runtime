@@ -23,7 +23,7 @@ namespace System.DirectoryServices.AccountManagement
         public PrincipalSearcher(Principal queryFilter)
         {
             if (null == queryFilter)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, "queryFilter"));
+                throw new ArgumentException(nameof(queryFilter));
 
             _ctx = queryFilter.Context;
             this.QueryFilter = queryFilter; // use property to enforce "no persisted principals" check
@@ -56,7 +56,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (null == value)
-                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, "queryFilter"));
+                    throw new ArgumentNullException(nameof(QueryFilter));
 
                 CheckDisposed();
                 Debug.Assert(value.Context != null);

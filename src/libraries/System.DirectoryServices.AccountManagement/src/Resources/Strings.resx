@@ -447,9 +447,6 @@
   <data name="InvalidStringValueForStore" xml:space="preserve">
     <value>Empty string is not supported by the property {0} for this store type.</value>
   </data>
-  <data name="InvalidNullArgument" xml:space="preserve">
-    <value>{0} cannot be null or empty.</value>
-  </data>
   <data name="ServerDown" xml:space="preserve">
     <value>The server could not be contacted.</value>
   </data>
@@ -499,6 +496,6 @@
     <value>Unknown error (0x{0})</value>
   </data>
   <data name="DirectoryServicesAccountManagement_PlatformNotSupported" xml:space="preserve">
-      <value>System.DirectoryServices.AccountManagement is not supported on this platform.</value>
+    <value>System.DirectoryServices.AccountManagement is not supported on this platform.</value>
   </data>
 </root>
