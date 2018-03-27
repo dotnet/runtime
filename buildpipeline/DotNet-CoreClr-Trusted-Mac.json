@@ -35,7 +35,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/sync.sh",
-        "arguments": "",
+        "arguments": " -- /p:BuildType=$(PB_BuildType)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
