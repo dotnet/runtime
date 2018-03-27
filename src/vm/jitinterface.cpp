@@ -11371,7 +11371,7 @@ void CEEJitInfo::recordRelocation(void * location,
                     // When m_fAllowRel32 == TRUE, the JIT will use REL32s for both data addresses and direct code targets.
                     // Since we cannot tell what the relocation is for, we have to defensively retry.
                     //
-                    m_fRel32Overflow = TRUE;
+                    m_fJumpStubOverflow = TRUE;
                     delta = 0;
                 }
                 else
@@ -11385,7 +11385,7 @@ void CEEJitInfo::recordRelocation(void * location,
                     {
                         // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
                         // we will find space for them.
-                        m_fRel32Overflow = TRUE;
+                        m_fJumpStubOverflow = TRUE;
                     }
 
                     // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory 
@@ -11429,12 +11429,12 @@ void CEEJitInfo::recordRelocation(void * location,
             if (!FitsInRel28(delta))
             {
                 // Use jump stub.
-                // 
+                //
                 TADDR baseAddr = (TADDR)fixupLocation;
                 TADDR loAddr   = baseAddr - 0x08000000;   // -2^27
                 TADDR hiAddr   = baseAddr + 0x07FFFFFF;   // +2^27-1
 
-                // Check for the wrap around cases  
+                // Check for the wrap around cases
                 if (loAddr > baseAddr)
                     loAddr = UINT64_MIN; // overflow
                 if (hiAddr < baseAddr)
@@ -11443,7 +11443,21 @@ void CEEJitInfo::recordRelocation(void * location,
                 PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled,
                                                                 (PCODE)  target,
                                                                 (BYTE *) loAddr,
-                                                                (BYTE *) hiAddr);
+                                                                (BYTE *) hiAddr,
+                                                                NULL,
+                                                                false);
+
+                // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
+                // on retry to increase chances that the retry succeeds.
+                m_reserveForJumpStubs = max(0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+
+                if (jumpStubAddr == 0)
+                {
+                    // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
+                    // we will find space for them.
+                    m_fJumpStubOverflow = TRUE;
+                    break;
+                }
 
                 delta = (INT64)(jumpStubAddr - fixupLocation);
 
@@ -12674,25 +12688,22 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader, CORJIT_
     }
 #endif //_DEBUG
 
-#ifdef _TARGET_AMD64_
-    BOOL fForceRel32Overflow = FALSE;
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+    BOOL fForceJumpStubOverflow = FALSE;
 
 #ifdef _DEBUG
     // Always exercise the overflow codepath with force relocs
     if (PEDecoder::GetForceRelocs())
-        fForceRel32Overflow = TRUE;
+        fForceJumpStubOverflow = TRUE;
 #endif
 
-    BOOL fAllowRel32 = g_fAllowRel32 | fForceRel32Overflow;
+#if defined(_TARGET_AMD64_)
+    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow);
+#endif
+
     size_t reserveForJumpStubs = 0;
 
-    // For determinism, never try to use the REL32 in compilation process
-    if (IsCompilationProcess())
-    {
-        fForceRel32Overflow = FALSE;
-        fAllowRel32 = FALSE;
-    }
-#endif // _TARGET_AMD64_
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
 
     for (;;)
     {
@@ -12706,10 +12717,15 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader, CORJIT_
         EEJitManager *jitMgr = NULL;
 #endif
 
-#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
-        if (fForceRel32Overflow)
-            jitInfo.SetRel32Overflow(fAllowRel32);
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)) && !defined(CROSSGEN_COMPILE)
+#ifdef _TARGET_AMD64_
+        if (fForceJumpStubOverflow)
+            jitInfo.SetJumpStubOverflow(fAllowRel32);
         jitInfo.SetAllowRel32(fAllowRel32);
+#else
+        if (fForceJumpStubOverflow)
+            jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
+#endif
         jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
 #endif
 
@@ -12858,21 +12874,23 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader, CORJIT_
         if (!nativeEntry)
             COMPlusThrow(kInvalidProgramException);
 
-#if defined(_TARGET_AMD64_) && !defined(CROSSGEN_COMPILE)
-        if (jitInfo.IsRel32Overflow())
+#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)) && !defined(CROSSGEN_COMPILE)
+        if (jitInfo.IsJumpStubOverflow())
         {
             // Backout and try again with fAllowRel32 == FALSE.
             jitInfo.BackoutJitData(jitMgr);
 
+#ifdef _TARGET_AMD64_
             // Disallow rel32 relocs in future.
             g_fAllowRel32 = FALSE;
 
             fAllowRel32 = FALSE;
+#endif // _TARGET_AMD64_
 
             reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
             continue;
         }
-#endif // _TARGET_AMD64_ && !CROSSGEN_COMPILE
+#endif // (_TARGET_AMD64_ || _TARGET_ARM64_) && !CROSSGEN_COMPILE
 
         LOG((LF_JIT, LL_INFO10000,
             "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
