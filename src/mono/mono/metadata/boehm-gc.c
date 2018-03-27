@@ -40,6 +40,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/unlocked.h>
 
+
 #if HAVE_BOEHM_GC
 
 #undef TRUE
@@ -991,13 +992,13 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
 
 	if (atype == ATYPE_STRING) {
-		csig->ret = &mono_defaults.string_class->byval_arg;
-		csig->params [0] = &mono_defaults.int_class->byval_arg;
-		csig->params [1] = &mono_defaults.int32_class->byval_arg;
+		csig->ret = m_class_get_byval_arg (mono_defaults.string_class);
+		csig->params [0] = m_class_get_byval_arg (mono_defaults.int_class);
+		csig->params [1] = m_class_get_byval_arg (mono_defaults.int32_class);
 	} else {
-		csig->ret = &mono_defaults.object_class->byval_arg;
-		csig->params [0] = &mono_defaults.int_class->byval_arg;
-		csig->params [1] = &mono_defaults.int32_class->byval_arg;
+		csig->ret = m_class_get_byval_arg (mono_defaults.object_class);
+		csig->params [0] = m_class_get_byval_arg (mono_defaults.int_class);
+		csig->params [1] = m_class_get_byval_arg (mono_defaults.int32_class);
 	}
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
@@ -1005,7 +1006,7 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	if (slowpath)
 		goto always_slowpath;
 
-	bytes_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	bytes_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
 	if (atype == ATYPE_STRING) {
 		/* a string alloator method takes the args: (vtable, len) */
 		/* bytes = (offsetof (MonoString, chars) + ((len + 1) * 2)); */
@@ -1037,7 +1038,7 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	}
 
 	/* int index = INDEX_FROM_BYTES(bytes); */
-	index_var = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	index_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int32_class));
 	
 	mono_mb_emit_ldloc (mb, bytes_var);
 	mono_mb_emit_icon (mb, GRANULARITY - 1);
@@ -1049,8 +1050,8 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 	/* index var is already adjusted into bytes */
 	mono_mb_emit_stloc (mb, index_var);
 
-	my_fl_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	my_entry_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	my_fl_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+	my_entry_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 	/* my_fl = ((GC_thread)tsd) -> ptrfree_freelists + index; */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, 0x0D); /* CEE_MONO_TLS */
@@ -1099,8 +1100,8 @@ create_allocator (int atype, int tls_key, gboolean slowpath)
 		int start_var, end_var, start_loop;
 		/* end = my_entry + bytes; start = my_entry + sizeof (gpointer);
 		 */
-		start_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		end_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		start_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
+		end_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.int_class));
 		mono_mb_emit_ldloc (mb, my_entry_var);
 		mono_mb_emit_ldloc (mb, bytes_var);
 		mono_mb_emit_byte (mb, MONO_CEE_ADD);
@@ -1220,21 +1221,21 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 	 */
 	return NULL;
 
-	if (!SMALL_ENOUGH (klass->instance_size))
+	if (!SMALL_ENOUGH (m_class_get_instance_size (klass)))
 		return NULL;
 	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass))
 		return NULL;
 	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
 		return NULL;
-	if (klass->rank)
+	if (m_class_get_rank (klass))
 		return NULL;
-	if (mono_class_is_open_constructed_type (&klass->byval_arg))
+	if (mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)))
 		return NULL;
-	if (klass->byval_arg.type == MONO_TYPE_STRING) {
+	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_STRING) {
 		atype = ATYPE_STRING;
 	} else if (!known_instance_size) {
 		return NULL;
-	} else if (!klass->has_references) {
+	} else if (!m_class_has_references (klass)) {
 		if (for_box)
 			atype = ATYPE_FREEPTR_FOR_BOX;
 		else

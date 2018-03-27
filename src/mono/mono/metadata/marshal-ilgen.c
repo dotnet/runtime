@@ -498,7 +498,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		break;
 	}
 	case MONO_MARSHAL_CONV_ARRAY_LPARRAY: {
-		char *msg = g_strdup_printf ("Structure field of type %s can't be marshalled as LPArray", mono_class_from_mono_type (type)->name);
+		char *msg = g_strdup_printf ("Structure field of type %s can't be marshalled as LPArray", m_class_get_name (mono_class_from_mono_type (type)));
 		mono_mb_emit_exception_marshal_directive (mb, msg);
 		break;
 	}
@@ -708,7 +708,7 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 			eklass = type->data.klass;
 		} else if (type->type == MONO_TYPE_ARRAY) {
 			eklass = type->data.array->eklass;
-			g_assert(eklass->blittable);
+			g_assert(m_class_is_blittable (eklass));
 		} else {
 			g_assert_not_reached ();
 		}
