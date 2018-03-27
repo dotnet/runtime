@@ -492,6 +492,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.BinarySearch.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Byte.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Manipulation.cs" />
