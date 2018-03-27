@@ -460,7 +460,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
         WszOutputDebugString(W("\"\r\n"));
     }
 
-    const WCHAR * argExceptionString = NULL;
+    LPCWSTR argExceptionString = NULL;
     StackSString msg;
     if (gc.refExceptionForWatsonBucketing != NULL)
     {

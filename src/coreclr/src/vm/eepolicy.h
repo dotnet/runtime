@@ -124,7 +124,7 @@ public:
 
     static void HandleExitProcess(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete);
 
-    static void DECLSPEC_NORETURN HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage=NULL, PEXCEPTION_POINTERS pExceptionInfo= NULL, LPCWSTR errorSource=NULL, const WCHAR * argExceptionString=NULL);
+    static void DECLSPEC_NORETURN HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage=NULL, PEXCEPTION_POINTERS pExceptionInfo= NULL, LPCWSTR errorSource=NULL, LPCWSTR argExceptionString=NULL);
 
     static void DECLSPEC_NORETURN HandleFatalStackOverflow(EXCEPTION_POINTERS *pException, BOOL fSkipDebugger = FALSE);
 
@@ -147,7 +147,7 @@ private:
     BOOL IsValidActionForFailure(EClrFailure failure, EPolicyAction action);
     EPolicyAction GetFinalAction(EPolicyAction action, Thread *pThread);
 
-    static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, const WCHAR * argExceptionString=NULL);
+    static void LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString=NULL);
 
     // IMPORTANT NOTE: only the following two functions should be calling ExitProcessViaShim.
     // - CorHost2::ExitProcess
