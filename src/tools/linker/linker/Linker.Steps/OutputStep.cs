@@ -162,11 +162,9 @@ namespace Mono.Linker.Steps {
 			if (!assembly.MainModule.HasSymbols)
 				return parameters;
 
-#if NATIVE_READER_SUPPORT
-			// NativePdb's can't be written on non-windows platforms
-			if (Environment.OSVersion.Platform != PlatformID.Win32NT && assembly.MainModule.SymbolReader is Mono.Cecil.Pdb.NativePdbReader)
+			// Use a string check to avoid a hard dependency on Mono.Cecil.Pdb
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT && assembly.MainModule.SymbolReader.GetType ().FullName == "Mono.Cecil.Pdb.NativePdbReader")
 				return parameters;
-#endif
 
 			if (Context.SymbolWriterProvider != null)
 				parameters.SymbolWriterProvider = Context.SymbolWriterProvider;
