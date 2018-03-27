@@ -44,6 +44,11 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => true;
     }
 
+    public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
+    {
+        protected override bool UseSocketsHttpHandler => true;
+    }
+
     public sealed class SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         protected override bool UseSocketsHttpHandler => true;
