@@ -2065,6 +2065,7 @@ BEGIN
     IDS_EE_BADMARSHAL_TYPE_ASANYA                     "Marshalling arbitrary types is not supported"
     IDS_EE_BADMARSHAL_TYPE_IDISPATCH                  "Marshalling as IDispatch is not supported"
     IDS_EE_ERROR_IDISPATCH                            "IDispatch and IDispatchEx are not supported"
+    IDS_EE_ERROR_COM                                  "COM is not supported"
 END
 
 STRINGTABLE DISCARDABLE 

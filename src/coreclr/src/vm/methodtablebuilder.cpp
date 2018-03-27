@@ -1536,12 +1536,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     }
 
-#ifdef FEATURE_COMINTEROP 
-
     // Com Import classes are special. These types must derive from System.Object,
     // and we then substitute the parent with System._ComObject.
     if (IsComImport() && !IsEnum() && !IsInterface() && !IsValueClass() && !IsDelegate())
     {
+#ifdef FEATURE_COMINTEROP        
         // ComImport classes must either extend from Object or be a WinRT class
         // that extends from another WinRT class (and so form a chain of WinRT classes
         // that ultimately extend from object).
@@ -1579,11 +1578,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
             bmtInternal->pType->SetParentType(CreateTypeChain(pCOMMT, Substitution()));
             bmtInternal->pParentMT = pCOMMT;
         }
-
+#endif
         // if the current class is imported
         bmtProp->fIsComObjectType = true;
     }
 
+#ifdef FEATURE_COMINTEROP
     if (GetHalfBakedClass()->IsProjectedFromWinRT() && IsValueClass() && !IsEnum())
     {
         // WinRT structures must have sequential layout
@@ -2865,12 +2865,10 @@ MethodTableBuilder::EnumerateClassMethods()
         // RVA : 0
         if (dwMethodRVA != 0)
         {
-#ifdef FEATURE_COMINTEROP 
             if(fIsClassComImport)
             {
                 BuildMethodTableThrowException(BFA_METHOD_WITH_NONZERO_RVA);
             }
-#endif // FEATURE_COMINTEROP
             if(IsMdAbstract(dwMemberAttrs))
             {
                 BuildMethodTableThrowException(BFA_ABSTRACT_METHOD_WITH_RVA);
@@ -3066,14 +3064,12 @@ MethodTableBuilder::EnumerateClassMethods()
             // The attribute is not present
             if (hr == S_FALSE)
             {
+#ifdef FEATURE_COMINTEROP
                 if (fIsClassComImport
-#ifdef FEATURE_COMINTEROP 
                     || GetHalfBakedClass()->IsProjectedFromWinRT()
                     || bmtProp->fComEventItfType
-#endif //FEATURE_COMINTEROP
                     )
                 {
-#ifdef FEATURE_COMINTEROP
                     // ComImport classes have methods which are just used
                     // for implementing all interfaces the class supports
                     type = METHOD_TYPE_COMINTEROP;
@@ -3090,13 +3086,10 @@ MethodTableBuilder::EnumerateClassMethods()
                             type = METHOD_TYPE_FCALL;
                         }
                     }
-#else
-                    //If we don't support com interop, refuse to load interop methods.  Otherwise we fail to
-                    //jit calls to them since the constuctor has no intrinsic ID.
-                    BuildMethodTableThrowException(hr, IDS_CLASSLOAD_GENERAL, tok);
-#endif // FEATURE_COMINTEROP
                 }
-                else if (dwMethodRVA == 0)
+                else 
+#endif //FEATURE_COMINTEROP
+                if (dwMethodRVA == 0)
                 {
                     type = METHOD_TYPE_FCALL;
                 }
@@ -10322,16 +10315,17 @@ MethodTableBuilder::SetupMethodTable2(
 
         GetHalfBakedClass()->SetBaseSizePadding(baseSize - bmtFP->NumInstanceFieldBytes);
 
-#ifdef FEATURE_COMINTEROP 
         if (bmtProp->fIsComObjectType)
         {   // Propagate the com specific info
             pMT->SetComObjectType();
-
+#ifdef FEATURE_COMINTEROP 
             // COM objects need an optional field on the EEClass, so ensure this class instance has allocated
             // the optional field descriptor.
             EnsureOptionalFieldsAreAllocated(pClass, m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+#endif // FEATURE_COMINTEROP
         }
 
+#ifdef FEATURE_COMINTEROP 
         if (pMT->GetAssembly()->IsManagedWinMD())
         {
             // We need to mark classes that are implementations of managed WinRT runtime classes with

@@ -106,6 +106,13 @@ ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
 // Determines if a COM object can be cast to the specified type.
 BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT);
 
+// includes Types which hold a "ComObject" class
+// and types which are imported through typelib
+BOOL IsComWrapperClass(TypeHandle type);
+
+// includes Type which hold a "__ComObject" class
+BOOL IsComObjectClass(TypeHandle type);
+
 //---------------------------------------------------------
 // Read the BestFit custom attribute info from 
 // both assembly level and interface level
@@ -491,14 +498,6 @@ public:
     static void ComputeGuidForGenericType(MethodTable *pMT, GUID *pGuid);
 };  // class WinRTGuidGenerator
 
-
-// includes Types which hold a "ComObject" class
-// and types which are imported through typelib
-BOOL IsComWrapperClass(TypeHandle type);
-
-// includes Type which hold a "__ComObject" class
-BOOL IsComObjectClass(TypeHandle type);
-
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
 
@@ -508,7 +507,6 @@ class ICOMInterfaceMarshalerCallback;
 void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable *pFactoryIntfMT, BOOL bNeedUniqueRCW, ICOMInterfaceMarshalerCallback *pCallback, OBJECTREF *prefFactory);
 
 #else // FEATURE_COMINTEROP
-
 inline HRESULT EnsureComStartedNoThrow()
 {
     LIMITED_METHOD_CONTRACT;

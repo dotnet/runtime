@@ -999,6 +999,7 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     COMPlusThrow(kNotSupportedException);
 #endif
 }
+
 #endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------
@@ -1616,6 +1617,55 @@ BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT)
     {
         return obj->GetTrueMethodTable()->CanCastToClass(pTargetMT);
     }
+}
+
+// Returns TRUE iff the argument represents the "__ComObject" type or
+// any type derived from it (i.e. typelib-imported RCWs).
+BOOL IsComWrapperClass(TypeHandle type)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    
+    MethodTable* pMT = type.GetMethodTable();
+    if (pMT == NULL)
+        return FALSE;
+        
+    return pMT->IsComObjectType();
+}
+
+// Returns TRUE iff the argument represents the "__ComObject" type.
+BOOL IsComObjectClass(TypeHandle type)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP
+    if (!type.IsTypeDesc())
+    {
+        MethodTable *pMT = type.AsMethodTable();
+
+        if (pMT->IsComObjectType())
+        {
+            // May be __ComObject or typed RCW. __ComObject must have already been loaded
+            // if we see an MT marked like this so calling the *NoInit method is sufficient.
+
+            return pMT == g_pBaseCOMObject;
+        }
+    }
+#endif
+
+    return FALSE;
 }
 
 VOID
@@ -6203,53 +6253,6 @@ MethodTable *WinRTDelegateRedirector::GetWinRTTypeForRedirectedDelegateIndex(Win
         UNREACHABLE();
     }
 }
-
-// Returns TRUE iff the argument represents the "__ComObject" type or
-// any type derived from it (i.e. typelib-imported RCWs).
-BOOL IsComWrapperClass(TypeHandle type)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    
-    MethodTable* pMT = type.GetMethodTable();
-    if (pMT == NULL)
-        return FALSE;
-        
-    return pMT->IsComObjectType();
-}
-
-// Returns TRUE iff the argument represents the "__ComObject" type.
-BOOL IsComObjectClass(TypeHandle type)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    if (!type.IsTypeDesc())
-    {
-        MethodTable *pMT = type.AsMethodTable();
-
-        if (pMT->IsComObjectType())
-        {
-            // May be __ComObject or typed RCW. __ComObject must have already been loaded
-            // if we see an MT marked like this so calling the *NoInit method is sufficient.
-            return (pMT == g_pBaseCOMObject);
-        }
-    }
-
-    return FALSE;
-}
-
 
 #ifndef CROSSGEN_COMPILE
 
