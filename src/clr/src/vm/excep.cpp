@@ -28,6 +28,7 @@
 #include "shimload.h"
 #include "eeconfig.h"
 #include "virtualcallstub.h"
+#include "typestring.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -5234,10 +5235,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
 #endif // DEBUGGING_SUPPORTED
 
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
-        DoReportForUnhandledException(pParam->pExceptionInfo);
-#endif // FEATURE_EVENT_TRACE    
-
         //
         // Except for notifying debugger, ignore exception if unmanaged, or
         // if it's a debugger-generated exception or user breakpoint exception.
@@ -5245,6 +5242,9 @@ LONG InternalUnhandledExceptionFilter_Worker(
         if (tore.GetType() == TypeOfReportedError::NativeThreadUnhandledException)
         {
             pParam->retval = EXCEPTION_CONTINUE_SEARCH;
+#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
+            DoReportForUnhandledNativeException(pParam->pExceptionInfo);
+#endif
             goto lDone;
         }
 
@@ -5252,15 +5252,17 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {
             LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker, ignoring the exception\n"));
             pParam->retval = EXCEPTION_CONTINUE_SEARCH;
+#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
+            DoReportForUnhandledNativeException(pParam->pExceptionInfo);
+#endif
             goto lDone;
         }
 
         LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: Calling DefaultCatchHandler\n"));
 
-
         // Call our default catch handler to do the managed unhandled exception work.
         DefaultCatchHandler(pParam->pExceptionInfo, NULL, useLastThrownObject,
-            TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/);
+            TRUE /*isTerminating*/, FALSE /*isThreadBaseFIlter*/, FALSE /*sendAppDomainEvents*/, TRUE /* sendWindowsEventLog */);
 
 lDone: ;
     }
@@ -5510,8 +5512,10 @@ void STDMETHODCALLTYPE
 DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                                           OBJECTREF throwable,
                                           __inout_ecount(buf_size) WCHAR *buf,
-                                          const int buf_size)
+                                          const int buf_size,
+                                          BOOL sendWindowsEventLog)
 {
+    GCPROTECT_BEGIN(throwable);
     if (throwable != NULL)
     {
         PrintToStdErrA("\n");
@@ -5532,7 +5536,39 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         }
 
         PrintToStdErrA("\n");
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
+        // Send the log to Windows Event Log
+        if (sendWindowsEventLog && ShouldLogInEventLog())
+        {
+            EX_TRY
+            {
+                EventReporter reporter(EventReporter::ERT_UnhandledException);
+
+                if (IsException(throwable->GetMethodTable()))
+                {
+                    if (!message.IsEmpty())
+                    {
+                        reporter.AddDescription(message);
+                    }
+                    reporter.Report();
+                }
+                else
+                {
+                    StackSString s;
+                    TypeString::AppendType(s, TypeHandle(throwable->GetMethodTable()), TypeString::FormatNamespace | TypeString::FormatFullInst);
+                    reporter.AddDescription(s);
+                    LogCallstackForEventReporter(reporter);
+                }
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions);
+        }
+#endif
     }
+    GCPROTECT_END();
 }
 
 //******************************************************************************
@@ -5544,7 +5580,8 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     BOOL useLastThrownObject,
                     BOOL isTerminating,
                     BOOL isThreadBaseFilter,
-                    BOOL sendAppDomainEvents)
+                    BOOL sendAppDomainEvents,
+                    BOOL sendWindowsEventLog)
 {
     CONTRACTL
     {
@@ -5724,7 +5761,7 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                 {
                     // this is stack heavy because of the CQuickWSTRBase, so we break it out
                     // and don't have to carry the weight through our other code paths.
-                    DefaultCatchHandlerExceptionMessageWorker(pThread, throwable, buf, buf_size);
+                    DefaultCatchHandlerExceptionMessageWorker(pThread, throwable, buf, buf_size, sendWindowsEventLog);
                 }
             }
             EX_CATCH
