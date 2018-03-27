@@ -11,12 +11,8 @@ namespace System
     /// This only exists for compatibility with .NET Framework.
     /// </summary>
     [Serializable]
-#if CORERT
-    public
-#else
-    internal
-#endif
-    sealed class UnitySerializationHolder : ISerializable, IObjectReference
+    // Needs to be public to support binary serialization compatibility
+    public sealed class UnitySerializationHolder : ISerializable, IObjectReference
     {
         internal const int NullUnity = 0x0002;
         private readonly int _unityType;
