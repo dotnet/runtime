@@ -5685,7 +5685,8 @@ void CodeGen::genCheckUseBlockInit()
                             {
                                 // Var is completely on the stack, in the legacy JIT case, or
                                 // on the stack at entry, in the RyuJIT case.
-                                initStkLclCnt += (unsigned)roundUp(compiler->lvaLclSize(varNum)) / sizeof(int);
+                                initStkLclCnt +=
+                                    (unsigned)roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
                             }
                         }
                         else
@@ -5716,7 +5717,7 @@ void CodeGen::genCheckUseBlockInit()
             {
                 varDsc->lvMustInit = true;
 
-                initStkLclCnt += (unsigned)roundUp(compiler->lvaLclSize(varNum)) / sizeof(int);
+                initStkLclCnt += (unsigned)roundUp(compiler->lvaLclSize(varNum), TARGET_POINTER_SIZE) / sizeof(int);
             }
 
             continue;
@@ -6621,7 +6622,7 @@ void CodeGen::genMov32RelocatableDataLabel(unsigned value, regNumber reg)
  *
  * Move of relocatable immediate to register
  */
-void CodeGen::genMov32RelocatableImmediate(emitAttr size, unsigned value, regNumber reg)
+void CodeGen::genMov32RelocatableImmediate(emitAttr size, size_t value, regNumber reg)
 {
     _ASSERTE(EA_IS_RELOC(size));
 

@@ -361,7 +361,7 @@ protected:
 
     void genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg);
     void genMov32RelocatableDataLabel(unsigned value, regNumber reg);
-    void genMov32RelocatableImmediate(emitAttr size, unsigned value, regNumber reg);
+    void genMov32RelocatableImmediate(emitAttr size, size_t value, regNumber reg);
 
     bool genUsedPopToReturn; // True if we use the pop into PC to return,
                              // False if we didn't and must branch to LR to return.
