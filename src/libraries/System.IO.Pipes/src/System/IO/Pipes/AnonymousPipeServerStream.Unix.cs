@@ -30,7 +30,7 @@ namespace System.IO.Pipes
             // bufferSize is just advisory and ignored if platform does not support setting pipe capacity via fcntl.
             if (bufferSize > 0 && Interop.Sys.Fcntl.CanGetSetPipeSz)
             {
-                CheckPipeCall(Interop.Sys.Fcntl.SetPipeSz(serverHandle, bufferSize));
+                Interop.Sys.Fcntl.SetPipeSz(serverHandle, bufferSize); // advisory, ignore errors
             }
 
             // We're connected.  Finish initialization using the newly created handles.
