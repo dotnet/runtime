@@ -125,7 +125,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (null == value || 0 == value.Length)
-                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, PropertyNames.PrincipalSamAccountName));
+                    throw new ArgumentNullException(PropertyNames.PrincipalSamAccountName);
 
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalSamAccountName))
                     throw new InvalidOperationException(SR.InvalidPropertyForStore);
@@ -245,7 +245,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (null == value || 0 == value.Length)
-                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, PropertyNames.PrincipalName));
+                    throw new ArgumentNullException(PropertyNames.PrincipalName);
 
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalName))
                     throw new InvalidOperationException(SR.InvalidPropertyForStore);
