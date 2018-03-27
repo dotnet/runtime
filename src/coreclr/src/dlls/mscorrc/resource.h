@@ -897,3 +897,4 @@
 #define IDS_EE_NDIRECT_LOADLIB_LINUX               0x263e
 #define IDS_EE_NDIRECT_LOADLIB_MAC                 0x263f
 #define IDS_EE_NDIRECT_GETPROCADDRESS_UNIX         0x2640
+#define IDS_EE_ERROR_COM                           0x2641
