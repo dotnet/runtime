@@ -61,7 +61,7 @@
     <CurrentRefXmlPath>$(MSBuildThisFileFullPath)</CurrentRefXmlPath>
   </PropertyGroup>
 
-  <!-- ILLinik.Tasks package version -->
+  <!-- ILLink.Tasks package version -->
   <PropertyGroup>
     <ILLinkTasksPackage>ILLink.Tasks</ILLinkTasksPackage>
     <ILLinkTasksPackageVersion>0.1.5-preview-1461378</ILLinkTasksPackageVersion>

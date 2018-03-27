@@ -20,12 +20,8 @@ namespace System.Collections
     ///    This should not be used if performance is important for large numbers of elements.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-#if CORERT
-    public
-#else
-    internal
-#endif
-    class ListDictionaryInternal : IDictionary
+    // Needs to be public to support binary serialization compatibility
+    public class ListDictionaryInternal : IDictionary
     {
         private DictionaryNode head; // Do not rename (binary serialization)
         private int version; // Do not rename (binary serialization)

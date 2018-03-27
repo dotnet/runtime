@@ -68,7 +68,8 @@ namespace System.Collections.Generic
     // to Equal bind to IEquatable<T>.Equals(T) instead of Object.Equals(Object)
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
@@ -137,7 +138,8 @@ namespace System.Collections.Generic
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T? x, T? y)
@@ -204,7 +206,8 @@ namespace System.Collections.Generic
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
@@ -273,7 +276,8 @@ namespace System.Collections.Generic
     // We will call the C runtime function memchr, which is optimized.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class ByteEqualityComparer : EqualityComparer<byte>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class ByteEqualityComparer : EqualityComparer<byte>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(byte x, byte y)
@@ -310,7 +314,8 @@ namespace System.Collections.Generic
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
+    // Needs to be public to support binary serialization compatibility
+    public sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         internal EnumEqualityComparer() { }
 

@@ -45,7 +45,8 @@ namespace System.Collections.Generic
     // for value types.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
         public override int Compare(T x, T y)
         {
@@ -68,7 +69,8 @@ namespace System.Collections.Generic
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class NullableComparer<T> : Comparer<T?> where T : struct, IComparable<T>
     {
         public override int Compare(T? x, T? y)
         {
@@ -91,7 +93,8 @@ namespace System.Collections.Generic
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class ObjectComparer<T> : Comparer<T>
+    // Needs to be public to support binary serialization compatibility
+    public sealed class ObjectComparer<T> : Comparer<T>
     {
         public override int Compare(T x, T y)
         {
