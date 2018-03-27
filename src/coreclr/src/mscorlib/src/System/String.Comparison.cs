@@ -21,10 +21,6 @@ namespace System
 {
     public partial class String
     {
-        //
-        //Native Static Methods
-        //
-
         private static unsafe int CompareOrdinalIgnoreCaseHelper(String strA, String strB)
         {
             Debug.Assert(strA != null);
@@ -61,16 +57,6 @@ namespace System
             }
         }
 
-        // native call to COMString::CompareOrdinalEx
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int CompareOrdinalHelper(String strA, int indexA, int countA, String strB, int indexB, int countB);
-
-        //
-        //
-        // NATIVE INSTANCE METHODS
-        //
-        //
-
         //
         // Search/Query methods
         //
@@ -86,6 +72,18 @@ namespace System
                     ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
                     ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
                     ((nuint)strA.Length) * 2);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int CompareOrdinalHelper(String strA, int indexA, int countA, String strB, int indexB, int countB)
+        {
+            Debug.Assert(strA != null);
+            Debug.Assert(strB != null);
+            Debug.Assert(indexA >= 0 && indexB >= 0);
+            Debug.Assert(countA >= 0 && countB >= 0);
+            Debug.Assert(indexA + countA <= strA.Length && indexB + countB <= strB.Length);
+
+            return SpanHelpers.SequenceCompareTo(ref Unsafe.Add(ref strA.GetRawStringData(), indexA), countA, ref Unsafe.Add(ref strB.GetRawStringData(), indexB), countB);
         }
 
         private static unsafe bool EqualsIgnoreCaseAsciiHelper(String strA, String strB)
@@ -315,13 +313,14 @@ namespace System
                     return CompareOrdinalHelper(strA, strB);
 
                 case StringComparison.OrdinalIgnoreCase:
+#if CORECLR
                     // If both strings are ASCII strings, we can take the fast path.
                     if (strA.IsAscii() && strB.IsAscii())
                     {
-                        return (CompareOrdinalIgnoreCaseHelper(strA, strB));
+                        return CompareOrdinalIgnoreCaseHelper(strA, strB);
                     }
-
-                    return CompareInfo.CompareOrdinalIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
+#endif
+                    return CompareInfo.CompareOrdinalIgnoreCase(strA, strB);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
@@ -503,7 +502,7 @@ namespace System
                     return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 case StringComparison.OrdinalIgnoreCase:
-                    return (CompareInfo.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB));
+                    return CompareInfo.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
@@ -539,40 +538,9 @@ namespace System
             return CompareOrdinalHelper(strA, strB);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int CompareOrdinal(ReadOnlySpan<char> strA, ReadOnlySpan<char> strB)
-        {
-            // TODO: Add a vectorized code path, similar to SequenceEqual
-            // https://github.com/dotnet/corefx/blob/master/src/System.Memory/src/System/SpanHelpers.byte.cs#L900
-
-            int minLength = Math.Min(strA.Length, strB.Length);
-            ref char first = ref MemoryMarshal.GetReference(strA);
-            ref char second = ref MemoryMarshal.GetReference(strB);
-
-            int i = 0;
-            if (minLength >= sizeof(nuint) / sizeof(char))
-            {
-                while (i < minLength - sizeof(nuint) / sizeof(char))
-                {
-                    if (Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref first, i))) !=
-                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref second, i))))
-                    {
-                        break;
-                    }
-                    i += sizeof(nuint) / sizeof(char);
-                }
-            }
-            while (i < minLength)
-            {
-                char a = Unsafe.Add(ref first, i);
-                char b = Unsafe.Add(ref second, i);
-                if (a != b)
-                {
-                    return a - b;
-                }
-                i++;
-            }
-            return strA.Length - strB.Length;
-        }
+            => SpanHelpers.SequenceCompareTo(ref MemoryMarshal.GetReference(strA), strA.Length, ref MemoryMarshal.GetReference(strB), strB.Length);
 
         // Compares strA and strB using an ordinal (code-point) comparison.
         //
@@ -795,13 +763,13 @@ namespace System
                 case StringComparison.OrdinalIgnoreCase:
                     if (this.Length != value.Length)
                         return false;
-
+#if CORECLR
                     // If both strings are ASCII strings, we can take the fast path.
                     if (this.IsAscii() && value.IsAscii())
                     {
                         return EqualsIgnoreCaseAsciiHelper(this, value);
                     }
-
+#endif
                     return (CompareInfo.CompareOrdinalIgnoreCase(this, 0, this.Length, value, 0, value.Length) == 0);
 
                 default:
@@ -857,23 +825,19 @@ namespace System
                 case StringComparison.Ordinal:
                     if (a.Length != b.Length)
                         return false;
-
                     return EqualsHelper(a, b);
 
                 case StringComparison.OrdinalIgnoreCase:
                     if (a.Length != b.Length)
                         return false;
-                    else
+#if CORECLR
+                    // If both strings are ASCII strings, we can take the fast path.
+                    if (a.IsAscii() && b.IsAscii())
                     {
-                        // If both strings are ASCII strings, we can take the fast path.
-                        if (a.IsAscii() && b.IsAscii())
-                        {
-                            return EqualsIgnoreCaseAsciiHelper(a, b);
-                        }
-                        // Take the slow path.
-
-                        return (CompareInfo.CompareOrdinalIgnoreCase(a, 0, a.Length, b, 0, b.Length) == 0);
+                        return EqualsIgnoreCaseAsciiHelper(a, b);
                     }
+#endif
+                    return (CompareInfo.CompareOrdinalIgnoreCase(a, 0, a.Length, b, 0, b.Length) == 0);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));

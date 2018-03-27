@@ -301,6 +301,13 @@ namespace System
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
                     other.Length);
 
+            if (typeof(T) == typeof(char))
+                return SpanHelpers.SequenceCompareTo(
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                    span.Length,
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(other)),
+                    other.Length);
+
             return SpanHelpers.SequenceCompareTo(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(other), other.Length);
         }
 
@@ -657,6 +664,13 @@ namespace System
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
+                    other.Length);
+
+            if (typeof(T) == typeof(char))
+                return SpanHelpers.SequenceCompareTo(
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                    span.Length,
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(other)),
                     other.Length);
 
             return SpanHelpers.SequenceCompareTo(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(other), other.Length);

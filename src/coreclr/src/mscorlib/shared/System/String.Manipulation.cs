@@ -1541,7 +1541,7 @@ namespace System
                 if (this[i] == separator[0] && currentSepLength <= Length - i)
                 {
                     if (currentSepLength == 1
-                        || CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
+                        || this.AsSpan(i, currentSepLength).SequenceEqual(separator))
                     {
                         sepListBuilder.Append(i);
                         i += currentSepLength - 1;
@@ -1575,7 +1575,7 @@ namespace System
                     if (this[i] == separator[0] && currentSepLength <= Length - i)
                     {
                         if (currentSepLength == 1
-                            || CompareOrdinal(this, i, separator, 0, currentSepLength) == 0)
+                            || this.AsSpan(i, currentSepLength).SequenceEqual(separator))
                         {
                             sepListBuilder.Append(i);
                             lengthListBuilder.Append(currentSepLength);
