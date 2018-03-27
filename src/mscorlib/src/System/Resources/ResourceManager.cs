@@ -771,7 +771,7 @@ namespace System.Resources
         // we can do very little with WinRT in mscorlib.
         internal static WindowsRuntimeResourceManagerBase GetWinRTResourceManager()
         {
-            Type WinRTResourceManagerType = Type.GetType("System.Resources.WindowsRuntimeResourceManager, " + AssemblyRef.SystemRuntimeWindowsRuntime, true);
+            Type WinRTResourceManagerType = Type.GetType("System.Resources.WindowsRuntimeResourceManager, System.Runtime.WindowsRuntime", throwOnError: true);
             return (WindowsRuntimeResourceManagerBase)Activator.CreateInstance(WinRTResourceManagerType, true);
         }
 #endif
