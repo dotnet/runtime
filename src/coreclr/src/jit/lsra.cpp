@@ -8269,7 +8269,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
 #ifdef _TARGET_ARM_
                     if (genIsValidDoubleReg(fromReg))
                     {
-                        // Ensure that the other half is free.
+                        // Ensure that either:
+                        // - the Interval targetting fromReg is not double, or
+                        // - the other half of the double is free.
                         Interval* otherInterval = sourceIntervals[source[fromReg]];
                         regNumber upperHalfReg  = REG_NEXT(fromReg);
                         if ((otherInterval->registerType == TYP_DOUBLE) && (location[upperHalfReg] != REG_NA))
