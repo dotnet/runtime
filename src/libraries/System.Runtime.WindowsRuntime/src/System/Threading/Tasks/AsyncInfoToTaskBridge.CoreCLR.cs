@@ -70,7 +70,7 @@ namespace System.Threading.Tasks
                     }
 
                     if (disposeOfCtr)
-                        ctr.TryDeregister();
+                        ctr.Unregister();
                 }
             }
             catch (Exception ex)
@@ -150,7 +150,7 @@ namespace System.Threading.Tasks
                     ctr = _ctr; // under lock to avoid torn reads
                     _ctr = default(CancellationTokenRegistration);
                 }
-                ctr.TryDeregister(); // It's ok if we end up unregistering a not-initialized registration; it'll just be a nop.
+                ctr.Unregister(); // It's ok if we end up unregistering a not-initialized registration; it'll just be a nop.
 
                 try
                 {
