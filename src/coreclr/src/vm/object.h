@@ -1060,8 +1060,6 @@ class StringObject : public Object
 
 
 private:
-    static INT32 FastCompareStringHelper(DWORD* strAChars, INT32 countA, DWORD* strBChars, INT32 countB);
-
     static STRINGREF* EmptyStringRefPtr;
 };
 
