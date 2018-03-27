@@ -409,10 +409,13 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
     return (size_t)memStatus.ullTotalVirtual;
 }
 
-
 static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
 
 #ifndef FEATURE_PAL
+
+// For 32-bit processes the virtual address range could be smaller than the amount of physical
+// memory on the machine/in the container, we need to restrict by the VM.
+static bool g_UseRestrictedVirtualMemory = false;
 
 typedef BOOL (WINAPI *PGET_PROCESS_MEMORY_INFO)(HANDLE handle, PROCESS_MEMORY_COUNTERS* memCounters, uint32_t cb);
 static PGET_PROCESS_MEMORY_INFO GCGetProcessMemoryInfo = 0;
@@ -429,6 +432,8 @@ static size_t GetRestrictedPhysicalMemoryLimit()
         return g_RestrictedPhysicalMemoryLimit;
 
     size_t job_physical_memory_limit = (size_t)MAX_PTR;
+    uint64_t total_virtual = 0;
+    uint64_t total_physical = 0;
     BOOL in_job_p = FALSE;
     HINSTANCE hinstKernel32 = 0;
 
@@ -487,6 +492,8 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 
             MEMORYSTATUSEX ms;
             ::GetProcessMemoryLoad(&ms);
+            total_virtual = ms.ullTotalVirtual;
+            total_physical = ms.ullAvailPhys;
 
             // A sanity check in case someone set a larger limit than there is actual physical memory.
             job_physical_memory_limit = (size_t) min (job_physical_memory_limit, ms.ullTotalPhys);
@@ -498,7 +505,40 @@ exit:
     {
         job_physical_memory_limit = 0;
 
-        FreeLibrary(hinstKernel32);
+        if (hinstKernel32 != 0)
+        {
+            FreeLibrary(hinstKernel32);
+            hinstKernel32 = 0;
+            GCGetProcessMemoryInfo = 0;
+        }
+    }
+
+    // Check to see if we are limited by VM.
+    if (total_virtual == 0)
+    {
+        MEMORYSTATUSEX ms;
+        ::GetProcessMemoryLoad(&ms);
+
+        total_virtual = ms.ullTotalVirtual;
+        total_physical = ms.ullTotalPhys;
+    }
+
+    if (job_physical_memory_limit != 0)
+    {
+        total_physical = job_physical_memory_limit;
+    }
+
+    if (total_virtual < total_physical)
+    {
+        if (hinstKernel32 != 0)
+        {
+            // We can also free the lib here - if we are limited by VM we will not be calling
+            // GetProcessMemoryInfo.
+            FreeLibrary(hinstKernel32);
+            GCGetProcessMemoryInfo = 0;
+        }
+        g_UseRestrictedVirtualMemory = true;
+        job_physical_memory_limit = (size_t)total_virtual;
     }
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
@@ -558,9 +598,12 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
         size_t workingSetSize;
         BOOL status = FALSE;
 #ifndef FEATURE_PAL
-        PROCESS_MEMORY_COUNTERS pmc;
-        status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
-        workingSetSize = pmc.WorkingSetSize;
+        if (!g_UseRestrictedVirtualMemory)
+        {
+            PROCESS_MEMORY_COUNTERS pmc;
+            status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+            workingSetSize = pmc.WorkingSetSize;
+        }
 #else
         status = PAL_GetWorkingSetSize(&workingSetSize);
 #endif
@@ -587,13 +630,32 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
     MEMORYSTATUSEX ms;
     ::GetProcessMemoryLoad(&ms);
+    
+#ifndef FEATURE_PAL
+    if (g_UseRestrictedVirtualMemory)
+    {
+        _ASSERTE (ms.ullTotalVirtual == restricted_limit);
+        if (memory_load != NULL)
+            *memory_load = (uint32_t)((float)(ms.ullTotalVirtual - ms.ullAvailVirtual) * 100.0 / (float)ms.ullTotalVirtual);
+        if (available_physical != NULL)
+            *available_physical = ms.ullTotalVirtual;
 
-    if (memory_load != NULL)
-        *memory_load = ms.dwMemoryLoad;
-    if (available_physical != NULL)
-        *available_physical = ms.ullAvailPhys;
-    if (available_page_file != NULL)
-        *available_page_file = ms.ullAvailPageFile;
+        // Available page file isn't helpful when we are restricted by virtual memory
+        // since the amount of memory we can reserve is less than the amount of
+        // memory we can commit.
+        if (available_page_file != NULL)
+            *available_page_file = 0;
+    }
+    else
+#endif //!FEATURE_PAL
+    {
+        if (memory_load != NULL)
+            *memory_load = ms.dwMemoryLoad;
+        if (available_physical != NULL)
+            *available_physical = ms.ullAvailPhys;
+        if (available_page_file != NULL)
+            *available_page_file = ms.ullAvailPageFile;
+    }
 }
 
 // Get a high precision performance counter
