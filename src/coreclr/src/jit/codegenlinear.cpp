@@ -896,10 +896,15 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 inst_RV_TT(ins_Load(treeType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum)), dstReg, unspillTree);
             }
 #elif defined(_TARGET_ARM64_)
-            var_types   targetType = unspillTree->gtType;
-            instruction ins        = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
-            emitAttr    attr       = emitTypeSize(targetType);
-            emitter*    emit       = getEmitter();
+            var_types targetType = unspillTree->gtType;
+            if (targetType != genActualType(varDsc->lvType) && !varTypeIsGC(targetType) && !varDsc->lvNormalizeOnLoad())
+            {
+                assert(!varTypeIsGC(varDsc));
+                targetType = genActualType(varDsc->lvType);
+            }
+            instruction ins  = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
+            emitAttr    attr = emitTypeSize(targetType);
+            emitter*    emit = getEmitter();
 
             // Fixes Issue #3326
             attr = varTypeIsFloating(targetType) ? attr : emit->emitInsAdjustLoadStoreAttr(ins, attr);
