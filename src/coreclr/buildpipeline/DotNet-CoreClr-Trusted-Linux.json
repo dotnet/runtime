@@ -115,7 +115,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./sync.sh",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./sync.sh -- /p:BuildType=$(PB_BuildType)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
