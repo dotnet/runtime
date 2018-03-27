@@ -3,12 +3,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <ProjectGuid>{7f4b8c48-8692-4885-bf84-feb7ea82e34b}</ProjectGuid>
+    <ProjectGuid>{7F4B8C48-8692-4885-BF84-FEB7EA82E34B}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
+    <Compile Include="Perf.Regex.Cache.cs" />
     <Compile Include="Perf.Regex.cs" />
     <Compile Include="Perf.RegexRedux.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
