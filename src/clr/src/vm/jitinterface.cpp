@@ -12886,6 +12886,9 @@ PCODE UnsafeJitFunction(MethodDesc* ftn, COR_ILMETHOD_DECODER* ILHeader, CORJIT_
 
             fAllowRel32 = FALSE;
 #endif // _TARGET_AMD64_
+#ifdef _TARGET_ARM64_
+            fForceJumpStubOverflow = FALSE;
+#endif // _TARGET_ARM64_
 
             reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
             continue;
