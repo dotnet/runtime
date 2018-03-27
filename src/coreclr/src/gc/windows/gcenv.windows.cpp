@@ -21,6 +21,10 @@ static PGET_PROCESS_MEMORY_INFO GCGetProcessMemoryInfo = 0;
 
 static size_t g_RestrictedPhysicalMemoryLimit = (size_t)UINTPTR_MAX;
 
+// For 32-bit processes the virtual address range could be smaller than the amount of physical
+// memory on the machine/in the container, we need to restrict by the VM.
+static bool g_UseRestrictedVirtualMemory = false;
+
 typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
 typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
 
@@ -31,13 +35,6 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
     pMSEX->dwLength = sizeof(MEMORYSTATUSEX);
     BOOL fRet = ::GlobalMemoryStatusEx(pMSEX);
     assert(fRet);
-
-    // If the machine has more RAM than virtual address limit, let us cap it.
-    // Our GC can never use more than virtual address limit.
-    if (pMSEX->ullAvailPhys > pMSEX->ullTotalVirtual)
-    {
-        pMSEX->ullAvailPhys = pMSEX->ullAvailVirtual;
-    }
 }
 
 static size_t GetRestrictedPhysicalMemoryLimit()
@@ -49,6 +46,8 @@ static size_t GetRestrictedPhysicalMemoryLimit()
         return g_RestrictedPhysicalMemoryLimit;
 
     size_t job_physical_memory_limit = (size_t)UINTPTR_MAX;
+    uint64_t total_virtual = 0;
+    uint64_t total_physical = 0;
     BOOL in_job_p = FALSE;
     HINSTANCE hinstKernel32 = 0;
 
@@ -109,6 +108,8 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 
             MEMORYSTATUSEX ms;
             ::GetProcessMemoryLoad(&ms);
+            total_virtual = ms.ullTotalVirtual;
+            total_physical = ms.ullAvailPhys;
 
             // A sanity check in case someone set a larger limit than there is actual physical memory.
             job_physical_memory_limit = (size_t) min (job_physical_memory_limit, ms.ullTotalPhys);
@@ -120,7 +121,40 @@ exit:
     {
         job_physical_memory_limit = 0;
 
-        FreeLibrary(hinstKernel32);
+        if (hinstKernel32 != 0)
+        {
+            FreeLibrary(hinstKernel32);
+            hinstKernel32 = 0;
+            GCGetProcessMemoryInfo = 0;
+        }
+    }
+
+    // Check to see if we are limited by VM.
+    if (total_virtual == 0)
+    {
+        MEMORYSTATUSEX ms;
+        ::GetProcessMemoryLoad(&ms);
+
+        total_virtual = ms.ullTotalVirtual;
+        total_physical = ms.ullTotalPhys;
+    }
+
+    if (job_physical_memory_limit != 0)
+    {
+        total_physical = job_physical_memory_limit;
+    }
+
+    if (total_virtual < total_physical)
+    {
+        if (hinstKernel32 != 0)
+        {
+            // We can also free the lib here - if we are limited by VM we will not be calling
+            // GetProcessMemoryInfo.
+            FreeLibrary(hinstKernel32);
+            GCGetProcessMemoryInfo = 0;
+        }
+        g_UseRestrictedVirtualMemory = true;
+        job_physical_memory_limit = (size_t)total_virtual;
     }
 
     VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
@@ -495,13 +529,26 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
     uint64_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
-        PROCESS_MEMORY_COUNTERS pmc;
-        if (GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+        size_t workingSetSize;
+        BOOL status = FALSE;
+        if (!g_UseRestrictedVirtualMemory)
+        {
+            PROCESS_MEMORY_COUNTERS pmc;
+            status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+            workingSetSize = pmc.WorkingSetSize;
+        }
+
+        if(status)
         {
             if (memory_load)
-                *memory_load = (uint32_t)((float)pmc.WorkingSetSize * 100.0 / (float)restricted_limit);
+                *memory_load = (uint32_t)((float)workingSetSize * 100.0 / (float)restricted_limit);
             if (available_physical)
-                *available_physical = restricted_limit - pmc.WorkingSetSize;
+            {
+                if(workingSetSize > restricted_limit)
+                    *available_physical = 0;
+                else
+                    *available_physical = restricted_limit - workingSetSize;
+            }
             // Available page file doesn't mean much when physical memory is restricted since
             // we don't know how much of it is available to this process so we are not going to 
             // bother to make another OS call for it.
@@ -514,13 +561,30 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
     MEMORYSTATUSEX ms;
     ::GetProcessMemoryLoad(&ms);
+    
+    if (g_UseRestrictedVirtualMemory)
+    {
+        _ASSERTE (ms.ullTotalVirtual == restricted_limit);
+        if (memory_load != NULL)
+            *memory_load = (uint32_t)((float)(ms.ullTotalVirtual - ms.ullAvailVirtual) * 100.0 / (float)ms.ullTotalVirtual);
+        if (available_physical != NULL)
+            *available_physical = ms.ullTotalVirtual;
 
-    if (memory_load != nullptr)
-        *memory_load = ms.dwMemoryLoad;
-    if (available_physical != nullptr)
-        *available_physical = ms.ullAvailPhys;
-    if (available_page_file != nullptr)
-        *available_page_file = ms.ullAvailPageFile;
+        // Available page file isn't helpful when we are restricted by virtual memory
+        // since the amount of memory we can reserve is less than the amount of
+        // memory we can commit.
+        if (available_page_file != NULL)
+            *available_page_file = 0;
+    }
+    else
+    {
+        if (memory_load != NULL)
+            *memory_load = ms.dwMemoryLoad;
+        if (available_physical != NULL)
+            *available_physical = ms.ullAvailPhys;
+        if (available_page_file != NULL)
+            *available_page_file = ms.ullAvailPageFile;
+    }
 }
 
 // Get a high precision performance counter
