@@ -270,9 +270,49 @@ namespace System
         public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
 
         /// <summary>
-        /// Returns a handle for the array.
-        /// <param name="pin">If pin is true, the GC will not move the array and hence its address can be taken</param>
+        /// Creates a handle for the memory.
+        /// The GC will not move the array until the returned <see cref="MemoryHandle"/>
+        /// is disposed, enabling taking and using the memory's address.
         /// </summary>
+        public unsafe MemoryHandle Pin()
+        {
+            if (_index < 0)
+            {
+                return ((OwnedMemory<T>)_object).Pin((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
+            }
+            else if (typeof(T) == typeof(char) && _object is string s)
+            {
+                // This case can only happen if a ReadOnlyMemory<char> was created around a string
+                // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
+                // to work, however, so that code that uses a single Memory<char> field to store either
+                // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
+                // used for interop purposes.
+                GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
+                void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
+                return new MemoryHandle(null, pointer, handle);
+            }
+            else if (_object is T[] array)
+            {
+                var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
+                void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
+                return new MemoryHandle(null, pointer, handle);
+            }
+            return default;
+        }
+
+        /// <summary>[Obsolete, use Pin()] Creates a handle for the memory.</summary>
+        /// <param name="pin">
+        /// If pin is true, the GC will not move the array until the returned <see cref="MemoryHandle"/>
+        /// is disposed, enabling taking and using the memory's address.
+        /// </param>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
             MemoryHandle memoryHandle = default;
