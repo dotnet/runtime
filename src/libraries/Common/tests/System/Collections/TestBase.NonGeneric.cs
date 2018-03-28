@@ -25,7 +25,8 @@ namespace System.Collections.Tests
             HashSet,
             SortedSet,
             List,
-            Queue
+            Queue,
+            Lazy,
         };
 
         #endregion

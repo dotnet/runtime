@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -14,6 +15,18 @@ namespace System.Collections.Tests
     {
         internal class Driver<T>
         {
+            public Func<T[], IEnumerable<T>>[] CollectionGenerators { get; }
+
+            public Driver()
+            {
+                CollectionGenerators = new Func<T[], IEnumerable<T>>[]
+                {
+                    ConstructTestList,
+                    ConstructTestEnumerable,
+                    ConstructLazyTestEnumerable,
+                };
+            }
+
             #region Insert
 
             public void BasicInsert(T[] items, T item, int index, int repeat)
@@ -103,7 +116,7 @@ namespace System.Collections.Tests
 
             #region InsertRange
 
-            public void InsertRangeICollection(T[] itemsX, T[] itemsY, int index, int repeat, Func<T[], IEnumerable<T>> constructIEnumerable)
+            public void InsertRangeIEnumerable(T[] itemsX, T[] itemsY, int index, int repeat, Func<T[], IEnumerable<T>> constructIEnumerable)
             {
                 List<T> list = new List<T>(constructIEnumerable(itemsX));
 
@@ -159,37 +172,6 @@ namespace System.Collections.Tests
                 }
             }
 
-            public void InsertRangeList(T[] itemsX, T[] itemsY, int index, int repeat, Func<T[], IEnumerable<T>> constructIEnumerable)
-            {
-                List<T> list = new List<T>(constructIEnumerable(itemsX));
-
-                for (int i = 0; i < repeat; i++)
-                {
-                    list.InsertRange(index, new List<T>(constructIEnumerable(itemsY)));
-                }
-
-                foreach (T item in itemsY)
-                {
-                    Assert.True(list.Contains(item)); //"Should contain the item."
-                }
-                Assert.Equal(list.Count, itemsX.Length + (itemsY.Length * repeat)); //"Should have the same result."
-
-                for (int i = 0; i < index; i++)
-                {
-                    Assert.Equal(list[i], itemsX[i]); //"Should have the same result."
-                }
-
-                for (int i = index; i < index + (itemsY.Length * repeat); i++)
-                {
-                    Assert.Equal(list[i], itemsY[(i - index) % itemsY.Length]); //"Should have the same result."
-                }
-
-                for (int i = index + (itemsY.Length * repeat); i < list.Count; i++)
-                {
-                    Assert.Equal(list[i], itemsX[i - (itemsY.Length * repeat)]); //"Should have the same result."
-                }
-            }
-
             public void InsertRangeValidations(T[] items, Func<T[], IEnumerable<T>> constructIEnumerable)
             {
                 List<T> list = new List<T>(constructIEnumerable(items));
@@ -202,9 +184,20 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentNullException>(() => list.InsertRange(0, null)); //"ArgumentNullException expected."
             }
 
-            public IEnumerable<T> ConstructTestCollection(T[] items)
+            public IEnumerable<T> ConstructTestEnumerable(T[] items)
             {
                 return items;
+            }
+
+            public IEnumerable<T> ConstructLazyTestEnumerable(T[] items)
+            {
+                return ConstructTestEnumerable(items)
+                    .Select(item => item);
+            }
+
+            public IEnumerable<T> ConstructTestList(T[] items)
+            {
+                return items.ToList();
             }
 
             #endregion
@@ -795,13 +788,15 @@ namespace System.Collections.Tests
                 intArr2[i] = i + 100;
             }
 
-            IntDriver.InsertRangeICollection(new int[0], intArr1, 0, 1, IntDriver.ConstructTestCollection);
-            IntDriver.InsertRangeICollection(intArr1, intArr2, 0, 1, IntDriver.ConstructTestCollection);
-            IntDriver.InsertRangeICollection(intArr1, intArr2, 1, 1, IntDriver.ConstructTestCollection);
-            IntDriver.InsertRangeICollection(intArr1, intArr2, 99, 1, IntDriver.ConstructTestCollection);
-            IntDriver.InsertRangeICollection(intArr1, intArr2, 100, 1, IntDriver.ConstructTestCollection);
-            IntDriver.InsertRangeICollection(intArr1, intArr2, 50, 50, IntDriver.ConstructTestCollection);
-            IntDriver.InsertRangeList(intArr1, intArr2, 0, 1, IntDriver.ConstructTestCollection);
+            foreach (Func<int[], IEnumerable<int>> collectionGenerator in IntDriver.CollectionGenerators)
+            {
+                IntDriver.InsertRangeIEnumerable(new int[0], intArr1, 0, 1, collectionGenerator);
+                IntDriver.InsertRangeIEnumerable(intArr1, intArr2, 0, 1, collectionGenerator);
+                IntDriver.InsertRangeIEnumerable(intArr1, intArr2, 1, 1, collectionGenerator);
+                IntDriver.InsertRangeIEnumerable(intArr1, intArr2, 99, 1, collectionGenerator);
+                IntDriver.InsertRangeIEnumerable(intArr1, intArr2, 100, 1, collectionGenerator);
+                IntDriver.InsertRangeIEnumerable(intArr1, intArr2, 50, 50, collectionGenerator);
+            }
 
             Driver<string> StringDriver = new Driver<string>();
             string[] stringArr1 = new string[100];
@@ -811,17 +806,19 @@ namespace System.Collections.Tests
             for (int i = 0; i < 10; i++)
                 stringArr2[i] = "SomeTestString" + (i + 100).ToString();
 
-            StringDriver.InsertRangeICollection(new string[0], stringArr1, 0, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(stringArr1, stringArr2, 0, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(stringArr1, stringArr2, 1, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(stringArr1, stringArr2, 99, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(stringArr1, stringArr2, 100, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(stringArr1, stringArr2, 50, 50, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(new string[] { null, null, null, null }, stringArr2, 0, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(new string[] { null, null, null, null }, stringArr2, 4, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(new string[] { null, null, null, null }, new string[] { null, null, null, null }, 0, 1, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeICollection(new string[] { null, null, null, null }, new string[] { null, null, null, null }, 4, 50, StringDriver.ConstructTestCollection);
-            StringDriver.InsertRangeList(stringArr1, stringArr2, 0, 1, StringDriver.ConstructTestCollection);
+            foreach (Func<string[], IEnumerable<string>> collectionGenerator in StringDriver.CollectionGenerators)
+            {
+                StringDriver.InsertRangeIEnumerable(new string[0], stringArr1, 0, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(stringArr1, stringArr2, 0, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(stringArr1, stringArr2, 1, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(stringArr1, stringArr2, 99, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(stringArr1, stringArr2, 100, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(stringArr1, stringArr2, 50, 50, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(new string[] { null, null, null, null }, stringArr2, 0, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(new string[] { null, null, null, null }, stringArr2, 4, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(new string[] { null, null, null, null }, new string[] { null, null, null, null }, 0, 1, collectionGenerator);
+                StringDriver.InsertRangeIEnumerable(new string[] { null, null, null, null }, new string[] { null, null, null, null }, 4, 50, collectionGenerator);
+            }
         }
 
         [Fact]
@@ -836,8 +833,8 @@ namespace System.Collections.Tests
             for (int i = 0; i < 100; i++)
                 stringArr1[i] = "SomeTestString" + i.ToString();
 
-            IntDriver.InsertRangeValidations(intArr1, IntDriver.ConstructTestCollection);
-            StringDriver.InsertRangeValidations(stringArr1, StringDriver.ConstructTestCollection);
+            IntDriver.InsertRangeValidations(intArr1, IntDriver.ConstructTestEnumerable);
+            StringDriver.InsertRangeValidations(stringArr1, StringDriver.ConstructTestEnumerable);
         }
 
         [Fact]
