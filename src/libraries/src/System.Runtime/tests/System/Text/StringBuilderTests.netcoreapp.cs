@@ -142,6 +142,67 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(10000)]
+        public static void Clear_AppendAndInsertBeforeClearManyTimes_CapacityStaysWithinRange(int times)
+        {
+            var builder = new StringBuilder();
+            var originalCapacity = builder.Capacity;
+            var s = new string(' ', 10);
+            int oldLength = 0;
+            for (int i = 0; i < times; i++)
+            {
+                builder.Append(s);
+                builder.Append(s);
+                builder.Append(s);
+                builder.Insert(0, s);
+                builder.Insert(0, s);
+                oldLength = builder.Length;
+
+                builder.Clear();
+            }
+            Assert.InRange(builder.Capacity, 1, oldLength * 1.2);
+        }
+
+        [Fact]
+        public static void Clear_InitialCapacityMuchLargerThanLength_CapacityReducedToInitialCapacity()
+        {
+            var builder = new StringBuilder(100);
+            var initialCapacity = builder.Capacity;
+            builder.Append(new string('a', 40));
+            builder.Insert(0, new string('a', 10));
+            builder.Insert(0, new string('a', 10));
+            builder.Insert(0, new string('a', 10));
+            var oldCapacity = builder.Capacity;
+            var oldLength = builder.Length;
+            builder.Clear();
+            Assert.NotEqual(oldCapacity, builder.Capacity);
+            Assert.Equal(initialCapacity, builder.Capacity);
+            Assert.NotInRange(builder.Capacity, 1, oldLength * 1.2);
+            Assert.InRange(builder.Capacity, 1, Math.Max(initialCapacity, oldLength * 1.2));
+        }
+
+        [Fact]
+        public static void Clear_StringBuilderHasTwoChunks_OneChunkIsEmpty_ClearReducesCapacity()
+        {
+            var sb = new StringBuilder(string.Empty);
+            int initialCapacity = sb.Capacity;
+            for (int i = 0; i < initialCapacity; i++)
+            {
+                sb.Append('a');
+            }
+            sb.Insert(0, 'a');
+            while (sb.Length > 1)
+            {
+                sb.Remove(1, 1);
+            }
+            int oldCapacity = sb.Capacity;
+            sb.Clear();
+            Assert.Equal(oldCapacity - 1, sb.Capacity);
+            Assert.Equal(initialCapacity, sb.Capacity);
+        }
+
+        [Theory]
         [InlineData("Hello", 0, new char[] { '\0', '\0', '\0', '\0', '\0' }, 5, new char[] { 'H', 'e', 'l', 'l', 'o' })]
         [InlineData("Hello", 0, new char[] { '\0', '\0', '\0', '\0' }, 4, new char[] { 'H', 'e', 'l', 'l' })]
         [InlineData("Hello", 1, new char[] { '\0', '\0', '\0', '\0', '\0' }, 4, new char[] { 'e', 'l', 'l', 'o', '\0' })]
