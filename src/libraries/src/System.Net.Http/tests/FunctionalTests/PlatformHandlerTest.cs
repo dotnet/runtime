@@ -42,6 +42,11 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
+    public sealed class PlatformHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
+    {
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_HttpClientEKUTest : HttpClientEKUTest
     {
         protected override bool UseSocketsHttpHandler => false;
