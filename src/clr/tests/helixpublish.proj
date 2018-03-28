@@ -47,6 +47,7 @@
     <BuildMoniker Condition="'$(IsOfficial)'=='true' And '$(ProductBuildId)'!=''">$(ProductBuildId)</BuildMoniker>
     <HelixArchLabel>$(Platform)</HelixArchLabel>
     <HelixConfigLabel>$(BuildType)</HelixConfigLabel>
+    <TestListFilename>$(Rid)-$(BuildType)-TestList.json</TestListFilename>
   </PropertyGroup>
 
   <!-- Set Helix environment vars based on target platform -->
