@@ -118,22 +118,35 @@ def osShortName = ['Windows 10': 'win10',
                 }
             }
 
+            // Add the unit test results
+            def archiveSettings = new ArchivalSettings()
+            archiveSettings.addFiles('msbuild.log')
+            archiveSettings.addFiles('machinedata.json')
+            archiveSettings.addFiles('bin/**/Perf-*Performance.Tests.csv')
+            archiveSettings.addFiles('bin/**/Perf-*Performance.Tests.etl')
+            archiveSettings.addFiles('bin/**/Perf-*Performance.Tests.md')
+            archiveSettings.addFiles('bin/**/Perf-*Performance.Tests.xml')
+            archiveSettings.setAlwaysArchive()
+
+            // Add archival for the built data.
+            Utilities.addArchival(newJob, archiveSettings)
+
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-            //Set timeout to non-default
             newJob.with {
+                logRotator {
+                    artifactDaysToKeep(30)
+                    daysToKeep(30)
+                    artifactNumToKeep(200)
+                    numToKeep(200)
+                }
                 wrappers {
                     timeout {
                         absolute(240)
                     }
                 }
             }
-            // Add the unit test results
-            Utilities.addXUnitDotNETResults(newJob, 'bin/**/Perf-*.xml')
-            def archiveContents = "msbuild.log"
 
-            // Add archival for the built data.
-            Utilities.addArchival(newJob, archiveContents)
             // Set up triggers
             if (isPR) {
                 TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
