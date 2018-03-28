@@ -98,10 +98,10 @@ namespace System.IO.Pipelines
                 return true;
             }
 
-            protected override bool TryGetArray(out ArraySegment<byte> arraySegment)
+            protected override bool TryGetArray(out ArraySegment<byte> segment)
             {
                 _pool.CheckDisposed();
-                return MemoryMarshal.TryGetArray(_ownedMemory.Memory, out arraySegment);
+                return MemoryMarshal.TryGetArray(_ownedMemory.Memory, out segment);
             }
 
             public override bool IsDisposed
