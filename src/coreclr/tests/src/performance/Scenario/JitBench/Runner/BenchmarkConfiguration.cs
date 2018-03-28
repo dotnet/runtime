@@ -17,7 +17,7 @@ namespace JitBench
 
         public BenchmarkConfiguration WithTiering()
         {
-            return WithModifier("Tiering", "COMPLUS_EXPERIMENTAL_TieredCompilation", "1");
+            return WithModifier("Tiering", "COMPLUS_TieredCompilation", "1");
         }
 
         public BenchmarkConfiguration WithMinOpts()
