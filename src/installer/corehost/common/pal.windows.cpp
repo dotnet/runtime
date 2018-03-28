@@ -367,7 +367,7 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 }
 
 // Return if path is valid and file exists, return true and adjust path as appropriate.
-bool pal::realpath(string_t* path)
+bool pal::realpath(string_t* path, bool skip_error_logging)
 {
     if (LongFile::IsNormalized(path->c_str()))
     {
@@ -382,7 +382,10 @@ bool pal::realpath(string_t* path)
     auto size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
     if (size == 0)
     {
-        trace::error(_X("Error resolving full path [%s]"), path->c_str());
+        if (!skip_error_logging)
+        {
+            trace::error(_X("Error resolving full path [%s]"), path->c_str());
+        }
         return false;
     }
 
@@ -400,7 +403,10 @@ bool pal::realpath(string_t* path)
 
         if (size == 0)
         {
-            trace::error(_X("Error resolving full path [%s]"), path->c_str());
+            if (!skip_error_logging)
+            {
+                trace::error(_X("Error resolving full path [%s]"), path->c_str());
+            }
             return false;
         }
 
@@ -436,7 +442,7 @@ bool pal::file_exists(const string_t& path)
     }
 
     string_t tmp(path);
-    return pal::realpath(&tmp);
+    return pal::realpath(&tmp, true);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
