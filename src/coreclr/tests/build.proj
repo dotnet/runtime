@@ -9,9 +9,9 @@
   </ItemGroup>
 
   <Import Project="dir.targets" />
-  
+
   <Import Project="dir.traversal.targets" />
-  
+
   <PropertyGroup>
     <TraversalBuildDependsOn>
       BatchRestorePackages;
@@ -34,15 +34,15 @@
     <RestoreProjects Include="$(MSBuildThisFileDirectory)src\TestWrappersConfig\TestWrappersConfig.csproj" />
   </ItemGroup>
 
-  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages">
+  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
     <Message Text="Building Targeting Pack" Importance="High" />
     <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(BuildOS)' == 'AnyOS'" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.depproj" />
   </Target>
 
-  <Target Name="BatchRestorePackages">
+  <Target Name="BatchRestorePackages" Condition="$(__SkipPackageRestore) != 'true'">
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
-    
+
     <!-- restore all csproj's with PackageReferences in one pass -->
     <MSBuild Projects="build.proj"
              Properties="RestoreProj=%(RestoreProjects.Identity)"
