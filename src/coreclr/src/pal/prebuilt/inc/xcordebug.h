@@ -1,13 +1,19 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
 
 
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.00.0603 */
+ /* File created by MIDL compiler version 8.01.0622 */
+/* at Mon Jan 18 19:14:07 2038
+ */
+/* Compiler settings for C:/coreclr/src/inc/xcordebug.idl:
+    Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
+    protocol : dce , ms_ext, c_ext, robust
+    error checks: allocation ref bounds_check enum stub_data 
+    VC __declspec() decoration level: 
+         __declspec(uuid()), __declspec(selectany), __declspec(novtable)
+         DECLSPEC_UUID(), MIDL_INTERFACE()
+*/
 /* @@MIDL_FILE_HEADING(  ) */
 
 #pragma warning( disable: 4049 )  /* more than 64k source lines */
@@ -23,7 +29,7 @@
 
 #ifndef __RPCNDR_H_VERSION__
 #error this stub requires an updated version of <rpcndr.h>
-#endif // __RPCNDR_H_VERSION__
+#endif /* __RPCNDR_H_VERSION__ */
 
 #ifndef COM_NO_WINDOWS_H
 #include "windows.h"
@@ -45,11 +51,20 @@ typedef interface ICorDebugProcess4 ICorDebugProcess4;
 
 #endif 	/* __ICorDebugProcess4_FWD_DEFINED__ */
 
+
+#ifndef __ICorDebugProcess9_FWD_DEFINED__
+#define __ICorDebugProcess9_FWD_DEFINED__
+typedef interface ICorDebugProcess9 ICorDebugProcess9;
+
+#endif 	/* __ICorDebugProcess9_FWD_DEFINED__ */
+
+
 #ifndef __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_FWD_DEFINED__
 #define __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_FWD_DEFINED__
 typedef interface ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly;
 
 #endif 	/* __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_FWD_DEFINED__ */
+
 
 /* header files for imported files */
 #include "cordebug.h"
@@ -159,6 +174,89 @@ EXTERN_C const IID IID_ICorDebugProcess4;
 
 
 #endif 	/* __ICorDebugProcess4_INTERFACE_DEFINED__ */
+
+
+#ifndef __ICorDebugProcess9_INTERFACE_DEFINED__
+#define __ICorDebugProcess9_INTERFACE_DEFINED__
+
+/* interface ICorDebugProcess9 */
+/* [unique][uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ICorDebugProcess9;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("CB54E392-C6DD-47BE-9C60-A99F3ECE3A98")
+    ICorDebugProcess9 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE CreateBreakpoint( 
+            /* [in] */ CORDB_ADDRESS address,
+            /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ICorDebugProcess9Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ICorDebugProcess9 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ICorDebugProcess9 * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ICorDebugProcess9 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
+            ICorDebugProcess9 * This,
+            /* [in] */ CORDB_ADDRESS address,
+            /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
+        
+        END_INTERFACE
+    } ICorDebugProcess9Vtbl;
+
+    interface ICorDebugProcess9
+    {
+        CONST_VTBL struct ICorDebugProcess9Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ICorDebugProcess9_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ICorDebugProcess9_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ICorDebugProcess9_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ICorDebugProcess9_CreateBreakpoint(This,address,ppBreakpoint)	\
+    ( (This)->lpVtbl -> CreateBreakpoint(This,address,ppBreakpoint) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ICorDebugProcess9_INTERFACE_DEFINED__ */
+
 
 #ifndef __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_INTERFACE_DEFINED__
 #define __ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly_INTERFACE_DEFINED__

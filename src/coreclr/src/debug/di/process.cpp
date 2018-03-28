@@ -938,6 +938,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_syncCompleteReceived(false),
     m_pShim(pShim),
     m_userThreads(11),
+    m_dataBreakpoints(4),
     m_oddSync(false), 
 #ifdef FEATURE_INTEROP_DEBUGGING
     m_unmanagedThreads(11),
@@ -1303,6 +1304,7 @@ void CordbProcess::NeuterChildren()
     // Sweep neuter lists.    
     m_ExitNeuterList.NeuterAndClear(this);
     m_ContinueNeuterList.NeuterAndClear(this);
+    m_dataBreakpoints.NeuterAndClear(GetProcessLock());
 
     m_userThreads.NeuterAndClear(GetProcessLock());
     
@@ -2175,6 +2177,10 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
+    else if (id == IID_ICorDebugProcess9)
+    {
+        *pInterface = static_cast<ICorDebugProcess9*>(this);
+    }
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
     else if (id == IID_ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly)
     {
@@ -2520,6 +2526,105 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     hr = GetProcess()->GetDAC()->SetSendExceptionsOutsideOfJMC(enableExceptionsOutsideOfJMC);
 
     PUBLIC_API_END(hr);
+    return hr;
+}
+
+COM_METHOD CordbProcess::CreateBreakpoint(CORDB_ADDRESS address, ICorDebugValueBreakpoint **ppBreakpoint)
+{
+    HRESULT hr = S_OK;
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(this);
+
+    RSLockHolder lockHolder(GetProcessLock());
+    HASHFIND hashFind;
+    CordbThread * pThread;
+
+    for (pThread = m_userThreads.FindFirst(&hashFind);
+        pThread != NULL;
+        pThread = m_userThreads.FindNext(&hashFind))
+    {
+        HRESULT hr = S_OK;
+        HANDLE hTemp;
+        EX_TRY
+        {
+            pThread->InternalGetHandle(&hTemp);    // throws on error
+        }
+        EX_CATCH_HRESULT(hr);
+
+        DWORD dwDesiredAccess = THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION | THREAD_SET_CONTEXT | THREAD_SET_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_TERMINATE;
+
+        HANDLE hThread;
+        hr = ::DuplicateHandle(GetCurrentProcess(), hTemp, GetCurrentProcess(), &hThread, dwDesiredAccess, FALSE, 0);
+
+        if (SUCCEEDED(hr))
+        {
+            DWORD dwSuspendCount = ::SuspendThread(hThread);
+
+            CONTEXT context;
+            context.ContextFlags = CONTEXT_CONTROL | CONTEXT_DEBUG_REGISTERS;
+
+            BOOL result = ::GetThreadContext(hThread, &context);
+
+            if (result == TRUE)
+            {
+#ifdef DBG_TARGET_AMD64
+                if (m_dataBreakpoints.GetCount() == 0)
+                {
+                    context.Dr0 = address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len0 = 2;
+                    pdr7->Rwe0 = 0x01;
+                    pdr7->L0 = 0x01;
+                }
+                else if (m_dataBreakpoints.GetCount() == 1)
+                {
+                    context.Dr1 = address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len1 = 2;
+                    pdr7->Rwe1 = 0x01;
+                    pdr7->L1 = 0x01;
+                }
+                else if (m_dataBreakpoints.GetCount() == 2)
+                {
+                    context.Dr2 = address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len2 = 2;
+                    pdr7->Rwe2 = 0x01;
+                    pdr7->L2 = 0x01;
+                }
+                else if (m_dataBreakpoints.GetCount() == 3)
+                {
+                    context.Dr3 = address;
+                    PDR7 pdr7 = (PDR7)&(context.Dr7);
+                    pdr7->Len3 = 2;
+                    pdr7->Rwe3 = 0x01;
+                    pdr7->L3 = 0x01;
+                }
+                else
+                {
+                    return E_FAIL;
+                }
+#endif
+            }
+            result = ::SetThreadContext(hThread, &context);
+            ::ResumeThread(hThread);
+        }
+    }
+
+    EX_TRY
+    {
+        RSInitHolder<CordbValueBreakpoint> pValueBreakpoint(new CordbValueBreakpoint(m_dataBreakpoints.GetCount(), nullptr, this));
+        
+        if (pValueBreakpoint)
+        {
+            hr = pValueBreakpoint->QueryInterface(IID_ICorDebugValueBreakpoint, (void**)ppBreakpoint);
+        }
+
+        pValueBreakpoint.TransferOwnershipToHash(&m_dataBreakpoints);
+    }
+    EX_CATCH_HRESULT(hr);
+
     return hr;
 }
 
@@ -4872,6 +4977,27 @@ void CordbProcess::RawDispatchEvent(
         }
         break;
 
+    case DB_IPCE_DATA_BREAKPOINT:
+        {
+            _ASSERTE(pThread != NULL);
+            _ASSERTE(pAppDomain != NULL);
+
+            HASHFIND hashFind;
+            CordbValueBreakpoint* pBreakpoint;
+
+            for (pBreakpoint = m_dataBreakpoints.FindFirst(&hashFind);
+                 pBreakpoint != NULL;
+                 pBreakpoint = m_dataBreakpoints.FindNext(&hashFind))
+            {
+                if (pBreakpoint->GetIndex() == pEvent->DataBreakpointData.index)
+                {
+                    PUBLIC_CALLBACK_IN_THIS_SCOPE2(this, pLockHolder, pEvent, "thread=0x%p, bp=0x%p", pThread, pBreakpoint);
+                    pCallback1->Breakpoint(pAppDomain, pThread, CordbBreakpointToInterface(pBreakpoint));
+                    break;
+                }
+            }
+        }
+        break;
     case DB_IPCE_USER_BREAKPOINT:
         {
             STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: user breakpoint.\n",
