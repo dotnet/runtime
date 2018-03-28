@@ -262,7 +262,7 @@ int run(const int argc, const pal::char_t* argv[])
         trace::println();
         trace::println(_X("Options:"));
         trace::println(_X("  -h|--help         Display help."));
-        trace::println(_X("  --info            Display .NET Core information.."));
+        trace::println(_X("  --info            Display .NET Core information."));
         trace::println(_X("  --list-sdks       Display the installed SDKs."));
         trace::println(_X("  --list-runtimes   Display the installed runtimes."));
         trace::println();
