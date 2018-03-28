@@ -4,7 +4,6 @@
   <PropertyGroup>
     <NugetRuntimeIdentifier>$(PackageRID)</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
-    <CoreClrPackageVersion Condition="'$(TargetGroup)' == 'netcoreapp2.0'">2.0.0</CoreClrPackageVersion>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'  Or '$(TargetGroup)' == 'uap10.0.16299aot'">

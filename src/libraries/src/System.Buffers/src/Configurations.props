@@ -4,10 +4,6 @@
     <PackageConfigurations>
       netstandard1.1;
       netstandard;
-      netcoreapp2.0-Windows_NT;
-      netcoreapp2.0-Unix;
-      uap10.0.16299-Windows_NT;
-      uap10.0.16299aot-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
