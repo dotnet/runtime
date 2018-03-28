@@ -226,10 +226,44 @@ namespace System
         /// <param name="destination">The span to copy items into.</param>
         public bool TryCopyTo(Memory<T> destination) => Span.TryCopyTo(destination.Span);
 
-        /// <summary>Creates a handle for the memory.</summary>
+        /// <summary>
+        /// Creates a handle for the memory.
+        /// The GC will not move the array until the returned <see cref="MemoryHandle"/>
+        /// is disposed, enabling taking and using the memory's address.
+        /// </summary>
+        public unsafe MemoryHandle Pin()
+        {
+            if (_index < 0)
+            {
+                return ((OwnedMemory<T>)_object).Pin((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
+            }
+            else if (typeof(T) == typeof(char) && _object is string s)
+            {
+                GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
+                void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
+                return new MemoryHandle(null, pointer, handle);
+            }
+            else if (_object is T[] array)
+            {
+                var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
+                void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
+                return new MemoryHandle(null, pointer, handle);
+            }
+            return default;
+        }
+
+        /// <summary>[Obsolete, use Pin()] Creates a handle for the memory.</summary>
         /// <param name="pin">
         /// If pin is true, the GC will not move the array until the returned <see cref="MemoryHandle"/>
-        /// is disposed, enabling the memory's address can be taken and used.
+        /// is disposed, enabling taking and using the memory's address.
         /// </param>
         public unsafe MemoryHandle Retain(bool pin = false)
         {
