@@ -84,79 +84,87 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            uint uValue = value; // Use uint for comparisons to avoid unnecessary 8->32 extensions
-            IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            IntPtr nLength = (IntPtr)length;
+            fixed (char* pChars = &searchSpace)
+            {
+                char* pCh = pChars;
+                char* pEndCh = pCh + length;
+
 #if !netstandard11
-            if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
-            {
-                const int elementsPerByte = sizeof(ushort) / sizeof(byte);
-                int unaligned = ((int)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1)) / elementsPerByte;
-                nLength = (IntPtr)((Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1));
-            }
-        SequentialScan:
-#endif
-            while ((byte*)nLength >= (byte*)4)
-            {
-                nLength -= 4;
-
-                if (uValue == Unsafe.Add(ref searchSpace, index))
-                    goto Found;
-                if (uValue == Unsafe.Add(ref searchSpace, index + 1))
-                    goto Found1;
-                if (uValue == Unsafe.Add(ref searchSpace, index + 2))
-                    goto Found2;
-                if (uValue == Unsafe.Add(ref searchSpace, index + 3))
-                    goto Found3;
-
-                index += 4;
-            }
-
-            while ((byte*)nLength > (byte*)0)
-            {
-                nLength -= 1;
-
-                if (uValue == Unsafe.Add(ref searchSpace, index))
-                    goto Found;
-
-                index += 1;
-            }
-#if !netstandard11
-            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
-            {
-                nLength = (IntPtr)((length - (int)(byte*)index) & ~(Vector<ushort>.Count - 1));
-
-                // Get comparison Vector
-                Vector<ushort> vComparison = new Vector<ushort>(value);
-
-                while ((byte*)nLength > (byte*)index)
+                if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
                 {
-                    var vMatches = Vector.Equals(vComparison, Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index))));
-                    if (Vector<ushort>.Zero.Equals(vMatches))
+                    const int elementsPerByte = sizeof(ushort) / sizeof(byte);
+                    int unaligned = ((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte;
+                    length = ((Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1));
+                }
+            SequentialScan:
+#endif
+                while (length >= 4)
+                {
+                    length -= 4;
+
+                    if (*pCh == value)
+                        goto Found;
+                    if (*(pCh + 1) == value)
+                        goto Found1;
+                    if (*(pCh + 2) == value)
+                        goto Found2;
+                    if (*(pCh + 3) == value)
+                        goto Found3;
+
+                    pCh += 4;
+                }
+
+                while (length > 0)
+                {
+                    length -= 1;
+
+                    if (*pCh == value)
+                        goto Found;
+
+                    pCh += 1;
+                }
+#if !netstandard11
+                // We get past SequentialScan only if IsHardwareAccelerated is true. However, we still have the redundant check to allow
+                // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
+                if (Vector.IsHardwareAccelerated && pCh < pEndCh)
+                {
+                    length = (int)((pEndCh - pCh) & ~(Vector<ushort>.Count - 1));
+
+                    // Get comparison Vector
+                    Vector<ushort> vComparison = new Vector<ushort>(value);
+
+                    while (length > 0)
                     {
-                        index += Vector<ushort>.Count;
-                        continue;
+                        // Using Unsafe.Read instead of ReadUnaligned since the search space is pinned and pCh is always vector aligned
+                        Debug.Assert(((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) == 0);
+                        Vector<ushort> vMatches = Vector.Equals(vComparison, Unsafe.Read<Vector<ushort>>(pCh));
+                        if (Vector<ushort>.Zero.Equals(vMatches))
+                        {
+                            pCh += Vector<ushort>.Count;
+                            length -= Vector<ushort>.Count;
+                            continue;
+                        }
+                        // Find offset of first match
+                        return (int)(pCh - pChars) + LocateFirstFoundChar(vMatches);
                     }
-                    // Find offset of first match
-                    return (int)(byte*)index + LocateFirstFoundChar(vMatches);
-                }
 
-                if ((int)(byte*)index < length)
-                {
-                    nLength = (IntPtr)(length - (int)(byte*)index);
-                    goto SequentialScan;
+                    if (pCh < pEndCh)
+                    {
+                        length = (int)(pEndCh - pCh);
+                        goto SequentialScan;
+                    }
                 }
-            }
 #endif
-            return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
-            return (int)(byte*)index;
-        Found1:
-            return (int)(byte*)(index + 1);
-        Found2:
-            return (int)(byte*)(index + 2);
-        Found3:
-            return (int)(byte*)(index + 3);
+                return -1;
+            Found3:
+                pCh++;
+            Found2:
+                pCh++;
+            Found1:
+                pCh++;
+            Found:
+                return (int)(pCh - pChars);
+            }
         }
 
 #if !netstandard11
