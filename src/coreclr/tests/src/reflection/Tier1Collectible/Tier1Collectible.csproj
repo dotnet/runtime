@@ -21,11 +21,11 @@
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPlus_EXPERIMENTAL_TieredCompilation=1
+set COMPlus_TieredCompilation=1
 ]]></CLRTestBatchPreCommands>
     <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-export COMPlus_EXPERIMENTAL_TieredCompilation=1
+export COMPlus_TieredCompilation=1
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

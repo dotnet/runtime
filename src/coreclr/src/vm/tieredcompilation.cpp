@@ -22,19 +22,11 @@
 //
 // # Current feature state
 //
-// This feature is incomplete and currently experimental. To enable it
-// you need to set COMPLUS_EXPERIMENTAL_TieredCompilation = 1. When the environment
-// variable is unset the runtime should work as normal, but when it is there are a few
-// known issues
-//   ETW - Native to IL maps aren't correctly emitted (probably tier1 wrong, tier0 right)
-//   Profiler - Still missing APIs that allow profilers to correctly get native to IL
-//              maps for all code bodies.
-//
-//  Diagnostic tools have minimal testing that we are aware of and its possible they
-//  made additional assumptions about runtime implementation that have been invalidated
-//  by this feature. VS debugging does appear to work at a basic level at least.
-//   
-//  I aim to keep this comment updated as things change.
+// This feature is a work in progress. It should be functionally correct for a 
+// good range of scenarios, but performance varies by scenario. To enable it
+// you need to set COMPLUS_TieredCompilation = 1. This feature has been
+// tested with all of our runtime and CoreFX functional tests, as well as
+// diagnostics tests and various partner testing in Visual Studio. 
 //
 //
 // # Important entrypoints in this code:

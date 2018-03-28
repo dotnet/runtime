@@ -163,7 +163,7 @@ namespace JitBench
 
         static IEnumerable<BenchmarkConfiguration> GetBenchmarkConfigurations(CommandLineOptions options)
         {
-            string tieredEnv = Environment.GetEnvironmentVariable("COMPLUS_EXPERIMENTAL_TieredCompilation");
+            string tieredEnv = Environment.GetEnvironmentVariable("COMPLUS_TieredCompilation");
             string minoptsEnv = Environment.GetEnvironmentVariable("COMPLUS_JitMinopts");
             string r2rEnv = Environment.GetEnvironmentVariable("COMPLUS_ReadyToRun");
             string ngenEnv = Environment.GetEnvironmentVariable("COMPLUS_ZapDisable");
