@@ -163,12 +163,12 @@ namespace System.Collections.Generic
 
             set
             {
-                _version++;
                 if ((uint)index >= (uint)_size)
                 {
                     ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 }
                 _items[index] = value;
+                _version++;
             }
         }
 
