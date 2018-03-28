@@ -652,11 +652,8 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 
 	/* Necessary to get valid priority range */
 
-#if defined(_AIX)
-	/*
-	 * this AIX hack is because PASE is finicky; AIX is just less
-	 * fatalistic about it
-	 */
+#if defined(__PASE__)
+	/* only priorities allowed by IBM i */
 	min = PRIORITY_MIN;
 	max = PRIORITY_MAX;
 #else
@@ -691,7 +688,8 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 		}
 	}
 
-#if defined(_AIX)
+#if defined(__PASE__)
+	/* only scheduling param allowed by IBM i */
 	res = pthread_setschedparam (tid, SCHED_OTHER, &param);
 #else
 	res = pthread_setschedparam (tid, policy, &param);

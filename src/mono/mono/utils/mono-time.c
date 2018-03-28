@@ -219,8 +219,8 @@ mono_100ns_ticks (void)
 		timebase.denom *= 100; /* we return 100ns ticks */
 	}
 	return now * timebase.numer / timebase.denom;
-#elif defined(CLOCK_MONOTONIC) && !defined(_AIX)
-	/* !_AIX is defined because i 7.1 doesn't have clock_getres */
+#elif defined(CLOCK_MONOTONIC) && !defined(__PASE__)
+	/* !__PASE__ is defined because i 7.1 doesn't have clock_getres */
 	struct timespec tspec;
 	static struct timespec tspec_freq = {0};
 	static int can_use_clock = 0;

@@ -106,7 +106,7 @@ mono_thread_small_id_alloc (void)
 		hazard_table_size = HAZARD_TABLE_MAX_SIZE;
 #else
 		gpointer page_addr;
-#if defined(_AIX)
+#if defined(__PASE__)
 		/*
 		 * HACK: allocating the table with none prot will cause i 7.1
 		 * to segfault when accessing or protecting it
