@@ -1033,11 +1033,15 @@ class MsbuildGenerator {
 		// ../class/lib/build/tmp/System.Xml.dll  [No longer possible, we should be removing this from order.xml]
 		//   /class/lib/basic/System.Core.dll
 		// <library_output>mcs.exe</library_output>
-		string build_output_dir;
-		if (LibraryOutput.Contains ("/"))
+		string build_output_dir, intermediate_output_dir;
+		if (LibraryOutput.Contains ("/")) {
 			build_output_dir = Path.GetDirectoryName (LibraryOutput);
-		else
+			intermediate_output_dir = build_output_dir.Substring (0, build_output_dir.IndexOf("/class/lib") + 7) + "obj";
+		}
+		else {
 			build_output_dir = "bin\\Debug\\" + library;
+			intermediate_output_dir =  "obj\\Debug\\" + library;
+		}
 
 		if (build_output_dir.Contains ("-linux") || build_output_dir.Contains ("-darwin") || build_output_dir.Contains ("-win32"))
 			build_output_dir = build_output_dir
@@ -1088,11 +1092,19 @@ class MsbuildGenerator {
 			: template;
 
 		var properties = new StringBuilder ();
-		properties.AppendLine ($"  <PropertyGroup {groupConditional} >");
-		properties.AppendLine ($"    <OutputPath>{build_output_dir}</OutputPath>");
-  		properties.AppendLine ($"    <IntermediateOutputPath>obj-{outputSuffix}</IntermediateOutputPath>");
-  		properties.AppendLine ($"    <DefineConstants>{defines.ToString ()}</DefineConstants>");
-		properties.AppendLine ("  </PropertyGroup>");
+		properties.Append ($"  <PropertyGroup {groupConditional}>{NewLine}");
+		properties.Append ($"    <OutputPath>{build_output_dir}</OutputPath>{NewLine}");
+  		properties.Append ($"    <IntermediateOutputPath>{intermediate_output_dir}/$(AssemblyName)-{outputSuffix}</IntermediateOutputPath>{NewLine}");
+  		properties.Append ($"    <DefineConstants>{defines.ToString ()}</DefineConstants>{NewLine}");
+		properties.Append ($"  </PropertyGroup>{NewLine}");
+
+		var prebuild_postbuild = new StringBuilder ();
+		if (!String.IsNullOrWhiteSpace(prebuild) || !String.IsNullOrWhiteSpace(prebuild)) {
+			prebuild_postbuild.Append ($"  <PropertyGroup>{NewLine}");
+			prebuild_postbuild.Append (prebuild);
+			prebuild_postbuild.Append (postbuild);
+			prebuild_postbuild.Append ($"  </PropertyGroup>{NewLine}");
+		}
 
 		Csproj.output = textToUpdate.
 			Replace ("@OUTPUTTYPE@", Target == Target.Library ? "Library" : "Exe").
@@ -1109,8 +1121,7 @@ class MsbuildGenerator {
 			Replace ("@ASSEMBLYNAME@", assemblyName).
 			Replace ("@DEBUG@", want_debugging_support ? "true" : "false").
 			Replace ("@DEBUGTYPE@", want_debugging_support ? "full" : "pdbonly").
-			Replace ("@PREBUILD@", prebuild).
-			Replace ("@POSTBUILD@", postbuild).
+			Replace ("@PREBUILD_POSTBUILD@", prebuild_postbuild.ToString ()).
 			Replace ("@STARTUPOBJECT@", main == null ? "" : $"<StartupObject>{main}</StartupObject>").
 			//Replace ("@ADDITIONALLIBPATHS@", String.Format ("<AdditionalLibPaths>{0}</AdditionalLibPaths>", string.Join (",", libs.ToArray ()))).
 			Replace ("@ADDITIONALLIBPATHS@", String.Empty).
@@ -1123,10 +1134,10 @@ class MsbuildGenerator {
 		var sourcesPlaceholder = "<!-- @ALL_SOURCES@ -->";
 
 		Csproj.output = Csproj.output.
-			Replace (propertiesPlaceholder, properties.ToString () + "\r\n" + propertiesPlaceholder).
-			Replace (refsPlaceholder, refs.ToString () + "\r\n" + refsPlaceholder).
-			Replace (resourcesPlaceholder, resources.ToString () + "\r\n" + resourcesPlaceholder).
-			Replace (sourcesPlaceholder, sources.ToString () + "\r\n" + sourcesPlaceholder);
+			Replace (propertiesPlaceholder, properties.ToString () + NewLine + propertiesPlaceholder).
+			Replace (refsPlaceholder, refs.ToString () + NewLine + refsPlaceholder).
+			Replace (resourcesPlaceholder, resources.ToString () + NewLine + resourcesPlaceholder).
+			Replace (sourcesPlaceholder, sources.ToString () + NewLine + sourcesPlaceholder);
 
 		Csproj.preBuildEvent = prebuild;
 		Csproj.postBuildEvent = postbuild;
@@ -1152,7 +1163,7 @@ class MsbuildGenerator {
 		target_unix = target.Replace ("@MONO@", "mono").Replace ("@CAT@", "cat");
 		target_windows = target.Replace ("@MONO@", "").Replace ("@CAT@", "type");
 
-		target_unix = target_unix.Replace ("\\jay\\jay.exe", "\\jay\\jay\\jay");
+		target_unix = target_unix.Replace ("\\jay\\jay.exe", "\\jay\\jay");
 
 		target_unix = target_unix.Replace ("@COPY@", "cp");
 		target_windows = target_windows.Replace ("@COPY@", "copy");
@@ -1160,10 +1171,13 @@ class MsbuildGenerator {
 		target_unix = target_unix.Replace ("\r", "");
 		const string condition_unix    = "Condition=\" '$(OS)' != 'Windows_NT' \"";
 		const string condition_windows = "Condition=\" '$(OS)' == 'Windows_NT' \"";
-		var result =
-			$"    <{eventKey} {condition_unix}>\n{target_unix}\n    </{eventKey}>{NewLine}" +
-			$"    <{eventKey} {condition_windows}>{NewLine}{target_windows}{NewLine}    </{eventKey}>";
-		return result;
+		
+		var result = new StringBuilder ();
+		if (!String.IsNullOrWhiteSpace (target_unix))
+			result.Append ($"    <{eventKey} {condition_unix}>{target_unix.Trim ()}</{eventKey}>{NewLine}");
+		if (!String.IsNullOrWhiteSpace (target_windows))
+			result.Append ($"    <{eventKey} {condition_windows}>{target_windows.Trim ()}</{eventKey}>{NewLine}");
+		return result.ToString ();
 	}
 	
 	void AddProjectReference (StringBuilder refs, VsCsproj result, MsbuildGenerator match, string r, string alias)
@@ -1492,7 +1506,8 @@ public class Driver {
 			}
 		}
 
-		doc.Save (csprojFilename);
+		using (var w = XmlWriter.Create (csprojFilename, new XmlWriterSettings { NewLineChars = SlnGenerator.NewLine, Indent = true }))
+			doc.Save (w);
 	}
 
 	static void ProcessCompileOrProjectReferenceItems (XmlNamespaceManager mgr, XmlNode x, Action<XmlNode, string> compileAction, Action<XmlNode, string> projRefAction)
