@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemDefinitionGroup>
-    <LibraryPackage>
-      <Version>4.4.0</Version>
-    </LibraryPackage>
     <PrereleaseLibraryPackage>
       <Version>4.5.0</Version>
     </PrereleaseLibraryPackage>
@@ -29,6 +26,7 @@
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Data.DataSetExtensions" />
+    <PrereleaseLibraryPackage Include="System.Data.SqlClient" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
@@ -42,6 +40,7 @@
     <PrereleaseLibraryPackage Include="System.Management" />
     <PrereleaseLibraryPackage Include="System.Runtime.Caching" />
     <PrereleaseLibraryPackage Include="System.Security.AccessControl" />
+    <PrereleaseLibraryPackage Include="System.Security.Cryptography.Cng" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Pkcs" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.ProtectedData" />
     <PrereleaseLibraryPackage Include="System.Security.Cryptography.Xml" />
@@ -68,10 +67,6 @@
     <LibraryPackage Include="System.ServiceModel.Security">
       <Version>$(ServiceModelVersion)</Version>
     </LibraryPackage>
-
-    <!-- Stable packages shipped already for netcoreapp2.0 -->
-    <LibraryPackage Include="System.Data.SqlClient" />
-    <LibraryPackage Include="System.Security.Cryptography.Cng" />
   </ItemGroup>
 
   <ItemGroup>
