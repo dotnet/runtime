@@ -688,26 +688,29 @@ get_custom_categories (void) {
 	return list;
 }
 
-static char*
+static SharedCounter*
 custom_category_counters (SharedCategory* cat)
 {
-	char *p = cat->name + strlen (cat->name) + 1;
-	p += strlen (p) + 1; /* skip category help */
-	return p;
+	char *help = cat->name + strlen (cat->name) + 1;
+	return (SharedCounter*)(help + strlen (help) + 1);
+}
+
+static SharedCounter*
+next_custom_category_counter (SharedCounter* counter)
+{
+	char *help = counter->name + strlen (counter->name) + 1;
+	return (SharedCounter*)(help + strlen (help) + 1);
 }
 
 static SharedCounter*
 find_custom_counter (SharedCategory* cat, MonoString *name)
 {
 	int i;
-	char *p = custom_category_counters (cat);
+	SharedCounter *counter = custom_category_counters (cat);
 	for (i = 0; i < cat->num_counters; ++i) {
-		SharedCounter *counter = (SharedCounter*)p;
 		if (mono_string_compare_ascii (name, counter->name) == 0)
 			return counter;
-		p += 2; /* skip counter type */
-		p += strlen (p) + 1; /* skip counter name */
-		p += strlen (p) + 1; /* skip counter help */
+		counter = next_custom_category_counter (counter);
 	}
 	return NULL;
 }
@@ -1650,7 +1653,7 @@ mono_perfcounter_counter_names (MonoString *category)
 	perfctr_lock ();
 	scat = find_custom_category (category);
 	if (scat) {
-		char *p = custom_category_counters (scat);
+		SharedCounter *counter = custom_category_counters (scat);
 		int i;
 		res = mono_array_new_checked (domain, mono_get_string_class (), scat->num_counters, error);
 		if (mono_error_set_pending_exception (error)) {
@@ -1659,12 +1662,10 @@ mono_perfcounter_counter_names (MonoString *category)
 		}
 
 		for (i = 0; i < scat->num_counters; ++i) {
-			MonoString *str = mono_string_new_checked (domain, p + 1, error);
+			MonoString *str = mono_string_new_checked (domain, counter->name, error);
 			goto_if_nok (error, leave);
 			mono_array_setref (res, i, str);
-			p += 2; /* skip counter type */
-			p += strlen (p) + 1; /* skip counter name */
-			p += strlen (p) + 1; /* skip counter help */
+			counter = next_custom_category_counter (counter);
 		}
 	} else
 		res = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
@@ -1859,8 +1860,6 @@ static gboolean
 mono_perfcounter_foreach_shared_item (SharedHeader *header, gpointer data)
 {
 	int i;
-	char *p, *name;
-	unsigned char type;
 	void *addr;
 	SharedCategory *cat;
 	SharedCounter *counter;
@@ -1869,26 +1868,15 @@ mono_perfcounter_foreach_shared_item (SharedHeader *header, gpointer data)
 
 	if (header->ftype == FTYPE_CATEGORY) {
 		cat = (SharedCategory*)header;
-
-		p = cat->name;
-		p += strlen (p) + 1; /* skip category name */
-		p += strlen (p) + 1; /* skip category help */
-
+		counter = custom_category_counters (cat);
 		for (i = 0; i < cat->num_counters; ++i) {
-			counter = (SharedCounter*) p;
-			type = (unsigned char)*p++;
-			/* seq_num = (int)* */ p++;
-			name = p;
-			p += strlen (p) + 1;
-			/* help = p; */
-			p += strlen (p) + 1;
-
-			inst = custom_get_instance (cat, counter, name);
+			inst = custom_get_instance (cat, counter, counter->name);
 			if (!inst)
 				return FALSE;
 			addr = custom_get_value_address (counter, inst);
-			if (!foreach_data->cb (cat->name, name, type, addr ? *(gint64*)addr : 0, foreach_data->data))
+			if (!foreach_data->cb (cat->name, counter->name, counter->type, addr ? *(gint64*)addr : 0, foreach_data->data))
 				return FALSE;
+			counter = next_custom_category_counter (counter);
 		}
 	}
 
