@@ -149,12 +149,12 @@ namespace System.IO
         [Fact]
         public void RemoveAccessRule_IdenticalRule_Succeeds()
         {
-            var accessRule = new FileSystemAccessRule(@"NT AUTHORITY\SYSTEM",
+            var accessRule = new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null).Translate(typeof(NTAccount)).Value,
                 FileSystemRights.Read | FileSystemRights.Write,
                 AccessControlType.Allow);
             var fileSecurity = new FileSecurity();
             fileSecurity.AddAccessRule(accessRule);
-            Assert.True(fileSecurity.RemoveAccessRule(new FileSystemAccessRule(@"NT AUTHORITY\SYSTEM",
+            Assert.True(fileSecurity.RemoveAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null).Translate(typeof(NTAccount)).Value,
                  FileSystemRights.Read | FileSystemRights.Write,
                 AccessControlType.Allow)));
             var rules = fileSecurity.GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
@@ -211,7 +211,7 @@ namespace System.IO
         [Fact]
         public void RemoveAccessRuleSpecific_Succeeds()
         {
-            var accessRule = new FileSystemAccessRule(@"NT AUTHORITY\SYSTEM", FileSystemRights.AppendData
+            var accessRule = new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null).Translate(typeof(NTAccount)).Value, FileSystemRights.AppendData
                 | FileSystemRights.Write, AccessControlType.Allow);
             var fileSecurity = new FileSecurity();
             fileSecurity.AddAccessRule(accessRule);
