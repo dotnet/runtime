@@ -46,15 +46,17 @@ Daily Builds
 |   **Ubuntu 18.04 (x64)**   |   [![][ubuntu-18.04-badge-master]][ubuntu-18.04-version-master]<br>[Runtime-Deps][ubuntu-18.04-runtime-deps-master] ([Checksum][ubuntu-18.04-runtime-deps-checksum-master])<br>[Host][ubuntu-18.04-host-master] ([Checksum][ubuntu-18.04-host-checksum-master])<br>[Host FX Resolver][ubuntu-18.04-hostfxr-master] ([Checksum][ubuntu-18.04-hostfxr-checksum-master])<br>[Shared Framework][ubuntu-18.04-sharedfx-master] ([Checksum][ubuntu-18.04-sharedfx-checksum-master])<br>  ||N/A |   N/A  |   N/A   |  
 |   **Debian 8.2 (x64)**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[Runtime-Deps][debian-8.2-runtime-deps-master] ([Checksum][debian-8.2-runtime-deps-checksum-master])<br>[Host][debian-8.2-host-master] ([Checksum][debian-8.2-host-checksum-master])<br>[Host FX Resolver][debian-8.2-hostfxr-master] ([Checksum][debian-8.2-hostfxr-checksum-master])<br>[Shared Framework][debian-8.2-sharedfx-master] ([Checksum][debian-8.2-sharedfx-checksum-master])<br>  |   [![][debian-8.2-badge-2.0.X]][debian-8.2-version-2.0.X]<br>[Host][debian-8.2-host-2.0.X] ([Checksum][debian-8.2-host-checksum-2.0.X])<br>[Host FX Resolver][debian-8.2-hostfxr-2.0.X] ([Checksum][debian-8.2-hostfxr-checksum-2.0.X])<br>[Shared Framework][debian-8.2-sharedfx-2.0.X] ([Checksum][debian-8.2-sharedfx-checksum-2.0.X])<br>  |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[Host][debian-8.2-host-1.1.X]<br>[Host FX Resolver][debian-8.2-hostfxr-1.1.X]<br>[Shared Framework][debian-8.2-sharedfx-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[Host][debian-8.2-host-preview]<br>[Host FX Resolver][debian-8.2-hostfxr-preview]<br>[Shared Framework][debian-8.2-sharedfx-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
 |   **Debian 9 (x64)**       |   [![][debian-9-badge-master]][debian-9-version-master]<br>[Runtime-Deps][debian-9-runtime-deps-master] ([Checksum][debian-9-runtime-deps-checksum-master])<br>[Host][debian-9-host-master] ([Checksum][debian-9-host-checksum-master])<br>[Host FX Resolver][debian-9-hostfxr-master] ([Checksum][debian-9-hostfxr-checksum-master])<br>[Shared Framework][debian-9-sharedfx-master] ([Checksum][debian-9-sharedfx-checksum-master])<br>  | N/A | N/A | N/A |
-|   **CentOS 7.1 (x64)**     |   N/A   |   N/A   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
+|   **CentOS 7 (x64)**     |   [![][centos-7-badge-master]][centos-7-version-master]<br>[Runtime-Deps][centos-7-runtime-deps-master] ([Checksum][centos-7-runtime-deps-checksum-master])<br>[Host][centos-7-host-master] ([Checksum][centos-7-host-checksum-master])<br>[Host FX Resolver][centos-7-hostfxr-master] ([Checksum][centos-7-hostfxr-checksum-master])<br>[Shared Framework][centos-7-sharedfx-master] ([Checksum][centos-7-sharedfx-checksum-master])<br>     |   N/A   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
 |   **RHEL 6**               |   [![][rhel-6-badge-master]][rhel-6-version-master]<br>[tar.gz][rhel-6-targz-master]   |   [![][rhel-6-badge-2.0.X]][rhel-6-version-2.0.X]<br>[tar.gz][rhel-6-targz-2.0.X]   |   N/A   |   N/A   |
 |   **RHEL 7.2 (x64)**       |   [![][rhel7-badge-master]][rhel7-version-master]<br>[Host][rhel7-host-master] ([Checksum][rhel7-host-checksum-master])<br>[Host FX Resolver][rhel7-hostfxr-master] ([Checksum][rhel7-hostfxr-checksum-master])<br>[Shared Framework][rhel7-sharedfx-master] ([Checksum][rhel7-sharedfx-checksum-master])<br>  |   [![][rhel7-badge-2.0.X]][rhel7-version-2.0.X]<br>[Host][rhel7-host-2.0.X] ([Checksum][rhel7-host-checksum-2.0.X])<br>[Host FX Resolver][rhel7-hostfxr-2.0.X] ([Checksum][rhel7-hostfxr-checksum-2.0.X])<br>[Shared Framework][rhel7-sharedfx-2.0.X] ([Checksum][rhel7-sharedfx-checksum-2.0.X])<br>   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |    [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23 (x64)**      |   N/A   |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24 (x64)**      |   N/A   |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
-|   **OpenSUSE 42.1 (x64)**  |  [![][OpenSUSE-42-badge-master]][OpenSUSE-42-version-master]<br>[Host][OpenSUSE-42-host-master] ([Checksum][OpenSUSE-42-host-checksum-master])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-master] ([Checksum][OpenSUSE-42-hostfxr-checksum-master])<br>[Shared Framework][OpenSUSE-42-sharedfx-master] ([Checksum][OpenSUSE-42-sharedfx-checksum-master])<br>   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
+|   **Fedora 27 (x64)**   |   [![][fedora-27-badge-master]][fedora-27-version-master]<br>[Runtime-Deps][fedora-27-runtime-deps-master] ([Checksum][fedora-27-runtime-deps-checksum-master])<br>[Host][fedora-27-host-master] ([Checksum][fedora-27-host-checksum-master])<br>[Host FX Resolver][fedora-27-hostfxr-master] ([Checksum][fedora-27-hostfxr-checksum-master])<br>[Shared Framework][fedora-27-sharedfx-master] ([Checksum][fedora-27-sharedfx-checksum-master])<br>  | N/A | N/A |   N/A  |   N/A   |  
+|   **SLES 12 (x64)**   |   [![][sles-12-badge-master]][sles-12-version-master]<br>[Runtime-Deps][sles-12-runtime-deps-master] ([Checksum][sles-12-runtime-deps-checksum-master])<br>[Host][sles-12-host-master] ([Checksum][sles-12-host-checksum-master])<br>[Host FX Resolver][sles-12-hostfxr-master] ([Checksum][sles-12-hostfxr-checksum-master])<br>[Shared Framework][sles-12-sharedfx-master] ([Checksum][sles-12-sharedfx-checksum-master])<br>  | N/A | N/A |   N/A  |   N/A   |  
+|   **OpenSUSE 42 (x64)**  |  [![][OpenSUSE-42-badge-master]][OpenSUSE-42-version-master]<br>[Runtime-Deps][OpenSUSE-42-runtime-deps-master] ([Checksum][OpenSUSE-42-runtime-deps-checksum-master])<br>[Host][OpenSUSE-42-host-master] ([Checksum][OpenSUSE-42-host-checksum-master])<br>[Host FX Resolver][OpenSUSE-42-hostfxr-master] ([Checksum][OpenSUSE-42-hostfxr-checksum-master])<br>[Shared Framework][OpenSUSE-42-sharedfx-master] ([Checksum][OpenSUSE-42-sharedfx-checksum-master])<br>   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
 |   **Alpine 3.6 (x64)** |   [![][alpine.3.6-x64-badge-master]][alpine.3.6-x64-version-master]<br>[tar.gz][alpine.3.6-x64-targz-master] ([Checksum][alpine.3.6-x64-targz-checksum-master])<br>[Symbols (tar.gz)][alpine.3.6-x64-symbols-targz-master]   |   N/A   |   N/A   |   N/A   |
 
-*Note: Our .deb packages are put together slightly differently than the other OS specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the .deb files (via dpkg or similar), then you'll need to install them in the order presented above.*
+*Note: Our Linux packages (.deb and .rpm) are put together slightly differently than the Windows and Mac specific installers. Instead of combining everything, we have separate component packages that depend on each other. If you're installing these directly from the installer files (via dpkg or similar), then you'll need to install them in the order presented above.*
 
 [build-badge-master]: https://devdiv.visualstudio.com/_apis/public/build/definitions/0bdbc590-a062-4c3f-b0f6-9383f67865ee/3160/badge
 [build-master]: https://devdiv.visualstudio.com/DevDiv/_build/index?definitionId=3160&_a=completed
@@ -368,6 +370,17 @@ Daily Builds
 [centos-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.centos.x64.version
 [centos-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-centos-x64.latest.tar.gz
 
+[centos-7-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_centos.7-x64_Release_version_badge.svg
+[centos-7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.centos.7.x64.version
+[centos-7-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm
+[centos-7-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-centos.7-x64.rpm
+[centos-7-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-centos.7-x64.rpm.sha512
+[centos-7-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm.sha512
+[centos-7-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.rpm
+[centos-7-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.rpm.sha512
+[centos-7-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm
+[centos-7-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm.sha512
+
 [rhel7-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_rhel.7-x64_Release_version_badge.svg
 [rhel7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.rhel.7.x64.version
 [rhel7-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-rhel.7-x64.rpm
@@ -394,7 +407,6 @@ Daily Builds
 [rhel-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.rhel.x64.version
 [rhel-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-rhel-x64.latest.tar.gz
 
-
 [fedora-23-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Fedora_23_x64_Release_version_badge.svg
 [fedora-23-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.fedora.23.x64.version
 [fedora-23-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-fedora.23-x64.latest.tar.gz
@@ -403,13 +415,36 @@ Daily Builds
 [fedora-23-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.fedora.23.x64.version
 [fedora-23-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-fedora.23-x64.latest.tar.gz
 
-
 [fedora-24-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Fedora_24_x64_Release_version_badge.svg
 [fedora-24-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.fedora.24.x64.version
 [fedora-24-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-fedora.24-x64.latest.tar.gz
 
+[fedora-27-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_fedora.27-x64_Release_version_badge.svg
+[fedora-27-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.fedora.27.x64.version
+[fedora-27-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm
+[fedora-27-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-fedora.27-x64.rpm
+[fedora-27-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-fedora.27-x64.rpm.sha512
+[fedora-27-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm.sha512
+[fedora-27-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.rpm
+[fedora-27-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.rpm.sha512
+[fedora-27-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm
+[fedora-27-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm.sha512
+
+[sles-12-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_sles.12-x64_Release_version_badge.svg
+[sles-12-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.sles.12.x64.version
+[sles-12-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm
+[sles-12-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-sles.12-x64.rpm
+[sles-12-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-sles.12-x64.rpm.sha512
+[sles-12-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.rpm.sha512
+[sles-12-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.rpm
+[sles-12-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.rpm.sha512
+[sles-12-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm
+[sles-12-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-latest-x64.rpm.sha512
+
 [OpenSUSE-42-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_opensuse.42-x64_Release_version_badge.svg
 [OpenSUSE-42-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.opensuse.42.x64.version
+[OpenSUSE-42-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-opensuse.42-x64.rpm
+[OpenSUSE-42-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-opensuse.42-x64.rpm.sha512
 [OpenSUSE-42-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-opensuse.42-x64.rpm
 [OpenSUSE-42-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-opensuse.42-x64.rpm.sha512
 [OpenSUSE-42-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-opensuse.42-x64.rpm
