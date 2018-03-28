@@ -61,11 +61,11 @@ namespace System.IO.Pipelines.Tests
                     throw new NotImplementedException();
                 }
 
-                protected override bool TryGetArray(out ArraySegment<byte> arraySegment)
+                protected override bool TryGetArray(out ArraySegment<byte> segment)
                 {
                     if (IsDisposed)
                         throw new ObjectDisposedException(nameof(DisposeTrackingBufferPool));
-                    arraySegment = new ArraySegment<byte>(_array);
+                    segment = new ArraySegment<byte>(_array);
                     return true;
                 }
 

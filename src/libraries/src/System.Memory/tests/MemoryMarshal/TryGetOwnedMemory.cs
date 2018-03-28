@@ -84,7 +84,7 @@ namespace System.MemoryTests
             protected override bool IsRetained => false;
             public override Span<T> Span => throw new NotImplementedException();
             public override MemoryHandle Pin(int byteOffset = 0) => throw new NotImplementedException();
-            protected override bool TryGetArray(out ArraySegment<T> arraySegment) => throw new NotImplementedException();
+            protected override bool TryGetArray(out ArraySegment<T> segment) => throw new NotImplementedException();
             protected override void Dispose(bool disposing) => throw new NotImplementedException();
             public override void Retain() => throw new NotImplementedException();
             public override bool Release() => throw new NotImplementedException();
