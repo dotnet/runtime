@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{07CAF142-B259-418E-86EF-C4BD8B50253E}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == netfx">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
@@ -16,6 +16,11 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.OracleClient" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
