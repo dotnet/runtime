@@ -458,7 +458,7 @@ def main(args):
     if optLevel == 'min_opts':
         myEnv['COMPlus_JITMinOpts'] = '1'
     elif optLevel == 'tiered':
-        myEnv['COMPLUS_EXPERIMENTAL_TieredCompilation'] = '1'
+        myEnv['COMPLUS_TieredCompilation'] = '1'
 
     if not 'XUNIT_PERFORMANCE_MAX_ITERATION' in myEnv:
         myEnv['XUNIT_PERFORMANCE_MAX_ITERATION'] = '21'
