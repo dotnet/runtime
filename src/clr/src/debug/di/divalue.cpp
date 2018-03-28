@@ -377,9 +377,18 @@ ULONG32 CordbValue::GetSizeForType(CordbType * pType, BoxedValue boxing)
 
 HRESULT CordbValue::CreateBreakpoint(ICorDebugValueBreakpoint **ppBreakpoint)
 {
+    //PUBLIC_API_ENTRY(this);
+    //FAIL_IF_NEUTERED(this);
+    //ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     VALIDATE_POINTER_TO_OBJECT(ppBreakpoint, ICorDebugValueBreakpoint **);
 
-    return E_NOTIMPL;
+    //ICorDebugHandleValue** ppHandleValue = nullptr;
+    //if (SUCCEEDED(InternalCreateHandle((CorDebugHandleType)3, ppHandleValue)))
+    //{
+        return GetProcess()->CreateBreakpoint((CORDB_ADDRESS)this->m_id, ppBreakpoint);
+    //}
+
+    //return E_NOTIMPL;
 } // CordbValue::CreateBreakpoint
 
 // gets the exact type of a value
@@ -427,7 +436,11 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
 
     *ppHandle = NULL;        
 
-    if (handleType == HANDLE_STRONG)
+    if (handleType == 3)
+    {
+        fStrong = 2;
+    }
+    else if (handleType == HANDLE_STRONG)
     {
         fStrong = TRUE;
     }
