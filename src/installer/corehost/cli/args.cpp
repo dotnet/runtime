@@ -90,7 +90,7 @@ bool parse_arguments(
             trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
             return false;
         }
-        args.app_root = init.host_info.dotnet_root;
+        args.app_root = get_directory(init.host_info.app_path);
         args.app_argv = &argv[1];
         args.app_argc = argc - 1;
     }
