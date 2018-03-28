@@ -31,6 +31,18 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void HashSet_Generic_Constructor_Capacity_ToNextPrimeNumber()
+        {
+            // Highest pre-computed number + 1.
+            const int Capacity = 7199370;
+            var set = new HashSet<T>(Capacity);
+
+            // Assert that the HashTable's capacity is set to the descendant prime number of the given one.
+            const int NextPrime = 7199371;
+            Assert.Equal(NextPrime, set.EnsureCapacity(0));
+        }
+
+        [Fact]
         public void HashSet_Generic_Constructor_int_Negative_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new HashSet<T>(-1));
