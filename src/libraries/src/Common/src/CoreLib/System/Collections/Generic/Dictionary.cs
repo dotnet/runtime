@@ -331,7 +331,7 @@ namespace System.Collections.Generic
             {
                 if (entries[i].hashCode >= 0)
                 {
-                    array[index + i] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
+                    array[index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
                 }
             }
         }
@@ -912,7 +912,7 @@ namespace System.Collections.Generic
                 {
                     if (entries[i].hashCode >= 0)
                     {
-                        dictEntryArray[index + i] = new DictionaryEntry(entries[i].key, entries[i].value);
+                        dictEntryArray[index++] = new DictionaryEntry(entries[i].key, entries[i].value);
                     }
                 }
             }
@@ -932,7 +932,7 @@ namespace System.Collections.Generic
                     {
                         if (entries[i].hashCode >= 0)
                         {
-                            objects[index + i] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
+                            objects[index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
                         }
                     }
                 }
@@ -1300,7 +1300,7 @@ namespace System.Collections.Generic
                 Entry[] entries = _dictionary._entries;
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].hashCode >= 0) array[index + i] = entries[i].key;
+                    if (entries[i].hashCode >= 0) array[index++] = entries[i].key;
                 }
             }
 
@@ -1360,7 +1360,7 @@ namespace System.Collections.Generic
                     {
                         for (int i = 0; i < count; i++)
                         {
-                            if (entries[i].hashCode >= 0) objects[index + i] = entries[i].key;
+                            if (entries[i].hashCode >= 0) objects[index++] = entries[i].key;
                         }
                     }
                     catch (ArrayTypeMismatchException)
@@ -1483,7 +1483,7 @@ namespace System.Collections.Generic
                 Entry[] entries = _dictionary._entries;
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].hashCode >= 0) array[index + i] = entries[i].value;
+                    if (entries[i].hashCode >= 0) array[index++] = entries[i].value;
                 }
             }
 
@@ -1543,7 +1543,7 @@ namespace System.Collections.Generic
                     {
                         for (int i = 0; i < count; i++)
                         {
-                            if (entries[i].hashCode >= 0) objects[index + i] = entries[i].value;
+                            if (entries[i].hashCode >= 0) objects[index++] = entries[i].value;
                         }
                     }
                     catch (ArrayTypeMismatchException)
