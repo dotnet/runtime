@@ -289,7 +289,7 @@ LOCAL_LABEL(LNullThis):
 
         PROLOG_PUSH "{r0-r4,r7,r8,lr}" // add r8 to make stack aligned by 8B
         PROLOG_STACK_SAVE_OFFSET r7, #20
-        vpush {d0-d7}
+        PROLOG_VPUSH {d0-d7}
 
         CHECK_STACK_ALIGNMENT
 
@@ -300,8 +300,8 @@ LOCAL_LABEL(LNullThis):
         mov     r12, r0
 
         // Epilog
-        vpop {d0-d7}
-        pop {r0-r4,r7,r8,lr}
+        EPILOG_VPOP {d0-d7}
+        EPILOG_POP "{r0-r4,r7,r8,lr}"
         bx r12
 
         NESTED_END TheUMEntryPrestub,_TEXT
@@ -542,7 +542,7 @@ ThePreStubPatchLabel:
         PROLOG_PUSH "{r0-r4,r7,r8,lr}"                  // Spill general argument registers, return address and
         PROLOG_STACK_SAVE_OFFSET r7, #20
                                                         // arbitrary register to keep stack aligned
-        vpush {d0-d7}                                   // Spill floating point argument registers
+        PROLOG_VPUSH {d0-d7}                                   // Spill floating point argument registers
 
         CHECK_STACK_ALIGNMENT
 
@@ -550,8 +550,8 @@ ThePreStubPatchLabel:
         bl      C_FUNC(NDirectImportWorker)
         mov     r12, r0
 
-        vpop {d0-d7}
-        pop {r0-r4,r7,r8,lr}
+        EPILOG_VPOP {d0-d7}
+        EPILOG_POP "{r0-r4,r7,r8,lr}"
 
         // If we got back from NDirectImportWorker, the MD has been successfully
         // linked. Proceed to execute the original DLL call.
@@ -972,7 +972,7 @@ LOCAL_LABEL(stackProbe_loop):
     // pop the stack and restore original register state
     vldm               sp, {d0-d7}
     free_stack SIZEOF__FloatArgumentRegisters + 4
-    pop {r0-r3, r7,r8, lr}
+    EPILOG_POP "{r0-r3, r7,r8, lr}"
 
     PATCH_LABEL VirtualMethodFixupPatchLabel
 
@@ -1060,13 +1060,13 @@ LOCAL_LABEL(stackProbe_loop):
 
     PROLOG_PUSH "{r0-r1, r7,r8, r11, lr}" // save integer return value
     PROLOG_STACK_SAVE_OFFSET r7, #8
-    vpush {d0-d3}                  // floating point return value
+    PROLOG_VPUSH {d0-d3}                  // floating point return value
 
     CHECK_STACK_ALIGNMENT
 
     bl          C_FUNC(JIT_RareDisableHelperWorker)
 
-    vpop {d0-d3}
+    EPILOG_VPOP {d0-d3}
     EPILOG_POP "{r0-r1, r7,r8, r11, pc}"
 
     NESTED_END JIT_RareDisableHelper, _TEXT
@@ -1193,8 +1193,8 @@ LOCAL_LABEL(ThrowIndexOutOfRangeException):
 //   r12 = array->GetArrayElementTypeHandle()
 //
     NESTED_ENTRY JIT_Stelem_Ref_NotExactMatch, _TEXT, NoHandler
-    push   {lr}
-    push   {r0-r2}
+    PROLOG_PUSH {lr}
+    PROLOG_PUSH {r0-r2}
 
     CHECK_STACK_ALIGNMENT 
 
@@ -1213,8 +1213,8 @@ LOCAL_LABEL(NeedFrame):
     bl      C_FUNC(ArrayStoreCheck) // ArrayStoreCheck(&val, &array)
  
 LOCAL_LABEL(DoWrite):
-    pop  {r0-r2}
-    pop  {lr}
+    EPILOG_POP {r0-r2}
+    EPILOG_POP {lr}
     b C_FUNC(JIT_Stelem_DoWrite)
 
     NESTED_END JIT_Stelem_Ref_NotExactMatch, _TEXT
@@ -1410,13 +1410,13 @@ g_rgWriteBarrierDescriptors:
     NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
 
     // Match what the lazy thunk has pushed. The actual method arguments will be spilled later.
-    push         {r1-r3}
+    PROLOG_PUSH  {r1-r3}
 
         // This is where execution really starts.
 DelayLoad_MethodCall:
     .global DelayLoad_MethodCall
 
-    push         {r0}
+    PROLOG_PUSH  {r0}
 
     PROLOG_WITH_TRANSITION_BLOCK 0x0, 1, DoNotPushArgRegs
 
@@ -1454,13 +1454,13 @@ DelayLoad_MethodCall:
         NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
 
         // Match what the lazy thunk has pushed. The actual method arguments will be spilled later.
-        push         {r1-r3}
+        PROLOG_PUSH  {r1-r3}
 
         // This is where execution really starts.
 DelayLoad_Helper\suffix:
         .global DelayLoad_Helper\suffix
 
-        push         {r0}
+        PROLOG_PUSH  {r0}
 
         PROLOG_WITH_TRANSITION_BLOCK 0x4, 0, DoNotPushArgRegs
 
