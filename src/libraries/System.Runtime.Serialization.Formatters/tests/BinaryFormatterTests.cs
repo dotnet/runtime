@@ -18,6 +18,31 @@ namespace System.Runtime.Serialization.Formatters.Tests
 {
     public partial class BinaryFormatterTests : RemoteExecutorTestBase
     {
+        private static unsafe bool Is64Bit => sizeof(void*) == 8;
+
+        // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        [ConditionalTheory(nameof(Is64Bit))]
+        [InlineData(2 * 6_584_983 - 2)] // previous limit
+        [InlineData(2 * 7_199_369 - 2)] // last pre-computed prime number
+        public void SerializeHugeObjectGraphs(int limit)
+        {
+            Point[] pointArr = Enumerable.Range(0, limit)
+                .Select(i => new Point(i, i + 1))
+                .ToArray();
+
+            // This should not throw a SerializationException as we removed the artifical limit in the ObjectIDGenerator.
+            // Instead of round tripping we only serialize to minimize test time.
+            // This will throw on .NET Framework as the artificial limit is still enabled.
+            var bf = new BinaryFormatter();
+            AssertExtensions.ThrowsIf<SerializationException>(PlatformDetection.IsFullFramework, () =>
+            {
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    bf.Serialize(ms, pointArr);
+                }
+            });
+        }
+
         [Theory]
         [MemberData(nameof(BasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)

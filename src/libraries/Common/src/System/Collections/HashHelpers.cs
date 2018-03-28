@@ -2,27 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-**
-** Purpose: Hash table implementation
-**
-** 
-===========================================================*/
 
-using System;
 using System.Diagnostics;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
-using System.Threading;
 
 namespace System.Collections
 {
     internal static class HashHelpers
     {
+        // This is the maximum prime smaller than Array.MaxArrayLength
+        public const int MaxPrimeArrayLength = 0x7FEFFFFD;
+
+        private const int HashPrime = 101;
+
         // Table of prime numbers to use as hash table sizes. 
         // A typical resize algorithm would pick the smallest prime number in this array
         // that is larger than twice the previous capacity. 
@@ -34,16 +25,29 @@ namespace System.Collections
         // hashtable operations such as add.  Having a prime guarantees that double 
         // hashing does not lead to infinite loops.  IE, your hash function will be 
         // h1(key) + i*h2(key), 0 <= i < size.  h2 and the size must be relatively prime.
+        // We prefer the low computation costs of higher prime numbers over the increased
+        // memory allocation of a fixed prime number i.e. when right sizing a HashSet.
         public static readonly int[] primes = {
             3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919,
             1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591,
             17519, 21023, 25229, 30293, 36353, 43627, 52361, 62851, 75431, 90523, 108631, 130363, 156437,
             187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263,
-            1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369, 8639249, 10367101,
-            12440537, 14928671, 17914409, 21497293, 25796759, 30956117, 37147349, 44576837, 53492207, 64190669,
-            77028803, 92434613, 110921543, 133105859, 159727031, 191672443, 230006941, 276008387, 331210079,
-            397452101, 476942527, 572331049, 686797261, 824156741, 988988137, 1186785773, 1424142949, 1708971541,
-            2050765853, MaxPrimeArrayLength };
+            1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369 };
+
+        public static bool IsPrime(int candidate)
+        {
+            if ((candidate & 1) != 0)
+            {
+                int limit = (int)Math.Sqrt(candidate);
+                for (int divisor = 3; divisor <= limit; divisor += 2)
+                {
+                    if ((candidate % divisor) == 0)
+                        return false;
+                }
+                return true;
+            }
+            return (candidate == 2);
+        }
 
         public static int GetPrime(int min)
         {
@@ -56,6 +60,13 @@ namespace System.Collections
                 if (prime >= min) return prime;
             }
 
+            //outside of our predefined table. 
+            //compute the hard way. 
+            for (int i = (min | 1); i < int.MaxValue; i += 2)
+            {
+                if (IsPrime(i) && ((i - 1) % HashPrime != 0))
+                    return i;
+            }
             return min;
         }
 
@@ -64,7 +75,7 @@ namespace System.Collections
         {
             int newSize = 2 * oldSize;
 
-            // Allow the hashtables to grow to maximum possible size (~2G elements) before encoutering capacity overflow.
+            // Allow the hashtables to grow to maximum possible size (~2G elements) before encountering capacity overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {
@@ -74,9 +85,5 @@ namespace System.Collections
 
             return GetPrime(newSize);
         }
-
-
-        // This is the maximum prime smaller than Array.MaxArrayLength
-        public const int MaxPrimeArrayLength = 0x7FEFFFFD;
     }
 }
