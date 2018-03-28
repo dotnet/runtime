@@ -509,7 +509,7 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
     return (recv->length() > 0);
 }
 
-bool pal::realpath(pal::string_t* path)
+bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 {
     auto resolved = ::realpath(path->c_str(), nullptr);
     if (resolved == nullptr)
@@ -518,9 +518,15 @@ bool pal::realpath(pal::string_t* path)
         {
             return false;
         }
-        perror("realpath()");
+
+        if (!skip_error_logging)
+        {
+            perror("realpath()");
+        }
+        
         return false;
     }
+
     path->assign(resolved);
     ::free(resolved);
     return true;
