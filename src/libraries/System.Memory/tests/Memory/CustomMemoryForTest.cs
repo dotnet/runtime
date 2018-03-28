@@ -72,11 +72,11 @@ namespace System.MemoryTests
             }
         }
 
-        protected override bool TryGetArray(out ArraySegment<T> arraySegment)
+        protected override bool TryGetArray(out ArraySegment<T> segment)
         {
             if (IsDisposed)
                 throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
-            arraySegment = new ArraySegment<T>(_array, _offset, _length);
+            segment = new ArraySegment<T>(_array, _offset, _length);
             return true;
         }
 

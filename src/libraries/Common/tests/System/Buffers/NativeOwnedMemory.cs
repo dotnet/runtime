@@ -106,9 +106,9 @@ namespace System.Buffers
             }
         }
 
-        protected override bool TryGetArray(out ArraySegment<byte> arraySegment)
+        protected override bool TryGetArray(out ArraySegment<byte> segment)
         {
-            arraySegment = default(ArraySegment<byte>);
+            segment = default(ArraySegment<byte>);
             return false;
         }
     }
