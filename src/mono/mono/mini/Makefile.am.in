@@ -21,14 +21,14 @@ endif
 boehm_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV) \
+	$(GLIB_LIBS) \
 	$(libgc_libs)
 
 sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV)
+	$(GLIB_LIBS)
 
 if FULL_AOT_TESTS
 # if the tests are going to run with framework assemblies compiled with
@@ -223,7 +223,6 @@ mono_boehm_LDADD = \
 	$(MONO_LIB)		\
 	$(GLIB_LIBS)		\
 	$(LLVMMONOF)		\
-	$(LIBICONV)		\
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 
@@ -234,7 +233,6 @@ mono_sgen_LDADD = \
 	$(MONO_SGEN_LIB)	\
 	$(GLIB_LIBS)		\
 	$(LLVMMONOF)		\
-	$(LIBICONV)		\
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 

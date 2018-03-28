@@ -97,7 +97,7 @@ endif
 # builds.
 
 libmono_profiler_aot_la_SOURCES = aot.c
-libmono_profiler_aot_la_LIBADD =  $(libmono_dep) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_aot_la_LIBADD =  $(libmono_dep) $(GLIB_LIBS)
 libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_aot_static_la_SOURCES = aot.c
 libmono_profiler_aot_static_la_LDFLAGS = -static
@@ -117,7 +117,7 @@ libmono_profiler_coverage_static_la_LDFLAGS = -static
 if HAVE_VTUNE
 libmono_profiler_vtune_la_SOURCES = vtune.c
 libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
-libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(libmono_dep) $(GLIB_LIBS) $(LIBICONV)
+libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(libmono_dep) $(GLIB_LIBS)
 libmono_profiler_vtune_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_vtune_static_la_SOURCES = vtune.c
 libmono_profiler_vtune_static_la_LDFLAGS = -static
@@ -126,7 +126,7 @@ libmono_profiler_vtune_static_la_LIBADD = $(VTUNE_LIBS)
 endif
 
 mprof_report_SOURCES = mprof-report.c
-mprof_report_LDADD = $(GLIB_LIBS) $(LIBICONV) $(zlib_dep)
+mprof_report_LDADD = $(GLIB_LIBS) $(zlib_dep)
 
 PLOG_TESTS_SRC = \
 	test-alloc.cs \

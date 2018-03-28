@@ -22,7 +22,7 @@ endif
 
 test_cflags = $(AM_CFLAGS) $(SGEN_DEFINES)
 test_ldadd = libtestlib.la \
-	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(LLVMMONOF)
+	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LLVMMONOF)
 if HOST_DARWIN
 test_ldflags = -framework CoreFoundation -framework Foundation
 endif
@@ -32,7 +32,7 @@ sgen_libs = \
 	$(monodir)/mono/metadata/libmonoruntimesgen.la	\
 	$(monodir)/mono/sgen/libmonosgen.la	\
 	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV)
+	$(GLIB_LIBS)
 
 mini_libs = \
 	$(monodir)/mono/mini/libmini.la
