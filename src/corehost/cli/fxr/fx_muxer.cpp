@@ -912,14 +912,13 @@ void fx_muxer_t::muxer_usage(bool is_sdk_present)
     }
     trace::println(_X("  --list-runtimes                     Display the installed runtimes"));
     trace::println(_X("  --list-sdks                         Display the installed SDKs"));
-    trace::println();
 
     if (!is_sdk_present)
     {
+        trace::println();
         trace::println(_X("Common Options:"));
         trace::println(_X("  -h|--help                           Displays this help."));
         trace::println(_X("  --info                              Display .NET Core information."));
-        trace::println();
     }
 }
 
