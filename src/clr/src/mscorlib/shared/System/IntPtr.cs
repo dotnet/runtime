@@ -81,9 +81,9 @@ namespace System
             return false;
         }
 
-        unsafe bool IEquatable<IntPtr>.Equals(IntPtr value)
+        unsafe bool IEquatable<IntPtr>.Equals(IntPtr other)
         {
-            return _value == value._value;
+            return _value == other._value;
         }
 
         public unsafe override int GetHashCode()
