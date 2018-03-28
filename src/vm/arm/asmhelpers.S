@@ -1423,7 +1423,7 @@ DelayLoad_MethodCall:
     // Load the helper arguments
     ldr         r5, [sp,#(__PWTB_TransitionBlock+10*4)] // pModule
     ldr         r6, [sp,#(__PWTB_TransitionBlock+11*4)] // sectionIndex
-    ldr         r7, [sp,#(__PWTB_TransitionBlock+12*4)] // indirection
+    ldr         r8, [sp,#(__PWTB_TransitionBlock+12*4)] // indirection
 
     // Spill the actual method arguments
     str         r1, [sp,#(__PWTB_TransitionBlock+10*4)]
@@ -1432,7 +1432,7 @@ DelayLoad_MethodCall:
 
     add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
 
-    mov         r1, r7          // pIndirection
+    mov         r1, r8          // pIndirection
     mov         r2, r6          // sectionIndex
     mov         r3, r5          // pModule
 
@@ -1467,7 +1467,7 @@ DelayLoad_Helper\suffix:
         // Load the helper arguments
         ldr         r5, [sp,#(__PWTB_TransitionBlock+10*4)] // pModule
         ldr         r6, [sp,#(__PWTB_TransitionBlock+11*4)] // sectionIndex
-        ldr         r7, [sp,#(__PWTB_TransitionBlock+12*4)] // indirection
+        ldr         r8, [sp,#(__PWTB_TransitionBlock+12*4)] // indirection
 
         // Spill the actual method arguments
         str         r1, [sp,#(__PWTB_TransitionBlock+10*4)]
@@ -1476,7 +1476,7 @@ DelayLoad_Helper\suffix:
 
         add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
 
-        mov         r1, r7          // pIndirection
+        mov         r1, r8          // pIndirection
         mov         r2, r6          // sectionIndex
         mov         r3, r5          // pModule
 
