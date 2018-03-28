@@ -979,6 +979,40 @@ namespace System.Text.Tests
             Assert.Same(string.Empty, builder.ToString());
         }
 
+        [Fact]
+        public static void Clear_Empty_CapacityNotZero()
+        {
+            var builder = new StringBuilder();
+            builder.Clear();
+            Assert.NotEqual(0, builder.Capacity);
+        }
+
+        [Fact]
+        public static void Clear_Empty_CapacityStaysUnchanged()
+        {
+            var sb = new StringBuilder(14);
+            sb.Clear();
+            Assert.Equal(14, sb.Capacity);
+        }
+
+        [Fact]
+        public static void Clear_Full_CapacityStaysUnchanged()
+        {
+            var sb = new StringBuilder(14);
+            sb.Append("Hello World!!!");
+            sb.Clear();
+            Assert.Equal(14, sb.Capacity);
+        }
+
+        [Fact]
+        public static void Clear_AtMaxCapacity_CapacityStaysUnchanged()
+        {
+            var builder = new StringBuilder(14, 14);
+            builder.Append("Hello World!!!");
+            builder.Clear();
+            Assert.Equal(14, builder.Capacity);
+        }
+
         [Theory]
         [InlineData("Hello", 0, new char[] { '\0', '\0', '\0', '\0', '\0' }, 0, 5, new char[] { 'H', 'e', 'l', 'l', 'o' })]
         [InlineData("Hello", 0, new char[] { '\0', '\0', '\0', '\0', '\0', '\0' }, 1, 5, new char[] { '\0', 'H', 'e', 'l', 'l', 'o' })]
