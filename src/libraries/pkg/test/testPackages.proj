@@ -79,6 +79,12 @@
       <DestinationFolder>$(TestDir)</DestinationFolder>
     </TestSupportFiles>
   </ItemGroup>
+  
+  <ItemGroup>
+    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
+  </ItemGroup>
 
   <Target Name="CreateTestDir"
           Inputs="@(TestSupportFiles)"
@@ -159,13 +165,13 @@
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects">
     <Message Importance="High" Text="*** Restoring ***" />
-    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" StandardOutputImportance="High" />
+    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
   </Target>
   
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects">
     <Message Importance="High" Text="*** Testing ***" />
-    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" StandardOutputImportance="High" />
+    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" EnvironmentVariables="@(CliEnvironment)"  ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildProjects" />
