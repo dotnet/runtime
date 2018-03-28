@@ -298,9 +298,10 @@ namespace System.IO.Pipelines
             {
                 CommitUnsynchronized();
 
-                _readerAwaitable.Complete(out completionData);
-
+                // AttachToken before completing reader awaiter in case cancellationToken is already completed
                 cancellationTokenRegistration = _writerAwaitable.AttachToken(cancellationToken, s_signalWriterAwaitable, this);
+
+                _readerAwaitable.Complete(out completionData);
 
                 // If the writer is completed (which it will be most of the time) the return a completed ValueTask
                 if (_writerAwaitable.IsCompleted)

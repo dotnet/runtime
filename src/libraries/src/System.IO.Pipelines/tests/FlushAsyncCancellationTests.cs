@@ -307,6 +307,24 @@ namespace System.IO.Pipelines.Tests
             Assert.False(awaiterIsCompleted);
             Assert.True(onCompletedCalled);
         }
+
+        [Fact]
+        public async Task FlushAsyncThrowsIfPassedCanceledCancellationTokenAndPipeIsAbleToComplete()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            // AsTask is important here, it validates that we are calling completion callback
+            // and not only setting IsCompleted flag
+            var task = Pipe.Reader.ReadAsync().AsTask();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await Pipe.Writer.FlushAsync(cancellationTokenSource.Token));
+
+            Pipe.Writer.Complete();
+
+            Assert.True(task.IsCompleted);
+            Assert.True(task.Result.IsCompleted);
+        }
     }
 
     public static class TestWriterExtensions
