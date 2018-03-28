@@ -35,10 +35,7 @@ namespace System
         // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
-        public int IndexOf(char value)
-        {
-            return IndexOf(value, 0, this.Length);
-        }
+        public int IndexOf(char value) => SpanHelpers.IndexOf(ref _firstChar, value, Length);
 
         public int IndexOf(char value, int startIndex)
         {
@@ -74,121 +71,18 @@ namespace System
 
         public unsafe int IndexOf(char value, int startIndex, int count)
         {
+            // These bounds checks are redundant since AsSpan does them already, but are required
+            // so that the correct parameter name is thrown as part of the exception.
             if ((uint)startIndex > (uint)Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_Index);
 
             if ((uint)count > (uint)(Length - startIndex))
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = &_firstChar)
-            {
-                char* pCh = pChars + startIndex;
-                char* pEndCh = pCh + count;
+            int result = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, startIndex), value, count);
 
-                if (Vector.IsHardwareAccelerated && count >= Vector<ushort>.Count * 2)
-                {
-                    unchecked
-                    {
-                        const int elementsPerByte = sizeof(ushort) / sizeof(byte);
-                        int unaligned = ((int)pCh & (Vector<byte>.Count - 1)) / elementsPerByte;
-                        count = ((Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1));
-                    }
-                }
-            SequentialScan:
-                while (count >= 4)
-                {
-                    if (*pCh == value) goto ReturnIndex;
-                    if (*(pCh + 1) == value) goto ReturnIndex1;
-                    if (*(pCh + 2) == value) goto ReturnIndex2;
-                    if (*(pCh + 3) == value) goto ReturnIndex3;
-
-                    count -= 4;
-                    pCh += 4;
-                }
-
-                while (count > 0)
-                {
-                    if (*pCh == value)
-                        goto ReturnIndex;
-
-                    count--;
-                    pCh++;
-                }
-
-                if (pCh < pEndCh)
-                {
-                    count = (int)((pEndCh - pCh) & ~(Vector<ushort>.Count - 1));
-                    // Get comparison Vector
-                    Vector<ushort> vComparison = new Vector<ushort>(value);
-                    while (count > 0)
-                    {
-                        var vMatches = Vector.Equals(vComparison, Unsafe.ReadUnaligned<Vector<ushort>>(pCh));
-                        if (Vector<ushort>.Zero.Equals(vMatches))
-                        {
-                            pCh += Vector<ushort>.Count;
-                            count -= Vector<ushort>.Count;
-                            continue;
-                        }
-                        // Find offset of first match
-                        return (int)(pCh - pChars) + LocateFirstFoundChar(vMatches);
-                    }
-
-                    if (pCh < pEndCh)
-                    {
-                        unchecked
-                        {
-                            count = (int)(pEndCh - pCh);
-                        }
-                        goto SequentialScan;
-                    }
-                }
-
-                return -1;
-
-            ReturnIndex3: pCh++;
-            ReturnIndex2: pCh++;
-            ReturnIndex1: pCh++;
-            ReturnIndex:
-                return (int)(pCh - pChars);
-            }
+            return result == -1 ? result : result + startIndex;
         }
-
-        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(Vector<ushort> match)
-        {
-            var vector64 = Vector.AsVectorUInt64(match);
-            ulong candidate = 0;
-            int i = 0;
-            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
-            for (; i < Vector<ulong>.Count; i++)
-            {
-                candidate = vector64[i];
-                if (candidate != 0)
-                {
-                    break;
-                }
-            }
-
-            // Single LEA instruction with jitted const (using function result)
-            return i * 4 + LocateFirstFoundChar(candidate);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int LocateFirstFoundChar(ulong match)
-        {
-            unchecked
-            {
-                // Flag least significant power of two bit
-                var powerOfTwoFlag = match ^ (match - 1);
-                // Shift all powers of two into the high byte and extract
-                return (int)((powerOfTwoFlag * XorPowerOfTwoToHighChar) >> 49);
-            }
-        }
-
-        private const ulong XorPowerOfTwoToHighChar = (0x03ul |
-                                                       0x02ul << 16 |
-                                                       0x01ul << 32) + 1;
 
         // Returns the index of the first occurrence of any specified character in the current instance.
         // The search starts at startIndex and runs to startIndex + count - 1.
