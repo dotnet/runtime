@@ -5988,6 +5988,49 @@ bool Debugger::ThreadsAtUnsafePlaces(void)
     return (m_threadsAtUnsafePlaces != 0);
 }
 
+void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
+    DebuggerDataBreakpoint *breakpoint)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+    GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (CORDBUnrecoverableError(this))
+        return;
+
+#ifdef _DEBUG
+    static BOOL shouldBreak = -1;
+    if (shouldBreak == -1)
+        shouldBreak = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgBreakOnSendBreakpoint);
+
+    if (shouldBreak > 0) {
+        _ASSERTE(!"DbgBreakOnSendBreakpoint");
+    }
+#endif
+
+    LOG((LF_CORDB, LL_INFO10000, "D::SDB: breakpoint BP:0x%x\n", breakpoint));
+
+    _ASSERTE((g_pEEInterface->GetThread() &&
+        !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
+        g_fInControlC);
+
+    _ASSERTE(ThreadHoldsLock());
+
+    // Send a breakpoint event to the Right Side
+    DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
+    InitIPCEvent(ipce,
+        DB_IPCE_DATA_BREAKPOINT,
+        thread,
+        thread->GetDomain());
+    ipce->DataBreakpointData.index = breakpoint->GetIndex();
+    _ASSERTE(breakpoint->m_pAppDomain == ipce->vmAppDomain.GetRawPtr());
+
+    m_pRCThread->SendIPCEvent();
+}
+
 //
 // SendBreakpoint is called by Runtime threads to send that they've
 // hit a breakpoint to the Right Side.
@@ -11303,7 +11346,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
              Object * pObject = (Object*)pEvent->CreateHandle.objectToken;
              OBJECTREF objref = ObjectToOBJECTREF(pObject);
              AppDomain * pAppDomain = pEvent->vmAppDomain.GetRawPtr();
-             BOOL fStrong = pEvent->CreateHandle.fStrong;
+             int fStrong = (int) pEvent->CreateHandle.fStrong;
              OBJECTHANDLE objectHandle;
 
              // This is a synchronous event (reply required)
@@ -11323,6 +11366,10 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                      {
                          // create strong handle
                          objectHandle = pAppDomain->CreateStrongHandle(objref);
+                     }
+                     else if (fStrong == 2)
+                     {
+                         objectHandle = pAppDomain->CreatePinningHandle(objref);
                      }
                      else
                      {

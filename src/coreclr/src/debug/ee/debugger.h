@@ -418,7 +418,7 @@ HRESULT ValidateObject(Object *objPtr);
 
 //-----------------------------------------------------------------------------
 // Execution control needs several ways to get at the context of a thread
-// stopped in mangaged code (stepping, setip, func-eval).
+// stopped in managed code (stepping, setip, func-eval).
 // We want to abstract away a few things:
 // - active: this thread is stopped at a patch
 // - inactive: this threads was managed suspended somewhere in jitted code
@@ -2155,6 +2155,8 @@ public:
 
     void SendBreakpoint(Thread *thread, T_CONTEXT *context,
                         DebuggerBreakpoint *breakpoint);
+
+    void SendDataBreakpoint(Thread* thread, T_CONTEXT *context, DebuggerDataBreakpoint *breakpoint);
 
     void SendStep(Thread *thread, T_CONTEXT *context,
                   DebuggerStepper *stepper,
