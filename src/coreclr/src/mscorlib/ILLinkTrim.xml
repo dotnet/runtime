@@ -5,15 +5,19 @@
            instantiations to save in the ngen image. -->
       <method name="CommonlyUsedWinRTRedirectedInterfaceStubs" />
     </type>
+    <!-- Properties and methods used by a debugger. -->
     <type fullname="System.Threading.Tasks.Task">
-      <!-- Properties used by a debugger. -->
       <property name="ParentForDebugger" />
       <property name="StateFlagsForDebugger" />
     </type>
-    <type fullname="System.Diagnostics.Tracing.EventListener">
-      <!-- Method gets used when the code is mirrored into CoreFX
-           and is packaged into Microsoft.Diagnostics.Tracing.EventSource.Redist. -->
-      <method name="DisposeOnShutdown" />
+    <type fullname="System.Threading.ThreadPool">
+      <method name="GetQueuedWorkItemsForDebugger" />
+      <method name="GetGloballyQueuedWorkItemsForDebugger" />
+      <method name="GetLocallyQueuedWorkItemsForDebugger" />
+    </type> 
+    <type fullname="System.Threading.Tasks.TaskScheduler">
+      <method name="GetScheduledTasksForDebugger" />
+      <method name="GetTaskSchedulersForDebugger" /> 
     </type>
     <type fullname="System.Threading.Tasks.Task">
       <!-- Methods is used by VS Tasks Window. -->
