@@ -60,6 +60,9 @@
     <TestSupportFiles Include="$(SourceDir)shims\netfxreference.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
+    <TestSupportFiles Include="$(ProjectDir)dependencies.props">
+      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
+    </TestSupportFiles>
     <TestSupportFiles Include="$(ToolsDir)Packaging.common.targets">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
