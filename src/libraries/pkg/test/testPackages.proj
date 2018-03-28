@@ -4,7 +4,10 @@
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
-    <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" />
+    <ExcludePackages Include="CoreFx.Private.TestUtilities" />
+    <ExcludePackages Include="$(ExcludePackages)" />
+
+    <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
     <PackageReports Condition="'@(TestPackages)' != ''" Include="@(TestPackages->'$(PackageReportDir)%(Identity).json')" />
     
     <!-- support override via commandline -->
