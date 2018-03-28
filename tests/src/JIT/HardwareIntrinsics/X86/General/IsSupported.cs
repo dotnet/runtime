@@ -36,15 +36,10 @@ namespace IntelHardwareIntrinsicTest
                 Convert.ToBoolean(typeof(Ssse3).GetMethod(issupported).Invoke(null, null)) != Ssse3.IsSupported ||
                 Convert.ToBoolean(typeof(Sse41).GetMethod(issupported).Invoke(null, null)) != Sse41.IsSupported ||
                 Convert.ToBoolean(typeof(Sse42).GetMethod(issupported).Invoke(null, null)) != Sse42.IsSupported ||
-                Convert.ToBoolean(typeof(Aes).GetMethod(issupported).Invoke(null, null)) != Aes.IsSupported ||
                 Convert.ToBoolean(typeof(Avx).GetMethod(issupported).Invoke(null, null)) != Avx.IsSupported ||
                 Convert.ToBoolean(typeof(Avx2).GetMethod(issupported).Invoke(null, null)) != Avx2.IsSupported ||
-                Convert.ToBoolean(typeof(Fma).GetMethod(issupported).Invoke(null, null)) != Fma.IsSupported ||
                 Convert.ToBoolean(typeof(Lzcnt).GetMethod(issupported).Invoke(null, null)) != Lzcnt.IsSupported ||
-                Convert.ToBoolean(typeof(Bmi1).GetMethod(issupported).Invoke(null, null)) != Bmi1.IsSupported ||
-                Convert.ToBoolean(typeof(Bmi2).GetMethod(issupported).Invoke(null, null)) != Bmi2.IsSupported ||
-                Convert.ToBoolean(typeof(Popcnt).GetMethod(issupported).Invoke(null, null)) != Popcnt.IsSupported ||
-                Convert.ToBoolean(typeof(Pclmulqdq).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.IsSupported
+                Convert.ToBoolean(typeof(Popcnt).GetMethod(issupported).Invoke(null, null)) != Popcnt.IsSupported
             )
             {
                 result = false;
