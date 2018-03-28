@@ -1322,11 +1322,6 @@ namespace System.Xml
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
-        public override void Close()
-        {
-            base.Dispose();
-        }
-
         private class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo
         {
             private XmlReader _reader;
