@@ -2,8 +2,11 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
+    <HarvestIncludePath Include="ref\netstandard1.1;ref\netstandard2.0">
+      <SupportedFramework>netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
+    </HarvestIncludePath>
     <ProjectReference Include="..\ref\System.Buffers.csproj">
-      <SupportedFramework>net45;netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net45</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Buffers.csproj" />
 
@@ -11,14 +14,8 @@
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
 
-    <!-- Since UAP and .NETCoreApp are package based we still want to enable
-         OOBing libraries that happen to overlap with their framework package.
-         This avoids us having to lock the API in our NuGet packages just 
-         to match what shipped inbox: since we can provide a new library 
-         we can update it to add API without raising the netstandard version. -->
-    <ValidatePackageSuppression Include="TreatAsOutOfBox">
-      <Value>.NETCoreApp;UAP</Value>
-    </ValidatePackageSuppression>
+    <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="uap10.0.16299" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

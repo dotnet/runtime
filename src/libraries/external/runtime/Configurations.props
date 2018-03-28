@@ -4,8 +4,6 @@
     <BuildConfigurations>
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
-      netcoreapp2.0-Windows_NT;
-      netcoreapp2.0-Unix;
       uap10.0.16299aot;
       uap;
       uapaot;
