@@ -98,13 +98,7 @@ namespace System.Tests
         private static IEnumerable<object[]> TestData_AttributeExists()
         {
             yield return new object[] { typeof(TestTypeWithAttributes), typeof(SerializableAttribute), new SerializableAttribute() };
-
-            // Ignore exceptions if COM is not supported
-            // This can be simplified if https://github.com/dotnet/corefx/issues/26851 is fixed
-            Type testComInterface = null;
-            try { testComInterface = GetComInterfaceType(); } catch { }
-            if (testComInterface != null)
-                yield return new object[] { testComInterface, typeof(ComImportAttribute), new ComImportAttribute() };
+            yield return new object[] { typeof(ITestComInterface), typeof(ComImportAttribute), new ComImportAttribute() };
 
             FieldInfo testField = typeof(TestTypeWithAttributes).GetField("_testField");
             yield return new object[] { testField, typeof(FieldOffsetAttribute), new FieldOffsetAttribute(120) };
@@ -151,11 +145,6 @@ namespace System.Tests
             yield return new object[] { testMethod, typeof(DllImportAttribute), null };
 
             yield return new object[] { testMethod, typeof(PreserveSigAttribute), null };
-        }
-
-        private static Type GetComInterfaceType()
-        {
-            return typeof(ITestComInterface);
         }
 
         [SerializableAttribute]
