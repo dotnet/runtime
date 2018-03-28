@@ -101,6 +101,8 @@ namespace System.Collections.Tests
                     return CreateSortedSet(enumerableToMatchTo, count, numberOfMatchingElements);
                 case EnumerableType.Queue:
                     return CreateQueue(enumerableToMatchTo, count, numberOfMatchingElements, numberOfDuplicateElements);
+                case EnumerableType.Lazy:
+                    return CreateLazyEnumerable(enumerableToMatchTo, count, numberOfMatchingElements, numberOfDuplicateElements);
                 default:
                     Debug.Assert(false, "Check that the 'EnumerableType' Enum returns only types that are special-cased in the CreateEnumerable function within the Iset_Generic_Tests class");
                     return null;
@@ -287,6 +289,12 @@ namespace System.Collections.Tests
             }
 
             return set;
+        }
+
+        protected IEnumerable<T> CreateLazyEnumerable(IEnumerable<T> enumerableToMatchTo, int count, int numberOfMatchingElements, int numberOfDuplicateElements)
+        {
+            IEnumerable<T> list = CreateList(enumerableToMatchTo, count, numberOfMatchingElements, numberOfDuplicateElements);
+            return list.Select(item => item);
         }
 
         #endregion
