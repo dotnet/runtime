@@ -75,7 +75,6 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue(27211)]
         public async Task CloseAsync_Cancel_Success(Uri server)
         {
             await TestCancellation(async (cws) =>
