@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
@@ -10,24 +11,16 @@ namespace System.Runtime.Serialization
     {
         private const int NumBins = 4;
 
-        // Table of prime numbers to use as hash table sizes. Each entry is the
-        // smallest prime number larger than twice the previous entry.
-        private static readonly int[] s_sizes = 
-        {
-            5, 11, 29, 47, 97, 197, 397, 797, 1597, 3203, 6421, 12853, 25717, 51437,
-            102877, 205759, 411527, 823117, 1646237, 3292489, 6584983
-        };
-
         internal int _currentCount;
-        internal int _currentSize;
-        internal long[] _ids;
-        internal object[] _objs;
+        private int _currentSize;
+        private long[] _ids;
+        private object[] _objs;
 
         // Constructs a new ObjectID generator, initializing all of the necessary variables.
         public ObjectIDGenerator()
         {
             _currentCount = 1;
-            _currentSize = s_sizes[0];
+            _currentSize = HashHelpers.primes[0]; // Starting with 3
             _ids = new long[_currentSize * NumBins];
             _objs = new object[_currentSize * NumBins];
         }
@@ -106,13 +99,12 @@ namespace System.Runtime.Serialization
         // we return that id, otherwise we return 0.
         public virtual long HasId(object obj, out bool firstTime)
         {
-            bool found;
-
             if (obj == null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
 
+            bool found;
             int pos = FindElement(obj, out found);
             if (found)
             {
@@ -129,14 +121,14 @@ namespace System.Runtime.Serialization
         // the old arrays into the new ones.  Expensive but necessary.
         private void Rehash()
         {
-            int i = 0;
-            for (int currSize = _currentSize; i < s_sizes.Length && s_sizes[i] <= currSize; i++) ;
-            if (i == s_sizes.Length)
+            int currSize = _currentSize;
+            int newSize = HashHelpers.ExpandPrime(currSize);
+            if (newSize == currSize)
             {
                 // We just walked off the end of the array.
                 throw new SerializationException(SR.Serialization_TooManyElements);
             }
-            _currentSize = s_sizes[i];
+            _currentSize = newSize;
 
             long[] newIds = new long[_currentSize * NumBins];
             object[] newObjs = new object[_currentSize * NumBins];
@@ -151,8 +143,7 @@ namespace System.Runtime.Serialization
             {
                 if (oldObjs[j] != null)
                 {
-                    bool found;
-                    int pos = FindElement(oldObjs[j], out found);
+                    int pos = FindElement(oldObjs[j], out _);
                     _objs[pos] = oldObjs[j];
                     _ids[pos] = oldIds[j];
                 }
