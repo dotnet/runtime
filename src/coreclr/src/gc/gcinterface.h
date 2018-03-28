@@ -211,7 +211,8 @@ enum GCEventLevel
     GCEventLevel_Warning = 3,
     GCEventLevel_Information = 4,
     GCEventLevel_Verbose = 5,
-    GCEventLevel_Max = 6
+    GCEventLevel_Max = 6,
+    GCEventLevel_LogAlways = 255
 };
 
 // Event keywords corresponding to events that can be fired by the GC. These

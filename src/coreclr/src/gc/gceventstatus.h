@@ -85,7 +85,7 @@ public:
      */
     static void Set(GCEventProvider provider, GCEventKeyword keywords, GCEventLevel level)
     {
-        assert(level >= GCEventLevel_None && level < GCEventLevel_Max);
+        assert((level >= GCEventLevel_None && level < GCEventLevel_Max) || level == GCEventLevel_LogAlways);
 
         size_t index = static_cast<size_t>(provider);
 
@@ -133,6 +133,9 @@ private:
             break;
         case GCEventLevel_Verbose:
             fprintf(stderr, "  level: Verbose\n");
+            break;
+        case GCEventLevel_LogAlways:
+            fprintf(stderr, "  level: LogAlways");
             break;
         default:
             fprintf(stderr, "  level: %d?\n", level);
