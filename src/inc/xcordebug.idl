@@ -55,6 +55,17 @@ interface ICorDebugProcess4 : IUnknown
 
 };
 
+[
+    object,
+    local,
+    uuid(CB54E392-C6DD-47BE-9C60-A99F3ECE3A98),
+    pointer_default(unique)
+]
+interface ICorDebugProcess9 : IUnknown
+{
+    HRESULT CreateBreakpoint([in] CORDB_ADDRESS address, [out] ICorDebugValueBreakpoint **ppBreakpoint);
+}
+
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
 
 /* A private API for use on Windows phone to invoke CLR hosting

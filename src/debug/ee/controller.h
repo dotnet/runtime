@@ -31,6 +31,45 @@ struct DebuggerControllerPatch;
 class DebuggerUserBreakpoint;
 class ControllerStackInfo;
 
+typedef struct _DR6 *PDR6;
+typedef struct _DR6 {
+    DWORD       B0 : 1;
+    DWORD       B1 : 1;
+    DWORD       B2 : 1;
+    DWORD       B3 : 1;
+    DWORD       Pad1 : 9;
+    DWORD       BD : 1;
+    DWORD       BS : 1;
+    DWORD       BT : 1;
+} DR6;
+
+typedef struct _DR7 *PDR7;
+typedef struct _DR7 {
+    DWORD       L0 : 1;
+    DWORD       G0 : 1;
+    DWORD       L1 : 1;
+    DWORD       G1 : 1;
+    DWORD       L2 : 1;
+    DWORD       G2 : 1;
+    DWORD       L3 : 1;
+    DWORD       G3 : 1;
+    DWORD       LE : 1;
+    DWORD       GE : 1;
+    DWORD       Pad1 : 3;
+    DWORD       GD : 1;
+    DWORD       Pad2 : 1;
+    DWORD       Pad3 : 1;
+    DWORD       Rwe0 : 2;
+    DWORD       Len0 : 2;
+    DWORD       Rwe1 : 2;
+    DWORD       Len1 : 2;
+    DWORD       Rwe2 : 2;
+    DWORD       Len2 : 2;
+    DWORD       Rwe3 : 2;
+    DWORD       Len3 : 2;
+} DR7;
+
+
 // Ticket for ensuring that it's safe to get a stack trace.
 class StackTraceTicket
 {
@@ -864,6 +903,7 @@ enum DEBUGGER_CONTROLLER_TYPE
                                           // send that they've hit a user breakpoint to the Right Side.
     DEBUGGER_CONTROLLER_JMC_STEPPER,      // Stepper that only stops in JMC-functions.
     DEBUGGER_CONTROLLER_CONTINUABLE_EXCEPTION,
+    DEBUGGER_CONTROLLER_DATA_BREAKPOINT,
     DEBUGGER_CONTROLLER_STATIC,
 };
 
@@ -951,7 +991,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 
 // DebuggerController:   DebuggerController serves
 // both as a static class that dispatches exceptions coming from the
-// EE, and as an abstract base class for the five classes that derrive
+// EE, and as an abstract base class for the five classes that derive
 // from it.
 class DebuggerController 
 {
@@ -1731,6 +1771,130 @@ private:
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
 };
 
+class DebuggerDataBreakpoint : public DebuggerController
+{
+public:
+    static void CreateDebuggerDataBreakpoint(Thread* pThread, AppDomain* pAppDomain, CONTEXT* context)
+    {
+        _ASSERTE(g_DataBreakpointCount < 5);
+
+        DebuggerDataBreakpoint* newDataBp = new DebuggerDataBreakpoint(g_DataBreakpointCount, pThread, pAppDomain, context);
+        g_DataBreakpoints[g_DataBreakpointCount++] = newDataBp;
+    }
+
+    DebuggerDataBreakpoint(unsigned int index, Thread* pThread, AppDomain* pAppDomain, CONTEXT* context) : DebuggerController(pThread, pAppDomain)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "D::DDBP: New Data Breakpoint set for 0x%x\n", context->Dr0));
+        memcpy(&m_Context, context, sizeof(CONTEXT));
+        m_Index = index;
+    }
+    
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
+    {
+        return DEBUGGER_CONTROLLER_DATA_BREAKPOINT;
+    }
+
+    bool SendEvent(Thread *thread, bool fInteruptedBySetIp)
+    {
+        CONTRACTL
+        {
+            SO_NOT_MAINLINE;
+            NOTHROW;
+            SENDEVENT_CONTRACT_ITEMS;
+        }
+        CONTRACTL_END;
+
+        LOG((LF_CORDB, LL_INFO10000, "DDBP::SE: in DebuggerDataBreakpoint's SendEvent\n"));
+
+        CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
+
+        // If we got interupted by SetIp, we just don't send the IPC event. Our triggers are still
+        // active so no harm done.
+        if (!fInteruptedBySetIp)
+        {
+            g_pDebugger->SendDataBreakpoint(thread, context, this);
+            return true;
+        }
+
+        // Controller is still alive, will fire if we hit the breakpoint again.
+        return false;
+    }
+
+    bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
+
+        bool hitDataBp = false;
+
+        PDR6 pdr6 = (PDR6)&(pContext->Dr6);
+        PDR7 pdr7 = (PDR7)&(pContext->Dr7);
+        
+        if (m_Index == 0)
+        {
+            if (pdr6->B0)
+            {
+                if (pContext->Dr0 == m_Context.Dr0 && pdr7->L0 != 0)
+                {
+                    hitDataBp = true;
+                }
+            }
+        }
+        else if (m_Index == 1)
+        {
+            if (pdr6->B1)
+            {
+                if (pContext->Dr1 == m_Context.Dr1 && pdr7->L1 != 0)
+                {
+                    hitDataBp = true;
+                }
+            }
+        }
+        else if (m_Index == 2)
+        {
+            if (pdr6->B2)
+            {
+                if (pContext->Dr2 == m_Context.Dr2 && pdr7->L2 != 0)
+                {
+                    hitDataBp = true;
+                }
+            }
+        }
+        else if (m_Index == 3)
+        {
+            if (pdr6->B3)
+            {
+                if (pContext->Dr3 == m_Context.Dr3 && pdr7->L3 != 0)
+                {
+                    hitDataBp = true;
+                }
+            }
+        }
+
+        if (hitDataBp)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT...\n"));
+        }
+        else
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: DIDN'T TRIGGER DATA BREAKPOINT...\n"));
+        }
+
+        return hitDataBp;
+    }
+
+    unsigned int GetIndex()
+    {
+        return m_Index;
+    }
+
+    static DebuggerDataBreakpoint* g_DataBreakpoints[4];
+    static unsigned int g_DataBreakpointCount;
+private:
+    CONTEXT m_Context;
+    unsigned int m_Index;
+};
+
+
 /* ------------------------------------------------------------------------- *
  * DebuggerUserBreakpoint routines.  UserBreakpoints are used 
  * by Runtime threads to send that they've hit a user breakpoint to the 
@@ -1800,6 +1964,7 @@ private:
 
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
 };
+
 
 #ifdef EnC_SUPPORTED
 //---------------------------------------------------------------------------------------
