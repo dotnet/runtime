@@ -292,6 +292,7 @@ namespace System.Threading.Tasks.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Uses reflection to access an internal method of the TaskScheduler class.")]
+        [ActiveIssue(28539)]
         public static void GetTaskSchedulersForDebugger_ReturnsDefaultScheduler()
         {
             MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
