@@ -1,0 +1,4 @@
+Compat issues with assembly System.Runtime:
+MembersMustExist : Member 'System.Memory<T>.Pin()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Pin()' does not exist in the implementation but it does exist in the contract.
+Total Issues: 2

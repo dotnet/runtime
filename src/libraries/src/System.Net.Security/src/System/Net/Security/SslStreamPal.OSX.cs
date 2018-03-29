@@ -126,7 +126,7 @@ namespace System.Net.Security
 
                 unsafe
                 {
-                    MemoryHandle memHandle = input.Retain(pin: true);
+                    MemoryHandle memHandle = input.Pin();
                     try
                     {
                         PAL_TlsIo status;

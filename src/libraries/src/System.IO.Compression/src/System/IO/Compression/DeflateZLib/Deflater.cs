@@ -100,7 +100,7 @@ namespace System.IO.Compression
 
             lock (SyncLock)
             {
-                _inputBufferHandle = inputBuffer.Retain(pin: true);
+                _inputBufferHandle = inputBuffer.Pin();
 
                 _zlibStream.NextIn = (IntPtr)_inputBufferHandle.Pointer;
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
