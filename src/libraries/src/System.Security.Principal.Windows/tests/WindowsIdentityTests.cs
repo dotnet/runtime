@@ -4,7 +4,8 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
-using System.Runtime.Serialization.Formatters.Tests;
+using System.Linq;
+using System.Security.Claims;
 using System.Security.Principal;
 using Xunit;
 
@@ -91,6 +92,32 @@ public class WindowsIdentityTests
     {
         WindowsIdentity id = WindowsIdentity.GetCurrent();
         Assert.Equal(id.AccessToken.DangerousGetHandle(), id.Token);
+    }
+
+    [Fact]
+    public static void CheckDeviceClaims()
+    {
+        using (WindowsIdentity id = WindowsIdentity.GetCurrent())
+        {
+            int manualCount = id.Claims.Count(c => c.Properties.ContainsKey(ClaimTypes.WindowsDeviceClaim));
+            int autoCount = id.DeviceClaims.Count();
+
+            Assert.Equal(manualCount, autoCount);
+        }
+    }
+
+    [Fact]
+    public static void CheckUserClaims()
+    {
+        using (WindowsIdentity id = WindowsIdentity.GetCurrent())
+        {
+            Claim[] allClaims = id.Claims.ToArray();
+            int deviceCount = allClaims.Count(c => c.Properties.ContainsKey(ClaimTypes.WindowsDeviceClaim));
+            int manualCount = allClaims.Length - deviceCount;
+            int autoCount = id.UserClaims.Count();
+
+            Assert.Equal(manualCount, autoCount);
+        }
     }
 
     private static void CheckDispose(WindowsIdentity identity, bool anonymous = false)

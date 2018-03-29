@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Text;
@@ -42,6 +43,8 @@ namespace System.Security.Principal
         private volatile bool _claimsInitialized;
         private List<Claim> _deviceClaims;
         private List<Claim> _userClaims;
+
+        private static bool s_ignoreWindows8Properties;
 
         //
         // Constructors.
@@ -779,7 +782,7 @@ namespace System.Security.Principal
         }
 
 
-        private static SafeLocalAllocHandle GetTokenInformation(SafeAccessTokenHandle tokenHandle, TokenInformationClass tokenInformationClass)
+        private static SafeLocalAllocHandle GetTokenInformation(SafeAccessTokenHandle tokenHandle, TokenInformationClass tokenInformationClass, bool nullOnInvalidParam=false)
         {
             SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.InvalidHandle;
             uint dwLength = (uint)sizeof(uint);
@@ -812,6 +815,15 @@ namespace System.Security.Principal
                     break;
                 case Interop.Errors.ERROR_INVALID_HANDLE:
                     throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
+                case Interop.Errors.ERROR_INVALID_PARAMETER:
+                    if (nullOnInvalidParam)
+                    {
+                        safeLocalAllocHandle.Dispose();
+                        return null;
+                    }
+
+                    // Throw the exception.
+                    goto default;
                 default:
                     throw new SecurityException(new Win32Exception(dwErrorCode).Message);
             }
@@ -941,6 +953,21 @@ namespace System.Security.Principal
                         // group sids
                         AddGroupSidClaims(_userClaims);
 
+                        if (!s_ignoreWindows8Properties)
+                        {
+                            // Device group sids (may cause s_ignoreWindows8Properties to be set to true, so must be first in this block)
+                            AddDeviceGroupSidClaims(_deviceClaims, TokenInformationClass.TokenDeviceGroups);
+
+                            if (!s_ignoreWindows8Properties)
+                            {
+                                // User token claims
+                                AddTokenClaims(_userClaims, TokenInformationClass.TokenUserClaimAttributes, ClaimTypes.WindowsUserClaim);
+
+                                // Device token claims
+                                AddTokenClaims(_deviceClaims, TokenInformationClass.TokenDeviceClaimAttributes, ClaimTypes.WindowsDeviceClaim);
+                            }
+                        }
+
                         _claimsInitialized = true;
                     }
                 }
@@ -1051,6 +1078,153 @@ namespace System.Security.Principal
             finally
             {
                 safeAllocHandle.Dispose();
+            }
+        }
+
+        private void AddDeviceGroupSidClaims(List<Claim> instanceClaims, TokenInformationClass tokenInformationClass)
+        {
+            // special case the anonymous identity.
+            if (_safeTokenHandle.IsInvalid)
+                return;
+
+            SafeLocalAllocHandle safeAllocHandle = SafeLocalAllocHandle.InvalidHandle;
+            try
+            {
+                // Retrieve all group sids
+
+                safeAllocHandle = GetTokenInformation(_safeTokenHandle, tokenInformationClass, nullOnInvalidParam: true);
+
+                if (safeAllocHandle == null)
+                {
+                    s_ignoreWindows8Properties = true;
+                    return;
+                }
+
+                int count = Marshal.ReadInt32(safeAllocHandle.DangerousGetHandle());
+                IntPtr pSidAndAttributes = new IntPtr((long)safeAllocHandle.DangerousGetHandle() + (long)Marshal.OffsetOf(typeof(Interop.TOKEN_GROUPS), "Groups"));
+                string claimType = null;
+
+                for (int i = 0; i < count; ++i)
+                {
+                    Interop.SID_AND_ATTRIBUTES group = (Interop.SID_AND_ATTRIBUTES)Marshal.PtrToStructure(pSidAndAttributes, typeof(Interop.SID_AND_ATTRIBUTES));
+                    uint mask = Interop.SecurityGroups.SE_GROUP_ENABLED | Interop.SecurityGroups.SE_GROUP_LOGON_ID | Interop.SecurityGroups.SE_GROUP_USE_FOR_DENY_ONLY;
+                    SecurityIdentifier groupSid = new SecurityIdentifier(group.Sid, true);
+                    if ((group.Attributes & mask) == Interop.SecurityGroups.SE_GROUP_ENABLED)
+                    {
+                        claimType = ClaimTypes.WindowsDeviceGroup;
+                        Claim claim = new Claim(claimType, groupSid.Value, ClaimValueTypes.String, _issuerName, _issuerName, this);
+                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture));
+                        claim.Properties.Add(claimType, "");
+                        instanceClaims.Add(claim);
+                    }
+                    else if ((group.Attributes & mask) == Interop.SecurityGroups.SE_GROUP_USE_FOR_DENY_ONLY)
+                    {
+                        claimType = ClaimTypes.DenyOnlyWindowsDeviceGroup;
+                        Claim claim = new Claim(claimType, groupSid.Value, ClaimValueTypes.String, _issuerName, _issuerName, this);
+                        claim.Properties.Add(ClaimTypes.WindowsSubAuthority, Convert.ToString(groupSid.IdentifierAuthority, CultureInfo.InvariantCulture));
+                        claim.Properties.Add(claimType, "");
+                        instanceClaims.Add(claim);
+                    }
+
+                    pSidAndAttributes = new IntPtr((long)pSidAndAttributes + Marshal.SizeOf<Interop.SID_AND_ATTRIBUTES>());
+                }
+            }
+            finally
+            {
+                safeAllocHandle?.Close();
+            }
+        }
+
+        private void AddTokenClaims(List<Claim> instanceClaims, TokenInformationClass tokenInformationClass, string propertyValue)
+        {
+            // special case the anonymous identity.
+            if (_safeTokenHandle.IsInvalid)
+                return;
+
+            SafeLocalAllocHandle safeAllocHandle = SafeLocalAllocHandle.InvalidHandle;
+
+            try
+            {
+                safeAllocHandle = GetTokenInformation(_safeTokenHandle, tokenInformationClass);
+
+                Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION claimAttributes = (Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION)Marshal.PtrToStructure(safeAllocHandle.DangerousGetHandle(), typeof(Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION));
+                // An attribute represents a collection of claims.  Inside each attribute a claim can be multivalued, we create a claim for each value.
+                // It is a ragged multi-dimentional array, where each cell can be of different lenghts.
+
+                // index into array of claims.
+                long offset = 0;
+
+                for (int attribute = 0; attribute < claimAttributes.AttributeCount; attribute++)
+                {
+                    IntPtr pAttribute = new IntPtr(claimAttributes.Attribute.pAttributeV1.ToInt64() + offset);
+                    Interop.CLAIM_SECURITY_ATTRIBUTE_V1 windowsClaim = (Interop.CLAIM_SECURITY_ATTRIBUTE_V1)Marshal.PtrToStructure(pAttribute, typeof(Interop.CLAIM_SECURITY_ATTRIBUTE_V1));
+
+                    // the switch was written this way, which appears to have multiple for loops, because each item in the ValueCount is of the same ValueType.  This saves the type check each item.
+                    switch (windowsClaim.ValueType)
+                    {
+                        case Interop.ClaimSecurityAttributeType.CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING:
+                            IntPtr[] stringPointers = new IntPtr[windowsClaim.ValueCount];
+                            Marshal.Copy(windowsClaim.Values.ppString, stringPointers, 0, (int)windowsClaim.ValueCount);
+
+                            for (int item = 0; item < windowsClaim.ValueCount; item++)
+                            {
+                                Claim c = new Claim(windowsClaim.Name, Marshal.PtrToStringAuto(stringPointers[item]), ClaimValueTypes.String, _issuerName, _issuerName, this);
+                                c.Properties.Add(propertyValue, string.Empty);
+                                instanceClaims.Add(c);
+                            }
+                            break;
+
+                        case Interop.ClaimSecurityAttributeType.CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64:
+                            long[] intValues = new long[windowsClaim.ValueCount];
+                            Marshal.Copy(windowsClaim.Values.pInt64, intValues, 0, (int)windowsClaim.ValueCount);
+
+                            for (int item = 0; item < windowsClaim.ValueCount; item++)
+                            {
+                                Claim c = new Claim(windowsClaim.Name, Convert.ToString(intValues[item], CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _issuerName, _issuerName, this);
+                                c.Properties.Add(propertyValue, string.Empty);
+                                instanceClaims.Add(c);
+                            }
+                            break;
+
+
+                        case Interop.ClaimSecurityAttributeType.CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64:
+                            long[] uintValues = new long[windowsClaim.ValueCount];
+                            Marshal.Copy(windowsClaim.Values.pUint64, uintValues, 0, (int)windowsClaim.ValueCount);
+
+                            for (int item = 0; item < windowsClaim.ValueCount; item++)
+                            {
+                                Claim c = new Claim(windowsClaim.Name, Convert.ToString((ulong)uintValues[item], CultureInfo.InvariantCulture), ClaimValueTypes.UInteger64, _issuerName, _issuerName, this);
+                                c.Properties.Add(propertyValue, string.Empty);
+                                instanceClaims.Add(c);
+                            }
+                            break;
+
+                        case Interop.ClaimSecurityAttributeType.CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN:
+                            long[] boolValues = new long[windowsClaim.ValueCount];
+                            Marshal.Copy(windowsClaim.Values.pUint64, boolValues, 0, (int)windowsClaim.ValueCount);
+
+                            for (int item = 0; item < windowsClaim.ValueCount; item++)
+                            {
+                                Claim c = new Claim(
+                                    windowsClaim.Name,
+                                    ((ulong)boolValues[item] != 0).ToString(),
+                                    ClaimValueTypes.Boolean,
+                                    _issuerName,
+                                    _issuerName,
+                                    this);
+
+                                c.Properties.Add(propertyValue, string.Empty);
+                                instanceClaims.Add(c);
+                            }
+                            break;
+                    }
+
+                    offset += Marshal.SizeOf(windowsClaim);
+                }
+            }
+            finally
+            {
+                safeAllocHandle.Close();
             }
         }
     }
