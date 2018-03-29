@@ -9,16 +9,16 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>68931eec8b1b9daed99ab9fbe0baf26fd0637dc0</CoreFxCurrentRef>
+    <CoreFxCurrentRef>557c1e3cd387554127d14604466e78d45af8df54</CoreFxCurrentRef>
     <CoreClrCurrentRef>68931eec8b1b9daed99ab9fbe0baf26fd0637dc0</CoreClrCurrentRef>
     <StandardCurrentRef>6298244e25cf84d91e3cda9627315f2425274624</StandardCurrentRef>
     <BuildToolsCurrentRef>68931eec8b1b9daed99ab9fbe0baf26fd0637dc0</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
-    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview3-26329-01</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>2.1.0-preview3-26329-05</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview3-26329-01</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.5.0-preview3-26329-05</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview3-26329-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.1</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.4.1</MicrosoftDiaSymReaderNativePackageVersion>
