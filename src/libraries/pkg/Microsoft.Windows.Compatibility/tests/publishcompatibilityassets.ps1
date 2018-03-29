@@ -28,7 +28,6 @@ $dotnetPath = -join($repoRoot, "\Tools\dotnetcli\dotnet.exe")
 $csprojPath = -join($PSScriptRoot, "\", (Get-ChildItem $PSScriptRoot"\*.csproj" | Select-Object -ExpandProperty Name))
 $packagesCachePath = -join($repoRoot, "\packages")
 $localPackageSourcePath = -join($repoRoot, "\bin\packages\Debug\")
-$restoreSources = -join("https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json;https://api.nuget.org/v3/index.json;https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;", $localPackageSourcePath)
 
 if (!(Test-Path $localPackageSourcePath))
 {
@@ -39,6 +38,8 @@ if (!(Test-Path $localPackageSourcePath))
 		Exit;
 	}
 }
+
+$restoreSources = -join("https://dotnet.myget.org/F/aspnetcore-dev/api/v3/index.json;https://api.nuget.org/v3/index.json;https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;", $localPackageSourcePath)
 
 $compatPackageVersion = _getPackageVersion "Microsoft.Windows.Compatibility"
 $privatePackageVersion = _getPackageVersion "Microsoft.Private.CoreFx.NETCoreApp"
