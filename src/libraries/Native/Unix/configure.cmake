@@ -28,7 +28,9 @@ else ()
 endif ()
 
 # We compile with -Werror, so we need to make sure these code fragments compile without warnings.
-set(CMAKE_REQUIRED_FLAGS -Werror)
+# Older CMake versions (3.8) do not assign the result of their tests, causing unused-value errors
+# which are not distinguished from the test failing. So no error for that one.
+set(CMAKE_REQUIRED_FLAGS "-Werror -Wno-error=unused-value")
 
 # This compiler warning will fail code as innocuous as:
 # static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -229,7 +231,7 @@ check_c_source_compiles(
     int main()
     {
         char buffer[1];
-        char* c = strerror_r(0, buffer, 0);
+        char c = *strerror_r(0, buffer, 0);
         return 0;
     }
     "

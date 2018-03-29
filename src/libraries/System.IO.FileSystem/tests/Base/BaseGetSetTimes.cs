@@ -86,8 +86,8 @@ namespace System.IO.Tests
                     DateTime time = function.Getter(item);
                     msec = time.Millisecond;
 
-                    //if (msec != 0)
-                    //    break;
+                    if (msec != 0)
+                        break;
 
                     // This case should only happen 1/1000 times, unless the OS/Filesystem does
                     // not support millisecond granularity.
@@ -98,14 +98,12 @@ namespace System.IO.Tests
                     // If it's the OS/Filesystem often returns 0 for the millisecond part, this may
                     // help prove it. This should only be written 1/1000 runs, unless the test is going to
                     // fail.
-                    //Console.WriteLine($"TimesIncludeMillisecondPart got a file time of {time.ToString("o")}");
                     Console.WriteLine($"## TimesIncludeMillisecondPart got a file time of {time.ToString("o")} on {driveFormat}");
 
                     item = GetExistingItem(); // try a new file/directory
                 }
 
-                // Temporarily disabled while investigating failures in #27662
-                // Assert.NotEqual(0, msec);
+                Assert.NotEqual(0, msec);
             });
         }
 
@@ -130,11 +128,6 @@ namespace System.IO.Tests
 
                     // If it's 1/1000, or low granularity, this may help:
                     Thread.Sleep(1234);
-
-                    // If it's the OS/Filesystem often returns 0 for the millisecond part, this may
-                    // help prove it. This should only be written 1/1000 runs, unless the test is going to
-                    // fail.
-                    Console.WriteLine($"TimesIncludeMillisecondPart got a file time of {time.ToString("o")}");
 
                     item = GetExistingItem(); // try a new file/directory
                 }
