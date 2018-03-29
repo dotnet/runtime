@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Collections.Concurrent
 {
-    public partial class ConcurrentQueue<T>
+    partial class ConcurrentQueue<T>
     {
         /// <summary>
         /// Provides a multi-producer, multi-consumer thread-safe bounded segment.  When the queue is full,
@@ -34,8 +33,10 @@ namespace System.Collections.Concurrent
             internal bool _preservedForObservation;
             /// <summary>Indicates whether the segment has been marked such that no additional items may be enqueued.</summary>
             internal bool _frozenForEnqueues;
+#pragma warning disable 0649 // some builds don't assign to this field
             /// <summary>The segment following this one in the queue, or null if this segment is the last in the queue.</summary>
             internal Segment _nextSegment;
+#pragma warning restore 0649
 
             /// <summary>Creates the segment.</summary>
             /// <param name="boundedLength">
