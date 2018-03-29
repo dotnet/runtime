@@ -95,6 +95,7 @@ namespace System.Net
         public const int DefaultPerDomainCookieLimit = 20;
         public const int DefaultCookieLengthLimit = 4096;
 
+        private static readonly string s_fqdnMyDomain = CreateFqdnMyDomain();
         private static readonly HeaderVariantInfo[] s_headerInfo = {
             new HeaderVariantInfo(HttpKnownHeaderNames.SetCookie,  CookieVariant.Rfc2109),
             new HeaderVariantInfo(HttpKnownHeaderNames.SetCookie2, CookieVariant.Rfc2965)
@@ -105,19 +106,13 @@ namespace System.Net
         private int m_maxCookies = DefaultCookieLimit; // Do not rename (binary serialization)
         private int m_maxCookiesPerDomain = DefaultPerDomainCookieLimit; // Do not rename (binary serialization)
         private int m_count = 0; // Do not rename (binary serialization)
-        private string m_fqdnMyDomain = string.Empty; // Do not rename (binary serialization)
+        private string m_fqdnMyDomain = s_fqdnMyDomain; // Do not rename (binary serialization)
 
         public CookieContainer()
         {
-            string domain = HostInformation.DomainName;
-            if (domain != null && domain.Length > 1)
-            {
-                m_fqdnMyDomain = '.' + domain;
-            }
-            // Otherwise it will remain string.Empty.
         }
 
-        public CookieContainer(int capacity) : this()
+        public CookieContainer(int capacity)
         {
             if (capacity <= 0)
             {
@@ -138,6 +133,14 @@ namespace System.Net
                 throw new ArgumentException(SR.net_toosmall, "MaxCookieSize");
             }
             m_maxCookieSize = maxCookieSize;
+        }
+
+        private static string CreateFqdnMyDomain()
+        {
+            string domain = HostInformation.DomainName;
+            return domain != null && domain.Length > 1 ?
+                '.' + domain :
+                string.Empty;
         }
 
         // NOTE: after shrinking the capacity, Count can become greater than Capacity.
