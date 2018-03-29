@@ -126,8 +126,21 @@ class UTF8StructMarshalling
         public int index;
     }
 
+    unsafe struct UnmanagedStruct
+    {
+      public fixed byte psz[8];
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+    struct ManagedStruct
+    {
+      [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 8)]
+      public string str;
+    }
+
     [DllImport("UTF8TestNative", CallingConvention = CallingConvention.Cdecl)]
     public static extern void TestStructWithUtf8Field(Utf8Struct utfStruct);
+
     public static void TestUTF8StructMarshalling(string[] utf8Strings)
     {
         Utf8Struct utf8Struct = new Utf8Struct();
@@ -137,7 +150,40 @@ class UTF8StructMarshalling
             utf8Struct.index = i;
             TestStructWithUtf8Field(utf8Struct);
         }
-    }
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+         CompareWithUTF8Encoding();
+   }
+   
+   unsafe static void CompareWithUTF8Encoding()
+   {
+       // Compare results with UTF8Encoding
+        UnmanagedStruct ums;
+        ums.psz[0] = 0xFF;
+        ums.psz[1] = (byte)'a';
+        ums.psz[2] = (byte)'b';
+        ums.psz[3] = (byte)'c';
+        ums.psz[4] = (byte)'d';
+        ums.psz[5] = 0;
+
+        IntPtr ptr = (IntPtr)(&ums);
+        ManagedStruct ms = Marshal.PtrToStructure<ManagedStruct>(ptr);
+	string actual = ms.str;       
+ 
+        UTF8Encoding uTF8Encoding = new UTF8Encoding();
+        byte [] b = new byte[5];
+        b[0] = 0xFF;
+        b[1] = (byte)'a';
+        b[2] = (byte)'b';
+        b[3] = (byte)'c';
+        b[4] = (byte)'d';
+        string expected = uTF8Encoding.GetString(b);
+        if (actual != expected)
+	{
+           Console.WriteLine("Actual:" + actual + " Length:" + actual.Length);
+           Console.WriteLine("Expected:" + expected + " Length:" + expected.Length);
+           throw new Exception("UTF8Encoding.GetString doesn't match with Utf8 String Marshaller result");
+        }
+   }
 }
 
 // UTF8 string as delegate parameter
@@ -164,6 +210,7 @@ class UTF8DelegateMarshalling
         }
     }
 }
+
 
 class Test
 {
@@ -216,6 +263,7 @@ class Test
         // String.Empty tests
         UTF8StringTests.EmptyStringTest();
 
+        
         return 100;
     }
 }
