@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
@@ -441,6 +439,43 @@ namespace System.Net.WebSockets.Client.Tests
                     await connectToServerThatAbortsConnection(clientSocket, server, url);
                 }
             }, options);
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var rand = new Random();
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                // Do a 0-byte receive.  It shouldn't complete yet.
+                Task<WebSocketReceiveResult> t = ReceiveAsync(cws, new ArraySegment<byte>(Array.Empty<byte>()), ctsDefault.Token);
+                Assert.False(t.IsCompleted);
+
+                // Send a packet to the echo server.
+                await SendAsync(cws, new ArraySegment<byte>(new byte[1] { 42 }), WebSocketMessageType.Binary, true, ctsDefault.Token);
+
+                // Now the 0-byte receive should complete, but without reading any data.
+                WebSocketReceiveResult r = await t;
+                Assert.Equal(WebSocketMessageType.Binary, r.MessageType);
+                Assert.Equal(0, r.Count);
+                Assert.False(r.EndOfMessage);
+
+                // Now do a receive to get the payload.
+                var receiveBuffer = new byte[1];
+                t = ReceiveAsync(cws, new ArraySegment<byte>(receiveBuffer), ctsDefault.Token);
+                Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+                r = await t;
+                Assert.Equal(WebSocketMessageType.Binary, r.MessageType);
+                Assert.Equal(1, r.Count);
+                Assert.True(r.EndOfMessage);
+                Assert.Equal(42, receiveBuffer[0]);
+
+                // Clean up.
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, nameof(ZeroByteReceive_CompletesWhenDataAvailable), ctsDefault.Token);
+            }
         }
     }
 }
