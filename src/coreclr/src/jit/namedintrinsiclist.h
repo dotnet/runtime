@@ -112,11 +112,6 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SpecialImport = 0x80000,
 };
 
-inline HWIntrinsicFlag operator|(HWIntrinsicFlag c1, HWIntrinsicFlag c2)
-{
-    return static_cast<HWIntrinsicFlag>(static_cast<unsigned>(c1) | static_cast<unsigned>(c2));
-}
-
 enum HWIntrinsicCategory : unsigned int
 {
     // Simple SIMD intrinsics
