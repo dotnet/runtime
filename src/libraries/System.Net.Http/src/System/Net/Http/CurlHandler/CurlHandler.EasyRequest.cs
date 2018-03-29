@@ -300,6 +300,8 @@ namespace System.Net.Http
                 // and when enabled has a measurably negative impact on latency in key scenarios
                 // (e.g. POST'ing small-ish data).
                 SetCurlOption(CURLoption.CURLOPT_TCP_NODELAY, 1L);
+                // Enable TCP keep-alive.
+                SetCurlOption(CURLoption.CURLOPT_TCP_KEEPALIVE, 1L);
             }
 
             private void SetMultithreading()
