@@ -21,6 +21,7 @@
     <Compile Include="EncryptedXmlTests.cs" />
     <Compile Include="EncryptionPropertyCollectionTest.cs" />
     <Compile Include="EncryptionPropertyTest.cs" />
+    <Compile Include="SignedXml_Helpers.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
     <Compile Include="KeyInfoNodeTest.cs" />
     <Compile Include="KeyInfoRetrievalMethodTest.cs" />
@@ -43,7 +44,6 @@
     <Compile Include="TestHelpers.cs" />
     <Compile Include="TransformChainTest.cs" />
     <Compile Include="TransformTest.cs" />
-    <Compile Include="XmlDecryptionTransformTest.cs" />
     <Compile Include="XmlDsigBase64TransformTest.cs" />
     <Compile Include="XmlDsigC14NTransformTest.cs" />
     <Compile Include="XmlDsigC14NWithCommentsTransformTest.cs" />
@@ -55,6 +55,15 @@
     <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="KeyInfo_ArbitraryElements.cs" />
+    <Compile Include="Reference_ArbitraryElements.cs" />
+    <Compile Include="Signature_ArbitraryElements.cs" />
+    <Compile Include="SignedInfo_ArbitraryElements.cs" />
+    <Compile Include="SignedXml_Limits.cs" />
+    <Compile Include="SignedXml_SignatureMethodAlgorithm.cs" />
+    <Compile Include="XmlDecryptionTransformTest.cs" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
     <EmbeddedResource Include="EncryptedXmlSample2.xml" />
@@ -64,6 +73,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
