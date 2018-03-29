@@ -89,10 +89,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue(25640, TestPlatforms.Windows)] // TODO It should be enabled for SocketsHttpHandler on all platforms
         public async Task ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed(bool useProxy)
         {
             const string ExpectedUsername = "rightusername";
