@@ -346,7 +346,7 @@ protected:
                 throw ArgumentException("String 'chars' contains invalid Unicode code points.");
 
             // Now we aren't going to be false, so its OK to update chars
-            chars = &charTemp;
+            *chars = charTemp;
         }
 
         return true;
@@ -412,7 +412,7 @@ protected:
 class DecoderReplacementFallbackBuffer : public DecoderFallbackBuffer
 {
     // Store our default string
-    WCHAR strDefault[4];
+    WCHAR strDefault[2];
     int strDefaultLength;
     int fallbackCount = -1;
     int fallbackIndex = -1;
@@ -421,11 +421,8 @@ public:
     // Construction
     DecoderReplacementFallbackBuffer(DecoderReplacementFallback* fallback)
     {
-        // 2X in case we're a surrogate pair
         wcscpy_s(strDefault, sizeof(strDefault), fallback->GetDefaultString());
-        wcscat_s(strDefault, sizeof(strDefault), fallback->GetDefaultString());
-        strDefaultLength = 2 * PAL_wcslen((const WCHAR *)fallback->GetDefaultString());
-
+        strDefaultLength = PAL_wcslen((const WCHAR *)fallback->GetDefaultString());
     }
 
     // Fallback Methods
@@ -1081,9 +1078,14 @@ class UTF8Encoding
         return begin <= c && c <= end;
     }
 
-    size_t PtrDiff(void* ptr1, void* ptr2)
+    size_t PtrDiff(WCHAR* ptr1, WCHAR* ptr2)
     {
-        return (BYTE*)ptr2 - (BYTE*)ptr1;
+        return ptr1 - ptr2;
+    }
+
+    size_t PtrDiff(BYTE* ptr1, BYTE* ptr2)
+    {
+        return ptr1 - ptr2;
     }
 
     void ThrowBytesOverflow()
@@ -1116,6 +1118,28 @@ class UTF8Encoding
         if (nothingEncoded){
             ThrowCharsOverflow();
         }
+    }
+
+    // During GetChars we had an invalid byte sequence
+    // pSrc is backed up to the start of the bad sequence if we didn't have room to
+    // fall it back.  Otherwise pSrc remains where it is.
+    bool FallbackInvalidByteSequence(BYTE** pSrc, int ch, DecoderFallbackBuffer* fallback, WCHAR** pTarget)
+    {
+        // Get our byte[]
+        BYTE* pStart = *pSrc;
+        BYTE* bytesUnknown;        
+        int size = GetBytesUnknown(pStart, ch,  &bytesUnknown);
+
+        // Do the actual fallback
+        if (!fallback->InternalFallback(bytesUnknown, *pSrc, pTarget, size))
+        {
+            // Oops, it failed, back up to pStart
+            *pSrc = pStart;
+            return false;
+        }
+
+        // It worked
+        return true;
     }
 
     int FallbackInvalidByteSequence(BYTE* pSrc, int ch, DecoderFallbackBuffer *fallback)
@@ -1211,7 +1235,7 @@ class UTF8Encoding
 public:
 
     UTF8Encoding(bool isThrowException)
-        : encoderReplacementFallback(W("\xFFFD"))
+        : encoderReplacementFallback(W("\xFFFD")), decoderReplacementFallback(W("\xFFFD"))
     {
         if (isThrowException)
         {
@@ -1704,8 +1728,9 @@ public:
                 fallback = decoderFallback->CreateFallbackBuffer();
                 fallback->InternalInitialize(bytes, pAllocatedBufferEnd);
             }
-            // This'll back us up the appropriate # of bytes if we didn't get anywhere
-            if (!FallbackInvalidByteSequence(pSrc, ch, fallback))
+            
+            // That'll back us up the appropriate # of bytes if we didn't get anywhere
+            if (!FallbackInvalidByteSequence(&pSrc, ch, fallback, &pTarget))
             {
                 // Ran out of buffer space
                 // Need to throw an exception?
