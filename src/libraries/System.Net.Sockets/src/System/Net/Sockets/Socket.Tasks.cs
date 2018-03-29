@@ -197,7 +197,7 @@ namespace System.Net.Sockets
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).ValueTaskReceive);
             if (saea.Reserve())
             {
-                if (saea.BufferList != null) saea.BufferList = null;
+                Debug.Assert(saea.BufferList == null);
                 saea.SetBuffer(buffer);
                 saea.SocketFlags = socketFlags;
                 saea.WrapExceptionsInIOExceptions = fromNetworkStream;
@@ -346,7 +346,7 @@ namespace System.Net.Sockets
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).ValueTaskSend);
             if (saea.Reserve())
             {
-                if (saea.BufferList != null) saea.BufferList = null;
+                Debug.Assert(saea.BufferList == null);
                 saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
                 saea.SocketFlags = socketFlags;
                 saea.WrapExceptionsInIOExceptions = false;
@@ -370,7 +370,7 @@ namespace System.Net.Sockets
             AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).ValueTaskSend);
             if (saea.Reserve())
             {
-                if (saea.BufferList != null) saea.BufferList = null;
+                Debug.Assert(saea.BufferList == null);
                 saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
                 saea.SocketFlags = socketFlags;
                 saea.WrapExceptionsInIOExceptions = true;
@@ -809,9 +809,9 @@ namespace System.Net.Sockets
         {
             internal static readonly AwaitableSocketAsyncEventArgs Reserved = new AwaitableSocketAsyncEventArgs() { _continuation = null };
             /// <summary>Sentinel object used to indicate that the operation has completed prior to OnCompleted being called.</summary>
-            private static readonly Action<object> s_completedSentinel = state => throw new Exception(nameof(s_completedSentinel));
+            private static readonly Action<object> s_completedSentinel = new Action<object>(state => throw new Exception(nameof(s_completedSentinel)));
             /// <summary>Sentinel object used to indicate that the instance is available for use.</summary>
-            private static readonly Action<object> s_availableSentinel = state => throw new Exception(nameof(s_availableSentinel));
+            private static readonly Action<object> s_availableSentinel = new Action<object>(state => throw new Exception(nameof(s_availableSentinel)));
             /// <summary>
             /// <see cref="s_availableSentinel"/> if the object is available for use, after GetResult has been called on a previous use.
             /// null if the operation has not completed.
@@ -840,7 +840,8 @@ namespace System.Net.Sockets
 
             public bool WrapExceptionsInIOExceptions { get; set; }
 
-            public bool Reserve() => Interlocked.CompareExchange(ref _continuation, null, s_availableSentinel) == s_availableSentinel;
+            public bool Reserve() =>
+                ReferenceEquals(Interlocked.CompareExchange(ref _continuation, null, s_availableSentinel), s_availableSentinel);
 
             private void Release()
             {
@@ -951,7 +952,7 @@ namespace System.Net.Sockets
                 }
 
                 return
-                    _continuation != s_completedSentinel ? ValueTaskSourceStatus.Pending :
+                    !ReferenceEquals(_continuation, s_completedSentinel) ? ValueTaskSourceStatus.Pending :
                     base.SocketError == SocketError.Success ? ValueTaskSourceStatus.Succeeded :
                     ValueTaskSourceStatus.Faulted;
             }
