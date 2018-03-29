@@ -197,21 +197,38 @@ namespace System.Security.Cryptography.Xml
                 if (cipherData.CipherReference.CipherValue != null)
                     return cipherData.CipherReference.CipherValue;
                 Stream decInputStream = null;
+                if (cipherData.CipherReference.Uri == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
+                }
                 // See if the CipherReference is a local URI
                 if (cipherData.CipherReference.Uri.Length == 0)
                 {
                     // self referenced Uri
                     string baseUri = (_document == null ? null : _document.BaseURI);
                     TransformChain tc = cipherData.CipherReference.TransformChain;
+                    if (tc == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
+                    }
                     decInputStream = tc.TransformToOctetStream(_document, _xmlResolver, baseUri);
                 }
                 else if (cipherData.CipherReference.Uri[0] == '#')
                 {
                     string idref = Utils.ExtractIdFromLocalUri(cipherData.CipherReference.Uri);
                     // Serialize 
-                    inputStream = new MemoryStream(_encoding.GetBytes(GetIdElement(_document, idref).OuterXml));
+                    XmlElement idElem = GetIdElement(_document, idref);
+                    if (idElem == null || idElem.OuterXml == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
+                    }
+                    inputStream = new MemoryStream(_encoding.GetBytes(idElem.OuterXml));
                     string baseUri = (_document == null ? null : _document.BaseURI);
                     TransformChain tc = cipherData.CipherReference.TransformChain;
+                    if (tc == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
+                    }
                     decInputStream = tc.TransformToOctetStream(inputStream, _xmlResolver, baseUri);
                 }
                 else
@@ -361,7 +378,11 @@ namespace System.Security.Cryptography.Xml
                 if (key == null)
                     throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
 
-                SymmetricAlgorithm symAlg = (SymmetricAlgorithm)CryptoHelpers.CreateFromName(symmetricAlgorithmUri);
+                SymmetricAlgorithm symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
+                if (symAlg == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
+                }
                 symAlg.Key = key;
                 return symAlg;
             }
@@ -394,6 +415,10 @@ namespace System.Security.Cryptography.Xml
                     object kek = _keyNameMapping[keyName];
                     if (kek != null)
                     {
+                        if (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
+                        }
                         // kek is either a SymmetricAlgorithm or an RSA key, otherwise, we wouldn't be able to insert it in the hash table
                         if (kek is SymmetricAlgorithm)
                             return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, (SymmetricAlgorithm)kek);
@@ -414,6 +439,10 @@ namespace System.Security.Cryptography.Xml
                         {
                             if (privateKey != null)
                             {
+                                if (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)
+                                {
+                                    throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
+                                }
                                 fOAEP = (encryptedKey.EncryptionMethod != null && encryptedKey.EncryptionMethod.KeyAlgorithm == EncryptedXml.XmlEncRSAOAEPUrl);
                                 return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, privateKey, fOAEP);
                             }
@@ -456,7 +485,16 @@ namespace System.Security.Cryptography.Xml
                     if (encryptionKey != null)
                     {
                         // this is a symmetric algorithm for sure
-                        SymmetricAlgorithm symAlg = (SymmetricAlgorithm)CryptoHelpers.CreateFromName(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        SymmetricAlgorithm symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        if (symAlg == null)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
+                        }
+                        symAlg.Key = encryptionKey;
+                        if (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)
+                        {
+                            throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
+                        }
                         symAlg.Key = encryptionKey;
                         return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, symAlg);
                     }

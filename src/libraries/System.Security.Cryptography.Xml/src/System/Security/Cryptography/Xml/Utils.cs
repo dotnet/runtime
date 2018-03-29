@@ -81,6 +81,29 @@ namespace System.Security.Cryptography.Xml
             return element.HasAttribute(localName) || element.HasAttribute(localName, namespaceURI);
         }
 
+        internal static bool VerifyAttributes(XmlElement element, string expectedAttrName)
+        {
+            return VerifyAttributes(element, expectedAttrName == null ? null : new string[] { expectedAttrName });
+        }
+
+        internal static bool VerifyAttributes(XmlElement element, string[] expectedAttrNames)
+        {
+            foreach (XmlAttribute attr in element.Attributes)
+            {
+                // There are a few Xml Special Attributes that are always allowed on any node. Make sure we allow those here.
+                bool attrIsAllowed = attr.Name == "xmlns" || attr.Name.StartsWith("xmlns:") || attr.Name == "xml:space" || attr.Name == "xml:lang" || attr.Name == "xml:base";
+                int expectedInd = 0;
+                while (!attrIsAllowed && expectedAttrNames != null && expectedInd < expectedAttrNames.Length)
+                {
+                    attrIsAllowed = attr.Name == expectedAttrNames[expectedInd];
+                    expectedInd++;
+                }
+                if (!attrIsAllowed)
+                    return false;
+            }
+            return true;
+        }
+
         internal static bool IsNamespaceNode(XmlNode n)
         {
             return n.NodeType == XmlNodeType.Attribute && (n.Prefix.Equals("xmlns") || (n.Prefix.Length == 0 && n.LocalName.Equals("xmlns")));
@@ -774,5 +797,8 @@ namespace System.Security.Cryptography.Xml
         {
             return (AsymmetricAlgorithm)certificate.GetRSAPublicKey();
         }
+
+        internal const int MaxTransformsPerReference = 10;
+        internal const int MaxReferencesPerSignedInfo = 100;
     }
 }
