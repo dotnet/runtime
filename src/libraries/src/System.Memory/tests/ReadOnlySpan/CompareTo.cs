@@ -275,7 +275,6 @@ namespace System.SpanTests
         {
             ReadOnlySpan<char> span = length <= (strA.Length - indexA) ? strA.AsSpan(indexA, length) : strA.AsSpan(indexA);
             ReadOnlySpan<char> value = length <= (strB.Length - indexB) ? strB.AsSpan(indexB, length) : strB.AsSpan(indexB);
-            //Assert.True(expected == Math.Sign(span.CompareTo(value, comparisonType)), span.ToString() + "|" + value.ToString() + "|" + length);
             Assert.Equal(expected, Math.Sign(span.CompareTo(value, comparisonType)));
         }
     }
