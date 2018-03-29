@@ -158,7 +158,7 @@ typedef struct {
 
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
 
-typedef struct {
+typedef struct MonoDebugOptions {
 	gboolean handle_sigint;
 	gboolean keep_delegates;
 	gboolean reverse_pinvoke_exceptions;
@@ -220,6 +220,9 @@ typedef struct {
 	 * identify the stack on some platforms
 	 */
 	gboolean disable_omit_fp;
+
+	// Internal testing feature.
+	gboolean test_tailcall_require;
 } MonoDebugOptions;
 
 

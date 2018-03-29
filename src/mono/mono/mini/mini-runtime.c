@@ -3514,6 +3514,11 @@ mono_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *met
 gboolean
 mini_parse_debug_option (const char *option)
 {
+	// Empty string is ok as consequence of appending ",foo"
+	// without first checking for empty.
+	if (*option == 0)
+		return TRUE;
+
 	if (!strcmp (option, "handle-sigint"))
 		mini_debug_options.handle_sigint = TRUE;
 	else if (!strcmp (option, "keep-delegates"))
@@ -3570,6 +3575,11 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.native_debugger_break = TRUE;
 	else if (!strcmp (option, "disable_omit_fp"))
 		mini_debug_options.disable_omit_fp = TRUE;
+	// This is an internal testing feature.
+	// Every tail. encountered is required to be optimized.
+	// It is asserted.
+	else if (!strcmp (option, "test-tailcall-require"))
+		mini_debug_options.test_tailcall_require = TRUE;
 	else
 		return FALSE;
 
@@ -3593,6 +3603,9 @@ mini_parse_debug_options (void)
 
 		if (!mini_parse_debug_option (arg)) {
 			fprintf (stderr, "Invalid option for the MONO_DEBUG env variable: %s\n", arg);
+			// test-tailcall-require is also accepted but not documented.
+			// empty string is also accepted and ignored as a consequence
+			// of appending ",foo" without checking for empty.
 			fprintf (stderr, "Available options: 'handle-sigint', 'keep-delegates', 'reverse-pinvoke-exceptions', 'collect-pagefault-stats', 'break-on-unverified', 'no-gdb-backtrace', 'suspend-on-native-crash', 'suspend-on-sigsegv', 'suspend-on-exception', 'suspend-on-unhandled', 'dont-free-domains', 'dyn-runtime-invoke', 'gdb', 'explicit-null-checks', 'gen-seq-points', 'no-compact-seq-points', 'single-imm-size', 'init-stacks', 'casts', 'soft-breakpoints', 'check-pinvoke-callconv', 'use-fallback-tls', 'debug-domain-unload', 'partial-sharing', 'align-small-structs', 'native-debugger-break'\n");
 			exit (1);
 		}

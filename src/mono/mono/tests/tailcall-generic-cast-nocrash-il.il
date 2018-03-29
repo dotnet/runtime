@@ -667,7 +667,7 @@ IL_0012:
 		conv.i8
 
 		call !0[] class D`1<class B>::cast9<class A> (object, int32, int64)
-		call void E::print (object)
+		tail. call void E::print (object)
 
 		ret
 	}

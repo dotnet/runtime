@@ -149,7 +149,7 @@ IL_0013:
 	ldc.i4.0
 	conv.i8
 	callvirt instance int32 A::f1(int32, int64, int64)
-	call void [mscorlib]System.Environment::Exit(int32)
+	tail. call void [mscorlib]System.Environment::Exit(int32)
 	ret
 }
 

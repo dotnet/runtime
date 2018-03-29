@@ -2167,6 +2167,19 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 		*out_pass_mrgctx = pass_mrgctx;
 }
 
+static void
+test_tailcall (MonoCompile *cfg, MonoBoolean tailcall)
+{
+	// A lot of tests say "tailcall" throughout their verbose output.
+	// "tailcalllog" is more searchable.
+	//
+	// Do not change "tailcalllog" here without changing other places, e.g. tests that search for it.
+	//
+	g_assertf (tailcall || !mini_get_debug_options ()->test_tailcall_require, "tailcalllog fail from %s", cfg->method->name);
+	if (cfg->verbose_level)
+		g_print ("tailcalllog %s from %s\n", tailcall ? "success" : "fail", cfg->method->name);
+}
+
 inline static MonoCallInst *
 mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig, 
 					 MonoInst **args, int calli, int virtual_, int tail, int rgctx, int unbox_trampoline, MonoMethod *target)
@@ -2177,8 +2190,11 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	int i;
 #endif
 
-	if (cfg->llvm_only)
+	if (cfg->llvm_only) {
+		if (tail)
+			test_tailcall (cfg, FALSE);
 		tail = FALSE;
+	}
 
 	if (tail && (debug_tailcall_break_compile || debug_tailcall_break_run)
 		&& mono_is_usermode_native_debugger_present ()) {
@@ -8313,6 +8329,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			ins = (MonoInst*)mini_emit_calli (cfg, fsig, sp, addr, NULL, NULL);
 
 			calli_end:
+			if (ins_flag & MONO_INST_TAILCALL)
+				test_tailcall (cfg, FALSE); // Currently we never tailcall calli.
 
 			/* End of call, INS should contain the result of the call, if any */
 
@@ -9199,6 +9217,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				push_res = FALSE;
 				need_seq_point = FALSE;
 			}
+
+			if (ins_flag & MONO_INST_TAILCALL)
+				test_tailcall (cfg, supported_tail_call);
 
 			/* End of call, INS should contain the result of the call, if any */
 
