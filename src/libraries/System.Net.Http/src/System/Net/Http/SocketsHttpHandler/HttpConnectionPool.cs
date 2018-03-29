@@ -45,6 +45,8 @@ namespace System.Net.Http
         private bool _usedSinceLastCleanup = true;
         /// <summary>Whether the pool has been disposed.</summary>
         private bool _disposed;
+        /// <summary>Whether timeouts are set such that we shouldn't ever pool a connection.</summary>
+        private bool _avoidStoringConnections;
 
         private const int DefaultHttpPort = 80;
         private const int DefaultHttpsPort = 443;
@@ -60,6 +62,9 @@ namespace System.Net.Http
             _port = port;
             _proxyUri = proxyUri;
             _maxConnections = maxConnections;
+            _avoidStoringConnections =
+                poolManager.Settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
+                poolManager.Settings._pooledConnectionLifetime == TimeSpan.Zero;
 
             switch (kind)
             {
@@ -608,8 +613,9 @@ namespace System.Net.Http
                 // If the pool has been disposed of, dispose the connection being returned,
                 // as the pool is being deactivated. We do this after the above in order to
                 // use pooled connections to satisfy any requests that pended before the
-                // the pool was disposed of.
-                if (_disposed)
+                // the pool was disposed of.  We also dispose of connections if connection
+                // timeouts are such that the connection would immediately expire, anyway.
+                if (_disposed || _avoidStoringConnections)
                 {
                     if (NetEventSource.IsEnabled) connection.Trace("Disposing connection returned to disposed pool.");
                     connection.Dispose();
