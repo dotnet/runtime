@@ -166,7 +166,6 @@ void *EEConfig::operator new(size_t size)
     RETURN g_EEConfigMemory;
 }
 
-
 /**************************************************************/
 HRESULT EEConfig::Init()
 {
@@ -392,7 +391,6 @@ HRESULT EEConfig::Init()
     // CLRConfig access config files. This is needed because CLRConfig lives outside the VM and can't
     // statically link to EEConfig.
     CLRConfig::RegisterGetConfigValueCallback(&GetConfigValueCallback);
-
 
     return S_OK;
 }
