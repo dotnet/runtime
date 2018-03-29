@@ -62,7 +62,7 @@ readonly EXIT_CODE_EXCEPTION=1     # Script exited because something exceptional
 readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or more tests failed.
 
 # Argument variables
-((maxIterations = 4))
+((maxIterations = 20))
 
 # Handle arguments
 __UnprocessedBuildArgs=
