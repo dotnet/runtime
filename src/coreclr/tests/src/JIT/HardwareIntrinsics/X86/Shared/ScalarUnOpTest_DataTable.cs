@@ -18,37 +18,32 @@ namespace JIT.HardwareIntrinsics.X86
 
         private GCHandle outHandle;
 
-        private byte simdSize;
+        private ulong alignment;
 
-        public SimpleScalarUnaryOpTest__DataTable(TResult[] outArray, int simdSize)
+        public SimpleScalarUnaryOpTest__DataTable(TResult[] outArray, int alignment)
         {
-            this.outArray = new byte[simdSize * 2];
+            int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
+            if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfoutArray)
+            {
+                throw new ArgumentException("Invalid value of alignment");
+            }
+            this.outArray = new byte[alignment * 2];
 
             this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
-            this.simdSize = unchecked((byte)(simdSize));
+            this.alignment = (ulong)alignment;
         }
 
-        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
         public void Dispose()
         {
             outHandle.Free();
         }
 
-        private static unsafe void* Align(byte* buffer, byte expectedAlignment)
+        private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
         {
-            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
-            // Then subtract that from the expectedAlignment and add it to the original address
-            // to compute the aligned address.
-
-            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-            var result = (void*)(buffer + misalignment);
-            
-            Debug.Assert(((ulong)(result) % expectedAlignment) == 0);
-            Debug.Assert((ulong)(result) <= ((ulong)(result) + expectedAlignment));
-
-            return result;
+            return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
         }
     }
 }
