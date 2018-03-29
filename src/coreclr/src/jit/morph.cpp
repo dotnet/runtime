@@ -12052,7 +12052,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op2  = tree->gtOp.gtOp2;
                 }
             }
-#endif //_TARGET_ARM64_
+#endif // !_TARGET_ARM64_
 #endif // !LEGACY_BACKEND
             break;
 
