@@ -152,57 +152,57 @@ int __cdecl main(int argc, char *argv[])
 
         // Strings with errors
         // Incomplete 2 byte encoded character standalone
-        W(""),
+        W("\xFFFD"),
         // Incomplete 3 byte encoded character 1 byte missing standalone
-        W(""),
+        W("\xFFFD"),
         // Incomplete 3 byte encoded character 2 bytes missing standalone
-        W(""),
+        W("\xFFFD"),
         // Incomplete surrogate character 1 byte missing standalone
-        W(""),
+        W("\xFFFD"),
         // Incomplete surrogate character 2 bytes missing standalone
-        W(""),
+        W("\xFFFD"),
         // Incomplete surrogate character 3 bytes missing standalone
-        W(""),
+        W("\xFFFD"),
         // Trailing byte with no lead byte standalone
-        W(""),
+        W("\xFFFD"),
         // Incomplete 2 byte encoded character 1 byte missing between 1 byte chars
-        W("\x0041\x0042"),
+        W("\x0041\xFFFD\x0042"),
         // Incomplete 3 byte encoded character 1 byte missing between 1 byte chars
-        W("\x0041\x0042"),
+        W("\x0041\xFFFD\x0042"),
         // Incomplete 3 byte encoded character 2 bytes missing between 1 byte chars
-        W("\x0041\x0042"),
+        W("\x0041\xFFFD\x0042"),
         // Trailing byte with no lead byte between 1 byte chars
-        W("\x0041\x0042"),
+        W("\x0041\xFFFD\x0042"),
         // Incomplete 2 byte encoded character 1 byte missing before 1 byte char
-        W("\x0042"),
+        W("\xFFFD\x0042"),
         // Incomplete 3 byte encoded character 1 byte missing before 1 byte char
-        W("\x0042"),
+        W("\xFFFD\x0042"),
         // Incomplete 3 byte encoded character 2 bytes missing before 1 byte char
-        W("\x0042"),
+        W("\xFFFD\x0042"),
         // Trailing byte with no lead byte before 1 byte char
-        W("\x0042"),
+        W("\xFFFD\x0042"),
         // Incomplete 2 byte encoded character 1 byte missing after 1 byte char
-        W("\x0041"),
+        W("\x0041\xFFFD"),
         // Incomplete 3 byte encoded character 1 byte missing after 1 byte char
-        W("\x0041"),
+        W("\x0041\xFFFD"),
         // Incomplete 3 byte encoded character 2 bytes missing after 1 byte char
-        W("\x0041"),
+        W("\x0041\xFFFD"),
         // Trailing byte with no lead byte after 1 byte char
-        W("\x0041"),
+        W("\x0041\xFFFD"),
         // Incomplete 2 byte encoded character 1 byte missing between 2 byte chars
-        W("\x0080\x00FF"),
+        W("\x0080\xFFFD\x00FF"),
         // Incomplete 3 byte encoded character 1 byte missing between 2 byte chars
-        W("\x0080\x00FF"),
+        W("\x0080\xFFFD\x00FF"),
         // Incomplete 3 byte encoded character 2 bytes missing between 2 byte chars
-        W("\x0080\x00FF"),
+        W("\x0080\xFFFD\x00FF"),
         // Trailing byte with no lead byte between 2 byte chars
-        W("\x0080\x00FF"),
+        W("\x0080\xFFFD\x00FF"),
         // 2 byte encoded character in non-shortest form encodings (these are not allowed)
-        W(""),
+        W("\xFFFD\xFFFD"),
         // 3 byte encoded character in non-shortest form encodings (these are not allowed)
-        W(""),
+        W("\xFFFD\xFFFD"),
         // 4 byte encoded character in non-shortest form encodings (these are not allowed)
-        W(""),
+        W("\xFFFD\xFFFD\xFFFD"),
     };
 
     for (int i = 0; i < (sizeof(utf8Strings) / sizeof(utf8Strings[0])); i++)
