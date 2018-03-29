@@ -275,18 +275,34 @@ namespace System.Collections.Generic
 
         public bool ContainsValue(TValue value)
         {
+            Entry[] entries = _entries;
             if (value == null)
             {
                 for (int i = 0; i < _count; i++)
                 {
-                    if (_entries[i].hashCode >= 0 && _entries[i].value == null) return true;
+                    if (entries[i].hashCode >= 0 && entries[i].value == null) return true;
                 }
             }
             else
             {
-                for (int i = 0; i < _count; i++)
+                if (default(TValue) != null)
                 {
-                    if (_entries[i].hashCode >= 0 && EqualityComparer<TValue>.Default.Equals(_entries[i].value, value)) return true;
+                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    for (int i = 0; i < _count; i++)
+                    {
+                        if (entries[i].hashCode >= 0 && EqualityComparer<TValue>.Default.Equals(entries[i].value, value)) return true;
+                    }
+                }
+                else
+                {
+                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
+                    // https://github.com/dotnet/coreclr/issues/17273
+                    // So cache in a local rather than get EqualityComparer per loop iteration
+                    EqualityComparer<TValue> defaultComparer = EqualityComparer<TValue>.Default;
+                    for (int i = 0; i < _count; i++)
+                    {
+                        if (entries[i].hashCode >= 0 && defaultComparer.Equals(entries[i].value, value)) return true;
+                    }
                 }
             }
             return false;
@@ -364,24 +380,53 @@ namespace System.Collections.Generic
                     int hashCode = key.GetHashCode() & 0x7FFFFFFF;
                     // Value in _buckets is 1-based
                     i = buckets[hashCode % buckets.Length] - 1;
-                    do
+                    if (default(TKey) != null)
                     {
-                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
-                        // Test in if to drop range check for following array access
-                        if ((uint)i >= (uint)entries.Length || (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key)))
+                        // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                        do
                         {
-                            break;
-                        }
+                            // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                            // Test in if to drop range check for following array access
+                            if ((uint)i >= (uint)entries.Length || (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key)))
+                            {
+                                break;
+                            }
 
-                        i = entries[i].next;
-                        if (collisionCount >= entries.Length)
+                            i = entries[i].next;
+                            if (collisionCount >= entries.Length)
+                            {
+                                // The chain of entries forms a loop; which means a concurrent update has happened.
+                                // Break out of the loop and throw, rather than looping forever.
+                                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                            }
+                            collisionCount++;
+                        } while (true);
+                    }
+                    else
+                    {
+                        // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
+                        // https://github.com/dotnet/coreclr/issues/17273
+                        // So cache in a local rather than get EqualityComparer per loop iteration
+                        EqualityComparer<TKey> defaultComparer = EqualityComparer<TKey>.Default;
+                        do
                         {
-                            // The chain of entries forms a loop; which means a concurrent update has happened.
-                            // Break out of the loop and throw, rather than looping forever.
-                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                        }
-                        collisionCount++;
-                    } while (true);
+                            // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                            // Test in if to drop range check for following array access
+                            if ((uint)i >= (uint)entries.Length || (entries[i].hashCode == hashCode && defaultComparer.Equals(entries[i].key, key)))
+                            {
+                                break;
+                            }
+
+                            i = entries[i].next;
+                            if (collisionCount >= entries.Length)
+                            {
+                                // The chain of entries forms a loop; which means a concurrent update has happened.
+                                // Break out of the loop and throw, rather than looping forever.
+                                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                            }
+                            collisionCount++;
+                        } while (true);
+                    }
                 }
                 else
                 {
@@ -449,40 +494,85 @@ namespace System.Collections.Generic
 
             if (comparer == null)
             {
-                do
+                if (default(TKey) != null)
                 {
-                    // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
-                    // Test uint in if rather than loop condition to drop range check for following array access
-                    if ((uint)i >= (uint)entries.Length)
+                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    do
                     {
-                        break;
-                    }
-
-                    if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
-                    {
-                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Test uint in if rather than loop condition to drop range check for following array access
+                        if ((uint)i >= (uint)entries.Length)
                         {
-                            entries[i].value = value;
-                            return true;
+                            break;
                         }
 
-                        if (behavior == InsertionBehavior.ThrowOnExisting)
+                        if (entries[i].hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].key, key))
                         {
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            if (behavior == InsertionBehavior.OverwriteExisting)
+                            {
+                                entries[i].value = value;
+                                return true;
+                            }
+
+                            if (behavior == InsertionBehavior.ThrowOnExisting)
+                            {
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            }
+
+                            return false;
                         }
 
-                        return false;
-                    }
-
-                    i = entries[i].next;
-                    if (collisionCount >= entries.Length)
+                        i = entries[i].next;
+                        if (collisionCount >= entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                        collisionCount++;
+                    } while (true);
+                }
+                else
+                {
+                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize
+                    // https://github.com/dotnet/coreclr/issues/17273
+                    // So cache in a local rather than get EqualityComparer per loop iteration
+                    EqualityComparer<TKey> defaultComparer = EqualityComparer<TKey>.Default;
+                    do
                     {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                    }
-                    collisionCount++;
-                } while (true);
+                        // Should be a while loop https://github.com/dotnet/coreclr/issues/15476
+                        // Test uint in if rather than loop condition to drop range check for following array access
+                        if ((uint)i >= (uint)entries.Length)
+                        {
+                            break;
+                        }
+
+                        if (entries[i].hashCode == hashCode && defaultComparer.Equals(entries[i].key, key))
+                        {
+                            if (behavior == InsertionBehavior.OverwriteExisting)
+                            {
+                                entries[i].value = value;
+                                return true;
+                            }
+
+                            if (behavior == InsertionBehavior.ThrowOnExisting)
+                            {
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            }
+
+                            return false;
+                        }
+
+                        i = entries[i].next;
+                        if (collisionCount >= entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
+                        collisionCount++;
+                    } while (true);
+                }
             }
             else
             {
