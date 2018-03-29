@@ -7,29 +7,14 @@ using Xunit;
 
 namespace System.MemoryTests
 {
-    public static partial class MemoryTests
+    public static partial class ReadOnlyMemoryTests
     {
-
         [Fact]
-        public static void MemoryRetainWithoutPinning()
+        public static void MemoryPin()
         {
             int[] array = { 1, 2, 3, 4, 5 };
-            Memory<int> memory = array;
-            MemoryHandle handle = memory.Retain();
-            Assert.False(handle.HasPointer);
-            unsafe
-            {
-                Assert.True(handle.Pointer == null);
-            }
-            handle.Dispose();
-        }
-
-        [Fact]
-        public static void MemoryRetainWithPinning()
-        {
-            int[] array = { 1, 2, 3, 4, 5 };
-            Memory<int> memory = array;
-            MemoryHandle handle = memory.Retain(pin: true);
+            ReadOnlyMemory<int> memory = array;
+            MemoryHandle handle = memory.Pin();
             Assert.True(handle.HasPointer);
             unsafe
             {
@@ -46,21 +31,19 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void MemoryFromEmptyArrayRetainWithPinning()
+        public static void MemoryFromEmptyArrayPin()
         {
-            Memory<int> memory = new int[0];
-            MemoryHandle handle = memory.Retain(pin: true);
+            ReadOnlyMemory<int> memory = new int[0];
+            MemoryHandle handle = memory.Pin();
             Assert.True(handle.HasPointer);
             handle.Dispose();
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public static void DefaultMemoryRetain(bool pin)
+        [Fact]
+        public static void DefaultMemoryPin()
         {
-            Memory<int> memory = default;
-            MemoryHandle handle = memory.Retain(pin: pin);
+            ReadOnlyMemory<int> memory = default;
+            MemoryHandle handle = memory.Pin();
             Assert.False(handle.HasPointer);
             unsafe
             {
@@ -70,13 +53,13 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void MemoryRetainWithPinningAndSlice()
+        public static void MemoryPinAndSlice()
         {
             int[] array = { 1, 2, 3, 4, 5 };
-            Memory<int> memory = array;
+            ReadOnlyMemory<int> memory = array;
             memory = memory.Slice(1);
-            MemoryHandle handle = memory.Retain(pin: true);
-            Span<int> span = memory.Span;
+            MemoryHandle handle = memory.Pin();
+            ReadOnlySpan<int> span = memory.Span;
             Assert.True(handle.HasPointer);
             unsafe
             {
@@ -98,27 +81,12 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void OwnedMemoryRetainWithoutPinning()
+        public static void OwnedMemoryPin()
         {
             int[] array = { 1, 2, 3, 4, 5 };
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Memory<int> memory = owner.Memory;
-            MemoryHandle handle = memory.Retain();
-            Assert.False(handle.HasPointer);
-            unsafe
-            {
-                Assert.True(handle.Pointer == null);
-            }
-            handle.Dispose();
-        }
-
-        [Fact]
-        public static void OwnedMemoryRetainWithPinning()
-        {
-            int[] array = { 1, 2, 3, 4, 5 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Memory<int> memory = owner.Memory;
-            MemoryHandle handle = memory.Retain(pin: true);
+            ReadOnlyMemory<int> memory = owner.Memory;
+            MemoryHandle handle = memory.Pin();
             Assert.True(handle.HasPointer);
             unsafe
             {
@@ -135,13 +103,13 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void OwnedMemoryRetainWithPinningAndSlice()
+        public static void OwnedMemoryPinAndSlice()
         {
             int[] array = { 1, 2, 3, 4, 5 };
             OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Memory<int> memory = owner.Memory.Slice(1);
-            MemoryHandle handle = memory.Retain(pin: true);
-            Span<int> span = memory.Span;
+            ReadOnlyMemory<int> memory = owner.Memory.Slice(1);
+            MemoryHandle handle = memory.Pin();
+            ReadOnlySpan<int> span = memory.Span;
             Assert.True(handle.HasPointer);
             unsafe
             {

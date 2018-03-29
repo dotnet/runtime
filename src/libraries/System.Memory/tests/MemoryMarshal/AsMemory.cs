@@ -39,17 +39,17 @@ namespace System.MemoryTests
 
         [Theory]
         [MemberData(nameof(ReadOnlyMemoryInt32Instances))]
-        public static void AsMemory_Roundtrips(ReadOnlyMemory<int> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory);
+        public static void AsMemory_Roundtrips(ReadOnlyMemory<int> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory, true);
 
         [Theory]
         [MemberData(nameof(ReadOnlyMemoryObjectInstances))]
-        public static void AsMemory_Roundtrips(ReadOnlyMemory<object> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory);
+        public static void AsMemory_Roundtrips(ReadOnlyMemory<object> readOnlyMemory) => AsMemory_Roundtrips_Core(readOnlyMemory, false);
 
         [Theory]
         [MemberData(nameof(ReadOnlyMemoryCharInstances))]
         public static void AsMemory_Roundtrips(ReadOnlyMemory<char> readOnlyMemory)
         {
-            AsMemory_Roundtrips_Core(readOnlyMemory);
+            AsMemory_Roundtrips_Core(readOnlyMemory, true);
 
             Memory<char> memory = MemoryMarshal.AsMemory(readOnlyMemory);
             ReadOnlyMemory<char> readOnlyClone = memory;
@@ -66,7 +66,7 @@ namespace System.MemoryTests
             }
         }
 
-        private static unsafe void AsMemory_Roundtrips_Core<T>(ReadOnlyMemory<T> readOnlyMemory)
+        private static unsafe void AsMemory_Roundtrips_Core<T>(ReadOnlyMemory<T> readOnlyMemory, bool canBePinned)
         {
             Memory<T> memory = MemoryMarshal.AsMemory(readOnlyMemory);
             ReadOnlyMemory<T> readOnlyClone = memory;
@@ -87,13 +87,16 @@ namespace System.MemoryTests
             Assert.Equal(array1.Offset, array2.Offset);
             Assert.Equal(array1.Count, array2.Count);
 
-            // Retain
-            using (MemoryHandle readOnlyMemoryHandle = readOnlyMemory.Retain())
-            using (MemoryHandle readOnlyCloneHandle = readOnlyMemory.Retain())
-            using (MemoryHandle memoryHandle = readOnlyMemory.Retain())
+            if (canBePinned)
             {
-                Assert.Equal((IntPtr)readOnlyMemoryHandle.Pointer, (IntPtr)readOnlyCloneHandle.Pointer);
-                Assert.Equal((IntPtr)readOnlyMemoryHandle.Pointer, (IntPtr)memoryHandle.Pointer);
+                // Pin
+                using (MemoryHandle readOnlyMemoryHandle = readOnlyMemory.Pin())
+                using (MemoryHandle readOnlyCloneHandle = readOnlyMemory.Pin())
+                using (MemoryHandle memoryHandle = readOnlyMemory.Pin())
+                {
+                    Assert.Equal((IntPtr)readOnlyMemoryHandle.Pointer, (IntPtr)readOnlyCloneHandle.Pointer);
+                    Assert.Equal((IntPtr)readOnlyMemoryHandle.Pointer, (IntPtr)memoryHandle.Pointer);
+                }
             }
         }
     }

@@ -40,7 +40,7 @@ namespace System.IO.Pipes
             _threadPoolBinding = handle;
             _state = NoResult;
 
-            _pinnedMemory = bufferToPin.Retain(pin: true);
+            _pinnedMemory = bufferToPin.Pin();
             _overlapped = _threadPoolBinding.AllocateNativeOverlapped((errorCode, numBytes, pOverlapped) =>
             {
                 var completionSource = (PipeCompletionSource<TResult>)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);

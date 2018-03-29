@@ -54,6 +54,21 @@ namespace System.MemoryTests
             handle.Dispose();
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void DefaultMemoryRetain(bool pin)
+        {
+            ReadOnlyMemory<int> memory = default;
+            MemoryHandle handle = memory.Retain(pin: pin);
+            Assert.False(handle.HasPointer);
+            unsafe
+            {
+                Assert.True(handle.Pointer == null);
+            }
+            handle.Dispose();
+        }
+
         [Fact]
         public static void MemoryRetainWithPinningAndSlice()
         {
@@ -143,21 +158,6 @@ namespace System.MemoryTests
                 {
                     Assert.Equal(array[i + 1], span[i]);
                 }
-            }
-            handle.Dispose();
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public static void DefaultMemoryRetain(bool pin)
-        {
-            ReadOnlyMemory<int> memory = default;
-            MemoryHandle handle = memory.Retain(pin: pin);
-            Assert.False(handle.HasPointer);
-            unsafe
-            {
-                Assert.True(handle.Pointer == null);
             }
             handle.Dispose();
         }
