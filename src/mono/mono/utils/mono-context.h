@@ -41,7 +41,7 @@ typedef __m128d MonoContextSimdReg;
 #elif defined(HOST_ANDROID)
 #define MONO_HAVE_SIMD_REG
 typedef struct _libc_xmmreg MonoContextSimdReg;
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__OpenBSD__)
 #define MONO_HAVE_SIMD_REG
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;

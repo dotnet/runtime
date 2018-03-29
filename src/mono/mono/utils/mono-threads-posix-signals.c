@@ -68,6 +68,8 @@ abort_signal_get (void)
 {
 #if defined(HOST_ANDROID)
 	return SIGTTIN;
+#elif defined (__OpenBSD__)
+	return SIGUSR1;
 #elif defined (SIGRTMIN)
 	static int abort_signum = -1;
 	if (abort_signum == -1)
