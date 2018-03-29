@@ -3413,7 +3413,7 @@ building and deploying the assemblies with the application.
   </data>
   <data name="HelpUsage" xml:space="preserve">
     <value>
-Usage: dotnet {0} [[--assembly &lt;assembly name&gt;] | [&lt;assembly file location&gt;]] [--type] [--debug]</value>
+Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&gt;]</value>
   </data>
   <data name="HelpDevOptions" xml:space="preserve">
     <value>  
