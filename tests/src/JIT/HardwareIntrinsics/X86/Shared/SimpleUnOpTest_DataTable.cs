@@ -21,23 +21,30 @@ namespace JIT.HardwareIntrinsics.X86
         private GCHandle inHandle;
         private GCHandle outHandle;
 
-        private byte simdSize;
+        private ulong alignment;
 
-        public SimpleUnaryOpTest__DataTable(TOp1[] inArray, TResult[] outArray, int simdSize)
+        public SimpleUnaryOpTest__DataTable(TOp1[] inArray, TResult[] outArray, int alignment)
         {
-            this.inArray = new byte[simdSize * 2];
-            this.outArray = new byte[simdSize * 2];
+            int sizeOfinArray = inArray.Length * Unsafe.SizeOf<TOp1>();
+            int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
+            if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray || (alignment * 2) < sizeOfoutArray)
+            {
+                throw new ArgumentException("Invalid value of alignment");
+            }
+
+            this.inArray = new byte[alignment * 2];
+            this.outArray = new byte[alignment * 2];
 
             this.inHandle = GCHandle.Alloc(this.inArray, GCHandleType.Pinned);
             this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
-            this.simdSize = unchecked((byte)(simdSize));
+            this.alignment = (ulong)alignment;
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArrayPtr), ref Unsafe.As<TOp1, byte>(ref inArray[0]), this.simdSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArrayPtr), ref Unsafe.As<TOp1, byte>(ref inArray[0]), (uint)sizeOfinArray);
         }
 
-        public void* inArrayPtr => Align((byte*)(inHandle.AddrOfPinnedObject().ToPointer()), simdSize);
-        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* inArrayPtr => Align((byte*)(inHandle.AddrOfPinnedObject().ToPointer()), alignment);
+        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
         public void Dispose()
         {
@@ -45,19 +52,9 @@ namespace JIT.HardwareIntrinsics.X86
             outHandle.Free();
         }
 
-        private static unsafe void* Align(byte* buffer, byte expectedAlignment)
+        private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
         {
-            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
-            // Then subtract that from the expectedAlignment and add it to the original address
-            // to compute the aligned address.
-
-            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-            var result = (void*)(buffer + misalignment);
-            
-            Debug.Assert(((ulong)(result) % expectedAlignment) == 0);
-            Debug.Assert((ulong)(result) <= ((ulong)(result) + expectedAlignment));
- 
-            return result;
+            return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
         }
     }
 }
