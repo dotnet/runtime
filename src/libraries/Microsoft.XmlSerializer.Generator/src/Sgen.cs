@@ -45,17 +45,6 @@ namespace Microsoft.XmlSerializer.Generator
                 for (int i = 0; i < args.Length; i++)
                 {
                     string arg = args[i];
-                    string value = string.Empty;
-                    
-                    if (arg.StartsWith("-"))
-                    {
-                        int colonPos = arg.IndexOf(":");
-                        if (colonPos != -1)
-                        {
-                            value = arg.Substring(colonPos + 1).Trim();
-                            arg = arg.Substring(0, colonPos).Trim();
-                        }
-                    }
   
                     if (ArgumentMatch(arg, "help") || ShortNameArgumentMatch(arg, "h"))
                     {
@@ -73,18 +62,26 @@ namespace Microsoft.XmlSerializer.Generator
                     }
                     else if (ArgumentMatch(arg, "out") || ShortNameArgumentMatch(arg, "o"))
                     {
-                        if (codePath != null)
-                        {
-                            errs.Add(SR.Format(SR.ErrInvalidArgument, "--out", arg));
+                        i++;
+                        if(i >= args.Length || codePath != null )
+                        {                         
+                            errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
-
-                        codePath = value;
+                        else
+                        {
+                            codePath = args[i];
+                        }
                     }
                     else if (ArgumentMatch(arg, "type"))
                     {
-                        if (value != string.Empty)
+                        i++;
+                        if (i >= args.Length)
                         {
-                            string[] typelist = value.Split(';');
+                            errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
+                        }
+                        else
+                        {
+                            string[] typelist = args[i].Split(';');
                             foreach (var type in typelist)
                             {
                                 types.Add(type);
@@ -93,12 +90,15 @@ namespace Microsoft.XmlSerializer.Generator
                     }
                     else if (ArgumentMatch(arg, "assembly") || ShortNameArgumentMatch(arg, "a"))
                     {
-                        if (assembly != null)
+                        i++;
+                        if (i >= args.Length || assembly != null)
                         {
-                            errs.Add(SR.Format(SR.ErrInvalidArgument, "--assembly", arg));
+                            errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
-
-                        assembly = value;
+                        else
+                        {
+                            assembly = args[i];
+                        }
                     }
                     else if (ArgumentMatch(arg, "quiet"))
                     {
@@ -122,11 +122,19 @@ namespace Microsoft.XmlSerializer.Generator
                     }
                     else if (ArgumentMatch(arg, "reference"))
                     {
-                        s_references = value;
-                        if (!string.IsNullOrEmpty(s_references))
+                        i++;
+                        if (i >= args.Length)
                         {
-                            ParseReferences();
+                            errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
+                        else
+                        {
+                            s_references = args[i];
+                            if (!string.IsNullOrEmpty(s_references))
+                            {
+                                ParseReferences();
+                            }
+                        }                        
                     }
                     else
                     {
@@ -134,7 +142,7 @@ namespace Microsoft.XmlSerializer.Generator
                         {
                             if (assembly != null)
                             {
-                                errs.Add(SR.Format(SR.ErrInvalidArgument, "--assembly", arg));
+                                errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                             }
 
                             assembly = arg;
