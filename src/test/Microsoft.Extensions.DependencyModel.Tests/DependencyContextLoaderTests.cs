@@ -73,5 +73,21 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var context = loader.Load(Assembly.GetEntryAssembly());
             context.RuntimeLibraries.Should().Contain(l => l.Name == "System.Banana");
         }
+
+        [Fact]
+        public void LoadCanLoadANonEntryAssembly()
+        {
+            var loader = new DependencyContextLoader();
+            var context = loader.Load(typeof(DependencyContextLoaderTests).Assembly);
+
+            context.RuntimeLibraries.Should().Contain(l => l.Name == "Microsoft.Extensions.DependencyModel");
+        }
+
+        [Fact]
+        public void LoadReturnsNullWhenNotFound()
+        {
+            var loader = new DependencyContextLoader();
+            Assert.Null(loader.Load(typeof(string).Assembly));
+        }
     }
 }
