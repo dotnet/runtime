@@ -578,19 +578,42 @@ namespace System.Drawing.Printing.Tests
             Assert.NotEqual(IntPtr.Zero, handle);
         }
 
-        [ActiveIssue(26637)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(typeof(PrinterSettingsTests), nameof(CanTestSetHdevmode_IntPtr_Success))]
         public void SetHdevmode_IntPtr_Success()
         {
-            var printerSettings = new PrinterSettings() { Copies = 3 };
-            var newPrinterSettings = new PrinterSettings() { Copies = 6 };
+            string printerName = GetNameOfTestPrinterSuitableForDevModeTesting();
+            var printerSettings = new PrinterSettings() { PrinterName = printerName, Copies = 3 };
+            var newPrinterSettings = new PrinterSettings() { PrinterName = printerName, Copies = 6 };
+
             IntPtr handle = printerSettings.GetHdevmode();
             newPrinterSettings.SetHdevmode(handle);
             Assert.Equal(printerSettings.Copies, newPrinterSettings.Copies);
             Assert.Equal(printerSettings.Collate, newPrinterSettings.Collate);
             Assert.Equal(printerSettings.Duplex, newPrinterSettings.Duplex);
         }
+
+        public static bool CanTestSetHdevmode_IntPtr_Success => Helpers.GetGdiplusIsAvailable() && GetNameOfTestPrinterSuitableForDevModeTesting() != null;
+
+        private static string GetNameOfTestPrinterSuitableForDevModeTesting()
+        {
+            foreach (string candidate in s_TestPrinterNames)
+            {
+                PrinterSettings printerSettings = new PrinterSettings() { PrinterName = candidate };
+                if (printerSettings.IsValid)
+                    return candidate;
+            }
+            return null;
+        }
+
+        private static readonly string[] s_TestPrinterNames =
+        {
+            // Our method of testing this api requires a printer that supports multi-copy printing, collating and duplex settings. Not all printers
+            // support these so rather than trust the machine running the test to have configured such a printer as the default, use the name of 
+            // a known compliant printer that ships with Windows 10.
+            "Microsoft Print to PDF",
+            "Microsoft XPS Document Writer", // Backup for older Windows
+        };
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
