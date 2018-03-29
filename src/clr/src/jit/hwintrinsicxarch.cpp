@@ -20,8 +20,10 @@ struct HWIntrinsicInfo
 };
 
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
+// clang-format off
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##id, name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag},
+    {NI_##id, name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+// clang-format on
 #include "hwintrinsiclistxarch.h"
 };
 
