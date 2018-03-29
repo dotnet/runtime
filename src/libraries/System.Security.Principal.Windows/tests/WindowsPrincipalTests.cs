@@ -4,6 +4,8 @@
 
 using System;
 using System.ComponentModel;
+using System.Linq;
+using System.Security.Claims;
 using System.Security.Principal;
 using Xunit;
 
@@ -31,6 +33,35 @@ public class WindowsPrincipalTests
             // NetFx throws a plain SystemException which has the message built via FormatMessage.
             // CoreFx throws a Win32Exception based on the error, which gets the same message value.
             Assert.Equal(win32Exception.Message, e.Message);
+        }
+    }
+
+    [Fact]
+    public static void CheckDeviceClaims()
+    {
+        using (WindowsIdentity id = WindowsIdentity.GetCurrent())
+        {
+            WindowsPrincipal principal = new WindowsPrincipal(id);
+
+            int manualCount = principal.Claims.Count(c => c.Properties.ContainsKey(ClaimTypes.WindowsDeviceClaim));
+            int autoCount = principal.DeviceClaims.Count();
+
+            Assert.Equal(manualCount, autoCount);
+        }
+    }
+
+    [Fact]
+    public static void CheckUserClaims()
+    {
+        using (WindowsIdentity id = WindowsIdentity.GetCurrent())
+        {
+            WindowsPrincipal principal = new WindowsPrincipal(id);
+            Claim[] allClaims = principal.Claims.ToArray();
+            int deviceCount = allClaims.Count(c => c.Properties.ContainsKey(ClaimTypes.WindowsDeviceClaim));
+            int manualCount = allClaims.Length - deviceCount;
+            int autoCount = principal.UserClaims.Count();
+
+            Assert.Equal(manualCount, autoCount);
         }
     }
 }

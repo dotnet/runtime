@@ -68,6 +68,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentThread.cs">
       <Link>Common\Interop\Interop.GetCurrentThread.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ClaimSecurityAttributes.cs">
+      <Link>Common\Interop\Interop.ClaimSecurityAttributes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
       <Link>Common\Interop\Interop.OpenProcessToken.cs</Link>
     </Compile>

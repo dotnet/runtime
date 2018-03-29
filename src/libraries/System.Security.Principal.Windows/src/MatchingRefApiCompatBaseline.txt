@@ -1,7 +1,0 @@
-Compat issues with assembly System.Security.Principal.Windows:
-MembersMustExist : Member 'System.Security.Principal.WindowsIdentity..ctor(System.Security.Principal.WindowsIdentity)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Principal.WindowsIdentity.DeviceClaims.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Principal.WindowsIdentity.UserClaims.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Principal.WindowsPrincipal.DeviceClaims.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Principal.WindowsPrincipal.UserClaims.get()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 5
