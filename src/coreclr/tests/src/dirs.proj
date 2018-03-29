@@ -45,6 +45,7 @@
 
     <!-- Test build is divided in slices which can be created within Test Group
          Priority 0 tests are build using Test Group 1 with 2 subgroups or slices -->
+
     <ItemGroup Condition="$(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '1' And $(TestBuildSlice) == '1'">
       <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
@@ -59,6 +60,7 @@
 
     <!-- Test build is divided in slices which can be created within Test Group
          Priority 1 or higher tests are build using Test Group 2 with 16 subgroups or slices -->    
+
     <ItemGroup Condition="($(__BuildOS) == 'Windows_NT' And $(__TestGroupToBuild) == '2' And $(TestBuildSlice) == '1')">
       <Project Include="baseservices\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
@@ -90,6 +92,9 @@
       <Project Include="GC\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
+      <Project Include="hosting\**\*.csproj" Exclude="@(DisabledProjects)">
+        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
+      </Project>
       <Project Include="Interop\**\*.csproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
@@ -97,6 +102,9 @@
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
       <Project Include="GC\**\*.ilproj" Exclude="@(DisabledProjects)">
+        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
+      </Project>
+      <Project Include="hosting\**\*.ilproj" Exclude="@(DisabledProjects)">
         <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
       </Project>
       <Project Include="Interop\**\*.ilproj" Exclude="@(DisabledProjects)">
