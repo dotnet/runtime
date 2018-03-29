@@ -26,6 +26,9 @@ namespace System.Net.WebSockets
                 {
                     ThrowIfOperationInProgress(_lastReceiveAsync.IsCompleted);
                     ValueTask<ValueWebSocketReceiveResult> t = ReceiveAsyncPrivate<ValueWebSocketReceiveResultGetter, ValueWebSocketReceiveResult>(buffer, cancellationToken);
+
+                    // WARNING: This code is only valid because ReceiveAsyncPrivate returns a ValueTask that wraps a T or a Task.
+                    // If that ever changes where ReceiveAsyncPrivate could wrap an IValueTaskSource, this must also change.
                     _lastReceiveAsync =
                         t.IsCompletedSuccessfully ? (t.Result.MessageType == WebSocketMessageType.Close ? s_cachedCloseTask : Task.CompletedTask) :
                         t.AsTask();

@@ -504,10 +504,13 @@ namespace System.Net.WebSockets
                 // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
                 // The call will handle releasing the lock.
                 ValueTask t = SendFrameLockAcquiredNonCancelableAsync(MessageOpcode.Ping, true, Memory<byte>.Empty);
-
-                // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
-                if (!t.IsCompletedSuccessfully)
+                if (t.IsCompletedSuccessfully)
                 {
+                    t.GetAwaiter().GetResult();
+                }
+                else
+                {
+                    // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
                     t.AsTask().ContinueWith(p => { Exception ignored = p.Exception; },
                         CancellationToken.None,
                         TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
