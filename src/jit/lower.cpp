@@ -4778,9 +4778,9 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         {
 #ifdef _TARGET_64BIT_
             magic = MagicDivide::GetSigned64Magic(static_cast<int64_t>(divisorValue), &shift);
-#else
+#else  // !_TARGET_64BIT_
             unreached();
-#endif
+#endif // !_TARGET_64BIT_
         }
 
         divisor->gtIntConCommon.SetIconValue(magic);
@@ -4872,9 +4872,11 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         }
 
         return mulhi;
-#else
+#elif defined(_TARGET_ARM_)
         // Currently there's no GT_MULHI for ARM32
         return nullptr;
+#else
+#error Unsupported or unset target architecture
 #endif
     }
 
