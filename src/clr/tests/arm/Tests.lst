@@ -40073,7 +40073,7 @@ RelativePath=CoreMangLib\cti\system\gc\GCCollect\GCCollect.cmd
 WorkingDir=CoreMangLib\cti\system\gc\GCCollect
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE;Pri1
 HostStyle=0
 
 [DictionaryValueCollectionCopyTo.cmd_5028]
