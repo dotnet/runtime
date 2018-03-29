@@ -729,9 +729,9 @@ typedef struct {
 	gint32 security_depth;
 	gint32 unused;
 	/* Threadpool */
+	gint32 threadpool_threads;
 	gint64 threadpool_workitems;
 	gint64 threadpool_ioworkitems;
-	gint32 threadpool_threads;
 	gint32 threadpool_iothreads;
 } MonoPerfCounters;
 
