@@ -410,7 +410,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if there is a signature description class defined in the Config file
-            SignatureDescription signatureDescription = CryptoHelpers.CreateFromName(SignedInfo.SignatureMethod) as SignatureDescription;
+            SignatureDescription signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignedInfo.SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
             HashAlgorithm hashAlg = signatureDescription.CreateDigest();
@@ -653,7 +653,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // See if we're signed witn an HMAC algorithm
-            HMAC hmac = CryptoHelpers.CreateFromName(SignatureMethod) as HMAC;
+            HMAC hmac = CryptoHelpers.CreateFromName<HMAC>(SignatureMethod);
             if (hmac == null)
             {
                 // We aren't signed with an HMAC algorithm, so we cannot have a truncated HMAC
@@ -1017,7 +1017,7 @@ namespace System.Security.Cryptography.Xml
 
             SignedXmlDebugLog.LogBeginCheckSignedInfo(this, m_signature.SignedInfo);
 
-            SignatureDescription signatureDescription = CryptoHelpers.CreateFromName(SignatureMethod) as SignatureDescription;
+            SignatureDescription signatureDescription = CryptoHelpers.CreateFromName<SignatureDescription>(SignatureMethod);
             if (signatureDescription == null)
                 throw new CryptographicException(SR.Cryptography_Xml_SignatureDescriptionNotCreated);
 

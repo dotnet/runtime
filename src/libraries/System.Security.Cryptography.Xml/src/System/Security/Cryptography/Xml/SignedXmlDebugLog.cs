@@ -698,6 +698,8 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
+                HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = string.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_SigningReference,
                                                   GetObjectId(reference),
@@ -705,7 +707,7 @@ namespace System.Security.Cryptography.Xml
                                                   reference.Id,
                                                   reference.Type,
                                                   reference.DigestMethod,
-                                                  CryptoHelpers.CreateFromName(reference.DigestMethod).GetType().Name);
+                                                  hashAlgorithmName);
 
                 WriteLine(signedXml,
                           TraceEventType.Verbose,
@@ -831,11 +833,13 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
+                HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = string.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_ReferenceHash,
                                                   GetObjectId(reference),
                                                   reference.DigestMethod,
-                                                  CryptoHelpers.CreateFromName(reference.DigestMethod).GetType().Name,
+                                                  hashAlgorithmName,
                                                   FormatBytes(actualHash),
                                                   FormatBytes(expectedHash));
 
@@ -1043,11 +1047,13 @@ namespace System.Security.Cryptography.Xml
 
             if (InformationLoggingEnabled)
             {
+                HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = string.Format(CultureInfo.InvariantCulture,
                                                     SR.Log_SignedXmlRecursionLimit,
                                                     GetObjectId(reference),
                                                     reference.DigestMethod,
-                                                    CryptoHelpers.CreateFromName(reference.DigestMethod).GetType().Name);
+                                                    hashAlgorithmName);
 
                 WriteLine(signedXml,
                             TraceEventType.Information,

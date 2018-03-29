@@ -50,28 +50,39 @@ namespace System.Security.Cryptography.Xml
                 string prefix = null;
                 string namespaceURI = null;
                 XmlElement elem = node as XmlElement;
-                if ((elem != null) && (elem.LocalName == "XPath"))
+                if (elem != null)
                 {
-                    _xpathexpr = elem.InnerXml.Trim(null);
-                    XmlNodeReader nr = new XmlNodeReader(elem);
-                    XmlNameTable nt = nr.NameTable;
-                    _nsm = new XmlNamespaceManager(nt);
-                    // Look for a namespace in the attributes
-                    foreach (XmlAttribute attrib in elem.Attributes)
+                    if (elem.LocalName == "XPath")
                     {
-                        if (attrib.Prefix == "xmlns")
+                        _xpathexpr = elem.InnerXml.Trim(null);
+                        XmlNodeReader nr = new XmlNodeReader(elem);
+                        XmlNameTable nt = nr.NameTable;
+                        _nsm = new XmlNamespaceManager(nt);
+                        if (!Utils.VerifyAttributes(elem, (string)null))
                         {
-                            prefix = attrib.LocalName;
-                            namespaceURI = attrib.Value;
-                            if (prefix == null)
-                            {
-                                prefix = elem.Prefix;
-                                namespaceURI = elem.NamespaceURI;
-                            }
-                            _nsm.AddNamespace(prefix, namespaceURI);
+                            throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                         }
+                        // Look for a namespace in the attributes
+                        foreach (XmlAttribute attrib in elem.Attributes)
+                        {
+                            if (attrib.Prefix == "xmlns")
+                            {
+                                prefix = attrib.LocalName;
+                                namespaceURI = attrib.Value;
+                                if (prefix == null)
+                                {
+                                    prefix = elem.Prefix;
+                                    namespaceURI = elem.NamespaceURI;
+                                }
+                                _nsm.AddNamespace(prefix, namespaceURI);
+                            }
+                        }
+                        break;
                     }
-                    break;
+                    else
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
+                    }
                 }
             }
 

@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = new XmlDocument();
             doc.LoadXml("<a />");
 
-            transform.LoadInnerXml(doc.ChildNodes);
+            Assert.Throws<CryptographicException>(() => transform.LoadInnerXml(doc.ChildNodes));
 
             Assert.Null(transform.UnprotectedGetInnerXml());
         }
