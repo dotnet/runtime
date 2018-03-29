@@ -5143,11 +5143,13 @@ private:
 
     bool fgIsBigOffset(size_t offset);
 
+#if defined(LEGACY_BACKEND)
     // The following are used when morphing special cases of integer div/mod operations and also by codegen
     bool fgIsSignedDivOptimizable(GenTree* divisor);
     bool fgIsUnsignedDivOptimizable(GenTree* divisor);
     bool fgIsSignedModOptimizable(GenTree* divisor);
     bool fgIsUnsignedModOptimizable(GenTree* divisor);
+#endif // LEGACY_BACKEND
 
     bool fgNeedReturnSpillTemp();
 
