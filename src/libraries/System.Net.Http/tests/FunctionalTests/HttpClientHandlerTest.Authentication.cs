@@ -18,6 +18,7 @@ namespace System.Net.Http.Functional.Tests
         private const string Domain = "testdomain";
 
         private static readonly NetworkCredential s_credentials = new NetworkCredential(Username, Password, Domain);
+        private static readonly NetworkCredential s_credentialsNoDomain = new NetworkCredential(Username, Password);
 
         private static readonly Func<HttpClientHandler, Uri, HttpStatusCode, ICredentials, Task> s_createAndValidateRequest = async (handler, url, expectedStatusCode, credentials) =>
         {
@@ -34,11 +35,16 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Authentication_TestData))]
         public async Task HttpClientHandler_Authentication_Succeeds(string authenticateHeader, bool result)
         {
-            if (PlatformDetection.IsWindowsNanoServer || (IsCurlHandler && authenticateHeader.ToLowerInvariant().Contains("digest")))
+            if (PlatformDetection.IsWindowsNanoServer)
             {
                 // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
+
+            // Digest authentication does not work with domain credentials on CurlHandler. This is blocked by the behavior of LibCurl.
+            NetworkCredential credentials = (IsCurlHandler && authenticateHeader.ToLowerInvariant().Contains("digest")) ?
+                s_credentialsNoDomain :
+                s_credentials;
 
             var options = new LoopbackServer.Options { Domain = Domain, Username = Username, Password = Password };
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -50,7 +56,7 @@ namespace System.Net.Http.Functional.Tests
                     server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, serverAuthenticateHeader);
 
                 await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(TestHelper.PassingTestTimeoutMilliseconds,
-                    s_createAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, s_credentials), serverTask);
+                    s_createAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, credentials), serverTask);
             }, options);
         }
 
@@ -139,21 +145,13 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "bAsiC ", true };
             yield return new object[] { "basic", true };
 
-            // Add digest tests fail on CurlHandler.
-            // TODO: #28065: Fix failing authentication test cases on different httpclienthandlers.
-            yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
             yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"{Convert.ToBase64String(Encoding.UTF8.GetBytes($"{DateTimeOffset.UtcNow}:XMh;z+$5|`i6Hx}}\", qop=auth-int, algorithm=MD5"))}\"", true };
-            yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
-                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
-            yield return new object[] { "dIgEsT realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
-                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
             yield return new object[] { $"Basic realm=\"testrealm\", " +
                     $"Digest realm=\"testrealm\", nonce=\"{Convert.ToBase64String(Encoding.UTF8.GetBytes($"{DateTimeOffset.UtcNow}:XMh;z+$5|`i6Hx}}"))}\", algorithm=MD5", true };
 
             if (PlatformDetection.IsNetCore)
             {
                 // TODO: #28060: Fix failing authentication test cases on Framework run.
-                yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
                 yield return new object[] { "Basic something, Digest something", false };
                 yield return new object[] { $"Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=MD5 " +
                     $"Basic realm=\"testrealm\"", false };
