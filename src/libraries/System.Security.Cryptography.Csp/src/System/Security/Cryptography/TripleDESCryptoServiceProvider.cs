@@ -63,11 +63,33 @@ namespace System.Security.Cryptography
         public override KeySizes[] LegalBlockSizes => _impl.LegalBlockSizes;
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
         public override ICryptoTransform CreateDecryptor() => _impl.CreateDecryptor();
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementation of TripleDES")]
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) =>
+            _impl.CreateEncryptor(rgbKey, TrimLargeIV(rgbIV));
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementation of TripleDES")]
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) =>
+            _impl.CreateDecryptor(rgbKey, TrimLargeIV(rgbIV));
+
+        private byte[] TrimLargeIV(byte[] iv)
+        {
+            // The BlockSize for 3DES is 64, so this is always 8, but let's use
+            // the formula anyways.
+            int blockSizeBytes = (BlockSize + 7) / 8;
+
+            if (iv?.Length > blockSizeBytes)
+            {
+                byte[] tmp = new byte[blockSizeBytes];
+                Buffer.BlockCopy(iv, 0, tmp, 0, tmp.Length);
+                return tmp;
+            }
+
+            return iv;
+        }
 
         protected override void Dispose(bool disposing)
         {
