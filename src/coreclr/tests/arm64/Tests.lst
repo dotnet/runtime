@@ -10945,7 +10945,7 @@ RelativePath=CoreMangLib\cti\system\gc\GCCollect\GCCollect.cmd
 WorkingDir=CoreMangLib\cti\system\gc\GCCollect
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS;GCSTRESS_FAIL;10070
+Categories=Pri1;RT;EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [GCGetTotalMemory.cmd_1420]
