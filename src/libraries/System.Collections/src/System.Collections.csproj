@@ -44,7 +44,7 @@
     <Compile Include="System\Collections\Generic\StackDebugView.cs" />
     <Compile Include="System\Collections\StructuralComparisons.cs" />
     <!-- Shared Common -->
-    <Compile Include="$(CommonPath)\System\Collections\HashHelpers.cs">
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\EnumerableHelpers.cs">
