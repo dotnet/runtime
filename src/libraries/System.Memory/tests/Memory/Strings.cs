@@ -57,18 +57,13 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static unsafe void Memory_Retain_ExpectedPointerValue()
+        public static unsafe void Memory_Pin_ExpectedPointerValue()
         {
             string input = "0123456789";
             ReadOnlyMemory<char> readonlyMemory = input.AsMemory();
             Memory<char> m = MemoryMarshal.AsMemory(readonlyMemory);
 
-            using (MemoryHandle h = m.Retain(pin: false))
-            {
-                Assert.Equal(IntPtr.Zero, (IntPtr)h.Pointer);
-            }
-
-            using (MemoryHandle h = m.Retain(pin: true))
+            using (MemoryHandle h = m.Pin())
             {
                 GC.Collect();
                 fixed (char* ptr = input)

@@ -232,7 +232,7 @@ internal static partial class Interop
             int retVal;
             unsafe
             {
-                using (MemoryHandle handle = input.Retain(pin: true))
+                using (MemoryHandle handle = input.Pin())
                 {
                     retVal = Ssl.SslWrite(context, (byte*)handle.Pointer, input.Length);
                 }

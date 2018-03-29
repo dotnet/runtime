@@ -183,7 +183,7 @@ namespace System.Net.Sockets
             // Return pending and we will continue in the completion port callback.
             if (_singleBufferHandleState == SingleBufferHandleState.InProcess)
             {
-                _singleBufferHandle = _buffer.Retain(pin: true);
+                _singleBufferHandle = _buffer.Pin();
                 _singleBufferHandleState = SingleBufferHandleState.Set;
             }
             return SocketError.IOPending;
@@ -199,7 +199,7 @@ namespace System.Net.Sockets
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
-                _singleBufferHandle = buffer.Retain(pin: true);
+                _singleBufferHandle = buffer.Pin();
                 _singleBufferHandleState = SingleBufferHandleState.Set;
 
                 bool success = socket.AcceptEx(
@@ -234,7 +234,7 @@ namespace System.Net.Sockets
             try
             {
                 Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
-                _singleBufferHandle = _buffer.Retain(pin: true);
+                _singleBufferHandle = _buffer.Pin();
                 _singleBufferHandleState = SingleBufferHandleState.Set;
 
                 bool success = socket.ConnectEx(
@@ -472,7 +472,7 @@ namespace System.Net.Sockets
                 }
 
                 Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.None);
-                _singleBufferHandle = _buffer.Retain(pin: true);
+                _singleBufferHandle = _buffer.Pin();
                 _singleBufferHandleState = SingleBufferHandleState.Set;
 
                 _wsaRecvMsgWSABufferArray[0].Pointer = (IntPtr)_singleBufferHandle.Pointer;
