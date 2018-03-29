@@ -3134,6 +3134,8 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
     return (offset > compMaxUncheckedOffsetForNullObject);
 }
 
+#if defined(LEGACY_BACKEND)
+
 /***********************************************************************************
 *
 *  Returns true if back-end will do other than integer division which currently occurs only
@@ -3217,6 +3219,8 @@ inline bool Compiler::fgIsUnsignedModOptimizable(GenTree* divisor)
 
     return false;
 }
+
+#endif // LEGACY_BACKEND
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

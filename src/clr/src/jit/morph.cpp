@@ -11834,7 +11834,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
 
 #if USE_HELPERS_FOR_INT_DIV
-            if (typ == TYP_INT && !fgIsSignedDivOptimizable(op2))
+            if (typ == TYP_INT
+#if defined(LEGACY_BACKEND)
+                && !fgIsSignedDivOptimizable(op2)
+#endif // LEGACY_BACKEND
+                    )
             {
                 helper = CORINFO_HELP_DIV;
                 goto USE_HELPER_FOR_ARITH;
@@ -11859,7 +11863,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 goto USE_HELPER_FOR_ARITH;
             }
 #if USE_HELPERS_FOR_INT_DIV
-            if (typ == TYP_INT && !fgIsUnsignedDivOptimizable(op2))
+            if (typ == TYP_INT
+#if defined(LEGACY_BACKEND)
+                && !fgIsUnsignedDivOptimizable(op2)
+#endif // LEGACY_BACKEND
+                    )
             {
                 helper = CORINFO_HELP_UDIV;
                 goto USE_HELPER_FOR_ARITH;
@@ -11974,12 +11982,20 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 #if USE_HELPERS_FOR_INT_DIV
             if (typ == TYP_INT)
             {
-                if (oper == GT_UMOD && !fgIsUnsignedModOptimizable(op2))
+                if (oper == GT_UMOD
+#if defined(LEGACY_BACKEND)
+                    && !fgIsUnsignedModOptimizable(op2)
+#endif // LEGACY_BACKEND
+                        )
                 {
                     helper = CORINFO_HELP_UMOD;
                     goto USE_HELPER_FOR_ARITH;
                 }
-                else if (oper == GT_MOD && !fgIsSignedModOptimizable(op2))
+                else if (oper == GT_MOD
+#if defined(LEGACY_BACKEND)
+                         && !fgIsSignedModOptimizable(op2)
+#endif // LEGACY_BACKEND
+                             )
                 {
                     helper = CORINFO_HELP_MOD;
                     goto USE_HELPER_FOR_ARITH;
