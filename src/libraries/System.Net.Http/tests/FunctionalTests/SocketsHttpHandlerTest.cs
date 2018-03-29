@@ -568,13 +568,25 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Authentication_SocketsHttpHandler_TestData()
         {
-            // These test cases pass on SocketsHttpHandler, fail everywhere else.
-            // TODO: #28065: Investigate failing authentication test cases on WinHttpHandler & CurlHandler.
+            // These test cases successfully authenticate on SocketsHttpHandler but fail on the other handlers.
+            // These are legal as per the the RFC, so authenticating is the expected behavior. See #28521 for details.
             yield return new object[] { "Basic realm=\"testrealm1\" basic realm=\"testrealm1\"", true };
             yield return new object[] { "Basic something digest something", true };
+            yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
+                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
+            yield return new object[] { "dIgEsT realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
+                    "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
+
+            // These cases fail on WinHttpHandler because of a behavior in WinHttp that causes requests to be duplicated
+            // when the digest header has certain parameters. See #28522 for details.
             yield return new object[] { "Digest ", false };
-            yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
             yield return new object[] { "Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=\"myown\"", false };
+
+            // These cases fail to authenticate on SocketsHttpHandler, but succeed on the other handlers.
+            // they are all invalid as per the RFC, so failing is the expected behavior. See #28523 for details.
+            yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
+            yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
+            yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
         }
     }
 
