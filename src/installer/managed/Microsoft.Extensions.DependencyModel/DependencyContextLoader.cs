@@ -115,8 +115,8 @@ namespace Microsoft.Extensions.DependencyModel
                 }
             }
 
-            var depsJsonFile = Path.ChangeExtension(assembly.Location, DepsJsonExtension);
-            if (_fileSystem.File.Exists(depsJsonFile))
+            var depsJsonFile = GetDepsJsonPath(assembly);
+            if (!string.IsNullOrEmpty(depsJsonFile))
             {
                 using (var stream = _fileSystem.File.OpenRead(depsJsonFile))
                 {
@@ -125,6 +125,41 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return null;
+        }
+
+        private string GetDepsJsonPath(Assembly assembly)
+        {
+            string depsJsonFile = Path.ChangeExtension(assembly.Location, DepsJsonExtension);
+            bool depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
+
+            if (!depsJsonFileExists)
+            {
+                // in some cases (like .NET Framework shadow copy) the Assembly Location 
+                // and CodeBase will be different, so also try the CodeBase
+                string assemblyCodeBase = GetNormalizedCodeBasePath(assembly);
+                if (!string.IsNullOrEmpty(assemblyCodeBase) &&
+                    assembly.Location != assemblyCodeBase)
+                {
+                    depsJsonFile = Path.ChangeExtension(assemblyCodeBase, DepsJsonExtension);
+                    depsJsonFileExists = _fileSystem.File.Exists(depsJsonFile);
+                }
+            }
+
+            return depsJsonFileExists ?
+                depsJsonFile :
+                null;
+        }
+
+        private static string GetNormalizedCodeBasePath(Assembly assembly)
+        {
+            try
+            {
+                return new Uri(assembly.CodeBase).LocalPath;
+            }
+            catch (UriFormatException)
+            {
+                return null;
+            }
         }
     }
 }
