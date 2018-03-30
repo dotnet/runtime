@@ -35,7 +35,7 @@ namespace System.IO.Pipelines.Tests
         private readonly TestMemoryPool _pool;
 
         [Fact]
-        public async Task AdvanceEmptyBufferAfterWritingResetsAwaitable()
+        public async Task CanReadAndWrite()
         {
             byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
 
@@ -50,14 +50,6 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal("Hello World", Encoding.ASCII.GetString(array));
 
             _pipe.Reader.AdvanceTo(buffer.End);
-
-            // Now write 0 and advance 0
-            await _pipe.Writer.WriteAsync(new byte[] { });
-            result = await _pipe.Reader.ReadAsync();
-            _pipe.Reader.AdvanceTo(result.Buffer.End);
-
-            ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
-            Assert.False(awaitable.IsCompleted);
         }
 
         [Fact]
@@ -75,8 +67,7 @@ namespace System.IO.Pipelines.Tests
             ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
             Assert.False(awaitable.IsCompleted);
 
-            // Unblock without writing anything
-            _pipe.Writer.GetMemory();
+            _pipe.Writer.Write(new byte[1]);
             await _pipe.Writer.FlushAsync();
 
             Assert.True(awaitable.IsCompleted);
@@ -153,7 +144,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CompleteReaderAfterFlushWithoutAdvancingDoesNotThrow()
         {
-            await _pipe.Writer.FlushAsync();
+            await _pipe.Writer.WriteAsync(new byte[10]);
             ReadResult result = await _pipe.Reader.ReadAsync();
             ReadOnlySequence<byte> buffer = result.Buffer;
 
@@ -207,33 +198,6 @@ namespace System.IO.Pipelines.Tests
 
             var exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(buffer.End));
             Assert.Equal("Reading is not allowed after reader was completed.", exception.Message);
-        }
-
-        [Fact]
-        public async Task EmptyBufferStartCrossingSegmentBoundaryIsTreatedLikeAndEnd()
-        {
-            Memory<byte> memory = _pipe.Writer.GetMemory();
-            // Append one full segment to a pipe
-            _pipe.Writer.Write(memory.Span);
-            await _pipe.Writer.FlushAsync();
-
-            // Consume entire segment
-            ReadResult result = await _pipe.Reader.ReadAsync();
-            _pipe.Reader.AdvanceTo(result.Buffer.End);
-
-            // Append empty segment
-            _pipe.Writer.GetMemory(1);
-            await _pipe.Writer.FlushAsync();
-
-            result = await _pipe.Reader.ReadAsync();
-
-            Assert.True(result.Buffer.IsEmpty);
-            Assert.Equal(result.Buffer.Start, result.Buffer.End);
-
-            _pipe.Writer.GetMemory();
-            _pipe.Reader.AdvanceTo(result.Buffer.Start);
-            ValueTask<ReadResult> awaitable = _pipe.Reader.ReadAsync();
-            Assert.False(awaitable.IsCompleted);
         }
 
         [Fact]
@@ -806,6 +770,30 @@ namespace System.IO.Pipelines.Tests
             _pipe.Writer.CancelPendingFlush();
             var task = _pipe.Writer.FlushAsync();
             Assert.True(IsTaskWithResult(task));
+        }
+
+        [Fact]
+        public void EmptyFlushAsyncDoesntWakeUpReader()
+        {
+            ValueTask<ReadResult> task = _pipe.Reader.ReadAsync();
+            _pipe.Writer.FlushAsync();
+
+            Assert.False(task.IsCompleted);
+        }
+
+        [Fact]
+        public async Task EmptyFlushAsyncDoesntWakeUpReaderAfterAdvance()
+        {
+            await _pipe.Writer.WriteAsync(new byte[10]);
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End);
+
+            ValueTask<ReadResult> task = _pipe.Reader.ReadAsync();
+
+            await _pipe.Writer.FlushAsync();
+
+            Assert.False(task.IsCompleted);
         }
 
         private bool IsTaskWithResult<T>(ValueTask<T> task)
