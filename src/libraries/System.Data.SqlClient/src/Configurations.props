@@ -8,6 +8,9 @@
       netstandard1.3;
       netstandard;
       netfx-Windows_NT;
+      netcoreapp;
+      netcoreapp-Unix;
+      netcoreapp-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
