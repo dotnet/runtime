@@ -115,7 +115,7 @@ namespace System.IO.Tests
                     return Task.FromResult(10);
                 });
 
-            using (var totalNativeMemory = new NativeOwnedMemory(30))
+            using (var totalNativeMemory = new NativeMemoryManager(30))
             {
                 Memory<byte> totalMemory = totalNativeMemory.Memory;
                 Memory<byte> targetMemory = totalMemory.Slice(5, 20);
@@ -174,7 +174,7 @@ namespace System.IO.Tests
                     return Task.CompletedTask;
                 });
 
-            using (var nativeMemory = new NativeOwnedMemory(10))
+            using (var nativeMemory = new NativeMemoryManager(10))
             {
                 Memory<byte> memory = nativeMemory.Memory;
                 memory.Span[2] = 0;

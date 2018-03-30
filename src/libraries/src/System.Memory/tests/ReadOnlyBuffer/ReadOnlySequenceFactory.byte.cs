@@ -13,7 +13,6 @@ namespace System.Memory.Tests
     {
         public static ReadOnlySequenceFactoryByte ArrayFactory { get; } = new ArrayTestSequenceFactoryByte();
         public static ReadOnlySequenceFactoryByte MemoryFactory { get; } = new MemoryTestSequenceFactoryByte();
-        public static ReadOnlySequenceFactoryByte OwnedMemoryFactory { get; } = new OwnedMemoryTestSequenceFactoryByte();
         public static ReadOnlySequenceFactoryByte SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactoryByte();
         public static ReadOnlySequenceFactoryByte SegmentPerByteFactory { get; } = new BytePerSegmentTestSequenceFactoryByte();
 
@@ -52,21 +51,6 @@ namespace System.Memory.Tests
                 var startSegment = new byte[data.Length + 20];
                 Array.Copy(data, 0, startSegment, 10, data.Length);
                 return new ReadOnlySequence<byte>(new Memory<byte>(startSegment, 10, data.Length));
-            }
-        }
-
-        internal class OwnedMemoryTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
-        {
-            public override ReadOnlySequence<byte> CreateOfSize(int size)
-            {
-                return CreateWithContent(new byte[size]);
-            }
-
-            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
-            {
-                var startSegment = new byte[data.Length + 20];
-                Array.Copy(data, 0, startSegment, 10, data.Length);
-                return new ReadOnlySequence<byte>(new CustomMemoryForTest<byte>(startSegment, 10, data.Length));
             }
         }
 

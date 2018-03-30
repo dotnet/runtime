@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.MemoryTests
 {
-    public class CustomMemoryForTest<T> : OwnedMemory<T>
+    public class CustomMemoryForTest<T> : MemoryManager<T>
     {
         private bool _disposed;
         private int _referenceCount;
@@ -18,7 +18,7 @@ namespace System.MemoryTests
         private readonly int _offset;
         private readonly int _length;
 
-        public CustomMemoryForTest(T[] array): this(array, 0, array.Length)
+        public CustomMemoryForTest(T[] array) : this(array, 0, array.Length)
         {
         }
 
@@ -33,40 +33,38 @@ namespace System.MemoryTests
 
         public override int Length => _length;
 
-        public override bool IsDisposed => _disposed;
+        public bool IsDisposed => _disposed;
 
-        protected override bool IsRetained => _referenceCount > 0;
+        protected bool IsRetained => _referenceCount > 0;
 
-        public override Span<T> Span
+        public override Span<T> GetSpan()
         {
-            get
-            {
-                if (IsDisposed)
-                    throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
-                return new Span<T>(_array, _offset, _length);
-            }
+            if (IsDisposed)
+                throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
+            return new Span<T>(_array, _offset, _length);
         }
 
-        public override MemoryHandle Pin(int byteOffset = 0)
+        public override MemoryHandle Pin(int elementIndex = 0)
         {
             unsafe
             {
-                Retain(); // this checks IsDisposed
+                if (IsDisposed)
+                    throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
+                Interlocked.Increment(ref _referenceCount);
 
                 try
                 {
-                    if ((IntPtr.Size == 4 && (uint)byteOffset > (uint)_array.Length * (uint)Unsafe.SizeOf<T>())
-                        || (IntPtr.Size != 4 && (ulong)byteOffset > (uint)_array.Length * (ulong)Unsafe.SizeOf<T>()))
+                    if ((uint)elementIndex > (uint)(_array.Length - _offset))
                     {
-                        throw new ArgumentOutOfRangeException(nameof(byteOffset));
+                        throw new ArgumentOutOfRangeException(nameof(elementIndex));
                     }
 
                     var handle = GCHandle.Alloc(_array, GCHandleType.Pinned);
-                    return new MemoryHandle(this, Unsafe.Add<byte>((void*)handle.AddrOfPinnedObject(), _offset + byteOffset), handle);
+                    return new MemoryHandle(Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _offset + elementIndex), handle, this);
                 }
                 catch
                 {
-                    Release();
+                    Unpin();
                     throw;
                 }
             }
@@ -94,14 +92,7 @@ namespace System.MemoryTests
 
         }
 
-        public override void Retain()
-        {
-            if (IsDisposed)
-                throw new ObjectDisposedException(nameof(CustomMemoryForTest<T>));
-            Interlocked.Increment(ref _referenceCount);
-        }
-
-        public override bool Release()
+        public override void Unpin()
         {
             int newRefCount = Interlocked.Decrement(ref _referenceCount);
 
@@ -111,9 +102,7 @@ namespace System.MemoryTests
             if (newRefCount == 0)
             {
                 _noReferencesCalledCount++;
-                return false;
             }
-            return true;
         }
     }
 }

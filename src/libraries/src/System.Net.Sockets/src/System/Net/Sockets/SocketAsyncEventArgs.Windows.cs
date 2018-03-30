@@ -1053,7 +1053,6 @@ namespace System.Net.Sockets
             try
             {
                 Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.Set);
-                Debug.Assert(_singleBufferHandle.HasPointer);
                 bool userBuffer = _count >= _acceptAddressBufferCount;
 
                 _currentSocket.GetAcceptExSockaddrs(

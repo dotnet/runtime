@@ -33,11 +33,11 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void OwnedMemoryTryGetArray()
+        public static void MemoryManagerTryGetArray()
         {
             int[] array = new int[10];
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            ReadOnlyMemory<int> memory = owner.Memory;
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
+            ReadOnlyMemory<int> memory = manager.Memory;
             Assert.True(MemoryMarshal.TryGetArray(memory, out ArraySegment<int> segment));
             Assert.Equal(array.Length, segment.Count);
 
@@ -62,22 +62,22 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void TryGetArrayFromEmptyOwnedMemory()
+        public static void TryGetArrayFromEmptyMemoryManager()
         {
             int[] array = new int[0];
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
 
-            Assert.True(MemoryMarshal.TryGetArray(owner.Memory, out ArraySegment<int> segment));
+            Assert.True(MemoryMarshal.TryGetArray(manager.Memory, out ArraySegment<int> segment));
             Assert.Same(array, segment.Array);
             Assert.Equal(0, segment.Array.Length);
         }
 
         [Fact]
-        public static void TryGetArrayFromEmptyNonRetrievableOwnedMemory()
+        public static void TryGetArrayFromEmptyNonRetrievableMemoryManager()
         {
-            using (var owner = new NativeOwnedMemory(0))
+            using (var manager = new NativeMemoryManager(0))
             {
-                Assert.True(MemoryMarshal.TryGetArray(owner.Memory, out ArraySegment<byte> segment));
+                Assert.True(MemoryMarshal.TryGetArray(manager.Memory, out ArraySegment<byte> segment));
                 Assert.Equal(0, segment.Array.Length);
             }
         }

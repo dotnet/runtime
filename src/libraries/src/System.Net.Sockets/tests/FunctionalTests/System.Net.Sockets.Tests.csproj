@@ -98,8 +98,8 @@
     <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs">
-      <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeMemoryManager.cs">
+      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>

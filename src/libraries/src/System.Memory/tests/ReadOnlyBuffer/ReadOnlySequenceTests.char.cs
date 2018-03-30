@@ -21,11 +21,6 @@ namespace System.Memory.Tests
             public String() : base(ReadOnlySequenceFactoryChar.StringFactory) { }
         }
 
-        public class OwnedMemory : ReadOnlySequenceTestsChar
-        {
-            public OwnedMemory() : base(ReadOnlySequenceFactoryChar.OwnedMemoryFactory) { }
-        }
-
         public class Memory : ReadOnlySequenceTestsChar
         {
             public Memory() : base(ReadOnlySequenceFactoryChar.MemoryFactory) { }

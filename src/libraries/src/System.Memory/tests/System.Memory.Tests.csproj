@@ -162,9 +162,8 @@
     <Compile Include="Memory\Equality.cs" />
     <Compile Include="Memory\GetHashCode.cs" />
     <Compile Include="Memory\ImplicitConversion.cs" />
-    <Compile Include="Memory\OwnedMemory.cs" />
+    <Compile Include="Memory\MemoryManager.cs" />
     <Compile Include="Memory\Pin.cs" />
-    <Compile Include="Memory\Retain.cs" />
     <Compile Include="Memory\Slice.cs" />
     <Compile Include="Memory\Span.cs" />
     <Compile Include="Memory\Strings.cs" />
@@ -179,7 +178,7 @@
     <Compile Include="MemoryMarshal\CastSpan.cs" />
     <Compile Include="MemoryMarshal\GetReference.cs" />
     <Compile Include="MemoryMarshal\TryGetArray.cs" />
-    <Compile Include="MemoryMarshal\TryGetOwnedMemory.cs" />
+    <Compile Include="MemoryMarshal\TryGetMemoryManager.cs" />
     <Compile Include="MemoryMarshal\TryGetString.cs" />
     <Compile Include="MemoryMarshal\ToEnumerable.cs" />
   </ItemGroup>
@@ -195,7 +194,6 @@
     <Compile Include="ReadOnlyMemory\GetHashCode.cs" />
     <Compile Include="ReadOnlyMemory\ImplicitConversion.cs" />
     <Compile Include="ReadOnlyMemory\Pin.cs" />
-    <Compile Include="ReadOnlyMemory\Retain.cs" />
     <Compile Include="ReadOnlyMemory\Slice.cs" />
     <Compile Include="ReadOnlyMemory\Span.cs" />
     <Compile Include="ReadOnlyMemory\Strings.cs" />
@@ -236,8 +234,8 @@
     <Compile Include="Base64\Base64TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs">
-      <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeMemoryManager.cs">
+      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\MutableDecimal.cs">
       <Link>Common\System\MutableDecimal.cs</Link>

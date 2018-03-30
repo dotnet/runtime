@@ -169,20 +169,20 @@ namespace System.IO.Pipelines.Tests
 
             var startSegment = (BufferSegment)start;
             var endSegment = (BufferSegment)end;
-            Assert.NotNull(startSegment.OwnedMemory);
-            Assert.NotNull(endSegment.OwnedMemory);
+            Assert.NotNull(startSegment.MemoryOwner);
+            Assert.NotNull(endSegment.MemoryOwner);
 
             _pipe.Reader.Complete();
 
             // Nothing cleaned up
-            Assert.NotNull(startSegment.OwnedMemory);
-            Assert.NotNull(endSegment.OwnedMemory);
+            Assert.NotNull(startSegment.MemoryOwner);
+            Assert.NotNull(endSegment.MemoryOwner);
 
             _pipe.Writer.Complete();
 
             // Should be cleaned up now
-            Assert.Null(startSegment.OwnedMemory);
-            Assert.Null(endSegment.OwnedMemory);
+            Assert.Null(startSegment.MemoryOwner);
+            Assert.Null(endSegment.MemoryOwner);
 
             _pipe.Reset();
         }

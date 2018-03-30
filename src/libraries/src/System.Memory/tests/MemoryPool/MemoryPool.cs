@@ -26,10 +26,9 @@ namespace System.MemoryTests
             MemoryPool<int> mp = MemoryPool<int>.Shared;
             mp.Dispose();
             mp.Dispose();
-            using (OwnedMemory<int> block = mp.Rent(10))
+            using (IMemoryOwner<int> block = mp.Rent(10))
             {
-                Assert.True(block.Length >= 10);
-                block.Release();
+                Assert.True(block.Memory.Length >= 10);
             }
         }
 
@@ -44,11 +43,13 @@ namespace System.MemoryTests
         public static void MemoryPoolSpan()
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            using (OwnedMemory<int> block = pool.Rent(10))
+            using (IMemoryOwner<int> block = pool.Rent(10))
             {
-                Span<int> sp = block.Span;
-                Assert.Equal(block.Length, sp.Length);
-                using (MemoryHandle newMemoryHandle = block.Pin())
+                Memory<int> memory = block.Memory;
+                Span<int> sp = memory.Span;
+                Assert.Equal(memory.Length, sp.Length);
+                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
+                using (MemoryHandle newMemoryHandle = manager.Pin())
                 {
                     unsafe
                     {
@@ -56,69 +57,63 @@ namespace System.MemoryTests
                         Assert.Equal((IntPtr)newMemoryHandle.Pointer, (IntPtr)pSpan);
                     }
                 }
-                block.Release();
             }
         }
 
         [Theory]
         [InlineData(0)]
         [InlineData(3)]
-        [InlineData(10 * sizeof(int))]
-        public static void MemoryPoolPin(int byteOffset)
+        [InlineData(10)]
+        public static void MemoryPoolPin(int elementIndex)
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            using (OwnedMemory<int> block = pool.Rent(10))
+            using (IMemoryOwner<int> block = pool.Rent(10))
             {
-                Span<int> sp = block.Span;
-                Assert.Equal(block.Length, sp.Length);
-                using (MemoryHandle newMemoryHandle = block.Pin(byteOffset: byteOffset))
+                Memory<int> memory = block.Memory;
+                Span<int> sp = memory.Span;
+                Assert.Equal(memory.Length, sp.Length);
+                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
+                using (MemoryHandle newMemoryHandle = manager.Pin(elementIndex: elementIndex))
                 {
                     unsafe
                     {
-                        void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp));
-                        Assert.Equal((IntPtr)pSpan, ((IntPtr)newMemoryHandle.Pointer) - byteOffset);
+                        void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp.Slice(elementIndex)));
+                        Assert.Equal((IntPtr)pSpan, ((IntPtr)newMemoryHandle.Pointer));
                     }
                 }
-                block.Release();
             }
         }
 
         [Theory]
         [InlineData(-1)]
         [InlineData(int.MinValue)]
-        public static void MemoryPoolPinBadOffset(int byteOffset)
+        public static void MemoryPoolPinBadOffset(int elementIndex)
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            OwnedMemory<int> block = pool.Rent(10);
-            Span<int> sp = block.Span;
-            Assert.Equal(block.Length, sp.Length);
-            Assert.Throws<ArgumentOutOfRangeException>(() => block.Pin(byteOffset: byteOffset));
+            IMemoryOwner<int> block = pool.Rent(10);
+            Memory<int> memory = block.Memory;
+            Span<int> sp = memory.Span;
+            Assert.Equal(memory.Length, sp.Length);
+            Assert.Throws<ArgumentOutOfRangeException>(() => ((MemoryManager<int>)block).Pin(elementIndex: elementIndex));
         }
 
         [Fact]
         public static void MemoryPoolPinOffsetAtEnd()
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            OwnedMemory<int> block = pool.Rent(10);
-            Span<int> sp = block.Span;
-            Assert.Equal(block.Length, sp.Length);
+            IMemoryOwner<int> block = pool.Rent(10);
+            Memory<int> memory = block.Memory;
+            Span<int> sp = memory.Span;
+            Assert.Equal(memory.Length, sp.Length);
 
-            int byteOffset = 0;
-            try
-            {
-                byteOffset = checked(block.Length * sizeof(int));
-            }
-            catch (OverflowException)
-            {
-                return; // The pool gave us a very large block - too big to compute the byteOffset needed to carry out this test. Skip.
-            }
-
-            using (MemoryHandle newMemoryHandle = block.Pin(byteOffset: byteOffset))
+            int elementIndex = memory.Length;
+            Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
+            using (MemoryHandle newMemoryHandle = manager.Pin(elementIndex: elementIndex))
             {
                 unsafe
                 {
-                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp));
-                    Assert.Equal((IntPtr)pSpan, ((IntPtr)newMemoryHandle.Pointer) - byteOffset);
+                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(sp.Slice(elementIndex)));
+                    Assert.Equal((IntPtr)pSpan, ((IntPtr)newMemoryHandle.Pointer));
                 }
             }
         }
@@ -127,28 +122,21 @@ namespace System.MemoryTests
         public static void MemoryPoolPinBadOffsetTooLarge()
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            OwnedMemory<int> block = pool.Rent(10);
-            Span<int> sp = block.Span;
-            Assert.Equal(block.Length, sp.Length);
+            IMemoryOwner<int> block = pool.Rent(10);
+            Memory<int> memory = block.Memory;
+            Span<int> sp = memory.Span;
+            Assert.Equal(memory.Length, sp.Length);
 
-            int byteOffset = 0;
-            try
-            {
-                byteOffset = checked(block.Length * sizeof(int) + 1);
-            }
-            catch (OverflowException)
-            {
-                return; // The pool gave us a very large block - too big to compute the byteOffset needed to carry out this test. Skip.
-            }
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => block.Pin(byteOffset: byteOffset));
+            int elementIndex = memory.Length + 1;
+            Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Pin(elementIndex: elementIndex));
         }
 
         [Fact]
         public static void EachRentalIsUniqueUntilDisposed()
         {
             MemoryPool<int> pool = MemoryPool<int>.Shared;
-            List<OwnedMemory<int>> priorBlocks = new List<OwnedMemory<int>>();
+            List<IMemoryOwner<int>> priorBlocks = new List<IMemoryOwner<int>>();
 
             Random r = new Random(42);
             List<int> testInputs = new List<int>();
@@ -159,14 +147,16 @@ namespace System.MemoryTests
 
             foreach (int minBufferSize in testInputs)
             {
-                OwnedMemory<int> newBlock = pool.Rent(minBufferSize);
-                Assert.True(newBlock.Length >= minBufferSize);
-
-                foreach (OwnedMemory<int> prior in priorBlocks)
+                IMemoryOwner<int> newBlock = pool.Rent(minBufferSize);
+                Memory<int> memory = newBlock.Memory;
+                Assert.True(memory.Length >= minBufferSize);
+                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(newBlock.Memory, out MemoryManager<int> newManager));
+                foreach (IMemoryOwner<int> prior in priorBlocks)
                 {
-                    using (MemoryHandle priorMemoryHandle = prior.Pin())
+                    Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(prior.Memory, out MemoryManager<int> priorManager));
+                    using (MemoryHandle priorMemoryHandle = priorManager.Pin())
                     {
-                        using (MemoryHandle newMemoryHandle = newBlock.Pin())
+                        using (MemoryHandle newMemoryHandle = newManager.Pin())
                         {
                             unsafe
                             {
@@ -178,9 +168,10 @@ namespace System.MemoryTests
                 priorBlocks.Add(newBlock);
             }
 
-            foreach (OwnedMemory<int> prior in priorBlocks)
+            foreach (IMemoryOwner<int> prior in priorBlocks)
             {
-                prior.Release();
+                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(prior.Memory, out MemoryManager<int> priorManager));
+                priorManager.Unpin();
                 prior.Dispose();
             }
         }
@@ -188,10 +179,15 @@ namespace System.MemoryTests
         [Fact]
         public static void RentWithDefaultSize()
         {
-            using (OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(minBufferSize: -1))
+            using (IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(minBufferSize: -1))
             {
-                Assert.True(block.Length >= 1);
-                block.Release();
+                Assert.True(block.Memory.Length >= 1);
+            }
+
+            using (IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(minBufferSize: -1))
+            {
+                Assert.True(block.Memory.Length >= 1);
+                block.Dispose();    // intentional double dispose
             }
         }
 
@@ -215,66 +211,29 @@ namespace System.MemoryTests
         [Fact]
         public static void MemoryPoolTryGetArray()
         {
-            using (OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42))
+            using (IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42))
             {
                 Memory<int> memory = block.Memory;
                 bool success = MemoryMarshal.TryGetArray(memory, out ArraySegment<int> arraySegment);
                 Assert.True(success);
-                Assert.Equal(block.Length, arraySegment.Count);
+                Assert.Equal(memory.Length, arraySegment.Count);
                 unsafe
                 {
-                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(block.Span));
+                    Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
+                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(manager.GetSpan()));
                     fixed (int* pArray = arraySegment.Array)
                     {
                         Assert.Equal((IntPtr)pSpan, (IntPtr)pArray);
                     }
                 }
-                block.Release();
             }
-        }
-
-        [Fact]
-        public static void RefCounting()
-        {
-            using (OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42))
-            {
-                block.Retain();
-                block.Retain();
-                block.Retain();
-
-                bool moreToGo;
-                moreToGo = block.Release();
-                Assert.True(moreToGo);
-
-                moreToGo = block.Release();
-                Assert.True(moreToGo);
-
-                moreToGo = block.Release();
-                Assert.True(moreToGo);
-
-                moreToGo = block.Release();
-                Assert.False(moreToGo);
-
-                Assert.Throws<ObjectDisposedException>(() => block.Release());
-            }
-        }
-
-        [Fact]
-        public static void IsDisposed()
-        {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            Assert.False(block.IsDisposed);
-            block.Release();
-            Assert.True(block.IsDisposed);
-            block.Dispose();
-            Assert.True(block.IsDisposed);
         }
 
         [Fact]
         public static void ExtraDisposesAreIgnored()
         {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            block.Release();
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            ((MemoryManager<int>)block).Unpin();
             block.Dispose();
             block.Dispose();
         }
@@ -282,63 +241,38 @@ namespace System.MemoryTests
         [Fact]
         public static void NoSpanAfterDispose()
         {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            block.Release();
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            ((MemoryManager<int>)block).Unpin();
             block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => block.Span.DontBox());
-        }
-
-        [Fact]
-        public static void NoRetainAfterDispose()
-        {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            block.Release();
-            block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => block.Retain());
-        }
-
-        [Fact]
-        public static void NoRelease_AfterDispose()
-        {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            block.Release();
-            block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => block.Release());
+            Assert.Throws<ObjectDisposedException>(() => ((MemoryManager<int>)block).GetSpan().DontBox());
         }
 
         [Fact]
         public static void NoPinAfterDispose()
         {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            block.Release();
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            ((MemoryManager<int>)block).Unpin();
             block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => block.Pin());
+            Assert.Throws<ObjectDisposedException>(() => ((MemoryManager<int>)block).Pin());
+        }
+
+        [Fact]
+        public static void NoUnpin_AfterDispose()
+        {
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            ((MemoryManager<int>)block).Unpin();
+            block.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => ((MemoryManager<int>)block).Unpin());
         }
 
         [Fact]
         public static void NoTryGetArrayAfterDispose()
         {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
             Memory<int> memory = block.Memory;
-            block.Release();
+            ((MemoryManager<int>)block).Unpin();
             block.Dispose();
             Assert.Throws<ObjectDisposedException>(() => MemoryMarshal.TryGetArray(memory, out ArraySegment<int> arraySegment));
-        }
-
-        [Fact]
-        public static void IsRetainedWhenReturned()
-        {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            Assert.False(block.Release());
-        }
-
-        [Fact]
-        public static void IsDisposedWhenReleased()
-        {
-            OwnedMemory<int> block = MemoryPool<int>.Shared.Rent(42);
-            block.Release();
-
-            Assert.True(block.IsDisposed);
         }
     }
 }

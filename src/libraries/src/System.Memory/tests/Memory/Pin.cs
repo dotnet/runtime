@@ -15,10 +15,10 @@ namespace System.MemoryTests
             int[] array = { 1, 2, 3, 4, 5 };
             Memory<int> memory = array;
             MemoryHandle handle = memory.Pin();
-            Assert.True(handle.HasPointer);
             unsafe
             {
                 int* pointer = (int*)handle.Pointer;
+                Assert.True(pointer != null);
 
                 GC.Collect();
 
@@ -35,7 +35,10 @@ namespace System.MemoryTests
         {
             Memory<int> memory = new int[0];
             MemoryHandle handle = memory.Pin();
-            Assert.True(handle.HasPointer);
+            unsafe
+            {
+                Assert.True(handle.Pointer != null);
+            }
             handle.Dispose();
         }
 
@@ -44,7 +47,6 @@ namespace System.MemoryTests
         {
             Memory<int> memory = default;
             MemoryHandle handle = memory.Pin();
-            Assert.False(handle.HasPointer);
             unsafe
             {
                 Assert.True(handle.Pointer == null);
@@ -60,10 +62,10 @@ namespace System.MemoryTests
             memory = memory.Slice(1);
             MemoryHandle handle = memory.Pin();
             Span<int> span = memory.Span;
-            Assert.True(handle.HasPointer);
             unsafe
             {
                 int* pointer = (int*)handle.Pointer;
+                Assert.True(pointer != null);
 
                 GC.Collect();
 
@@ -81,16 +83,16 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void OwnedMemoryPin()
+        public static void MemoryManagerPin()
         {
             int[] array = { 1, 2, 3, 4, 5 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Memory<int> memory = owner.Memory;
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
+            Memory<int> memory = manager.Memory;
             MemoryHandle handle = memory.Pin();
-            Assert.True(handle.HasPointer);
             unsafe
             {
                 int* pointer = (int*)handle.Pointer;
+                Assert.True(pointer != null);
 
                 GC.Collect();
 
@@ -103,17 +105,17 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void OwnedMemoryPinAndSlice()
+        public static void MemoryManagerPinAndSlice()
         {
             int[] array = { 1, 2, 3, 4, 5 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Memory<int> memory = owner.Memory.Slice(1);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
+            Memory<int> memory = manager.Memory.Slice(1);
             MemoryHandle handle = memory.Pin();
             Span<int> span = memory.Span;
-            Assert.True(handle.HasPointer);
             unsafe
             {
                 int* pointer = (int*)handle.Pointer;
+                Assert.True(pointer != null);
 
                 GC.Collect();
 
