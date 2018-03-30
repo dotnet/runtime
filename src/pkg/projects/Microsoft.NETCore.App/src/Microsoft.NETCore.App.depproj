@@ -64,7 +64,7 @@
 
     <PropertyGroup>
       <_crossDir Condition="'$(TargetArchitecture)' == 'arm'">/x86_arm</_crossDir>
-      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win10-arm64' or '$(NuGetRuntimeIdentifier)' == 'win-arm64'">/x64_arm64</_crossDir>
+      <_crossDir Condition="'$(TargetArchitecture)' == 'arm64'">/x64_arm64</_crossDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'@(_runtimeCLR)' != ''">

@@ -64,7 +64,7 @@ platformList.each { platform ->
             dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture} --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
             buildArgs += " -SkipTests=true -CrossBuild=true"
 
-            if (architecture == 'armel' || architecture == 'arm64') {
+            if (architecture == 'armel') {
                 buildArgs += " -DisableCrossgen=true"
             }
 
