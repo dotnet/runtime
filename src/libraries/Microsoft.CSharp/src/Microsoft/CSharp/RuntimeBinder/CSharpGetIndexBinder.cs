@@ -36,6 +36,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpGetIndexBinder" />.
         /// </summary>
@@ -47,7 +49,36 @@ namespace Microsoft.CSharp.RuntimeBinder
             base(BinderHelper.CreateCallInfo(ref argumentInfo, 1)) // discard 1 argument: the target object
         {
             _argumentInfo = argumentInfo as CSharpArgumentInfo[];
+            _callingContext = callingContext;
             _binder = new RuntimeBinder(callingContext);
+        }
+
+        public int BinderEqivalenceHash
+        {
+            get
+            {
+                int hash = _callingContext?.GetHashCode() ?? 0;
+                hash = BinderHelper.AddArgHashes(hash, _argumentInfo);
+
+                return hash;
+            }
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpGetIndexBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (_callingContext != otherBinder._callingContext ||
+                _argumentInfo.Length != otherBinder._argumentInfo.Length)
+            {
+                return false;
+            }
+
+            return BinderHelper.CompareArgInfos(_argumentInfo, otherBinder._argumentInfo);
         }
 
         /// <summary>

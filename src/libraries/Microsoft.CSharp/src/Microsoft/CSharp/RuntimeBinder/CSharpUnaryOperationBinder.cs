@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -45,6 +46,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
+        private bool IsChecked => _binder.IsChecked;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpUnaryOperationBinder"/> class.
         /// </summary>
@@ -61,7 +66,42 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             _argumentInfo = BinderHelper.ToArray(argumentInfo);
             Debug.Assert(_argumentInfo.Length == 1);
+            _callingContext = callingContext;
             _binder = new RuntimeBinder(callingContext, isChecked);
+        }
+
+        public int BinderEqivalenceHash
+        {
+            get
+            {
+                int hash = _callingContext?.GetHashCode() ?? 0;
+                hash = HashHelpers.Combine(hash, (int)Operation);
+                if (IsChecked)
+                {
+                    hash = HashHelpers.Combine(hash, 1);
+                }
+                hash = BinderHelper.AddArgHashes(hash, _argumentInfo);
+
+                return hash;
+            }
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpUnaryOperationBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (Operation != otherBinder.Operation ||
+                IsChecked != otherBinder.IsChecked ||
+                _callingContext != otherBinder._callingContext)
+            {
+                return false;
+            }
+
+            return BinderHelper.CompareArgInfos(_argumentInfo, otherBinder._argumentInfo);
         }
 
         /// <summary>

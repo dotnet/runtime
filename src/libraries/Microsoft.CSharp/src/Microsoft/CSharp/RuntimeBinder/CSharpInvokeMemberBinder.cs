@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -72,6 +73,40 @@ namespace Microsoft.CSharp.RuntimeBinder
             _binder = new RuntimeBinder(callingContext);
         }
 
+        public int BinderEqivalenceHash
+        {
+            get
+            {
+                int hash = CallingContext?.GetHashCode() ?? 0;
+                hash = HashHelpers.Combine(hash, (int)Flags);
+                hash = HashHelpers.Combine(hash, Name.GetHashCode());
+
+                hash = BinderHelper.AddArgHashes(hash, TypeArguments, _argumentInfo);
+
+                return hash;
+            }
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpInvokeMemberBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (Flags != otherBinder.Flags ||
+                CallingContext != otherBinder.CallingContext ||
+                Name != otherBinder.Name ||
+                TypeArguments.Length != otherBinder.TypeArguments.Length ||
+                _argumentInfo.Length != otherBinder._argumentInfo.Length)
+            {
+                return false;
+            }
+
+            return BinderHelper.CompareArgInfos(TypeArguments, otherBinder.TypeArguments, _argumentInfo, otherBinder._argumentInfo);
+        }
+
         /// <summary>
         /// Performs the binding of the dynamic invoke member operation if the target dynamic object cannot bind.
         /// </summary>
@@ -102,7 +137,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
         {
-            CSharpInvokeBinder c = new CSharpInvokeBinder(Flags, CallingContext, _argumentInfo);
+            CSharpInvokeBinder c = new CSharpInvokeBinder(Flags, CallingContext, _argumentInfo).TryGetExisting();
             return c.Defer(target, args);
         }
     }
