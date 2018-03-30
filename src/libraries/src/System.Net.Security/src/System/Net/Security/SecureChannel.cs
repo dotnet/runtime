@@ -624,7 +624,7 @@ namespace System.Net.Security
         //
         // Acquire Server Side Certificate information and set it on the class.
         //
-        private bool AcquireServerCredentials(ref byte[] thumbPrint)
+        private bool AcquireServerCredentials(ref byte[] thumbPrint, byte[] clientHello)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
@@ -632,7 +632,18 @@ namespace System.Net.Security
             X509Certificate localCertificate = null;
             bool cachedCred = false;
 
-            if (_sslAuthenticationOptions.CertSelectionDelegate != null)
+            if (_sslAuthenticationOptions.ServerCertSelectionDelegate != null)
+            {
+                string serverIdentity = SniHelper.GetServerName(clientHello);
+                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(serverIdentity);
+
+                if (localCertificate == null)
+                {
+                    throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
+                }
+            }
+            // This probably never gets called as this is a client options delegate
+            else if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
                 X509CertificateCollection tempCollection = new X509CertificateCollection();
                 tempCollection.Add(_sslAuthenticationOptions.ServerCertificate);
@@ -744,7 +755,6 @@ namespace System.Net.Security
 #if TRACE_VERBOSE
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"_refreshCredentialNeeded = {_refreshCredentialNeeded}");
 #endif
-
             if (offset < 0 || offset > (input == null ? 0 : input.Length))
             {
                 NetEventSource.Fail(this, "Argument 'offset' out of range.");
@@ -786,7 +796,7 @@ namespace System.Net.Security
                     if (_refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
-                                        ? AcquireServerCredentials(ref thumbPrint)
+                                        ? AcquireServerCredentials(ref thumbPrint, input)
                                         : AcquireClientCredentials(ref thumbPrint);
                     }
 
