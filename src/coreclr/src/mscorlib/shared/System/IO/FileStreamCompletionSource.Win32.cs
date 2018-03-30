@@ -246,7 +246,7 @@ namespace System.IO
             internal MemoryFileStreamCompletionSource(FileStream stream, int numBufferedBytes, ReadOnlyMemory<byte> memory) :
                 base(stream, numBufferedBytes, bytes: null) // this type handles the pinning, so null is passed for bytes
             {
-                _handle = memory.Retain(pin: true);
+                _handle = memory.Pin();
             }
 
             internal override void ReleaseNativeResource()

@@ -26,15 +26,18 @@ namespace System
         // as code uses Unsafe.As to cast between them.
 
         // The highest order bit of _index is used to discern whether _object is an array/string or an owned memory
-        // if (_index >> 31) == 1, object _object is an OwnedMemory<T>
-        // else, object _object is a T[] or a string. It can only be a string if the Memory<T> was created by
+        // if (_index >> 31) == 1, object _object is an MemoryManager<T>
+        // else, object _object is a T[] or a string.
+        //     if (_length >> 31) == 1, _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
+        //     else, Pin() needs to allocate a new GCHandle to pin the object.
+        // It can only be a string if the Memory<T> was created by
         // using unsafe / marshaling code to reinterpret a ReadOnlyMemory<char> wrapped around a string as
         // a Memory<T>.
         private readonly object _object;
         private readonly int _index;
         private readonly int _length;
 
-        private const int RemoveOwnedFlagBitMask = 0x7FFFFFFF;
+        private const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         /// <summary>
         /// Creates a new memory over the entirety of the target array.
@@ -110,22 +113,72 @@ namespace System
             _length = length;
         }
 
-        // Constructor for internal use only.
+        /// <summary>
+        /// Creates a new memory from a memory manager that provides specific method implementations beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="manager">The memory manager.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <param name="length">The number of items in the memory.</param>
+        /// <remarks>Returns default when <paramref name="manager"/> is null.</remarks>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Memory(OwnedMemory<T> owner, int index, int length)
+        public Memory(MemoryManager<T> manager, int start, int length)
         {
-            // No validation performed; caller must provide any necessary validation.
-            _object = owner;
-            _index = index | (1 << 31); // Before using _index, check if _index < 0, then 'and' it with RemoveOwnedFlagBitMask
+            if (manager == null)
+            {
+                if (start != 0 || length != 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                this = default;
+                return; // returns default
+            }
+            if ((uint)start > (uint)manager.Length || (uint)length > (uint)(manager.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            _object = manager;
+            _index = start | (1 << 31); // Before using _index, check if _index < 0, then 'and' it with RemoveFlagsBitMask
             _length = length;
         }
 
+        /// <summary>
+        /// Creates a new memory over the portion of the pre-pinned target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The pre-pinned target array.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <param name="length">The number of items in the memory.</param>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
+        /// </exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Memory(object obj, int index, int length)
+        public static Memory<T> CreateFromPinnedArray(T[] array, int start, int length)
+        {
+            if (array == null)
+            {
+                if (start != 0 || length != 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                return default;
+            }
+            if (default(T) == null && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
+            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            // Before using _length, check if _length < 0, then 'and' it with RemoveFlagsBitMask
+            return new Memory<T>((object)array, start, length | (1 << 31));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private Memory(object obj, int start, int length)
         {
             // No validation performed; caller must provide any necessary validation.
             _object = obj;
-            _index = index;
+            _index = start;
             _length = length;
         }
 
@@ -153,12 +206,12 @@ namespace System
         /// <summary>
         /// The number of items in the memory.
         /// </summary>
-        public int Length => _length;
+        public int Length => _length & RemoveFlagsBitMask;
 
         /// <summary>
         /// Returns true if Length is 0.
         /// </summary>
-        public bool IsEmpty => _length == 0;
+        public bool IsEmpty => (_length & RemoveFlagsBitMask) == 0;
 
         /// <summary>
         /// For <see cref="Memory{Char}"/>, returns a new instance of string that represents the characters pointed to by the memory.
@@ -168,9 +221,9 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
-                return (_object is string str) ? str.Substring(_index, _length) : Span.ToString();
+                return (_object is string str) ? str.Substring(_index, _length & RemoveFlagsBitMask) : Span.ToString();
             }
-            return string.Format("System.Memory<{0}>[{1}]", typeof(T).Name, _length);
+            return string.Format("System.Memory<{0}>[{1}]", typeof(T).Name, _length & RemoveFlagsBitMask);
         }
 
         /// <summary>
@@ -183,12 +236,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory<T> Slice(int start)
         {
-            if ((uint)start > (uint)_length)
+            int actualLength = _length & RemoveFlagsBitMask;
+            if ((uint)start > (uint)actualLength)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
             }
 
-            return new Memory<T>(_object, _index + start, _length - start);
+            return new Memory<T>(_object, _index + start, actualLength - start);
         }
 
         /// <summary>
@@ -202,7 +256,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory<T> Slice(int start, int length)
         {
-            if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
+            int actualLength = _length & RemoveFlagsBitMask;
+            if ((uint)start > (uint)actualLength || (uint)length > (uint)(actualLength - start))
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
@@ -220,10 +275,12 @@ namespace System
             {
                 if (_index < 0)
                 {
-                    return ((OwnedMemory<T>)_object).Span.Slice(_index & RemoveOwnedFlagBitMask, _length);
+                    Debug.Assert(_length >= 0);
+                    return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
                 }
                 else if (typeof(T) == typeof(char) && _object is string s)
                 {
+                    Debug.Assert(_length >= 0);
                     // This is dangerous, returning a writable span for a string that should be immutable.
                     // However, we need to handle the case where a ReadOnlyMemory<char> was created from a string
                     // and then cast to a Memory<T>. Such a cast can only be done with unsafe or marshaling code,
@@ -237,7 +294,7 @@ namespace System
                 }
                 else if (_object != null)
                 {
-                    return new Span<T>((T[])_object, _index, _length);
+                    return new Span<T>((T[])_object, _index, _length & RemoveFlagsBitMask);
                 }
                 else
                 {
@@ -278,7 +335,7 @@ namespace System
         {
             if (_index < 0)
             {
-                return ((OwnedMemory<T>)_object).Pin((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
+                return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
             }
             else if (typeof(T) == typeof(char) && _object is string s)
             {
@@ -293,70 +350,19 @@ namespace System
 #else
                 void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
 #endif // FEATURE_PORTABLE_SPAN
-                return new MemoryHandle(null, pointer, handle);
+                return new MemoryHandle(pointer, handle);
             }
             else if (_object is T[] array)
             {
-                var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+                GCHandle handle = _length < 0 ? default : GCHandle.Alloc(array, GCHandleType.Pinned);
 #if FEATURE_PORTABLE_SPAN
                 void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
 #else
                 void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
 #endif // FEATURE_PORTABLE_SPAN
-                return new MemoryHandle(null, pointer, handle);
+                return new MemoryHandle(pointer, handle);
             }
             return default;
-        }
-
-        /// <summary>[Obsolete, use Pin()] Creates a handle for the memory.</summary>
-        /// <param name="pin">
-        /// If pin is true, the GC will not move the array until the returned <see cref="MemoryHandle"/>
-        /// is disposed, enabling taking and using the memory's address.
-        /// </param>
-        public unsafe MemoryHandle Retain(bool pin = false)
-        {
-            MemoryHandle memoryHandle = default;
-            if (pin)
-            {
-                if (_index < 0)
-                {
-                    memoryHandle = ((OwnedMemory<T>)_object).Pin((_index & RemoveOwnedFlagBitMask) * Unsafe.SizeOf<T>());
-                }
-                else if (typeof(T) == typeof(char) && _object is string s)
-                {
-                    // This case can only happen if a ReadOnlyMemory<char> was created around a string
-                    // and then that was cast to a Memory<char> using unsafe / marshaling code.  This needs
-                    // to work, however, so that code that uses a single Memory<char> field to store either
-                    // a readable ReadOnlyMemory<char> or a writable Memory<char> can still be pinned and
-                    // used for interop purposes.
-                    GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
-#if FEATURE_PORTABLE_SPAN
-                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
-#else
-                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
-#endif // FEATURE_PORTABLE_SPAN
-                    memoryHandle = new MemoryHandle(null, pointer, handle);
-                }
-                else if (_object is T[] array)
-                {
-                    var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
-#if FEATURE_PORTABLE_SPAN
-                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
-#else
-                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
-#endif // FEATURE_PORTABLE_SPAN
-                    memoryHandle = new MemoryHandle(null, pointer, handle);
-                }
-            }
-            else
-            {
-                if (_index < 0)
-                {
-                    ((OwnedMemory<T>)_object).Retain();
-                    memoryHandle = new MemoryHandle((OwnedMemory<T>)_object);
-                }
-            }
-            return memoryHandle;
         }
 
         /// <summary>
