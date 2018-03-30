@@ -1428,40 +1428,6 @@ namespace System.Xml.Serialization
             Array.Copy(a, b, length);
             return b;
         }
-        // This is copied from Core's XmlReader.ReadString, as it is not exposed in the Contract.
-        protected virtual string ReadString()
-        {
-            if (Reader.ReadState != ReadState.Interactive)
-            {
-                return string.Empty;
-            }
-            Reader.MoveToElement();
-            if (Reader.NodeType == XmlNodeType.Element)
-            {
-                if (Reader.IsEmptyElement)
-                {
-                    return string.Empty;
-                }
-                else if (!Reader.Read())
-                {
-                    throw new InvalidOperationException(SR.Xml_InvalidOperation);
-                }
-                if (Reader.NodeType == XmlNodeType.EndElement)
-                {
-                    return string.Empty;
-                }
-            }
-            string result = string.Empty;
-            while (IsTextualNode(Reader.NodeType))
-            {
-                result += Reader.Value;
-                if (!Reader.Read())
-                {
-                    break;
-                }
-            }
-            return result;
-        }
 
         // 0x6018
         private static uint s_isTextualNodeBitmap = (1 << (int)XmlNodeType.Text) | (1 << (int)XmlNodeType.CDATA) | (1 << (int)XmlNodeType.Whitespace) | (1 << (int)XmlNodeType.SignificantWhitespace);
