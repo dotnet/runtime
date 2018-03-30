@@ -208,7 +208,7 @@
     <value>Once authentication is attempted as the client or server, additional authentication attempts must use the same client or server role.</value>
   </data>
   <data name="net_auth_SSPI" xml:space="preserve">
-    <value>A call to SSPI failed, see inner exception.</value>
+    <value>Authentication failed, see inner exception.</value>
   </data>
   <data name="net_auth_eof" xml:space="preserve">
     <value>Authentication failed because the remote party has closed the transport stream.</value>
