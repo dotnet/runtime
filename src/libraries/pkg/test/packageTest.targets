@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <Import Project="tools\Packaging.common.targets" />
+  <Import Project="tools\dependencies.props" />
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
   <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
   <Import Project="packageSettings\$(TestPackageId)\*.targets" />
@@ -56,7 +57,7 @@
 
   <Target Name="VerifyRuntimeClosure" 
           DependsOnTargets="ResolveReferences"
-          Condition="'$(ShouldVerifyClosure)' == 'true' AND '$(RuntimeIdentifier)' != '' AND '@(ReferenceCopyLocalPaths)' != ''">
+          Condition="'$(ShouldVerifyClosure)' == 'true' AND '$(RuntimeIdentifier)' != ''">
     <ItemGroup>
       <_runClosureFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
         <Original>%(Identity)</Original>
