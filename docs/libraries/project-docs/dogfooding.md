@@ -14,26 +14,26 @@ this experience. Make sure to consult this document often.
 
 3. Reminder: if you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Developer Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet`. If you receive an error "The current .NET SDK does not support targeting .NET Core 2.1." then you may be executing an older `dotnet`.
 
-After setting up dotnet you can verify you are using the newer version by executing `dotnet --info` -- the version should be greater than 2.2.0-*  (dotnet CLI is currently numbered 2.2.0-* not 2.1.0-* ). Here is an example output at the time of writing:
+After setting up dotnet you can verify you are using the newer version by executing `dotnet --info` -- the version should be greater than `2.1.300-*`  (dotnet CLI for .NET Core 2.1 is currently numbered `2.1.300-*`). Here is an example output at the time of writing:
 ```
 >dotnet.exe --info
-.NET Command Line Tools (2.2.0-preview1-007460)
+.NET Command Line Tools (2.1.300-preview2-008171)
 
 Product Information:
- Version:            2.2.0-preview1-007460
- Commit SHA-1 hash:  173cc035e4
+ Version:            2.1.300-preview2-008171
+ Commit SHA-1 hash:  fbc76ea5f6
 
 Runtime Environment:
  OS Name:     Windows
  OS Version:  10.0.16299
  OS Platform: Windows
  RID:         win10-x64
- Base Path:   F:\dotnet\sdk\2.2.0-preview1-007460\
+ Base Path:   F:\dotnet\sdk\2.1.300-preview2-008171\
 
 Microsoft .NET Core Shared Framework Host
 
-  Version  : 2.1.0-preview1-25825-07
-  Build    : 4c165c13bd390adf66f9af30a088d634d3f37a9d
+  Version  : 2.1.0-preview2-26209-04
+  Build    : 5df6e9b7ab674a461b2a7f01ac87fb6e0ca06666
 ```
 
 4. Our nightly builds are uploaded to MyGet, not NuGet - so ensure the .NET Core MyGet feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add this line:
