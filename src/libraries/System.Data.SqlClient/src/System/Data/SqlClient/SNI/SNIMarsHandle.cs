@@ -272,7 +272,7 @@ namespace System.Data.SqlClient.SNI
         /// </summary>
         /// <param name="packet">SNI packet</param>
         /// <returns>SNI error code</returns>
-        public override uint ReceiveAsync(ref SNIPacket packet, bool isMars = true)
+        public override uint ReceiveAsync(ref SNIPacket packet)
         {
             lock (_receivedPacketQueue)
             {
