@@ -17,10 +17,9 @@ using Xunit;
 
 namespace System.Net.Mail.Tests
 {
-    public class SmtpClientTest : IDisposable
+    public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;
-        private string _tempFolder;
 
         private SmtpClient Smtp
         {
@@ -34,28 +33,17 @@ namespace System.Net.Mail.Tests
         {
             get
             {
-                if (_tempFolder == null)
-                {
-                    _tempFolder = Path.Combine(Path.GetTempPath(), GetType().FullName, Guid.NewGuid().ToString());
-                    if (Directory.Exists(_tempFolder))
-                        Directory.Delete(_tempFolder, true);
-
-                    Directory.CreateDirectory(_tempFolder);
-                }
-
-                return _tempFolder;
+                return TestDirectory;
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (_smtp != null)
             {
                 _smtp.Dispose();
             }
-
-            if (Directory.Exists(_tempFolder))
-                Directory.Delete(_tempFolder, true);
+            base.Dispose(disposing);
         }
 
         [Theory]

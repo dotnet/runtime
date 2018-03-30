@@ -49,7 +49,7 @@ namespace System.Xml.Tests
     public class XsltApiTestCaseBase : FileCleanupTestBase
     {
         private const string XmlResolverDocumentName = "xmlResolver_document_function.xml";
-        private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), "XslTransformApi", XmlResolverDocumentName);
+        private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), typeof(XsltApiTestCaseBase) + "_" + Path.GetRandomFileName());
         private static readonly object s_temporaryResolverDocumentLock = new object();
 
         // Generic data for all derived test cases

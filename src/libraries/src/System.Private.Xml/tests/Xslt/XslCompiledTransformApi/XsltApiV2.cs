@@ -76,7 +76,7 @@ namespace System.Xml.Tests
         static XsltApiTestCaseBase2()
         {
             // Replace absolute URI in xmlResolver_document_function.xml based on the environment
-            string targetFile = Path.Combine(Path.GetTempPath(), "xmlResolver_document_function.xml");
+            string targetFile = Path.Combine(Path.GetTempPath(), typeof(XsltApiTestCaseBase2) + "_" + Path.GetRandomFileName());
             string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2", "xmlResolver_document_function_absolute_uri.xsl");
             XmlDocument doc = new XmlDocument();
             doc.Load(xslFile);
