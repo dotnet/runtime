@@ -2163,9 +2163,25 @@ leave:
 		mono_gchandle_free (value_gchandle);
 }
 
+static MonoObjectHandle
+typed_reference_to_object (MonoTypedRef *tref, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MonoObjectHandle result;
+	if (MONO_TYPE_IS_REFERENCE (tref->type)) {
+		MonoObject** objp = (MonoObject **)tref->value;
+		result = MONO_HANDLE_NEW (MonoObject, *objp);
+	} else {
+		result = mono_value_box_handle (mono_domain_get (), tref->klass, tref->value, error);
+	}
+	HANDLE_FUNCTION_RETURN_REF (MonoObject, result);
+}
+
 ICALL_EXPORT void
 ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField *field, MonoReflectionType *field_type, MonoTypedRef *obj, MonoObject *value, MonoReflectionType *context_type)
 {
+	ICALL_ENTRY ();
+
 	MonoClassField *f;
 
 	g_assert (field);
@@ -2174,14 +2190,18 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField *field, 
 
 	f = field->field;
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (f->parent))) {
-		mono_set_pending_exception (mono_get_exception_not_implemented (NULL));
-		return;
-	}
-
-	if (MONO_TYPE_IS_REFERENCE (f->type))
+		MonoReflectionFieldHandle fieldHandle = MONO_HANDLE_NEW (MonoReflectionField, field);
+		MonoObjectHandle objHandle = typed_reference_to_object (obj, error), 
+			valueHandle = MONO_HANDLE_NEW (MonoObject, value);
+		goto_if_nok (error, leave);
+		ves_icall_MonoField_SetValueInternal (fieldHandle, objHandle, valueHandle, error);
+	} else if (MONO_TYPE_IS_REFERENCE (f->type))
 		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), value, FALSE);
 	else
 		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), mono_object_unbox (value), FALSE);
+
+leave:
+	ICALL_RETURN ();
 }
 
 ICALL_EXPORT MonoObject *
@@ -7552,16 +7572,10 @@ mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 ICALL_EXPORT MonoObject*
 mono_TypedReference_ToObject (MonoTypedRef* tref)
 {
-	ERROR_DECL (error);
-	MonoObject *result = NULL;
-	if (MONO_TYPE_IS_REFERENCE (tref->type)) {
-		MonoObject** objp = (MonoObject **)tref->value;
-		return *objp;
-	}
-
-	result = mono_value_box_checked (mono_domain_get (), tref->klass, tref->value, error);
+	ICALL_ENTRY ();
+	MonoObjectHandle result = typed_reference_to_object (tref, error);
 	mono_error_set_pending_exception (error);
-	return result;
+	ICALL_RETURN_OBJ (result);
 }
 
 ICALL_EXPORT MonoTypedRef
