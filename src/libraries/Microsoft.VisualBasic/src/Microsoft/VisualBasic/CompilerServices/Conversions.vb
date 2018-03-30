@@ -919,13 +919,13 @@ MisMatch:
         Public Shared Shadows Function ToString(value As Char) As String
             Return value.ToString()
         End Function
-        Public Shared Function GetCultureInfo() As Global.System.Globalization.CultureInfo
+        Friend Shared Function GetCultureInfo() As Global.System.Globalization.CultureInfo
             Return Global.System.Globalization.CultureInfo.CurrentCulture
         End Function
-        Public Shared Function ToHalfwidthNumbers(s As String, culture As Global.System.Globalization.CultureInfo) As String
+        Friend Shared Function ToHalfwidthNumbers(s As String, culture As Global.System.Globalization.CultureInfo) As String
             Return s
         End Function
-        Public Shared Function IsHexOrOctValue(value As String, ByRef i64Value As Global.System.Int64) As Boolean
+        Friend Shared Function IsHexOrOctValue(value As String, ByRef i64Value As Global.System.Int64) As Boolean
             Dim ch As Char
             Dim length As Integer
             Dim firstNonspace As Integer
@@ -955,7 +955,7 @@ GetSpecialValue:
             Return True
         End Function
         <Global.System.CLSCompliant(False)>
-        Public Shared Function IsHexOrOctValue(value As String, ByRef ui64Value As Global.System.UInt64) As Boolean
+        Friend Shared Function IsHexOrOctValue(value As String, ByRef ui64Value As Global.System.UInt64) As Boolean
             Dim ch As Char
             Dim length As Integer
             Dim firstNonspace As Integer

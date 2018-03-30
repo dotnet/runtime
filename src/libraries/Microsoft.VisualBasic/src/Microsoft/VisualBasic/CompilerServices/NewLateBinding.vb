@@ -30,7 +30,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
-        Public Shared Function LateCanEvaluate(
+        Friend Shared Function LateCanEvaluate(
                 ByVal instance As Object,
                 ByVal type As System.Type,
                 ByVal memberName As String,
