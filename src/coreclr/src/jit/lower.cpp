@@ -4720,7 +4720,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     assert((type == TYP_INT) || (type == TYP_LONG));
 
 #if defined(USE_HELPERS_FOR_INT_DIV)
-    unreached();
+    assert(!"unreachable: GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
 
     if (dividend->IsCnsIntOrI())
