@@ -4719,6 +4719,10 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     const var_types type = divMod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
+#if defined(USE_HELPERS_FOR_INT_DIV)
+    unreached();
+#endif // USE_HELPERS_FOR_INT_DIV
+
     if (dividend->IsCnsIntOrI())
     {
         // We shouldn't see a divmod with constant operands here but if we do then it's likely
