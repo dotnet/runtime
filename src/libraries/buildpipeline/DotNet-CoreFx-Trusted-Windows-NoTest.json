@@ -143,7 +143,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\sync.cmd",
-        "arguments": "$(PB_SyncArguments)",
+        "arguments": "$(PB_SyncArguments) $(PB_OptionalToolingSyncArguments) $(PB_PipelineBuildMSBuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -183,7 +183,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) $(PB_PipelineBuildMSBuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -416,6 +416,28 @@
     },
     "PB_BuildArguments": {
       "value": "-buildArch=x64 -Release -- /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
+      "allowOverride": true
+    },
+    "PB_OptionalToolingSyncArguments": {
+      "value": "/p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser);OptionalToolSourcePassword=$(PB_OptionalToolSourcePAT)"
+    },
+    "PB_OptionalToolSource": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolSourcePAT": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolSourceUser": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_PipelineBuildMSBuildArguments": {
+      "value": "",
       "allowOverride": true
     },
     "PB_SignType": {
