@@ -16,10 +16,14 @@ add_definitions(-DPACKAGE_STRING="")
 add_definitions(-DPACKAGE_BUGREPORT="")
 
 add_definitions(-D_GNU_SOURCE)
+# Ensure that the remote and local unwind code can reside in the same binary without name clashing
+add_definitions("-Ddwarf_search_unwind_table_int=UNW_OBJ(dwarf_search_unwind_table_int)")
 
 add_compile_options(-Wno-header-guard)
 
 if(CLR_CMAKE_PLATFORM_ARCH_ARM)
+    # Ensure that the remote and local unwind code can reside in the same binary without name clashing
+    add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
     # Disable warning in asm: use of SP or PC in the list is deprecated
     add_compile_options(-Wno-inline-asm)
     # Disable warning due to labs function called on unsigned argument
@@ -28,6 +32,8 @@ if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_compile_options(-Wno-format)
     # Disable warning for a bug in the libunwind source src/arm/Gtrace.c:529, but not in code that we exercise
     add_compile_options(-Wno-implicit-function-declaration)
+    # Disable warning due to an unused function prel31_read
+    add_compile_options(-Wno-unused-function)
     # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
     add_definitions(-Dasm=__asm__)
     # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
@@ -75,7 +81,9 @@ SET(libunwind_coredump_la_SOURCES
 # List of arch-independent files needed by generic library (libunwind-$ARCH):
 SET(libunwind_la_SOURCES_generic
     mi/Gdyn-extract.c mi/Gdyn-remote.c mi/Gfind_dynamic_proc_info.c
-    mi/Gget_accessors.c
+    # The Gget_accessors.c implements the same function as Lget_accessors.c, so
+    # the source is excluded here to prevent name clash
+    #mi/Gget_accessors.c
     mi/Gget_proc_info_by_ip.c mi/Gget_proc_name.c
     mi/Gput_dynamic_unwind_info.c mi/Gdestroy_addr_space.c
     mi/Gget_reg.c mi/Gset_reg.c
@@ -307,22 +315,22 @@ SET(libunwind_x86_64_la_SOURCES_x86_64
 
 if(CLR_CMAKE_PLATFORM_ARCH_ARM64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
-    SET(libunwind_aarch64_la_SOURCES            ${libunwind_aarch64_la_SOURCES_aarch64})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-    SET(libunwind_arm_la_SOURCES                ${libunwind_arm_la_SOURCES_arm})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
 elseif(CLR_CMAKE_PLATFORM_ARCH_I386)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
-    SET(libunwind_x86_la_SOURCES                ${libunwind_x86_la_SOURCES_x86})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_x86_la_SOURCES_x86})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     x86/longjmp.S x86/siglongjmp.S)
 elseif(CLR_CMAKE_PLATFORM_ARCH_AMD64)
     SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
-    SET(libunwind_x86_64_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
     SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
     list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
 endif()
@@ -330,8 +338,10 @@ endif()
 add_library(libunwind
   OBJECT
   ${libunwind_la_SOURCES}
+  ${libunwind_remote_la_SOURCES}
   ${libunwind_dwarf_local_la_SOURCES}
   ${libunwind_dwarf_common_la_SOURCES}
+  ${libunwind_dwarf_generic_la_SOURCES}
   ${libunwind_elf_la_SOURCES}
 )
 
