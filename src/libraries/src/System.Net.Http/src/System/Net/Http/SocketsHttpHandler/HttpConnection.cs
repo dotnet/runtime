@@ -55,6 +55,7 @@ namespace System.Net.Http
         private int _allowedReadLineBytes;
 
         private ValueTask<int>? _readAheadTask;
+        private int _readAheadTaskLock = 0; // 0 == free, 1 == held
         private byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;
@@ -121,33 +122,42 @@ namespace System.Net.Http
 
                     // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.
-                    if (_readAheadTask != null)
+                    ValueTask<int>? readAheadTask = ConsumeReadAheadTask();
+                    if (readAheadTask != null)
                     {
-                        ValueTask<int> t = _readAheadTask.GetValueOrDefault();
-                        if (t.IsCompleted)
-                        {
-                            if (!t.IsCompletedSuccessfully)
-                            {
-                                Exception ignored = t.AsTask().Exception; // accessing Exception prop is sufficient to suppress unobserved exception events
-                            }
-                        }
-                        else
-                        {
-                            t.AsTask().ContinueWith(p =>
-                            {
-                                Exception ignored = p.Exception;
-                            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
-                        }
+                        IgnoreExceptionsAsync(readAheadTask.GetValueOrDefault());
                     }
                 }
             }
         }
 
+        /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
+        private static async void IgnoreExceptionsAsync(ValueTask<int> task)
+        {
+            try { await task.ConfigureAwait(false); } catch { }
+        }
+
         /// <summary>Do a non-blocking poll to see whether the connection has data available or has been closed.</summary>
         /// <remarks>If we don't have direct access to the underlying socket, we instead use a read-ahead task.</remarks>
-        public bool PollRead() => _socket != null ?
-            _socket.Poll(0, SelectMode.SelectRead) :
-            EnsureReadAheadAndPollRead();
+        public bool PollRead()
+        {
+            if (_socket != null) // may be null if we don't have direct access to the socket
+            {
+                try
+                {
+                    return _socket.Poll(0, SelectMode.SelectRead);
+                }
+                catch (Exception e) when (e is SocketException || e is ObjectDisposedException)
+                {
+                    // Poll can throw when used on a closed socket.
+                    return true;
+                }
+            }
+            else
+            {
+                return EnsureReadAheadAndPollRead();
+            }
+        }
 
         /// <summary>
         /// Issues a read-ahead on the connection, which will serve both as the first read on the
@@ -173,6 +183,21 @@ namespace System.Net.Http
             }
 
             return _readAheadTask.Value.IsCompleted; // equivalent to polling
+        }
+
+        private ValueTask<int>? ConsumeReadAheadTask()
+        {
+            if (Interlocked.CompareExchange(ref _readAheadTaskLock, 1, 0) == 0)
+            {
+                ValueTask<int>? t = _readAheadTask;
+                _readAheadTask = null;
+                Volatile.Write(ref _readAheadTaskLock, 0);
+                return t;
+            }
+
+            // We couldn't get the lock, which means it must already be held
+            // by someone else who will consume the task.
+            return null;
         }
 
         public bool IsNewConnection
@@ -438,16 +463,11 @@ namespace System.Net.Http
                 // by the previous request handling.  (Note we do not support HTTP pipelining.)
                 Debug.Assert(_readOffset == _readLength);
 
-                // When the connection was put back into the pool, a pre-emptive read was performed
-                // into the read buffer.  That read should not complete prior to us using the
-                // connection again, as that would mean the connection was either closed or had
-                // erroneous data sent on it by the server in response to no request from us.
-                // We need to consume that read prior to issuing another read request.
-                ValueTask<int>? t = _readAheadTask;
+                // When the connection was taken out of the pool, a pre-emptive read was performed
+                // into the read buffer. We need to consume that read prior to issuing another read.
+                ValueTask<int>? t = ConsumeReadAheadTask();
                 if (t != null)
                 {
-                    _readAheadTask = null;
-
                     int bytesRead = await t.GetValueOrDefault().ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
 
