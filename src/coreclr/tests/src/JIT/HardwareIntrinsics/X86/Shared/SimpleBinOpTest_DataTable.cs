@@ -24,27 +24,35 @@ namespace JIT.HardwareIntrinsics.X86
         private GCHandle inHandle2;
         private GCHandle outHandle;
 
-        private byte simdSize;
+        private ulong alignment;
 
-        public SimpleBinaryOpTest__DataTable(TOp1[] inArray1, TOp2[] inArray2, TResult[] outArray, int simdSize)
+        public SimpleBinaryOpTest__DataTable(TOp1[] inArray1, TOp2[] inArray2, TResult[] outArray, int alignment)
         {
-            this.inArray1 = new byte[simdSize * 2];
-            this.inArray2 = new byte[simdSize * 2];
-            this.outArray = new byte[simdSize * 2];
+            int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<TOp1>();
+            int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<TOp2>();
+            int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<TResult>();
+            if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
+            {
+                throw new ArgumentException("Invalid value of alignment");
+            }
+
+            this.inArray1 = new byte[alignment * 2];
+            this.inArray2 = new byte[alignment * 2];
+            this.outArray = new byte[alignment * 2];
 
             this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
             this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
             this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
-            this.simdSize = unchecked((byte)(simdSize));
+            this.alignment = (ulong)alignment;
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<TOp1, byte>(ref inArray1[0]), this.simdSize);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<TOp2, byte>(ref inArray2[0]), this.simdSize);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<TOp1, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<TOp2, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
         }
 
-        public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), simdSize);
-        public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), simdSize);
-        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), simdSize);
+        public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+        public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+        public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
         public void Dispose()
         {
@@ -53,19 +61,9 @@ namespace JIT.HardwareIntrinsics.X86
             outHandle.Free();
         }
 
-        private static unsafe void* Align(byte* buffer, byte expectedAlignment)
+        private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
         {
-            // Compute how bad the misalignment is, which is at most (expectedAlignment - 1).
-            // Then subtract that from the expectedAlignment and add it to the original address
-            // to compute the aligned address.
-
-            var misalignment = expectedAlignment - ((ulong)(buffer) % expectedAlignment);
-            var result = (void*)(buffer + misalignment);
-            
-            Debug.Assert(((ulong)(result) % expectedAlignment) == 0);
-            Debug.Assert((ulong)(result) <= ((ulong)(result) + expectedAlignment));
-
-            return result;
+            return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
         }
     }
 }
