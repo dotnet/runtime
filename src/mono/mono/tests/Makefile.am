@@ -30,6 +30,7 @@ TAILCALL_DISABLED_TESTS_COMPILE = \
 TAILCALL_DISABLED_TESTS_RUN = \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/PInvokeTail.exe \
 	tailcall/coreclr/JIT/Directed/IL/PInvokeTail/tailwinapi.exe \
+	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.exe \
 	tailcall/coreclr/JIT/Directed/IL/mutualrecur-tailcall/MutualRecur-TailCall.exe \
 	tailcall/coreclr/JIT/Directed/coverage/importer/Desktop/badtailcall.exe \
 	tailcall/coreclr/JIT/Directed/coverage/importer/badtailcall.exe \
@@ -56,6 +57,7 @@ TAILCALL_DISABLED_TESTS_RUN = \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_switch.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateTail.exe \
+	tailcall/coreclr/JIT/Methodical/tailcall_v4/hijacking.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/smallFrame.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/tailcall_AV.exe \
 	tailcall/coreclr/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102844/tailcallcalli.exe \
@@ -100,7 +102,6 @@ TAILCALL_DISABLED_TESTS_RUN += \
 TAILCALL_DISABLED_TESTS_RUN += \
 	tailcall/coreclr/JIT/CodeGenBringUpTests/RecursiveTailCall.exe \
 	tailcall/coreclr/JIT/Directed/IL/Tailcall/JitTailcall1.exe \
-	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.exe \
 	tailcall/coreclr/JIT/Methodical/Boxing/boxunbox/tailcall.exe \
 	tailcall/coreclr/JIT/Methodical/Boxing/misc/tailjump.exe \
 	tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfault_tail.exe \
@@ -127,7 +128,6 @@ TAILCALL_DISABLED_TESTS_RUN += \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_3b.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall_v4/delegateParamCallTarget.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall_v4/hijacking.exe \
 	tailcall/coreclr/JIT/opt/ETW/TailCallCases.exe \
 	tailcall/coreclr/JIT/opt/FastTailCall/FastTailCallCandidates.exe \
 	tailcall/coreclr/JIT/opt/FastTailCall/FastTailCallInlining.exe \
@@ -894,7 +894,6 @@ if X86
 PLATFORM_DISABLED_TESTS += \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
-	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_2a.exe \
@@ -936,7 +935,6 @@ PLATFORM_DISABLED_TESTS += tailcall-mrgctx.exe # MONO_ARCH_HAVE_VOLATILE_NON_PAR
 PLATFORM_DISABLED_TESTS += tailcall-rgctxa.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
 
 PLATFORM_DISABLED_TESTS += \
-	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/recurse_ep_void.exe \
@@ -944,9 +942,7 @@ PLATFORM_DISABLED_TESTS += \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_2b.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_2c.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/test_void.exe \
-	tailcall/coreclr/JIT/Directed/IL/Tailcall/Jittailcall2.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval.exe \
-	tailcall/coreclr/JIT/Methodical/tailcall_v4/hijacking.exe \
 	tailcall/coreclr/JIT/Methodical/tailcall/gcval_sideeffect.exe
 endif
 
