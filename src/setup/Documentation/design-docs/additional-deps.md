@@ -48,11 +48,7 @@ In order to prevent having to co-release for roll-forward cases, and deploy all 
 Where "found" means the version that is being used at run time including roll-forward. For example, if an app requests `2.1.0` of `Microsoft.NETCore.App` in its runtimeconfig.json, but we actually found and are using `2.2.1` (because there were no "compatible" versions installed from 2.1.0 to 2.2.0), then look for the deps folder `shared/Microsoft.NETCore.App/2.1.1` first.
 
 2) If the `found_framework_version` folder does not exist, find the next closest by going "backwards" in versioning
-3) The next closest version includes patch version (major.minor.patch) only if `applyPatches` is true
-
-The `applyPatches` option can only be specified in the runtimeconfig.json file (for app and frameworks). It is true by default and rare to have it set to `false`. If `false` it implies that the application want a stable, idempotent environment, so it makes sense to acknowledge that for additional-deps scenarios.
-
-4) The next closest version only includes a lower minor or major if enabled by "roll-forward-by-no-candidate-fx"
+3) The next closest version only includes a lower minor or major if enabled by "roll-forward-by-no-candidate-fx"
 
 The "roll-forward-by-no-candidate-fx" option has values (0=off, 1=minor, 2=minor\major) and is specified by:
 - `%DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX%` environment variable
@@ -63,8 +59,9 @@ where 1 (minor) is the default.
 
 Similar to `applyPatches`, the app may or may not want to tighten or loosen the range of supported frameworks. The default of `minor` seems like a good fit for additional-deps.
 
-5) Similar to roll-forward, a pre-release version will only "roll-backwards" to pre-release versions of the same `major.minor`. It will not roll-backwards to release. The "roll-forward-by-no-candidate-fx" option does not apply to pre-release roll-forward\backward.
-6) Similar to roll-forward, a release version will only "roll-backwards" to release versions, unless no release versions are found. Then it will attempt to to find a compatible pre-release version.
+4) Similar to roll-forward, a release version will only "roll-backwards" to release versions, unless no release versions are found. Then it will attempt to to find a compatible pre-release version.
+
+Note: the "apply patches" functionality that exists in roll-forward doesn't make sense here since we are going "backwards" and the nearest (most compatible) version already has patches applied.
 
 ## 2.1 other issues (not covered here)
 Currently the additional-deps feature relies on either the store or "additional probing paths" in order for the assets in the additional deps.json to be found.
