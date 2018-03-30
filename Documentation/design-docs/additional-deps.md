@@ -47,7 +47,7 @@ A secondary issue with with the store's naming convention for framework. It cont
    `\dotnet\store\x64\netcoreapp2.0\microsoft.applicationinsights\2.4.0`
 where 'netcoreapp2.0' is a "tfm" (target framework moniker). During roll-forward cases, the tfm is still the value specified in the app's runtimeconfig. The host only includes store folders that match that tfm, so it may not find packages from other deps files that were generated off a different tfm. In addition, with the advent of multiple frameworks, it makes it cumbersome to be forced to install to every tfm because multiple frameworks may use the same package, and because each package is still identified by an exact version.
 
-The proposal for this is to add an `any` tfm.
+The proposal for this is to add an "any" tfm.
 
 Finally, a third issue is there is no way to turn off the global deps lightup (via `%DOTNET_ADDITIONAL_DEPS%`) for a single application if they run into issues with pulling in the additional deps. If the environment variable is set, and an application can't load because of the additional lightup deps, and the lightup isn't needed, there should be a way to turn it off so the app can load. One (poor) workaround would be to specify `--additional-deps` in the command-line to point to any empty file, but that would only work if the command line can be used in this way to launch the application.
 
@@ -86,8 +86,9 @@ _Note: doesn't this make "uninstall" more difficult? Because multiple installs m
 
 ## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
 Add an `additionalDepsLookup` option to the runtimeconfig with these values:
-    0) The `%DOTNET_ADDITIONAL_DEPS%` is not used
-    1) `DOTNET_ADDITIONAL_DEPS` is used (the default)
+
+  0) The `%DOTNET_ADDITIONAL_DEPS%` is not used
+  1) `DOTNET_ADDITIONAL_DEPS` is used (the default)
 
 ## Long-term thoughts
 A lightup "extension" could be considered an application, and have its own `runtimeconfig.json` and `deps.json` file next to its corresponding assembly(s). In this way, it would specify the target framework version and thus compatibility with the hosting application could be established. Having an app-to-app dependency in this way is not currently supported.
