@@ -48,7 +48,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pal.h"
 #include <dlfcn.h>
 
-#define UNW_LOCAL_ONLY
 // Sub-headers included from the libunwind.h contain an empty struct
 // and clang issues a warning. Until the libunwind is fixed, disable
 // the warning.
