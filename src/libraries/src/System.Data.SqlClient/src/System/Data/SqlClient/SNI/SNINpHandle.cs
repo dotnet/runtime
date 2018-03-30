@@ -172,13 +172,13 @@ namespace System.Data.SqlClient.SNI
             }
         }
 
-        public override uint ReceiveAsync(ref SNIPacket packet, bool isMars = false)
+        public override uint ReceiveAsync(ref SNIPacket packet)
         {
             packet = new SNIPacket(_bufferSize);
             
             try
             {
-                packet.ReadFromStreamAsync(_stream, _receiveCallback, isMars);
+                packet.ReadFromStreamAsync(_stream, _receiveCallback);
                 return TdsEnums.SNI_SUCCESS_IO_PENDING;
             }
             catch (ObjectDisposedException ode)

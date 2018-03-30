@@ -108,7 +108,7 @@ namespace System.Data.SqlClient.SNI
         {
             lock (this)
             {
-                return _lowerHandle.ReceiveAsync(ref packet, isMars: true);
+                return _lowerHandle.ReceiveAsync(ref packet);
             }
         }
 
