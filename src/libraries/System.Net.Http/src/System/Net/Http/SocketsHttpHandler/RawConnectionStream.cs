@@ -26,7 +26,7 @@ namespace System.Net.Http
                     return 0;
                 }
 
-                ValueTask<int> readTask = _connection.ReadAsync(buffer);
+                ValueTask<int> readTask = _connection.ReadBufferedAsync(buffer);
                 int bytesRead;
                 if (readTask.IsCompletedSuccessfully)
                 {

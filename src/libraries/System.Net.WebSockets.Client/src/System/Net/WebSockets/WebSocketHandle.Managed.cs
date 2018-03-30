@@ -204,12 +204,12 @@ namespace System.Net.WebSockets
                 }
 
                 // Get or create the buffer to use
-                const int MinBufferSize = 14; // from ManagedWebSocket.MaxMessageHeaderLength
+                const int MinBufferSize = 125; // from ManagedWebSocket.MaxControlPayloadLength
                 ArraySegment<byte> optionsBuffer = options.Buffer.GetValueOrDefault();
                 Memory<byte> buffer =
                     optionsBuffer.Count >= MinBufferSize ? optionsBuffer : // use the provided buffer if it's big enough
-                    options.ReceiveBufferSize >= MinBufferSize ? new byte[options.ReceiveBufferSize] : // or use the requested size if it's big enough
-                    Memory<byte>.Empty; // or let WebSocket.CreateFromStream use its default
+                    default; // or let WebSocket.CreateFromStream use its default
+                    // options.ReceiveBufferSize is ignored, as we rely on the buffer inside the SocketsHttpHandler stream
 
                 // Get the response stream and wrap it in a web socket.
                 Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);

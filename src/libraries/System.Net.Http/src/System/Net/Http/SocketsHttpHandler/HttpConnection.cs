@@ -1296,6 +1296,52 @@ namespace System.Net.Http
             return count;
         }
 
+        private ValueTask<int> ReadBufferedAsync(Memory<byte> destination)
+        {
+            // If the caller provided buffer, and thus the amount of data desired to be read,
+            // is larger than the internal buffer, there's no point going through the internal
+            // buffer, so just do an unbuffered read.
+            return destination.Length >= _readBuffer.Length ?
+                ReadAsync(destination) :
+                ReadBufferedAsyncCore(destination);
+        }
+
+        private async ValueTask<int> ReadBufferedAsyncCore(Memory<byte> destination)
+        {
+            // This is called when reading the response body.
+
+            int remaining = _readLength - _readOffset;
+            if (remaining > 0)
+            {
+                // We have data in the read buffer.  Return it to the caller.
+                if (destination.Length <= remaining)
+                {
+                    ReadFromBuffer(destination.Span);
+                    return destination.Length;
+                }
+                else
+                {
+                    ReadFromBuffer(destination.Span.Slice(0, remaining));
+                    return remaining;
+                }
+            }
+
+            // No data in read buffer. 
+            _readOffset = _readLength = 0;
+
+            // Do a buffered read directly against the underlying stream.
+            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+            int bytesRead = await _stream.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+            _readLength = bytesRead;
+
+            // Hand back as much data as we can fit.
+            int bytesToCopy = Math.Min(bytesRead, destination.Length);
+            _readBuffer.AsSpan(0, bytesToCopy).CopyTo(destination.Span);
+            _readOffset = bytesToCopy;
+            return bytesToCopy;
+        }
+
         private async Task CopyFromBufferAsync(Stream destination, int count, CancellationToken cancellationToken)
         {
             Debug.Assert(count <= _readLength - _readOffset);
