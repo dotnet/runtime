@@ -5,7 +5,7 @@
 Namespace Global.Microsoft.VisualBasic.CompilerServices
     <Global.System.Diagnostics.DebuggerNonUserCode()>
     <Global.System.ComponentModel.EditorBrowsable(Global.System.ComponentModel.EditorBrowsableState.Never)>
-    Public Class StaticLocalInitFlag
+    Public NotInheritable Class StaticLocalInitFlag
         Public State As Short
     End Class
 End Namespace

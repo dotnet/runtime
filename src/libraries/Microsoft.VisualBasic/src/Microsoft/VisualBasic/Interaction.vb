@@ -4,7 +4,7 @@
 
 Namespace Microsoft.VisualBasic
 
-    Public Module Interaction
+    Friend Module Interaction
 
         Friend Function IIf(Of T)(ByVal condition As Boolean, ByVal truePart As T, ByVal falsePart As T) As T
             If condition Then

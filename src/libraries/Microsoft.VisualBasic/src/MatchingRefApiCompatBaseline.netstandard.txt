@@ -1,16 +1,7 @@
 Compat issues with assembly Microsoft.VisualBasic:
-TypesMustExist : Type 'Microsoft.VisualBasic.ControlChars' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.HideModuleNameAttribute' is sealed in the implementation but not sealed in the contract.
-TypesMustExist : Type 'Microsoft.VisualBasic.Interaction' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.Strings.Left(System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
+
+# Loaded via reflection so needs to be public in the implementation but we don't want to expose them publicly in the ref assembly:
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Conversions.FallbackUserDefinedConversion(System.Object, System.Type)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Conversions.GetCultureInfo()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Conversions.IsHexOrOctValue(System.String, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Conversions.IsHexOrOctValue(System.String, System.UInt64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Conversions.ToHalfwidthNumbers(System.String, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.CompilerServices.DesignerGeneratedAttribute' is sealed in the implementation but not sealed in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.CompilerServices.IncompleteInitialization' is sealed in the implementation but not sealed in the contract.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.InternalErrorException' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackCall(System.Object, System.String, System.Object[], System.String[], System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackGet(System.Object, System.String, System.Object[], System.String[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackIndexSet(System.Object, System.Object[], System.String[])' does not exist in the implementation but it does exist in the contract.
@@ -20,12 +11,8 @@ MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackSet(System.Object, System.String, System.Object[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackSetComplex(System.Object, System.String, System.Object[], System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.LateCallInvokeDefault(System.Object, System.Object[], System.String[], System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.LateCanEvaluate(System.Object, System.Type, System.String, System.Object[], System.Boolean, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.LateGetInvokeDefault(System.Object, System.Object[], System.String[], System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Operators.CompareObject(System.Object, System.Object, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Operators.FallbackInvokeUserDefinedOperator(System.Object, System.Object[])' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute' is sealed in the implementation but not sealed in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.CompilerServices.OptionTextAttribute' is sealed in the implementation but not sealed in the contract.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate0' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate1' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate2' does not exist in the implementation but it does exist in the contract.
@@ -34,8 +21,3 @@ TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate4' doe
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate5' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate6' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate7' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute' is sealed in the implementation but not sealed in the contract.
-CannotSealType : Type 'Microsoft.VisualBasic.CompilerServices.StaticLocalInitFlag' is sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Utils.GetResourceString(System.String, System.String[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Utils.MethodToString(System.Reflection.MethodBase)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 39

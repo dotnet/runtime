@@ -28,7 +28,7 @@ Namespace Global.Microsoft.VisualBasic
         '============================================================================
         ' Left/Right/Mid/Trim functions.
         '============================================================================
-        Public Function Left(ByVal [str] As String, ByVal length As Integer) As String
+        Friend Function Left(ByVal [str] As String, ByVal length As Integer) As String
             '-------------------------------------------------------------
             '   lLen < 0 throws InvalidArgument exception
             '   lLen > Len([str]) let lLen = Len([str])
