@@ -2402,6 +2402,11 @@ FINISHED:
    this function is called to find all live objects (pushed arguments)
    and to get the stack base for fully interruptible methods.
    Returns size of things pushed on the stack for ESP frames
+
+   Arguments:
+      table   - The pointer table
+      curOffs - The current code offset
+      info    - Incoming arg used to determine if there's a frame, and to save results
  */
 
 static
@@ -2416,14 +2421,14 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
     } CONTRACTL_END;
 
     regNum thisPtrReg = REGI_NA;
-    unsigned  ptrRegs    = 0;
-    unsigned iptrRegs    = 0;
-    unsigned  ptrOffs    = 0;
-    unsigned  argCnt     = 0;
+    unsigned  ptrRegs    = 0;    // The mask of registers that contain pointers
+    unsigned iptrRegs    = 0;    // The subset of ptrRegs that are interior pointers
+    unsigned  ptrOffs    = 0;    // The code offset of the table entry we are currently looking at
+    unsigned  argCnt     = 0;    // The number of args that have been pushed
 
-    ptrArgTP  ptrArgs(0);
-    ptrArgTP iptrArgs(0);
-    ptrArgTP  argHigh(0);
+    ptrArgTP  ptrArgs(0);        // The mask of stack values that contain pointers.
+    ptrArgTP iptrArgs(0);        // The subset of ptrArgs that are interior pointers.
+    ptrArgTP  argHigh(0);        // The current mask position that corresponds to the top of the stack.
 
     bool      isThis     = false;
     bool      iptr       = false;
@@ -2659,8 +2664,14 @@ unsigned scanArgRegTableI(PTR_CBYTE     table,
 
                 if (hasPartialArgInfo)
                 {
+                    // We always leave argHigh pointing to the next ptr arg.
+                    // So, while argHigh is non-zero, and not a ptrArg, we shift right (and subtract
+                    // one arg from our argCnt) until it is a ptrArg.
                     while (!intersect(argHigh, ptrArgs) && (!isZero(argHigh)))
+                    {
                         argHigh >>= 1;
+                        argCnt--;
+                    }
                 }
 
             }
