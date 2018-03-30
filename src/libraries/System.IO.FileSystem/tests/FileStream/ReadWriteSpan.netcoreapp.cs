@@ -189,13 +189,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async Task NonEmptyFile_CustomOwnedMemory_ReadAsync_GetsExpectedData()
+        public async Task NonEmptyFile_CustomMemoryManager_ReadAsync_GetsExpectedData()
         {
             string fileName = GetTestFilePath();
             File.WriteAllBytes(fileName, TestBuffer);
 
             using (var fs = CreateFileStream(fileName, FileMode.Open))
-            using (var buffer = new NativeOwnedMemory(TestBuffer.Length))
+            using (var buffer = new NativeMemoryManager(TestBuffer.Length))
             {
                 Assert.Equal(TestBuffer.Length, await fs.ReadAsync(buffer.Memory));
                 Assert.Equal<byte>(TestBuffer, buffer.Memory.ToArray());
@@ -255,9 +255,9 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async Task NonEmptyWriteAsync_CustomOwnedMemory_WritesExpectedData()
+        public async Task NonEmptyWriteAsync_CustomMemoryManager_WritesExpectedData()
         {
-            using (var mem = new NativeOwnedMemory(TestBuffer.Length))
+            using (var mem = new NativeMemoryManager(TestBuffer.Length))
             using (var fs = CreateFileStream(GetTestFilePath(), FileMode.Create))
             {
                 new Memory<byte>(TestBuffer).CopyTo(mem.Memory);

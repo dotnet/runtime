@@ -116,9 +116,10 @@
     <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.Byte.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.Char.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\SpanHelpers.T.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IRetainable.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IPinnable.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\IMemoryOwner.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Buffers\MemoryHandle.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\OwnedMemory.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\MemoryManager.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Runtime\InteropServices\MemoryMarshal.cs" />
     <Compile Include="System\ReadOnlySpan.Portable.cs" />
     <Compile Include="System\Span.Portable.cs" />

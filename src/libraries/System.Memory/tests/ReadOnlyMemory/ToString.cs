@@ -68,28 +68,28 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void ToStringFromMemoryFromOwnedMemory()
+        public static void ToStringFromMemoryFromMemoryManager()
         {
             int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> intOwner = new CustomMemoryForTest<int>(a);
-            Assert.Equal("System.ReadOnlyMemory<Int32>[4]", ((ReadOnlyMemory<int>)intOwner.Memory).ToString());
+            MemoryManager<int> intManager = new CustomMemoryForTest<int>(a);
+            Assert.Equal("System.ReadOnlyMemory<Int32>[4]", ((ReadOnlyMemory<int>)intManager.Memory).ToString());
 
-            intOwner = new CustomMemoryForTest<int>(Array.Empty<int>());
-            Assert.Equal("System.ReadOnlyMemory<Int32>[0]", ((ReadOnlyMemory<int>)intOwner.Memory).ToString());
+            intManager = new CustomMemoryForTest<int>(Array.Empty<int>());
+            Assert.Equal("System.ReadOnlyMemory<Int32>[0]", ((ReadOnlyMemory<int>)intManager.Memory).ToString());
 
             char[] charArray = { '1', '2', '-', '4' };
-            OwnedMemory<char> charOwner = new CustomMemoryForTest<char>(charArray);
-            Assert.Equal("12-4", ((ReadOnlyMemory<char>)charOwner.Memory).ToString());
+            MemoryManager<char> charManager = new CustomMemoryForTest<char>(charArray);
+            Assert.Equal("12-4", ((ReadOnlyMemory<char>)charManager.Memory).ToString());
 
-            charOwner = new CustomMemoryForTest<char>(Array.Empty<char>());
-            Assert.Equal("", ((ReadOnlyMemory<char>)charOwner.Memory).ToString());
+            charManager = new CustomMemoryForTest<char>(Array.Empty<char>());
+            Assert.Equal("", ((ReadOnlyMemory<char>)charManager.Memory).ToString());
 
             string[] strArray = { "91", "92", "-93", "94" };
-            OwnedMemory<string> strOwner = new CustomMemoryForTest<string>(strArray);
-            Assert.Equal("System.ReadOnlyMemory<String>[4]", ((ReadOnlyMemory<string>)strOwner.Memory).ToString());
+            MemoryManager<string> strManager = new CustomMemoryForTest<string>(strArray);
+            Assert.Equal("System.ReadOnlyMemory<String>[4]", ((ReadOnlyMemory<string>)strManager.Memory).ToString());
 
-            strOwner = new CustomMemoryForTest<string>(Array.Empty<string>());
-            Assert.Equal("System.ReadOnlyMemory<String>[0]", ((ReadOnlyMemory<string>)strOwner.Memory).ToString());
+            strManager = new CustomMemoryForTest<string>(Array.Empty<string>());
+            Assert.Equal("System.ReadOnlyMemory<String>[0]", ((ReadOnlyMemory<string>)strManager.Memory).ToString());
         }
 
         [Fact]

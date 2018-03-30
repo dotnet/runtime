@@ -15,7 +15,6 @@ namespace System.Memory.Tests
         public static ReadOnlySequenceFactoryChar ArrayFactory { get; } = new ArrayTestSequenceFactoryChar();
         public static ReadOnlySequenceFactoryChar MemoryFactory { get; } = new MemoryTestSequenceFactoryChar();
         public static ReadOnlySequenceFactoryChar StringFactory { get; } = new StringTestSequenceFactoryChar();
-        public static ReadOnlySequenceFactoryChar OwnedMemoryFactory { get; } = new OwnedMemoryTestSequenceFactoryChar();
         public static ReadOnlySequenceFactoryChar SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactoryChar();
         public static ReadOnlySequenceFactoryChar SegmentPerCharFactory { get; } = new CharPerSegmentTestSequenceFactoryChar();
 
@@ -86,21 +85,6 @@ namespace System.Memory.Tests
                 var startSegment = new char[data.Length + 20];
                 Array.Copy(data, 0, startSegment, 10, data.Length);
                 return new ReadOnlySequence<char>(new ReadOnlyMemory<char>(startSegment, 10, data.Length));
-            }
-        }
-
-        internal class OwnedMemoryTestSequenceFactoryChar : ReadOnlySequenceFactoryChar
-        {
-            public override ReadOnlySequence<char> CreateOfSize(int size)
-            {
-                return CreateWithContent(new char[size]);
-            }
-
-            public override ReadOnlySequence<char> CreateWithContent(char[] data)
-            {
-                var startSegment = new char[data.Length + 20];
-                Array.Copy(data, 0, startSegment, 10, data.Length);
-                return new ReadOnlySequence<char>(new CustomMemoryForTest<char>(startSegment, 10, data.Length));
             }
         }
 

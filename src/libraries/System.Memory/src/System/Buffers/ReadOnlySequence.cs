@@ -119,10 +119,10 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(ReadOnlyMemory<T> memory)
         {
-            if (MemoryMarshal.TryGetOwnedMemory(memory, out OwnedMemory<T> ownedMemory, out int index, out int length))
+            if (MemoryMarshal.TryGetMemoryManager(memory, out MemoryManager<T> manager, out int index, out int length))
             {
-                _sequenceStart = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceStart(index));
-                _sequenceEnd = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceEnd(length));
+                _sequenceStart = new SequencePosition(manager, ReadOnlySequence.MemoryManagerToSequenceStart(index));
+                _sequenceEnd = new SequencePosition(manager, ReadOnlySequence.MemoryManagerToSequenceEnd(length));
             }
             else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
             {
@@ -146,34 +146,6 @@ namespace System.Buffers
                 _sequenceStart = default;
                 _sequenceEnd = default;
             }
-        }
-
-        /// <summary>
-        /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the <see cref="OwnedMemory{T}"/>.
-        /// Consumer is expected to manage lifetime of memory until <see cref="ReadOnlySequence{T}"/> is not used anymore.
-        /// </summary>
-        public ReadOnlySequence(OwnedMemory<T> ownedMemory)
-        {
-            if (ownedMemory == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.ownedMemory);
-
-            _sequenceStart = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceStart(0));
-            _sequenceEnd = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceEnd(ownedMemory.Length));
-        }
-
-        /// <summary>
-        /// Creates an instance of <see cref="ReadOnlySequence{T}"/> from the <see cref="OwnedMemory{T}"/>, start and length.
-        /// Consumer is expected to manage lifetime of memory until <see cref="ReadOnlySequence{T}"/> is not used anymore.
-        /// </summary>
-        public ReadOnlySequence(OwnedMemory<T> ownedMemory, int start, int length)
-        {
-            if (ownedMemory == null ||
-                (uint)start > (uint)ownedMemory.Length ||
-                (uint)length > (uint)(ownedMemory.Length - start))
-                ThrowHelper.ThrowArgumentValidationException(ownedMemory, start);
-
-            _sequenceStart = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceStart(start));
-            _sequenceEnd = new SequencePosition(ownedMemory, ReadOnlySequence.OwnedMemoryToSequenceEnd(start + length));
         }
 
         /// <summary>
@@ -411,7 +383,7 @@ namespace System.Buffers
         {
             MultiSegment = 0x00,
             Array = 0x1,
-            OwnedMemory = 0x2,
+            MemoryManager = 0x2,
             String = 0x3,
             Empty = 0x4
         }
@@ -428,8 +400,8 @@ namespace System.Buffers
         public const int ArrayStartMask = 0;
         public const int ArrayEndMask = FlagBitMask;
 
-        public const int OwnedMemoryStartMask = FlagBitMask;
-        public const int OwnedMemoryEndMask = 0;
+        public const int MemoryManagerStartMask = FlagBitMask;
+        public const int MemoryManagerEndMask = 0;
 
         public const int StringStartMask = FlagBitMask;
         public const int StringEndMask = FlagBitMask;
@@ -443,9 +415,9 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ArrayToSequenceEnd(int endIndex) => endIndex | ArrayEndMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int OwnedMemoryToSequenceStart(int startIndex) => startIndex | OwnedMemoryStartMask;
+        public static int MemoryManagerToSequenceStart(int startIndex) => startIndex | MemoryManagerStartMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int OwnedMemoryToSequenceEnd(int endIndex) => endIndex | OwnedMemoryEndMask;
+        public static int MemoryManagerToSequenceEnd(int endIndex) => endIndex | MemoryManagerEndMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int StringToSequenceStart(int startIndex) => startIndex | StringStartMask;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -8,16 +8,16 @@ using Xunit;
 namespace System.MemoryTests
 {
     //
-    // Tests for internal Memory<T>.ctor(OwnedMemory<T>, int , int)
+    // Tests for Memory<T>.ctor(MemoryManager<T>, int , int)
     //
     public static partial class MemoryTests
     {
         [Fact]
-        public static void MemoryFromOwnedMemoryInt()
+        public static void MemoryFromMemoryManagerInt()
         {
             int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memory = owner.Memory;
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memory = manager.Memory;
             memory.Validate(91, 92, -93, 94);
             memory.Slice(0, 4).Validate(91, 92, -93, 94);
             memory.Slice(1, 0).Validate();
@@ -28,11 +28,11 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void ReadOnlyMemoryFromMemoryFromOwnedMemoryInt()
+        public static void ReadOnlyMemoryFromMemoryFromMemoryManagerInt()
         {
             int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            ReadOnlyMemory<int> readOnlyMemory = owner.Memory;
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            ReadOnlyMemory<int> readOnlyMemory = manager.Memory;
             readOnlyMemory.Validate(91, 92, -93, 94);
             readOnlyMemory.Slice(0, 4).Validate(91, 92, -93, 94);
             readOnlyMemory.Slice(1, 0).Validate();
@@ -43,11 +43,11 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void MemoryFromOwnedMemoryLong()
+        public static void MemoryFromMemoryManagerLong()
         {
             long[] a = { 91, -92, 93, 94, -95 };
-            OwnedMemory<long> owner = new CustomMemoryForTest<long>(a);
-            Memory<long> memory = owner.Memory;
+            MemoryManager<long> manager = new CustomMemoryForTest<long>(a);
+            Memory<long> memory = manager.Memory;
             memory.Validate(91, -92, 93, 94, -95);
             memory.Slice(0, 5).Validate(91, -92, 93, 94, -95);
             memory.Slice(1, 0).Validate();
@@ -58,58 +58,63 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void MemoryFromOwnedMemoryObject()
+        public static void MemoryFromMemoryManagerObject()
         {
             object o1 = new object();
             object o2 = new object();
             object[] a = { o1, o2 };
-            OwnedMemory<object> owner = new CustomMemoryForTest<object>(a);
-            Memory<object> memory = owner.Memory;
+            MemoryManager<object> manager = new CustomMemoryForTest<object>(a);
+            Memory<object> memory = manager.Memory;
             memory.ValidateReferenceType(o1, o2);
         }
 
         [Fact]
-        public static void ImplicitReadOnlyMemoryFromOwnedMemory()
+        public static void ImplicitReadOnlyMemoryFromMemoryManager()
         {
             long[] a = { 91, -92, 93, 94, -95 };
-            OwnedMemory<long> owner = new CustomMemoryForTest<long>(a);
-            Memory<long> memory = owner.Memory;
+            MemoryManager<long> manager = new CustomMemoryForTest<long>(a);
+            Memory<long> memory = manager.Memory;
             CastReadOnly<long>(memory, 91, -92, 93, 94, -95);
         }
 
         [Fact]
-        public static void OwnedMemoryDispose()
+        public static void MemoryManagerDispose()
         {
             int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Assert.False(owner.IsDisposed);
-            owner.Dispose();
-            Assert.True(owner.IsDisposed);
-        }
-        
-        [Fact]
-        public static void OwnedMemoryPinEmptyArray()
-        {
-            int[] a = {};
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            MemoryHandle handle = owner.Pin();
-            Assert.True(handle.HasPointer);
+            CustomMemoryForTest<int> manager;
+            using (manager = new CustomMemoryForTest<int>(a))
+            {
+                Assert.False(manager.IsDisposed);
+            }
+            Assert.True(manager.IsDisposed);
         }
 
         [Fact]
-        public static void OwnedMemoryPinArray()
+        public static void MemoryManagerPinEmptyArray()
+        {
+            int[] a = { };
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            MemoryHandle handle = manager.Pin();
+            unsafe
+            {
+                Assert.True(handle.Pointer != null);
+            }
+        }
+
+        [Fact]
+        public static void MemoryManagerPinArray()
         {
             int[] array = { 1, 2, 3, 4, 5 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            MemoryHandle handle = owner.Pin();
-            Assert.True(handle.HasPointer);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
+            MemoryHandle handle = manager.Pin();
             unsafe
             {
                 int* pointer = (int*)handle.Pointer;
+                Assert.True(pointer != null);
 
                 GC.Collect();
 
-                for (int i = 0; i < owner.Memory.Length; i++)
+                for (int i = 0; i < manager.Memory.Length; i++)
                 {
                     Assert.Equal(array[i], pointer[i]);
                 }
@@ -120,7 +125,7 @@ namespace System.MemoryTests
         [Fact]
         [OuterLoop]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop framework doesn't support large arrays by default.")]
-        public static void OwnedMemoryPinLargeArray()
+        public static void MemoryManagerPinLargeArray()
         {
             // Early-out: we can only run this test on 64-bit platforms.
             if (IntPtr.Size == 4)
@@ -129,38 +134,20 @@ namespace System.MemoryTests
             }
 
             int[] array = new int[0x2000_0000]; // will produce array with total byte length > 2 GB
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(array);
-            Assert.Throws<ArgumentOutOfRangeException>(() => owner.Pin(int.MinValue));
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(array);
+            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Pin(int.MinValue));
         }
 
         [Fact]
-        public static void MemoryFromOwnedMemoryAfterDispose()
+        public static void SpanFromMemoryManagerAfterDispose()
         {
             int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            owner.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => owner.Memory);
-        }
+            MemoryManager<int> manager;
+            using (manager = new CustomMemoryForTest<int>(a))
+            {
 
-        [Fact]
-        public static void DisposeOwnedMemoryAfterRetain()
-        {
-            int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            owner.Retain();
-            Assert.Throws<InvalidOperationException>(() => owner.Dispose());
-            owner.Release();
-        }
-
-        [Fact]
-        public static void DisposeOwnedMemoryAfterRetainAndRelease()
-        {
-            int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            owner.Retain();
-            owner.Release();
-            owner.Dispose();
-            Assert.True(owner.IsDisposed);
+            }
+            Assert.Throws<ObjectDisposedException>(() => manager.GetSpan());
         }
     }
 

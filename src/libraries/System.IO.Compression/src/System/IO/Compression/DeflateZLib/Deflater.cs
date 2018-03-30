@@ -91,8 +91,6 @@ namespace System.IO.Compression
         internal unsafe void SetInput(ReadOnlyMemory<byte> inputBuffer)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.HasPointer);
-
             if (0 == inputBuffer.Length)
             {
                 return;
@@ -111,7 +109,6 @@ namespace System.IO.Compression
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
             Debug.Assert(inputBufferPtr != null);
-            Debug.Assert(!_inputBufferHandle.HasPointer);
 
             if (count == 0)
             {
@@ -182,7 +179,6 @@ namespace System.IO.Compression
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(outputBuffer.Length > 0, "Can't pass in an empty output buffer!");
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(!_inputBufferHandle.HasPointer);
 
 
             // Note: we require that NeedsInput() == true, i.e. that 0 == _zlibStream.AvailIn.

@@ -182,7 +182,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SetBufferMemory_NonArray_BufferReturnsNull()
         {
-            using (var m = new NativeOwnedMemory(42))
+            using (var m = new NativeMemoryManager(42))
             using (var saea = new SocketAsyncEventArgs())
             {
                 saea.SetBuffer(m.Memory);

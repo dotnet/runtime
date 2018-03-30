@@ -19,11 +19,11 @@ namespace System.MemoryTests
             Assert.Equal(4, memory.Length);
             Assert.True(Unsafe.AreSame(ref a[6], ref MemoryMarshal.GetReference(memory.Span)));
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.Memory.Slice(6);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memoryFromManager = manager.Memory.Slice(6);
 
-            Assert.Equal(4, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[6], ref MemoryMarshal.GetReference(memoryFromOwner.Span)));
+            Assert.Equal(4, memoryFromManager.Length);
+            Assert.True(Unsafe.AreSame(ref a[6], ref MemoryMarshal.GetReference(memoryFromManager.Span)));
         }
 
         [Fact]
@@ -34,11 +34,11 @@ namespace System.MemoryTests
             Assert.Equal(0, memory.Length);
             Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref MemoryMarshal.GetReference(memory.Span), 1)));
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.Memory.Slice(a.Length);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memoryFromManager = manager.Memory.Slice(a.Length);
 
-            Assert.Equal(0, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref MemoryMarshal.GetReference(memoryFromOwner.Span), 1)));
+            Assert.Equal(0, memoryFromManager.Length);
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref MemoryMarshal.GetReference(memoryFromManager.Span), 1)));
         }
 
         [Fact]
@@ -49,11 +49,11 @@ namespace System.MemoryTests
             Assert.Equal(5, memory.Length);
             Assert.True(Unsafe.AreSame(ref a[3], ref MemoryMarshal.GetReference(memory.Span)));
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.Memory.Slice(3, 5);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memoryFromManager = manager.Memory.Slice(3, 5);
 
-            Assert.Equal(5, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[3], ref MemoryMarshal.GetReference(memoryFromOwner.Span)));
+            Assert.Equal(5, memoryFromManager.Length);
+            Assert.True(Unsafe.AreSame(ref a[3], ref MemoryMarshal.GetReference(memoryFromManager.Span)));
         }
 
         [Fact]
@@ -64,11 +64,11 @@ namespace System.MemoryTests
             Assert.Equal(6, memory.Length);
             Assert.True(Unsafe.AreSame(ref a[4], ref MemoryMarshal.GetReference(memory.Span)));
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.Memory.Slice(4, 6);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memoryFromManager = manager.Memory.Slice(4, 6);
 
-            Assert.Equal(6, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[4], ref MemoryMarshal.GetReference(memoryFromOwner.Span)));
+            Assert.Equal(6, memoryFromManager.Length);
+            Assert.True(Unsafe.AreSame(ref a[4], ref MemoryMarshal.GetReference(memoryFromManager.Span)));
         }
 
         [Fact]
@@ -79,11 +79,11 @@ namespace System.MemoryTests
             Assert.Equal(0, memory.Length);
             Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref MemoryMarshal.GetReference(memory.Span), 1)));
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memoryFromOwner = owner.Memory.Slice(a.Length, 0);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memoryFromManager = manager.Memory.Slice(a.Length, 0);
 
-            Assert.Equal(0, memoryFromOwner.Length);
-            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref MemoryMarshal.GetReference(memoryFromOwner.Span), 1)));
+            Assert.Equal(0, memoryFromManager.Length);
+            Assert.True(Unsafe.AreSame(ref a[a.Length - 1], ref Unsafe.Subtract(ref MemoryMarshal.GetReference(memoryFromManager.Span), 1)));
         }
 
         [Fact]
@@ -98,8 +98,8 @@ namespace System.MemoryTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(a).Slice(a.Length + 1, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Memory<int>(a).Slice(a.Length, 1));
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            Memory<int> memory = owner.Memory;
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            Memory<int> memory = manager.Memory;
 
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(a.Length + 1));
