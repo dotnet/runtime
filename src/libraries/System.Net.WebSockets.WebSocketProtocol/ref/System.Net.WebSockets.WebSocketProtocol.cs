@@ -5,12 +5,10 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.IO;
-
 namespace System.Net.WebSockets
 {
     public static class WebSocketProtocol
     {
-        public static WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval, Memory<byte> buffer = default) { throw null; }
+        public static WebSocket CreateFromStream(System.IO.Stream stream, bool isServer, string subProtocol, System.TimeSpan keepAliveInterval) { throw null; }
     }
 }

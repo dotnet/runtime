@@ -203,14 +203,6 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                // Get or create the buffer to use
-                const int MinBufferSize = 125; // from ManagedWebSocket.MaxControlPayloadLength
-                ArraySegment<byte> optionsBuffer = options.Buffer.GetValueOrDefault();
-                Memory<byte> buffer =
-                    optionsBuffer.Count >= MinBufferSize ? optionsBuffer : // use the provided buffer if it's big enough
-                    default; // or let WebSocket.CreateFromStream use its default
-                    // options.ReceiveBufferSize is ignored, as we rely on the buffer inside the SocketsHttpHandler stream
-
                 // Get the response stream and wrap it in a web socket.
                 Stream connectedStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
                 Debug.Assert(connectedStream.CanWrite);
@@ -219,8 +211,7 @@ namespace System.Net.WebSockets
                     connectedStream,
                     isServer: false,
                     subprotocol,
-                    options.KeepAliveInterval,
-                    buffer);
+                    options.KeepAliveInterval);
             }
             catch (Exception exc)
             {

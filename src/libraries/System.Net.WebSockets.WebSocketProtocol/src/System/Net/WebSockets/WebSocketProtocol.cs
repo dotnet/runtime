@@ -13,8 +13,7 @@ namespace System.Net.WebSockets
             Stream stream,
             bool isServer,
             string subProtocol,
-            TimeSpan keepAliveInterval,
-            Memory<byte> buffer = default)
+            TimeSpan keepAliveInterval)
         {
             if (stream == null)
             {
@@ -38,7 +37,7 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval, buffer);
+            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval);
         }
     }
 }
