@@ -77,18 +77,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void CanWriteEmpty()
-        {
-            PipeWriter writer = Pipe.Writer;
-            var array = new byte[] { };
-
-            writer.Write(array);
-            writer.Write(new Span<byte>(array, 0, array.Length));
-
-            Assert.Equal(array, Read());
-        }
-
-        [Fact]
         public void CanWriteIntoHeadlessBuffer()
         {
             PipeWriter writer = Pipe.Writer;
@@ -130,6 +118,8 @@ namespace System.IO.Pipelines.Tests
             var span = writer.GetSpan(10);
 
             Assert.True(span.Length >= 10);
+            // 0 byte Flush would not complete the reader so we complete.
+            Pipe.Writer.Complete();
             Assert.Equal(new byte[] { }, Read());
         }
 
