@@ -149,6 +149,8 @@ void PEImageLayout::ApplyBaseRelocations()
     SIZE_T cbWriteableRegion = 0;
     DWORD dwOldProtection = 0;
 
+    BOOL bRelocDone = FALSE;
+
     COUNT_T dirPos = 0;
     while (dirPos < dirSize)
     {
@@ -175,9 +177,19 @@ void PEImageLayout::ApplyBaseRelocations()
             // Restore the protection
             if (dwOldProtection != 0)
             {
+                BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+                    PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
                     ThrowLastError();
+
+                if (bRelocDone && bExecRegion)
+                {
+                    ClrFlushInstructionCache(pWriteableRegion, cbWriteableRegion);
+                }
+
+                bRelocDone = FALSE;
 
                 dwOldProtection = 0;
             }
@@ -221,11 +233,13 @@ void PEImageLayout::ApplyBaseRelocations()
             {
             case IMAGE_REL_BASED_PTR:
                 *(TADDR *)address += delta;
+                bRelocDone = TRUE;
                 break;
 
 #ifdef _TARGET_ARM_
             case IMAGE_REL_BASED_THUMB_MOV32:
                 PutThumb2Mov32((UINT16 *)address, GetThumb2Mov32((UINT16 *)address) + delta);
+                bRelocDone = TRUE;
                 break;
 #endif
 
@@ -245,10 +259,18 @@ void PEImageLayout::ApplyBaseRelocations()
 #ifndef CROSSGEN_COMPILE
     if (dwOldProtection != 0)
     {
+        BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
+
+        if (bRelocDone && bExecRegion)
+        {
+            ClrFlushInstructionCache(pWriteableRegion, cbWriteableRegion);
+        }
     }
 #endif // CROSSGEN_COMPILE
 }
