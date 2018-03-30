@@ -609,18 +609,13 @@ namespace System.Xml.Tests
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
+            string fileName = GetType().Name + "_" + Path.GetRandomFileName();
+            string testFile = Path.Combine(Path.GetTempPath(), fileName);
+            string xmlFile = FullFilePath(fileName);
 
             // copy file on the local machine
             try
             {
-                string tempPath = Path.GetTempPath();
-                string testFile = Path.Combine(tempPath, "xmlResolver_document_function.xml");
-                if (File.Exists(testFile))
-                {
-                    File.SetAttributes(testFile, FileAttributes.Normal);
-                    File.Delete(testFile);
-                }
-                string xmlFile = FullFilePath("xmlResolver_document_function.xml");
                 File.Copy(xmlFile, testFile, true);
             }
             catch (Exception e)
@@ -628,6 +623,14 @@ namespace System.Xml.Tests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Could not copy file to local. Some other issues prevented this test from running");
                 return; //TEST_SKIPPED;
+            }
+            finally
+            {
+                if (File.Exists(testFile))
+                {
+                    File.SetAttributes(testFile, FileAttributes.Normal);
+                    File.Delete(testFile);
+                }
             }
 
             // copy file on the local machine (this is now done with createAPItestfiles.js, see Oasys scenario.)
@@ -2522,18 +2525,13 @@ namespace System.Xml.Tests
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
 
             string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
+            string fileName = GetType().Name + "_" + Path.GetRandomFileName();
+            string testFile = Path.Combine(Path.GetTempPath(), fileName);
+            string xmlFile = FullFilePath(fileName);
 
             // copy file on the local machine
             try
             {
-                string tempPath = Path.GetTempPath();
-                string testFile = Path.Combine(tempPath, "xmlResolver_document_function.xml");
-                if (File.Exists(testFile))
-                {
-                    File.SetAttributes(testFile, FileAttributes.Normal);
-                    File.Delete(testFile);
-                }
-                string xmlFile = FullFilePath("xmlResolver_document_function.xml");
                 File.Copy(xmlFile, testFile, true);
             }
             catch (Exception e)
@@ -2541,6 +2539,14 @@ namespace System.Xml.Tests
                 _output.WriteLine(e.ToString());
                 _output.WriteLine("Could not copy file to local. Some other issues prevented this test from running");
                 return; //TEST_SKIPPED;
+            }
+            finally
+            {
+                if (File.Exists(testFile))
+                {
+                    File.SetAttributes(testFile, FileAttributes.Normal);
+                    File.Delete(testFile);
+                }
             }
 
             if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl", xslInputType, readerType) == 1)
