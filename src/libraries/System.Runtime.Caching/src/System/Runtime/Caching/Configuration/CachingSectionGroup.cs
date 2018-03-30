@@ -7,7 +7,7 @@ using System.Configuration;
 
 namespace System.Runtime.Caching.Configuration
 {
-    public sealed class CachingSectionGroup : ConfigurationSectionGroup
+    internal sealed class CachingSectionGroup : ConfigurationSectionGroup
     {
         public CachingSectionGroup()
         {
