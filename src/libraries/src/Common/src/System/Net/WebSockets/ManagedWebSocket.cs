@@ -63,8 +63,6 @@ namespace System.Net.WebSockets
         private const int MaxControlPayloadLength = 125;
         /// <summary>Length of the mask XOR'd with the payload data.</summary>
         private const int MaskLength = 4;
-        /// <summary>Default length of a receive buffer to create when an invalid scratch buffer is provided.</summary>
-        private const int DefaultReceiveBufferSize = 0x1000;
 
         /// <summary>The stream used to communicate with the remote server.</summary>
         private readonly Stream _stream;
@@ -184,8 +182,11 @@ namespace System.Net.WebSockets
             // socket rents a similarly sized buffer from the pool for its duration, we'll end up draining
             // the pool, such that other web sockets will allocate anyway, as will anyone else in the process using the
             // pool.  If someone wants to pool, they can do so by passing in the buffer they want to use, and they can
-            // get it from whatever pool they like.
-            _receiveBuffer = buffer.Length >= MaxMessageHeaderLength ? buffer : new byte[DefaultReceiveBufferSize];
+            // get it from whatever pool they like.  If we create our own buffer, it's small, large enough for message
+            // headers and control payloads, but data for other message payloads is read directly into the buffers
+            // passed into ReceiveAsync.
+            const int ReceiveBufferMinLength = MaxControlPayloadLength;
+            _receiveBuffer = buffer.Length >= ReceiveBufferMinLength ? buffer : new byte[ReceiveBufferMinLength];
 
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
             _abortSource.Token.Register(s =>
@@ -697,32 +698,56 @@ namespace System.Net.WebSockets
                     }
 
                     // Otherwise, read as much of the payload as we can efficiently, and upate the header to reflect how much data
-                    // remains for future reads.
-                    int bytesToCopy = Math.Min(payloadBuffer.Length, (int)Math.Min(header.PayloadLength, _receiveBuffer.Length));
-                    Debug.Assert(bytesToCopy > 0, $"Expected {nameof(bytesToCopy)} > 0");
-                    if (_receiveBufferCount < bytesToCopy)
+                    // remains for future reads.  We first need to copy any data that may be lingering in the receive buffer
+                    // into the destination; then to minimize ReceiveAsync calls, we want to read as much as we can, stopping
+                    // only when we've either read the whole message or when we've filled the payload buffer.
+
+                    // First copy any data lingering in the receive buffer.
+                    int totalBytesReceived = 0;
+                    if (_receiveBufferCount > 0)
                     {
-                        await EnsureBufferContainsAsync(bytesToCopy, throwOnPrematureClosure: true).ConfigureAwait(false);
+                        int receiveBufferBytesToCopy = Math.Min(payloadBuffer.Length, (int)Math.Min(header.PayloadLength, _receiveBufferCount));
+                        Debug.Assert(receiveBufferBytesToCopy > 0);
+                        _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(payloadBuffer.Span);
+                        ConsumeFromBuffer(receiveBufferBytesToCopy);
+                        totalBytesReceived += receiveBufferBytesToCopy;
+                        Debug.Assert(
+                            _receiveBufferCount == 0 ||
+                            totalBytesReceived == payloadBuffer.Length ||
+                            totalBytesReceived == header.PayloadLength);
+                    }
+
+                    // Then read directly into the payload buffer until we've hit a limit.
+                    while (totalBytesReceived < payloadBuffer.Length &&
+                           totalBytesReceived < header.PayloadLength)
+                    {
+                        int numBytesRead = await _stream.ReadAsync(payloadBuffer.Slice(
+                            totalBytesReceived,
+                            (int)Math.Min(payloadBuffer.Length, header.PayloadLength) - totalBytesReceived)).ConfigureAwait(false);
+                        if (numBytesRead <= 0)
+                        {
+                            ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
+                            break;
+                        }
+                        totalBytesReceived += numBytesRead;
                     }
 
                     if (_isServer)
                     {
-                        _receivedMaskOffsetOffset = ApplyMask(_receiveBuffer.Span.Slice(_receiveBufferOffset, bytesToCopy), header.Mask, _receivedMaskOffsetOffset);
+                        _receivedMaskOffsetOffset = ApplyMask(payloadBuffer.Span.Slice(0, totalBytesReceived), header.Mask, _receivedMaskOffsetOffset);
                     }
-                    _receiveBuffer.Span.Slice(_receiveBufferOffset, bytesToCopy).CopyTo(payloadBuffer.Span.Slice(0, bytesToCopy));
-                    ConsumeFromBuffer(bytesToCopy);
-                    header.PayloadLength -= bytesToCopy;
+                    header.PayloadLength -= totalBytesReceived;
 
                     // If this a text message, validate that it contains valid UTF8.
                     if (header.Opcode == MessageOpcode.Text &&
-                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, bytesToCopy), header.Fin, _utf8TextState))
+                        !TryValidateUtf8(payloadBuffer.Span.Slice(0, totalBytesReceived), header.Fin, _utf8TextState))
                     {
                         await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
                     }
 
                     _lastReceiveHeader = header;
                     return resultGetter.GetResult(
-                        bytesToCopy,
+                        totalBytesReceived,
                         header.Opcode == MessageOpcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary,
                         header.Fin && header.PayloadLength == 0,
                         null, null);
@@ -1165,24 +1190,29 @@ namespace System.Net.WebSockets
                 {
                     int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount, _receiveBuffer.Length - _receiveBufferCount), default).ConfigureAwait(false);
                     Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
-                    _receiveBufferCount += numRead;
-                    if (numRead == 0)
+                    if (numRead <= 0)
                     {
-                        // The connection closed before we were able to read everything we needed.
-                        // If it was due to use being disposed, fail.  If it was due to the connection
-                        // being closed and it wasn't expected, fail.  If it was due to the connection
-                        // being closed and that was expected, exit gracefully.
-                        if (_disposed)
-                        {
-                            throw new ObjectDisposedException(nameof(WebSocket));
-                        }
-                        else if (throwOnPrematureClosure)
-                        {
-                            throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
-                        }
+                        ThrowIfEOFUnexpected(throwOnPrematureClosure);
                         break;
                     }
+                    _receiveBufferCount += numRead;
                 }
+            }
+        }
+
+        private void ThrowIfEOFUnexpected(bool throwOnPrematureClosure)
+        {
+            // The connection closed before we were able to read everything we needed.
+            // If it was due to us being disposed, fail.  If it was due to the connection
+            // being closed and it wasn't expected, fail.  If it was due to the connection
+            // being closed and that was expected, exit gracefully.
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(WebSocket));
+            }
+            if (throwOnPrematureClosure)
+            {
+                throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
             }
         }
 
