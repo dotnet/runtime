@@ -24,7 +24,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.2-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'uap' ">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' ">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
@@ -221,7 +227,7 @@
     <Compile Include="System\Data\SqlClient\SqlCredential.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="('$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp') AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
@@ -232,7 +238,7 @@
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
   </ItemGroup>
   <!-- Assets needed on Windows but should be avoided on UAP to avoid sni.dll -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetGroup)' != 'uap' ">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectNative.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
@@ -472,7 +478,7 @@
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Diagnostics.Tracing" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OSGroup)' != 'AnyOS' AND '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="('$(OSGroup)' != 'AnyOS' AND '$(TargetGroup)' == 'uap') OR '$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Collections.NonGeneric" />
   </ItemGroup>
@@ -484,6 +490,13 @@
     <EmbeddedResource Include="Resources\System.Data.SqlClient.SqlMetaData.xml">
       <LogicalName>System.Data.SqlClient.SqlMetaData.xml</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup  Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Data.Common" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Xml.ReaderWriter" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Import Project=".\GenerateThisAssemblyCs.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />
