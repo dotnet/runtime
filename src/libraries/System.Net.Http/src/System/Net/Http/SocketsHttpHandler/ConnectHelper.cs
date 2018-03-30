@@ -48,10 +48,11 @@ namespace System.Net.Http
             {
                 saea = new ConnectEventArgs();
             }
-            saea.Initialize(cancellationToken);
 
             try
             {
+                saea.Initialize(cancellationToken);
+
                 // Configure which server to which to connect.
                 saea.RemoteEndPoint = IPAddress.TryParse(host, out IPAddress address) ?
                     (EndPoint)new IPEndPoint(address, port) :

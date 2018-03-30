@@ -61,8 +61,7 @@ namespace System.Net.Http
 
             // Start out with the timer not running, since we have no pools.
             // When it does run, run it with a frequency based on the idle timeout.
-            if (settings._pooledConnectionLifetime != TimeSpan.Zero &&
-                settings._pooledConnectionIdleTimeout != TimeSpan.Zero)
+            if (!AvoidStoringConnections)
             {
                 if (settings._pooledConnectionIdleTimeout == Timeout.InfiniteTimeSpan)
                 {
@@ -112,6 +111,9 @@ namespace System.Net.Http
 
         public HttpConnectionSettings Settings => _settings;
         public ICredentials ProxyCredentials => _proxyCredentials;
+        public bool AvoidStoringConnections =>
+            _settings._pooledConnectionIdleTimeout == TimeSpan.Zero ||
+            _settings._pooledConnectionLifetime == TimeSpan.Zero;
 
         private static string ParseHostNameFromHeader(string hostHeader)
         {
