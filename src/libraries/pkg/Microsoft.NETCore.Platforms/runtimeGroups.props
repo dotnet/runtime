@@ -9,15 +9,19 @@
       <Parent>unix</Parent>
       <Architectures>x64;x86;arm;armel;arm64</Architectures>
     </RuntimeGroup>
+    <RuntimeGroup Include="linux-musl">
+      <Parent>linux</Parent>
+      <Architectures>x64;x86;arm;armel;arm64</Architectures>
+    </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">
-      <Parent>unix</Parent>
+      <Parent>linux-musl</Parent>
       <Architectures>x64</Architectures>
-      <Versions>3.6</Versions>
+      <Versions>3.6;3.7</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="android">
-      <Parent>any</Parent>
+      <Parent>linux</Parent>
       <Architectures>arm;arm64</Architectures>
       <Versions>21</Versions>
     </RuntimeGroup>
