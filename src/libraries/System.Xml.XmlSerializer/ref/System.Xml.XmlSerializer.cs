@@ -382,8 +382,8 @@ namespace System.Xml.Serialization
         public System.Xml.XmlQualifiedName ExportTypeMapping(System.Xml.Serialization.XmlMembersMapping xmlMembersMapping) { throw null; }
         public void ExportTypeMapping(System.Xml.Serialization.XmlTypeMapping xmlTypeMapping) { }
     }
-    public partial class XmlSchemaImporter
-//CodeDOM : System.Xml.Serialization.SchemaImporter
+    public partial class XmlSchemaImporter : SchemaImporter
+    //CodeDOM : System.Xml.Serialization.SchemaImporter
     {
         public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas) { }
 //CODEDOM        public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas, System.Xml.Serialization.CodeGenerationOptions options, System.CodeDom.Compiler.CodeDomProvider codeProvider, System.Xml.Serialization.ImportContext context) { }
@@ -401,6 +401,10 @@ namespace System.Xml.Serialization
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName, System.Type baseType) { throw null; }
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName, System.Type baseType, bool baseTypeCanBeIndirect) { throw null; }
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Xml.XmlQualifiedName name) { throw null; }
+    }
+    public abstract class SchemaImporter
+    {
+        internal SchemaImporter() { }
     }
     public partial class XmlSchemas : System.Collections.CollectionBase, System.Collections.Generic.IEnumerable<System.Xml.Schema.XmlSchema>, System.Collections.IEnumerable
     {
