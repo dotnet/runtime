@@ -2985,8 +2985,11 @@ void emitter::emitIns_R_R_R(instruction ins,
             }
             __fallthrough;
 
+#if !defined(USE_HELPERS_FOR_INT_DIV)
         case INS_sdiv:
         case INS_udiv:
+#endif // !USE_HELPERS_FOR_INT_DIV
+
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_C5;
             sf  = INS_FLAGS_NOT_SET;

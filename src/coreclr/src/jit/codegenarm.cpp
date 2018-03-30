@@ -627,9 +627,11 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_MUL:
             ins = INS_MUL;
             break;
+#if !defined(USE_HELPERS_FOR_INT_DIV)
         case GT_DIV:
             ins = INS_sdiv;
             break;
+#endif // !USE_HELPERS_FOR_INT_DIV
         case GT_LSH:
             ins = INS_SHIFT_LEFT_LOGICAL;
             break;
@@ -1089,6 +1091,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     // helper call by front-end. Similarly we shouldn't be seeing GT_UDIV and GT_UMOD
     // on float/double args.
     noway_assert(tree->OperIs(GT_DIV) || !varTypeIsFloating(tree));
+
+#if defined(USE_HELPERS_FOR_INT_DIV)
+    noway_assert(!varTypeIsIntOrI(tree));
+#endif // USE_HELPERS_FOR_INT_DIV
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
