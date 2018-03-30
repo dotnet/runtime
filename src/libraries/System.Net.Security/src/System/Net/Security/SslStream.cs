@@ -31,9 +31,12 @@ namespace System.Net.Security
     // A user delegate used to select local SSL certificate.
     public delegate X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers);
 
+    public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string hostName);
+
     // Internal versions of the above delegates.
     internal delegate bool RemoteCertValidationCallback(string host, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
     internal delegate X509Certificate LocalCertSelectionCallback(string targetHost, X509CertificateCollection localCertificates, X509Certificate2 remoteCertificate, string[] acceptableIssuers);
+    internal delegate X509Certificate ServerCertCallback(string hostName);
 
     public class SslStream : AuthenticatedStream
     {
@@ -42,6 +45,7 @@ namespace System.Net.Security
 
         internal RemoteCertificateValidationCallback _userCertificateValidationCallback;
         internal LocalCertificateSelectionCallback _userCertificateSelectionCallback;
+        internal ServerCertificateSelectionCallback _userServerCertificateSelectionCallback;
         internal RemoteCertValidationCallback _certValidationDelegate;
         internal LocalCertSelectionCallback _certSelectionDelegate;
         internal EncryptionPolicy _encryptionPolicy;
@@ -141,6 +145,17 @@ namespace System.Net.Security
             return _userCertificateSelectionCallback(this, targetHost, localCertificates, remoteCertificate, acceptableIssuers);
         }
 
+        private X509Certificate ServerCertSelectionCallbackWrapper(string targetHost)
+        {
+            return _userServerCertificateSelectionCallback(this, targetHost);
+        }
+
+        private void SetServerCertificateSelectionCallbackWrapper(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        {
+            _userServerCertificateSelectionCallback = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
+            sslServerAuthenticationOptions._serverCertDelegate = _userServerCertificateSelectionCallback == null ? null : new ServerCertCallback(ServerCertSelectionCallbackWrapper);
+        }
+
         //
         // Client side auth.
         //
@@ -231,6 +246,8 @@ namespace System.Net.Security
 
             // Set the delegate on the options.
             sslServerAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
+
+            SetServerCertificateSelectionCallbackWrapper(sslServerAuthenticationOptions);
 
             _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
 

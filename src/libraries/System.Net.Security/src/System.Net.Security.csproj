@@ -23,6 +23,7 @@
     <Compile Include="System\Net\FixedSizeReader.cs" />
     <Compile Include="System\Net\HelperAsyncResults.cs" />
     <Compile Include="System\Net\Logging\NetEventSource.cs" />
+    <Compile Include="System\Net\Security\SniHelper.cs" />
     <Compile Include="System\Net\Security\SslApplicationProtocol.cs" />
     <Compile Include="System\Net\Security\SslAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />

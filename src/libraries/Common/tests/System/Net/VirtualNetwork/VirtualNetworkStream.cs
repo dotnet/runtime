@@ -156,5 +156,15 @@ namespace System.Net.Test.Common
 
         public override void EndWrite(IAsyncResult asyncResult) =>
             TaskToApm.End(asyncResult);
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _network.BreakConnection();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

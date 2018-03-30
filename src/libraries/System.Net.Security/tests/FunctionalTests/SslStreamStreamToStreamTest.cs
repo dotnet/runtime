@@ -310,7 +310,11 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_Dispose_Throws()
         {
-            VirtualNetwork network = new VirtualNetwork();
+            VirtualNetwork network = new VirtualNetwork()
+            {
+                DisableConnectionBreaking = true
+            };
+
             using (var clientStream = new VirtualNetworkStream(network, isServer: false))
             using (var serverStream = new VirtualNetworkStream(network, isServer: true))
             using (var clientSslStream = new SslStream(clientStream, false, AllowAnyServerCertificate))
