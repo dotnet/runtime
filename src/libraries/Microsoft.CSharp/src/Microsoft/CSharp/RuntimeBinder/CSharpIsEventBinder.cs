@@ -4,6 +4,7 @@
 
 using System;
 using System.Dynamic;
+using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -29,6 +30,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly RuntimeBinder _binder;
 
+        private readonly Type _callingContext;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CSharpIsEventBinder"/> class.
         /// </summary>
@@ -39,7 +42,35 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type callingContext)
         {
             Name = name;
+            _callingContext = callingContext;
             _binder = new RuntimeBinder(callingContext);
+        }
+
+        public int BinderEqivalenceHash
+        {
+            get
+            {
+                int hash = _callingContext?.GetHashCode() ?? 0;
+                hash = HashHelpers.Combine(hash, Name.GetHashCode());
+                return hash;
+            }
+        }
+
+        public bool IsEquivalentTo(ICSharpBinder other)
+        {
+            var otherBinder = other as CSharpIsEventBinder;
+            if (otherBinder == null)
+            {
+                return false;
+            }
+
+            if (_callingContext != otherBinder._callingContext ||
+                Name != otherBinder.Name)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>

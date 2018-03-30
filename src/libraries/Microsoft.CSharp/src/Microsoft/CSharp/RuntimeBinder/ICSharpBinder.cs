@@ -26,5 +26,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         string Name { get; }
 
         Type ReturnType { get; }
+
+        int BinderEqivalenceHash { get; }
+
+        bool IsEquivalentTo(ICSharpBinder other);
     }
 }

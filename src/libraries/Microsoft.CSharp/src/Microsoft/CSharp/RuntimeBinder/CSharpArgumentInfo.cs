@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Numerics.Hashing;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -19,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <summary>
         /// The flags for the argument.
         /// </summary>
-        private CSharpArgumentInfoFlags Flags { get; }
+        internal CSharpArgumentInfoFlags Flags { get; }
 
         /// <summary>
         /// The name of the argument, if named; otherwise null.
