@@ -152,11 +152,12 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static string GetNormalizedCodeBasePath(Assembly assembly)
         {
-            try
+            if (Uri.TryCreate(assembly.CodeBase, UriKind.Absolute, out Uri codeBase)
+                && codeBase.IsFile)
             {
-                return new Uri(assembly.CodeBase).LocalPath;
+                return codeBase.LocalPath;
             }
-            catch (UriFormatException)
+            else
             {
                 return null;
             }
