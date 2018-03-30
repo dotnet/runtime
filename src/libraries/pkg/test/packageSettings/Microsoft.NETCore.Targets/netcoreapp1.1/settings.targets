@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- This package intentionally drops all runtime-package mappings from runtime.json -->
+    <ShouldVerifyClosure>false</ShouldVerifyClosure>
+  </PropertyGroup>
+</Project>

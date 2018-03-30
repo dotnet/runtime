@@ -4,19 +4,23 @@
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
-    <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" />
+    <ExcludePackages Include="CoreFx.Private.TestUtilities" />
+    <ExcludePackages Include="$(ExcludePackages)" />
+
+    <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
     <PackageReports Condition="'@(TestPackages)' != ''" Include="@(TestPackages->'$(PackageReportDir)%(Identity).json')" />
     
     <!-- support override via commandline -->
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
-
-    <!-- restrict restore sources to the current build and publicly shipped packages -->
-    <RestoreSource Include="$(PackageOutputPath)" />
+    
     <RestoreSource Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
 
     <!-- needed for SQLClient's SNI packages -->
     <RestoreSource Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+
+    <!-- ideally this would be first, but we need to list last to workaround https://github.com/NuGet/Home/issues/6678 -->
+    <RestoreSource Include="$(PackageOutputPath)" />
 
     <!-- we don't build alpine or older OSX versions -->
     <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64" />
@@ -56,6 +60,9 @@
     <TestSupportFiles Include="$(SourceDir)shims\netfxreference.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
+    <TestSupportFiles Include="$(ProjectDir)dependencies.props">
+      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
+    </TestSupportFiles>
     <TestSupportFiles Include="$(ToolsDir)Packaging.common.targets">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
@@ -74,6 +81,12 @@
     <TestSupportFiles Include="$(TestProjectName)">
       <DestinationFolder>$(TestDir)</DestinationFolder>
     </TestSupportFiles>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
+    <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
+    <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
   <Target Name="CreateTestDir"
@@ -155,13 +168,13 @@
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects">
     <Message Importance="High" Text="*** Restoring ***" />
-    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" StandardOutputImportance="High" />
+    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
   </Target>
   
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects">
     <Message Importance="High" Text="*** Testing ***" />
-    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" StandardOutputImportance="High" />
+    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" EnvironmentVariables="@(CliEnvironment)"  ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildProjects" />
