@@ -58,12 +58,7 @@ namespace System.Net.WebSockets
             // Send websocket handshake headers
             await responseStream.WriteWebSocketHandshakeHeadersAsync().ConfigureAwait(false);
 
-            const int MinBufferSize = 14; // from ManagedWebSocket.MaxMessageHeaderLength
-            Memory<byte> buffer =
-                internalBuffer.GetValueOrDefault().Count >= MinBufferSize ? internalBuffer.GetValueOrDefault() : // use provided buffer if it's big enough
-                receiveBufferSize >= MinBufferSize ? new byte[receiveBufferSize] : // or use provided size if it's big enough
-                Memory<byte>.Empty; // or use the default
-            WebSocket webSocket = WebSocket.CreateFromStream(context.Connection.ConnectedStream, isServer:true, subProtocol, keepAliveInterval, buffer);
+            WebSocket webSocket = WebSocket.CreateFromStream(context.Connection.ConnectedStream, isServer:true, subProtocol, keepAliveInterval);
 
             HttpListenerWebSocketContext webSocketContext = new HttpListenerWebSocketContext(
                                                                 request.Url,

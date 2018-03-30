@@ -29,17 +29,6 @@ namespace System.Net.WebSockets.Tests
                 WebSocket.CreateFromStream(new MemoryStream(), true, "subProtocol", TimeSpan.FromSeconds(-2)));
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(14)]
-        [InlineData(4096)]
-        public void CreateFromStream_ValidBufferSizes_Succeed(int bufferSize)
-        {
-            Assert.NotNull(WebSocket.CreateFromStream(new MemoryStream(), false, null, Timeout.InfiniteTimeSpan, new byte[bufferSize]));
-            Assert.NotNull(WebSocket.CreateFromStream(new MemoryStream(), true, null, Timeout.InfiniteTimeSpan, new byte[bufferSize]));
-        }
-
         [Fact]
         public void ValueWebSocketReceiveResult_Ctor_InvalidArguments_Throws()
         {

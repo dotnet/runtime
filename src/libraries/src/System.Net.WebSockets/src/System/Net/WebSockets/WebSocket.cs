@@ -135,9 +135,8 @@ namespace System.Net.WebSockets
         /// <param name="isServer"><code>true</code> if this is the server-side of the connection; <code>false</code> if it's the client side.</param>
         /// <param name="subProtocol">The agreed upon sub-protocol that was used when creating the connection.</param>
         /// <param name="keepAliveInterval">The keep-alive interval to use, or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.</param>
-        /// <param name="buffer">A scratch buffer that may be used by the implementation for any purpose.</param>
         /// <returns>The created <see cref="WebSocket"/>.</returns>
-        public static WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval, Memory<byte> buffer = default)
+        public static WebSocket CreateFromStream(Stream stream, bool isServer, string subProtocol, TimeSpan keepAliveInterval)
         {
             if (stream == null)
             {
@@ -161,7 +160,7 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval, buffer);
+            return ManagedWebSocket.CreateFromConnectedStream(stream, isServer, subProtocol, keepAliveInterval);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -211,12 +210,10 @@ namespace System.Net.WebSockets
                     SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
             }
 
-            Memory<byte> internalMemoryBuffer = 
-                internalBuffer.Count >= receiveBufferSize ? internalBuffer :
-                receiveBufferSize >= ManagedWebSocket.MaxMessageHeaderLength ? new byte[receiveBufferSize] :
-                Memory<byte>.Empty; // let ManagedWebSocket create it
+            // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
+            // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
 
-            return ManagedWebSocket.CreateFromConnectedStream(innerStream, false, subProtocol, keepAliveInterval, internalMemoryBuffer);
+            return ManagedWebSocket.CreateFromConnectedStream(innerStream, false, subProtocol, keepAliveInterval);
         }
     }
 }

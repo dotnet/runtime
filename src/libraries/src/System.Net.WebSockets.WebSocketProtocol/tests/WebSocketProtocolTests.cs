@@ -25,19 +25,19 @@ namespace System.Net.WebSockets.Tests
         public void CreateFromStream_InvalidArguments_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("stream",
-                () => WebSocketProtocol.CreateFromStream(null, true, "subProtocol", TimeSpan.FromSeconds(30), default(Memory<byte>)));
+                () => WebSocketProtocol.CreateFromStream(null, true, "subProtocol", TimeSpan.FromSeconds(30)));
             AssertExtensions.Throws<ArgumentException>("stream",
-                () => WebSocketProtocol.CreateFromStream(new MemoryStream(new byte[100], writable: false), true, "subProtocol", TimeSpan.FromSeconds(30), default(Memory<byte>)));
+                () => WebSocketProtocol.CreateFromStream(new MemoryStream(new byte[100], writable: false), true, "subProtocol", TimeSpan.FromSeconds(30)));
             AssertExtensions.Throws<ArgumentException>("stream",
-                () => WebSocketProtocol.CreateFromStream(new UnreadableStream(), true, "subProtocol", TimeSpan.FromSeconds(30), default(Memory<byte>)));
+                () => WebSocketProtocol.CreateFromStream(new UnreadableStream(), true, "subProtocol", TimeSpan.FromSeconds(30)));
 
             AssertExtensions.Throws<ArgumentException>("subProtocol",
-                () => WebSocketProtocol.CreateFromStream(new MemoryStream(), true, "    ", TimeSpan.FromSeconds(30), default(Memory<byte>)));
+                () => WebSocketProtocol.CreateFromStream(new MemoryStream(), true, "    ", TimeSpan.FromSeconds(30)));
             AssertExtensions.Throws<ArgumentException>("subProtocol",
-                () => WebSocketProtocol.CreateFromStream(new MemoryStream(), true, "\xFF", TimeSpan.FromSeconds(30), default(Memory<byte>)));
+                () => WebSocketProtocol.CreateFromStream(new MemoryStream(), true, "\xFF", TimeSpan.FromSeconds(30)));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("keepAliveInterval", () =>
-                WebSocketProtocol.CreateFromStream(new MemoryStream(), true, "subProtocol", TimeSpan.FromSeconds(-2), default(Memory<byte>)));
+                WebSocketProtocol.CreateFromStream(new MemoryStream(), true, "subProtocol", TimeSpan.FromSeconds(-2)));
         }
 
         [Theory]
@@ -47,8 +47,8 @@ namespace System.Net.WebSockets.Tests
         [InlineData(4096)]
         public void CreateFromStream_ValidBufferSizes_Succeed(int bufferSize)
         {
-            Assert.NotNull(WebSocketProtocol.CreateFromStream(new MemoryStream(), false, null, Timeout.InfiniteTimeSpan, new Memory<byte>(new byte[bufferSize])));
-            Assert.NotNull(WebSocketProtocol.CreateFromStream(new MemoryStream(), true, null, Timeout.InfiniteTimeSpan, new Memory<byte>(new byte[bufferSize])));
+            Assert.NotNull(WebSocketProtocol.CreateFromStream(new MemoryStream(), false, null, Timeout.InfiniteTimeSpan));
+            Assert.NotNull(WebSocketProtocol.CreateFromStream(new MemoryStream(), true, null, Timeout.InfiniteTimeSpan));
         }
 
         [OuterLoop] // Connects to external server.
