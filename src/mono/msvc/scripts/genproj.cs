@@ -127,6 +127,7 @@ class SlnGenerator {
 				continue;
 
 			var platformToBuild = profile;
+			var isBuildEnabled = true;
 
 			HashSet<string> projectProfiles;
 			if (
@@ -135,12 +136,15 @@ class SlnGenerator {
 			) {
 				fallbackProfileNames.Add (platformToBuild);
 				platformToBuild = defaultPlatform;
+				isBuildEnabled = false;
 			}
 
 			sln.WriteLine ("\t\t{0}.Debug|{1}.ActiveCfg = Debug|{2}", guid, profile, platformToBuild);
-			sln.WriteLine ("\t\t{0}.Debug|{1}.Build.0 = Debug|{2}", guid, profile, platformToBuild);
+			if (isBuildEnabled)
+				sln.WriteLine ("\t\t{0}.Debug|{1}.Build.0 = Debug|{2}", guid, profile, platformToBuild);
 			sln.WriteLine ("\t\t{0}.Release|{1}.ActiveCfg = Release|{2}", guid, profile, platformToBuild);
-			sln.WriteLine ("\t\t{0}.Release|{1}.Build.0 = Release|{2}", guid, profile, platformToBuild);
+			if (isBuildEnabled)
+				sln.WriteLine ("\t\t{0}.Release|{1}.Build.0 = Release|{2}", guid, profile, platformToBuild);
 		}
 
 		if (fallbackProfileNames.Count > 0)
