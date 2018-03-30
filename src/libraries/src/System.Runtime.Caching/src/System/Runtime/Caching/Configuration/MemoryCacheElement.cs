@@ -8,7 +8,7 @@ using System.Configuration;
 
 namespace System.Runtime.Caching.Configuration
 {
-    public sealed class MemoryCacheElement : ConfigurationElement
+    internal sealed class MemoryCacheElement : ConfigurationElement
     {
         private static ConfigurationPropertyCollection s_properties;
         private static readonly ConfigurationProperty s_propName;
