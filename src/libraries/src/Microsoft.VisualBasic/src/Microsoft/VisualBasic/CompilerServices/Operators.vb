@@ -350,7 +350,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Public Shared Function CompareObject(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Integer
+        Friend Shared Function CompareObject(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Integer
             Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
 
             Select Case comparison

@@ -4,7 +4,7 @@
 
 Namespace Microsoft.VisualBasic
     ' Contants for the Control Characters
-    Public NotInheritable Class ControlChars
+    Friend NotInheritable Class ControlChars
 
         Public Const CrLf As String = ChrW(13) & ChrW(10)
         Public Const NewLine As String = ChrW(13) & ChrW(10)

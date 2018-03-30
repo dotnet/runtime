@@ -58,7 +58,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
     End Class
 
-    Public NotInheritable Class InternalErrorException
+    Friend NotInheritable Class InternalErrorException
         Inherits System.Exception
 
         Public Sub New(ByVal message As String)

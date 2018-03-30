@@ -5,7 +5,7 @@
 Namespace Global.Microsoft.VisualBasic.CompilerServices
     <Global.System.AttributeUsage(Global.System.AttributeTargets.Parameter, Inherited:=False)>
     <Global.System.ComponentModel.EditorBrowsable(Global.System.ComponentModel.EditorBrowsableState.Never)>
-    Public Class OptionCompareAttribute
+    Public NotInheritable Class OptionCompareAttribute
         Inherits Global.System.Attribute
     End Class
 End Namespace
