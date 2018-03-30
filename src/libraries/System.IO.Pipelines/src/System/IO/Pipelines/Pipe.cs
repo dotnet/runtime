@@ -224,12 +224,12 @@ namespace System.IO.Pipelines
             }
         }
 
-        internal void CommitUnsynchronized()
+        internal bool CommitUnsynchronized()
         {
             if (_writingHead == null)
             {
                 // Nothing written to commit
-                return;
+                return true;
             }
 
             if (_readHead == null)
@@ -241,9 +241,10 @@ namespace System.IO.Pipelines
             }
 
             // Always move the commit head to the write head
+            var bytesWritten = _currentWriteLength;
             _commitHead = _writingHead;
             _commitHeadIndex = _writingHead.End;
-            _length += _currentWriteLength;
+            _length += bytesWritten;
 
             // Do not reset if reader is complete
             if (_pauseWriterThreshold > 0 &&
@@ -256,6 +257,8 @@ namespace System.IO.Pipelines
             // Clear the writing state
             _writingHead = null;
             _currentWriteLength = 0;
+
+            return bytesWritten == 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -296,12 +299,24 @@ namespace System.IO.Pipelines
             ValueTask<FlushResult> result;
             lock (_sync)
             {
-                CommitUnsynchronized();
+                var wasEmpty = CommitUnsynchronized();
 
                 // AttachToken before completing reader awaiter in case cancellationToken is already completed
                 cancellationTokenRegistration = _writerAwaitable.AttachToken(cancellationToken, s_signalWriterAwaitable, this);
 
-                _readerAwaitable.Complete(out completionData);
+                // Complete reader only if new data was pushed into the pipe
+                if (!wasEmpty)
+                {
+                    _readerAwaitable.Complete(out completionData);
+                }
+                else
+                {
+                    completionData = default;
+                }
+
+                // I couldn't find a way for flush to induce backpressure deadlock
+                // if it always adds new data to pipe and wakes up the reader but assert anyway
+                Debug.Assert(_writerAwaitable.IsCompleted || _readerAwaitable.IsCompleted);
 
                 // If the writer is completed (which it will be most of the time) the return a completed ValueTask
                 if (_writerAwaitable.IsCompleted)
