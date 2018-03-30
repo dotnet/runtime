@@ -92,16 +92,6 @@ namespace System.Runtime.Serialization
             Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
         }
 
-        public DataContractSerializer(Type type, XmlDictionaryString rootName, XmlDictionaryString rootNamespace,
-            IEnumerable<Type> knownTypes,
-            int maxItemsInObjectGraph,
-            bool ignoreExtensionDataObject,
-            bool preserveObjectReferences,
-            DataContractResolver dataContractResolver)
-        {
-            Initialize(type, rootName, rootNamespace, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, /*dataContractSurrogate,*/ dataContractResolver, false);
-        }
-
         public DataContractSerializer(Type type, DataContractSerializerSettings settings)
         {
             if (settings == null)
