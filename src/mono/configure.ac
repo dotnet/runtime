@@ -4551,9 +4551,10 @@ dnl ***  Btls  ***
 dnl **************
 
 AC_ARG_ENABLE(btls, [  --disable-btls             Disable the BoringTls provider], enable_btls=$enableval, enable_btls=$BTLS_SUPPORTED)
+AC_ARG_ENABLE(btls-lib, [  --disable-btls-lib             Disable building the BTLS native library], enable_btls_lib=$enableval, enable_btls_lib=$BTLS_SUPPORTED)
 AC_ARG_WITH(btls_android_ndk, [  --with-btls-android-ndk        Android NDK for BoringTls])
 
-AM_CONDITIONAL(BTLS, test x$enable_btls = xyes)
+AM_CONDITIONAL(BTLS, test x$enable_btls_lib = xyes)
 
 btls_android=no
 if test "x$enable_btls" = "xyes"; then
