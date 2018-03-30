@@ -21,8 +21,8 @@ namespace System.MemoryTests
             memory = new ReadOnlyMemory<int>(a, 0, a.Length);
             memory.Span.Validate(91, 92, -93, 94);
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(a);
-            ((ReadOnlyMemory<int>)owner.Memory).Span.Validate(91, 92, -93, 94);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(a);
+            ((ReadOnlyMemory<int>)manager.Memory).Span.Validate(91, 92, -93, 94);
         }
 
         [Fact]
@@ -37,8 +37,8 @@ namespace System.MemoryTests
             memory = new ReadOnlyMemory<long>(a, 0, a.Length);
             memory.Span.Validate(91, -92, 93, 94, -95);
 
-            OwnedMemory<long> owner = new CustomMemoryForTest<long>(a);
-            ((ReadOnlyMemory<long>)owner.Memory).Span.Validate(91, -92, 93, 94, -95);
+            MemoryManager<long> manager = new CustomMemoryForTest<long>(a);
+            ((ReadOnlyMemory<long>)manager.Memory).Span.Validate(91, -92, 93, 94, -95);
         }
 
         [Fact]
@@ -55,8 +55,8 @@ namespace System.MemoryTests
             memory = new ReadOnlyMemory<object>(a, 0, a.Length);
             memory.Span.ValidateReferenceType(o1, o2);
 
-            OwnedMemory<object> owner = new CustomMemoryForTest<object>(a);
-            ((ReadOnlyMemory<object>)owner.Memory).Span.ValidateReferenceType(o1, o2);
+            MemoryManager<object> manager = new CustomMemoryForTest<object>(a);
+            ((ReadOnlyMemory<object>)manager.Memory).Span.ValidateReferenceType(o1, o2);
         }
 
         [Fact]
@@ -71,8 +71,8 @@ namespace System.MemoryTests
             memory = new ReadOnlyMemory<int>(empty, 0, empty.Length);
             memory.Span.ValidateNonNullEmpty();
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(empty);
-            ((ReadOnlyMemory<int>)owner.Memory).Span.Validate();
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(empty);
+            ((ReadOnlyMemory<int>)manager.Memory).Span.Validate();
         }
 
         [Fact]
@@ -90,8 +90,8 @@ namespace System.MemoryTests
             memory = new ReadOnlyMemory<int>(aAsIntArray, 0, aAsIntArray.Length);
             memory.Span.Validate(42, -1);
 
-            OwnedMemory<int> owner = new CustomMemoryForTest<int>(aAsIntArray);
-            ((ReadOnlyMemory<int>)owner.Memory).Span.Validate(42, -1);
+            MemoryManager<int> manager = new CustomMemoryForTest<int>(aAsIntArray);
+            ((ReadOnlyMemory<int>)manager.Memory).Span.Validate(42, -1);
         }
 
         [Fact]

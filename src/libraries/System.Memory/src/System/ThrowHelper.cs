@@ -88,10 +88,6 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateObjectDisposedException_ArrayMemoryPoolBuffer() { return new ObjectDisposedException("ArrayMemoryPoolBuffer"); }
 
-        internal static void ThrowObjectDisposedException_MemoryDisposed() { throw CreateObjectDisposedException_MemoryDisposed(); }
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateObjectDisposedException_MemoryDisposed() { return new ObjectDisposedException("OwnedMemory<T>", SR.MemoryDisposed); }
-
         internal static void ThrowFormatException_BadFormatSpecifier() { throw CreateFormatException_BadFormatSpecifier(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateFormatException_BadFormatSpecifier() { return new FormatException(SR.Argument_BadFormatSpecifier); }
@@ -155,19 +151,6 @@ namespace System
             else
                 return CreateArgumentOutOfRangeException(ExceptionArgument.length);
         }
-
-        public static void ThrowArgumentValidationException<T>(OwnedMemory<T> ownedMemory, int start)
-            => throw CreateArgumentValidationException(ownedMemory, start);
-
-        private static Exception CreateArgumentValidationException<T>(OwnedMemory<T> ownedMemory, int start)
-        {
-            if (ownedMemory == null)
-                return CreateArgumentNullException(ExceptionArgument.ownedMemory);
-            else if ((uint)start > (uint)ownedMemory.Length)
-                return CreateArgumentOutOfRangeException(ExceptionArgument.start);
-            else
-                return CreateArgumentOutOfRangeException(ExceptionArgument.length);
-        }
     }
 
     //
@@ -178,7 +161,7 @@ namespace System
         length,
         start,
         minimumBufferSize,
-        byteOffset,
+        elementIndex,
         comparable,
         comparer,
         destination,
@@ -188,7 +171,6 @@ namespace System
         startIndex,
         endIndex,
         array,
-        ownedMemory,
         culture
     }
 }

@@ -46,9 +46,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ArrayPoolEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ConfigurableArrayPool.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\IRetainable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\IMemoryOwner.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\IPinnable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\OwnedMemory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\MemoryManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Byte.cs" />

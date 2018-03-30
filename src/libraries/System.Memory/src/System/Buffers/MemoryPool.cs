@@ -20,7 +20,7 @@ namespace System.Buffers
         /// Returns a memory block capable of holding at least <paramref name="minBufferSize" /> elements of T.
         /// </summary>
         /// <param name="minBufferSize">If -1 is passed, this is set to a default value for the pool.</param>
-        public abstract OwnedMemory<T> Rent(int minBufferSize = -1);
+        public abstract IMemoryOwner<T> Rent(int minBufferSize = -1);
 
         /// <summary>
         /// Returns the maximum buffer size supported by this pool.

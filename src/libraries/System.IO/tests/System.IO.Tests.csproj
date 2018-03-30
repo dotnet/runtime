@@ -57,8 +57,8 @@
     <Compile Include="StringReader\StringReader.CtorTests.cs" />
     <Compile Include="StringWriter\StringWriterTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="StringWriter\StringWriterTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Buffers\NativeOwnedMemory.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
-      <Link>Common\System\Buffers\NativeOwnedMemory.cs</Link>
+    <Compile Include="$(CommonTestPath)\System\Buffers\NativeMemoryManager.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
+      <Link>Common\System\Buffers\NativeMemoryManager.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\CallTrackingStream.cs">
       <Link>Common\System\IO\CallTrackingStream.cs</Link>

@@ -12,28 +12,25 @@ namespace System.IO.Pipelines.Tests
     {
         private class DisposeTrackingBufferPool : TestMemoryPool
         {
-            public int ReturnedBlocks { get; set; }
             public int DisposedBlocks { get; set; }
             public int CurrentlyRentedBlocks { get; set; }
 
-            public override OwnedMemory<byte> Rent(int size)
+            public override IMemoryOwner<byte> Rent(int size)
             {
-                return new DisposeTrackingOwnedMemory(new byte[size], this);
+                return new DisposeTrackingMemoryManager(new byte[size], this);
             }
 
             protected override void Dispose(bool disposing)
             {
             }
 
-            private class DisposeTrackingOwnedMemory : OwnedMemory<byte>
+            private class DisposeTrackingMemoryManager : MemoryManager<byte>
             {
                 private byte[] _array;
 
                 private readonly DisposeTrackingBufferPool _bufferPool;
 
-                private int _refCount = 1;
-
-                public DisposeTrackingOwnedMemory(byte[] array, DisposeTrackingBufferPool bufferPool)
+                public DisposeTrackingMemoryManager(byte[] array, DisposeTrackingBufferPool bufferPool)
                 {
                     _array = array;
                     _bufferPool = bufferPool;
@@ -42,21 +39,14 @@ namespace System.IO.Pipelines.Tests
 
                 public override int Length => _array.Length;
 
-                public override Span<byte> Span
+                public bool IsDisposed => _array == null;
+
+                public override MemoryHandle Pin(int elementIndex = 0)
                 {
-                    get
-                    {
-                        if (IsDisposed)
-                            throw new ObjectDisposedException(nameof(DisposeTrackingBufferPool));
-                        return _array;
-                    }
+                    throw new NotImplementedException();
                 }
 
-                public override bool IsDisposed => _array == null;
-
-                protected override bool IsRetained => _refCount > 0;
-
-                public override MemoryHandle Pin(int byteOffset = 0)
+                public override void Unpin()
                 {
                     throw new NotImplementedException();
                 }
@@ -71,26 +61,17 @@ namespace System.IO.Pipelines.Tests
 
                 protected override void Dispose(bool disposing)
                 {
-                    if (IsRetained)
-                    {
-                        throw new InvalidOperationException();
-                    }
                     _bufferPool.DisposedBlocks++;
+                    _bufferPool.CurrentlyRentedBlocks--;
 
                     _array = null;
                 }
 
-                public override bool Release()
+                public override Span<byte> GetSpan()
                 {
-                    _bufferPool.ReturnedBlocks++;
-                    _bufferPool.CurrentlyRentedBlocks--;
-                    _refCount--;
-                    return IsRetained;
-                }
-
-                public override void Retain()
-                {
-                    _refCount++;
+                    if (IsDisposed)
+                        throw new ObjectDisposedException(nameof(DisposeTrackingBufferPool));
+                    return _array;
                 }
             }
         }
@@ -113,8 +94,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.AdvanceTo(readResult.Buffer.End);
 
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
-            Assert.Equal(0, pool.DisposedBlocks);
-            Assert.Equal(3, pool.ReturnedBlocks);
+            Assert.Equal(3, pool.DisposedBlocks);
         }
 
         [Fact]
@@ -143,8 +123,7 @@ namespace System.IO.Pipelines.Tests
             await pipe.Writer.WriteAsync(new byte[writeSize]);
 
             Assert.Equal(1, pool.CurrentlyRentedBlocks);
-            Assert.Equal(0, pool.DisposedBlocks);
-            Assert.Equal(2, pool.ReturnedBlocks);
+            Assert.Equal(2, pool.DisposedBlocks);
         }
 
         [Fact]
@@ -157,13 +136,11 @@ namespace System.IO.Pipelines.Tests
 
             readerWriter.Writer.Complete();
             readerWriter.Reader.Complete();
-            Assert.Equal(1, pool.ReturnedBlocks);
-            Assert.Equal(0, pool.DisposedBlocks);
+            Assert.Equal(1, pool.DisposedBlocks);
 
             readerWriter.Writer.Complete();
             readerWriter.Reader.Complete();
-            Assert.Equal(1, pool.ReturnedBlocks);
-            Assert.Equal(0, pool.DisposedBlocks);
+            Assert.Equal(1, pool.DisposedBlocks);
         }
 
         [Fact]
@@ -198,8 +175,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
             pipe.Writer.Complete();
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
-            Assert.Equal(1, pool.ReturnedBlocks);
-            Assert.Equal(0, pool.DisposedBlocks);
+            Assert.Equal(1, pool.DisposedBlocks);
         }
 
         [Fact]
@@ -213,8 +189,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
             pipe.Writer.Complete();
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
-            Assert.Equal(2, pool.ReturnedBlocks);
-            Assert.Equal(0, pool.DisposedBlocks);
+            Assert.Equal(2, pool.DisposedBlocks);
         }
 
         [Fact]

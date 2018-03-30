@@ -16,11 +16,6 @@ namespace System.Memory.Tests
             public Array() : base(ReadOnlySequenceFactoryByte.ArrayFactory) { }
         }
 
-        public class OwnedMemory : ReadOnlySequenceTestsByte
-        {
-            public OwnedMemory() : base(ReadOnlySequenceFactoryByte.OwnedMemoryFactory) { }
-        }
-
         public class Memory : ReadOnlySequenceTestsByte
         {
             public Memory() : base(ReadOnlySequenceFactoryByte.MemoryFactory) { }

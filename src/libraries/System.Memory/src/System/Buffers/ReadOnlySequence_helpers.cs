@@ -60,11 +60,11 @@ namespace System.Buffers
 
                 data = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
             }
-            else if (type == SequenceType.OwnedMemory)
+            else if (type == SequenceType.MemoryManager)
             {
-                Debug.Assert(startObject is OwnedMemory<T>);
+                Debug.Assert(startObject is MemoryManager<T>);
 
-                data = (Unsafe.As<OwnedMemory<T>>(startObject)).Memory;
+                data = (Unsafe.As<MemoryManager<T>>(startObject)).Memory;
             }
             else if (typeof(T) == typeof(char) && type == SequenceType.String)
             {
@@ -121,11 +121,11 @@ namespace System.Buffers
 
                 memory = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
             }
-            else if (type == SequenceType.OwnedMemory)
+            else if (type == SequenceType.MemoryManager)
             {
-                Debug.Assert(startObject is OwnedMemory<T>);
+                Debug.Assert(startObject is MemoryManager<T>);
 
-                memory = (Unsafe.As<OwnedMemory<T>>(startObject)).Memory;
+                memory = (Unsafe.As<MemoryManager<T>>(startObject)).Memory;
             }
             else if (typeof(T) == typeof(char) && type == SequenceType.String)
             {
@@ -158,7 +158,7 @@ namespace System.Buffers
                 var startSegment = Unsafe.As<ReadOnlySequenceSegment<T>>(startObject);
 
                 int currentLength = startSegment.Memory.Length - startIndex;
-                
+
                 // Position in start segment, defer to single segment seek
                 if (currentLength > count)
                     goto IsSingleSegment;
@@ -199,7 +199,7 @@ namespace System.Buffers
             // Hit the end of the segments but didn't reach the count
             if (currentSegment == null || (currentSegment == endObject && endPosition < count))
                 ThrowHelper.ThrowArgumentOutOfRangeException_CountOutOfRange();
-        
+
         FoundSegment:
             return new SequencePosition(currentSegment, (int)count);
         }
@@ -322,21 +322,21 @@ namespace System.Buffers
             return true;
         }
 
-        internal bool TryGetOwnedMemory(out OwnedMemory<T> ownedMemory, out int start, out int length)
+        internal bool TryGetMemoryManager(out MemoryManager<T> manager, out int start, out int length)
         {
             GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out start, out int endIndex);
 
-            if (type != SequenceType.OwnedMemory)
+            if (type != SequenceType.MemoryManager)
             {
-                ownedMemory = default;
+                manager = default;
                 length = 0;
                 return false;
             }
 
             Debug.Assert(Start.GetObject() != null);
-            Debug.Assert(Start.GetObject() is OwnedMemory<T>);
+            Debug.Assert(Start.GetObject() is MemoryManager<T>);
 
-            ownedMemory = Unsafe.As<OwnedMemory<T>>(Start.GetObject());
+            manager = Unsafe.As<MemoryManager<T>>(Start.GetObject());
             length = endIndex - start;
             return true;
         }
@@ -364,11 +364,11 @@ namespace System.Buffers
 
                 memory = new ReadOnlyMemory<T>(Unsafe.As<T[]>(startObject));
             }
-            else if (type == SequenceType.OwnedMemory)
+            else if (type == SequenceType.MemoryManager)
             {
-                Debug.Assert(startObject is OwnedMemory<T>);
+                Debug.Assert(startObject is MemoryManager<T>);
 
-                memory = Unsafe.As<OwnedMemory<T>>(startObject).Memory;
+                memory = Unsafe.As<MemoryManager<T>>(startObject).Memory;
             }
             else if (typeof(T) == typeof(char) && type == SequenceType.String)
             {

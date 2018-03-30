@@ -9,15 +9,15 @@ namespace System
 {
     public static partial class MemoryExtensions
     {
+        public static System.ReadOnlyMemory<char> AsMemory(this string text) { throw null; }
+        public static System.ReadOnlyMemory<char> AsMemory(this string text, int start) { throw null; }
+        public static System.ReadOnlyMemory<char> AsMemory(this string text, int start, int length) { throw null; }
         public static System.Memory<T> AsMemory<T>(this System.ArraySegment<T> segment) { throw null; }
         public static System.Memory<T> AsMemory<T>(this System.ArraySegment<T> segment, int start) { throw null; }
         public static System.Memory<T> AsMemory<T>(this System.ArraySegment<T> segment, int start, int length) { throw null; }
         public static System.Memory<T> AsMemory<T>(this T[] array) { throw null; }
         public static System.Memory<T> AsMemory<T>(this T[] array, int start) { throw null; }
         public static System.Memory<T> AsMemory<T>(this T[] array, int start, int length) { throw null; }
-        public static System.ReadOnlyMemory<char> AsMemory(this string text) { throw null; }
-        public static System.ReadOnlyMemory<char> AsMemory(this string text, int start) { throw null; }
-        public static System.ReadOnlyMemory<char> AsMemory(this string text, int start, int length) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string text) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string text, int start) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string text, int start, int length) { throw null; }
@@ -92,6 +92,7 @@ namespace System
     public readonly partial struct Memory<T>
     {
         private readonly object _dummy;
+        public Memory(System.Buffers.MemoryManager<T> manager, int start, int length) { throw null; }
         public Memory(T[] array) { throw null; }
         public Memory(T[] array, int start, int length) { throw null; }
         public static System.Memory<T> Empty { get { throw null; } }
@@ -99,6 +100,8 @@ namespace System
         public int Length { get { throw null; } }
         public System.Span<T> Span { get { throw null; } }
         public void CopyTo(System.Memory<T> destination) { }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public static System.Memory<T> CreateFromPinnedArray(T[] array, int start, int length) { throw null; }
         public bool Equals(System.Memory<T> other) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public override bool Equals(object obj) { throw null; }
@@ -108,7 +111,6 @@ namespace System
         public static implicit operator System.ReadOnlyMemory<T> (System.Memory<T> memory) { throw null; }
         public static implicit operator System.Memory<T> (T[] array) { throw null; }
         public System.Buffers.MemoryHandle Pin() { throw null; }
-        public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public System.Memory<T> Slice(int start) { throw null; }
         public System.Memory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
@@ -133,7 +135,6 @@ namespace System
         public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> segment) { throw null; }
         public static implicit operator System.ReadOnlyMemory<T> (T[] array) { throw null; }
         public System.Buffers.MemoryHandle Pin() { throw null; }
-        public System.Buffers.MemoryHandle Retain(bool pin = false) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
         public T[] ToArray() { throw null; }
@@ -178,18 +179,18 @@ namespace System
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
     {
         private readonly object _dummy;
-        public SequencePosition(object segment, int index) { throw null; }
+        public SequencePosition(object @object, int integer) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.SequencePosition other) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public int GetInteger() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public object GetObject() { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        public override bool Equals(object obj) { throw null; }
-        public bool Equals(System.SequencePosition other) { throw null; }
-        public override int GetHashCode() { throw null; }
         public static bool operator ==(System.SequencePosition left, System.SequencePosition right) { throw null; }
         public static bool operator !=(System.SequencePosition left, System.SequencePosition right) { throw null; }
-        public override string ToString() { throw null; }
     }
     public readonly ref partial struct Span<T>
     {
@@ -232,32 +233,48 @@ namespace System
 }
 namespace System.Buffers
 {
+    public static partial class BuffersExtensions
+    {
+        public static void CopyTo<T>(this in System.Buffers.ReadOnlySequence<T> source, System.Span<T> destination) { }
+        public static System.Nullable<System.SequencePosition> PositionOf<T>(this in System.Buffers.ReadOnlySequence<T> source, T value) where T : System.IEquatable<T> { throw null; }
+        public static T[] ToArray<T>(this in System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
+        public static void Write<T>(this System.Buffers.IBufferWriter<T> writer, System.ReadOnlySpan<T> value) { }
+    }
     public partial interface IBufferWriter<T>
     {
         void Advance(int count);
         System.Memory<T> GetMemory(int sizeHint = 0);
         System.Span<T> GetSpan(int sizeHint = 0);
     }
-    public abstract partial class ReadOnlySequenceSegment<T>
+    public partial interface IMemoryOwner<T> : System.IDisposable
     {
-        public System.ReadOnlyMemory<T> Memory { get; protected set; }
-        public System.Buffers.ReadOnlySequenceSegment<T> Next { get; protected set; }
-        public long RunningIndex { get; protected set; }
+        System.Memory<T> Memory { get; }
     }
-    public partial interface IRetainable
+    public partial interface IPinnable
     {
-        bool Release();
-        void Retain();
+        System.Buffers.MemoryHandle Pin(int elementIndex);
+        void Unpin();
     }
     public partial struct MemoryHandle : System.IDisposable
     {
         private object _dummy;
         [System.CLSCompliantAttribute(false)]
-        public unsafe MemoryHandle(System.Buffers.IRetainable retainable, void* pointer = null, System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle)) { throw null; }
-        public bool HasPointer { get { throw null; } }
+        public unsafe MemoryHandle(void* pointer, System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle), System.Buffers.IPinnable pinnable = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe void* Pointer { get { throw null; } }
         public void Dispose() { }
+    }
+    public abstract partial class MemoryManager<T> : System.Buffers.IMemoryOwner<T>, System.Buffers.IPinnable, System.IDisposable
+    {
+        protected MemoryManager() { }
+        public virtual int Length { get { throw null; } }
+        public virtual System.Memory<T> Memory { get { throw null; } }
+        protected abstract void Dispose(bool disposing);
+        public abstract System.Span<T> GetSpan();
+        public abstract System.Buffers.MemoryHandle Pin(int elementIndex = 0);
+        void System.IDisposable.Dispose() { }
+        protected internal virtual bool TryGetArray(out System.ArraySegment<T> segment) { throw null; }
+        public abstract void Unpin();
     }
     public abstract partial class MemoryPool<T> : System.IDisposable
     {
@@ -266,7 +283,7 @@ namespace System.Buffers
         public static System.Buffers.MemoryPool<T> Shared { get { throw null; } }
         public void Dispose() { }
         protected abstract void Dispose(bool disposing);
-        public abstract System.Buffers.OwnedMemory<T> Rent(int minBufferSize = -1);
+        public abstract System.Buffers.IMemoryOwner<T> Rent(int minBufferSize = -1);
     }
     public enum OperationStatus
     {
@@ -275,38 +292,21 @@ namespace System.Buffers
         InvalidData = 3,
         NeedMoreData = 2,
     }
-    public abstract partial class OwnedMemory<T> : System.Buffers.IRetainable, System.IDisposable
+    public abstract partial class ReadOnlySequenceSegment<T>
     {
-        protected OwnedMemory() { }
-        public abstract bool IsDisposed { get; }
-        protected abstract bool IsRetained { get; }
-        public abstract int Length { get; }
-        public System.Memory<T> Memory { get { throw null; } }
-        public abstract System.Span<T> Span { get; }
-        public void Dispose() { }
-        protected abstract void Dispose(bool disposing);
-        public abstract System.Buffers.MemoryHandle Pin(int byteOffset = 0);
-        public abstract bool Release();
-        public abstract void Retain();
-        protected internal abstract bool TryGetArray(out System.ArraySegment<T> segment);
-    }
-    public static partial class BuffersExtensions
-    {
-        public static void CopyTo<T>(in this System.Buffers.ReadOnlySequence<T> source, System.Span<T> destination) { }
-        public static System.Nullable<System.SequencePosition> PositionOf<T>(in this System.Buffers.ReadOnlySequence<T> source, T value) where T : System.IEquatable<T> { throw null; }
-        public static T[] ToArray<T>(in this System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
-        public static void Write<T>(this System.Buffers.IBufferWriter<T> writer, ReadOnlySpan<T> value) { }
+        protected ReadOnlySequenceSegment() { }
+        public System.ReadOnlyMemory<T> Memory { get { throw null; } protected set { } }
+        public System.Buffers.ReadOnlySequenceSegment<T> Next { get { throw null; } protected set { } }
+        public long RunningIndex { get { throw null; } protected set { } }
     }
     public readonly partial struct ReadOnlySequence<T>
     {
         private readonly object _dummy;
         public static readonly System.Buffers.ReadOnlySequence<T> Empty;
         public ReadOnlySequence(System.Buffers.ReadOnlySequenceSegment<T> startSegment, int startIndex, System.Buffers.ReadOnlySequenceSegment<T> endSegment, int endIndex) { throw null; }
+        public ReadOnlySequence(System.ReadOnlyMemory<T> memory) { throw null; }
         public ReadOnlySequence(T[] array) { throw null; }
         public ReadOnlySequence(T[] array, int start, int length) { throw null; }
-        public ReadOnlySequence(System.ReadOnlyMemory<T> memory) { throw null; }
-        public ReadOnlySequence(System.Buffers.OwnedMemory<T> memory) { throw null; }
-        public ReadOnlySequence(System.Buffers.OwnedMemory<T> memory, int start, int length) { throw null; }
         public System.SequencePosition End { get { throw null; } }
         public System.ReadOnlyMemory<T> First { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
@@ -522,21 +522,18 @@ namespace System.Runtime.InteropServices
         public static T Read<T>(System.ReadOnlySpan<byte> source) where T : struct { throw null; }
         public static System.Collections.Generic.IEnumerable<T> ToEnumerable<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static bool TryGetArray<T>(System.ReadOnlyMemory<T> memory, out System.ArraySegment<T> segment) { throw null; }
-        public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> memory, out TOwner owner)
-            where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
-        public static bool TryGetOwnedMemory<T, TOwner>(ReadOnlyMemory<T> memory, out TOwner owner, out int start, out int length)
-            where TOwner : System.Buffers.OwnedMemory<T> { throw null; }
+        public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, out TManager manager) where TManager : System.Buffers.MemoryManager<T> { throw null; }
+        public static bool TryGetMemoryManager<T, TManager>(System.ReadOnlyMemory<T> memory, out TManager manager, out int start, out int length) where TManager : System.Buffers.MemoryManager<T> { throw null; }
         public static bool TryGetString(System.ReadOnlyMemory<char> memory, out string text, out int start, out int length) { throw null; }
         public static bool TryRead<T>(System.ReadOnlySpan<byte> source, out T value) where T : struct { throw null; }
         public static bool TryWrite<T>(System.Span<byte> destination, ref T value) where T : struct { throw null; }
         public static void Write<T>(System.Span<byte> destination, ref T value) where T : struct { }
     }
-
     public static partial class SequenceMarshal
     {
         public static bool TryGetArray<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ArraySegment<T> segment) { throw null; }
-        public static bool TryGetReadOnlySequenceSegment<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.ReadOnlySequenceSegment<T> startSegment, out int startIndex, out System.Buffers.ReadOnlySequenceSegment<T> endSegment, out int endIndex) { throw null; }
-        public static bool TryGetOwnedMemory<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.OwnedMemory<T> ownedMemory, out int start, out int length) { throw null; }
+        public static bool TryGetMemoryManager<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.MemoryManager<T> nanager, out int start, out int length) { throw null; }
         public static bool TryGetReadOnlyMemory<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ReadOnlyMemory<T> memory) { throw null; }
+        public static bool TryGetReadOnlySequenceSegment<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.ReadOnlySequenceSegment<T> startSegment, out int startIndex, out System.Buffers.ReadOnlySequenceSegment<T> endSegment, out int endIndex) { throw null; }
     }
 }

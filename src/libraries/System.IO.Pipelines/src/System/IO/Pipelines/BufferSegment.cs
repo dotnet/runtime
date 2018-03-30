@@ -9,7 +9,7 @@ namespace System.IO.Pipelines
 {
     internal sealed class BufferSegment : ReadOnlySequenceSegment<byte>
     {
-        private OwnedMemory<byte> _ownedMemory;
+        private IMemoryOwner<byte> _memoryOwner;
         private BufferSegment _next;
         private int _end;
 
@@ -53,16 +53,16 @@ namespace System.IO.Pipelines
             }
         }
 
-        public void SetMemory(OwnedMemory<byte> buffer)
+        public void SetMemory(IMemoryOwner<byte> memoryOwner)
         {
-            SetMemory(buffer, 0, 0);
+            SetMemory(memoryOwner, 0, 0);
         }
 
-        public void SetMemory(OwnedMemory<byte> ownedMemory, int start, int end, bool readOnly = false)
+        public void SetMemory(IMemoryOwner<byte> memoryOwner, int start, int end, bool readOnly = false)
         {
-            _ownedMemory = ownedMemory;
+            _memoryOwner = memoryOwner;
 
-            AvailableMemory = _ownedMemory.Memory;
+            AvailableMemory = _memoryOwner.Memory;
 
             ReadOnly = readOnly;
             RunningIndex = 0;
@@ -73,12 +73,12 @@ namespace System.IO.Pipelines
 
         public void ResetMemory()
         {
-            _ownedMemory.Release();
-            _ownedMemory = null;
+            _memoryOwner.Dispose();
+            _memoryOwner = null;
             AvailableMemory = default;
         }
 
-        internal OwnedMemory<byte> OwnedMemory => _ownedMemory;
+        internal IMemoryOwner<byte> MemoryOwner => _memoryOwner;
 
         public Memory<byte> AvailableMemory { get; private set; }
 

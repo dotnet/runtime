@@ -8,26 +8,26 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    internal sealed class NativeOwnedMemory : OwnedMemory<byte>
+    internal sealed class NativeMemoryManager : MemoryManager<byte>
     {
         private readonly int _length;
         private IntPtr _ptr;
         private int _retainedCount;
         private bool _disposed;
 
-        public NativeOwnedMemory(int length)
+        public NativeMemoryManager(int length)
         {
             _length = length;
             _ptr = Marshal.AllocHGlobal(length);
         }
 
-        ~NativeOwnedMemory()
+        ~NativeMemoryManager()
         {
-            Debug.WriteLine($"{nameof(NativeOwnedMemory)} being finalized");
+            Debug.WriteLine($"{nameof(NativeMemoryManager)} being finalized");
             Dispose(false);
         }
 
-        public override bool IsDisposed
+        public bool IsDisposed
         {
             get
             {
@@ -40,7 +40,7 @@ namespace System.Buffers
 
         public override int Length => _length;
 
-        protected override bool IsRetained
+        public bool IsRetained
         {
             get
             {
@@ -51,16 +51,26 @@ namespace System.Buffers
             }
         }
 
-        public override unsafe Span<byte> Span => new Span<byte>((void*)_ptr, _length);
+        public override unsafe Span<byte> GetSpan() => new Span<byte>((void*)_ptr, _length);
 
-        public override unsafe MemoryHandle Pin(int byteOffset = 0)
+        public override unsafe MemoryHandle Pin(int elementIndex = 0)
         {
-            if (byteOffset < 0 || byteOffset > _length) throw new ArgumentOutOfRangeException(nameof(byteOffset));
-            void* pointer = (void*)((byte*)_ptr + byteOffset);
-            return new MemoryHandle(this, pointer);
+            if (elementIndex < 0 || elementIndex > _length) throw new ArgumentOutOfRangeException(nameof(elementIndex));
+
+            lock (this)
+            {
+                if (_retainedCount == 0 && _disposed)
+                {
+                    throw new Exception();
+                }
+                _retainedCount++;
+            }
+
+            void* pointer = (void*)((byte*)_ptr + elementIndex);    // T = byte
+            return new MemoryHandle(pointer, default, this);
         }
 
-        public override bool Release()
+        public override void Unpin()
         {
             lock (this)
             {
@@ -74,22 +84,8 @@ namespace System.Buffers
                             Marshal.FreeHGlobal(_ptr);
                             _ptr = IntPtr.Zero;
                         }
-                        return true;
                     }
                 }
-            }
-            return false;
-        }
-
-        public override void Retain()
-        {
-            lock (this)
-            {
-                if (_retainedCount == 0 && _disposed)
-                {
-                    throw new Exception();
-                }
-                _retainedCount++;
             }
         }
 
@@ -104,12 +100,6 @@ namespace System.Buffers
                     _ptr = IntPtr.Zero;
                 }
             }
-        }
-
-        protected override bool TryGetArray(out ArraySegment<byte> segment)
-        {
-            segment = default(ArraySegment<byte>);
-            return false;
         }
     }
 }

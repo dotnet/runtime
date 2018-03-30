@@ -6,6 +6,7 @@
     <AssemblyName>System.Runtime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='uapaot' OR '$(TargetGroup)' == 'uap'">true</GenFacadesIgnoreMissingTypes>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />

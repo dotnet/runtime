@@ -69,28 +69,28 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void ToStringFromMemoryFromOwnedMemory()
+        public static void ToStringFromMemoryFromMemoryManager()
         {
             int[] a = { 91, 92, -93, 94 };
-            OwnedMemory<int> intOwner = new CustomMemoryForTest<int>(a);
-            Assert.Equal("System.Memory<Int32>[4]", intOwner.Memory.ToString());
+            MemoryManager<int> intManager = new CustomMemoryForTest<int>(a);
+            Assert.Equal("System.Memory<Int32>[4]", intManager.Memory.ToString());
 
-            intOwner = new CustomMemoryForTest<int>(Array.Empty<int>());
-            Assert.Equal("System.Memory<Int32>[0]", intOwner.Memory.ToString());
+            intManager = new CustomMemoryForTest<int>(Array.Empty<int>());
+            Assert.Equal("System.Memory<Int32>[0]", intManager.Memory.ToString());
 
             char[] charArray = { '1', '2', '-', '4' };
-            OwnedMemory<char> charOwner = new CustomMemoryForTest<char>(charArray);
-            Assert.Equal("12-4", charOwner.Memory.ToString());
+            MemoryManager<char> charManager = new CustomMemoryForTest<char>(charArray);
+            Assert.Equal("12-4", charManager.Memory.ToString());
 
-            charOwner = new CustomMemoryForTest<char>(Array.Empty<char>());
-            Assert.Equal("", charOwner.Memory.ToString());
+            charManager = new CustomMemoryForTest<char>(Array.Empty<char>());
+            Assert.Equal("", charManager.Memory.ToString());
 
             string[] strArray = { "91", "92", "-93", "94" };
-            OwnedMemory<string> strOwner = new CustomMemoryForTest<string>(strArray);
-            Assert.Equal("System.Memory<String>[4]", strOwner.Memory.ToString());
+            MemoryManager<string> strManager = new CustomMemoryForTest<string>(strArray);
+            Assert.Equal("System.Memory<String>[4]", strManager.Memory.ToString());
 
-            strOwner = new CustomMemoryForTest<string>(Array.Empty<string>());
-            Assert.Equal("System.Memory<String>[0]", strOwner.Memory.ToString());
+            strManager = new CustomMemoryForTest<string>(Array.Empty<string>());
+            Assert.Equal("System.Memory<String>[0]", strManager.Memory.ToString());
         }
 
         [Fact]
