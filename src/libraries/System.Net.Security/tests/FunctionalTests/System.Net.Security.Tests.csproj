@@ -90,10 +90,15 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.7-->
+    <Compile Include="..\..\src\System\Net\Security\SniHelper.cs">
+      <Link>src\SniHelper.cs</Link>
+    </Compile>
+    <Compile Include="SniHelperTest.cs" />
     <Compile Include="SslAuthenticationOptionsTest.cs" />
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamAllowRenegotiationTests.cs" />
     <Compile Include="SslStreamAlpnTests.cs" />
+    <Compile Include="SslStreamSniTest.cs" />
     <Compile Include="SslStreamEKUTest.cs" />
     <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
     <Compile Include="SslStreamCredentialCacheTest.cs" />

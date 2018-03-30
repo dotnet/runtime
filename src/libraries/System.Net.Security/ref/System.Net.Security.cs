@@ -32,6 +32,8 @@ namespace System.Net.Security
         RequireEncryption = 0,
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate remoteCertificate, string[] acceptableIssuers);
+    public delegate System.Security.Cryptography.X509Certificates.X509Certificate ServerCertificateSelectionCallback(object sender, string hostName);
+
     public partial class NegotiateStream : AuthenticatedStream
     {
         public NegotiateStream(System.IO.Stream innerStream) : base(innerStream, false) { }
@@ -108,6 +110,7 @@ namespace System.Net.Security
         public X509RevocationMode CertificateRevocationCheckMode { get { throw null;  } set { } }
         public List<SslApplicationProtocol> ApplicationProtocols { get { throw null; } set { } }
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null;  } set { } }
+        public ServerCertificateSelectionCallback ServerCertificateSelectionCallback { get { throw null; } set { } }
         public EncryptionPolicy EncryptionPolicy { get { throw null;  } set { } }
     }
     public partial class SslClientAuthenticationOptions
