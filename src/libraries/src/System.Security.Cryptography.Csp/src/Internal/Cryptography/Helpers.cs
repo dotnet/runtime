@@ -44,6 +44,20 @@ namespace Internal.Cryptography
             return null;
         }
 
+        public static byte[] TrimLargeIV(byte[] currentIV, int blockSizeInBits)
+        {
+            int blockSizeBytes = checked((blockSizeInBits + 7) / 8);
+
+            if (currentIV?.Length > blockSizeBytes)
+            {
+                byte[] tmp = new byte[blockSizeBytes];
+                Buffer.BlockCopy(currentIV, 0, tmp, 0, tmp.Length);
+                return tmp;
+            }
+
+            return currentIV;
+        }
+
         public static bool IsLegalSize(this int size, KeySizes[] legalSizes)
         {
             for (int i = 0; i < legalSizes.Length; i++)

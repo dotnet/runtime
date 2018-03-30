@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -67,29 +68,11 @@ namespace System.Security.Cryptography
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementation of TripleDES")]
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) =>
-            _impl.CreateEncryptor(rgbKey, TrimLargeIV(rgbIV));
+            _impl.CreateEncryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementation of TripleDES")]
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) =>
-            _impl.CreateDecryptor(rgbKey, TrimLargeIV(rgbIV));
-
-        private byte[] TrimLargeIV(byte[] iv)
-        {
-            // The BlockSize for 3DES is 64, so this is always 8, but let's use
-            // the formula anyways.
-            int blockSizeBytes = (BlockSize + 7) / 8;
-
-            if (iv?.Length > blockSizeBytes)
-            {
-                byte[] tmp = new byte[blockSizeBytes];
-                Buffer.BlockCopy(iv, 0, tmp, 0, tmp.Length);
-                return tmp;
-            }
-
-            return iv;
-        }
+            _impl.CreateDecryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
 
         protected override void Dispose(bool disposing)
         {
