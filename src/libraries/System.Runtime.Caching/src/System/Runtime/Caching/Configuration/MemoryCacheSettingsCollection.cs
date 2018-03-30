@@ -9,7 +9,7 @@ namespace System.Runtime.Caching.Configuration
 {
     [ConfigurationCollection(typeof(MemoryCacheElement),
     CollectionType = ConfigurationElementCollectionType.AddRemoveClearMap)]
-    public sealed class MemoryCacheSettingsCollection : ConfigurationElementCollection
+    internal sealed class MemoryCacheSettingsCollection : ConfigurationElementCollection
     {
         private static ConfigurationPropertyCollection s_properties;
 
