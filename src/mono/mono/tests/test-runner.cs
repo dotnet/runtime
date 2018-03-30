@@ -208,6 +208,11 @@ public class TestRunner
 				}
 		}
 
+		if (!tests.Any ()) {
+			Console.WriteLine ("No tests selected, exiting.");
+			return 0;
+		}
+
 		/* If tests are repeated, we don't want the same test to run consecutively, so we need to randomise their order.
 		 * But to ease reproduction of certain order-based bugs (if and only if test A and B execute at the same time),
 		 * we want to use a constant seed so the tests always run in the same order. */
