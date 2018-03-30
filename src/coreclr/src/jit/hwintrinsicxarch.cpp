@@ -1236,6 +1236,16 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX_SetHighLow:
+        {
+            baseType              = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            GenTree* lowerVector  = impSIMDPopStack(TYP_SIMD16);
+            GenTree* higherVector = impSIMDPopStack(TYP_SIMD16);
+            retNode               = gtNewSimdHWIntrinsicNode(TYP_SIMD32, lowerVector, higherVector, gtNewIconNode(1),
+                                               NI_AVX_InsertVector128, baseType, 32);
+            break;
+        }
+
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
         {
