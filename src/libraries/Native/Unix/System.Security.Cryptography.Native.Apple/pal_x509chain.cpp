@@ -154,7 +154,8 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
     CFStringRef keyString = reinterpret_cast<CFStringRef>(key);
 
     if (CFEqual(keyString, CFSTR("NotValidBefore")) || CFEqual(keyString, CFSTR("ValidLeaf")) ||
-        CFEqual(keyString, CFSTR("ValidIntermediates")) || CFEqual(keyString, CFSTR("ValidRoot")))
+        CFEqual(keyString, CFSTR("ValidIntermediates")) || CFEqual(keyString, CFSTR("ValidRoot")) ||
+        CFEqual(keyString, CFSTR("TemporalValidity")))
         *pStatus |= PAL_X509ChainNotTimeValid;
     else if (CFEqual(keyString, CFSTR("Revocation")))
         *pStatus |= PAL_X509ChainRevoked;
@@ -168,8 +169,10 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         *pStatus |= PAL_X509ChainExplicitDistrust;
     else if (CFEqual(keyString, CFSTR("RevocationResponseRequired")))
         *pStatus |= PAL_X509ChainRevocationStatusUnknown;
+    else if (CFEqual(keyString, CFSTR("MissingIntermediate")))
+        *pStatus |= PAL_X509ChainPartialChain;
     else if (CFEqual(keyString, CFSTR("WeakLeaf")) || CFEqual(keyString, CFSTR("WeakIntermediates")) ||
-             CFEqual(keyString, CFSTR("WeakRoot")))
+             CFEqual(keyString, CFSTR("WeakRoot")) || CFEqual(keyString, CFSTR("WeakKeySize")))
     {
         // Because we won't report this out of a chain built by .NET on Windows,
         // don't report it here.
