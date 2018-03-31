@@ -642,7 +642,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                expectedFlags = X509ChainStatusFlags.UntrustedRoot;
+                // For OSX alone expectedFlags here means OR instead of AND.
+                // Because the error code changed in 10.13.4 from UntrustedRoot to PartialChain
+                // and we handle that later in this test.
+                expectedFlags =
+                    X509ChainStatusFlags.UntrustedRoot |
+                    X509ChainStatusFlags.PartialChain;
             }
             else
             {
@@ -669,6 +674,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     chain.ChainStatus.Select(cs => cs.Status).Aggregate(
                         X509ChainStatusFlags.NoError,
                         (a, b) => a | b);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // If we're on 10.13.3 or older we get UntrustedRoot.
+                    // If we're on 10.13.4 or newer we get PartialChain.
+                    //
+                    // So make the expectedValue be whichever of those two is set.
+                    expectedFlags = (expectedFlags & allFlags);
+                    // One of them has to be set.
+                    Assert.NotEqual(X509ChainStatusFlags.NoError, expectedFlags);
+                    // Continue executing now to ensure that no other unexpected flags were set.
+                }
 
                 Assert.Equal(expectedFlags, allFlags);
             }
