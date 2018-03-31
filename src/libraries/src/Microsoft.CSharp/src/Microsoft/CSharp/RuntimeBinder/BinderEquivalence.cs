@@ -21,7 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         //    typical C# binders, once created, are rooted to their callsites, which are stored in static fields.
         //    the cache is unlikely to extend the life time of the binders.
         //    the limit here is just to have assurance on how large the cache may get.
-        private const int BINDER_CACHE_LIMIT = 4096;
+        private const uint BINDER_CACHE_LIMIT = 4096;
 
         // keep a separate count because it is cheaper than calling CD.Count()
         // it does not need to be very precise either
@@ -43,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 // a simple eviction policy -
                 // if cache grows too big, just flush it and start over.
-                if (count > BINDER_CACHE_LIMIT)
+                if ((uint)count > BINDER_CACHE_LIMIT)
                 {
                     binderEquivalenceCache.Clear();
                     cachedBinderCount = 0;
