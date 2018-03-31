@@ -608,8 +608,9 @@ namespace System.Net.Http
                 // If the pool has been disposed of, dispose the connection being returned,
                 // as the pool is being deactivated. We do this after the above in order to
                 // use pooled connections to satisfy any requests that pended before the
-                // the pool was disposed of.
-                if (_disposed)
+                // the pool was disposed of.  We also dispose of connections if connection
+                // timeouts are such that the connection would immediately expire, anyway.
+                if (_disposed || _poolManager.AvoidStoringConnections)
                 {
                     if (NetEventSource.IsEnabled) connection.Trace("Disposing connection returned to disposed pool.");
                     connection.Dispose();
