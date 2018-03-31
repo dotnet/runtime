@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
@@ -15,6 +16,11 @@ namespace System.Net.Http
 {
     internal static class ConnectHelper
     {
+        /// <summary>Pool of event args to use to establish connections.</summary>
+        private static readonly ConcurrentQueue<ConnectEventArgs>.Segment s_connectEventArgs =
+            new ConcurrentQueue<ConnectEventArgs>.Segment(
+                ConcurrentQueue<ConnectEventArgs>.Segment.RoundUpToPowerOf2(Environment.ProcessorCount));
+
         /// <summary>
         /// Helper type used by HttpClientHandler when wrapping SocketsHttpHandler to map its
         /// certificate validation callback to the one used by SslStream.
@@ -34,64 +40,46 @@ namespace System.Net.Http
 
         public static async ValueTask<(Socket, Stream)> ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
+            // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
+            // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
+            // to cancel it if needed. Rent or allocate one.
+            ConnectEventArgs saea;
+            if (!s_connectEventArgs.TryDequeue(out saea))
+            {
+                saea = new ConnectEventArgs();
+            }
+
             try
             {
-                // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
-                // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
-                // to cancel it if needed.
-                using (var saea = new BuilderAndCancellationTokenSocketAsyncEventArgs(cancellationToken))
+                saea.Initialize(cancellationToken);
+
+                // Configure which server to which to connect.
+                saea.RemoteEndPoint = IPAddress.TryParse(host, out IPAddress address) ?
+                    (EndPoint)new IPEndPoint(address, port) :
+                    new DnsEndPoint(host, port);
+
+                // Initiate the connection.
+                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea))
                 {
-                    // Configure which server to which to connect.
-                    saea.RemoteEndPoint = IPAddress.TryParse(host, out IPAddress address) ?
-                        (EndPoint)new IPEndPoint(address, port) :
-                        new DnsEndPoint(host, port);
-
-                    // Hook up a callback that'll complete the Task when the operation completes.
-                    saea.Completed += (s, e) =>
+                    // Connect completing asynchronously. Enable it to be canceled and wait for it.
+                    using (cancellationToken.Register(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s), saea))
                     {
-                        var csaea = (BuilderAndCancellationTokenSocketAsyncEventArgs)e;
-                        switch (e.SocketError)
-                        {
-                            case SocketError.Success:
-                                csaea.Builder.SetResult();
-                                break;
-                            case SocketError.OperationAborted:
-                            case SocketError.ConnectionAborted:
-                                if (csaea.CancellationToken.IsCancellationRequested)
-                                {
-                                    csaea.Builder.SetException(CancellationHelper.CreateOperationCanceledException(null, csaea.CancellationToken));
-                                    break;
-                                }
-                                goto default;
-                            default:
-                                csaea.Builder.SetException(new SocketException((int)e.SocketError));
-                                break;
-                        }
-                    };
-
-                    // Initiate the connection.
-                    if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, saea))
-                    {
-                        // Connect completing asynchronously. Enable it to be canceled and wait for it.
-                        using (cancellationToken.Register(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s), saea))
-                        {
-                            await saea.Builder.Task.ConfigureAwait(false);
-                        }
+                        await saea.Builder.Task.ConfigureAwait(false);
                     }
-                    else if (saea.SocketError != SocketError.Success)
-                    {
-                        // Connect completed synchronously but unsuccessfully.
-                        throw new SocketException((int)saea.SocketError);
-                    }
-
-                    Debug.Assert(saea.SocketError == SocketError.Success, $"Expected Success, got {saea.SocketError}.");
-                    Debug.Assert(saea.ConnectSocket != null, "Expected non-null socket");
-                   
-                    // Configure the socket and return a stream for it.
-                    Socket socket = saea.ConnectSocket;
-                    socket.NoDelay = true;
-                    return (socket, new NetworkStream(socket, ownsSocket: true));
                 }
+                else if (saea.SocketError != SocketError.Success)
+                {
+                    // Connect completed synchronously but unsuccessfully.
+                    throw new SocketException((int)saea.SocketError);
+                }
+
+                Debug.Assert(saea.SocketError == SocketError.Success, $"Expected Success, got {saea.SocketError}.");
+                Debug.Assert(saea.ConnectSocket != null, "Expected non-null socket");
+
+                // Configure the socket and return a stream for it.
+                Socket socket = saea.ConnectSocket;
+                socket.NoDelay = true;
+                return (socket, new NetworkStream(socket, ownsSocket: true));
             }
             catch (Exception error)
             {
@@ -99,21 +87,54 @@ namespace System.Net.Http
                     CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
                     new HttpRequestException(error.Message, error);
             }
+            finally
+            {
+                // Pool the event args, or if the pool is full, dispose of it.
+                saea.Clear();
+                if (!s_connectEventArgs.TryEnqueue(saea))
+                {
+                    saea.Dispose();
+                }
+            }
         }
 
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
-        private sealed class BuilderAndCancellationTokenSocketAsyncEventArgs : SocketAsyncEventArgs
+        private sealed class ConnectEventArgs : SocketAsyncEventArgs
         {
-            public AsyncTaskMethodBuilder Builder { get; }
-            public CancellationToken CancellationToken { get; }
+            public AsyncTaskMethodBuilder Builder { get; private set; }
+            public CancellationToken CancellationToken { get; private set; }
 
-            public BuilderAndCancellationTokenSocketAsyncEventArgs(CancellationToken cancellationToken)
+            public void Initialize(CancellationToken cancellationToken)
             {
+                CancellationToken = cancellationToken;
                 var b = new AsyncTaskMethodBuilder();
                 var ignored = b.Task; // force initialization
                 Builder = b;
+            }
 
-                CancellationToken = cancellationToken;
+            public void Clear() => CancellationToken = default;
+
+            protected override void OnCompleted(SocketAsyncEventArgs _)
+            {
+                switch (SocketError)
+                {
+                    case SocketError.Success:
+                        Builder.SetResult();
+                        break;
+
+                    case SocketError.OperationAborted:
+                    case SocketError.ConnectionAborted:
+                        if (CancellationToken.IsCancellationRequested)
+                        {
+                            Builder.SetException(CancellationHelper.CreateOperationCanceledException(null, CancellationToken));
+                            break;
+                        }
+                        goto default;
+
+                    default:
+                        Builder.SetException(new SocketException((int)SocketError));
+                        break;
+                }
             }
         }
 
