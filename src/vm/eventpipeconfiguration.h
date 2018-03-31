@@ -82,6 +82,15 @@ public:
     // Delete deferred providers.
     void DeleteDeferredProviders();
 
+    // Determine if the specified thread is the rundown thread.
+    // Used during rundown to ignore events from all other threads so that we don't corrupt the trace file.
+    inline bool IsRundownThread(Thread *pThread)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return (pThread == m_pRundownThread);
+    }
+
 private:
 
     // Get the provider without taking the lock.
@@ -111,6 +120,9 @@ private:
 
     // True if rundown is enabled.
     Volatile<bool> m_rundownEnabled;
+
+    // The rundown thread.  If rundown is not enabled, this is NULL.
+    Thread *m_pRundownThread;
 };
 
 #endif // FEATURE_PERFTRACING
