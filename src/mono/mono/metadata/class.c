@@ -5236,14 +5236,11 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 	if (is_nesting_type (access_klass, member_klass) || (m_class_get_nested_in (access_klass) && is_nesting_type (m_class_get_nested_in (access_klass), member_klass)))
 		return TRUE;
 
-	MonoClass *member_klass_nested_in = m_class_get_nested_in (member_klass);
-	if (member_klass_nested_in && !can_access_type (access_klass, member_klass_nested_in))
-		return FALSE;
-
 	/*Non nested type with nested visibility. We just fail it.*/
 	if (access_level >= TYPE_ATTRIBUTE_NESTED_PRIVATE && access_level <= TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM && m_class_get_nested_in (member_klass) == NULL)
 		return FALSE;
 
+	MonoClass *member_klass_nested_in = m_class_get_nested_in (member_klass);
 	switch (access_level) {
 	case TYPE_ATTRIBUTE_NOT_PUBLIC:
 		return can_access_internals (access_klass_assembly, member_klass_assembly);
@@ -5252,16 +5249,16 @@ can_access_type (MonoClass *access_klass, MonoClass *member_klass)
 		return TRUE;
 
 	case TYPE_ATTRIBUTE_NESTED_PUBLIC:
-		return TRUE;
+		return member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
 
 	case TYPE_ATTRIBUTE_NESTED_PRIVATE:
-		return is_nesting_type (member_klass, access_klass);
+		return is_nesting_type (member_klass, access_klass) && member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
 
 	case TYPE_ATTRIBUTE_NESTED_FAMILY:
 		return mono_class_has_parent_and_ignore_generics (access_klass, m_class_get_nested_in (member_klass)); 
 
 	case TYPE_ATTRIBUTE_NESTED_ASSEMBLY:
-		return can_access_internals (access_klass_assembly, member_klass_assembly);
+		return can_access_internals (access_klass_assembly, member_klass_assembly) && member_klass_nested_in && can_access_type (access_klass, member_klass_nested_in);
 
 	case TYPE_ATTRIBUTE_NESTED_FAM_AND_ASSEM:
 		return can_access_internals (access_klass_assembly, m_class_get_image (member_klass_nested_in)->assembly) &&
