@@ -8828,7 +8828,7 @@ static void ManagedThreadBase_DispatchInner(ManagedThreadCallState *pCallState)
         // This also implies that there will be no exception object marshalling (and it may not be required after all) 
         // as well and once the holder reverts the AD context, the LastThrownObject in Thread will be set to NULL.
 #ifndef FEATURE_PAL
-        BOOL fSetupEHAtTransition = !(RunningOnWin7());            
+        BOOL fSetupEHAtTransition = FALSE;
 #else // !FEATURE_PAL
         BOOL fSetupEHAtTransition = TRUE;
 #endif // !FEATURE_PAL

@@ -52,8 +52,6 @@ FaultReportResult DoFaultReport(            // Was Watson attempted, successful?
     EXCEPTION_POINTERS *pExceptionInfo,     // Information about the fault.
     TypeOfReportedError tore);              // What sort of error is reported.
 
-BOOL InitializeWatson(COINITIEE fFlags);
-BOOL InitializeWatsonVersionInfo(LPCSTR pVer);
 BOOL IsWatsonEnabled();
 BOOL RegisterOutOfProcessWatsonCallbacks();
 
@@ -80,8 +78,6 @@ struct ResetWatsonBucketsParams
 void ResetWatsonBucketsFavorWorker(void * pParam);
 
 extern LONG g_watsonAlreadyLaunched;
-
-extern HandleHolder g_hWatsonCompletionEvent;
 
 //----------------------------------------------------------------------------
 // Passes data between DoFaultReport and DoFaultReportCallback

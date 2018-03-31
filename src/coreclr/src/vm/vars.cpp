@@ -28,11 +28,6 @@ const char g_psBaseLibrary[]      = CoreLibName_IL_A;
 const char g_psBaseLibraryName[]  = CoreLibName_A;
 const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
-#ifdef FEATURE_COMINTEROP
-const WCHAR g_pwBaseLibraryTLB[]  = CoreLibName_TLB_W;
-const char g_psBaseLibraryTLB[]   = CoreLibName_TLB_A;
-#endif  // FEATURE_COMINTEROP
-
 Volatile<LONG>       g_TrapReturningThreads;
 
 HINSTANCE            g_pMSCorEE;
@@ -248,8 +243,6 @@ LPWSTR g_pCachedModuleFileName = 0;
 // IJW needs the shim HINSTANCE
 //
 HINSTANCE g_hInstShim = NULL;
-
-char g_Version[] = VER_PRODUCTVERSION_STR;
 
 #endif // #ifndef DACCESS_COMPILE
 

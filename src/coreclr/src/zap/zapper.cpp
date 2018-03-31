@@ -782,15 +782,13 @@ void Zapper::CleanupAssembly()
 // To be used with GetSpecificCpuInfo()
 #ifdef _TARGET_X86_
 
-BOOL Runtime_Test_For_SSE2();
-
 #define CPU_X86_FAMILY(cpuType)     (((cpuType) & 0x0F00) >> 8)
 #define CPU_X86_MODEL(cpuType)      (((cpuType) & 0x00F0) >> 4)
 // Stepping is masked out by GetSpecificCpuInfo()
 // #define CPU_X86_STEPPING(cpuType)   (((cpuType) & 0x000F)     )
 
 #define CPU_X86_USE_CMOV(cpuFeat)   ((cpuFeat & 0x00008001) == 0x00008001)
-#define CPU_X86_USE_SSE2(cpuFeat)  (((cpuFeat & 0x04000000) == 0x04000000) && Runtime_Test_For_SSE2())
+#define CPU_X86_USE_SSE2(cpuFeat)   ((cpuFeat & 0x04000000) == 0x04000000)
 
 // Values for CPU_X86_FAMILY(cpuType)
 #define CPU_X86_486                 4
