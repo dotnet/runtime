@@ -6,6 +6,7 @@
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <IsUAPAssembly Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uap10.0.16299'">true</IsUAPAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.2'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.3'">4.1.0.0</AssemblyVersion>
@@ -14,6 +15,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap10.0.16299-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
@@ -30,7 +33,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' ">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp' OR '$(IsUAPAssembly)' == 'true' ">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
@@ -230,7 +233,7 @@
   <ItemGroup Condition="('$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'netcoreapp') AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(IsUAPAssembly)' == 'true'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Managed.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.uap.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.uap.cs" />
@@ -238,7 +241,7 @@
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
   </ItemGroup>
   <!-- Assets needed on Windows but should be avoided on UAP to avoid sni.dll -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(IsUAPAssembly)' != 'true'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectNative.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
@@ -433,7 +436,7 @@
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(IsUAPAssembly)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
@@ -478,7 +481,7 @@
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Diagnostics.Tracing" />
   </ItemGroup>
-  <ItemGroup Condition="('$(OSGroup)' != 'AnyOS' AND '$(TargetGroup)' == 'uap') OR '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="('$(OSGroup)' != 'AnyOS' AND '$(IsUAPAssembly)' == 'true') OR '$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Transactions.Local" />
     <Reference Include="System.Collections.NonGeneric" />
   </ItemGroup>
