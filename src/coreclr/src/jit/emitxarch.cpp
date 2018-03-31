@@ -5076,8 +5076,7 @@ void emitter::emitIns_AR_R_I(instruction ins, emitAttr attr, regNumber base, int
     assert(ins == INS_vextracti128 || ins == INS_vextractf128);
     assert(base != REG_NA);
     assert(ireg != REG_NA);
-    UNATIVE_OFFSET sz;
-    instrDesc*     id = emitNewInstrAmdCns(attr, disp, ival);
+    instrDesc* id = emitNewInstrAmdCns(attr, disp, ival);
 
     id->idIns(ins);
     id->idInsFmt(IF_AWR_RRD_CNS);
@@ -5087,8 +5086,8 @@ void emitter::emitIns_AR_R_I(instruction ins, emitAttr attr, regNumber base, int
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
-    // the code size of "vextracti/f128 [mem], ymm, imm8" is 6 byte
-    sz = 6;
+    // Plus one for the 1-byte immediate (ival)
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins)) + emitGetVexPrefixAdjustedSize(ins, attr, insCodeMR(ins)) + 1;
     id->idCodeSize(sz);
 
     dispIns(id);
