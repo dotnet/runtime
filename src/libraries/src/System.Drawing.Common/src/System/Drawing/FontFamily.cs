@@ -14,7 +14,7 @@ namespace System.Drawing
     /// <summary>
     /// Abstracts a group of type faces having a similar basic design but having certain variation in styles.
     /// </summary>
-    public sealed class FontFamily : MarshalByRefObject, IDisposable
+    public sealed partial class FontFamily : MarshalByRefObject, IDisposable
     {
         private const int NeutralLanguage = 0;
         private IntPtr _nativeFamily;
@@ -131,23 +131,6 @@ namespace System.Drawing
         ~FontFamily() => Dispose(false);
 
         internal IntPtr NativeFamily => _nativeFamily;
-
-        public override bool Equals(object obj)
-        {
-            if (obj == this)
-            {
-                return true;
-            }
-
-            if (!(obj is FontFamily otherFamily))
-            {
-                return false;
-            }
-
-            // We can safely use the ptr to the native GDI+ FontFamily because it is common to 
-            // all objects of the same family (singleton RO object).
-            return otherFamily.NativeFamily == NativeFamily;
-        }
 
         /// <summary>
         /// Converts this <see cref='FontFamily'/> to a human-readable string.
