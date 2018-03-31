@@ -44,8 +44,6 @@ EXTERN_C void STDCALL PInvokeStackImbalanceHelper(void);
 EXTERN_C void SinglecastDelegateInvokeStub();
 #endif // FEATURE_STUBS_AS_IL
 
-BOOL Runtime_Test_For_SSE2();
-
 #ifdef CROSSGEN_COMPILE
 #define GetEEFuncEntryPoint(pfn) 0x1001
 #else
@@ -61,7 +59,7 @@ BOOL Runtime_Test_For_SSE2();
 // #define CPU_X86_STEPPING(cpuType)   (((cpuType) & 0x000F)     )
 
 #define CPU_X86_USE_CMOV(cpuFeat)   ((cpuFeat & 0x00008001) == 0x00008001)
-#define CPU_X86_USE_SSE2(cpuFeat)  (((cpuFeat & 0x04000000) == 0x04000000) && Runtime_Test_For_SSE2())
+#define CPU_X86_USE_SSE2(cpuFeat)   ((cpuFeat & 0x04000000) == 0x04000000)
 
 // Values for CPU_X86_FAMILY(cpuType)
 #define CPU_X86_486                 4

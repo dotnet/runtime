@@ -579,10 +579,6 @@ EXTERN const char g_psBaseLibrary[];
 EXTERN const char g_psBaseLibraryName[];
 EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 
-#ifdef FEATURE_COMINTEROP
-EXTERN const WCHAR g_pwBaseLibraryTLB[];
-EXTERN const char g_psBaseLibraryTLB[];
-#endif  // FEATURE_COMINTEROP
 #endif // DACCESS_COMPILE
 
 //

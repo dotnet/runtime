@@ -11582,54 +11582,6 @@ void CordbProcess::HandleSyncCompleteRecieved()
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 
-// Get a Thread's _user_ starting address (the real starting address may be some
-// OS shim.)
-// This may return NULL for the Async-Break thread.
-void* GetThreadUserStartAddr(const DEBUG_EVENT* pCreateThreadEvent)
-{
-    // On Win7 and above, we can trust the lpStartAddress field of the CREATE_THREAD_DEBUG_EVENT
-    // to be the user start address (the actual OS start address is an implementation detail that 
-    // doesn't need to be exposed to users). Note that we are assuming that the target process
-    // is running on Win7 if mscordbi is. If we ever have some remoting scenario where the target
-    // can run on a different windows machine with a different OS version we will need a way to
-    // determine the target's OS version
-    if(RunningOnWin7())
-    {
-        return pCreateThreadEvent->u.CreateThread.lpStartAddress;
-    }
-    
-    // On pre-Win7 OSes, we rely on an OS implementation detail to get the real user thread start:
-    // it exists in EAX at thread start time.
-    // Note that for a brief period of time there was a GetThreadStartInformation API in Longhorn 
-    // we could use for this, but it was removed during the Longhorn reset.  
-    HANDLE hThread = pCreateThreadEvent->u.CreateThread.hThread;
-#if defined(DBG_TARGET_X86)
-    // Grab the thread's context.
-    DT_CONTEXT c;
-    c.ContextFlags = DT_CONTEXT_FULL;
-    BOOL succ = DbiGetThreadContext(hThread, &c);
-
-    if (succ)
-    {
-        return (void*) c.Eax;
-    }
-#elif defined(DBG_TARGET_AMD64)
-    DT_CONTEXT c;
-    c.ContextFlags = DT_CONTEXT_FULL;
-    BOOL succ = DbiGetThreadContext(hThread, &c);
-
-    if (succ)
-    {
-        return (void*) c.Rcx;
-    }
-#else
-    PORTABILITY_ASSERT("port GetThreadUserStartAddr");
-#endif
-
-    return NULL;
-}
-
-
 //---------------------------------------------------------------------------------------
 //
 // Get (create if needed) the unmanaged thread for an unmanaged debug event.
@@ -11706,7 +11658,7 @@ CordbUnmanagedThread * CordbProcess::GetUnmanagedThreadFromEvent(const DEBUG_EVE
                 UpdateRightSideDCB();
                 if ((this->GetDCB()->m_helperThreadStartAddr != NULL) && (pUnmanagedThread != NULL))
                 {
-                    void * pStartAddr = GetThreadUserStartAddr(pEvent);
+                    void * pStartAddr = pEvent->u.CreateThread.lpStartAddress;
 
                     if (pStartAddr == this->GetDCB()->m_helperThreadStartAddr)
                     {

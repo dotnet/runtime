@@ -1472,7 +1472,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         }
 
 #ifndef FEATURE_PAL        
-        if (RunningOnWin7() && IsWatsonEnabled() && (g_pDebugInterface != NULL))
+        if (IsWatsonEnabled() && (g_pDebugInterface != NULL))
         {
             _ASSERTE(pExceptionInfo != NULL);
 
