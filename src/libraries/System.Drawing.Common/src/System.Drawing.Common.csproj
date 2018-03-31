@@ -214,6 +214,7 @@
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Windows.cs" />
     <Compile Include="System\Drawing\Font.Windows.cs" />
+    <Compile Include="System\Drawing\FontFamily.Windows.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
     <Compile Include="System\Drawing\Graphics.Windows.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
@@ -314,6 +315,7 @@
     <Compile Include="System\Drawing\BufferedGraphicsContext.Unix.cs" />
     <Compile Include="System\Drawing\macFunctions.cs" />
     <Compile Include="System\Drawing\Font.Unix.cs" />
+    <Compile Include="System\Drawing\FontFamily.Unix.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
