@@ -107,6 +107,16 @@ public class ClassicCOMUnitTest
             Console.WriteLine("Caught unexpected PlatformNotSupportedException: " + e);
             return false;
         }
+        catch(System.Runtime.InteropServices.COMException e)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return true;
+            }
+            
+            Console.WriteLine("Caught unexpected COMException: " + e);
+            return false;
+        }
         catch (Exception e)
         {
             Console.WriteLine("Caught unexpected exception: " + e);
