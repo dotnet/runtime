@@ -198,7 +198,6 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
                     ThrowForModifiedManagedSslOptionsIfStarted();
                     _socketsHttpHandler.SslOptions.EnabledSslProtocols = value;
                 }

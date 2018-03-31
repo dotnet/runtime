@@ -205,7 +205,6 @@ namespace System.Net.Security
 
         internal virtual IAsyncResult BeginAuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback asyncCallback, object asyncState)
         {
-            SecurityProtocol.ThrowOnNotAllowed(sslClientAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -257,7 +256,6 @@ namespace System.Net.Security
 
         private IAsyncResult BeginAuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback asyncCallback, object asyncState)
         {
-            SecurityProtocol.ThrowOnNotAllowed(sslServerAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             _sslState.ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
@@ -322,7 +320,6 @@ namespace System.Net.Security
 
         private void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
-            SecurityProtocol.ThrowOnNotAllowed(sslClientAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
@@ -356,7 +353,6 @@ namespace System.Net.Security
 
         private void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            SecurityProtocol.ThrowOnNotAllowed(sslServerAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             _sslState.ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));

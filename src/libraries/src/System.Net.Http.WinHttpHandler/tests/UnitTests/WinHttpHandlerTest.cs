@@ -436,15 +436,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Theory]
-        [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
-        public void SslProtocols_SetUsingUnsupported_Throws(SslProtocols protocol)
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<NotSupportedException>(() => { handler.SslProtocols = protocol; });
-        }
-
-        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public void SslProtocols_SetUsingSupported_Success(SslProtocols protocol)
         {
@@ -460,33 +451,27 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             handler.SslProtocols = SslProtocols.None;
         }
 
-        [Fact]
-        public void SslProtocols_SetUsingInvalidEnum_Throws()
-        {
-            var handler = new WinHttpHandler();
-
-            Assert.Throws<NotSupportedException>(() => { handler.SslProtocols = (SslProtocols)4096; });
-        }
-
-        [Fact]
-        public void SslProtocols_SetUsingValidEnums_ExpectedWinHttpHandleSettings()
+        [Theory]
+        [InlineData(
+            SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+            Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1 |
+            Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1 |
+            Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2)]
+#pragma warning disable 0618
+        [InlineData(
+            SslProtocols.Ssl2 | SslProtocols.Ssl3,
+            Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL2 |
+            Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL3)]
+#pragma warning restore 0618
+        public void SslProtocols_SetUsingValidEnums_ExpectedWinHttpHandleSettings(
+            SslProtocols specified, uint expectedProtocols)
         {
             var handler = new WinHttpHandler();
 
             SendRequestHelper.Send(
                 handler,
-                delegate
-                {
-                    handler.SslProtocols =
-                        SslProtocols.Tls |
-                        SslProtocols.Tls11 |
-                        SslProtocols.Tls12;
-                });
+                delegate { handler.SslProtocols = specified; });
 
-            uint expectedProtocols =
-                Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1 |
-                Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1 |
-                Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
             Assert.Equal(expectedProtocols, APICallHistory.WinHttpOptionSecureProtocols);
         }
 

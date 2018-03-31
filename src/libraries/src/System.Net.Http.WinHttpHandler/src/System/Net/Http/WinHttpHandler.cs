@@ -194,8 +194,6 @@ namespace System.Net.Http
 
             set
             {
-                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
-
                 CheckDisposedOrStarted();
                 _sslProtocols = value;
             }
@@ -929,6 +927,18 @@ namespace System.Net.Http
             uint optionData = 0;
             SslProtocols sslProtocols =
                 (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
+            
+#pragma warning disable 0618 // SSL2/SSL3 are deprecated
+            if ((sslProtocols & SslProtocols.Ssl2) != 0)
+            {
+                optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL2;
+            }
+
+            if ((sslProtocols & SslProtocols.Ssl3) != 0)
+            {
+                optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_SSL3;
+            }
+#pragma warning restore 0618
 
             if ((sslProtocols & SslProtocols.Tls) != 0)
             {

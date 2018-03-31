@@ -467,9 +467,8 @@ namespace System.Net.Security
                     return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
                 });
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.Fail("AcquireCredentialsHandle failed.", ex.ToString());
                 return SSPIWrapper.AcquireCredentialsHandle(GlobalSSPI.SSPISecureChannel, SecurityPackage, credUsage, secureCredential);
             }
         }

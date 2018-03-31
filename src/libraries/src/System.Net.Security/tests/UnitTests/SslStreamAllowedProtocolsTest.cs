@@ -19,14 +19,6 @@ namespace System.Net.Security.Tests
             string targetHost, X509CertificateCollection clientCertificates, SslProtocols enabledSslProtocols, bool checkCertificateRevocation);
 
         [Theory]
-        [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
-        public void SslStream_AuthenticateAsClientAsync_NotSupported_Fails(SslProtocols protocol)
-        {
-            SslStream stream = new SslStream(new NotImplementedStream());
-            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, protocol, false));
-        }
-
-        [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
         public void SslStream_AuthenticateAsClientAsync_Supported_Success(SslProtocols protocol)
         {
@@ -40,27 +32,6 @@ namespace System.Net.Security.Tests
         {
             SslStream stream = new SslStream(new NotImplementedStream());
             AuthenticateAsClient(stream, true, "host", null, protocol, false);
-        }
-
-        [Fact]
-        public void SslStream_AuthenticateAsClientAsync_Invalid_Fails()
-        {
-            SslStream stream = new SslStream(new NotImplementedStream());
-            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, (SslProtocols)4096, false));
-        }
-
-        [Fact]
-        public void SslStream_AuthenticateAsClient_Invalid_Fails()
-        {
-            SslStream stream = new SslStream(new NotImplementedStream());
-            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, (SslProtocols)4096, false));
-        }
-
-        [Fact]
-        public void SslStream_AuthenticateAsClientAsync_AllUnsupported_Fails()
-        {
-            SslStream stream = new SslStream(new NotImplementedStream());
-            Assert.Throws<NotSupportedException>(() => AuthenticateAsClient(stream, false, "host", null, SslProtocolSupport.UnsupportedSslProtocols, false));
         }
 
         [Fact]
