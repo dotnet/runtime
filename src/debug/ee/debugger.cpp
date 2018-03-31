@@ -13525,8 +13525,7 @@ void Debugger::UnhandledHijackWorker(CONTEXT * pContext, EXCEPTION_RECORD * pRec
     // On Win7 WatsonLastChance returns CONTINUE_SEARCH for unhandled exceptions execpt stack overflow, and
     // lets OS launch debuggers for us.  Before the unhandled exception reaches the OS, CLR UEF has already 
     // processed this unhandled exception.  Thus, we should not call into CLR UEF again if it is the case.
-    if (RunningOnWin7() &&
-        pThread && 
+    if (pThread && 
         (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException) || 
          pThread->HasThreadStateNC(Thread::TSNC_AppDomainContainUnhandled) ||
          fSOException))
