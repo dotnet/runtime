@@ -286,11 +286,21 @@ namespace System.Net.Sockets
                 //
                 // Start the event loop on its own thread.
                 //
-                Task.Factory.StartNew(
-                    EventLoop,
-                    CancellationToken.None,
-                    TaskCreationOptions.LongRunning,
-                    TaskScheduler.Default);
+                bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
+                try
+                {
+                    if (suppressFlow) ExecutionContext.SuppressFlow();
+                    Task.Factory.StartNew(
+                        s => ((SocketAsyncEngine)s).EventLoop(),
+                        this,
+                        CancellationToken.None,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default);
+                }
+                finally
+                {
+                    if (suppressFlow) ExecutionContext.RestoreFlow();
+                }
             }
             catch
             {
