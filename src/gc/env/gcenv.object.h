@@ -36,11 +36,12 @@ public:
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
 
-#define MTFlag_ContainsPointers 0x0100
-#define MTFlag_HasFinalizer     0x0010
-#define MTFlag_IsArray          0x0008
-#define MTFlag_Collectible      0x1000
-#define MTFlag_HasComponentSize 0x8000
+#define MTFlag_ContainsPointers     0x0100
+#define MTFlag_HasCriticalFinalizer 0x0800
+#define MTFlag_HasFinalizer         0x0010
+#define MTFlag_IsArray              0x0008
+#define MTFlag_Collectible          0x1000
+#define MTFlag_HasComponentSize     0x8000
 
 class MethodTable
 {
@@ -103,7 +104,7 @@ public:
 
     bool HasCriticalFinalizer()
     {
-        return false;
+        return (m_flags & MTFlag_HasCriticalFinalizer) != 0;
     }
 
     bool IsArray()
