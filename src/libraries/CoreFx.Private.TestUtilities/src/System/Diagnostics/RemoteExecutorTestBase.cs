@@ -20,7 +20,7 @@ namespace System.Diagnostics
         public const int SuccessExitCode = 42;
 
         /// <summary>The name of the test console app.</summary>
-        protected static readonly string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
+        protected static readonly string TestConsoleApp = Path.GetFullPath("RemoteExecutorConsoleApp.exe");
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>

@@ -343,28 +343,21 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void TestWorkingDirectoryProperty()
+        public void TestWorkingDirectoryPropertyDefaultCase()
         {
             CreateDefaultProcess();
 
             // check defaults
             Assert.Equal(string.Empty, _process.StartInfo.WorkingDirectory);
+        }
 
-            Process p = CreateProcessLong();
-            p.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory();
-
-            try
-            {
-                p.Start();
-                Assert.Equal(Directory.GetCurrentDirectory(), p.StartInfo.WorkingDirectory);
-            }
-            finally
-            {
-                if (!p.HasExited)
-                    p.Kill();
-
-                Assert.True(p.WaitForExit(WaitInMS));
-            }
+        [Fact]
+        public void TestWorkingDirectoryPropertyInChildProcess()
+        {
+            string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory ;
+            Assert.NotEqual(workingDirectory, Directory.GetCurrentDirectory());
+            var psi = new ProcessStartInfo { WorkingDirectory = workingDirectory };
+            RemoteInvoke(wd => { Assert.Equal(wd, Directory.GetCurrentDirectory()); return SuccessExitCode; }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [ActiveIssue(12696)]
