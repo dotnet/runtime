@@ -36,7 +36,7 @@ namespace System.Net.Security
     // Internal versions of the above delegates.
     internal delegate bool RemoteCertValidationCallback(string host, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
     internal delegate X509Certificate LocalCertSelectionCallback(string targetHost, X509CertificateCollection localCertificates, X509Certificate2 remoteCertificate, string[] acceptableIssuers);
-    internal delegate X509Certificate ServerCertCallback(string hostName);
+    internal delegate X509Certificate ServerCertSelectionCallback(string hostName);
 
     public class SslStream : AuthenticatedStream
     {
@@ -150,10 +150,26 @@ namespace System.Net.Security
             return _userServerCertificateSelectionCallback(this, targetHost);
         }
 
-        private void SetServerCertificateSelectionCallbackWrapper(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        private SslAuthenticationOptions CreateAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
+            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null)
+            {
+                throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
+            }
+
+            if (sslServerAuthenticationOptions.ServerCertificate != null && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
+            }
+
+            var authOptions = new SslAuthenticationOptions(sslServerAuthenticationOptions);
+
             _userServerCertificateSelectionCallback = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
-            sslServerAuthenticationOptions._serverCertDelegate = _userServerCertificateSelectionCallback == null ? null : new ServerCertCallback(ServerCertSelectionCallbackWrapper);
+            authOptions.ServerCertSelectionDelegate = _userServerCertificateSelectionCallback == null ? null : new ServerCertSelectionCallback(ServerCertSelectionCallbackWrapper);
+
+            authOptions.CertValidationDelegate = _certValidationDelegate;
+
+            return authOptions;
         }
 
         //
@@ -244,12 +260,7 @@ namespace System.Net.Security
             SecurityProtocol.ThrowOnNotAllowed(sslServerAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
-            // Set the delegate on the options.
-            sslServerAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
-
-            SetServerCertificateSelectionCallbackWrapper(sslServerAuthenticationOptions);
-
-            _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
+            _sslState.ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
             LazyAsyncResult result = new LazyAsyncResult(_sslState, asyncState, asyncCallback);
             _sslState.ProcessAuthentication(result);
@@ -348,10 +359,7 @@ namespace System.Net.Security
             SecurityProtocol.ThrowOnNotAllowed(sslServerAuthenticationOptions.EnabledSslProtocols);
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
-            // Set the delegate on the options.
-            sslServerAuthenticationOptions._certValidationDelegate = _certValidationDelegate;
-
-            _sslState.ValidateCreateContext(sslServerAuthenticationOptions);
+            _sslState.ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
             _sslState.ProcessAuthentication(null);
         }
         #endregion
