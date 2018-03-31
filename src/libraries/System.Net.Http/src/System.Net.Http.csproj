@@ -152,6 +152,9 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RawConnectionStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\RedirectHandler.cs" />
+    <Compile Include="$(CommonPath)\System\Collections\Concurrent\ConcurrentQueue_Segment.cs">
+      <Link>Common\System\Collections\Concurrent\ConcurrentQueue_Segment.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\NTAuthentication.Common.cs">
       <Link>Common\System\Net\NTAuthentication.Common.cs</Link>
     </Compile>
