@@ -55,15 +55,18 @@ namespace System.Net.Security.Tests
             await ClientAsyncSslHelper(protocol, protocol);
         }
 
-        [Theory]
-        [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
-        [ActiveIssue(16534, TestPlatforms.Windows)]
-        public async Task ClientAsyncAuthenticate_EachClientUnsupportedProtocol_Fail(SslProtocols protocol)
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task ClientAsyncAuthenticate_Ssl2WithSelf_Success()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(() =>
+            // Test Ssl2 against itself.  This is a standalone test as even on versions where Windows supports Ssl2,
+            // it appears to have rules around not using it when other protocols are mentioned.
+            if (!PlatformDetection.IsWindows10Version1607OrGreater)
             {
-                return ClientAsyncSslHelper(protocol, SslProtocolSupport.SupportedSslProtocols);
-            });
+#pragma warning disable 0618
+                await ClientAsyncSslHelper(SslProtocols.Ssl2, SslProtocols.Ssl2);
+#pragma warning restore 0618
+            }
         }
 
         [Theory]
@@ -74,7 +77,9 @@ namespace System.Net.Security.Tests
             SslProtocols clientProtocol,
             Type expectedException)
         {
-            await Assert.ThrowsAsync(expectedException, () => ClientAsyncSslHelper(serverProtocol, clientProtocol));
+            Exception e = await Record.ExceptionAsync(() => ClientAsyncSslHelper(serverProtocol, clientProtocol));
+            Assert.NotNull(e);
+            Assert.IsAssignableFrom(expectedException, e);
         }
 
         [Fact]
@@ -84,18 +89,6 @@ namespace System.Net.Security.Tests
             await ClientAsyncSslHelper(
                 SslProtocolSupport.SupportedSslProtocols,
                 SslProtocolSupport.SupportedSslProtocols);
-        }
-
-        [Fact]
-        [ActiveIssue(16534, TestPlatforms.Windows)]
-        public async Task ClientAsyncAuthenticate_UnsupportedAllClient_Fail()
-        {
-            await Assert.ThrowsAsync<NotSupportedException>(() =>
-            {
-                return ClientAsyncSslHelper(
-                    SslProtocolSupport.UnsupportedSslProtocols,
-                    SslProtocolSupport.SupportedSslProtocols);
-            });
         }
 
         [Theory]
@@ -120,6 +113,11 @@ namespace System.Net.Security.Tests
 
         private static IEnumerable<object[]> ProtocolMismatchData()
         {
+#pragma warning disable 0618
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };
+            yield return new object[] { SslProtocols.Ssl2, SslProtocols.Tls12, typeof(Exception) };
+            yield return new object[] { SslProtocols.Ssl3, SslProtocols.Tls12, typeof(Exception) };
+#pragma warning restore 0618
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls11, typeof(IOException) };
             yield return new object[] { SslProtocols.Tls, SslProtocols.Tls12, typeof(IOException) };
             yield return new object[] { SslProtocols.Tls11, SslProtocols.Tls, typeof(AuthenticationException) };

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Security;
 using System.Net.Test.Common;
@@ -68,31 +69,35 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
-        [Theory]
-        [InlineData(~SslProtocols.None)]
-#pragma warning disable 0618 // obsolete warning
-        [InlineData(SslProtocols.Ssl2)]
-        [InlineData(SslProtocols.Ssl3)]
-        [InlineData(SslProtocols.Ssl2 | SslProtocols.Ssl3)]
-        [InlineData(SslProtocols.Ssl2 | SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
-#pragma warning restore 0618
-        public void DisabledProtocols_SetSslProtocols_ThrowsException(SslProtocols disabledProtocols)
+
+        public static IEnumerable<object[]> GetAsync_AllowedSSLVersion_Succeeds_MemberData()
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            // These protocols are all enabled by default, so we can connect with them both when
+            // explicitly specifying it in the client and when not.
+            foreach (SslProtocols protocol in new[] { SslProtocols.Tls, SslProtocols.Tls11, SslProtocols.Tls12 })
             {
-                Assert.Throws<NotSupportedException>(() => handler.SslProtocols = disabledProtocols);
+                yield return new object[] { protocol, false };
+                yield return new object[] { protocol, true };
             }
+
+            // These protocols are disabled by default, so we can only connect with them explicitly
+#pragma warning disable 0618
+            if (PlatformDetection.IsWindows ||
+                PlatformDetection.IsOSX ||
+                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian))
+            {
+                yield return new object[] { SslProtocols.Ssl3, true };
+            }
+            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater)
+            {
+                yield return new object[] { SslProtocols.Ssl2, true };
+            }
+#pragma warning restore 0618
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(SslProtocols.Tls, false)]
-        [InlineData(SslProtocols.Tls, true)]
-        [InlineData(SslProtocols.Tls11, false)]
-        [InlineData(SslProtocols.Tls11, true)]
-        [InlineData(SslProtocols.Tls12, false)]
-        [InlineData(SslProtocols.Tls12, true)]
+        [MemberData(nameof(GetAsync_AllowedSSLVersion_Succeeds_MemberData))]
         public async Task GetAsync_AllowedSSLVersion_Succeeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
             if (!BackendSupportsSslConfiguration)
@@ -125,17 +130,23 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static readonly object[][] SupportedSSLVersionServers =
+        public static IEnumerable<object[]> SupportedSSLVersionServers()
         {
-            new object[] {SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer},
-            new object[] {SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer},
-            new object[] {SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer},
-        };
+#pragma warning disable 0618 // SSL2/3 are deprecated
+            if (PlatformDetection.IsWindows ||
+                PlatformDetection.IsOSX ||
+                (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && PlatformDetection.OpenSslVersion < new Version(1, 0, 2) && !PlatformDetection.IsDebian))
+            {
+                yield return new object[] { SslProtocols.Ssl3, Configuration.Http.SSLv3RemoteServer };
+            }
+#pragma warning restore 0618
+            yield return new object[] { SslProtocols.Tls, Configuration.Http.TLSv10RemoteServer };
+            yield return new object[] { SslProtocols.Tls11, Configuration.Http.TLSv11RemoteServer };
+            yield return new object[] { SslProtocols.Tls12, Configuration.Http.TLSv12RemoteServer };
+        }
 
-        // This test is logically the same as the above test, albeit using remote servers
-        // instead of local ones.  We're keeping it for now (as outerloop) because it helps
-        // to validate against another SSL implementation that what we mean by a particular
-        // TLS version matches that other implementation.
+        // We have tests that validate with SslStream, but that's limited by what the current OS supports.
+        // This tests provides additional validation against an external server.
         [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
         [Theory]
         [MemberData(nameof(SupportedSSLVersionServers))]
@@ -149,12 +160,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
             {
-                if (PlatformDetection.IsRedHatFamily7)
-                {
-                    // Default protocol selection is always TLSv1 on Centos7 libcurl 7.29.0
-                    // Hence, set the specific protocol on HttpClient that is required by test
-                    handler.SslProtocols = sslProtocols;
-                }
+                handler.SslProtocols = sslProtocols;
                 using (var client = new HttpClient(handler))
                 {
                     (await RemoteServerQuery.Run(() => client.GetAsync(url), remoteServerExceptionWrapper, url)).Dispose();
@@ -177,35 +183,27 @@ namespace System.Net.Http.Functional.Tests
             }
         };
 
-        public static readonly object[][] NotSupportedSSLVersionServers =
+        public static IEnumerable<object[]> NotSupportedSSLVersionServers()
         {
-            new object[] {"SSLv2", Configuration.Http.SSLv2RemoteServer},
-            new object[] {"SSLv3", Configuration.Http.SSLv3RemoteServer},
-        };
+#pragma warning disable 0618
+            if (PlatformDetection.IsWindows10Version1607OrGreater)
+            {
+                yield return new object[] { SslProtocols.Ssl2, Configuration.Http.SSLv2RemoteServer };
+            }
+#pragma warning restore 0618
+        }
 
-        // It would be easy to remove the dependency on these remote servers if we didn't
-        // explicitly disallow creating SslStream with SSLv2/3.  Since we explicitly throw
-        // when trying to use such an SslStream, we can't stand up a localhost server that
-        // only speaks those protocols.
+        // We have tests that validate with SslStream, but that's limited by what the current OS supports.
+        // This tests provides additional validation against an external server.
         [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
         [Theory]
         [MemberData(nameof(NotSupportedSSLVersionServers))]
-        public async Task GetAsync_UnsupportedSSLVersion_Throws(string name, string url)
+        public async Task GetAsync_UnsupportedSSLVersion_Throws(SslProtocols sslProtocols, string url)
         {
-            if (!SSLv3DisabledByDefault)
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = new HttpClient(handler))
             {
-                return;
-            }
-
-            if (UseSocketsHttpHandler && !PlatformDetection.IsWindows10Version1607OrGreater)
-            {
-                // On Windows, https://github.com/dotnet/corefx/issues/21925#issuecomment-313408314
-                // On Linux, an older version of OpenSSL may permit negotiating SSLv3.
-                return;
-            }
-
-            using (HttpClient client = CreateHttpClient())
-            {
+                handler.SslProtocols = sslProtocols;
                 await Assert.ThrowsAsync<HttpRequestException>(() => RemoteServerQuery.Run(() => client.GetAsync(url), remoteServerExceptionWrapper, url));
             }
         }
@@ -240,6 +238,10 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
+#pragma warning disable 0618 // SSL2/3 are deprecated
+        [InlineData(SslProtocols.Ssl2, SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Ssl3, SslProtocols.Tls12)]
+#pragma warning restore 0618
         [InlineData(SslProtocols.Tls11, SslProtocols.Tls)]
         [InlineData(SslProtocols.Tls12, SslProtocols.Tls11)]
         [InlineData(SslProtocols.Tls, SslProtocols.Tls12)]

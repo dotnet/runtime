@@ -45,37 +45,56 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls12, null)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, null)]
         [InlineData(null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
+#pragma warning disable 0618
+        [InlineData(SslProtocols.Default, null)]
+        [InlineData(null, SslProtocols.Default)]
+#pragma warning restore 0618
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
-            const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
-
-            X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
-            string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
-            var clientCertificates = new X509CertificateCollection();
-            clientCertificates.Add(Configuration.Certificates.GetClientCertificate());
-
-            var tasks = new Task[2];
-            tasks[0] = AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols);
-            tasks[1] = AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols);
-
-            try
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(tasks);
-                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
+                string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                var clientCertificates = new X509CertificateCollection() { clientCertificate };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
+                    AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols));
+                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10 &&
+#pragma warning disable 0618
+                    clientProtocols.GetValueOrDefault() != SslProtocols.Default &&
+                    serverProtocols.GetValueOrDefault() != SslProtocols.Default)
+#pragma warning restore 0618
                 {
                     Assert.True(
                         (_clientStream.SslProtocol == SslProtocols.Tls11 && _clientStream.HashAlgorithm == HashAlgorithmType.Sha1) ||
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
-                        _clientStream.HashAlgorithm == HashAlgorithmType.Sha512);
+                        _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,
+                        _clientStream.SslProtocol + " " + _clientStream.HashAlgorithm);
                 }
             }
-            catch (HttpRequestException e) when (e.InnerException?.GetType().Name == "WinHttpException" &&
-                e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
-                !PlatformDetection.IsWindows10Version1607OrGreater)
+        }
+
+        [ConditionalTheory(nameof(IsNotWindows7))]
+#pragma warning disable 0618
+        [InlineData(null, SslProtocols.Ssl2)]
+        [InlineData(SslProtocols.None, SslProtocols.Ssl2)]
+        [InlineData(SslProtocols.Ssl2, null)]
+        [InlineData(SslProtocols.Ssl2, SslProtocols.None)]
+#pragma warning restore 0618
+        public async Task ClientAndServer_OneUsesDefault_OtherUsesLowerProtocol_Fails(
+            SslProtocols? clientProtocols, SslProtocols? serverProtocols)
+        {
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
-                // Testing on old Windows versions can hit https://github.com/dotnet/corefx/issues/7812
-                // Ignore SEC_E_BUFFER_TOO_SMALL error on such cases.
+                string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                var clientCertificates = new X509CertificateCollection() { clientCertificate };
+
+                await Assert.ThrowsAnyAsync<Exception>(() => TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols),
+                    AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols)));
             }
         }
 
