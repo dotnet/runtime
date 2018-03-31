@@ -1624,15 +1624,15 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void Process_StartTest()
         {
-            string currentProcessName = GetCurrentProcessName();
+            string name = "xcopy.exe";
             string userName = string.Empty;
             string domain = "thisDomain";
             SecureString password = AsSecureString("Value");
 
-            using (Process p = Process.Start(currentProcessName, userName, password, domain)) // This writes junk to the Console but with this overload, we can't prevent that.
+            using (Process p = Process.Start(name, userName, password, domain)) // This writes junk to the Console but with this overload, we can't prevent that.
             {
                 Assert.NotNull(p);
-                Assert.Equal(currentProcessName, p.StartInfo.FileName);
+                Assert.Equal(name, p.StartInfo.FileName);
                 Assert.Equal(userName, p.StartInfo.UserName);
                 Assert.Same(password, p.StartInfo.Password);
                 Assert.Equal(domain, p.StartInfo.Domain);
