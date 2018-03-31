@@ -25,7 +25,7 @@ namespace System.Net.Security
         {
         }
 
-        internal void ValidateCreateContext(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+        internal void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
         }
 
