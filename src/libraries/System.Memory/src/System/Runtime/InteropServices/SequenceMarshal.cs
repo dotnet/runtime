@@ -37,9 +37,9 @@ namespace System.Runtime.InteropServices
         /// Get <see cref="MemoryManager{T}"/> from the underlying <see cref="ReadOnlySequence{T}"/>.
         /// If unable to get the <see cref="MemoryManager{T}"/>, return false.
         /// </summary>
-        public static bool TryGetMemoryManager<T>(ReadOnlySequence<T> sequence, out MemoryManager<T> nanager, out int start, out int length)
+        public static bool TryGetMemoryManager<T>(ReadOnlySequence<T> sequence, out MemoryManager<T> manager, out int start, out int length)
         {
-            return sequence.TryGetMemoryManager(out nanager, out start, out length);
+            return sequence.TryGetMemoryManager(out manager, out start, out length);
         }
 
         /// <summary>
