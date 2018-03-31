@@ -255,13 +255,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     return 0x321;
 }
 
-#ifdef _TARGET_X86_
-BOOL Runtime_Test_For_SSE2()
-{
-    return TRUE;
-}
-#endif
-
 #ifdef _TARGET_AMD64_
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator /* = NULL */, bool throwOnOutOfMemoryWithinRange /*= true*/)

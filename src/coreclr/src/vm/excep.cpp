@@ -126,7 +126,6 @@ BOOL __stdcall IsExceptionFromManagedCodeCallback(EXCEPTION_RECORD * pExceptionR
         SO_TOLERANT;
         SUPPORTS_DAC;
         PRECONDITION(CheckPointer(pExceptionRecord));
-        PRECONDITION(!RunningOnWin7());
     } CONTRACTL_END;
 
     // If we can't enter the EE, done.
@@ -4083,49 +4082,6 @@ void DisableOSWatson(void)
     LOG((LF_EH, LL_INFO100, "DisableOSWatson: SetErrorMode = 0x%x\n", lastErrorMode | SEM_NOGPFAULTERRORBOX));
 
 }
-
-
-//----------------------------------------------------------------------------
-//
-// RaiseFailFastExceptionOnWin7 - invoke RaiseFailFastException on Win7
-//
-// Arguments:
-//    pExceptionRecord - pointer to exception record
-//    pContext - pointer to exception context
-//
-// Return Value:
-//    None
-//
-// Note:
-//    RaiseFailFastException will not return unless a debugger is attached
-//    and the user chooses to keep going.
-//
-//----------------------------------------------------------------------------
-void RaiseFailFastExceptionOnWin7(PEXCEPTION_RECORD pExceptionRecord, PCONTEXT pContext)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(RunningOnWin7());
-
-#ifndef FEATURE_CORESYSTEM
-    typedef void (WINAPI * RaiseFailFastExceptionFnPtr)(PEXCEPTION_RECORD, PCONTEXT, DWORD);
-    RaiseFailFastExceptionFnPtr RaiseFailFastException;
-
-    HINSTANCE hKernel32 = WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
-    if (hKernel32 == NULL)
-        return;
-
-    RaiseFailFastException = (RaiseFailFastExceptionFnPtr)GetProcAddress(hKernel32, "RaiseFailFastException");
-    if (RaiseFailFastException == NULL)
-        return;
-#endif
-
-    // enable preemptive mode before call into OS to allow runtime suspend to finish
-    GCX_PREEMP();
-
-    STRESS_LOG0(LF_CORDB,LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
-    RaiseFailFastException(pExceptionRecord, pContext, 0);
-    STRESS_LOG0(LF_CORDB,LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
-}
 #endif // !FEATURE_PAL
 
 //------------------------------------------------------------------------------
@@ -4196,133 +4152,83 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         LOG((LF_EH, LL_INFO10, "WatsonLastChance: Debugger not attached at sp %p ...\n", GetCurrentSP()));
 
 #ifndef FEATURE_PAL
-        BOOL bRunDoFaultReport = TRUE;
         FaultReportResult result = FaultReportResultQuit;
 
-        if (RunningOnWin7())
+        BOOL fSOException = FALSE;
+
+        if ((pExceptionInfo != NULL) &&
+            (pExceptionInfo->ExceptionRecord != NULL) &&
+            (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW))
         {
-            BOOL fSOException = FALSE;
+            fSOException = TRUE;
+        }
 
-            if ((pExceptionInfo != NULL) &&
-                (pExceptionInfo->ExceptionRecord != NULL) &&
-                (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW))
-            {
-                fSOException = TRUE;
-            }
+        if (g_pDebugInterface)
+        {
+            // we are about to let the OS trigger jit attach, however we need to synchronize with our
+            // own jit attach that we might be doing on another thread
+            // PreJitAttach races this thread against any others which might be attaching and if some other
+            // thread is doing it then we wait for its attach to complete first
+            g_pDebugInterface->PreJitAttach(TRUE, FALSE, FALSE);
+        }
 
-            if (g_pDebugInterface)
-            {
-                // we are about to let the OS trigger jit attach, however we need to synchronize with our
-                // own jit attach that we might be doing on another thread
-                // PreJitAttach races this thread against any others which might be attaching and if some other
-                // thread is doing it then we wait for its attach to complete first
-                g_pDebugInterface->PreJitAttach(TRUE, FALSE, FALSE);
-            }
-
-            // Let unhandled excpetions except stack overflow go to the OS
-            if (tore.IsUnhandledException() && !fSOException)
-            {
-                return EXCEPTION_CONTINUE_SEARCH;
-            }
-            else if (tore.IsUserBreakpoint())
-            {
-                DoReportFault(pExceptionInfo);
-            }
-            else
-            {
-                BOOL fWatsonAlreadyLaunched = FALSE;
-                if (FastInterlockCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
-                {
-                    fWatsonAlreadyLaunched = TRUE;
-                }
-
-                // Logic to avoid double prompt if more than one threads calling into WatsonLastChance
-                if (!fWatsonAlreadyLaunched)
-                {
-                    // EEPolicy::HandleFatalStackOverflow pushes a FaultingExceptionFrame on the stack after SO
-                    // exception.   Our hijack code runs in the exception context, and overwrites the stack space
-                    // after SO excpetion, so we need to pop up this frame before invoking RaiseFailFast.
-                    // This cumbersome code should be removed once SO synchronization is moved to be completely
-                    // out-of-process.
-                    if (fSOException && pThread && pThread->GetFrame() != FRAME_TOP)
-                    {
-                        GCX_COOP();     // Must be cooperative to modify frame chain.
-                        pThread->GetFrame()->Pop(pThread);
-                    }
-
-                    LOG((LF_EH, LL_INFO10, "D::WLC: Call RaiseFailFastExceptionOnWin7\n"));
-                    RaiseFailFastExceptionOnWin7(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord,
-                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord);
-                    STRESS_LOG0(LF_CORDB,LL_INFO10, "D::WLC: Return from RaiseFailFastExceptionOnWin7\n");
-                }
-            }
-
-            if (g_pDebugInterface)
-            {
-                // if execution resumed here then we may or may not be attached
-                // either way we need to end the attach process and unblock any other
-                // threads which were waiting for the attach here to complete
-                g_pDebugInterface->PostJitAttach();
-            }
-
-
-            if (IsDebuggerPresent())
-            {
-                result = FaultReportResultDebug;
-                jitAttachRequested = FALSE;
-            }
+        // Let unhandled excpetions except stack overflow go to the OS
+        if (tore.IsUnhandledException() && !fSOException)
+        {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
+        else if (tore.IsUserBreakpoint())
+        {
+            DoReportFault(pExceptionInfo);
         }
         else
         {
-            // If we've got a fatal error but Watson isn't enabled, then fall back to old-style non-managed-aware
-            // error reporting using faultrep to try and ensure we get an error report about this fatal error.
-            if (!IsWatsonEnabled() && tore.IsFatalError() && (pExceptionInfo != NULL))
+            BOOL fWatsonAlreadyLaunched = FALSE;
+            if (FastInterlockCompareExchange(&g_watsonAlreadyLaunched, 1, 0) != 0)
             {
-                EFaultRepRetVal r = DoReportFault(pExceptionInfo);
-                if (r != frrvErr && r != frrvErrNoDW && r != frrvErrTimeout)
+                fWatsonAlreadyLaunched = TRUE;
+            }
+
+            // Logic to avoid double prompt if more than one threads calling into WatsonLastChance
+            if (!fWatsonAlreadyLaunched)
+            {
+                // EEPolicy::HandleFatalStackOverflow pushes a FaultingExceptionFrame on the stack after SO
+                // exception.   Our hijack code runs in the exception context, and overwrites the stack space
+                // after SO excpetion, so we need to pop up this frame before invoking RaiseFailFast.
+                // This cumbersome code should be removed once SO synchronization is moved to be completely
+                // out-of-process.
+                if (fSOException && pThread && pThread->GetFrame() != FRAME_TOP)
                 {
-                    // Once native Watson is sucessfully launched, we should not try to launch
-                    // our fake Watson dailog box.
-                    bRunDoFaultReport = FALSE;
+                    GCX_COOP();     // Must be cooperative to modify frame chain.
+                    pThread->GetFrame()->Pop(pThread);
                 }
-            }
 
-            if (bRunDoFaultReport)
-            {
-                // http://devdiv/sites/docs/NetFX4/CLR/Specs/Developer%20Services/Error%20Reporting/WER%20SxS%20DCR.doc
-                //
-                // Watson SxS support for Desktop CLR
-                //
-                // For an unhandled exception thrown from native code, the first runtime that encounters the
-                // unhandled native exception will report Watson if it is allowed by Watson SxS manager to do
-                // Watson.  If more than one runtimes attempt to report Watson concurrently, only one runtims
-                // will be bestowed to report Watson.  The result is that at most one Watson report will be
-                // submitted for a process.
-                //
-                // To coordinate Watson reporting among runtimes in a process, Watson SxS manager, which is part
-                // of the shim, will provide a new set of APIs, and keeps a status of whether a Watson report
-                // has been submitted for a process.
-                //
-                // Each runtime registers an exception claiming callack with Watson SxS manager at startup.
-                // Watson SxS manager provide an exception claiming API, which iterators through registerd
-                // exception claiming callbacks to determine if an exception is thrown by one of registered
-                // runtimes.
-                //
-                // Before a runtime goes to process Watson for an unhandled exception, it first asks Waston SxS
-                // manager if a Watson report has already been submitted for the current process.  If so, it
-                // will not try to do Watson.   If not, it checks if the unhandled exception is thrown by itself.
-                // If true, it will report Watson only when Watson SxS manager allows it to do Watson.
-                //
-                // If the unhandled exception is not thrown by itself, it will invoke Watson SxS manager's exception
-                // claiming API to determine if the unhandled exception was thrown by another runtime which is
-                // responsible for reporting Watson.  If true, it will not try to do Watson.  If none of runtimes
-                // in the process claims the ownership of the unhandled exception, it will report Watson only when
-                // Watson SxS manager allows it to do Watson.
-                result = DoFaultReport(pExceptionInfo, tore);
+                LOG((LF_EH, LL_INFO10, "D::WLC: Call RaiseFailFastExceptionOnWin7\n"));
 
-                //  Set the event to indicate that Watson processing is completed.  Other threads can continue.
-                UnsafeSetEvent(g_hWatsonCompletionEvent);
+                // enable preemptive mode before call into OS to allow runtime suspend to finish
+                GCX_PREEMP();
+
+                STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
+                RaiseFailFastException(pExceptionInfo == NULL ? NULL : pExceptionInfo->ExceptionRecord, 
+                                        pExceptionInfo == NULL ? NULL : pExceptionInfo->ContextRecord,
+                                        0);
+                STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: Return from RaiseFailFastException\n");
             }
+        }
+
+        if (g_pDebugInterface)
+        {
+            // if execution resumed here then we may or may not be attached
+            // either way we need to end the attach process and unblock any other
+            // threads which were waiting for the attach here to complete
+            g_pDebugInterface->PostJitAttach();
+        }
+
+
+        if (IsDebuggerPresent())
+        {
+            result = FaultReportResultDebug;
+            jitAttachRequested = FALSE;
         }
 
         switch(result)
