@@ -209,16 +209,21 @@ namespace System.Net.Http
                     return;
                 }
 
-                // We explicitly disallow choosing SSL2/3. Make sure they were filtered out.
-                Debug.Assert((protocols & ~SecurityProtocol.AllowedSecurityProtocols) == 0, 
-                    "Disallowed protocols should have been filtered out.");
-
                 // libcurl supports options for either enabling all of the TLS1.* protocols or enabling 
-                // just one of them; it doesn't currently support enabling two of the three, e.g. you can't 
+                // just one protocol; it doesn't currently support enabling two of the three, e.g. you can't 
                 // pick TLS1.1 and TLS1.2 but not TLS1.0, but you can select just TLS1.2.
                 Interop.Http.CurlSslVersion curlSslVersion;
                 switch (protocols)
                 {
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                    case SslProtocols.Ssl2:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_SSLv2;
+                        break;
+                    case SslProtocols.Ssl3:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_SSLv3;
+                        break;
+#pragma warning restore 0618
+
                     case SslProtocols.Tls:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_0;
                         break;

@@ -308,7 +308,6 @@ namespace System.Net.Http
             get { return _sslProtocols; }
             set
             {
-                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
                 CheckDisposedOrStarted();
                 _sslProtocols = value;
             }

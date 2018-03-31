@@ -80,13 +80,8 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
     {
         protocolOptions |= SSL_OP_NO_SSLv2;
     }
-#ifndef OPENSSL_NO_SSL3
     if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
-#endif
     {
-        // If OPENSSL_NO_SSL3 is defined, then ensure we always include
-        // SSL_OP_NO_SSLv3 in case we end up running against a binary
-        // which had SSLv3 enabled (we don't want to use SSLv3 in that case).
         protocolOptions |= SSL_OP_NO_SSLv3;
     }
     if ((protocols & PAL_SSL_TLS) != PAL_SSL_TLS)

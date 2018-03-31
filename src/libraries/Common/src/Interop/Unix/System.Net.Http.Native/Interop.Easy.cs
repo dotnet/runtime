@@ -161,6 +161,8 @@ internal static partial class Interop
         internal enum CurlSslVersion
         {
             CURL_SSLVERSION_TLSv1 = 1,   /* TLS 1.x */
+            CURL_SSLVERSION_SSLv2 = 2,   /* SSL 2 */
+            CURL_SSLVERSION_SSLv3 = 3,   /* SSL 3 */
             CURL_SSLVERSION_TLSv1_0 = 4, /* TLS 1.0 */
             CURL_SSLVERSION_TLSv1_1 = 5, /* TLS 1.1 */
             CURL_SSLVERSION_TLSv1_2 = 6, /* TLS 1.2 */
