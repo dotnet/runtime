@@ -326,7 +326,7 @@ typedef struct ucontext {
 #endif
 
 #if defined(__linux__)
-	typedef struct ucontext os_ucontext;
+	typedef ucontext_t os_ucontext;
 
 #ifdef __mono_ppc64__
 	#define UCONTEXT_REG_Rn(ctx, n)   (((os_ucontext*)(ctx))->uc_mcontext.gp_regs [(n)])
