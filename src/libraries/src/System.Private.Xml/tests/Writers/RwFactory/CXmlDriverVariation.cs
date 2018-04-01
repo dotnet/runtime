@@ -58,8 +58,7 @@ namespace System.Xml.Tests
                 res = (tagVARIATION_STATUS)HandleException(e);
             }
             catch (Exception e)
-            {
-                Console.WriteLine(e);
+            {                
                 res = (tagVARIATION_STATUS)HandleException(e);
             }
 
