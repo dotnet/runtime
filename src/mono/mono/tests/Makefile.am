@@ -1182,8 +1182,7 @@ CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe \
 	monitor-abort.exe \
 	monitor-wait-abort.exe \
-	process-stress-3.exe \
-	bug-80307.exe
+	process-stress-3.exe
 
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
 LLVM_DISABLED_TESTS = \
