@@ -26,6 +26,11 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void ConstructorTest()
         {
+            const int SmallStackSize = 64 << 10; // 64 KB, currently accepted in all supported platforms, and is the PAL minimum
+            const int LargeStackSize = 2 << 20; // 2 MB, see https://github.com/dotnet/coreclr/issues/17170
+
+            int pageSizeBytes = Environment.SystemPageSize;
+
             Action<Thread> startThreadAndJoin =
                 t =>
                 {
@@ -38,22 +43,25 @@ namespace System.Threading.Threads.Tests
                 {
                     // Try to stack-allocate an array to verify that close to the expected amount of stack space is actually
                     // available
-                    int bufferSizeBytes = Math.Max(16 << 10, stackSizeBytes - (64 << 10));
+                    int bufferSizeBytes = Math.Max(16 << 10, stackSizeBytes - SmallStackSize);
                     unsafe
                     {
                         byte* buffer = stackalloc byte[bufferSizeBytes];
-                        Volatile.Write(ref buffer[0], 0xff);
+                        for (int i = 0; i < bufferSizeBytes; i += pageSizeBytes)
+                        {
+                            Volatile.Write(ref buffer[i], 0xff);
+                        }
                         Volatile.Write(ref buffer[bufferSizeBytes - 1], 0xff);
                     }
                 };
             startThreadAndJoin(new Thread(() => verifyStackSize(0)));
             startThreadAndJoin(new Thread(() => verifyStackSize(0), 0));
-            startThreadAndJoin(new Thread(() => verifyStackSize(64 << 10), 64 << 10)); // 64 KB
-            startThreadAndJoin(new Thread(() => verifyStackSize(16 << 20), 16 << 20)); // 16 MB
+            startThreadAndJoin(new Thread(() => verifyStackSize(SmallStackSize), SmallStackSize));
+            startThreadAndJoin(new Thread(() => verifyStackSize(LargeStackSize), LargeStackSize));
             startThreadAndJoin(new Thread(state => verifyStackSize(0)));
             startThreadAndJoin(new Thread(state => verifyStackSize(0), 0));
-            startThreadAndJoin(new Thread(state => verifyStackSize(64 << 10), 64 << 10)); // 64 KB
-            startThreadAndJoin(new Thread(state => verifyStackSize(16 << 20), 16 << 20)); // 16 MB
+            startThreadAndJoin(new Thread(state => verifyStackSize(SmallStackSize), SmallStackSize));
+            startThreadAndJoin(new Thread(state => verifyStackSize(LargeStackSize), LargeStackSize));
 
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null));
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null, 0));
