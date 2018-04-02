@@ -64,7 +64,7 @@ namespace System.Net.Http
                             string challengeResponse = authContext.GetOutgoingBlob(challengeData);
                             if (challengeResponse == null)
                             {
-                                // Server sent something invalid, so stop processing and return current response.
+                                // Response indicated denial even after login, so stop processing and return current response.
                                 break;
                             }
 
