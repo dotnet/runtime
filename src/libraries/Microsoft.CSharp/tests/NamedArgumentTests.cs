@@ -366,33 +366,37 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestSimple()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, int, int>> callsite = CallSite<Action<CallSite, Type, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C1),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "a"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            callsite.Target(callsite, typeof(C1), 1, 2);
-            callsite = CallSite<Action<CallSite, Type, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C1),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "a")
-                    }));
-            callsite.Target(callsite, typeof(C1), 3, 4);
-            Assert.Equal("First 1 2. Second 3 4. ", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, int, int>> callsite = CallSite<Action<CallSite, Type, int, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C1),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                "a"),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                        }));
+                callsite.Target(callsite, typeof(C1), 1, 2);
+                callsite = CallSite<Action<CallSite, Type, int, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C1),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "a")
+                        }));
+                callsite.Target(callsite, typeof(C1), 3, 4);
+                Assert.Equal("First 1 2. Second 3 4. ", console.ToString());
+            });
         }
 
         class C2
@@ -406,21 +410,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestSimpleConstructor()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Func<CallSite, Type, int, int, C2>> callsite = CallSite<Func<CallSite, Type, int, int, C2>>.Create(
-                Binder.InvokeConstructor(
-                    CSharpBinderFlags.None, typeof(C2),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.IsStaticType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.NamedArgument, "a"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            callsite.Target(callsite, typeof(C2), 1, 2);
-            Assert.Equal("1 2.", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Func<CallSite, Type, int, int, C2>> callsite =
+                    CallSite<Func<CallSite, Type, int, int, C2>>.Create(
+                        Binder.InvokeConstructor(
+                            CSharpBinderFlags.None, typeof(C2),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.IsStaticType,
+                                    null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.NamedArgument,
+                                    "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                            }));
+                callsite.Target(callsite, typeof(C2), 1, 2);
+                Assert.Equal("1 2.", console.ToString());
+            });
         }
 
         class C3
@@ -446,18 +454,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             // This test differs from its static equivalent considerably, as some event-related matters aren't as directly
             // applicable. We can use it for checking both direct and deferred delegate invocation.
 
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            C3 targetObject = new C3();
-            CallSite<Func<CallSite, object, object>> getCallSite = CallSite<Func<CallSite, object, object>>.Create(
-                Binder.GetMember(
-                    CSharpBinderFlags.None, "e", typeof(C3),
-                    new[] {CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)}));
-            object dele = getCallSite.Target(getCallSite, targetObject);
-            CallSite<Action<CallSite, object, int, int>> invokeCallSite =
-                CallSite<Action<CallSite, object, int, int>>.Create(
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                C3 targetObject = new C3();
+                CallSite<Func<CallSite, object, object>> getCallSite = CallSite<Func<CallSite, object, object>>.Create(
+                    Binder.GetMember(
+                        CSharpBinderFlags.None, "e", typeof(C3),
+                        new[] {CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)}));
+                object dele = getCallSite.Target(getCallSite, targetObject);
+                CallSite<Action<CallSite, object, int, int>> invokeCallSite =
+                    CallSite<Action<CallSite, object, int, int>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "Invoke", Type.EmptyTypes, typeof(C3),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            }));
+                invokeCallSite.Target(invokeCallSite, dele, 1, 2);
+                invokeCallSite = CallSite<Action<CallSite, object, int, int>>.Create(
                     Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "Invoke", Type.EmptyTypes, typeof(C3),
+                        CSharpBinderFlags.ResultDiscarded, "e", Type.EmptyTypes, typeof(C3),
                         new[]
                         {
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
@@ -466,19 +486,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                                 "a"),
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
                         }));
-            invokeCallSite.Target(invokeCallSite, dele, 1, 2);
-            invokeCallSite = CallSite<Action<CallSite, object, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "e", Type.EmptyTypes, typeof(C3),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "a"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                    }));
-            invokeCallSite.Target(invokeCallSite, targetObject, 1, 2);
-            Assert.Equal("1 2. 1 2. ", console.ToString());
+                invokeCallSite.Target(invokeCallSite, targetObject, 1, 2);
+                Assert.Equal("1 2. 1 2. ", console.ToString());
+            });
         }
 
         class C4
@@ -497,37 +507,38 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestSimpleIndexer()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            C4 targetObject = new C4();
-            CallSite<Func<CallSite, object, int, int, object>> getCallSite =
-                CallSite<Func<CallSite, object, int, int, object>>.Create(
-                    Binder.GetIndex(
-                        CSharpBinderFlags.None, typeof(C4),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.NamedArgument,
-                                "a"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        }));
-            Assert.Equal(0, getCallSite.Target(getCallSite, targetObject, 1, 2));
-            CallSite<Func<CallSite, object, int, int, int, object>> setCallSite =
-                CallSite<Func<CallSite, object, int, int, int, object>>.Create(
-                    Binder.SetIndex(
-                        CSharpBinderFlags.None, typeof(C4),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.NamedArgument,
-                                "a"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        }));
-            Assert.Equal(5, setCallSite.Target(setCallSite, targetObject, 3, 4, 5));
-            Assert.Equal("Get 1 2. Set 3 4 5.", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                C4 targetObject = new C4();
+                CallSite<Func<CallSite, object, int, int, object>> getCallSite =
+                    CallSite<Func<CallSite, object, int, int, object>>.Create(
+                        Binder.GetIndex(
+                            CSharpBinderFlags.None, typeof(C4),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.NamedArgument,
+                                    "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            }));
+                Assert.Equal(0, getCallSite.Target(getCallSite, targetObject, 1, 2));
+                CallSite<Func<CallSite, object, int, int, int, object>> setCallSite =
+                    CallSite<Func<CallSite, object, int, int, int, object>>.Create(
+                        Binder.SetIndex(
+                            CSharpBinderFlags.None, typeof(C4),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.UseCompileTimeType | CSharpArgumentInfoFlags.NamedArgument,
+                                    "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            }));
+                Assert.Equal(5, setCallSite.Target(setCallSite, targetObject, 3, 4, 5));
+                Assert.Equal("Get 1 2. Set 3 4 5.", console.ToString());
+            });
         }
 
 
@@ -652,14 +663,32 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestGenericInference()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
+            Helpers.OverrideConsoleAndRun(console =>
+            {
 
-            // Test with types defined fully.
-            CallSite<Action<CallSite, Type, int, string>> compileTimeTypeCallSite =
-                CallSite<Action<CallSite, Type, int, string>>.Create(
+                // Test with types defined fully.
+                CallSite<Action<CallSite, Type, int, string>> compileTimeTypeCallSite =
+                    CallSite<Action<CallSite, Type, int, string>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", new[] {typeof(int), typeof(string)}, typeof(C7),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                            }));
+                compileTimeTypeCallSite.Target(compileTimeTypeCallSite, typeof(C7), 1, "hi");
+                Assert.Equal("1 hi.", console.ToString());
+
+                // Test with types defined fully in delegate but generic types deduced.
+                console.GetStringBuilder().Length = 0;
+                compileTimeTypeCallSite = CallSite<Action<CallSite, Type, int, string>>.Create(
                     Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", new[] {typeof(int), typeof(string)}, typeof(C7),
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C7),
                         new[]
                         {
                             CSharpArgumentInfo.Create(
@@ -670,39 +699,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                                 "a"),
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
                         }));
-            compileTimeTypeCallSite.Target(compileTimeTypeCallSite, typeof(C7), 1, "hi");
-            Assert.Equal("1 hi.", console.ToString());
+                compileTimeTypeCallSite.Target(compileTimeTypeCallSite, typeof(C7), 1, "hi");
+                Assert.Equal("1 hi.", console.ToString());
 
-            // Test with types defined fully in delegate but generic types deduced.
-            console.GetStringBuilder().Length = 0;
-            compileTimeTypeCallSite = CallSite<Action<CallSite, Type, int, string>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C7),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "a"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            compileTimeTypeCallSite.Target(compileTimeTypeCallSite, typeof(C7), 1, "hi");
-            Assert.Equal("1 hi.", console.ToString());
-
-            // Test with all types deduced by the dynamic binder.
-            console.GetStringBuilder().Length = 0;
-            CallSite<Action<CallSite, Type, object, object>> runtimeTypeCallSite =
-                CallSite<Action<CallSite, Type, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C7),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "a"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                        }));
-            runtimeTypeCallSite.Target(runtimeTypeCallSite, typeof(C7), 1, "hi");
-            Assert.Equal("1 hi.", console.ToString());
+                // Test with all types deduced by the dynamic binder.
+                console.GetStringBuilder().Length = 0;
+                CallSite<Action<CallSite, Type, object, object>> runtimeTypeCallSite =
+                    CallSite<Action<CallSite, Type, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C7),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                            }));
+                runtimeTypeCallSite.Target(runtimeTypeCallSite, typeof(C7), 1, "hi");
+                Assert.Equal("1 hi.", console.ToString());
+            });
         }
 
         class C8
@@ -798,41 +812,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         public void TestNamedParamsVariousForms()
         {
             // This extends the static test in also calling with no arguments for the params section.
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
+            Helpers.OverrideConsoleAndRun(console =>
+            {
 
-            CallSite<Action<CallSite, Type, int, string>> callSite0 =
-                CallSite<Action<CallSite, Type, int, string>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
-                                null),
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
-                                "x"),
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "y")
-                        }));
-            callSite0.Target(callSite0, typeof(C10), 1, "2");
+                CallSite<Action<CallSite, Type, int, string>> callSite0 =
+                    CallSite<Action<CallSite, Type, int, string>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    "x"),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    "y")
+                            }));
+                callSite0.Target(callSite0, typeof(C10), 1, "2");
 
-            callSite0 = CallSite<Action<CallSite, Type, int, string>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "x"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            callSite0.Target(callSite0, typeof(C10), 2, "3");
-
-            CallSite<Action<CallSite, Type, int, string[]>> callSite1 =
-                CallSite<Action<CallSite, Type, int, string[]>>.Create(
+                callSite0 = CallSite<Action<CallSite, Type, int, string>>.Create(
                     Binder.InvokeMember(
                         CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
                         new[]
@@ -845,55 +846,61 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                                 "x"),
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
                         }));
-            callSite1.Target(callSite1, typeof(C10), 3, new[] {"4", "5"});
+                callSite0.Target(callSite0, typeof(C10), 2, "3");
 
-            CallSite<Action<CallSite, Type, int>> callSite2 = CallSite<Action<CallSite, Type, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "x")
-                    }));
-            callSite2.Target(callSite2, typeof(C10), 4);
+                CallSite<Action<CallSite, Type, int, string[]>> callSite1 =
+                    CallSite<Action<CallSite, Type, int, string[]>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    "x"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                            }));
+                callSite1.Target(callSite1, typeof(C10), 3, new[] {"4", "5"});
 
-            Assert.Equal("1 2. 2 3. 3 4,5. 4 . ", console.ToString());
+                CallSite<Action<CallSite, Type, int>> callSite2 = CallSite<Action<CallSite, Type, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "x")
+                        }));
+                callSite2.Target(callSite2, typeof(C10), 4);
+
+                Assert.Equal("1 2. 2 3. 3 4,5. 4 . ", console.ToString());
+            });
         }
 
         [Fact]
         public void TestNamedParamsVariousFormsDynamicallyDeducedTypes()
         {
             // This extends the static test in also calling with no arguments for the params section.
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
+            Helpers.OverrideConsoleAndRun(console =>
+            {
 
-            CallSite<Action<CallSite, Type, object, object>> callSite0 =
-                CallSite<Action<CallSite, Type, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "y")
-                        }));
-            callSite0.Target(callSite0, typeof(C10), 1, "2");
+                CallSite<Action<CallSite, Type, object, object>> callSite0 =
+                    CallSite<Action<CallSite, Type, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "y")
+                            }));
+                callSite0.Target(callSite0, typeof(C10), 1, "2");
 
-            callSite0 = CallSite<Action<CallSite, Type, object, object>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                    }));
-            callSite0.Target(callSite0, typeof(C10), 2, "3");
-
-            CallSite<Action<CallSite, Type, object, object>> callSite1 =
-                CallSite<Action<CallSite, Type, object, object>>.Create(
+                callSite0 = CallSite<Action<CallSite, Type, object, object>>.Create(
                     Binder.InvokeMember(
                         CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
                         new[]
@@ -902,19 +909,32 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x"),
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
                         }));
-            callSite1.Target(callSite1, typeof(C10), 3, new[] {"4", "5"});
+                callSite0.Target(callSite0, typeof(C10), 2, "3");
 
-            CallSite<Action<CallSite, Type, object>> callSite2 = CallSite<Action<CallSite, Type, object>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x")
-                    }));
-            callSite2.Target(callSite2, typeof(C10), 4);
+                CallSite<Action<CallSite, Type, object, object>> callSite1 =
+                    CallSite<Action<CallSite, Type, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                            }));
+                callSite1.Target(callSite1, typeof(C10), 3, new[] {"4", "5"});
 
-            Assert.Equal("1 2. 2 3. 3 4,5. 4 . ", console.ToString());
+                CallSite<Action<CallSite, Type, object>> callSite2 = CallSite<Action<CallSite, Type, object>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C10),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "x")
+                        }));
+                callSite2.Target(callSite2, typeof(C10), 4);
+
+                Assert.Equal("1 2. 2 3. 3 4,5. 4 . ", console.ToString());
+            });
         }
 
         [Fact]
@@ -1010,22 +1030,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestNamedParams5()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C12),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "y"),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "x")
-                    }));
-            callSite.Target(callSite, typeof(C12), 1, 2);
-            Assert.Equal("x=2 y[0]=1 y.Length=1", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C12),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                "y"),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "x")
+                        }));
+                callSite.Target(callSite, typeof(C12), 1, 2);
+                Assert.Equal("x=2 y[0]=1 y.Length=1", console.ToString());
+            });
         }
 
         class C13
@@ -1069,42 +1092,46 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestPickGoodOverload()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C14),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "c"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            callSite.Target(callSite, typeof(C14), 3, 2);
-            Assert.Equal("Second 3 2. ", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C14),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                "c"),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                        }));
+                callSite.Target(callSite, typeof(C14), 3, 2);
+                Assert.Equal("Second 3 2. ", console.ToString());
+            });
         }
 
         [Fact]
         public void TestPickGoodOverloadDynamicallyTyped()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, object, object>> callSite =
-                CallSite<Action<CallSite, Type, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C14),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "c"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                        }));
-            callSite.Target(callSite, typeof(C14), 3, 2);
-            Assert.Equal("Second 3 2. ", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, object, object>> callSite =
+                    CallSite<Action<CallSite, Type, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C14),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "c"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                            }));
+                callSite.Target(callSite, typeof(C14), 3, 2);
+                Assert.Equal("Second 3 2. ", console.ToString());
+            });
         }
 
         class C15
@@ -1121,40 +1148,44 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestPickGoodOverload2()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C15),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "c"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            callSite.Target(callSite, typeof(C15), 3, 2);
-            Assert.Equal("Second 3 2.", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C15),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                "c"),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                        }));
+                callSite.Target(callSite, typeof(C15), 3, 2);
+                Assert.Equal("Second 3 2.", console.ToString());
+            });
         }
 
         [Fact]
         public void TestPickGoodOverload2DynamicallyTyped()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, object, object>> callSite =
-                CallSite<Action<CallSite, Type, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C15),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "c"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                        }));
-            callSite.Target(callSite, typeof(C15), 3, 2);
-            Assert.Equal("Second 3 2.", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, object, object>> callSite =
+                    CallSite<Action<CallSite, Type, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C15),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "c"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                            }));
+                callSite.Target(callSite, typeof(C15), 3, 2);
+                Assert.Equal("Second 3 2.", console.ToString());
+            });
         }
 
         class C16
@@ -1168,40 +1199,44 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestOptionalValues()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
-                Binder.InvokeMember(
-                    CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C16),
-                    new[]
-                    {
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                        CSharpArgumentInfo.Create(
-                            CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType, "a"),
-                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                    }));
-            callSite.Target(callSite, typeof(C16), 1, 2);
-            Assert.Equal("42", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, int, int>> callSite = CallSite<Action<CallSite, Type, int, int>>.Create(
+                    Binder.InvokeMember(
+                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C16),
+                        new[]
+                        {
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                null),
+                            CSharpArgumentInfo.Create(
+                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                "a"),
+                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                        }));
+                callSite.Target(callSite, typeof(C16), 1, 2);
+                Assert.Equal("42", console.ToString());
+            });
         }
 
         [Fact]
         public void TestOptionalValuesRunTimeTypes()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, object, object>> callSite =
-                CallSite<Action<CallSite, Type, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C16),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "a"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                        }));
-            callSite.Target(callSite, typeof(C16), 1, 2);
-            Assert.Equal("42", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, object, object>> callSite =
+                    CallSite<Action<CallSite, Type, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C16),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "a"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                            }));
+                callSite.Target(callSite, typeof(C16), 1, 2);
+                Assert.Equal("42", console.ToString());
+            });
         }
 
         class C17
@@ -1269,47 +1304,49 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void TestParams2()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, int, int, int, int>> callSite =
-                CallSite<Action<CallSite, Type, int, int, int, int>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C18),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
-                                null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                            CSharpArgumentInfo.Create(
-                                CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
-                                "b"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
-                        }));
-            callSite.Target(callSite, typeof(C18), 1, 2, 3, 4);
-            Assert.Equal("1 2 3 4 Length:2", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, int, int, int, int>> callSite =
+                    CallSite<Action<CallSite, Type, int, int, int, int>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C18),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.IsStaticType | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                                CSharpArgumentInfo.Create(
+                                    CSharpArgumentInfoFlags.NamedArgument | CSharpArgumentInfoFlags.UseCompileTimeType,
+                                    "b"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.UseCompileTimeType, null)
+                            }));
+                callSite.Target(callSite, typeof(C18), 1, 2, 3, 4);
+                Assert.Equal("1 2 3 4 Length:2", console.ToString());
+            });
         }
 
         [Fact]
         public void TestParams2RuntimeTypes()
         {
-            StringWriter console = new StringWriter();
-            Console.SetOut(console);
-            CallSite<Action<CallSite, Type, object, object, object, object>> callSite =
-                CallSite<Action<CallSite, Type, object, object, object, object>>.Create(
-                    Binder.InvokeMember(
-                        CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C18),
-                        new[]
-                        {
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "b"),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
-                            CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
-                        }));
-            callSite.Target(callSite, typeof(C18), 1, 2, 3, 4);
-            Assert.Equal("1 2 3 4 Length:2", console.ToString());
+            Helpers.OverrideConsoleAndRun(console =>
+            {
+                CallSite<Action<CallSite, Type, object, object, object, object>> callSite =
+                    CallSite<Action<CallSite, Type, object, object, object, object>>.Create(
+                        Binder.InvokeMember(
+                            CSharpBinderFlags.ResultDiscarded, "M", Type.EmptyTypes, typeof(C18),
+                            new[]
+                            {
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.IsStaticType, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, "b"),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                            }));
+                callSite.Target(callSite, typeof(C18), 1, 2, 3, 4);
+                Assert.Equal("1 2 3 4 Length:2", console.ToString());
+            });
         }
     }
 }
