@@ -148,10 +148,15 @@ namespace System.Net.Http
         {
             Uri uri = request.RequestUri;
 
+            // If the hostname is an IPv6 address, uri.IdnHost will return the address without enclosing [].
+            // In this case, use uri.Host instead, which will correctly enclose with [].
+            // Note we don't need punycode encoding if it's an IP address, so using uri.Host is fine.
+            bool isIPv6Address = uri.HostNameType == UriHostNameType.IPv6;
+
             if (isProxyConnect)
             {
                 Debug.Assert(uri == proxyUri);
-                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, uri.IdnHost, uri.Port, null, proxyUri);
+                return new HttpConnectionKey(HttpConnectionKind.ProxyConnect, isIPv6Address ? uri.Host : uri.IdnHost, uri.Port, null, proxyUri);
             }
 
             string sslHostName = null;
@@ -177,7 +182,7 @@ namespace System.Net.Http
                     if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
                     {
                         // Non-secure websocket connection through proxy to the destination.
-                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, uri.IdnHost, uri.Port, null, proxyUri);
+                        return new HttpConnectionKey(HttpConnectionKind.ProxyTunnel, isIPv6Address ? uri.Host : uri.IdnHost, uri.Port, null, proxyUri);
                     }
                     else
                     {
@@ -190,16 +195,16 @@ namespace System.Net.Http
                 else
                 {
                     // Tunnel SSL connection through proxy to the destination.
-                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri);
+                    return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, isIPv6Address ? uri.Host : uri.IdnHost, uri.Port, sslHostName, proxyUri);
                 }
             }
             else if (sslHostName != null)
             {
-                return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null);
+                return new HttpConnectionKey(HttpConnectionKind.Https, isIPv6Address ? uri.Host : uri.IdnHost, uri.Port, sslHostName, null);
             }
             else
             {
-                return new HttpConnectionKey(HttpConnectionKind.Http, uri.IdnHost, uri.Port, null, null);
+                return new HttpConnectionKey(HttpConnectionKind.Http, isIPv6Address ? uri.Host : uri.IdnHost, uri.Port, null, null);
             }
         }
 

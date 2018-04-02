@@ -471,6 +471,67 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData("[::1234]")]
+        [InlineData("[::1234]:8080")]
+        public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host)
+        {
+            string ipv6Address = "http://" + host;
+            bool connectionAccepted = false;
+
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    handler.Proxy = new WebProxy(proxyUri);
+                    try { await client.GetAsync(ipv6Address); } catch { }
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                connectionAccepted = true;
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"Host: {host}", headers);
+            }));
+
+            Assert.True(connectionAccepted);
+        }
+
+        public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
+            from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
+            from useSsl in new[] { true, false }
+            select new object[] { address, useSsl };
+
+        [Theory]
+        [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
+        public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
+        {
+            var options = new LoopbackServer.Options { Address = address, UseSsl= useSsl };
+            bool connectionAccepted = false;
+            string host = "";
+
+            await LoopbackServer.CreateClientAndServerAsync(async url =>
+            {
+                host = $"{url.Host}:{url.Port}";
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    if (useSsl)
+                    {
+                        handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                    }
+                    try { await client.GetAsync(url); } catch { }
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                connectionAccepted = true;
+                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                Assert.Contains($"Host: {host}", headers);
+            }), options);
+
+            Assert.True(connectionAccepted);
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(CompressedServers))]
         public async Task GetAsync_SetAutomaticDecompression_HeadersRemoved(Uri server)
