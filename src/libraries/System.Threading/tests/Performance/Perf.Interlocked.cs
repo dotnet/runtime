@@ -8,7 +8,9 @@ namespace System.Threading.Tests
 {
     public class Perf_Interlocked
     {
-        [Benchmark(InnerIterationCount = 1000)]
+        private const int IterationCount = 10_000_000;
+
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void Increment_int()
         {
             int location = 0;
@@ -25,7 +27,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void Decrement_int()
         {
             int location = 0;
@@ -42,7 +44,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public void Increment_long()
         {
             long location = 0;
@@ -59,7 +61,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public void Decrement_long()
         {
             long location = 0;
@@ -76,7 +78,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public void Add_int()
         {
             int location = 0;
@@ -93,7 +95,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public void Add_long()
         {
             long location = 0;
@@ -110,7 +112,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void Exchange_int()
         {
             int location = 0;
@@ -128,7 +130,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 1000)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void Exchange_long()
         {
             long location = 0;
@@ -146,7 +148,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 500)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void CompareExchange_int()
         {
             int location = 0;
@@ -165,7 +167,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 500)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void CompareExchange_long()
         {
             long location = 0;
