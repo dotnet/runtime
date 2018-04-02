@@ -9,7 +9,9 @@ namespace System.Threading.Tests
 {
     public class Perf_Lock
     {
-        [Benchmark(InnerIterationCount = 2_000_000)]
+        private const int IterationCount = 2_000_000;
+
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void ReaderWriterLockSlimPerf()
         {
             ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
@@ -17,7 +19,7 @@ namespace System.Threading.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    for (int i = 0; i < IterationCount; i++)
                     {
                         rwLock.EnterReadLock();
                         rwLock.ExitReadLock();
