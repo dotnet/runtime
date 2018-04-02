@@ -146,7 +146,7 @@
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
   <data name="Cryptography_InvalidPadding" xml:space="preserve">
-    <value>Specified padding mode is not valid for this algorithm.</value>
+    <value>Padding is invalid and cannot be removed.</value>
   </data>
   <data name="Cryptography_InvalidProviderName" xml:space="preserve">
     <value>The provider name '{0}' is invalid.</value>
