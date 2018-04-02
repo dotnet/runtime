@@ -9,7 +9,9 @@ namespace System.Threading.Tests
 {
     public class Perf_EventWaitHandle
     {
-        [Benchmark(InnerIterationCount = 100_000)]
+        private const int IterationCount = 100_000;
+
+        [Benchmark(InnerIterationCount = IterationCount)]
         public void Set_Reset()
         {
             using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
@@ -18,7 +20,7 @@ namespace System.Threading.Tests
                 {
                     using (iteration.StartMeasurement())
                     {
-                        for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        for (int i = 0; i < IterationCount; i++)
                         {
                             are.Set();
                             are.Reset();

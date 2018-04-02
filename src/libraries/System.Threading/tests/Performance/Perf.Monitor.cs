@@ -19,7 +19,7 @@ namespace System.Threading.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    for (int i = 0; i < IterationCount; i++)
                     {
                         Monitor.Enter(sync);
                         Monitor.Exit(sync);
@@ -37,7 +37,7 @@ namespace System.Threading.Tests
             {
                 using (iteration.StartMeasurement())
                 {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    for (int i = 0; i < IterationCount; i++)
                     {
                         Monitor.TryEnter(sync, 0);
                         Monitor.Exit(sync);
