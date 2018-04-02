@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -18,7 +19,7 @@ namespace System.IO.Pipelines
         public override IMemoryOwner<byte> Rent(int minBufferSize = -1)
         {
             CheckDisposed();
-            return new PooledMemory((MemoryManager<byte>)_pool.Rent(minBufferSize), this);
+            return new PooledMemory(_pool.Rent(minBufferSize), this);
         }
 
         protected override void Dispose(bool disposing)
@@ -38,7 +39,7 @@ namespace System.IO.Pipelines
 
         private class PooledMemory : MemoryManager<byte>
         {
-            private MemoryManager<byte> _manager;
+            private IMemoryOwner<byte> _owner;
 
             private readonly TestMemoryPool _pool;
 
@@ -48,9 +49,9 @@ namespace System.IO.Pipelines
 
             private string _leaser;
 
-            public PooledMemory(MemoryManager<byte> manager, TestMemoryPool pool)
+            public PooledMemory(IMemoryOwner<byte> owner, TestMemoryPool pool)
             {
-                _manager = manager;
+                _owner = owner;
                 _pool = pool;
                 _leaser = Environment.StackTrace;
                 _referenceCount = 1;
@@ -70,13 +71,36 @@ namespace System.IO.Pipelines
             {
                 _pool.CheckDisposed();
                 Interlocked.Increment(ref _referenceCount);
-                return _manager.Pin(elementIndex);
+
+                if (!MemoryMarshal.TryGetArray(_owner.Memory, out ArraySegment<byte> segment))
+                {
+                    throw new InvalidOperationException();
+                }
+
+                unsafe
+                {
+                    try
+                    {
+                        if ((uint)elementIndex > (uint)segment.Count)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(elementIndex));
+                        }
+
+                        GCHandle handle = GCHandle.Alloc(segment.Array, GCHandleType.Pinned);
+
+                        return new MemoryHandle(Unsafe.Add<byte>(((void*)handle.AddrOfPinnedObject()), elementIndex + segment.Offset), handle, this);
+                    }
+                    catch
+                    {
+                        Unpin();
+                        throw;
+                    }
+                }
             }
 
             public override void Unpin()
             {
                 _pool.CheckDisposed();
-                _manager.Unpin();
 
                 int newRefCount = Interlocked.Decrement(ref _referenceCount);
 
@@ -92,7 +116,7 @@ namespace System.IO.Pipelines
             protected override bool TryGetArray(out ArraySegment<byte> segment)
             {
                 _pool.CheckDisposed();
-                return MemoryMarshal.TryGetArray(_manager.Memory, out segment);
+                return MemoryMarshal.TryGetArray(_owner.Memory, out segment);
             }
 
             public override int Length
@@ -100,14 +124,14 @@ namespace System.IO.Pipelines
                 get
                 {
                     _pool.CheckDisposed();
-                    return _manager.Length;
+                    return _owner.Memory.Length;
                 }
             }
 
             public override Span<byte> GetSpan()
             {
                 _pool.CheckDisposed();
-                return _manager.GetSpan();
+                return _owner.Memory.Span;
             }
         }
     }

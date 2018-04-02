@@ -48,8 +48,8 @@ namespace System.MemoryTests
                 Memory<int> memory = block.Memory;
                 Span<int> sp = memory.Span;
                 Assert.Equal(memory.Length, sp.Length);
-                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
-                using (MemoryHandle newMemoryHandle = manager.Pin())
+                Assert.True(MemoryMarshal.TryGetArray(memory, out ArraySegment<int> arraySegment));
+                using (MemoryHandle newMemoryHandle = memory.Pin())
                 {
                     unsafe
                     {
@@ -59,6 +59,7 @@ namespace System.MemoryTests
                 }
             }
         }
+
 
         [Theory]
         [InlineData(0)]
@@ -72,8 +73,8 @@ namespace System.MemoryTests
                 Memory<int> memory = block.Memory;
                 Span<int> sp = memory.Span;
                 Assert.Equal(memory.Length, sp.Length);
-                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
-                using (MemoryHandle newMemoryHandle = manager.Pin(elementIndex: elementIndex))
+                Assert.True(MemoryMarshal.TryGetArray(memory, out ArraySegment<int> segment));
+                using (MemoryHandle newMemoryHandle = memory.Slice(elementIndex).Pin())
                 {
                     unsafe
                     {
@@ -94,7 +95,7 @@ namespace System.MemoryTests
             Memory<int> memory = block.Memory;
             Span<int> sp = memory.Span;
             Assert.Equal(memory.Length, sp.Length);
-            Assert.Throws<ArgumentOutOfRangeException>(() => ((MemoryManager<int>)block).Pin(elementIndex: elementIndex));
+            Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(elementIndex).Pin());
         }
 
         [Fact]
@@ -107,8 +108,8 @@ namespace System.MemoryTests
             Assert.Equal(memory.Length, sp.Length);
 
             int elementIndex = memory.Length;
-            Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
-            using (MemoryHandle newMemoryHandle = manager.Pin(elementIndex: elementIndex))
+            Assert.True(MemoryMarshal.TryGetArray(memory, out ArraySegment<int> segment));
+            using (MemoryHandle newMemoryHandle = memory.Slice(elementIndex).Pin())
             {
                 unsafe
                 {
@@ -128,8 +129,8 @@ namespace System.MemoryTests
             Assert.Equal(memory.Length, sp.Length);
 
             int elementIndex = memory.Length + 1;
-            Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
-            Assert.Throws<ArgumentOutOfRangeException>(() => manager.Pin(elementIndex: elementIndex));
+            Assert.True(MemoryMarshal.TryGetArray(memory, out ArraySegment<int> segment));
+            Assert.Throws<ArgumentOutOfRangeException>(() => memory.Slice(elementIndex).Pin());
         }
 
         [Fact]
@@ -150,13 +151,13 @@ namespace System.MemoryTests
                 IMemoryOwner<int> newBlock = pool.Rent(minBufferSize);
                 Memory<int> memory = newBlock.Memory;
                 Assert.True(memory.Length >= minBufferSize);
-                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(newBlock.Memory, out MemoryManager<int> newManager));
+                Assert.True(MemoryMarshal.TryGetArray(newBlock.Memory, out ArraySegment<int> newArraySegment));
                 foreach (IMemoryOwner<int> prior in priorBlocks)
                 {
-                    Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(prior.Memory, out MemoryManager<int> priorManager));
-                    using (MemoryHandle priorMemoryHandle = priorManager.Pin())
+                    Assert.True(MemoryMarshal.TryGetArray(prior.Memory, out ArraySegment<int> priorArraySegment));
+                    using (MemoryHandle priorMemoryHandle = prior.Memory.Pin())
                     {
-                        using (MemoryHandle newMemoryHandle = newManager.Pin())
+                        using (MemoryHandle newMemoryHandle = newBlock.Memory.Pin())
                         {
                             unsafe
                             {
@@ -170,8 +171,7 @@ namespace System.MemoryTests
 
             foreach (IMemoryOwner<int> prior in priorBlocks)
             {
-                Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(prior.Memory, out MemoryManager<int> priorManager));
-                priorManager.Unpin();
+                Assert.True(MemoryMarshal.TryGetArray(prior.Memory, out ArraySegment<int> priorArraySegment));
                 prior.Dispose();
             }
         }
@@ -219,10 +219,10 @@ namespace System.MemoryTests
                 Assert.Equal(memory.Length, arraySegment.Count);
                 unsafe
                 {
-                    Assert.True(MemoryMarshal.TryGetMemoryManager<int, MemoryManager<int>>(memory, out MemoryManager<int> manager));
-                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(manager.GetSpan()));
+                    Assert.True(MemoryMarshal.TryGetArray(memory, out arraySegment));
                     fixed (int* pArray = arraySegment.Array)
                     {
+                        void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(memory.Span));
                         Assert.Equal((IntPtr)pSpan, (IntPtr)pArray);
                     }
                 }
@@ -233,47 +233,16 @@ namespace System.MemoryTests
         public static void ExtraDisposesAreIgnored()
         {
             IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
-            ((MemoryManager<int>)block).Unpin();
             block.Dispose();
             block.Dispose();
         }
 
-        [Fact]
-        public static void NoSpanAfterDispose()
-        {
-            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
-            ((MemoryManager<int>)block).Unpin();
-            block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => ((MemoryManager<int>)block).GetSpan().DontBox());
-        }
-
-        [Fact]
-        public static void NoPinAfterDispose()
-        {
-            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
-            ((MemoryManager<int>)block).Unpin();
-            block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => ((MemoryManager<int>)block).Pin());
-        }
-
-        [Fact]
-        public static void NoUnpin_AfterDispose()
-        {
-            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
-            ((MemoryManager<int>)block).Unpin();
-            block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => ((MemoryManager<int>)block).Unpin());
-        }
-
-        [Fact]
-        public static void NoTryGetArrayAfterDispose()
-        {
-            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
-            Memory<int> memory = block.Memory;
-            ((MemoryManager<int>)block).Unpin();
-            block.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => MemoryMarshal.TryGetArray(memory, out ArraySegment<int> arraySegment));
-        }
+       [Fact]
+       public static void NoMemoryAfterDispose()
+       {
+           IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+           block.Dispose();
+           Assert.Throws<ObjectDisposedException>(() => block.Memory);
+       }
     }
 }
-
