@@ -147,8 +147,8 @@ namespace Internal.Cryptography
                     case PaddingMode.None:
                         return false;
                     default:
-                        Debug.Fail($"Invalid padding mode {PaddingMode}.");
-                        throw new CryptographicException(SR.Cryptography_InvalidPadding);
+                        Debug.Fail($"Unknown padding mode {PaddingMode}.");
+                        throw new CryptographicException(SR.Cryptography_UnknownPaddingMode);
                 }
             }
         }

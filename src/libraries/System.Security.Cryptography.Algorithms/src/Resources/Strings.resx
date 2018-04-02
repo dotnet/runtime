@@ -176,7 +176,7 @@
     <value>This operation is not supported for this class.</value>
   </data>
   <data name="Cryptography_InvalidPadding" xml:space="preserve">
-    <value>Specified padding mode is not valid for this algorithm.</value>
+    <value>Padding is invalid and cannot be removed.</value>
   </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
     <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
