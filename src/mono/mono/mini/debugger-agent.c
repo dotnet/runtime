@@ -10754,13 +10754,13 @@ mono_debugger_agent_unhandled_exception (MonoException *exc)
 }
 
 void
-debugger_agent_single_step_from_context (MonoContext *ctx)
+mono_debugger_agent_single_step_from_context (MonoContext *ctx)
 {
 	g_assert_not_reached ();
 }
 
 void
-debugger_agent_breakpoint_from_context (MonoContext *ctx)
+mono_debugger_agent_breakpoint_from_context (MonoContext *ctx)
 {
 	g_assert_not_reached ();
 }
