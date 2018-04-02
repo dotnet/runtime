@@ -66,6 +66,14 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int SetGCLatencyMode(int newLatencyMode);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void GetMemoryInfo(out uint highMemLoadThreshold,
+                                                  out ulong totalPhysicalMem,
+                                                  out uint lastRecordedMemLoad,
+                                                  // The next two are size_t
+                                                  out UIntPtr lastRecordedHeapSize,
+                                                  out UIntPtr lastRecordedFragmentation);
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern int _StartNoGCRegion(long totalSize, bool lohSizeKnown, long lohSize, bool disallowFullBlockingGC);
 

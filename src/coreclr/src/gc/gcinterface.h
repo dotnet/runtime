@@ -608,6 +608,20 @@ public:
     ===========================================================================
     */
 
+    // Gets memory related information -
+    // highMemLoadThreshold - physical memory load (in percentage) when GC will start to 
+    // react aggressively to reclaim memory.
+    // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
+    // limit set on the container if running in a container.
+    // lastRecordedMemLoad - physical memory load in percentage recorded in the last GC
+    // lastRecordedHeapSize - total managed heap size recorded in the last GC
+    // lastRecordedFragmentation - total fragmentation in the managed heap recorded in the last GC
+    virtual void GetMemoryInfo(uint32_t* highMemLoadThreshold, 
+                               uint64_t* totalPhysicalMem, 
+                               uint32_t* lastRecordedMemLoad,
+                               size_t* lastRecordedHeapSize,
+                               size_t* lastRecordedFragmentation) = 0;
+
     // Gets the current GC latency mode.
     virtual int GetGcLatencyMode() = 0;
 

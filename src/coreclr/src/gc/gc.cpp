@@ -2467,13 +2467,19 @@ double       gc_heap::short_plugs_pad_ratio = 0;
 size_t      gc_heap::youngest_gen_desired_th;
 #endif //BIT64
 
-uint64_t    gc_heap::mem_one_percent;
+uint32_t    gc_heap::last_gc_memory_load = 0;
 
-uint32_t    gc_heap::high_memory_load_th;
+size_t      gc_heap::last_gc_heap_size = 0;
 
-uint64_t    gc_heap::total_physical_mem;
+size_t      gc_heap::last_gc_fragmentation = 0;
 
-uint64_t    gc_heap::entry_available_physical_mem;
+uint64_t    gc_heap::mem_one_percent = 0;
+
+uint32_t    gc_heap::high_memory_load_th = 0;
+
+uint64_t    gc_heap::total_physical_mem = 0;
+
+uint64_t    gc_heap::entry_available_physical_mem = 0;
 
 #ifdef BACKGROUND_GC
 GCEvent     gc_heap::bgc_start_event;
@@ -5755,9 +5761,8 @@ void gc_mechanisms::init_mechanisms()
     allocations_allowed = TRUE;
 #endif //BACKGROUND_GC
 
-#ifdef BIT64
     entry_memory_load = 0;
-#endif // BIT64
+    exit_memory_load = 0;
 
 #ifdef STRESS_HEAP
     stress_induced = FALSE;
@@ -19096,6 +19101,28 @@ size_t gc_heap::get_total_heap_size()
     return total_heap_size;
 }
 
+size_t gc_heap::get_total_fragmentation()
+{
+    size_t total_fragmentation = 0;
+
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+#else //MULTIPLE_HEAPS
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        for (int i = 0; i <= (max_generation + 1); i++)
+        {
+            generation* gen = hp->generation_of (i);
+            total_fragmentation += (generation_free_list_space (gen) + generation_free_obj_space (gen));
+        }
+    }
+
+    return total_fragmentation;
+}
+
 size_t gc_heap::committed_size()
 {
     generation* gen = generation_of (max_generation);
@@ -29663,8 +29690,11 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
             }
             else //large object heap
             {
+                uint32_t memory_load = 0;
                 uint64_t available_physical = 0;
-                get_memory_info (NULL, &available_physical);
+                get_memory_info (&memory_load, &available_physical);
+                if (heap_number == 0)
+                    settings.exit_memory_load = memory_load;
                 if (available_physical > 1024*1024)
                     available_physical -= 1024*1024;
 
@@ -29899,6 +29929,7 @@ size_t gc_heap::joined_youngest_desired (size_t new_allocation)
         {
             uint32_t memory_load = 0;
             get_memory_info (&memory_load);
+            settings.exit_memory_load = memory_load;
             dprintf (2, ("Current emory load: %d", memory_load));
 
             size_t final_total = 
@@ -34882,6 +34913,14 @@ void gc_heap::do_post_gc()
         settings.condemned_generation,
         (settings.concurrent ? "BGC" : "GC")));
 
+    if (settings.exit_memory_load != 0)
+        last_gc_memory_load = settings.exit_memory_load;
+    else if (settings.entry_memory_load != 0)
+        last_gc_memory_load = settings.entry_memory_load;
+
+    last_gc_heap_size = get_total_heap_size();
+    last_gc_fragmentation = get_total_fragmentation();
+
     GCHeap::UpdatePostGCCounters();
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     //if (g_fEnableARM)
@@ -35264,6 +35303,19 @@ int GCHeap::GetHomeHeapNumber ()
 unsigned int GCHeap::GetCondemnedGeneration()
 { 
     return gc_heap::settings.condemned_generation;
+}
+
+void GCHeap::GetMemoryInfo(uint32_t* highMemLoadThreshold, 
+                           uint64_t* totalPhysicalMem, 
+                           uint32_t* lastRecordedMemLoad,
+                           size_t* lastRecordedHeapSize,
+                           size_t* lastRecordedFragmentation)
+{
+    *highMemLoadThreshold = gc_heap::high_memory_load_th;
+    *totalPhysicalMem = gc_heap::total_physical_mem;
+    *lastRecordedMemLoad = gc_heap::last_gc_memory_load;
+    *lastRecordedHeapSize = gc_heap::last_gc_heap_size;
+    *lastRecordedFragmentation = gc_heap::last_gc_fragmentation;
 }
 
 int GCHeap::GetGcLatencyMode()

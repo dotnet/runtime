@@ -168,6 +168,12 @@ public:
 
     unsigned GetCondemnedGeneration();
 
+    void GetMemoryInfo(uint32_t* highMemLoadThreshold, 
+                       uint64_t* totalPhysicalMem, 
+                       uint32_t* lastRecordedMemLoad,
+                       size_t* lastRecordedHeapSize,
+                       size_t* lastRecordedFragmentation);
+
     int GetGcLatencyMode();
     int SetGcLatencyMode(int newLatencyMode);
 
