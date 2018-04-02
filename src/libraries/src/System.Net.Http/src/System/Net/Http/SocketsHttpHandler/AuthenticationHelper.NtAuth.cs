@@ -62,6 +62,11 @@ namespace System.Net.Http
                         while (true)
                         {
                             string challengeResponse = authContext.GetOutgoingBlob(challengeData);
+                            if (challengeResponse == null)
+                            {
+                                // Server sent something invalid, so stop processing and return current response.
+                                break;
+                            }
 
                             await connection.DrainResponseAsync(response).ConfigureAwait(false);
 
