@@ -489,7 +489,9 @@ public:
     BOOL stress_induced;
 #endif // STRESS_HEAP
 
+    // These are opportunistically set
     uint32_t entry_memory_load;
+    uint32_t exit_memory_load;
 
     void init_mechanisms(); //for each GC
     void first_init(); // for the life of the EE
@@ -2479,6 +2481,8 @@ protected:
     size_t get_total_heap_size ();
     PER_HEAP_ISOLATED
     size_t get_total_committed_size();
+    PER_HEAP_ISOLATED
+    size_t get_total_fragmentation();
 
     PER_HEAP_ISOLATED
     void get_memory_info (uint32_t* memory_load, 
@@ -2967,6 +2971,15 @@ public:
     PER_HEAP_ISOLATED
     size_t youngest_gen_desired_th;
 #endif //BIT64
+
+    PER_HEAP_ISOLATED
+    uint32_t last_gc_memory_load;
+
+    PER_HEAP_ISOLATED
+    size_t last_gc_heap_size;
+
+    PER_HEAP_ISOLATED
+    size_t last_gc_fragmentation;
 
     PER_HEAP_ISOLATED
     uint32_t high_memory_load_th;
