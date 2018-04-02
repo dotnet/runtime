@@ -943,7 +943,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
 					switch (type_index) {
 					case 0: case 1:
-						ADD_CODE (td, MINT_CONV_I8_I4);
+						ADD_CODE (td, MINT_CONV_I4_I8);
 						break;
 					case 2:
 						// ADD_CODE (td, MINT_CONV_R8_R4);
@@ -954,7 +954,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
 					switch (type_index) {
 					case 0: case 1:
-						ADD_CODE (td, MINT_CONV_I4_I8);
+						ADD_CODE (td, MINT_CONV_I8_I4);
 						break;
 					case 2:
 						ADD_CODE (td, MINT_CONV_R4_R8);
@@ -987,7 +987,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
 					switch (type_index) {
 					case 0: case 1:
-						ADD_CODE (td, MINT_CONV_I8_I4);
+						ADD_CODE (td, MINT_CONV_I4_I8);
 						break;
 					case 2:
 						// ADD_CODE (td, MINT_CONV_R4_R8);
@@ -998,7 +998,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
 					switch (type_index) {
 					case 0: case 1:
-						ADD_CODE (td, MINT_CONV_I4_I8);
+						ADD_CODE (td, MINT_CONV_I8_I4);
 						break;
 					case 2:
 						ADD_CODE (td, MINT_CONV_R4_R8);
