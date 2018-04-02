@@ -9,18 +9,21 @@ namespace System.Threading.Tests
 {
     public class Perf_EventWaitHandle
     {
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 100_000)]
         public void Set_Reset()
         {
-            foreach (var iteration in Benchmark.Iterations)
+            using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
             {
-                using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
-                using (iteration.StartMeasurement())
+                foreach (var iteration in Benchmark.Iterations)
                 {
-                    are.Set(); are.Reset(); are.Set(); are.Reset();
-                    are.Set(); are.Reset(); are.Set(); are.Reset();
-                    are.Set(); are.Reset(); are.Set(); are.Reset();
-                    are.Set(); are.Reset(); are.Set(); are.Reset();
+                    using (iteration.StartMeasurement())
+                    {
+                        for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        {
+                            are.Set();
+                            are.Reset();
+                        }
+                    }
                 }
             }
         }
