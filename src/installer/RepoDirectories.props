@@ -23,7 +23,7 @@
     <BuildToolsTaskDesktopDir>$(ToolsDir)net46/</BuildToolsTaskDesktopDir>
     <BuildToolsTaskDir>$(BuildToolsTaskCoreDir)</BuildToolsTaskDir>
     <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(BuildToolsTaskDesktopDir)</BuildToolsTaskDir>
-    <LocalBuildToolsTaskDir>$(LocalToolRuntimePath)</LocalBuildToolsTaskDir>
+    <LocalBuildToolsTaskDir>$(LocalToolRuntimePath)netstandard2.0/</LocalBuildToolsTaskDir>
     <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
