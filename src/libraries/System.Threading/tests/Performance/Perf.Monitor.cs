@@ -8,7 +8,9 @@ namespace System.Threading.Tests
 {
     public class Perf_Monitor
     {
-        [Benchmark(InnerIterationCount = 250)]
+        private const int IterationCount = 4_000_000;
+
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void EnterExit()
         {
             object sync = new object();
@@ -26,7 +28,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Benchmark(InnerIterationCount = 100)]
+        [Benchmark(InnerIterationCount = IterationCount)]
         public static void TryEnterExit()
         {
             object sync = new object();

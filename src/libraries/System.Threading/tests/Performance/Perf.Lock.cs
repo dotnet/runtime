@@ -9,7 +9,7 @@ namespace System.Threading.Tests
 {
     public class Perf_Lock
     {
-        [Benchmark(InnerIterationCount = 100)]
+        [Benchmark(InnerIterationCount = 2_000_000)]
         public static void ReaderWriterLockSlimPerf()
         {
             ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
