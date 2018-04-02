@@ -165,6 +165,67 @@ namespace System.Collections.Tests
         }
 
         [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(101)]
+        public void ICollection_NonGeneric_CopyTo_NonContiguousDictionary(int count)
+        {
+            ICollection collection = (ICollection)CreateDictionary(count, k => k.ToString());
+            KeyValuePair<string, string>[] array = new KeyValuePair<string, string>[count];
+            collection.CopyTo(array, 0);
+            int i = 0;
+            foreach (object obj in collection)
+                Assert.Equal(array[i++], obj);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(101)]
+        public void ICollection_Generic_CopyTo_NonContiguousDictionary(int count)
+        {
+            ICollection<KeyValuePair<string, string>> collection = CreateDictionary(count, k => k.ToString());
+            KeyValuePair<string, string>[] array = new KeyValuePair<string, string>[count];
+            collection.CopyTo(array, 0);
+            int i = 0;
+            foreach (KeyValuePair<string, string> obj in collection)
+                Assert.Equal(array[i++], obj);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(101)]
+        public void IDictionary_Generic_CopyTo_NonContiguousDictionary(int count)
+        {
+            IDictionary<string, string> collection = CreateDictionary(count, k => k.ToString());
+            KeyValuePair<string, string>[] array = new KeyValuePair<string, string>[count];
+            collection.CopyTo(array, 0);
+            int i = 0;
+            foreach (KeyValuePair<string, string> obj in collection)
+                Assert.Equal(array[i++], obj);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(101)]
+        public void CopyTo_NonContiguousDictionary(int count)
+        {
+            Dictionary<string, string> collection = (Dictionary<string, string>)CreateDictionary(count, k => k.ToString());
+            string[] array = new string[count];
+            collection.Keys.CopyTo(array, 0);
+            int i = 0;
+            foreach (KeyValuePair<string, string> obj in collection)
+                Assert.Equal(array[i++], obj.Key);
+
+            collection.Values.CopyTo(array, 0);
+            i = 0;
+            foreach (KeyValuePair<string, string> obj in collection)
+                Assert.Equal(array[i++], obj.Key);
+        }
+
+        [Theory]
         [MemberData(nameof(CopyConstructorInt32Data))]
         public void CopyConstructorInt32(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector)
         {
@@ -287,7 +348,10 @@ namespace System.Collections.Tests
 
         private static IDictionary<T, T> CreateDictionary<T>(int size, Func<int, T> keyValueSelector, IEqualityComparer<T> comparer = null)
         {
-            return Enumerable.Range(1, size).ToDictionary(keyValueSelector, keyValueSelector, comparer);
+            Dictionary<T, T> dict = Enumerable.Range(0, size + 1).ToDictionary(keyValueSelector, keyValueSelector, comparer);
+            // Remove first item to reduce Count to size and alter the contiguity of the dictionary
+            dict.Remove(keyValueSelector(0));
+            return dict;
         }
 
         private sealed class DictionarySubclass<TKey, TValue> : Dictionary<TKey, TValue>
