@@ -77,7 +77,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)\\build.cmd",
-        "arguments": "-signing-validation -- /p:AzureAccessToken=$(PB_AzureAccessToken) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser) /p:OptionalToolSourcePassword=$(PB_OptionalToolSourcePassword) /p:OfficialBuildId=$(OfficialBuildId) /flp:v=detailed /p:SignType=$(PB_SignType)",
+        "arguments": "-signing-validation -- /p:AzureAccessToken=$(PB_AzureAccessToken) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser) /p:OptionalToolSourcePassword=$(PB_OptionalToolSourcePassword) /p:OfficialBuildId=$(OfficialBuildId) /flp:v=detailed /p:SignType=$(PB_SignType) $(PB_AdditionalMSBuildArguments)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -251,6 +251,9 @@
     "PB_OptionalToolSourcePassword": {
       "value": null,
       "isSecret": true
+    },
+    "PB_AdditionalMSBuildArguments": {
+      "value": ""
     }
   },
   "demands": [
