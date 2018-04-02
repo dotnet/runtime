@@ -150,7 +150,7 @@ namespace System.Net.Http
             if (!string.IsNullOrWhiteSpace(bypassList))
             {
                 string[] list = bypassList.Split(',');
-                List<string> tmpList = new List<string>();
+                List<string> tmpList = new List<string>(list.Length);
 
                 foreach (string value in list)
                 {
