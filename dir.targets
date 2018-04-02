@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  
+
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)')"
            Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your enlistment to ensure the tools are installed before attempting to build an individual project." />
@@ -14,23 +14,7 @@
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets') and '$(UseLiveBuildTools)' != 'true'" />
 
  <Target Name="BuildCustomTasks">
-      <MSBuild Projects="$(MSBuildThisFileDirectory)tools-local/tasks/core-setup.tasks.builds" />
-
-    <PropertyGroup>
-      <DependencyModelTFM>netstandard1.3</DependencyModelTFM>
-      <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
-    </PropertyGroup>
-
-      <ItemGroup>
-        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
-        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
-        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
-        <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
-      </ItemGroup>        
-      <Copy SourceFiles="@(CustomTaskDependencies)"
-            DestinationFolder="$(LocalBuildToolsTaskDir)"
-            OverwriteReadOnlyFiles="true"
-            SkipUnchangedFiles="true" />
+    <Exec Command="$(DotnetToolCommand) build $(MSBuildThisFileDirectory)tools-local/tasks/core-setup.tasks.csproj" />
   </Target>
 
   <Target Name="GetLatestCommitHash">
@@ -46,10 +30,10 @@
   </Target>
 
   <Target Name="GetCommitCount">
-    <Exec Command="git rev-list --count HEAD" 
-          StandardOutputImportance="Low" 
-          IgnoreExitCode="true" 
-          IgnoreStandardErrorWarningFormat="true" 
+    <Exec Command="git rev-list --count HEAD"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true"
           ConsoleToMSBuild="true"
           Condition="'$(CommitCount)' == ''">
      <Output TaskParameter="ConsoleOutput" PropertyName="CommitCount" />
@@ -63,7 +47,7 @@
       <BundleDisplayVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion).$(BuildNumberMajor)</BundleDisplayVersion>
     </PropertyGroup>
   </Target>
-  
+
   <!-- Override Target from buildtools -->
   <Target Name="GenerateVersionHeader"
       Inputs="$(MSBuildProjectFile)"
