@@ -377,9 +377,18 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
-        public void NonExistentDriveAsPath_ReturnsFalse()
+        public void DriveAsPath()
         {
             Assert.False(Exists(IOServices.GetNonExistentDrive()));
+            Assert.All(IOServices.GetReadyDrives(), drive => Assert.True(Exists(drive)));
+        }
+
+        [ConditionalFact(nameof(UsingNewNormalization))]
+        [PlatformSpecific(TestPlatforms.Windows)] // drive labels
+        public void ExtendedDriveAsPath()
+        {
+            Assert.False(Exists(IOInputs.ExtendedPrefix + IOServices.GetNonExistentDrive()));
+            Assert.All(IOServices.GetReadyDrives(), drive => Assert.True(Exists(IOInputs.ExtendedPrefix + drive)));
         }
 
         [Fact]
