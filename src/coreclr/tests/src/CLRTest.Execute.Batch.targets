@@ -257,7 +257,6 @@ $(BatchIlrtTestLaunchCmds)
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
     <![CDATA[
-set ExePath=$(InputAssemblyName)
 $(BatchLinkerTestLaunchCmds)
 $(BatchCLRTestLaunchCmds)
 
@@ -374,6 +373,9 @@ $(BatchCLRTestEnvironmentCompatibilityCheck)
 $(JitDisasmBatchScript)
 
 $(IlasmRoundTripBatchScript)
+
+REM Allow precommands to override the ExePath
+set ExePath=$(InputAssemblyName)
 
 REM Precommands
 $(CLRTestBatchPreCommands)
