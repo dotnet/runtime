@@ -4,7 +4,10 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -191,6 +194,55 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(m.Length, saea.Count);
                 Assert.Null(saea.Buffer);
             }
+        }
+
+        [OuterLoop("Involves GC and finalization")]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Finalizer_InvokedWhenNoLongerReferenced(bool afterAsyncOperation)
+        {
+            var cwt = new ConditionalWeakTable<object, object>();
+
+            for (int i = 0; i < 5; i++) // create several SAEA instances, stored into cwt
+            {
+                CreateSocketAsyncEventArgs();
+
+                void CreateSocketAsyncEventArgs() // separated out so that JIT doesn't extend lifetime of SAEA instances
+                {
+                    var saea = new SocketAsyncEventArgs();
+                    cwt.Add(saea, saea);
+
+                    if (afterAsyncOperation)
+                    {
+                        using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                        {
+                            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                            listener.Listen(1);
+
+                            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                            {
+                                saea.RemoteEndPoint = listener.LocalEndPoint;
+                                using (var mres = new ManualResetEventSlim())
+                                {
+                                    saea.Completed += (s, e) => mres.Set();
+                                    if (client.ConnectAsync(saea))
+                                    {
+                                        mres.Wait();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Assert.True(SpinWait.SpinUntil(() =>
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                return cwt.Count() == 0; // validate that the cwt becomes empty
+            }, 30_000));
         }
     }
 }
