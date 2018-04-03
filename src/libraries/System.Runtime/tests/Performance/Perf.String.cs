@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using Xunit;
@@ -232,28 +233,104 @@ namespace System.Tests
                         testString.Substring(startIndex, length);
         }
 
-        [Benchmark]
-        [MemberData(nameof(TestStringSizes))]
-        public void ToLower(int size)
+        [Flags]
+        public enum ChangeCaseOptions
         {
-            PerfUtils utils = new PerfUtils();
-            string testString = utils.CreateString(size);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < 10000; i++)
-                        testString.ToLower();
+            None = 0,
+            UniqueString = 0x1,
+
+            MiddleTurkishI = 0x2,
+            MiddleDifferentCase = 0x4,
+            AllDifferentCase = 0x8,
         }
 
-        [Benchmark]
-        [MemberData(nameof(TestStringSizes))]
-        public void ToUpper(int size)
+        public static IEnumerable<object[]> ChangeCaseMemberData() =>
+            from size in new[] { 1, 10, 500 }
+            from culture in new[] { "en-US" }
+            from options in new[]
+            {
+                ChangeCaseOptions.None,
+                ChangeCaseOptions.MiddleTurkishI,
+                ChangeCaseOptions.MiddleDifferentCase,
+                ChangeCaseOptions.AllDifferentCase,
+
+                ChangeCaseOptions.UniqueString,
+                ChangeCaseOptions.UniqueString | ChangeCaseOptions.MiddleTurkishI,
+                ChangeCaseOptions.UniqueString | ChangeCaseOptions.MiddleDifferentCase,
+                ChangeCaseOptions.UniqueString | ChangeCaseOptions.AllDifferentCase,
+            }
+            select new object[] { size, options, culture };
+
+        private static string CreateChangeCaseString(int size, ChangeCaseOptions options, bool upper)
         {
-            PerfUtils utils = new PerfUtils();
-            string testString = utils.CreateString(size);
+            Span<char> chars = new char[size];
+
+            bool differentCase = (options & ChangeCaseOptions.AllDifferentCase) != 0;
+            chars.Fill(upper != differentCase ? 'S' : 's');
+
+            if ((options & ChangeCaseOptions.MiddleTurkishI) != 0)
+            {
+                chars[chars.Length / 2] = '\u0131';
+            }
+            else if ((options & ChangeCaseOptions.MiddleDifferentCase) != 0)
+            {
+                char c = chars[chars.Length / 2];
+                chars[chars.Length / 2] = char.IsUpper(c) ? char.ToLower(c) : char.ToUpper(c);
+            }
+
+            return chars.ToString();
+        }
+
+        [Benchmark, MeasureGCAllocations]
+        [MemberData(nameof(ChangeCaseMemberData))]
+        public void ToLower(int size, ChangeCaseOptions options, string cultureName)
+        {
+            const int Iters = 10_000;
+            var strings = new string[Iters];
+            var culture = new CultureInfo(cultureName); // Benchmark doesn't support CultureInfo as argument
+            string target = CreateChangeCaseString(size, options, upper: false);
+
             foreach (var iteration in Benchmark.Iterations)
+            {
+                for (int i = 0; i < strings.Length; i++)
+                {
+                    strings[i] = (options & ChangeCaseOptions.UniqueString) != 0 ? string.Copy(target) : target;
+                }
+
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 10000; i++)
-                        testString.ToUpper();
+                {
+                    for (int i = 0; i < Iters; i++)
+                    {
+                        strings[i].ToLower(culture);
+                    }
+                }
+            }
+        }
+
+        [Benchmark, MeasureGCAllocations]
+        [MemberData(nameof(ChangeCaseMemberData))]
+        public void ToUpper(int size, ChangeCaseOptions options, string cultureName)
+        {
+            const int Iters = 10_000;
+            var strings = new string[Iters];
+            var culture = new CultureInfo(cultureName); // Benchmark doesn't support CultureInfo as argument
+            string target = CreateChangeCaseString(size, options, upper: true);
+
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                for (int i = 0; i < strings.Length; i++)
+                {
+                    strings[i] = (options & ChangeCaseOptions.UniqueString) != 0 ? string.Copy(target) : target;
+                }
+
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Iters; i++)
+                    {
+                        strings[i].ToUpper(culture);
+                    }
+                }
+            }
         }
 
         [Benchmark]
