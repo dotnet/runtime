@@ -536,7 +536,11 @@ namespace System.Net.Sockets
             {
                 _context = ExecutionContext.Capture();
             }
+
+            StartOperationCommonCore();
         }
+
+        partial void StartOperationCommonCore();
 
         internal void StartOperationAccept()
         {
