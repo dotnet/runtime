@@ -341,6 +341,9 @@ build_cross_arch_component()
         if [ "$__HostArch" == "x64" ]; then
             export CROSSCOMPILE=1
         fi
+    elif [[ ("$__BuildArch" == "arm64") && "$__CrossArch" == "x64" ]]; then
+        export CROSSCOMPILE=0
+        __SkipCrossArchBuild=0
     else
         # not supported
         return
@@ -470,6 +473,8 @@ build_CoreLib()
        fi
     elif [ $__DoCrossArchBuild == 1 ]; then
        if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
+           build_CoreLib_ni "$__CrossComponentBinDir/crossgen"
+       elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
            build_CoreLib_ni "$__CrossComponentBinDir/crossgen"
        fi
     fi
