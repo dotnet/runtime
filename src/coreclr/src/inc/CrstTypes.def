@@ -783,3 +783,7 @@ End
 
 Crst NotifyGdb
 End
+
+Crst ReadyToRunEntryPointToMethodDescMap
+    AcquiredBefore ExecuteManRangeLock
+End

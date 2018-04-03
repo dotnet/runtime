@@ -252,7 +252,6 @@ fi
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
     <![CDATA[
-ExePath=$(InputAssemblyName)
 $(BashLinkerTestLaunchCmds)
 $(BashCLRTestLaunchCmds)
 if [ ! -z ${RunCrossGen+x} ]%3B then
@@ -373,6 +372,8 @@ $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 $(JitDisasmBashScript)
 $(IlasmRoundTripBashScript)
+# Allow precommands to override the ExePath
+ExePath=$(InputAssemblyName)
 # PreCommands
 $(BashCLRTestPreCommands)
 # Launch
