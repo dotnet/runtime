@@ -56,7 +56,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
                                      'OpenSuse.423.Amd64.Open',
                                      'Fedora.26.Amd64.Open',]
             if (params.TestOuter) {
-                targetHelixQueues += ['Debian.90.Amd64.Open',
+                targetHelixQueues += ['Debian.9.Amd64.Open',
                                       'Fedora.27.Amd64.Open',
                                       'SLES.12.Amd64.Open',]
             }
