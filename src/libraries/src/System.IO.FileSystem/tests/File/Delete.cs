@@ -139,7 +139,7 @@ namespace System.IO.Tests
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()
         {
-            if (PlatformDetection.IsRedHatFamily6)
+            if (PlatformDetection.IsRedHatFamily6 || PlatformDetection.IsAlpine)
                 return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
 
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
