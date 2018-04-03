@@ -444,7 +444,7 @@
       "allowOverride": true
     },
     "PB_TargetQueue": {
-      "value": "Centos.73.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1804.Amd64+opensuse.423.amd64+SLES.12.Amd64+Fedora.26.Amd64+Fedora.27.Amd64"
+      "value": "Centos.73.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Debian.9.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1804.Amd64+opensuse.423.amd64+SLES.12.Amd64+Fedora.26.Amd64+Fedora.27.Amd64"
     },
     "PB_VsoAccountName": {
       "value": "dn-bot"
