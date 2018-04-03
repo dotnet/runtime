@@ -30,8 +30,12 @@
     <_ProjectPattern Condition="'$(Performance)'=='true'">.Performance.Tests</_ProjectPattern>
   </PropertyGroup>
   
-  <ItemGroup>
+  <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <Project Include="$(MSBuildThisFileDirectory)*\tests\**\*$(_ProjectPattern).csproj" Exclude="@(TestProjectExclusions)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
+    <Project Include="$(ProjectDir)pkg\test\testPackages.proj" />
   </ItemGroup>
 
   <Import Project="$(ToolsDir)Build.Post.targets" Condition="Exists('$(ToolsDir)Build.Post.targets')" />
