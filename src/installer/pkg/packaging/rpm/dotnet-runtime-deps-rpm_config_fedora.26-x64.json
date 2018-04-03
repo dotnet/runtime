@@ -38,11 +38,7 @@
         "package_version": ""
     },
     {
-        "package_name": "libunwind",
-        "package_version": ""
-    },
-    {
-        "package_name": "libcurl",
+        "package_name": "krb5-libs",
         "package_version": ""
     }]
 }

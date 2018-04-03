@@ -30,12 +30,10 @@
 
     "debian_dependencies":{
         "libc6":{},
-        "libcurl3":{},
         "libgcc1":{},
         "libgssapi-krb5-2":{},
         "liblttng-ust0":{},
         "libstdc++6":{},
-        "libunwind8":{},
         "zlib1g":{},
         "libssl1.0.0" : {},
         "libicu55": {} 
