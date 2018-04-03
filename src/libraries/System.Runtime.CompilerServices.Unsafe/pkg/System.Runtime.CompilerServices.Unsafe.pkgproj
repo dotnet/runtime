@@ -11,6 +11,7 @@
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
+    <InboxOnTargetFramework Include="uap10.0.16300" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
