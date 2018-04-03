@@ -75,20 +75,17 @@ namespace Microsoft.CSharp.RuntimeBinder
             _binder = new RuntimeBinder(callingContext, isChecked);
         }
 
-        public int BinderEqivalenceHash
+        public int GetGetBinderEquivalenceHash()
         {
-            get
+            int hash = _callingContext?.GetHashCode() ?? 0;
+            hash = HashHelpers.Combine(hash, (int)ConversionKind);
+            if (IsChecked)
             {
-                int hash = _callingContext?.GetHashCode() ?? 0;
-                hash = HashHelpers.Combine(hash, (int)ConversionKind);
-                if (IsChecked)
-                {
-                    hash = HashHelpers.Combine(hash, 1);
-                }
-
-                hash = HashHelpers.Combine(hash, Type.GetHashCode());
-                return hash;
+                hash = HashHelpers.Combine(hash, 1);
             }
+
+            hash = HashHelpers.Combine(hash, Type.GetHashCode());
+            return hash;
         }
 
         public bool IsEquivalentTo(ICSharpBinder other)
