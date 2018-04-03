@@ -1679,6 +1679,12 @@ TEST_TAILCALL_CS_SRC=\
 #tailcall/coreclr/JIT/Methodical/Boxing/misc/tailjump.cs
 #tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfinally_tail.cs
 #tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.cs
+#tailcall/coreclr/JIT/Methodical/tailcall/compat_i2_bool.il
+#tailcall/coreclr/JIT/Methodical/tailcall/compat_i4_i1.il
+#tailcall/coreclr/JIT/Methodical/tailcall/compat_i4_u.il
+#tailcall/coreclr/JIT/Methodical/tailcall/compat_i_u2.il
+#tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8.il
+#tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4.il
 
 TEST_TAILCALL_IL_SRC=\
 	tailcall/coreclr/JIT/opt/Tailcall/TailcallVerifyWithPrefix.il \
@@ -1703,14 +1709,8 @@ TEST_TAILCALL_IL_SRC=\
 	tailcall/coreclr/JIT/Methodical/Invoke/SEH/catchfinally_tail.il \
 	tailcall/coreclr/JIT/Methodical/nonvirtualcall/tailcall.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_enum.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i2_bool.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i4_i1.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i4_u.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_i_u2.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_obj.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_r4_r8_inl.il \
-	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_r8_r4_inl.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/compat_v.il \
 	tailcall/coreclr/JIT/Methodical/tailcall/deep_array.il \

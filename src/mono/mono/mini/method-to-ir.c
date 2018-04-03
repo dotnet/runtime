@@ -7067,7 +7067,23 @@ is_supported_tail_call (MonoCompile *cfg, MonoMethod *method, MonoMethod *cmetho
 		|| (vtable_arg && !cfg->backend->have_volatile_non_param_register)
 
 		|| ((vtable_arg || cfg->gshared) && !cfg->backend->have_op_tail_call)
-		|| !mono_arch_tail_call_supported (cfg, mono_method_signature (method), mono_method_signature (cmethod)))
+		)
+		return FALSE;
+
+	MonoMethodSignature *caller_signature = mono_method_signature (method);
+	MonoMethodSignature *callee_signature = mono_method_signature (cmethod);
+
+	g_assert (caller_signature);
+	g_assert (callee_signature);
+
+	// Require an exact match on return type due to various conversions in emit_move_return_value that would be skipped.
+	// The main troublesome conversions are double <=> float.
+	// CoreCLR allows some conversions here, such as integer truncation.
+	// As well I <=> I[48] and U <=> U[48] would be ok, for matching size.
+	if (mini_get_underlying_type (caller_signature->ret)->type != mini_get_underlying_type (callee_signature->ret)->type)
+		return FALSE;
+
+	if (!mono_arch_tail_call_supported (cfg, caller_signature, callee_signature))
 		return FALSE;
 
 	for (i = 0; i < fsig->param_count; ++i) {
