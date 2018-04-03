@@ -50,6 +50,7 @@ typedef struct {
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
 #define MONO_ARCH_HAS_REGISTER_ICALL 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
+#define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 
 void mono_wasm_debugger_init (void);
 

@@ -1136,7 +1136,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 
 	g_assert (!frame->imethod);
 	if (!mono_interp_to_native_trampoline) {
-		if (mono_aot_only) {
+		if (mono_ee_features.use_aot_trampolines) {
 			mono_interp_to_native_trampoline = mono_aot_get_trampoline ("interp_to_native_trampoline");
 		} else {
 			MonoTrampInfo *info;

@@ -340,6 +340,29 @@ extern GList* mono_aot_paths;
 extern MonoDebugOptions mini_debug_options;
 extern GSList *mono_interp_only_classes;
 
+/*
+This struct describes what execution engine feature to use.
+This subsume, and will eventually sunset, mono_aot_only / mono_llvm_only and friends.
+The goal is to transition us to a place were we can more easily compose/describe what features we need for a given execution mode.
+
+A good feature flag is checked alone, a bad one described many things and keeps breaking some of the modes
+*/
+typedef struct {
+	/*
+	 * If true, trampolines are to be fetched from the AOT runtime instead of JIT compiled
+	 */
+	gboolean use_aot_trampolines;
+} MonoEEFeatures;
+
+extern MonoEEFeatures mono_ee_features;
+
+//XXX this enum *MUST extend MonoAotMode as they are consumed together.
+typedef enum {
+	/* Always execute with interp, will use JIT to produce trampolines */
+	MONO_EE_MODE_INTERP = MONO_AOT_MODE_LAST,
+} MonoEEMode;
+
+
 static inline MonoMethod*
 jinfo_get_method (MonoJitInfo *ji)
 {

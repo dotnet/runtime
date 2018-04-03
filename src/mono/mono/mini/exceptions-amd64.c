@@ -930,7 +930,7 @@ mono_arch_exceptions_init (void)
 	GSList *tramps, *l;
 	gpointer tramp;
 
-	if (mono_aot_only) {
+	if (mono_ee_features.use_aot_trampolines) {
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
 		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");

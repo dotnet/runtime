@@ -4147,7 +4147,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 			 * works.
 			 * FIXME: The caller signature doesn't match the callee, which might cause problems on some platforms
 			 */
-			if (mono_aot_only)
+			if (mono_ee_features.use_aot_trampolines)
 				mono_aot_get_trampoline_full (is_in ? "gsharedvt_trampoline" : "gsharedvt_out_trampoline", &tinfo);
 			else
 				mono_arch_get_gsharedvt_trampoline (&tinfo, FALSE);

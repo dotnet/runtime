@@ -1743,7 +1743,7 @@ mini_get_single_step_trampoline (void)
 	if (!trampoline) {
 		gpointer tramp;
 
-		if (mono_aot_only) {
+		if (mono_ee_features.use_aot_trampolines) {
 			tramp = mono_aot_get_trampoline ("sdb_single_step_trampoline");
 		} else {
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
@@ -1775,7 +1775,7 @@ mini_get_breakpoint_trampoline (void)
 	if (!trampoline) {
 		gpointer tramp;
 
-		if (mono_aot_only) {
+		if (mono_ee_features.use_aot_trampolines) {
 			tramp = mono_aot_get_trampoline ("sdb_breakpoint_trampoline");
 		} else {
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES

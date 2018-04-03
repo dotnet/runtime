@@ -202,7 +202,7 @@ void
 mono_exceptions_init (void)
 {
 	MonoRuntimeExceptionHandlingCallbacks cbs;
-	if (mono_aot_only) {
+	if (mono_ee_features.use_aot_trampolines) {
 		restore_context_func = mono_aot_get_trampoline ("restore_context");
 		call_filter_func = mono_aot_get_trampoline ("call_filter");
 		throw_exception_func = mono_aot_get_trampoline ("throw_exception");
@@ -281,7 +281,7 @@ mono_get_throw_corlib_exception (void)
 	if (throw_corlib_exception_func)
 		return throw_corlib_exception_func;
 
-	if (mono_aot_only)
+	if (mono_ee_features.use_aot_trampolines)
 		code = mono_aot_get_trampoline ("throw_corlib_exception");
 	else {
 		code = mono_arch_get_throw_corlib_exception (&info, FALSE);
