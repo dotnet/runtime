@@ -834,10 +834,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     bool fCompilingMscorlib = StringEndsWith((LPWSTR)pwzFilename, CoreLibName_IL_W);
 
 // Disable fragile NGen when compiling Mscorlib for ARM.
-#ifndef _TARGET_ARM_
+#if !(defined(_TARGET_ARM_) || defined(_TARGET_ARM64_))
     if (fCompilingMscorlib)
         dwFlags &= ~NGENWORKER_FLAGS_READYTORUN;
-#endif // _TARGET_ARM_
+#endif // !(_TARGET_ARM_ || _TARGET_ARM64_)
 
     if(pwzPlatformAssembliesPaths != nullptr)
     {
