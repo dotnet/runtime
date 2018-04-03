@@ -68,7 +68,7 @@ ret next call, ildasm and add tail.:
 
 .assembly extern mscorlib { }
 
-.assembly b { }
+.assembly 'tailcall-virt' { }
 
 .class A
 {

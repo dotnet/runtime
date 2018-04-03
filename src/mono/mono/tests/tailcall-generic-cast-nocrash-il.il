@@ -12,7 +12,7 @@ This derived from nearby tailcall-generic-cast-cs.cs.
 
 .assembly extern mscorlib { }
 
-.assembly 'tailcall-generic-cast' { }
+.assembly 'tailcall-generic-cast-nocrash-il' { }
 
 .class public A { }
 

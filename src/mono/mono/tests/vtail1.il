@@ -1,5 +1,7 @@
 .assembly extern mscorlib { }
-.assembly tailcall1 { }
+
+.assembly vtail1 { }
+
 .class A extends [mscorlib]System.Object {
 .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
 {

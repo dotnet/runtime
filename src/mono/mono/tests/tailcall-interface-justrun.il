@@ -7,8 +7,10 @@ Licensed under the MIT license. See LICENSE file in the project root for full li
 
 Derived from tailcall-interface.cs.
 */
+
 .assembly extern mscorlib {  }
-.assembly 'tailcall-interface' { }
+
+.assembly 'tailcall-interface-justrun' { }
 
 .class public sequential sealed Point
 extends [mscorlib]System.ValueType

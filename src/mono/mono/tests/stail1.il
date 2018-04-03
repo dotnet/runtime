@@ -1,5 +1,7 @@
 .assembly extern mscorlib { }
-.assembly tailcall1 { }
+
+.assembly stail1 { }
+
 .class A extends [mscorlib]System.Object {
 .method public hidebysig static int32 stail1() cil managed noinlining {
 .entrypoint

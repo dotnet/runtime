@@ -57,7 +57,8 @@ unsafe class B
 */
 
 .assembly extern mscorlib { }
-.assembly tailcall_rgctxa { }
+
+.assembly 'tailcall-rgctxa' { }
 
 .class A`1<T>
 {

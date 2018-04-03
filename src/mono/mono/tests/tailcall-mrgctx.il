@@ -55,8 +55,10 @@ unsafe class B
     }
 }
 */
+
 .assembly extern mscorlib { }
-.assembly tailcall_mrgctx { }
+
+.assembly 'tailcall-mrgctx' { }
 
 .class A
 {
