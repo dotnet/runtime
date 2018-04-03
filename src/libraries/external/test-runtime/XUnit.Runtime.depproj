@@ -51,7 +51,7 @@
       <Version>0.10.0-alpha-experimental</Version>
     </PackageReference>
     <PackageReference Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions">
-      <Version>$(MicrosoftDotNetPlatformAbstractionsPackageVersion)</Version>
+      <Version>2.0.4</Version>
     </PackageReference>
     <PackageReference Include="CommandLineParser">
       <Version>2.1.1-beta</Version>
