@@ -9,7 +9,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.Build.Construction;
-using System.Net.Http;
 using System.Xml;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -67,7 +66,7 @@ namespace Microsoft.DotNet.Build.Tasks
             blobLease.Acquire();
 
             // Prevent race conditions by dropping a version hint of what version this is. If we see this file
-            // and it is the same as our version then we know that a race happened where two+ builds finished 
+            // and it is the same as our version then we know that a race happened where two+ builds finished
             // at the same time and someone already took care of publishing and we have no work to do.
             if (IsLatestSpecifiedVersion(targetVersionFile) && !ForcePublish)
             {
@@ -87,7 +86,7 @@ namespace Microsoft.DotNet.Build.Tasks
                     .ToList()
                     .ForEach(f => TryDeleteBlob(f));
 
-                
+
                 // Drop the version file signaling such for any race-condition builds (see above comment).
                 CreateBlobIfNotExists(targetVersionFile);
 
@@ -156,12 +155,12 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public bool DeleteBlob(string container, string blob)
         {
-            return DeleteAzureBlob.Execute(AccountName, 
-                                           AccountKey, 
-                                            ConnectionString, 
-                                            container, 
-                                            blob, 
-                                            BuildEngine, 
+            return DeleteAzureBlob.Execute(AccountName,
+                                           AccountKey,
+                                            ConnectionString,
+                                            container,
+                                            blob,
+                                            BuildEngine,
                                             HostObject);
         }
 
@@ -190,14 +189,14 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public bool PublishStringToBlob(string container, string blob, string contents, string contentType = null)
         {
-            return PublishStringToAzureBlob.Execute(AccountName, 
-                                                    AccountKey, 
-                                                    ConnectionString, 
-                                                    container, 
-                                                    blob, 
-                                                    contents, 
+            return PublishStringToAzureBlob.Execute(AccountName,
+                                                    AccountKey,
+                                                    ConnectionString,
+                                                    container,
+                                                    blob,
+                                                    contents,
                                                     contentType,
-                                                    BuildEngine, 
+                                                    BuildEngine,
                                                     HostObject);
         }
     }
