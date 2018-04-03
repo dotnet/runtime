@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -76,10 +77,13 @@ namespace System
             {
                 char ch = *newPos;
                 if (ch > 0x7f) return false;    // not ascii
-                if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
+                if (ch < 'a') // Optimize for lower-case letters, which make up the majority of most Uris, and which are all greater than symbols checked for below
                 {
-                    end = newPos;
-                    break;
+                    if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
+                    {
+                        end = newPos;
+                        break;
+                    }
                 }
             }
 
@@ -505,16 +509,20 @@ namespace System
         //  DNS specification [RFC 1035]. We use our own variant of IsLetterOrDigit
         //  because the base version returns false positives for non-ANSI characters
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsASCIILetterOrDigit(char character, ref bool notCanonical)
         {
-            if ((character >= 'a' && character <= 'z') || (character >= '0' && character <= '9'))
+            if ((uint)(character - 'a') <= 'z' - 'a' || (uint)(character - '0') <= '9' - '0')
+            {
                 return true;
+            }
 
-            if (character >= 'A' && character <= 'Z')
+            if ((uint)(character - 'A') <= 'Z' - 'A')
             {
                 notCanonical = true;
                 return true;
             }
+
             return false;
         }
 
@@ -522,16 +530,20 @@ namespace System
         //  Takes into account the additional legal domain name characters '-' and '_'
         //  Note that '_' char is formally invalid but is historically in use, especially on corpnets
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsValidDomainLabelCharacter(char character, ref bool notCanonical)
         {
-            if ((character >= 'a' && character <= 'z') || (character >= '0' && character <= '9') || (character == '-') || (character == '_'))
+            if ((uint)(character - 'a') <= 'z' - 'a' || (uint)(character - '0') <= '9' - '0' || character == '-' || character == '_')
+            {
                 return true;
+            }
 
-            if (character >= 'A' && character <= 'Z')
+            if ((uint)(character - 'A') <= 'Z' - 'A')
             {
                 notCanonical = true;
                 return true;
             }
+
             return false;
         }
     }
