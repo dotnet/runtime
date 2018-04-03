@@ -50,41 +50,30 @@ namespace System.Net.Http.Functional.Tests
         {
             var explicitProxyCreds = new NetworkCredential("rightusername", "rightpassword");
             var defaultSystemProxyCreds = new NetworkCredential("wrongusername", "wrongpassword");
-            string expectCreds = "Basic " + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{explicitProxyCreds.UserName}:{explicitProxyCreds.Password}"));
+            string expectCreds = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{explicitProxyCreds.UserName}:{explicitProxyCreds.Password}"));
 
-            await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUrl) =>
+            await LoopbackServer.CreateClientAndServerAsync(async proxyUrl =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
                 using (var client = new HttpClient(handler))
                 {
                     handler.Proxy = new UseSpecifiedUriWebProxy(proxyUrl, explicitProxyCreds);
                     handler.DefaultProxyCredentials = defaultSystemProxyCreds;
-
-                    // URL does not matter. We will get response from "proxy" code bellow.
-                    Task<HttpResponseMessage> responseTask = client.GetAsync("http://notatrealserver.com/");
-
-                    await proxyServer.AcceptConnectionAsync(async connection =>
+                    using (HttpResponseMessage response = await client.GetAsync("http://notatrealserver.com/")) // URL does not matter
                     {
-                        List<string> headers = await connection.ReadRequestHeaderAsync();
-
-                        if (!IsCurlHandler)
-                        {
-                            // Curl sends Basic auth without asking, other handlers wait for 407.
-                            await connection.SendResponseAsync(HttpStatusCode.ProxyAuthenticationRequired, "Proxy-Authenticate: Basic\r\n");
-                            headers = await connection.ReadRequestHeaderAsync();
-                        }
-
-                        // Verify that we got explicitProxyCreds.
-                        Assert.Equal(expectCreds, LoopbackServer.GetRequestHeaderValue(headers, "Proxy-Authorization"));
-
-                        Task serverTask = connection.SendResponseAsync(HttpStatusCode.OK);
-
-                        await TestHelper.WhenAllCompletedOrAnyFailed(serverTask, responseTask);
-                        HttpResponseMessage response = responseTask.Result;
-
                         Assert.Equal(response.StatusCode, HttpStatusCode.OK);
-                    });
-                };
+                    }
+                }
+            }, async server =>
+            {
+                if (!IsCurlHandler) // libcurl sends Basic auth preemptively when only basic creds are provided; other handlers wait for 407.
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(
+                        HttpStatusCode.ProxyAuthenticationRequired, "Connection: close\r\nProxy-Authenticate: Basic\r\n");
+                }
+
+                List<string> headers = await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
+                Assert.Equal(expectCreds, LoopbackServer.GetRequestHeaderValue(headers, "Proxy-Authorization"));
             });
         }
 
