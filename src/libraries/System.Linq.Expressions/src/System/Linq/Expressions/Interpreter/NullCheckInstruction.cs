@@ -16,11 +16,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            if (frame.Peek() == null)
-            {
-                throw new NullReferenceException();
-            }
-
+            NullCheck(frame.Peek());
             return 1;
         }
     }
