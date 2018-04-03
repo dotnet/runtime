@@ -3576,7 +3576,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForSwap: Produce code for a GT_CMPXCHG node.
+// genCodeForCmpXchg: Produce code for a GT_CMPXCHG node.
 //
 // Arguments:
 //    tree - the GT_CMPXCHG node
@@ -8640,9 +8640,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
 
-        // NYI: Contained immediates.
-        NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA),
-               "Store of long lclVar with contained immediate");
+        noway_assert((loVal->gtRegNum != REG_NA) && (hiVal->gtRegNum != REG_NA));
 
         emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
         emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));

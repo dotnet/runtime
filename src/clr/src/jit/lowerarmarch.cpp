@@ -409,16 +409,11 @@ void Lowering::LowerCast(GenTree* tree)
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
+        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small
+                                          // int.
     }
 
     assert(!varTypeIsSmall(srcType));
-
-    // case of src is a floating point type and dst is a small type.
-    if (varTypeIsFloating(srcType) && varTypeIsSmall(dstType))
-    {
-        NYI_ARM("Lowering for cast from float to small type"); // Not tested yet.
-        tmpType = TYP_INT;
-    }
 
     if (tmpType != TYP_UNDEF)
     {
