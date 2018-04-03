@@ -107,6 +107,10 @@ namespace System
             private readonly int _stringSectionNumOffsets;
             /// <summary>The number of bytes in the strings table of the database.</summary>
             private readonly int _stringTableNumBytes;
+            /// <summary>Whether or not to read the number section as 32-bit integers.</summary>
+            private readonly bool _readAs32Bit;
+            /// <summary>The size of the integers on the number section.</summary>
+            private readonly int _sizeOfInt;
 
             /// <summary>Extended / user-defined entries in the terminfo database.</summary>
             private readonly Dictionary<string, string> _extendedStrings;
@@ -119,11 +123,14 @@ namespace System
                 _term = term;
                 _data = data;
 
-                // See "man term" for the file format.
-                if (ReadInt16(data, 0) != 0x11A) // magic number octal 0432
-                {
-                    throw new InvalidOperationException(SR.IO_TermInfoInvalid);
-                }
+                const int MagicLegacyNumber = 0x11A; // magic number octal 0432 for legacy ncurses terminfo
+                const int Magic32BitNumber = 0x21E; // magic number octal 01036 for new ncruses terminfo
+                short magic = ReadInt16(data, 0);
+                _readAs32Bit =
+                    magic == MagicLegacyNumber ? false :
+                    magic == Magic32BitNumber ? true :
+                    throw new InvalidOperationException(SR.Format(SR.IO_TermInfoInvalidMagicNumber, String.Concat("O" + Convert.ToString(magic, 8)))); // magic number was not recognized. Printing the magic number in octal.
+                _sizeOfInt = (_readAs32Bit) ? 4 : 2;
 
                 _nameSectionNumBytes = ReadInt16(data, 2);
                 _boolSectionNumBytes = ReadInt16(data, 4);
@@ -147,7 +154,7 @@ namespace System
                 // (Note that the extended section also includes other Booleans and numbers, but we don't
                 // have any need for those now, so we don't parse them.)
                 int extendedBeginning = RoundUpToEven(StringsTableOffset + _stringTableNumBytes);
-                _extendedStrings = ParseExtendedStrings(data, extendedBeginning) ?? new Dictionary<string, string>();
+                _extendedStrings = ParseExtendedStrings(data, extendedBeginning, _readAs32Bit) ?? new Dictionary<string, string>();
             }
 
             /// <summary>The name of the associated terminfo, if any.</summary>
@@ -278,7 +285,7 @@ namespace System
             /// The offset into data where the string offsets section begins.  We index into this section
             /// to find the location within the strings table where a string value exists.
             /// </summary>
-            private int StringOffsetsOffset { get { return NumbersOffset + (_numberSectionNumShorts * 2); } }
+            private int StringOffsetsOffset { get { return NumbersOffset + (_numberSectionNumShorts * _sizeOfInt); } }
 
             /// <summary>The offset into data where the string table exists.</summary>
             private int StringsTableOffset { get { return StringOffsetsOffset + (_stringSectionNumOffsets * 2); } }
@@ -346,9 +353,10 @@ namespace System
             /// defined as the earlier portions, and may not even exist, the parsing is more lenient about
             /// errors, returning an empty collection rather than throwing.
             /// </returns>
-            private static Dictionary<string, string> ParseExtendedStrings(byte[] data, int extendedBeginning)
+            private static Dictionary<string, string> ParseExtendedStrings(byte[] data, int extendedBeginning, bool readAs32Bit)
             {
                 const int ExtendedHeaderSize = 10;
+                int sizeOfIntValuesInBytes = (readAs32Bit) ? 4 : 2;
                 if (extendedBeginning + ExtendedHeaderSize >= data.Length)
                 {
                     // Exit out as there's no extended information.
@@ -357,10 +365,10 @@ namespace System
 
                 // Read in extended counts, and exit out if we got any incorrect info
                 int extendedBoolCount = ReadInt16(data, extendedBeginning);
-                int extendedNumberCount = ReadInt16(data, extendedBeginning + 2);
-                int extendedStringCount = ReadInt16(data, extendedBeginning + 4);
-                int extendedStringNumOffsets = ReadInt16(data, extendedBeginning + 6);
-                int extendedStringTableByteSize = ReadInt16(data, extendedBeginning + 8);
+                int extendedNumberCount = ReadInt16(data, extendedBeginning + (2 * 1));
+                int extendedStringCount = ReadInt16(data, extendedBeginning + (2 * 2));
+                int extendedStringNumOffsets = ReadInt16(data, extendedBeginning + (2 * 3));
+                int extendedStringTableByteSize = ReadInt16(data, extendedBeginning + (2 * 4));
                 if (extendedBoolCount < 0 ||
                     extendedNumberCount < 0 ||
                     extendedStringCount < 0 ||
@@ -380,7 +388,7 @@ namespace System
                     extendedBeginning + // go past the normal data
                     ExtendedHeaderSize + // and past the extended header
                     RoundUpToEven(extendedBoolCount) + // and past all of the extended Booleans
-                    (extendedNumberCount * 2); // and past all of the extended numbers
+                    (extendedNumberCount * sizeOfIntValuesInBytes); // and past all of the extended numbers
 
                 // Get the location where the extended string table begins.  This area contains
                 // null-terminated strings.
@@ -447,6 +455,14 @@ namespace System
 
             private static int RoundUpToEven(int i) { return i % 2 == 1 ? i + 1 : i; }
 
+            /// <summary>Read a 16-bit or 32-bit value from the buffer starting at the specified position.</summary>
+            /// <param name="buffer">The buffer from which to read.</param>
+            /// <param name="pos">The position at which to read.</param>
+            /// <param name="readAs32Bit">Whether or not to read value as 32-bit. Will read as 16-bit if set to false.</param>
+            /// <returns>The value read.</returns>
+            private static int ReadInt(byte[] buffer, int pos, bool readAs32Bit) =>
+                readAs32Bit ? ReadInt32(buffer, pos) : ReadInt16(buffer, pos);
+
             /// <summary>Read a 16-bit value from the buffer starting at the specified position.</summary>
             /// <param name="buffer">The buffer from which to read.</param>
             /// <param name="pos">The position at which to read.</param>
@@ -456,6 +472,18 @@ namespace System
                 return unchecked((short)
                     ((((int)buffer[pos + 1]) << 8) |
                      ((int)buffer[pos] & 0xff)));
+            }
+
+            /// <summary>Read a 32-bit value from the buffer starting at the specified position.</summary>
+            /// <param name="buffer">The buffer from which to read.</param>
+            /// <param name="pos">The position at which to read.</param>
+            /// <returns>The 32-bit value read.</returns>
+            private static int ReadInt32(byte[] buffer, int pos)
+            {
+                return (int)((buffer[pos] & 0xff) | 
+                             buffer[pos + 1] << 8 | 
+                             buffer[pos + 2] << 16 | 
+                             buffer[pos + 3] << 24);
             }
 
             /// <summary>Reads a string from the buffer starting at the specified position.</summary>
