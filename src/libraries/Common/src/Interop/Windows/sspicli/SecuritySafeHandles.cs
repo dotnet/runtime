@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 
@@ -444,6 +445,7 @@ namespace System.Net.Security
 #endif
         private const string dummyStr = " ";
         private static readonly byte[] s_dummyBytes = new byte[] { 0 };
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         protected SafeFreeCredentials _EffectiveCredential;
 
@@ -592,7 +594,8 @@ namespace System.Net.Security
                         targetName = dummyStr;
                     }
 
-                    fixed (char* namePtr = targetName)
+                    string punyCode = s_idnMapping.GetAscii(targetName);
+                    fixed (char* namePtr = punyCode)
                     {
                         errorCode = MustRunInitializeSecurityContext_SECURITY(
                                         ref inCredentials,
