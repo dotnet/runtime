@@ -73,6 +73,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
