@@ -92,6 +92,8 @@ public:
     bool RuntimeStructuresValid();
 
     void SetSuspensionPending(bool fSuspensionPending);
+    
+    void SetYieldProcessorScalingFactor(uint32_t yieldProcessorScalingFactor);
 
     void SetWaitForGCEvent();
     void ResetWaitForGCEvent();
