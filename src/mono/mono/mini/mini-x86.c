@@ -5266,7 +5266,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	
 	if (method->save_lmf) {
 		gint32 lmf_offset = cfg->lmf_var->inst_offset;
-		guint8 *patch;
 
 		/* restore caller saved regs */
 		if (cfg->used_int_regs & (1 << X86_EBX)) {
@@ -5288,13 +5287,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			}
 		}
 
+		g_assert (!pos || need_stack_frame);
 		if (pos) {
-			g_assert (need_stack_frame);
-			x86_lea_membase (code, X86_ESP, X86_EBP, pos);
-		}
-
-		if (pos) {
-			g_assert (need_stack_frame);
 			x86_lea_membase (code, X86_ESP, X86_EBP, pos);
 		}
 
