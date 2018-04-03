@@ -38,11 +38,7 @@
         "package_version": ""
     },
     {
-        "package_name": "libunwind",
-        "package_version": ""
-    },
-    {
-        "package_name": "libcurl4",
+        "package_name": "krb5-mini",
         "package_version": ""
     }]
 }
