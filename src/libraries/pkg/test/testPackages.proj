@@ -89,11 +89,6 @@
     <CliEnvironment Include="DOTNET_MULTILEVEL_LOOKUP=0" />
   </ItemGroup>
 
-  <Target Name="JoeLog" BeforeTargets="CreateTestDir">
-    <Message Importance="High" Text="**TestSupportFiles = @(TestSupportFiles)" />
-    <Message Importance="High" Text="**_ExcludeTestSupportFiles = @(_ExcludeTestSupportFiles)" />
-  </Target>
-
   <Target Name="CreateTestDir"
           Inputs="@(TestSupportFiles)"
           Outputs="@(TestSupportFiles->'%(DestinationFolder)\%(FileName)%(Extension)')">
