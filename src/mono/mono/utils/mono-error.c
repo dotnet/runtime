@@ -553,7 +553,7 @@ set_message_on_exception (MonoException *exception, MonoErrorInternal *error, Mo
 		mono_error_set_out_of_memory (error_out, "Could not allocate exception object");
 }
 
-MonoExceptionHandle
+static MonoExceptionHandle
 mono_error_prepare_exception_handle (MonoError *oerror, MonoError *error_out)
 // Can fail with out-of-memory
 {
@@ -686,7 +686,7 @@ Convert this MonoError to an exception if it's faulty or return NULL.
 The error object is cleant after.
 */
 
-MonoExceptionHandle
+static MonoExceptionHandle
 mono_error_convert_to_exception_handle (MonoError *target_error)
 {
 	ERROR_DECL (error);

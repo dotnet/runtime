@@ -328,7 +328,7 @@ worker_callback (void)
 
 		if (thread->state & (ThreadState_AbortRequested | ThreadState_SuspendRequested)) {
 			domains_unlock ();
-			if (mono_thread_interruption_checkpoint ()) {
+			if (mono_thread_interruption_checkpoint_bool ()) {
 				domains_lock ();
 				continue;
 			}

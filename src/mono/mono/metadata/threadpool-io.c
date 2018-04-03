@@ -344,7 +344,7 @@ selector_thread (gpointer data)
 		gint res;
 		gboolean interrupted = FALSE;
 
-		if (mono_thread_interruption_checkpoint ())
+		if (mono_thread_interruption_checkpoint_bool ())
 			continue;
 
 		mono_coop_mutex_lock (&threadpool_io->updates_lock);

@@ -196,7 +196,12 @@ static void self_suspend_internal (void);
 static gboolean
 mono_thread_set_interruption_requested_flags (MonoInternalThread *thread, gboolean sync);
 
-static MonoException* mono_thread_execute_interruption (void);
+static MonoException*
+mono_thread_execute_interruption (void);
+
+static void
+mono_thread_execute_interruption_void (void);
+
 static void ref_stack_destroy (gpointer rs);
 
 /* Spin lock for InterlockedXXX 64 bit functions */
@@ -3413,7 +3418,7 @@ mono_threads_set_shutting_down (void)
 
 		if (current_thread->state & (ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
 			UNLOCK_THREAD (current_thread);
-			mono_thread_execute_interruption ();
+			mono_thread_execute_interruption_void ();
 		} else {
 			UNLOCK_THREAD (current_thread);
 		}
@@ -3484,7 +3489,7 @@ mono_thread_manage (void)
 	if (!mono_runtime_try_shutdown ()) {
 		/*FIXME mono_thread_suspend probably should call mono_thread_execute_interruption when self interrupting. */
 		mono_thread_suspend (mono_thread_internal_current ());
-		mono_thread_execute_interruption ();
+		mono_thread_execute_interruption_void ();
 	}
 
 	/* 
@@ -4678,6 +4683,12 @@ exit:
 	return exc;
 }
 
+static void
+mono_thread_execute_interruption_void (void)
+{
+	mono_thread_execute_interruption ();
+}
+
 /*
  * mono_thread_request_interruption
  *
@@ -4686,7 +4697,7 @@ exit:
  * the thread. If the result is an exception that needs to be throw, it is 
  * provided as return value.
  */
-MonoException*
+static MonoException*
 mono_thread_request_interruption (gboolean running_managed)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -4717,6 +4728,12 @@ mono_thread_request_interruption (gboolean running_managed)
 	}
 }
 
+static void
+mono_thread_request_interruption_void (gboolean running_managed)
+{
+	mono_thread_request_interruption (running_managed);
+}
+
 /*This function should be called by a thread after it has exited all of
  * its handle blocks at interruption time.*/
 void
@@ -4743,7 +4760,7 @@ mono_thread_resume_interruption (gboolean exec)
 	mono_thread_info_self_interrupt ();
 
 	if (exec) // Ignore the exception here, it will be raised later.
-		mono_thread_execute_interruption ();
+		mono_thread_execute_interruption_void ();
 }
 
 gboolean mono_thread_interruption_requested ()
@@ -4784,6 +4801,18 @@ mono_thread_interruption_checkpoint (void)
 	return mono_thread_interruption_checkpoint_request (FALSE);
 }
 
+gboolean
+mono_thread_interruption_checkpoint_bool (void)
+{
+	return mono_thread_interruption_checkpoint () != NULL;
+}
+
+void
+mono_thread_interruption_checkpoint_void (void)
+{
+	mono_thread_interruption_checkpoint ();
+}
+
 /*
  * Performs the interruption of the current thread, if one has been requested.
  * Return the exception which needs to be thrown, if any.
@@ -4811,7 +4840,7 @@ mono_set_pending_exception (MonoException *exc)
 
 	MONO_OBJECT_SETREF (thread, pending_exception, exc);
 
-	mono_thread_request_interruption (FALSE);
+	mono_thread_request_interruption_void (FALSE);
 }
 
 /*
@@ -4831,7 +4860,7 @@ mono_set_pending_exception_handle (MonoExceptionHandle exc)
 
 	MONO_OBJECT_SETREF (thread, pending_exception, MONO_HANDLE_RAW (exc));
 
-	mono_thread_request_interruption (FALSE);
+	mono_thread_request_interruption_void (FALSE);
 }
 
 /**

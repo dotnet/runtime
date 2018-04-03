@@ -474,7 +474,7 @@ worker_thread (gpointer unused)
 	g_assert (thread);
 
 	while (!mono_runtime_is_shutting_down ()) {
-		if (mono_thread_interruption_checkpoint ())
+		if (mono_thread_interruption_checkpoint_bool ())
 			continue;
 
 		if (!work_item_try_pop ()) {
@@ -704,7 +704,7 @@ monitor_thread (gpointer unused)
 				break;
 			interval_left -= mono_msec_ticks () - ts;
 
-			mono_thread_interruption_checkpoint ();
+			mono_thread_interruption_checkpoint_void ();
 		} while (interval_left > 0 && ++awake < 10);
 
 		if (mono_runtime_is_shutting_down ())

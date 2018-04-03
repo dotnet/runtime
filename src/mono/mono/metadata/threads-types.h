@@ -249,9 +249,17 @@ void mono_thread_push_appdomain_ref (MonoDomain *domain);
 void mono_thread_pop_appdomain_ref (void);
 gboolean mono_thread_has_appdomain_ref (MonoThread *thread, MonoDomain *domain);
 
-MonoException* mono_thread_request_interruption (mono_bool running_managed);
 gboolean mono_thread_interruption_requested (void);
-MonoException* mono_thread_interruption_checkpoint (void);
+
+MonoException*
+mono_thread_interruption_checkpoint (void);
+
+gboolean
+mono_thread_interruption_checkpoint_bool (void);
+
+void
+mono_thread_interruption_checkpoint_void (void);
+
 MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
 gint32* mono_thread_interruption_request_flag (void);
 

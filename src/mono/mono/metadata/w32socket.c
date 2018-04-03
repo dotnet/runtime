@@ -1338,7 +1338,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode,
 			}
 
 			/* Suspend requested? */
-			mono_thread_interruption_checkpoint ();
+			mono_thread_interruption_checkpoint_void ();
 
 			errno = EINTR;
 		}
@@ -1833,7 +1833,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArrayHandle sockets, gi
 			}
 
 			/* Suspend requested? */
-			mono_thread_interruption_checkpoint ();
+			mono_thread_interruption_checkpoint_void ();
 
 			errno = EINTR;
 		}
