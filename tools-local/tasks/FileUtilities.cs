@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
@@ -30,6 +31,16 @@ namespace Microsoft.DotNet.Build.Tasks
 
             return s_assemblyExtensions.Contains(extension) ? GetAssemblyVersion(sourcePath) : null;
         }
-
+        private static Version GetAssemblyVersion(string sourcePath)
+        {
+            try
+            {
+                return AssemblyName.GetAssemblyName(sourcePath)?.Version;
+            }
+            catch (BadImageFormatException)
+            {
+                return null;
+            }
+        }
     }
 }
