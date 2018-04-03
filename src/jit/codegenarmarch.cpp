@@ -160,7 +160,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #else  // !_TARGET_ARM64_
                 if (varTypeIsFloating(treeNode))
                 {
-                    NYI_ARM("genRegCopy from 'int' to 'float'");
+                    // GT_BITCAST on ARM is only used to cast floating-point arguments to integer
+                    // registers. Nobody generates GT_BITCAST from int to float currently.
+                    NYI_ARM("GT_BITCAST from 'int' to 'float'");
                 }
                 else
                 {
@@ -172,7 +174,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                     }
                     else
                     {
-                        regNumber otherReg = (regNumber)treeNode->AsMultiRegOp()->gtOtherReg;
+                        assert(op1->TypeGet() == TYP_DOUBLE);
+                        regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
                         assert(otherReg != REG_NA);
                         inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
                     }
@@ -328,28 +331,27 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_PUTARG_SPLIT:
             genPutArgSplit(treeNode->AsPutArgSplit());
             break;
-#endif
+#endif // _TARGET_ARM_
 
         case GT_CALL:
             genCallInstruction(treeNode->AsCall());
-            break;
-
-        case GT_LOCKADD:
-        case GT_XCHG:
-        case GT_XADD:
-            genLockedInstructions(treeNode->AsOp());
             break;
 
         case GT_MEMORYBARRIER:
             instGen_MemoryBarrier();
             break;
 
-        case GT_CMPXCHG:
-            NYI_ARM("GT_CMPXCHG");
 #ifdef _TARGET_ARM64_
-            genCodeForCmpXchg(treeNode->AsCmpXchg());
-#endif
+        case GT_LOCKADD:
+        case GT_XCHG:
+        case GT_XADD:
+            genLockedInstructions(treeNode->AsOp());
             break;
+
+        case GT_CMPXCHG:
+            genCodeForCmpXchg(treeNode->AsCmpXchg());
+            break;
+#endif // _TARGET_ARM64_
 
         case GT_RELOAD:
             // do nothing - reload is just a marker.
@@ -511,12 +513,12 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             genConsumeOperands(treeNode->AsOp());
             getEmitter()->emitInsBinary(INS_frintm, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
-#endif
+
         case CORINFO_INTRINSIC_Round:
-            NYI_ARM("genIntrinsic for round - not implemented yet");
             genConsumeOperands(treeNode->AsOp());
-            getEmitter()->emitInsBinary(INS_ROUND, emitActualTypeSize(treeNode), treeNode, srcNode);
+            getEmitter()->emitInsBinary(INS_frintn, emitActualTypeSize(treeNode), treeNode, srcNode);
             break;
+#endif // _TARGET_ARM64_
 
         case CORINFO_INTRINSIC_Sqrt:
             genConsumeOperands(treeNode->AsOp());
@@ -2116,6 +2118,8 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 #else  // !_TARGET_ARM64_
         if (varTypeIsFloating(treeNode))
         {
+            // GT_COPY from 'int' to 'float' currently can't happen. Maybe if ARM SIMD is implemented
+            // it will happen, according to the comment above?
             NYI_ARM("genRegCopy from 'int' to 'float'");
         }
         else

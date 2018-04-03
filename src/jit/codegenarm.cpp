@@ -239,17 +239,6 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
-//------------------------------------------------------------------------
-// genLockedInstructions: Generate code for the locked operations.
-//
-// Notes:
-//    Handles GT_LOCKADD, GT_XCHG, GT_XADD nodes.
-//
-void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
-{
-    NYI("genLockedInstructions");
-}
-
 //--------------------------------------------------------------------------------------
 // genLclHeap: Generate code for localloc
 //
@@ -988,17 +977,10 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     GenTree*    data = tree->gtOp1;
     instruction ins  = ins_Store(targetType);
     emitAttr    attr = emitTypeSize(targetType);
-    if (data->isContainedIntOrIImmed())
-    {
-        assert(data->IsIntegralConst(0));
-        NYI_ARM("st.lclFld contained operand");
-    }
-    else
-    {
-        assert(!data->isContained());
-        genConsumeReg(data);
-        emit->emitIns_S_R(ins, attr, data->gtRegNum, varNum, offset);
-    }
+
+    assert(!data->isContained());
+    genConsumeReg(data);
+    emit->emitIns_S_R(ins, attr, data->gtRegNum, varNum, offset);
 
     genUpdateLife(tree);
     varDsc->lvRegNum = REG_STK;
@@ -1039,17 +1021,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     {
         genConsumeRegs(data);
 
-        regNumber dataReg = REG_NA;
-        if (data->isContainedIntOrIImmed())
-        {
-            assert(data->IsIntegralConst(0));
-            NYI_ARM("st.lclVar contained operand");
-        }
-        else
-        {
-            assert(!data->isContained());
-            dataReg = data->gtRegNum;
-        }
+        assert(!data->isContained());
+        regNumber dataReg = data->gtRegNum;
         assert(dataReg != REG_NA);
 
         if (targetReg == REG_NA) // store into stack based LclVar
@@ -1282,9 +1255,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // registers are taken care of.
         genConsumeOperands(tree);
 
-#if NOGC_WRITE_BARRIERS
-        NYI_ARM("NOGC_WRITE_BARRIERS");
-#else
         // At this point, we should not have any interference.
         // That is, 'data' must not be in REG_ARG_0,
         //  as that is where 'addr' must go.
@@ -1301,7 +1271,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         {
             inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
         }
-#endif // NOGC_WRITE_BARRIERS
 
         genGCWriteBarrier(tree, writeBarrierForm);
     }
@@ -1694,9 +1663,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
 
-        // NYI: Contained immediates.
-        NYI_IF((loVal->gtRegNum == REG_NA) || (hiVal->gtRegNum == REG_NA),
-               "Store of long lclVar with contained immediate");
+        noway_assert((loVal->gtRegNum != REG_NA) && (hiVal->gtRegNum != REG_NA));
 
         emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, loVal->gtRegNum, lclNum, 0);
         emit->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, hiVal->gtRegNum, lclNum, genTypeSize(TYP_INT));
