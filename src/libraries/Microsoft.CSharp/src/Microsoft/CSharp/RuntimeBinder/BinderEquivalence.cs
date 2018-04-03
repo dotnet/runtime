@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     internal static class BinderEquivalence
     {
         // An upper bound on the size of binder cache.
-        // We do not need to catch all the binders, 4K should be enough for most cases.
+        // We do not need to cache all the binders, 4K should be enough for most cases.
         //
         // For the perspective: the dynamic testsuite has a lot of dynamic operations, 
         // but ends up needing only ~500 binders once caching is enabled.
@@ -56,7 +56,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         internal class BinderEqualityComparer : IEqualityComparer<ICSharpBinder>
         {
             public bool Equals(ICSharpBinder x, ICSharpBinder y) => x.IsEquivalentTo(y);
-            public int GetHashCode(ICSharpBinder obj) => obj.BinderEqivalenceHash;
+            public int GetHashCode(ICSharpBinder obj) => obj.GetGetBinderEquivalenceHash();
         }
     }
 }
