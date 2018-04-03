@@ -129,7 +129,7 @@ fi
 if [[ -n "$CROSSCOMPONENT" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DCLR_CROSS_COMPONENTS_BUILD=1"
 fi
-if [[ -n "$CROSSCOMPILE" ]]; then
+if [ "$CROSSCOMPILE" == "1" ]; then
     if ! [[ -n "$ROOTFS_DIR" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
