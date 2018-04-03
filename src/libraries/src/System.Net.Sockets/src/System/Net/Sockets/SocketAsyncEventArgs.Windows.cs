@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -40,6 +41,7 @@ namespace System.Net.Sockets
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
+        private readonly StrongBox<SocketAsyncEventArgs> _strongThisRef = new StrongBox<SocketAsyncEventArgs>(); // state for _preAllocatedOverlapped; .Value set to this while operations in flight
 
         private PinState _pinState;
         private enum PinState : byte { None = 0, MultipleBuffer, SendPackets }
@@ -53,7 +55,7 @@ namespace System.Net.Sockets
             try
             {
                 if (suppressFlow) ExecutionContext.SuppressFlow();
-                _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, null);
+                _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, _strongThisRef, null);
             }
             finally
             {
@@ -90,6 +92,15 @@ namespace System.Net.Sockets
             Debug.Assert(_preAllocatedOverlapped != null, "_preAllocatedOverlapped is null");
 
             _currentSocket.SafeHandle.IOCPBoundHandle.FreeNativeOverlapped(overlapped);
+        }
+
+        partial void StartOperationCommonCore()
+        {
+            // Store the reference to this instance so that it's kept alive by the preallocated
+            // overlapped during the asynchronous operation and so that it's available in the
+            // I/O completion callback.  Once the operation completes, we null this out so
+            // that the SocketAsyncEventArgs instance isn't kept alive unnecessarily.
+            _strongThisRef.Value = this;
         }
 
         /// <summary>Handles the result of an IOCP operation.</summary>
@@ -1115,6 +1126,7 @@ namespace System.Net.Sockets
 
         private void CompleteCore()
         {
+            _strongThisRef.Value = null; // null out this reference from the overlapped so this isn't kept alive artificially
             if (_singleBufferHandleState != SingleBufferHandleState.None)
             {
                 CompleteCoreSpin();
@@ -1173,7 +1185,10 @@ namespace System.Net.Sockets
 
         private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
-            var saea = (SocketAsyncEventArgs)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+            var saeaBox = (StrongBox<SocketAsyncEventArgs>)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+            SocketAsyncEventArgs saea = saeaBox.Value;
+            Debug.Assert(saea != null);
+
             if ((SocketError)errorCode == SocketError.Success)
             {
                 saea.FreeNativeOverlapped(nativeOverlapped);
