@@ -1103,7 +1103,7 @@ class MsbuildGenerator {
 		properties.Append ($"  </PropertyGroup>{NewLine}");
 
 		var prebuild_postbuild = new StringBuilder ();
-		if (!String.IsNullOrWhiteSpace(prebuild) || !String.IsNullOrWhiteSpace(prebuild)) {
+		if (!String.IsNullOrWhiteSpace(prebuild) || !String.IsNullOrWhiteSpace(postbuild)) {
 			prebuild_postbuild.Append ($"  <PropertyGroup>{NewLine}");
 			prebuild_postbuild.Append (prebuild);
 			prebuild_postbuild.Append (postbuild);

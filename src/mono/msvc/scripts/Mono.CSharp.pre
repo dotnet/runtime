@@ -1,0 +1,1 @@
+$(ProjectDir)\..\..\jay\jay.exe -c -o $(ProjectDir)\$(Platform)-parser.cs $(ProjectDir)\..\..\mcs\cs-parser.jay &lt; $(ProjectDir)\..\..\jay\skeleton.cs
