@@ -341,7 +341,7 @@ namespace System.IO
         /// <summary>
         /// Try to intercept the key pressed.
         /// 
-        /// Unlike Windows Unix has no concept of virtual key codes.
+        /// Unlike Windows, Unix has no concept of virtual key codes.
         /// Hence, in case we do not recognize a key, we can't really
         /// get the ConsoleKey key code associated with it.
         /// As a result, we try to recognize the key, and if that does
