@@ -584,6 +584,7 @@ typedef struct {
 	int async_id;
 	/* Used to know if we are in process of async step-out and distishing from exception breakpoints */
 	MonoMethod* async_stepout_method;
+	int refcount;
 } SingleStepReq;
 
 /*
@@ -702,7 +703,7 @@ static MonoCoopCond debugger_thread_exited_cond;
 static MonoCoopMutex debugger_thread_exited_mutex;
 
 /* The single step request instance */
-static SingleStepReq *ss_req;
+static SingleStepReq *the_ss_req;
 
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 /* Number of single stepping operations in progress */
@@ -806,6 +807,8 @@ static void ss_start (SingleStepReq *ss_req, MonoMethod *method, SeqPoint *sp, M
 					  StackFrame **frames, int nframes);
 static ErrorCode ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilter filter, EventRequest *req);
 static void ss_destroy (SingleStepReq *req);
+static SingleStepReq* ss_req_acquire (void);
+static void ss_req_release (SingleStepReq *req);
 
 static void start_debugger_thread (void);
 static void stop_debugger_thread (void);
@@ -2452,7 +2455,10 @@ buffer_add_methodid (Buffer *buf, MonoDomain *domain, MonoMethod *method)
 		char *s;
 
 		s = mono_method_full_name (method, 1);
-		DEBUG_PRINTF (2, "[dbg]   send method [%s]\n", s);
+		if (is_debugger_thread ())
+			DEBUG_PRINTF (2, "[dbg]   send method [%s]\n", s);
+		else
+			DEBUG_PRINTF (2, "[%p]   send method [%s]\n", (gpointer) (gsize) mono_native_thread_id_get (), s);
 		g_free (s);
 	}
 }
@@ -4681,14 +4687,14 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	MonoDebugSourceLocation *loc = NULL;
 	gboolean hit = TRUE;
 
-	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR)) {
+	if ((req->filter & STEP_FILTER_STATIC_CTOR)) {
 		mono_thread_state_init_from_monoctx (&tls->context, ctx);
 		compute_frame_info (tls->thread, tls);
 
 		gboolean ret = FALSE;
 		gboolean method_in_stack = FALSE;
 
-		for (int i=0; i < tls->frame_count; i++) {
+		for (int i = 0; i < tls->frame_count; i++) {
 			MonoMethod *external_method = tls->frames [i]->method;
 			if (method == external_method)
 				method_in_stack = TRUE;
@@ -4745,9 +4751,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 		}
 	}
 
-	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && ss_req->start_method){
+	if (req->depth == STEP_DEPTH_INTO && req->size == STEP_SIZE_MIN && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && req->start_method) {
 		ss_calculate_framecount (tls, ctx);
-		if (ss_req->start_method == method && req->nframes && tls->frame_count == req->nframes) {//Check also frame count(could be recursion)
+		if (req->start_method == method && req->nframes && tls->frame_count == req->nframes) { //Check also frame count(could be recursion)
 			DEBUG_PRINTF (1, "[%p] Seq point at nonempty stack %x while stepping in, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 			return FALSE;
 		}
@@ -4775,9 +4781,9 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 
 	if (!loc) {
 		DEBUG_PRINTF (1, "[%p] No line number info for il offset %x, continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
-		ss_req->last_method = method;
+		req->last_method = method;
 		hit = FALSE;
-	} else if (loc && method == ss_req->last_method && loc->row == ss_req->last_line) {
+	} else if (loc && method == req->last_method && loc->row == req->last_line) {
 		ss_calculate_framecount (tls, ctx);
 		if (tls->frame_count == req->nframes) { // If the frame has changed we're clearly not on the same source line.
 			DEBUG_PRINTF (1, "[%p] Same source line (%d), continuing single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), loc->row);
@@ -4786,8 +4792,8 @@ ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, DebuggerTlsData *t
 	}
 				
 	if (loc) {
-		ss_req->last_method = method;
-		ss_req->last_line = loc->row;
+		req->last_method = method;
+		req->last_line = loc->row;
 		mono_debug_free_source_location (loc);
 	}
 
@@ -4966,6 +4972,12 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 	MonoSeqPointInfo *info;
 	SeqPoint sp;
 	gboolean found_sp;
+
+	if (suspend_count > 0) {
+		/* Could be hit if we were suspended in native code */
+		process_suspend (tls, ctx);
+		return;
+	}
 
 	// FIXME: Speed this up
 
@@ -5271,6 +5283,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	MonoMethod *method;
 	SeqPoint sp;
 	MonoSeqPointInfo *info;
+	SingleStepReq *ss_req;
 
 	/* Skip the instruction causing the single step */
 	if (from_signal)
@@ -5284,12 +5297,17 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 		return;
 	}
 
+	/*
+	 * This can run concurrently with a clear_event_request () call, so needs locking/reference counts.
+	 */
+	ss_req = ss_req_acquire ();
+
 	if (!ss_req)
 		// FIXME: A suspend race
 		return;
 
 	if (mono_thread_internal_current () != ss_req->thread)
-		return;
+		goto exit;
 
 	ip = (guint8 *)MONO_CONTEXT_GET_IP (ctx);
 
@@ -5304,7 +5322,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	g_assert (method);
 
 	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
-		return;
+		goto exit;
 
 	/* 
 	 * FIXME:
@@ -5312,7 +5330,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
 	if (method->klass == mono_defaults.string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
-		return;
+		goto exit;
 
 	/*
 	 * This could be in ss_update method, but mono_find_next_seq_point_for_native_offset is pretty expensive method,
@@ -5326,9 +5344,8 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 				break;
 			}
 		if (!found)
-			return;
+			goto exit;
 	}
-
 
 	/*
 	 * The ip points to the instruction causing the single step event, which is before
@@ -5336,13 +5353,13 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	 */
 	if (!mono_find_next_seq_point_for_native_offset (domain, method, (guint8*)ip - (guint8*)ji->code_start, &info, &sp)) {
 		g_assert_not_reached ();
-		return;
+		goto exit;
 	}
 
 	il_offset = sp.il_offset;
 
 	if (!ss_update (ss_req, ji, &sp, tls, ctx, method))
-		return;
+		goto exit;
 
 	/* Start single stepping again from the current sequence point */
 	ss_start (ss_req, method, &sp, info, ctx, tls, FALSE, NULL, 0);
@@ -5350,7 +5367,7 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	if ((ss_req->filter & STEP_FILTER_STATIC_CTOR) &&
 		(method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) &&
 		!strcmp (method->name, ".cctor"))
-		return;
+		goto exit;
 
 	// FIXME: Has to lock earlier
 
@@ -5367,6 +5384,9 @@ process_single_step_inner (DebuggerTlsData *tls, gboolean from_signal)
 	mono_loader_unlock ();
 
 	process_event (EVENT_KIND_STEP, jinfo_get_method (ji), il_offset, ctx, events, suspend_policy);
+
+ exit:
+	ss_req_release (ss_req);
 }
 
 static void
@@ -5865,19 +5885,20 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 	wait_for_suspend ();
 
 	// FIXME: Multiple requests
-	if (ss_req) {
+	if (the_ss_req) {
 		DEBUG_PRINTF (0, "Received a single step request while the previous one was still active.\n");
 		return ERR_NOT_IMPLEMENTED;
 	}
 
 	DEBUG_PRINTF (1, "[dbg] Starting single step of thread %p (depth=%s).\n", thread, ss_depth_to_string (depth));
 
-	ss_req = g_new0 (SingleStepReq, 1);
+	SingleStepReq *ss_req = g_new0 (SingleStepReq, 1);
 	ss_req->req = req;
 	ss_req->thread = thread;
 	ss_req->size = size;
 	ss_req->depth = depth;
 	ss_req->filter = filter;
+	ss_req->refcount = 1;
 	req->info = ss_req;
 
 	for (int i = 0; i < req->nmodifiers; i++) {
@@ -5977,6 +5998,8 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 
 	ss_req->start_method = method;
 
+	the_ss_req = ss_req;
+
 	ss_start (ss_req, method, sp, info, set_ip ? &tls->restore_state.ctx : &tls->context.ctx, tls, step_to_catch, frames, nframes);
 
 	if (frames)
@@ -5988,13 +6011,11 @@ ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, StepFilte
 static void
 ss_destroy (SingleStepReq *req)
 {
-	// FIXME: Locking
-	g_assert (ss_req == req);
+	DEBUG_PRINTF (1, "[dbg] ss_destroy.\n");
 
-	ss_stop (ss_req);
+	ss_stop (req);
 
-	g_free (ss_req);
-	ss_req = NULL;
+	g_free (req);
 }
 
 static void
@@ -6005,15 +6026,43 @@ ss_clear_for_assembly (SingleStepReq *req, MonoAssembly *assembly)
 
 	while (found) {
 		found = FALSE;
-		for (l = ss_req->bps; l; l = l->next) {
+		for (l = req->bps; l; l = l->next) {
 			if (breakpoint_matches_assembly ((MonoBreakpoint *)l->data, assembly)) {
 				clear_breakpoint ((MonoBreakpoint *)l->data);
-				ss_req->bps = g_slist_delete_link (ss_req->bps, l);
+				req->bps = g_slist_delete_link (req->bps, l);
 				found = TRUE;
 				break;
 			}
 		}
 	}
+}
+
+static SingleStepReq*
+ss_req_acquire (void)
+{
+	SingleStepReq *req;
+
+	dbg_lock ();
+	req = the_ss_req;
+	if (req)
+		req->refcount ++;
+	dbg_unlock ();
+	return req;
+}
+
+static void
+ss_req_release (SingleStepReq *req)
+{
+	gboolean free = FALSE;
+
+	dbg_lock ();
+	g_assert (req->refcount);
+	req->refcount --;
+	if (req->refcount == 0)
+		free = TRUE;
+	dbg_unlock ();
+	if (free)
+		ss_destroy (req);
 }
 
 /*
@@ -6960,8 +7009,10 @@ clear_event_request (int req_id, int etype)
 		if (req->id == req_id && req->event_kind == etype) {
 			if (req->event_kind == EVENT_KIND_BREAKPOINT)
 				clear_breakpoint ((MonoBreakpoint *)req->info);
-			if (req->event_kind == EVENT_KIND_STEP)
-				ss_destroy ((SingleStepReq *)req->info);
+			if (req->event_kind == EVENT_KIND_STEP) {
+				ss_req_release ((SingleStepReq *)req->info);
+				the_ss_req = NULL;
+			}
 			if (req->event_kind == EVENT_KIND_METHOD_ENTRY)
 				clear_breakpoint ((MonoBreakpoint *)req->info);
 			if (req->event_kind == EVENT_KIND_METHOD_EXIT)
