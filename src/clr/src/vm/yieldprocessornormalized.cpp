@@ -92,6 +92,9 @@ static void InitializeYieldProcessorNormalized()
     g_yieldsPerNormalizedYield = yieldsPerNormalizedYield;
     g_optimalMaxNormalizedYieldsPerSpinIteration = optimalMaxNormalizedYieldsPerSpinIteration;
     s_isYieldProcessorNormalizedInitialized = true;
+
+
+    GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor(yieldsPerNormalizedYield);
 }
 
 void EnsureYieldProcessorNormalizedInitialized()
