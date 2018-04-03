@@ -2608,8 +2608,10 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData("HELLO", "hello")]
         [InlineData("hello", "hello")]
+        [InlineData("HELLO", "hello")]
+        [InlineData("hElLo", "hello")]
+        [InlineData("HeLlO", "hello")]
         [InlineData("", "")]
         public static void ToLower(string s, string expected)
         {
@@ -2622,17 +2624,28 @@ namespace System.Tests
 
         private static IEnumerable<object[]> ToLower_Culture_TestData()
         {
-            yield return new object[] { "H\u0049 World", "h\u0131 world", new CultureInfo("tr-TR") };
-            yield return new object[] { "H\u0130 World", "h\u0069 world", new CultureInfo("tr-TR") };
-            yield return new object[] { "H\u0131 World", "h\u0131 world", new CultureInfo("tr-TR") };
+            var tuples = new[]
+            {
+                Tuple.Create('\u0049', '\u0131', new CultureInfo("tr-TR")),
+                Tuple.Create('\u0130', '\u0069', new CultureInfo("tr-TR")),
+                Tuple.Create('\u0131', '\u0131', new CultureInfo("tr-TR")),
 
-            yield return new object[] { "H\u0049 World", "h\u0069 world", new CultureInfo("en-US") };
-            yield return new object[] { "H\u0130 World", "h\u0069 world", new CultureInfo("en-US") };
-            yield return new object[] { "H\u0131 World", "h\u0131 world", new CultureInfo("en-US") };
+                Tuple.Create('\u0049', '\u0069', new CultureInfo("en-US")),
+                Tuple.Create('\u0130', '\u0069', new CultureInfo("en-US")),
+                Tuple.Create('\u0131', '\u0131', new CultureInfo("en-US")),
 
-            yield return new object[] { "H\u0049 World", "h\u0069 world", CultureInfo.InvariantCulture };
-            yield return new object[] { "H\u0130 World", "h\u0130 world", CultureInfo.InvariantCulture };
-            yield return new object[] { "H\u0131 World", "h\u0131 world", CultureInfo.InvariantCulture };
+                Tuple.Create('\u0049', '\u0069', CultureInfo.InvariantCulture),
+                Tuple.Create('\u0130', '\u0130', CultureInfo.InvariantCulture),
+                Tuple.Create('\u0131', '\u0131', CultureInfo.InvariantCulture),
+            };
+
+            foreach (Tuple<char, char, CultureInfo> tuple in tuples)
+            {
+                yield return new object[] { $"{tuple.Item1}Hello World", $"{tuple.Item2}hello world", tuple.Item3 };
+                yield return new object[] { $"HeLlO{tuple.Item1} WORLD", $"hello{tuple.Item2} world", tuple.Item3 };
+                yield return new object[] { $"hello world{tuple.Item1}", $"hello world{tuple.Item2}", tuple.Item3 };
+                yield return new object[] { new string(tuple.Item1, 100), new string(tuple.Item2, 100), tuple.Item3 };
+            }
         }
 
         [Fact]
@@ -2648,19 +2661,21 @@ namespace System.Tests
             }).Dispose();
         }
 
-        private static void ToLower_Culture(string actual, string expected, CultureInfo culture)
+        private static void ToLower_Culture(string input, string expected, CultureInfo culture)
         {
             CultureInfo.CurrentCulture = culture;
-            Assert.True(actual.ToLower().Equals(expected, StringComparison.Ordinal));
+            Assert.True(input.ToLower().Equals(expected, StringComparison.Ordinal), $"Input: {input}, Expected: {expected}, Actual: {input.ToLower()}");
 
-            Span<char> destination = new char[actual.Length];
-            Assert.Equal(actual.Length, actual.AsSpan().ToLower(destination, culture));
+            Span<char> destination = new char[input.Length];
+            Assert.Equal(input.Length, input.AsSpan().ToLower(destination, culture));
             Assert.Equal(expected, destination.ToString());
         }
 
         [Theory]
-        [InlineData("HELLO", "hello")]
         [InlineData("hello", "hello")]
+        [InlineData("HELLO", "hello")]
+        [InlineData("hElLo", "hello")]
+        [InlineData("HeLlO", "hello")]
         [InlineData("", "")]
         public static void ToLowerInvariant(string s, string expected)
         {
@@ -2684,6 +2699,8 @@ namespace System.Tests
         [Theory]
         [InlineData("hello", "HELLO")]
         [InlineData("HELLO", "HELLO")]
+        [InlineData("hElLo", "HELLO")]
+        [InlineData("HeLlO", "HELLO")]
         [InlineData("", "")]
         public static void ToUpper(string s, string expected)
         {
@@ -2694,17 +2711,34 @@ namespace System.Tests
             Assert.Equal(expected, destination.ToString());
         }
 
+        private static IEnumerable<object[]> ToUpper_TurkishI_MemberData(
+            params KeyValuePair<char, char>[] mappings)
+        {
+            foreach (KeyValuePair<char, char> mapping in mappings)
+            {
+                yield return new[] { $"{mapping.Key}", $"{mapping.Value}" };
+                yield return new[] { $"{mapping.Key}a TeSt", $"{mapping.Value}A TEST" };
+                yield return new[] { $"a T{mapping.Key}est", $"A T{mapping.Value}EST" };
+                yield return new[] { $"A test{mapping.Key}", $"A TEST{mapping.Value}" };
+                yield return new[] { new string(mapping.Key, 100), new string(mapping.Value, 100) };
+            }
+        }
+
+        public static IEnumerable<object[]> ToUpper_TurkishI_TurkishCulture_MemberData() =>
+            ToUpper_TurkishI_MemberData(
+                new KeyValuePair<char, char>('\u0069', '\u0130'),
+                new KeyValuePair<char, char>('\u0130', '\u0130'),
+                new KeyValuePair<char, char>('\u0131', '\u0049'));
+
         [Theory]
-        [InlineData("H\u0069 World", "H\u0130 WORLD")]
-        [InlineData("H\u0130 World", "H\u0130 WORLD")]
-        [InlineData("H\u0131 World", "H\u0049 WORLD")]
+        [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
             RemoteInvoke((str, expectedString) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
-                Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal));
+                Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal), "Actual: " + str.ToUpper());
                 
                 Span<char> destination = new char[str.Length];
                 Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
@@ -2714,17 +2748,21 @@ namespace System.Tests
             }, s.ToString(), expected.ToString()).Dispose();
         }
 
+        public static IEnumerable<object[]> ToUpper_TurkishI_EnglishUSCulture_MemberData() =>
+            ToUpper_TurkishI_MemberData(
+                new KeyValuePair<char, char>('\u0069', '\u0049'),
+                new KeyValuePair<char, char>('\u0130', '\u0130'),
+                new KeyValuePair<char, char>('\u0131', '\u0049'));
+
         [Theory]
-        [InlineData("H\u0069 World", "H\u0049 WORLD")]
-        [InlineData("H\u0130 World", "H\u0130 WORLD")]
-        [InlineData("H\u0131 World", "H\u0049 WORLD")]
+        [MemberData(nameof(ToUpper_TurkishI_EnglishUSCulture_MemberData))]
         public static void ToUpper_TurkishI_EnglishUSCulture(string s, string expected)
         {
             RemoteInvoke((str, expectedString) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
-                Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal));
+                Assert.True(str.ToUpper().Equals(expectedString, StringComparison.Ordinal), "Actual: " + str.ToUpper());
 
                 Span<char> destination = new char[str.Length];
                 Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
@@ -2734,10 +2772,14 @@ namespace System.Tests
             }, s.ToString(), expected.ToString()).Dispose();
         }
 
+        public static IEnumerable<object[]> ToUpper_TurkishI_InvariantCulture_MemberData() =>
+            ToUpper_TurkishI_MemberData(
+                new KeyValuePair<char, char>('\u0069', '\u0049'),
+                new KeyValuePair<char, char>('\u0130', '\u0130'),
+                new KeyValuePair<char, char>('\u0131', '\u0131'));
+
         [Theory]
-        [InlineData("H\u0069 World", "H\u0049 WORLD")]
-        [InlineData("H\u0130 World", "H\u0130 WORLD")]
-        [InlineData("H\u0131 World", "H\u0131 WORLD")]
+        [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
             RemoteInvoke((str, expectedString) =>
@@ -2757,6 +2799,8 @@ namespace System.Tests
         [Theory]
         [InlineData("hello", "HELLO")]
         [InlineData("HELLO", "HELLO")]
+        [InlineData("hElLo", "HELLO")]
+        [InlineData("HeLlO", "HELLO")]
         [InlineData("", "")]
         public static void ToUpperInvariant(string s, string expected)
         {
