@@ -58,6 +58,15 @@ public class TermInfo
         Assert.True(foundAtLeastOne, "Didn't find any terminfo files");
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests TermInfo
+    public void VerifyTermInfoSupportsNewAndLegacyNcurses()
+    {
+        MethodInfo readDbMethod = typeof(Console).GetTypeInfo().Assembly.GetType(TerminfoDatabaseType).GetTypeInfo().GetDeclaredMethods(ReadDatabaseMethod).Where(m => m.GetParameters().Count() == 2).Single();
+        readDbMethod.Invoke(null, new object[] { "xterm", "ncursesFormats" }); // This will throw InvalidOperationException in case we don't support the legacy format
+        readDbMethod.Invoke(null, new object[] { "screen-256color", "ncursesFormats" }); // This will throw InvalidOperationException if we can't parse the new format
+    }
+
     [Theory]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests TermInfo
     [InlineData("xterm-256color", "\u001B\u005B\u00330m", "\u001B\u005B\u00340m", 0)]
