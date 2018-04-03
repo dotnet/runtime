@@ -186,7 +186,7 @@
         "solution": "$(PB_SourcesDirectory)\\build.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:BatchRestorePackages;BuildCustomTasks",
+        "msbuildArguments": "/t:BuildTraversalBuildDependencies",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
