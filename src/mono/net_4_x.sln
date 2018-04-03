@@ -127,6 +127,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Web.DynamicData", "mcs/class/System.Web.DynamicData/System.Web.DynamicData.csproj", "{60723529-1132-43A7-B978-764AD9F1BE35}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.CSharp", "mcs/class/Mono.CSharp/Mono.CSharp.csproj", "{817CE046-07E8-409D-84BF-A6EA4F2879DE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5D485D32-3B9F-4287-AB24-C8DA5B89F537} = {5D485D32-3B9F-4287-AB24-C8DA5B89F537}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Net", "mcs/class/System.Net/System.Net.csproj", "{182E5AD7-2F59-48E5-B338-C515733AE79B}"
 EndProject
