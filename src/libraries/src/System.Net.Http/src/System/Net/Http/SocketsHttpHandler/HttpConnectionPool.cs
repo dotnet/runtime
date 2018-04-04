@@ -9,6 +9,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,8 @@ namespace System.Net.Http
     /// <summary>Provides a pool of connections to the same endpoint.</summary>
     internal sealed class HttpConnectionPool : IDisposable
     {
+        private static readonly bool s_isWindows7Or2008R2 = GetIsWindows7Or2008R2();
+
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
         private readonly string _host;
@@ -143,6 +146,16 @@ namespace System.Net.Http
             SslClientAuthenticationOptions sslOptions = poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
             sslOptions.ApplicationProtocols = null; // explicitly ignore any ApplicationProtocols set
             sslOptions.TargetHost = sslHostName; // always use the key's name rather than whatever was specified
+
+            // Windows 7 and Windows 2008 R2 support TLS 1.1 and 1.2, but for legacy reasons by default those protocols
+            // are not enabled when a developer elects to use the system default.  However, in .NET Core 2.0 and earlier,
+            // HttpClientHandler would enable them, due to being a wrapper for WinHTTP, which enabled them.  Both for
+            // compatibility and because we prefer those higher protocols whenever possible, SocketsHttpHandler also
+            // pretends they're part of the default when running on Win7/2008R2.
+            if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
+            {
+                sslOptions.EnabledSslProtocols = SecurityProtocol.DefaultSecurityProtocols;
+            }
 
             return sslOptions;
         }
@@ -733,6 +746,19 @@ namespace System.Net.Http
             }
 
             // Pool is active.  Should not be removed.
+            return false;
+        }
+
+        /// <summary>Gets whether we're running on Windows 7 or Windows 2008 R2.</summary>
+        private static bool GetIsWindows7Or2008R2()
+        {
+            OperatingSystem os = Environment.OSVersion;
+            if (os.Platform == PlatformID.Win32NT)
+            {
+                // Both Windows 7 and Windows 2008 R2 report version 6.1.
+                Version v = os.Version;
+                return v.Major == 6 && v.Minor == 1;
+            }
             return false;
         }
 
