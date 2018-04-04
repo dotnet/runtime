@@ -2102,7 +2102,7 @@ regMaskTP CodeGen::genMakeAddrArrElem(GenTree* arrElem, GenTree* tree, regMaskTP
     regMaskTP addrReg  = RBM_NONE;
     regMaskTP regNeed  = RBM_ALLINT;
 
-#if FEATURE_WRITE_BARRIER && !NOGC_WRITE_BARRIERS
+#if !NOGC_WRITE_BARRIERS
     // In CodeGen::WriteBarrier we set up ARG_1 followed by ARG_0
     // since the arrObj participates in the lea/add instruction
     // that computes ARG_0 we should avoid putting it in ARG_1
@@ -3108,8 +3108,6 @@ regMaskTP CodeGen::WriteBarrier(GenTree* tgt, GenTree* assignVal, regMaskTP tgtA
 
     regMaskTP resultRegMask = RBM_NONE;
 
-#if FEATURE_WRITE_BARRIER
-
     regNumber reg = assignVal->gtRegNum;
 
 #if defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
@@ -3340,13 +3338,6 @@ regMaskTP CodeGen::WriteBarrier(GenTree* tgt, GenTree* assignVal, regMaskTP tgtA
         return resultRegMask;
     }
 #endif // defined(DEBUG) || !(defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS)
-
-#else // !FEATURE_WRITE_BARRIER
-
-    NYI("FEATURE_WRITE_BARRIER unimplemented");
-    return resultRegMask;
-
-#endif // !FEATURE_WRITE_BARRIER
 }
 
 #ifdef _TARGET_X86_
@@ -8877,8 +8868,7 @@ void CodeGen::genCodeForCopyObj(GenTree* tree, regMaskTP destReg)
         CorInfoGCType gcTypeNext = TYPE_GC_NONE;
         var_types     type       = TYP_I_IMPL;
 
-#if FEATURE_WRITE_BARRIER
-        gcType                   = (CorInfoGCType)(*gcPtrs++);
+        gcType = (CorInfoGCType)(*gcPtrs++);
         if (blkSize > TARGET_POINTER_SIZE)
             gcTypeNext = (CorInfoGCType)(*gcPtrs);
 
@@ -8893,9 +8883,6 @@ void CodeGen::genCodeForCopyObj(GenTree* tree, regMaskTP destReg)
             assert(regSrc == REG_ARG_1);
             assert(regTemp == REG_R2);
         }
-#else
-        gcType = TYPE_GC_NONE;
-#endif // FEATURE_WRITE_BARRIER
 
         blkSize -= TARGET_POINTER_SIZE;
 
@@ -10427,14 +10414,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTree* tree, regMaskTP destReg, regMaskTP be
         }
             return;
 
-#else // !_TARGET_XARCH_
-
-        case GT_LOCKADD:
-        case GT_XADD:
-        case GT_XCHG:
-
-            NYI_ARM("LOCK instructions");
-#endif
+#endif // _TARGET_XARCH_
 
         case GT_ARR_LENGTH:
         {
