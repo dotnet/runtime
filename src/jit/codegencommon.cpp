@@ -635,7 +635,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 //   helper - The helper being inquired about
 //
 // Return Value:
-//   Mask of register kills -- registers whose value is no longer guaranteed to be the same.
+//   Mask of register kills -- registers whose values are no longer guaranteed to be the same.
 //
 regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
@@ -645,12 +645,18 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 #if defined(_TARGET_AMD64_)
             return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC;
 #elif defined(_TARGET_ARMARCH_)
-            return RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF | RBM_CALLEE_TRASH_NOGC;
+            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
 #elif defined(_TARGET_X86_)
             return RBM_ESI | RBM_EDI | RBM_ECX;
 #else
             NYI("Model kill set for CORINFO_HELP_ASSIGN_BYREF on target arch");
             return RBM_CALLEE_TRASH;
+#endif
+
+#if defined(_TARGET_ARMARCH_)
+        case CORINFO_HELP_ASSIGN_REF:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            return RBM_CALLEE_TRASH_WRITEBARRIER;
 #endif
 
         case CORINFO_HELP_PROF_FCN_ENTER:
@@ -742,15 +748,20 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_PROFILER_TAILCALL_TRASH;
 #endif // defined(_TARGET_XARCH_)
 
+#if defined(_TARGET_X86_)
         case CORINFO_HELP_ASSIGN_BYREF:
-#if defined(_TARGET_AMD64_)
-            return RBM_CALLEE_TRASH_NOGC;
-#elif defined(_TARGET_X86_)
             // This helper only trashes ECX.
             return RBM_ECX;
-#elif defined(_TARGET_ARMARCH_)
-            return RBM_CALLEE_TRASH_NOGC;
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(_TARGET_X86_)
+
+#if defined(_TARGET_ARMARCH_)
+        case CORINFO_HELP_ASSIGN_BYREF:
+            return RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+
+        case CORINFO_HELP_ASSIGN_REF:
+        case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            return RBM_CALLEE_GCTRASH_WRITEBARRIER;
+#endif
 
         default:
             return RBM_CALLEE_TRASH_NOGC;
@@ -3969,8 +3980,8 @@ void CodeGen::genReportEH()
 //
 // Return Value:
 //   true if an optimized write barrier helper should be used, false otherwise.
-//   Note: only x86 implements (register-specific source) optimized write
-//   barriers currently).
+//   Note: only x86 implements register-specific source optimized write
+//   barriers currently.
 //
 bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf)
 {
@@ -3999,8 +4010,8 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf
 //
 // Return Value:
 //   true if an optimized write barrier helper should be used, false otherwise.
-//   Note: only x86 implements (register-specific source) optimized write
-//   barriers currently).
+//   Note: only x86 implements register-specific source optimized write
+//   barriers currently.
 //
 bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal)
 {
