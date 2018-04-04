@@ -603,7 +603,6 @@ typedef enum {
 
 typedef enum {
 	SelfSuspendResumed,
-	SelfSuspendWait,
 	SelfSuspendNotifyAndWait,
 } MonoSelfSupendResult;
 

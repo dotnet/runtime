@@ -140,9 +140,6 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 	switch (mono_threads_transition_state_poll (info)) {
 	case SelfSuspendResumed:
 		break;
-	case SelfSuspendWait:
-		mono_thread_info_wait_for_resume (info);
-		break;
 	case SelfSuspendNotifyAndWait:
 		mono_threads_notify_initiator_of_suspend (info);
 		mono_thread_info_wait_for_resume (info);
