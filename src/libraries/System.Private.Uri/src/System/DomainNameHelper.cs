@@ -9,11 +9,9 @@ namespace System
 {
     // The class designed as to keep working set of Uri class as minimal.
     // The idea is to stay with static helper methods and strings
-    internal class DomainNameHelper
+    internal static class DomainNameHelper
     {
-        private DomainNameHelper()
-        {
-        }
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         internal const string Localhost = "localhost";
         internal const string Loopback = "loopback";
@@ -276,8 +274,7 @@ namespace System
                             // check ace validity
                             try
                             {
-                                IdnMapping map = new IdnMapping();
-                                map.GetUnicode(new string(strippedHostPtr, curPos, newPos - curPos));
+                                s_idnMapping.GetUnicode(strippedHost, curPos, newPos - curPos);
                                 atLeastOneValidIdn = true;
                                 break;
                             }
@@ -332,18 +329,15 @@ namespace System
             }
             else
             {
-                IdnMapping map = new IdnMapping();
-                string asciiForm;
                 bidiStrippedHost = UriHelper.StripBidiControlCharacter(hostname, start, end - start);
                 try
                 {
-                    asciiForm = map.GetAscii(bidiStrippedHost);
+                    return s_idnMapping.GetAscii(bidiStrippedHost);
                 }
                 catch (ArgumentException)
                 {
                     throw new UriFormatException(SR.net_uri_BadUnicodeHostForIdn);
                 }
-                return asciiForm;
             }
         }
 
@@ -374,13 +368,11 @@ namespace System
         //
         internal static unsafe string UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
         {
-            IdnMapping map = new IdnMapping();
-
             // Test common scenario first for perf
             // try to get unicode equivalent 
             try
             {
-                return map.GetUnicode(idnHost);
+                return s_idnMapping.GetUnicode(idnHost);
             }
             catch (ArgumentException)
             {
@@ -394,8 +386,6 @@ namespace System
 
         internal static unsafe string UnicodeEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
         {
-            IdnMapping map = new IdnMapping();
-
             // hostname already validated
             allAscii = true;
             atLeastOneValidIdn = false;
@@ -458,14 +448,14 @@ namespace System
                     string asciiForm = unescapedHostname.Substring(curPos, newPos - curPos);
                     try
                     {
-                        asciiForm = map.GetAscii(asciiForm);
+                        asciiForm = s_idnMapping.GetAscii(asciiForm);
                     }
                     catch (ArgumentException)
                     {
                         throw new UriFormatException(SR.net_uri_BadUnicodeHostForIdn);
                     }
 
-                    unicodeEqvlHost += map.GetUnicode(asciiForm);
+                    unicodeEqvlHost += s_idnMapping.GetUnicode(asciiForm);
                     if (foundDot)
                         unicodeEqvlHost += ".";
                 }
@@ -477,7 +467,7 @@ namespace System
                         // check ace validity
                         try
                         {
-                            unicodeEqvlHost += map.GetUnicode(unescapedHostname.Substring(curPos, newPos - curPos));
+                            unicodeEqvlHost += s_idnMapping.GetUnicode(unescapedHostname, curPos, newPos - curPos);
                             if (foundDot)
                                 unicodeEqvlHost += ".";
                             aceValid = true;
