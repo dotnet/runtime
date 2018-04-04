@@ -542,10 +542,6 @@ namespace System.Threading.Tasks
             m_stateObject = state;
             m_taskScheduler = scheduler;
 
-            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
-                "Captured an ExecutionContext when one was already captured.");
-            CapturedContext = ExecutionContext.Capture();
-
             // Check for validity of options
             if ((creationOptions &
                     ~(TaskCreationOptions.AttachedToParent |
@@ -602,6 +598,10 @@ namespace System.Threading.Tasks
 
                 AssignCancellationToken(cancellationToken, null, null);
             }
+
+            Debug.Assert(m_contingentProperties == null || m_contingentProperties.m_capturedContext == null,
+                "Captured an ExecutionContext when one was already captured.");
+            CapturedContext = ExecutionContext.Capture();
         }
 
         /// <summary>
