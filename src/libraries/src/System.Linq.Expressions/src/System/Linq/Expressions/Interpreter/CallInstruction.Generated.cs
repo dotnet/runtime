@@ -14,7 +14,7 @@ namespace System.Linq.Expressions.Interpreter
     internal partial class CallInstruction
     {
 #if FEATURE_DLG_INVOKE
-        private const int MaxHelpers = 3;
+        private const int MaxHelpers = 5;
 #endif
 
 #if FEATURE_FAST_CREATE
@@ -175,6 +175,12 @@ namespace System.Linq.Expressions.Interpreter
                     case 2:
                         t = typeof(ActionCallInstruction<,>).MakeGenericType(arrTypes);
                         break;
+                    case 3:
+                        t = typeof(ActionCallInstruction<,,>).MakeGenericType(arrTypes);
+                        break;
+                    case 4:
+                        t = typeof(ActionCallInstruction<,,,>).MakeGenericType(arrTypes);
+                        break;
                     default:
                         throw new InvalidOperationException();
                 }
@@ -191,6 +197,12 @@ namespace System.Linq.Expressions.Interpreter
                         break;
                     case 3:
                         t = typeof(FuncCallInstruction<,,>).MakeGenericType(arrTypes);
+                        break;
+                    case 4:
+                        t = typeof(FuncCallInstruction<,,,>).MakeGenericType(arrTypes);
+                        break;
+                    case 5:
+                        t = typeof(FuncCallInstruction<,,,,>).MakeGenericType(arrTypes);
                         break;
                     default:
                         throw new InvalidOperationException();
@@ -302,6 +314,84 @@ namespace System.Linq.Expressions.Interpreter
         public override string ToString() => "Call(" + _target.Method + ")";
     }
 
+    internal sealed class ActionCallInstruction<T0, T1, T2> : CallInstruction
+    {
+        private readonly bool _isInstance;
+        private readonly Action<T0, T1, T2> _target;
+        public override int ProducedStack => 0;
+        public override int ArgumentCount => 3;
+
+        public ActionCallInstruction(MethodInfo target)
+        {
+            _isInstance = !target.IsStatic;
+            _target = (Action<T0, T1, T2>)target.CreateDelegate(typeof(Action<T0, T1, T2>));
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            object firstArg = frame.Data[frame.StackIndex - 3];
+
+            if (_isInstance)
+            {
+                NullCheck(firstArg);
+            }
+
+            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            {
+                // no need to Invoke, just interpret the lambda body
+                InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
+            }
+            else
+            {
+                _target((T0)firstArg, (T1)frame.Data[frame.StackIndex - 2], (T2)frame.Data[frame.StackIndex - 1]);
+            }
+
+            frame.StackIndex -= 3;
+            return 1;
+        }
+
+        public override string ToString() => "Call(" + _target.Method + ")";
+    }
+
+    internal sealed class ActionCallInstruction<T0, T1, T2, T3> : CallInstruction
+    {
+        private readonly bool _isInstance;
+        private readonly Action<T0, T1, T2, T3> _target;
+        public override int ProducedStack => 0;
+        public override int ArgumentCount => 4;
+
+        public ActionCallInstruction(MethodInfo target)
+        {
+            _isInstance = !target.IsStatic;
+            _target = (Action<T0, T1, T2, T3>)target.CreateDelegate(typeof(Action<T0, T1, T2, T3>));
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            object firstArg = frame.Data[frame.StackIndex - 4];
+
+            if (_isInstance)
+            {
+                NullCheck(firstArg);
+            }
+
+            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            {
+                // no need to Invoke, just interpret the lambda body
+                InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 3], frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
+            }
+            else
+            {
+                _target((T0)firstArg, (T1)frame.Data[frame.StackIndex - 3], (T2)frame.Data[frame.StackIndex - 2], (T3)frame.Data[frame.StackIndex - 1]);
+            }
+
+            frame.StackIndex -= 4;
+            return 1;
+        }
+
+        public override string ToString() => "Call(" + _target.Method + ")";
+    }
+
     internal sealed class FuncCallInstruction<TRet> : CallInstruction
     {
         private readonly Func<TRet> _target;
@@ -404,5 +494,88 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString() => "Call(" + _target.Method + ")";
     }
+
+    internal sealed class FuncCallInstruction<T0, T1, T2, TRet> : CallInstruction
+    {
+        private readonly bool _isInstance;
+        private readonly Func<T0, T1, T2, TRet> _target;
+        public override int ProducedStack => 1;
+        public override int ArgumentCount => 3;
+
+        public FuncCallInstruction(MethodInfo target)
+        {
+            _isInstance = !target.IsStatic;
+            _target = (Func<T0, T1, T2, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, TRet>));
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            object firstArg = frame.Data[frame.StackIndex - 3];
+            object result;
+
+            if (_isInstance)
+            {
+                NullCheck(firstArg);
+            }
+
+            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            {
+                // no need to Invoke, just interpret the lambda body
+                result = InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
+            }
+            else
+            {
+                result = _target((T0)firstArg, (T1)frame.Data[frame.StackIndex - 2], (T2)frame.Data[frame.StackIndex - 1]);
+            }
+
+            frame.Data[frame.StackIndex - 3] = result;
+            frame.StackIndex -= 2;
+            return 1;
+        }
+
+        public override string ToString() => "Call(" + _target.Method + ")";
+    }
+
+    internal sealed class FuncCallInstruction<T0, T1, T2, T3, TRet> : CallInstruction
+    {
+        private readonly bool _isInstance;
+        private readonly Func<T0, T1, T2, T3, TRet> _target;
+        public override int ProducedStack => 1;
+        public override int ArgumentCount => 4;
+
+        public FuncCallInstruction(MethodInfo target)
+        {
+            _isInstance = !target.IsStatic;
+            _target = (Func<T0, T1, T2, T3, TRet>)target.CreateDelegate(typeof(Func<T0, T1, T2, T3, TRet>));
+        }
+
+        public override int Run(InterpretedFrame frame)
+        {
+            object firstArg = frame.Data[frame.StackIndex - 4];
+            object result;
+
+            if (_isInstance)
+            {
+                NullCheck(firstArg);
+            }
+
+            if (_isInstance && TryGetLightLambdaTarget(firstArg, out var targetLambda))
+            {
+                // no need to Invoke, just interpret the lambda body
+                result = InterpretLambdaInvoke(targetLambda, new object[] { frame.Data[frame.StackIndex - 3], frame.Data[frame.StackIndex - 2], frame.Data[frame.StackIndex - 1] });
+            }
+            else
+            {
+                result = _target((T0)firstArg, (T1)frame.Data[frame.StackIndex - 3], (T2)frame.Data[frame.StackIndex - 2], (T3)frame.Data[frame.StackIndex - 1]);
+            }
+
+            frame.Data[frame.StackIndex - 4] = result;
+            frame.StackIndex -= 3;
+            return 1;
+        }
+
+        public override string ToString() => "Call(" + _target.Method + ")";
+    }
+
 #endif
 }
