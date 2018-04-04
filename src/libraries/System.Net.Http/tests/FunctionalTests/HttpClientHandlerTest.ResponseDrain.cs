@@ -45,9 +45,17 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(ContentMode.BytePerChunk)]
         public async Task GetAsync_DisposeBeforeReadingToEnd_DrainsRequestsAndReusesConnection(ContentMode mode)
         {
-            if ((IsWinHttpHandler || IsCurlHandler) && mode == ContentMode.BytePerChunk)
+            if (IsWinHttpHandler)
             {
-                // These handlers' behavior with multiple chunks is inconsistent, so disable the test.
+                if (mode == ContentMode.BytePerChunk)
+                {
+                    // WinHttpHandler's behavior with multiple chunks is inconsistent, so disable the test.
+                    return;
+                }
+            }
+            else if (IsCurlHandler)
+            {
+                // CurlHandler's behavior here is inconsistent, so disable the test.
                 return;
             }
 
