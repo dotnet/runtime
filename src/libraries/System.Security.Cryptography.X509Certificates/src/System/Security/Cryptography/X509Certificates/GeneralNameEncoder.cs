@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.X509Certificates
             RegisteredId = DerSequenceReader.ContextSpecificTagFlag | 8,
         }
 
-        private readonly IdnMapping _idnMapping = new IdnMapping();
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
 
         internal byte[][] EncodeEmailAddress(string emailAddress)
         {
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal byte[][] EncodeDnsName(string dnsName)
         {
-            string idnaName = _idnMapping.GetAscii(dnsName);
+            string idnaName = s_idnMapping.GetAscii(dnsName);
             byte[][] dnsNameTlv = DerEncoder.SegmentedEncodeIA5String(idnaName.ToCharArray());
             dnsNameTlv[0][0] = (byte)GeneralNameTag.DnsName;
 

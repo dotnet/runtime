@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using Microsoft.Win32.SafeHandles;
@@ -14,6 +15,8 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
+
         // Read data from connection (or an instance delegate captured context) and write it to data
         // dataLength comes in as the capacity of data, goes out as bytes written.
         // Note: the true type of dataLength is `size_t*`, but on macOS that's most equal to `void**`
@@ -572,14 +575,13 @@ internal static partial class Interop
             // The IdnMapping converts Unicode input into the IDNA punycode sequence.
             // It also does host case normalization.  The bypass logic would be something
             // like "all characters being within [a-z0-9.-]+"
-            // Since it's not documented as being thread safe, create a new one each time.
             //
             // The SSL Policy (SecPolicyCreateSSL) has been verified as not inherently supporting
             // IDNA as of macOS 10.12.1 (Sierra).  If it supports low-level IDNA at a later date,
             // this code could be removed.
             //
             // It was verified as supporting case invariant match as of 10.12.1 (Sierra).
-            string matchName = new System.Globalization.IdnMapping().GetAscii(hostName);
+            string matchName = s_idnMapping.GetAscii(hostName);
 
             using (SafeCFDateHandle cfNotBefore = CoreFoundation.CFDateCreate(notBefore))
             using (SafeCreateHandle cfHostname = CoreFoundation.CFStringCreateWithCString(matchName))

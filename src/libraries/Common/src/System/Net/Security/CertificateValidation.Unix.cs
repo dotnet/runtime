@@ -11,6 +11,8 @@ namespace System.Net.Security
 {
     internal static class CertificateValidation
     {
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
+
         internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, string hostName)
         {
             SslPolicyErrors errors = chain.Build(remoteCertificate) ?
@@ -41,8 +43,7 @@ namespace System.Net.Security
                     // The IdnMapping converts Unicode input into the IDNA punycode sequence.
                     // It also does host case normalization.  The bypass logic would be something
                     // like "all characters being within [a-z0-9.-]+"
-                    // Since it's not documented as being thread safe, create a new one each time.
-                    string matchName = new IdnMapping().GetAscii(hostName);
+                    string matchName = s_idnMapping.GetAscii(hostName);
                     hostNameMatch = Interop.Crypto.CheckX509Hostname(certHandle, matchName, matchName.Length);
                 }
             }
