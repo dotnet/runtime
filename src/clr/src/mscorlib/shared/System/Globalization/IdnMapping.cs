@@ -25,6 +25,7 @@
 //  RFC 3492 - Punycode: A Bootstring encoding of Unicode for Internationalized Domain Names in Applications (IDNA)
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Globalization
@@ -93,7 +94,7 @@ namespace System.Globalization
             {
                 fixed (char* pUnicode = unicode)
                 {
-                    return GetAsciiCore(pUnicode + index, count);
+                    return GetAsciiCore(unicode, pUnicode + index, count);
                 }
             }
         }
@@ -137,7 +138,7 @@ namespace System.Globalization
             {
                 fixed (char* pAscii = ascii)
                 {
-                    return GetUnicodeCore(pAscii + index, count);
+                    return GetUnicodeCore(ascii, pAscii + index, count);
                 }
             }
         }
@@ -154,6 +155,14 @@ namespace System.Globalization
         public override int GetHashCode()
         {
             return (_allowUnassigned ? 100 : 200) + (_useStd3AsciiRules ? 1000 : 2000);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe string GetStringForOutput(string originalString, char* input, int inputLength, char* output, int outputLength)
+        {
+            return originalString.Length == inputLength && new ReadOnlySpan<char>(input, inputLength).SequenceEqual(new ReadOnlySpan<char>(output, outputLength)) ?
+                originalString :
+                new string(output, 0, outputLength);
         }
 
         //
