@@ -75,6 +75,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(SerializableObjects_MemberData))]
+        [ActiveIssue(28816, TargetFrameworkMonikers.NetFramework)]
         public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs) 
             => ValidateAndRoundtrip(obj, blobs, false);
 
