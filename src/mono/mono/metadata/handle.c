@@ -32,8 +32,6 @@ Add counters for:
 	mix/max/avg size of stack marks
 	handle stack wastage
 
-Actually do something in mono_handle_verify
-
 Shrink the handles stack in mono_handle_stack_scan
 Add a boehm implementation
 
@@ -476,15 +474,6 @@ mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_
 {
 	return MONO_HANDLE_NEW (MonoArray, mono_array_new_full_checked (domain, array_class, lengths, lower_bounds, error));
 }
-
-#ifdef ENABLE_CHECKED_BUILD
-/* Checked build helpers */
-void
-mono_handle_verify (MonoRawHandle raw_handle)
-{
-	
-}
-#endif
 
 uintptr_t
 mono_array_handle_length (MonoArrayHandle arr)

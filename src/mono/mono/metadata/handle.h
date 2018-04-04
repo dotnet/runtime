@@ -294,13 +294,6 @@ mono_thread_info_push_stack_mark (MonoThreadInfo *info, void *mark)
 Handle macros/functions
 */
 
-#ifdef ENABLE_CHECKED_BUILD
-void mono_handle_verify (MonoRawHandle handle);
-#define HANDLE_INVARIANTS(H) mono_handle_verify((void*)(H))
-#else
-#define HANDLE_INVARIANTS(H) (0)
-#endif
-
 #define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
 #define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
@@ -349,7 +342,7 @@ void mono_handle_verify (MonoRawHandle handle);
 #define NULL_HANDLE mono_null_value_handle
 
 //XXX add functions to get/set raw, set field, set field to null, set array, set array to null
-#define MONO_HANDLE_RAW(HANDLE) (HANDLE_INVARIANTS (HANDLE), ((HANDLE)->__raw))
+#define MONO_HANDLE_RAW(HANDLE) ((HANDLE)->__raw)
 #define MONO_HANDLE_DCL(TYPE, NAME) TYPED_HANDLE_NAME(TYPE) NAME = MONO_HANDLE_NEW (TYPE, (NAME ## _raw))
 
 #ifndef MONO_HANDLE_TRACK_OWNER
