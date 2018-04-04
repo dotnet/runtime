@@ -3,7 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp;
-      netstandard;
+      netfx;
       uap;
       uapaot;
     </BuildConfigurations>
