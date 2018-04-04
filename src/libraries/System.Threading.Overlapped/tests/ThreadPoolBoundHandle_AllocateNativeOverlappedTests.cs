@@ -200,7 +200,6 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/18058", TargetFrameworkMonikers.Uap)]
     public unsafe void AllocateNativeOverlapped_PreAllocated_ReusedReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero()
     {   // The CLR reuses NativeOverlapped underneath, check to make sure that they reset fields back to zero
 
