@@ -732,7 +732,7 @@ bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, 
             return false;
     }
 
-    *(T *)(buffer + offset) = value;
+    memcpy(buffer + offset, (char *)&value, sizeof(T));
     offset += sizeof(T);
     return true;
 }
