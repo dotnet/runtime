@@ -15,29 +15,53 @@ namespace System.Net.Http.Tests
     {
         private readonly ITestOutputHelper _output;
         private const string FakeProxyString = "http://proxy.contoso.com";
-        private readonly Uri fakeProxyUri = new Uri("http://proxy.contoso.com");
-        private readonly Uri fooHttp = new Uri("http://foo.com");
-        private readonly Uri fooHttps = new Uri("https://foo.com");
+        private const string insecureProxyUri = "http://proxy.insecure.com";
+        private const string secureProxyUri = "http://proxy.secure.com";
+        private const string fooHttp = "http://foo.com";
+        private const string fooHttps = "https://foo.com";
+        private const string fooWs = "ws://foo.com";
+        private const string fooWss = "wss://foo.com";
 
         public HttpSystemProxyTest(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        [Fact]
-        public void HttpProxy_SystemProxy_Loaded()
+        [Theory]
+        [InlineData("http://proxy.insecure.com", true, false)]
+        [InlineData("http=proxy.insecure.com", true, false)]
+        [InlineData("http://proxy.insecure.com http://proxy.wrong.com", true, false)]
+        [InlineData("https=proxy.secure.com http=proxy.insecure.com", true, true)]
+        [InlineData("https://proxy.secure.com\nhttp://proxy.insecure.com", true, true)]
+        [InlineData("https=proxy.secure.com\nhttp=proxy.insecure.com", true, true)]
+        [InlineData("https://proxy.secure.com;http://proxy.insecure.com", true, true)]
+        [InlineData("https=proxy.secure.com;http=proxy.insecure.com", true, true)]
+        [InlineData(";http=proxy.insecure.com;;", true, false)]
+        [InlineData("    http=proxy.insecure.com    ", true, false)]
+        [InlineData("http=proxy.insecure.com;http=proxy.wrong.com", true, false)]
+        [InlineData("http=http://proxy.insecure.com", true, false)]
+        [InlineData("https=https://proxy.secure.com", false, true)]
+        public void HttpProxy_SystemProxy_Loaded(string rawProxyString, bool hasInsecureProxy, bool hasSecureProxy)
         {
-            IWebProxy p;
+            RemoteInvoke((proxyString, insecureProxy, secureProxy) =>
+            {
+                IWebProxy p;
 
-            FakeRegistry.Reset();
-            Assert.False(HttpSystemProxy.TryCreate(out p));
+                FakeRegistry.Reset();
+                Assert.False(HttpSystemProxy.TryCreate(out p));
 
-            FakeRegistry.WinInetProxySettings.Proxy = FakeProxyString;
+                FakeRegistry.WinInetProxySettings.Proxy = proxyString;
+                WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
 
-            Assert.True(HttpSystemProxy.TryCreate(out p));
-            Assert.NotNull(p);
-            Assert.Equal(fakeProxyUri, p.GetProxy(fooHttp));
-            Assert.Equal(fakeProxyUri, p.GetProxy(fooHttps));
+                Assert.True(HttpSystemProxy.TryCreate(out p));
+                Assert.NotNull(p);
+
+                Assert.Equal(Boolean.Parse(insecureProxy) ? new Uri(insecureProxyUri) : null, p.GetProxy(new Uri(fooHttp)));
+                Assert.Equal(Boolean.Parse(secureProxy) ? new Uri(secureProxyUri) : null, p.GetProxy(new Uri(fooHttps)));
+                Assert.Equal(Boolean.Parse(insecureProxy) ? new Uri(insecureProxyUri) : null, p.GetProxy(new Uri(fooWs)));
+                Assert.Equal(Boolean.Parse(secureProxy) ? new Uri(secureProxyUri) : null, p.GetProxy(new Uri(fooWss)));
+                return SuccessExitCode;
+            }, rawProxyString, hasInsecureProxy.ToString(), hasSecureProxy.ToString()).Dispose();
         }
 
         [Theory]
@@ -66,7 +90,7 @@ namespace System.Net.Http.Tests
                 IWebProxy p;
 
                 FakeRegistry.Reset();
-                FakeRegistry.WinInetProxySettings.Proxy = FakeProxyString;
+                FakeRegistry.WinInetProxySettings.Proxy = insecureProxyUri;
                 FakeRegistry.WinInetProxySettings.ProxyBypass = "23.23.86.44;*.foo.com;<local>;BAR.COM; ; 162*;[2002::11];[*:f8b0:4005:80a::200e]; http://www.xn--mnchhausen-9db.at;http://*.xn--bb-bjab.eu;http://xn--bb-bjab.eu;";
 
                 Assert.True(HttpSystemProxy.TryCreate(out p));
@@ -93,7 +117,7 @@ namespace System.Net.Http.Tests
                 IWebProxy p;
 
                 FakeRegistry.Reset();
-                FakeRegistry.WinInetProxySettings.Proxy = FakeProxyString;
+                FakeRegistry.WinInetProxySettings.Proxy = insecureProxyUri;
                 FakeRegistry.WinInetProxySettings.ProxyBypass = bypassValue;
 
                 Assert.True(HttpSystemProxy.TryCreate(out p));
@@ -112,7 +136,36 @@ namespace System.Net.Http.Tests
                 }
                 return SuccessExitCode;
            }, bypass, count.ToString()).Dispose();
+        }
 
+        [Theory]
+        [InlineData("http://")]
+        [InlineData("http=")]
+        [InlineData("http://;")]
+        [InlineData("http=;")]
+        [InlineData("  ;  ")]
+        [InlineData("proxy.contoso.com")]
+        public void HttpProxy_InvalidSystemProxy_Null(string rawProxyString)
+        {
+            RemoteInvoke((proxyString) =>
+            {
+                IWebProxy p;
+
+                FakeRegistry.Reset();
+                Assert.False(HttpSystemProxy.TryCreate(out p));
+
+                FakeRegistry.WinInetProxySettings.Proxy = proxyString;
+                WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
+
+                Assert.True(HttpSystemProxy.TryCreate(out p));
+                Assert.NotNull(p);
+
+                Assert.Equal(null, p.GetProxy(new Uri(fooHttp)));
+                Assert.Equal(null, p.GetProxy(new Uri(fooHttps)));
+                Assert.Equal(null, p.GetProxy(new Uri(fooWs)));
+                Assert.Equal(null, p.GetProxy(new Uri(fooWss)));
+                return SuccessExitCode;
+            }, rawProxyString).Dispose();
         }
     }
 }
