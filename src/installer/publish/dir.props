@@ -47,8 +47,6 @@
     <PublishRid Include="ubuntu.18.04-x64" />
     <PublishRid Include="debian.8-x64" />
     <PublishRid Include="debian.9-x64" />
-    <PublishRid Include="linuxmint.17-x64" />
-    <PublishRid Include="linuxmint.18-x64" />
     <PublishRid Include="linux-x64" />
     <PublishRid Include="win-x86" />
     <PublishRid Include="win-x64" />
