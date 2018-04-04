@@ -210,7 +210,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(SslDefaultsToTls12))]
+        [Fact]
         public async Task GetAsync_NoSpecifiedProtocol_DefaultsToTls12()
         {
             if (!BackendSupportsSslConfiguration)
@@ -223,7 +223,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
 
-                var options = new LoopbackServer.Options { UseSsl = true };
+                var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -329,9 +329,5 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
-        private static bool SslDefaultsToTls12 => !PlatformDetection.IsWindows7;
-        // TLS 1.2 may not be enabled on Win7
-        // https://technet.microsoft.com/en-us/library/dn786418.aspx#BKMK_SchannelTR_TLS12
     }
 }
