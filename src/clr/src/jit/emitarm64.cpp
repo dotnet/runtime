@@ -7356,6 +7356,16 @@ void emitter::emitIns_Call(EmitCallType          callType,
         {
             savedSet |= RBM_PROFILER_RET_SCRATCH;
         }
+
+#ifdef DEBUG
+        if (emitComp->verbose)
+        {
+            printf("NOGC Call: savedSet=");
+            printRegMaskInt(savedSet);
+            emitDispRegSet(savedSet);
+            printf("\n");
+        }
+#endif
     }
     else
     {

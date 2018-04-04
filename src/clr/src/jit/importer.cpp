@@ -19221,9 +19221,9 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
 
 bool Compiler::IsIntrinsicImplementedByUserCall(CorInfoIntrinsics intrinsicId)
 {
-    // Currently, if an math intrisic is not implemented by target-specific
-    // intructions, it will be implemented by a System.Math call. In the
-    // future, if we turn to implementing some of them with helper callers,
+    // Currently, if a math intrinsic is not implemented by target-specific
+    // instructions, it will be implemented by a System.Math call. In the
+    // future, if we turn to implementing some of them with helper calls,
     // this predicate needs to be revisited.
     return !IsTargetIntrinsic(intrinsicId);
 }
