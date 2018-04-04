@@ -3,23 +3,76 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Xunit.Performance;
+using Xunit;
 
 namespace System.Tests
 {
     public class Perf_UInt32
     {
-        [Benchmark]
-        public void ToString_()
+        private const int InnerCount = 500_000;
+
+        private static string s_resultString;
+        private static int s_resultInt32;
+        private static uint s_resultUInt32;
+
+        public static object[][] UInt32Values => new[]
         {
-            uint testint = new uint();
-            foreach (var iteration in Benchmark.Iterations)
+            new object[] { 0u },
+            new object[] { 1u },
+            new object[] { 1283u },
+            new object[] { 12837467u },
+            new object[] { 4294967295u },
+        };
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [MemberData(nameof(UInt32Values))]
+        public void ToString(uint value)
+        {
+            Span<char> destination = new char[value.ToString().Length];
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
                 using (iteration.StartMeasurement())
-                    for (int i = 0; i < 10000; i++)
+                {
+                    for (int i = 0; i < InnerCount; i++)
                     {
-                        testint.ToString(); testint.ToString(); testint.ToString();
-                        testint.ToString(); testint.ToString(); testint.ToString();
-                        testint.ToString(); testint.ToString(); testint.ToString();
+                        s_resultString = value.ToString();
                     }
+                }
+            }
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [MemberData(nameof(UInt32Values))]
+        public void TryFormat(uint value)
+        {
+            Span<char> destination = new char[value.ToString().Length];
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < InnerCount; i++)
+                    {
+                        value.TryFormat(destination, out s_resultInt32);
+                    }
+                }
+            }
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [MemberData(nameof(UInt32Values))]
+        public void Parse(uint value)
+        {
+            ReadOnlySpan<char> valueSpan = value.ToString();
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < InnerCount; i++)
+                    {
+                        s_resultUInt32 = uint.Parse(valueSpan);
+                    }
+                }
+            }
         }
     }
 }

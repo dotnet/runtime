@@ -12,19 +12,21 @@
   <ItemGroup>
     <Compile Include="Perf.Boolean.cs" />
     <Compile Include="Perf.Char.cs" />
+    <Compile Include="Perf.DateTime.cs" />
     <Compile Include="Perf.Double.cs" />
     <Compile Include="Perf.Enum.cs" />
     <Compile Include="Perf.Guid.cs" />
     <Compile Include="Perf.HashCode.cs" />
+    <Compile Include="Perf.Int32.cs" />
+    <Compile Include="Perf.Int64.cs" />
+    <Compile Include="Perf.IntPtr.cs" />
     <Compile Include="Perf.Object.cs" />
     <Compile Include="Perf.String.cs" />
+    <Compile Include="Perf.StringBuilder.cs" />
     <Compile Include="Perf.TimeSpan.cs" />
     <Compile Include="Perf.Type.cs" />
     <Compile Include="Perf.UInt32.cs" />
-    <Compile Include="Perf.DateTime.cs" />
-    <Compile Include="Perf.Int32.cs" />
-    <Compile Include="Perf.IntPtr.cs" />
-    <Compile Include="Perf.StringBuilder.cs" />
+    <Compile Include="Perf.UInt64.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
