@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
         public override string InstructionName => "Call";
 
 #if FEATURE_DLG_INVOKE
-         private static readonly ConditionalWeakTable<MethodInfo, CallInstruction> _cache = new ConditionalWeakTable<MethodInfo, CallInstruction>();
+        private static readonly CacheDict<MethodInfo, CallInstruction> s_cache = new CacheDict<MethodInfo, CallInstruction>(256);
 #endif
 
         public static CallInstruction Create(MethodInfo info)
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
             CallInstruction res;
             if (ShouldCache(info))
             {
-                if (_cache.TryGetValue(info, out res))
+                if (s_cache.TryGetValue(info, out res))
                 {
                     return res;
                 }
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Interpreter
             // cache it for future users if it's a reasonable method to cache
             if (ShouldCache(info))
             {
-                _cache.AddOrUpdate(info, res);
+                s_cache[info] = res;
             }
 
             return res;
