@@ -366,7 +366,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
 #endif // FEATURE_SIMD
 
-  #define FEATURE_WRITE_BARRIER    1       // Generate the proper WriteBarrier calls for GC
   #define FEATURE_FIXED_OUT_ARGS   0       // X86 uses push instructions to pass args
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
@@ -510,11 +509,13 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define REG_VAR_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_ESI,REG_EDI,REG_EBX
   #define MAX_VAR_ORDER_SIZE       6
+
+#ifdef LEGACY_BACKEND
   #define REG_TMP_ORDER            REG_EAX,REG_EDX,REG_ECX,REG_EBX,REG_ESI,REG_EDI
-  #define RBM_TMP_ORDER            RBM_EAX,RBM_EDX,RBM_ECX,RBM_EBX,RBM_ESI,RBM_EDI
   #define REG_TMP_ORDER_COUNT      6
 
   #define REG_PREDICT_ORDER        REG_EAX,REG_EDX,REG_ECX,REG_EBX,REG_ESI,REG_EDI
+#endif // LEGACY_BACKEND
 
   // The order here is fixed: it must agree with an order assumed in eetwain...
   #define REG_CALLEE_SAVED_ORDER   REG_EDI,REG_ESI,REG_EBX,REG_EBP
@@ -743,7 +744,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
 #endif // !UNIX_AMD64_ABI
 #endif
-  #define FEATURE_WRITE_BARRIER    1       // Generate the WriteBarrier calls for GC (currently not the x86-style register-customized barriers)
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
@@ -770,11 +770,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
 #endif // !UNIX_AMD64_ABI
 
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
-#else
-  #define NOGC_WRITE_BARRIERS      0       // Do not modify this -- modify the definition above.  (If we're not using ASM barriers we definitely don't have NOGC barriers).
-#endif
   #define USER_ARGS_COME_LAST      1
   #define EMIT_TRACK_STACK_DEPTH   1
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
@@ -882,17 +878,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_VAR_ORDER_FLT      REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,REG_XMM8,REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
 
 #ifdef UNIX_AMD64_ABI
-  #define REG_TMP_ORDER          REG_EAX,REG_EDI,REG_ESI,REG_EDX,REG_ECX,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
-                                 REG_R8,REG_R9,REG_R10,REG_R11,REG_R14,REG_R15,REG_R12,REG_R13
-#else // !UNIX_AMD64_ABI
-  #define MAX_VAR_ORDER_SIZE     (14 + REG_ETW_FRAMED_EBP_COUNT)
-  #define REG_TMP_ORDER          REG_EAX,REG_EDX,REG_ECX,REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST \
-                                 REG_R8,REG_R9,REG_R10,REG_R11,REG_R14,REG_R15,REG_R12,REG_R13
-#endif // !UNIX_AMD64_ABI
-
-#ifdef UNIX_AMD64_ABI
-  #define REG_PREDICT_ORDER        REG_EAX,REG_EDI,REG_ESI,REG_EDX,REG_ECX,REG_EBX,REG_ETW_FRAMED_EBP_LIST \
-                                   REG_R8,REG_R9,REG_R10,REG_R11,REG_R14,REG_R15,REG_R12,REG_R13
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (9)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
@@ -903,9 +888,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
   #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
 #else // !UNIX_AMD64_ABI
-  #define REG_TMP_ORDER_COUNT      (14 + REG_ETW_FRAMED_EBP_COUNT)
-  #define REG_PREDICT_ORDER        REG_EAX,REG_EDX,REG_ECX,REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST \
-                                   REG_R8,REG_R9,REG_R10,REG_R11,REG_R14,REG_R15,REG_R12,REG_R13
   #define CNT_CALLEE_SAVED         (7 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (7)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
@@ -969,11 +951,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_JUMP_THUNK_PARAM     REG_EAX
   #define RBM_JUMP_THUNK_PARAM     RBM_EAX
 
-#if NOGC_WRITE_BARRIERS
-  #define REG_WRITE_BARRIER        REG_EDX
-  #define RBM_WRITE_BARRIER        RBM_EDX
-#endif
-
   // Register to be used for emitting helper calls whose call target is an indir of an
   // absolute memory address in case of Rel32 overflow i.e. a data address could not be
   // encoded as PC-relative 32-bit offset.
@@ -991,12 +968,10 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // GenericPInvokeCalliHelper VASigCookie Parameter
   #define REG_PINVOKE_COOKIE_PARAM          REG_R11
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R11
-  #define PREDICT_REG_PINVOKE_COOKIE_PARAM  PREDICT_REG_R11
 
   // GenericPInvokeCalliHelper unmanaged target Parameter 
   #define REG_PINVOKE_TARGET_PARAM          REG_R10
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R10
-  #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R10
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_R10
@@ -1188,7 +1163,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define CPBLK_UNROLL_LIMIT       32      // Upper bound to let the code generator to loop unroll CpBlk.
   #define INITBLK_UNROLL_LIMIT     32      // Upper bound to let the code generator to loop unroll InitBlk.
 
-  #define FEATURE_WRITE_BARRIER    1       // Generate the proper WriteBarrier calls for GC    
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE  0  // True when we want to promote fields of a multireg struct into registers
@@ -1204,11 +1178,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 floats or doubles using an HFA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      0       // We DO-NOT have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
-#else
-  #define NOGC_WRITE_BARRIERS      0       // Do not modify this -- modify the definition above.  (If we're not using ASM barriers we definitely don't have NOGC barriers).
-#endif
   #define USER_ARGS_COME_LAST      1
   #define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
@@ -1247,8 +1217,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
   #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
 
-  #define RBM_CALLEE_TRASH_NOGC   (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
-
   #define REG_FASTTAILCALL_TARGET REG_R12   // Target register for fast tail call
   #define RBM_FASTTAILCALL_TARGET RBM_R12
 
@@ -1268,6 +1236,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
                                    REG_F24, REG_F25, REG_F26, REG_F27, \
                                    REG_F28, REG_F29, REG_F30, REG_F31,
 
+#ifdef LEGACY_BACKEND
   #define MAX_VAR_ORDER_SIZE       32
 
   #define REG_TMP_ORDER            REG_R3,REG_R2,REG_R1,REG_R0, REG_R4,REG_R5,REG_R6,REG_R7,\
@@ -1287,6 +1256,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define REG_PREDICT_ORDER        REG_LR,REG_R12,REG_R3,REG_R2,REG_R1,REG_R0, \
                                    REG_R7,REG_R6,REG_R5,REG_R4,REG_R8,REG_R9,REG_R10
+#endif // LEGACY_BACKEND
 
   #define RBM_LOW_REGS            (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5|RBM_R6|RBM_R7)
   #define RBM_HIGH_REGS           (RBM_R8|RBM_R9|RBM_R10|RBM_R11|RBM_R12|RBM_SP|RBM_LR|RBM_PC)
@@ -1371,27 +1341,60 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_JUMP_THUNK_PARAM     REG_R12
   #define RBM_JUMP_THUNK_PARAM     RBM_R12
 
-#if NOGC_WRITE_BARRIERS
-  #define REG_WRITE_BARRIER        REG_R1
-  #define RBM_WRITE_BARRIER        RBM_R1
-#endif
-
-  //In the ARM case, registers of write barrier use the normal argument registers.
-  #define REG_WRITE_BARRIER_SRC_BYREF    REG_ARG_1
-  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_ARG_1
+  // ARM write barrier ABI (see vm\arm\asmhelpers.asm, vm\arm\asmhelpers.S):
+  // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
+  //     On entry:
+  //       r0: the destination address (LHS of the assignment)
+  //       r1: the object reference (RHS of the assignment)
+  //     On exit:
+  //       r0: trashed
+  //       r3: trashed
+  // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
+  //     On entry:
+  //       r0: the destination address (object reference written here)
+  //       r1: the source address (points to object reference to write)
+  //     On exit:
+  //       r0: incremented by 4
+  //       r1: incremented by 4
+  //       r2: trashed
+  //       r3: trashed
 
   #define REG_WRITE_BARRIER_DST_BYREF    REG_ARG_0
   #define RBM_WRITE_BARRIER_DST_BYREF    RBM_ARG_0
 
+  #define REG_WRITE_BARRIER_SRC_BYREF    REG_ARG_1
+  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_ARG_1
+
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_R2|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R0|RBM_R3|RBM_LR|RBM_DEFAULT_HELPER_CALL_TARGET)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_WRITEBARRIER
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+  // Note that r0 and r1 are still valid byref pointers after this helper call, despite their value being changed.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
+
   // GenericPInvokeCalliHelper VASigCookie Parameter 
   #define REG_PINVOKE_COOKIE_PARAM          REG_R4
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R4
+
+#ifdef LEGACY_BACKEND
   #define PREDICT_REG_PINVOKE_COOKIE_PARAM  PREDICT_REG_R4
+#endif // LEGACY_BACKEND
 
   // GenericPInvokeCalliHelper unmanaged target Parameter 
   #define REG_PINVOKE_TARGET_PARAM          REG_R12
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R12
+
+#ifdef LEGACY_BACKEND
   #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R12
+#endif // LEGACY_BACKEND
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
@@ -1546,7 +1549,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
 #endif // FEATURE_SIMD
 
-  #define FEATURE_WRITE_BARRIER    1       // Generate the proper WriteBarrier calls for GC    
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
   #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
   #define FEATURE_MULTIREG_STRUCT_PROMOTE 1  // True when we want to promote fields of a multireg struct into registers
@@ -1562,11 +1564,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 floats or doubles using an HFA)
   #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
 
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
   #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
-#else
-  #define NOGC_WRITE_BARRIERS      0       // Do not modify this -- modify the definition above.  (If we're not using ASM barriers we definitely don't have NOGC barriers).
-#endif
   #define USER_ARGS_COME_LAST      1
   #define EMIT_TRACK_STACK_DEPTH   1       // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
                                            // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
@@ -1607,9 +1605,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
   #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
-
-  // REVIEW: why does arm64 RBM_CALLEE_TRASH_NOGC include IP1? The JIT_ByRefWriteBarrier only trashes r12 and r15.
-  #define RBM_CALLEE_TRASH_NOGC   (RBM_R12|RBM_R15|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
 
   #define REG_FASTTAILCALL_TARGET REG_IP0   // Target register for fast tail call
   #define RBM_FASTTAILCALL_TARGET RBM_IP0
@@ -1679,26 +1674,65 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_JUMP_THUNK_PARAM     REG_R12
   #define RBM_JUMP_THUNK_PARAM     RBM_R12
 
-#if NOGC_WRITE_BARRIERS
-  #define REG_WRITE_BARRIER_SRC_BYREF    REG_R13
-  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R13
+  // ARM64 write barrier ABI (see vm\arm64\asmhelpers.asm, vm\arm64\asmhelpers.S):
+  // CORINFO_HELP_ASSIGN_REF (JIT_WriteBarrier), CORINFO_HELP_CHECKED_ASSIGN_REF (JIT_CheckedWriteBarrier):
+  //     On entry:
+  //       x14: the destination address (LHS of the assignment)
+  //       x15: the object reference (RHS of the assignment)
+  //     On exit:
+  //       x12: trashed
+  //       x14: incremented by 8
+  //       x15: trashed
+  //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP (currently non-Windows)
+  // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
+  //     On entry:
+  //       x13: the source address (points to object reference to write)
+  //       x14: the destination address (object reference written here)
+  //     On exit:
+  //       x12: trashed
+  //       x13: incremented by 8
+  //       x14: incremented by 8
+  //       x15: trashed
+  //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP (currently non-Windows)
+  //
+  // Note that while x17 (ip1) is currently only trashed under FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP,
+  // currently only set for non-Windows, it is expected to be set in the future for Windows, and for R2R.
+  // So simply always consider it trashed, to avoid later breaking changes.
+
+  #define REG_WRITE_BARRIER_DST          REG_R14
+  #define RBM_WRITE_BARRIER_DST          RBM_R14
+
+  #define REG_WRITE_BARRIER_SRC          REG_R15
+  #define RBM_WRITE_BARRIER_SRC          RBM_R15
 
   #define REG_WRITE_BARRIER_DST_BYREF    REG_R14
   #define RBM_WRITE_BARRIER_DST_BYREF    RBM_R14
 
-  #define REG_WRITE_BARRIER              REG_R15
-  #define RBM_WRITE_BARRIER              RBM_R15
-#endif
+  #define REG_WRITE_BARRIER_SRC_BYREF    REG_R13
+  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_R13
+
+  #define RBM_CALLEE_TRASH_NOGC          (RBM_R12|RBM_R15|RBM_IP1|RBM_DEFAULT_HELPER_CALL_TARGET)
+
+  // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER         (RBM_R14|RBM_CALLEE_TRASH_NOGC)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+
+  // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
+  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
+
+  // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
+  // Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
+  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter 
   #define REG_PINVOKE_COOKIE_PARAM          REG_R15
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R15
-  #define PREDICT_REG_PINVOKE_COOKIE_PARAM  PREDICT_REG_R15
 
   // GenericPInvokeCalliHelper unmanaged target Parameter 
   #define REG_PINVOKE_TARGET_PARAM          REG_R14
   #define RBM_PINVOKE_TARGET_PARAM          RBM_R14
-  #define PREDICT_REG_PINVOKE_TARGET_PARAM  PREDICT_REG_R14
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
@@ -1919,6 +1953,7 @@ public:
     };
     static const enum ArgOrder g_tgtArgOrder;
 
+#ifdef LEGACY_BACKEND
 #if NOGC_WRITE_BARRIERS
     static regMaskTP exclude_WriteBarrierReg(regMaskTP mask)
     {
@@ -1929,6 +1964,7 @@ public:
             return RBM_ALLINT & ~RBM_WRITE_BARRIER;
     }
 #endif // NOGC_WRITE_BARRIERS
+#endif // LEGACY_BACKEND
 };
 
 #if defined(DEBUG) || defined(LATE_DISASM)

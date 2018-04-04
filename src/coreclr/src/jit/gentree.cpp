@@ -7456,7 +7456,7 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
 //    Returns the newly created BitCast node.
 //
 // Notes:
-//    The node is generated as GenTreeMultiRegOp on RyuJIT/armel, as GenTreeOp on all the other archs.
+//    The node is generated as GenTreeMultiRegOp on RyuJIT/arm, as GenTreeOp on all the other archs.
 //
 GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
 {

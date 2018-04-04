@@ -6377,14 +6377,14 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
     }
 
     // If the parent is a reload/copy node, then tree must be a multi-reg call node
-    // that has already had one of its registers spilled. This is Because multi-reg
+    // that has already had one of its registers spilled. This is because multi-reg
     // call node is the only node whose RefTypeDef positions get independently
     // spilled or reloaded.  It is possible that one of its RefTypeDef position got
     // spilled and the next use of it requires it to be in a different register.
     //
-    // In this case set the ith position reg of reload/copy node to the reg allocated
+    // In this case set the i'th position reg of reload/copy node to the reg allocated
     // for copy/reload refPosition.  Essentially a copy/reload node will have a reg
-    // for each multi-reg position of its child. If there is a valid reg in ith
+    // for each multi-reg position of its child. If there is a valid reg in i'th
     // position of GT_COPY or GT_RELOAD node then the corresponding result of its
     // child needs to be copied or reloaded to that reg.
     if (parent->IsCopyOrReload())

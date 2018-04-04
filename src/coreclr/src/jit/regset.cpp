@@ -1902,11 +1902,13 @@ void RegSet::rsSpillRegs(regMaskTP regMask)
  *  for internal tree temps to live in
  */
 
+#ifdef LEGACY_BACKEND
 extern const regNumber raRegTmpOrder[] = {REG_TMP_ORDER};
 extern const regNumber rpRegTmpOrder[] = {REG_PREDICT_ORDER};
 #if FEATURE_FP_REGALLOC
 extern const regNumber raRegFltTmpOrder[] = {REG_FLT_TMP_ORDER};
 #endif
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************
  *

@@ -2757,7 +2757,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genCodeForSwap: Produce code for a GT_CMPXCHG node.
+// genCodeForCmpXchg: Produce code for a GT_CMPXCHG node.
 //
 // Arguments:
 //    tree - the GT_CMPXCHG node
@@ -3006,41 +3006,16 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // registers are taken care of.
         genConsumeOperands(tree);
 
-#if NOGC_WRITE_BARRIERS
         // At this point, we should not have any interference.
         // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
         //  as that is where 'addr' must go.
         noway_assert(data->gtRegNum != REG_WRITE_BARRIER_DST_BYREF);
 
-        // 'addr' goes into x14 (REG_WRITE_BARRIER_DST_BYREF)
-        if (addr->gtRegNum != REG_WRITE_BARRIER_DST_BYREF)
-        {
-            inst_RV_RV(INS_mov, REG_WRITE_BARRIER_DST_BYREF, addr->gtRegNum, addr->TypeGet());
-        }
+        // 'addr' goes into x14 (REG_WRITE_BARRIER_DST)
+        genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
 
-        // 'data'  goes into x15 (REG_WRITE_BARRIER)
-        if (data->gtRegNum != REG_WRITE_BARRIER)
-        {
-            inst_RV_RV(INS_mov, REG_WRITE_BARRIER, data->gtRegNum, data->TypeGet());
-        }
-#else
-        // At this point, we should not have any interference.
-        // That is, 'data' must not be in REG_ARG_0,
-        //  as that is where 'addr' must go.
-        noway_assert(data->gtRegNum != REG_ARG_0);
-
-        // addr goes in REG_ARG_0
-        if (addr->gtRegNum != REG_ARG_0)
-        {
-            inst_RV_RV(INS_mov, REG_ARG_0, addr->gtRegNum, addr->TypeGet());
-        }
-
-        // data goes in REG_ARG_1
-        if (data->gtRegNum != REG_ARG_1)
-        {
-            inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
-        }
-#endif // NOGC_WRITE_BARRIERS
+        // 'data' goes into x15 (REG_WRITE_BARRIER_SRC)
+        genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
         genGCWriteBarrier(tree, writeBarrierForm);
     }
@@ -3116,6 +3091,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 //
 void CodeGen::genCodeForSwap(GenTreeOp* tree)
 {
+    assert(tree->OperIs(GT_SWAP));
+
     // Swap is only supported for lclVar operands that are enregistered
     // We do not consume or produce any registers.  Both operands remain enregistered.
     // However, the gc-ness may change.
