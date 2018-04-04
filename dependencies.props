@@ -33,6 +33,7 @@
 
   <!-- infrastructure and test only dependencies -->
   <PropertyGroup>
+    <NugetProjectModelPackageVersion>4.3.0-preview2-4095</NugetProjectModelPackageVersion>
     <MicrosoftBuildPackageVersion>15.7.0-preview-000143</MicrosoftBuildPackageVersion>
     <MicrosoftBuildFrameworkPackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildFrameworkPackageVersion>
     <MicrosoftBuildTasksCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildTasksCorePackageVersion>
