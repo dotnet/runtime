@@ -100,7 +100,7 @@ enum EtwThreadFlags
 #define ETWFireEvent(EventName)
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
-#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::Enabled() || EventEnabled##EventDescriptor())
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
@@ -111,7 +111,7 @@ enum EtwThreadFlags
 #define ETWFireEvent(EventName)
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
-#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (XplatEventLogger::IsEventLoggingEnabled())
