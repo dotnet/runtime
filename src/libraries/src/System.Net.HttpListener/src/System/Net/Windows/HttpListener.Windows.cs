@@ -1008,7 +1008,10 @@ namespace System.Net
 
                             if (decodedOutgoingBlob != null)
                             {
-                                outBlob = Convert.ToBase64String(decodedOutgoingBlob);
+                                // Prefix SPNEGO token/NTLM challenge with scheme per RFC 4559, MS-NTHT
+                                outBlob = string.Format("{0} {1}",
+                                    headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate,
+                                    Convert.ToBase64String(decodedOutgoingBlob));
                             }
 
                             if (!error)
@@ -1099,12 +1102,9 @@ namespace System.Net
                                 {
                                     // auth incomplete
                                     newContext = context;
-
-                                    challenge = (headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate);
-                                    if (!String.IsNullOrEmpty(outBlob))
-                                    {
-                                        challenge += " " + outBlob;
-                                    }
+                                    challenge = string.IsNullOrEmpty(outBlob)
+                                        ? headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate
+                                        : outBlob;
                                 }
                             }
                             break;
