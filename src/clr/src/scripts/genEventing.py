@@ -285,7 +285,7 @@ def generateClrallEvents(eventNodes,allTemplates):
         clrallEvents.append(eventName)
         clrallEvents.append("() {return ")
         clrallEvents.append("EventPipeEventEnabled" + eventName + "() || ")
-        clrallEvents.append("EventXplatEnabled" + eventName + "();}\n\n")
+        clrallEvents.append("(XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabled" + eventName + "());}\n\n")
         #generate FireEtw functions
         fnptype     = []
         fnbody      = []
