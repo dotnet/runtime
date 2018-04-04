@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.Globalization
 {
@@ -24,115 +23,33 @@ namespace System.Globalization
             _sortHandle = ret > 0 ? handle : IntPtr.Zero;
         }
 
-        private unsafe string ChangeCase(string s, bool toUpper)
+        private unsafe void ChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!_invariantMode);
-
-            Debug.Assert(s != null);
-
-            //
-            //  Get the length of the string.
-            //
-            int nLengthInput = s.Length;
-
-            //
-            //  Check if we have the empty string.
-            //
-            if (nLengthInput == 0)
-            {
-                return s;
-            }
-
-            int ret;
+            Debug.Assert(pSource != null);
+            Debug.Assert(pResult != null);
+            Debug.Assert(pSourceLen >= 0);
+            Debug.Assert(pResultLen >= 0);
+            Debug.Assert(pSourceLen <= pResultLen);
 
             // Check for Invariant to avoid A/V in LCMapStringEx
             uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
 
-            //
-            //  Create the result string.
-            //
-            string result = string.FastAllocateString(nLengthInput);
-
-            fixed (char* pSource = s)
-            fixed (char* pResult = result)
-            {
-                ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
-                                                    linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
-                                                    pSource,
-                                                    nLengthInput,
-                                                    pResult,
-                                                    nLengthInput,
-                                                    null,
-                                                    null,
-                                                    _sortHandle);
-            }
-
+            int ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
+                                                     linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
+                                                     pSource,
+                                                     pSourceLen,
+                                                     pResult,
+                                                     pSourceLen,
+                                                     null,
+                                                     null,
+                                                     _sortHandle);
             if (ret == 0)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
 
-            Debug.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
-            return result;
-        }
-
-        internal unsafe void ChangeCase(ReadOnlySpan<char> source, Span<char> destination, bool toUpper)
-        {
-            Debug.Assert(!_invariantMode);
-            Debug.Assert(destination.Length >= source.Length);
-
-            if (source.IsEmpty)
-            {
-                return;
-            }
-
-            int ret;
-
-            // Check for Invariant to avoid A/V in LCMapStringEx
-            uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
-
-            fixed (char* pSource = &MemoryMarshal.GetReference(source))
-            fixed (char* pResult = &MemoryMarshal.GetReference(destination))
-            {
-                ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
-                                                    linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
-                                                    pSource,
-                                                    source.Length,
-                                                    pResult,
-                                                    source.Length,
-                                                    null,
-                                                    null,
-                                                    _sortHandle);
-            }
-
-            if (ret == 0)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-            }
-
-            Debug.Assert(ret == source.Length, "Expected getting the same length of the original span");
-        }
-
-        private unsafe char ChangeCase(char c, bool toUpper)
-        {
-            Debug.Assert(!_invariantMode);
-
-            char retVal = '\0';
-
-            // Check for Invariant to avoid A/V in LCMapStringEx
-            uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
-
-            Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
-                                          toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
-                                          &c,
-                                          1,
-                                          &retVal,
-                                          1,
-                                          null,
-                                          null,
-                                          _sortHandle);
-
-            return retVal;
+            Debug.Assert(ret == pSourceLen, "Expected getting the same length of the original string");
         }
 
         // PAL Ends here
@@ -143,9 +60,6 @@ namespace System.Globalization
         private const uint LCMAP_LOWERCASE = 0x00000100;
         private const uint LCMAP_UPPERCASE = 0x00000200;
 
-        private static bool IsInvariantLocale(string localeName)
-        {
-            return localeName == "";
-        }
+        private static bool IsInvariantLocale(string localeName) => localeName == "";
     }
 }
