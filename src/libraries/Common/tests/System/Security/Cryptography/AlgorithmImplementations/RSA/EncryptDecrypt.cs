@@ -501,8 +501,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA1);
                 Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                Assert.ThrowsAny<CryptographicException>(
-                    () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+                if (!PlatformDetection.IsFullFramework)
+                {
+                    Assert.ThrowsAny<CryptographicException>(
+                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA1));
+                }
 
                 Array.Resize(ref encrypted, encrypted.Length - 2);
 
@@ -514,8 +517,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                     encrypted = Encrypt(rsa, data, RSAEncryptionPadding.OaepSHA256);
                     Array.Resize(ref encrypted, encrypted.Length + 1);
 
-                    Assert.ThrowsAny<CryptographicException>(
-                        () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));
+                    if (!PlatformDetection.IsFullFramework)
+                    {
+                        Assert.ThrowsAny<CryptographicException>(
+                            () => Decrypt(rsa, encrypted, RSAEncryptionPadding.OaepSHA256));
+                    }
 
                     Array.Resize(ref encrypted, encrypted.Length - 2);
 
