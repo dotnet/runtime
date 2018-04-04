@@ -91,7 +91,7 @@ namespace System.IO.Pipes.Tests
                 while (clients.Count > 0)
                 {
                     Task<Task> firstClient = Task.WhenAny(clients);
-                    await WhenAllOrAnyFailed(ServerWaitReadAndWriteAsync(), firstClient);
+                    await new Task[] { ServerWaitReadAndWriteAsync(), firstClient }.WhenAllOrAnyFailed();
                     clients.Remove(firstClient.Result);
                 }
 
@@ -173,11 +173,11 @@ namespace System.IO.Pipes.Tests
 
                 Task[] serverWaits = (from server in servers select server.WaitForConnectionAsync()).ToArray();
                 Task[] clientWaits = (from client in clients select client.ConnectAsync()).ToArray();
-                await WhenAllOrAnyFailed(serverWaits.Concat(clientWaits).ToArray());
+                await serverWaits.Concat(clientWaits).ToArray().WhenAllOrAnyFailed();
 
                 Task[] serverSends = (from server in servers select server.WriteAsync(new byte[1], 0, 1)).ToArray();
                 Task<int>[] clientReceives = (from client in clients select client.ReadAsync(new byte[1], 0, 1)).ToArray();
-                await WhenAllOrAnyFailed(serverSends.Concat(clientReceives).ToArray());
+                await serverSends.Concat(clientReceives).ToArray().WhenAllOrAnyFailed();
             }
             finally
             {
@@ -191,33 +191,6 @@ namespace System.IO.Pipes.Tests
                     servers[i]?.Dispose();
                 }
             }
-        }
-
-        private static Task WhenAllOrAnyFailed(params Task[] tasks)
-        {
-            int remaining = tasks.Length;
-            var tcs = new TaskCompletionSource<bool>();
-            foreach (Task t in tasks)
-            {
-                t.ContinueWith(a =>
-                {
-                    if (a.IsFaulted)
-                    {
-                        tcs.TrySetException(a.Exception.InnerExceptions);
-                        Interlocked.Decrement(ref remaining);
-                    }
-                    else if (a.IsCanceled)
-                    {
-                        tcs.TrySetCanceled();
-                        Interlocked.Decrement(ref remaining);
-                    }
-                    else if (Interlocked.Decrement(ref remaining) == 0)
-                    {
-                        tcs.TrySetResult(true);
-                    }
-                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-            }
-            return tcs.Task;
         }
 
         [Theory]
