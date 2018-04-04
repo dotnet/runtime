@@ -127,7 +127,7 @@ Logs are going to be placed in %SYSTEMDRIVE%\sockets.etl.
 
 ### Using PerfView
 
-1. Install [PerfView](http://www.microsoft.com/en-us/download/details.aspx?id=28567)
+1. Install [PerfView](https://github.com/Microsoft/perfview/blob/master/documentation/Downloading.md)
 2. Run PerfView as Administrator
 3. Press Alt+C to collect events 
 4. Disable all other collection parameters
