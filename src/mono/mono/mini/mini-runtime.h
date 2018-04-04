@@ -352,6 +352,11 @@ typedef struct {
 	 * If true, trampolines are to be fetched from the AOT runtime instead of JIT compiled
 	 */
 	gboolean use_aot_trampolines;
+
+	/*
+	 * If true, the runtime will try to use the interpreter before looking for compiled code.
+	 */
+	gboolean force_use_interpreter;
 } MonoEEFeatures;
 
 extern MonoEEFeatures mono_ee_features;

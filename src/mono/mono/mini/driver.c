@@ -2592,10 +2592,14 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 		mono_aot_only = TRUE;
 		mono_use_interpreter = TRUE;
 		mono_llvm_only = TRUE;
+
+		mono_ee_features.force_use_interpreter = TRUE;
 		break;
 
 	case MONO_EE_MODE_INTERP:
 		mono_use_interpreter = TRUE;
+
+		mono_ee_features.force_use_interpreter = TRUE;
 		break;
 
 	default:
