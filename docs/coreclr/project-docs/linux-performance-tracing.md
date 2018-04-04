@@ -94,7 +94,7 @@ The easiest way to generate framework symbols is to have perfcollect do it for y
 	This will create a bin/*/netcoreapp2.0/Linux-x64/publish directory which contains all of the files required to run your app including the .NET runtime and framework.  As a side-effect, the dotnet CLI downloads and extracts the CoreCLR nuget package.  You should be able to find crossgen at:
 
 	> ```bash
-	> ~/packages/runtime.linux-x64.microsoft.netcore.app/2.0.0/tools/crossgen
+	> ~/.nuget/packages/runtime.linux-x64.microsoft.netcore.app/2.0.0/tools/crossgen
 	> ``` 
 
 2. Copy crossgen next to libcoreclr.so.  If you run your application out of the publish directory, you can copy it into the directory that you just created during step # 1.  If you run your application using the dotnet CLI, then you likely need to copy it to /usr/share/dotnet/shared/Microsoft.NETCore.App/<Version> where <Version> is the version number of CoreCLR.  This should match the version number in the path to crossgen from step # 1.
