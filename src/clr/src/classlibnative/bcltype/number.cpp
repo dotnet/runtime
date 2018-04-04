@@ -1983,7 +1983,7 @@ ParseSection:
 #pragma warning(pop)
 #endif
 
-FCIMPL3(void, COMNumber::DoubleToNumberFC, double value, int precision, NUMBER* number)
+FCIMPL3_VII(void, COMNumber::DoubleToNumberFC, double value, int precision, NUMBER* number)
 {
     FCALL_CONTRACT;
 
