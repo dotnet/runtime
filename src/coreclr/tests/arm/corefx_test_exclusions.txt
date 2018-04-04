@@ -1,3 +1,4 @@
+Microsoft.Win32.Registry.Tests
 System.Console.Tests
 System.Data.SqlClient.Tests
 System.Diagnostics.Process.Tests
