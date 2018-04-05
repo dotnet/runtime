@@ -245,6 +245,12 @@ namespace Mono.Linker.Steps {
 				return;
 			}
 
+			if (Annotations.IsMarked (type)) { 
+				var existingLevel = Annotations.IsPreserved (type) ? Annotations.GetPreserve (type) : TypePreserve.Nothing; 
+				var duplicateLevel = preserve != TypePreserve.Nothing ? preserve : nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All; 
+				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {type.FullName} ({existingLevel}).  Duplicate uses ({duplicateLevel})"); 
+			} 
+
 			Annotations.MarkAndPush (type);
 			Tracer.AddDirectDependency (this, type);
 
@@ -341,10 +347,14 @@ namespace Mono.Linker.Steps {
 
 		void MarkField (TypeDefinition type, FieldDefinition field, string signature)
 		{
-			if (field != null)
+			if (field != null) {
+				if (Annotations.IsMarked (field))
+					Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {field.FullName}");
+				
 				Annotations.Mark (field);
-			else
+			} else {
 				AddUnresolveMarker (string.Format ("T: {0}; F: {1}", type, signature));
+			}
 		}
 
 		void ProcessFieldName (TypeDefinition type, string name)
@@ -407,6 +417,9 @@ namespace Mono.Linker.Steps {
 
 		void MarkMethod (MethodDefinition method)
 		{
+			if (Annotations.IsMarked (method)) 
+				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {method.FullName}"); 
+
 			Annotations.Mark (method);
 			Tracer.AddDirectDependency (this, method);
 			Annotations.SetAction (method, MethodAction.Parse);
@@ -485,6 +498,9 @@ namespace Mono.Linker.Steps {
 		void MarkEvent (TypeDefinition type, EventDefinition @event, string signature)
 		{
 			if (@event != null) {
+				if (Annotations.IsMarked (@event))
+					Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {@event.FullName}");
+
 				Annotations.Mark (@event);
 
 				MarkMethod (@event.AddMethod);
@@ -547,6 +563,9 @@ namespace Mono.Linker.Steps {
 		void MarkProperty (TypeDefinition type, PropertyDefinition property, string signature, string[] accessors)
 		{
 			if (property != null) {
+				if (Annotations.IsMarked (property))
+					Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {property.FullName}");
+				
 				Annotations.Mark (property);
 
 				MarkPropertyAccessors (type, property, accessors);
