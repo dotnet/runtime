@@ -892,8 +892,6 @@ namespace System.Xml.Tests
             }
         }
 
-        //TFS_538324
-        [ActiveIssue(27740, TestPlatforms.AnyUnix)]
         [Fact]
         public void XSDValidationGeneratesInvalidError_1()
         {
@@ -919,8 +917,6 @@ namespace System.Xml.Tests
             }
         }
 
-        //TFS_538324
-        [ActiveIssue(27740, TestPlatforms.AnyUnix)]
         [Fact]
         public void XSDValidationGeneratesInvalidError_2()
         {
