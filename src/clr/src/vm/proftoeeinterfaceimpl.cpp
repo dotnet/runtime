@@ -8849,16 +8849,16 @@ HRESULT ProfToEEInterfaceImpl::GetRuntimeInformation(USHORT * pClrInstanceId,
     }
 
     if (pMajorVersion != NULL)
-        *pMajorVersion = VER_MAJORVERSION;
+        *pMajorVersion = CLR_MAJOR_VERSION;
 
     if (pMinorVersion != NULL)
-        *pMinorVersion = VER_MINORVERSION;
+        *pMinorVersion = CLR_MINOR_VERSION;
 
     if (pBuildNumber != NULL)
-        *pBuildNumber = VER_PRODUCTBUILD;
+        *pBuildNumber = CLR_BUILD_VERSION;
 
     if (pQFEVersion != NULL)
-        *pQFEVersion = VER_PRODUCTBUILD_QFE;
+        *pQFEVersion = CLR_BUILD_VERSION_QFE;
 
     return S_OK;
 }

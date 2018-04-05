@@ -41,10 +41,10 @@ BOOL ProfilingAPIAttachDetach::s_fInitializeCalled = FALSE;
 // Both the trigger (via code:ProfilingAPIAttachClient) and the target profilee (via
 // code:ProfilingAPIAttachServer) use this constant to identify their own version.
 const VersionBlock ProfilingAPIAttachDetach::kCurrentProcessVersion(
-    VER_MAJORVERSION,
-    VER_MINORVERSION,
-    VER_PRODUCTBUILD,
-    VER_PRODUCTBUILD_QFE);
+    CLR_MAJOR_VERSION,
+    CLR_MINOR_VERSION,
+    CLR_BUILD_VERSION,
+    CLR_BUILD_VERSION_QFE);
 
 // Note that the following two VersionBlocks are initialized with static numerals rather
 // than using the VER_* preproc defines, as we don't want these VersionBlocks to change
