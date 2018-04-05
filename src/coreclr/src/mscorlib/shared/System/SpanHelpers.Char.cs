@@ -72,7 +72,8 @@ namespace System
             while ((byte*)i < (byte*)minLength)
             {
                 int result = Unsafe.Add(ref first, i).CompareTo(Unsafe.Add(ref second, i));
-                if (result != 0) return result;
+                if (result != 0)
+                    return result;
                 i += 1;
             }
 
@@ -167,6 +168,91 @@ namespace System
             }
         }
 
+        public static unsafe int LastIndexOf(ref char searchSpace, char value, int length)
+        {
+            Debug.Assert(length >= 0);
+
+            fixed (char* pChars = &searchSpace)
+            {
+                char* pCh = pChars + length;
+                char* pEndCh = pChars;
+
+#if !netstandard11
+                if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
+                {
+                    const int elementsPerByte = sizeof(ushort) / sizeof(byte);
+                    length = (((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte);
+                }
+            SequentialScan:
+#endif
+                while (length >= 4)
+                {
+                    length -= 4;
+                    pCh -= 4;
+
+                    if (*(pCh + 3) == value)
+                        goto Found3;
+                    if (*(pCh + 2) == value)
+                        goto Found2;
+                    if (*(pCh + 1) == value)
+                        goto Found1;
+                    if (*pCh == value)
+                        goto Found;
+                }
+
+                while (length > 0)
+                {
+                    length -= 1;
+                    pCh -= 1;
+
+                    if (*pCh == value)
+                        goto Found;
+                }
+#if !netstandard11
+                // We get past SequentialScan only if IsHardwareAccelerated is true. However, we still have the redundant check to allow
+                // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
+                if (Vector.IsHardwareAccelerated && pCh > pEndCh)
+                {
+                    length = (int)((pCh - pEndCh) & ~(Vector<ushort>.Count - 1));
+
+                    // Get comparison Vector
+                    Vector<ushort> vComparison = new Vector<ushort>(value);
+
+                    while (length > 0)
+                    {
+                        char* pStart = pCh - Vector<ushort>.Count;
+                        // Using Unsafe.Read instead of ReadUnaligned since the search space is pinned and pCh (and hence pSart) is always vector aligned
+                        Debug.Assert(((int)pStart & (Unsafe.SizeOf<Vector<ushort>>() - 1)) == 0);
+                        Vector<ushort> vMatches = Vector.Equals(vComparison, Unsafe.Read<Vector<ushort>>(pStart));
+                        if (Vector<ushort>.Zero.Equals(vMatches))
+                        {
+                            pCh -= Vector<ushort>.Count;
+                            length -= Vector<ushort>.Count;
+                            continue;
+                        }
+                        // Find offset of last match
+                        return (int)(pStart - pEndCh) + LocateLastFoundChar(vMatches);
+                    }
+
+                    if (pCh > pEndCh)
+                    {
+                        length = (int)(pCh - pEndCh);
+                        goto SequentialScan;
+                    }
+                }
+#endif
+                return -1;
+            Found:
+                return (int)(pCh - pEndCh);
+            Found1:
+                return (int)(pCh - pEndCh) + 1;
+            Found2:
+                return (int)(pCh - pEndCh) + 2;
+            Found3:
+                return (int)(pCh - pEndCh) + 3;
+            }
+        }
+
 #if !netstandard11
         // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -204,6 +290,40 @@ namespace System
         private const ulong XorPowerOfTwoToHighChar = (0x03ul |
                                                        0x02ul << 16 |
                                                        0x01ul << 32) + 1;
+
+        // Vector sub-search adapted from https://github.com/aspnet/KestrelHttpServer/pull/1138
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LocateLastFoundChar(Vector<ushort> match)
+        {
+            var vector64 = Vector.AsVectorUInt64(match);
+            ulong candidate = 0;
+            int i = Vector<ulong>.Count - 1;
+            // Pattern unrolled by jit https://github.com/dotnet/coreclr/pull/8001
+            for (; i >= 0; i--)
+            {
+                candidate = vector64[i];
+                if (candidate != 0)
+                {
+                    break;
+                }
+            }
+
+            // Single LEA instruction with jitted const (using function result)
+            return i * 4 + LocateLastFoundChar(candidate);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LocateLastFoundChar(ulong match)
+        {
+            // Find the most significant char that has its highest bit set
+            int index = 3;
+            while ((long)match > 0)
+            {
+                match = match << 16;
+                index--;
+            }
+            return index;
+        }
 #endif
     }
 }
