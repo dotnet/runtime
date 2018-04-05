@@ -74,7 +74,8 @@ simpleNode('Windows_NT','latest') {
                 {
                     targetHelixQueues = ['Windows.10.Amd64.Open',
                                          'Windows.7.Amd64.Open',
-                                         'Windows.81.Amd64.Open']
+                                         'Windows.81.Amd64.Open',
+                                         'Windows.10.Amd64.ClientRS3.ES.Open']
                     if (params.AGroup == 'x64') {
                         targetHelixQueues += ['Windows.10.Nano.Amd64.Open']
                     }
