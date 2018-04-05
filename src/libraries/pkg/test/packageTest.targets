@@ -101,7 +101,7 @@
   <Target Name="_test"
           DependsOnTargets="$(TestDependsOn)">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <Touch AlwaysCreate="true" Files="$(IntermediateOutputPath)\.testComplete" />
+    <Touch AlwaysCreate="true" Files="$(IntermediateOutputPath)\$(RuntimeIdentifier).testComplete" />
   </Target>
   
   <Target Name="_getTestProjects">
@@ -113,7 +113,7 @@
         <Semaphore>$(IntermediateOutputPath)\.testComplete</Semaphore>
       </TestProject>
       <TestProject Include="$(MSBuildProjectFullPath)">
-        <Semaphore>$(IntermediateOutputPath)\%(_projectRuntime.Identity)\.testComplete</Semaphore>
+        <Semaphore>$(IntermediateOutputPath)\%(_projectRuntime.Identity).testComplete</Semaphore>
         <AdditionalProperties>RuntimeIdentifier=%(_projectRuntime.Identity)</AdditionalProperties>
       </TestProject>
     </ItemGroup>
