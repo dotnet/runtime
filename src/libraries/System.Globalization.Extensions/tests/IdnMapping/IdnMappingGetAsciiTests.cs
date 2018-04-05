@@ -84,6 +84,17 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetAscii(unicode, index, count));
         }
 
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]
+        [Theory]
+        [InlineData("www.microsoft.com")]
+        [InlineData("bing.com")]
+        public void GetAscii_NoTranslationNeeded_ResultIsSameObjectAsInput(string input)
+        {
+            Assert.Same(input, new IdnMapping().GetAscii(input));
+            Assert.NotSame(input, new IdnMapping().GetAscii(input.Substring(1)));
+            Assert.NotSame(input, new IdnMapping().GetAscii(input.Substring(0, input.Length - 1)));
+        }
+
         [Fact]
         public void TestGetAsciiWithDot()
         {
