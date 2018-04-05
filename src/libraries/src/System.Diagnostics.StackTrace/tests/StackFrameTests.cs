@@ -85,6 +85,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("", 0)]
         [InlineData("FileName", 1)]
+        [ActiveIssue(28853, TargetFrameworkMonikers.NetFramework)]
         public void Ctor_Filename_LineNumber(string fileName, int lineNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber);
@@ -99,6 +100,7 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN, 0)]
         [InlineData("", 0, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("FileName", 1, 2)]
+        [ActiveIssue(28853, TargetFrameworkMonikers.NetFramework)]
         public void Ctor_Filename_LineNumber_ColNumber(string fileName, int lineNumber, int columnNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber, columnNumber);
