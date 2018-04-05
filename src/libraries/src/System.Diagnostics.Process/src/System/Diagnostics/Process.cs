@@ -782,10 +782,20 @@ namespace System.Diagnostics
         ///     This is called from the threadpool when a process exits.
         /// </devdoc>
         /// <internalonly/>
-        private void CompletionCallback(object context, bool wasSignaled)
+        private void CompletionCallback(object waitHandleContext, bool wasSignaled)
         {
-            StopWatchingForExit();
-            RaiseOnExited();
+            Debug.Assert(waitHandleContext != null, "Process.CompletionCallback called with no waitHandleContext");
+            lock (this)
+            {
+                // Check the exited event that we get from the threadpool
+                // matches the event we are waiting for.
+                if (waitHandleContext != _waitHandle)
+                {
+                    return;
+                }
+                StopWatchingForExit();
+                RaiseOnExited();
+            }
         }
 
         /// <internalonly/>
@@ -835,7 +845,14 @@ namespace System.Diagnostics
             {
                 if (_haveProcessHandle)
                 {
-                    StopWatchingForExit();
+                    // We need to lock to ensure we don't run concurrently with CompletionCallback.
+                    // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
+                    // raise the Exited event a second time for the same process.
+                    lock (this)
+                    {
+                        // This sets _waitHandle to null which causes CompletionCallback to not emit events.
+                        StopWatchingForExit();
+                    }
 #if FEATURE_TRACESWITCH
                     Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(process) in Close()");
 #endif
