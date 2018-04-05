@@ -159,7 +159,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         }
 
         [Fact]
-        public void Running_Publish_Output_Standalone_EXE_With_Startupconfig_Succeeds()
+        public void Running_Publish_Output_Standalone_EXE_With_Relative_Embedded_Path_Succeeds()
         {
             var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
@@ -179,10 +179,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             Directory.CreateDirectory(Path.GetDirectoryName(appExe));
             File.Move(sourceAppExePath, appExe);
 
-            // Create the startupConfig.json
-            string startupConfigFileName = Path.GetFileNameWithoutExtension(appExe) + ".startupconfig.json";
-            string startupConfigPath = Path.Combine(currentOutDir, startupConfigFileName);
-            SetStartupConfigJson(startupConfigPath, relativeNewPath);
+            // Modify the apphost to include relative path
+            string appDll = fixture.TestProject.AppDll;
+            string appDllName = Path.GetFileName(appDll);
+            string relativeDllPath = Path.Combine(relativeNewPath, appDllName);
+            AppHostExtensions.SearchAndReplace(appExe, Encoding.UTF8.GetBytes(appDllName), Encoding.UTF8.GetBytes(relativeDllPath), true);
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -201,6 +202,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+            var appDll = fixture.TestProject.AppDll;
 
             // Move whole directory to a subdirectory
             string currentOutDir = fixture.TestProject.OutputDirectory;
@@ -209,11 +211,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             string newOutDir = Path.Combine(currentOutDir, relativeNewPath);
             Directory.Move(currentOutDir, newOutDir);
 
-            // Move just the apphost exe back to original location
+            // Move the apphost exe and app dll back to original location
             string appExeName = Path.GetFileName(appExe);
             string sourceAppExePath = Path.Combine(newOutDir, appExeName);
             Directory.CreateDirectory(Path.GetDirectoryName(appExe));
             File.Move(sourceAppExePath, appExe);
+
+            string appDllName = Path.GetFileName(appDll);
+            string sourceAppDllPath = Path.Combine(newOutDir, appDllName);
+            File.Move(sourceAppDllPath, appDll);
 
             // This verifies a self-contained apphost cannot use DOTNET_ROOT to reference a flat
             // self-contained layout since a flat layout of the shared framework is not supported.
@@ -299,33 +305,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             {
                 File.Copy(dotnetHostFxr, testProjectHostFxr, true);
             }
-        }
-
-        // Generated json file:
-        /*
-        {
-            "startupOptions": {
-                "appRoot": "${appRoot}"
-            }
-        }
-        */
-        private void SetStartupConfigJson(string destFile, string appRoot)
-        {
-            JObject startupOptions = new JObject(
-                new JProperty("startupOptions",
-                    new JObject(
-                        new JProperty("appRoot", appRoot)
-                    )
-                )
-            );
-
-            FileInfo file = new FileInfo(destFile);
-            if (!file.Directory.Exists)
-            {
-                file.Directory.Create();
-            }
-
-            File.WriteAllText(destFile, startupOptions.ToString());
         }
     }
 }
