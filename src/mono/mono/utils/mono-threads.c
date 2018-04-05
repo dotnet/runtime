@@ -863,11 +863,16 @@ cleanup:
 gboolean
 mono_thread_info_begin_suspend (MonoThreadInfo *info)
 {
-	switch (mono_threads_transition_request_async_suspension (info)) {
-	case AsyncSuspendAlreadySuspended:
-	case AsyncSuspendBlocking:
+	switch (mono_threads_transition_request_initiate_suspension (info)) {
+	case ReqSuspendAlreadySuspended:
+	case ReqSuspendAlreadySuspendedBlocking:
 		return TRUE;
-	case AsyncSuspendInitSuspend:
+	case ReqSuspendInitSuspendBlocking:
+		// in full cooperative mode there we just leave BLOCKING threads running until they try to return to RUNNING, so nothing to do.
+		return TRUE;
+	case ReqSuspendInitSuspendRunning:
+		// in full preemptive mode this should be a preemptive suspend
+		// in full and hybrid cooperative modes this should be a coop suspend
 		return begin_async_suspend (info, FALSE);
 	default:
 		g_assert_not_reached ();
@@ -935,17 +940,20 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 	if (!info)
 		return NULL;
 
-	switch (mono_threads_transition_request_async_suspension (info)) {
-	case AsyncSuspendAlreadySuspended:
+	switch (mono_threads_transition_request_initiate_suspension (info)) {
+	case ReqSuspendAlreadySuspended:
 		mono_hazard_pointer_clear (hp, 1); //XXX this is questionable we got to clean the suspend/resume nonsense of critical sections
 		return info;
-	case AsyncSuspendInitSuspend:
+	case ReqSuspendInitSuspendRunning:
 		if (!begin_async_suspend (info, interrupt_kernel)) {
 			mono_hazard_pointer_clear (hp, 1);
 			return NULL;
 		}
 		break;
-	case AsyncSuspendBlocking:
+	case ReqSuspendAlreadySuspendedBlocking:
+	case ReqSuspendInitSuspendBlocking:
+		// for full coop, executing in blocking counts as suspended.
+
 		if (interrupt_kernel)
 			mono_threads_suspend_abort_syscall (info);
 
