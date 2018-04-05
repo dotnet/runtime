@@ -47,7 +47,6 @@ namespace System.Tests
         [MemberData(nameof(UInt64Values))]
         public void ToString(ulong value)
         {
-            Span<char> destination = new char[value.ToString().Length];
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
