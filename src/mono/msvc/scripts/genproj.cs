@@ -335,7 +335,7 @@ class MsbuildGenerator {
 	bool Optimize = true;
 	bool want_debugging_support = false;
 	string main = null;
-	Dictionary<string, string> embedded_resources = new Dictionary<string, string> ();
+	SortedDictionary<string, string> embedded_resources = new SortedDictionary<string, string> ();
 	List<string> warning_as_error = new List<string> ();
 	List<int> ignore_warning = new List<int> ();
 	bool load_default_config = true;
