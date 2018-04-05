@@ -428,6 +428,17 @@ mono_error_set_invalid_program (MonoError *oerror, const char *msg_format, ...)
 	set_error_message ();
 }
 
+void
+mono_error_set_member_access (MonoError *oerror, const char *msg_format, ...)
+{
+	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
+
+	mono_error_prepare (error);
+	error->error_code = MONO_ERROR_MEMBER_ACCESS;
+
+	set_error_message ();
+}
+
 /**
  * mono_error_set_invalid_cast:
  *
@@ -587,6 +598,9 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 	case MONO_ERROR_MISSING_FIELD:
 		exception = mono_corlib_exception_new_with_args ("System", "MissingFieldException", error->full_message, error->first_argument, error_out);
+		break;
+	case MONO_ERROR_MEMBER_ACCESS:
+		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "MemberAccessException", error->full_message);
 		break;
 
 	case MONO_ERROR_TYPE_LOAD:

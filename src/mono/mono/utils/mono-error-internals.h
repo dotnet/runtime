@@ -194,6 +194,9 @@ void
 mono_error_set_invalid_program (MonoError *oerror, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
 void
+mono_error_set_member_access (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
+
+void
 mono_error_set_invalid_cast (MonoError *oerror);
 
 MonoException*

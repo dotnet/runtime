@@ -3651,6 +3651,14 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 	MonoInst *iargs [2];
 	void *alloc_ftn;
 
+	if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT) {
+		char* full_name = mono_type_get_full_name (klass);
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+		mono_error_set_member_access (&cfg->error, "Cannot create an abstract class: %s", full_name);
+		g_free (full_name);
+		return NULL;
+	}
+
 	if (context_used) {
 		MonoInst *data;
 		MonoRgctxInfoType rgctx_info;
