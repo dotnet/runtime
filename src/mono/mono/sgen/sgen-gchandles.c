@@ -365,6 +365,9 @@ sgen_gchandle_get_metadata (guint32 gchandle)
 void
 sgen_gchandle_free (guint32 gchandle)
 {
+	if (!gchandle)
+		return;
+
 	guint32 index = MONO_GC_HANDLE_SLOT (gchandle);
 	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = gc_handles_for_type (type);

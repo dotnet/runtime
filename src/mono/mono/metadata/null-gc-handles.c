@@ -393,6 +393,9 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 void
 mono_gchandle_free (guint32 gchandle)
 {
+	if (!gchandle)
+		return;
+
 	guint slot = MONO_GC_HANDLE_SLOT (gchandle);
 	guint type = MONO_GC_HANDLE_TYPE (gchandle);
 	HandleData *handles = &gc_handles [type];

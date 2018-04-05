@@ -854,10 +854,8 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	mono_w32mutex_abandon (thread);
 #endif
 
-	if (thread->abort_state_handle) {
-		mono_gchandle_free (thread->abort_state_handle);
-		thread->abort_state_handle = 0;
-	}
+	mono_gchandle_free (thread->abort_state_handle);
+	thread->abort_state_handle = 0;
 
 	thread->abort_exc = NULL;
 	thread->current_appcontext = NULL;
@@ -2449,14 +2447,14 @@ request_thread_abort (MonoInternalThread *thread, MonoObject *state, gboolean ap
 	else
 		thread->flags &= ~MONO_THREAD_FLAG_APPDOMAIN_ABORT;
 
-	if (thread->abort_state_handle)
-		mono_gchandle_free (thread->abort_state_handle);
+	mono_gchandle_free (thread->abort_state_handle);
+	thread->abort_state_handle = 0;
+
 	if (state) {
 		thread->abort_state_handle = mono_gchandle_new (state, FALSE);
 		g_assert (thread->abort_state_handle);
-	} else {
-		thread->abort_state_handle = 0;
 	}
+
 	thread->abort_exc = NULL;
 
 	THREAD_DEBUG (g_message ("%s: (%"G_GSIZE_FORMAT") Abort requested for %p (%"G_GSIZE_FORMAT")", __func__, mono_native_thread_id_get (), thread, (gsize)thread->tid));
@@ -2525,12 +2523,10 @@ ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this_obj)
 
 	mono_get_eh_callbacks ()->mono_clear_abort_threshold ();
 	thread->abort_exc = NULL;
-	if (thread->abort_state_handle) {
-		mono_gchandle_free (thread->abort_state_handle);
-		/* This is actually not necessary - the handle
-		   only counts if the exception is set */
-		thread->abort_state_handle = 0;
-	}
+	mono_gchandle_free (thread->abort_state_handle);
+	/* This is actually not necessary - the handle
+	   only counts if the exception is set */
+	thread->abort_state_handle = 0;
 }
 
 void
@@ -2543,12 +2539,10 @@ mono_thread_internal_reset_abort (MonoInternalThread *thread)
 	if (thread->abort_exc) {
 		mono_get_eh_callbacks ()->mono_clear_abort_threshold ();
 		thread->abort_exc = NULL;
-		if (thread->abort_state_handle) {
-			mono_gchandle_free (thread->abort_state_handle);
-			/* This is actually not necessary - the handle
-			   only counts if the exception is set */
-			thread->abort_state_handle = 0;
-		}
+		mono_gchandle_free (thread->abort_state_handle);
+		/* This is actually not necessary - the handle
+		   only counts if the exception is set */
+		thread->abort_state_handle = 0;
 	}
 
 	UNLOCK_THREAD (thread);
