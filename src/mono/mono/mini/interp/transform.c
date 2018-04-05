@@ -1518,7 +1518,7 @@ interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformDa
 
 	for (i = 0; i < dinfo->num_line_numbers; i++)
 		dinfo->line_numbers [i] = g_array_index (line_numbers, MonoDebugLineNumberEntry, i);
-	mono_debug_add_method (rtm->method, dinfo, mono_domain_get ());
+	mono_debug_add_method (rtm->method, dinfo, rtm->domain);
 
 	mono_debug_free_method_jit_info (dinfo);
 }
