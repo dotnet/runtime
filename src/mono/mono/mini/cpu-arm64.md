@@ -101,6 +101,7 @@ vcall: len:32 clob:c
 vcall_reg: src1:i len:32 clob:c
 vcall_membase: src1:b len:32 clob:c
 tailcall: len:64 clob:c
+tailcall_membase: src1:b len:64 clob:c # FIXME len?
 iconst: dest:i len:16
 r4const: dest:f len:24
 r8const: dest:f len:20

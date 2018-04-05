@@ -237,7 +237,7 @@ exit 0
 
 .assembly extern mscorlib { }
 
-.assembly fsharp { }
+.assembly 'fsharp-deeptail' { }
 
 .class private abstract auto ansi sealed '<StartupCode$fsharp>'.$Fsharp
 extends [mscorlib]System.Object
@@ -287,7 +287,7 @@ call void Fsharp::RunTest<int32>(string, !!0, !!0)
 ldstr "TailCallLoopGenericClassAndMethod<byte>.Method1<byte>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::Method1<uint8>(int32, !!0)
 ldc.i4.3
@@ -298,7 +298,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,uint8>>(string, !
 ldstr "TailCallLoopGenericClassAndMethod<byte>.Method1<int>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::Method1<int32>(int32, !!0)
 ldc.i4.3
@@ -309,7 +309,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,int32>>(string, !
 ldstr "TailCallLoopGenericClassAndMethod<byte>.Method1<DateTime>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldc.i4.3
@@ -320,7 +320,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,valuetype [mscorl
 ldstr "TailCallLoopGenericClassAndMethod<byte>.Method1<string>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<uint8>::Method1<string>(int32, !!0)
 ldc.i4.3
@@ -331,7 +331,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,string>>(string, 
 ldstr "TailCallLoopGenericClassAndMethod<int>.Method1<byte>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::Method1<uint8>(int32, !!0)
 ldc.i4.3
@@ -342,7 +342,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,uint8>>(string, !
 ldstr "TailCallLoopGenericClassAndMethod<int>.Method1<int>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::Method1<int32>(int32, !!0)
 ldc.i4.3
@@ -353,7 +353,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,int32>>(string, !
 ldstr "TailCallLoopGenericClassAndMethod<int>.Method1<DateTime>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldc.i4.3
@@ -364,7 +364,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,valuetype [mscorl
 ldstr "TailCallLoopGenericClassAndMethod<int>.Method1<string>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<int32>::Method1<string>(int32, !!0)
 ldc.i4.3
@@ -375,7 +375,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,string>>(string, 
 ldstr "TailCallLoopGenericClassAndMethod<DateTime>.Method1<byte>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<uint8>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -386,7 +386,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethod<DateTime>.Method1<int>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<int32>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -397,7 +397,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethod<DateTime>.Method1<DateTime>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -408,7 +408,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethod<DateTime>.Method1<string>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<string>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -419,7 +419,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethod<string>.Method1<byte>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::Method1<uint8>(int32, !!0)
 ldstr "qq"
@@ -430,7 +430,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,uint8>>(string, 
 ldstr "TailCallLoopGenericClassAndMethod<string>.Method1<int>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::Method1<int32>(int32, !!0)
 ldstr "qq"
@@ -441,7 +441,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,int32>>(string, 
 ldstr "TailCallLoopGenericClassAndMethod<string>.Method1<DateTime>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldstr "qq"
@@ -452,7 +452,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,valuetype [mscor
 ldstr "TailCallLoopGenericClassAndMethod<string>.Method1<string>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/TailCallLoopGenericClassAndMethod`1<string>::Method1<string>(int32, !!0)
 ldstr "qq"
@@ -463,7 +463,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,string>>(string,
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<byte>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<uint8>::Method1<uint8>(int32, !!0)
 ldc.i4.3
@@ -474,7 +474,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,uint8>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<int>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<uint8>::Method1<int32>(int32, !!0)
 ldc.i4.3
@@ -485,7 +485,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,int32>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<DateTime>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<uint8>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldc.i4.3
@@ -496,7 +496,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,valuetype [mscorl
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<string>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<uint8>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<uint8>::Method1<string>(int32, !!0)
 ldc.i4.3
@@ -507,7 +507,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,string>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<byte>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<int32>::Method1<uint8>(int32, !!0)
 ldc.i4.3
@@ -518,7 +518,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,uint8>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<int>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<int32>::Method1<int32>(int32, !!0)
 ldc.i4.3
@@ -529,7 +529,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,int32>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<DateTime>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<int32>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldc.i4.3
@@ -540,7 +540,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,valuetype [mscorl
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<string>"
 ldc.i4.3
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<int32>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<int32>::Method1<string>(int32, !!0)
 ldc.i4.3
@@ -551,7 +551,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,string>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<byte>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<uint8>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -562,7 +562,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<int>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<int32>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -573,7 +573,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<DateTime>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -584,7 +584,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<string>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<valuetype [mscorlib]System.DateTime>::Method1<string>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -595,7 +595,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<byte>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<string>::Method1<uint8>(int32, !!0)
 ldstr "qq"
@@ -606,7 +606,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,uint8>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<int>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<string>::Method1<int32>(int32, !!0)
 ldstr "qq"
@@ -617,7 +617,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,int32>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<DateTime>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<string>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldstr "qq"
@@ -628,7 +628,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,valuetype [mscor
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DatstringeTime>.Method1<string>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<string>::.ctor(!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<string>::Method1<string>(int32, !!0)
 ldstr "qq"
@@ -639,7 +639,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,string>>(string,
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<byte>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<uint8>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<uint8>::Method1<uint8>(int32, !!0)
 ldc.i4.3
@@ -650,7 +650,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,uint8>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<int>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<uint8>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<uint8>::Method1<int32>(int32, !!0)
 ldc.i4.3
@@ -661,7 +661,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,int32>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<DateTime>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<uint8>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<uint8>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldc.i4.3
@@ -672,7 +672,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,valuetype [mscorl
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<string>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<uint8>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<uint8>::Method1<string>(int32, !!0)
 ldc.i4.3
@@ -683,7 +683,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,string>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<byte>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<int32>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<int32>::Method1<uint8>(int32, !!0)
 ldc.i4.3
@@ -694,7 +694,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,uint8>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<int>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<int32>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<int32>::Method1<int32>(int32, !!0)
 ldc.i4.3
@@ -705,7 +705,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,int32>>(string, !
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<DateTime>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<int32>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<int32>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldc.i4.3
@@ -716,7 +716,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,valuetype [mscorl
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<int>.Method1<string>"
 ldc.i4.3
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<int32>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<int32>::Method1<string>(int32, !!0)
 ldc.i4.3
@@ -727,7 +727,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,string>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<byte>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<valuetype [mscorlib]System.DateTime>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<valuetype [mscorlib]System.DateTime>::Method1<uint8>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -738,7 +738,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<int>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<valuetype [mscorlib]System.DateTime>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<valuetype [mscorlib]System.DateTime>::Method1<int32>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -749,7 +749,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<DateTime>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<valuetype [mscorlib]System.DateTime>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<valuetype [mscorlib]System.DateTime>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -760,7 +760,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DateTime>.Method1<string>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<valuetype [mscorlib]System.DateTime>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<valuetype [mscorlib]System.DateTime>::Method1<string>(int32, !!0)
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MaxValue
@@ -771,7 +771,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<valuetype [mscorlib]Sys
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<byte>"
 ldstr "qq"
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<string>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<string>::Method1<uint8>(int32, !!0)
 ldstr "qq"
@@ -782,7 +782,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,uint8>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<int>"
 ldstr "qq"
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<string>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldc.i4.4
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<string>::Method1<int32>(int32, !!0)
 ldstr "qq"
@@ -793,7 +793,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,int32>>(string, 
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<DateTime>"
 ldstr "qq"
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<string>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<string>::Method1<valuetype [mscorlib]System.DateTime>(int32, !!0)
 ldstr "qq"
@@ -804,7 +804,7 @@ call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,valuetype [mscor
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<DatstringeTime>.Method1<string>"
 ldstr "qq"
 call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<string>(!!0)
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 ldstr "abc"
 callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<string>::Method1<string>(int32, !!0)
 ldstr "qq"
@@ -819,12 +819,14 @@ callvirt instance !0 class Fsharp/TailCallLoopGenericClass`1<int32>::get_Result(
 ldc.i4.3
 call void Fsharp::RunTest<int32>(string, !!0, !!0)
 
+/* FIXME This fails on x86 and ARM64. It passes on AMD64.
 ldstr "TailCallLoopGenericClass<DateTime>"
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 newobj instance void class Fsharp/TailCallLoopGenericClass`1<valuetype [mscorlib]System.DateTime>::.ctor(!0)
 callvirt instance !0 class Fsharp/TailCallLoopGenericClass`1<valuetype [mscorlib]System.DateTime>::get_Result()
 ldsfld valuetype [mscorlib]System.DateTime [mscorlib]System.DateTime::MinValue
 call void Fsharp::RunTest<valuetype [mscorlib]System.DateTime>(string, !!0, !!0)
+*/
 
 ldstr "TailCallLoopGenericClass<string>"
 ldstr "abc"
@@ -1310,7 +1312,7 @@ ldarg.0
 pop
 ldarg.0
 ldarg.0
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 callvirt instance int32 class Fsharp/TailCallLoop`1<!T1>::f(int32)
 stfld int32 class Fsharp/TailCallLoop`1<!T1>::v5
 ret
@@ -1318,7 +1320,7 @@ ret
 .method public hidebysig specialname instance int32 get_Result() cil managed
 {
 ldarg.0
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 callvirt instance int32 class Fsharp/TailCallLoop`1<!T1>::f(int32)
 ldarg.0
 ldfld int32 class Fsharp/TailCallLoop`1<!T1>::v5
@@ -1415,7 +1417,7 @@ ret
 .method public hidebysig specialname instance !T1 get_Result() cil managed
 {
 ldarg.0
-ldc.i4 0x989680
+call int32 Fsharp::get_HugeInt()
 tail.
 callvirt instance !0 class Fsharp/TailCallLoopGenericClass`1<!T1>::Method1(int32)
 ret

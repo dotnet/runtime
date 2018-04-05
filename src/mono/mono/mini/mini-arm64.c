@@ -796,6 +796,12 @@ emit_tls_set (guint8 *code, int sreg, int tls_offset)
 __attribute__ ((__warn_unused_result__)) guint8*
 mono_arm_emit_destroy_frame (guint8 *code, int stack_offset, guint64 temp_regs)
 {
+	// At least one of these registers must be available, or both.
+	gboolean const temp0 = (temp_regs & (1 << ARMREG_IP0)) != 0;
+	gboolean const temp1 = (temp_regs & (1 << ARMREG_IP1)) != 0;
+	g_assert (temp0 || temp1);
+	int const temp = temp0 ? ARMREG_IP0 : ARMREG_IP1;
+
 	arm_movspx (code, ARMREG_SP, ARMREG_FP);
 
 	if (arm_is_ldpx_imm (stack_offset)) {
@@ -803,19 +809,18 @@ mono_arm_emit_destroy_frame (guint8 *code, int stack_offset, guint64 temp_regs)
 	} else {
 		arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
 		/* sp += stack_offset */
-		g_assert (temp_regs & (1 << ARMREG_IP0));
-		if (temp_regs & (1 << ARMREG_IP1)) {
+		if (temp0 && temp1) {
 			code = emit_addx_sp_imm (code, stack_offset);
 		} else {
 			int imm = stack_offset;
 
-			/* Can't use addx_sp_imm () since we can't clobber ip0/ip1 */
-			arm_addx_imm (code, ARMREG_IP0, ARMREG_SP, 0);
+			/* Can't use addx_sp_imm () since we can't clobber both ip0/ip1 */
+			arm_addx_imm (code, temp, ARMREG_SP, 0);
 			while (imm > 256) {
-				arm_addx_imm (code, ARMREG_IP0, ARMREG_IP0, 256);
+				arm_addx_imm (code, temp, temp, 256);
 				imm -= 256;
 			}
-			arm_addx_imm (code, ARMREG_SP, ARMREG_IP0, imm);
+			arm_addx_imm (code, ARMREG_SP, temp, imm);
 		}
 	}
 	return code;
@@ -2670,29 +2675,66 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	}
 }
 
+static const gboolean debug_tailcall = FALSE;
+
+static gboolean
+is_supported_tailcall_helper (gboolean value, const char *svalue)
+{
+	if (!value && debug_tailcall)
+		g_print ("%s %s\n", __func__, svalue);
+	return value;
+}
+
+#define IS_SUPPORTED_TAILCALL(x) (is_supported_tailcall_helper((x), #x))
+
+static gboolean
+tailcall_return_storage_supported (ArgStorage storage)
+{
+	switch (storage) {
+	case ArgInIReg:
+	case ArgInFReg:
+	case ArgNone:
+		return TRUE;
+
+	case ArgHFA:
+	case ArgInFRegR4: // conversion in emit_move_return_value missed
+	case ArgOnStack:
+	case ArgOnStackR8:
+	case ArgOnStackR4:
+	case ArgVtypeByRef:
+	case ArgVtypeByRefOnStack:
+	case ArgVtypeInIRegs: // FIXME: Pass caller's caller's return area to callee.
+	case ArgVtypeOnStack:
+		return FALSE;
+
+	default:
+		g_assert_not_reached ();
+		return FALSE;
+	}
+}
+
 gboolean
 mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
-	CallInfo *c1, *c2;
-	gboolean res;
+	g_assert (caller_sig);
+	g_assert (callee_sig);
 
 	if (cfg->compile_aot && !cfg->full_aot)
 		/* OP_TAILCALL doesn't work with AOT */
 		return FALSE;
 
-	c1 = get_call_info (NULL, caller_sig);
-	c2 = get_call_info (NULL, callee_sig);
-	res = TRUE;
-	// FIXME: Relax these restrictions
-	if (c1->stack_usage != 0)
-		res = FALSE;
-	if (c1->stack_usage != c2->stack_usage)
-		res = FALSE;
-	if ((c1->ret.storage != ArgNone && c1->ret.storage != ArgInIReg) || c1->ret.storage != c2->ret.storage)
-		res = FALSE;
+	CallInfo *caller_info = get_call_info (NULL, caller_sig);
+	CallInfo *callee_info = get_call_info (NULL, callee_sig);
 
-	g_free (c1);
-	g_free (c2);
+	// FIXME: Relax these restrictions
+
+	gboolean res = IS_SUPPORTED_TAILCALL (caller_info->stack_usage == 0)
+		  && IS_SUPPORTED_TAILCALL (caller_info->stack_usage == callee_info->stack_usage)
+		  && IS_SUPPORTED_TAILCALL (caller_info->ret.storage == callee_info->ret.storage)
+		  && IS_SUPPORTED_TAILCALL (tailcall_return_storage_supported (caller_info->ret.storage));
+
+	g_free (caller_info);
+	g_free (callee_info);
 
 	return res;
 }
@@ -4247,10 +4289,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_blrx (code, ARMREG_IP0);
 			code = emit_move_return_value (cfg, code, ins);
 			break;
-		case OP_TAILCALL: {
-			MonoCallInst *call = (MonoCallInst*)ins;
+
+		case OP_TAILCALL:
+		case OP_TAILCALL_MEMBASE: {
+			guint64 free_reg = 0;
+			int branch_reg = -1;
+			gboolean tailcall_membase = FALSE;
+			call = (MonoCallInst*)ins;
 
 			g_assert (!cfg->method->save_lmf);
+
+			switch (ins->opcode) {
+			case OP_TAILCALL:
+				free_reg = (1 << ARMREG_IP0) | (1 << ARMREG_IP1);
+				branch_reg = ARMREG_IP0;
+				tailcall_membase = FALSE;
+				break;
+
+			case OP_TAILCALL_MEMBASE:
+				free_reg = (1 << ARMREG_IP0);
+				branch_reg = ARMREG_IP1;
+				tailcall_membase = TRUE;
+				// Get jmp address before restoring nonvolatiles, in case basereg is nonvolatile.
+				code = emit_ldrx (code, branch_reg, ins->inst_basereg, ins->inst_offset);
+				break;
+
+			default:
+				g_assert_not_reached ();
+			}
 
 			// FIXME: Copy stack arguments
 
@@ -4258,17 +4324,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_load_regset (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, ARMREG_FP, cfg->arch.saved_gregs_offset);
 
 			/* Destroy frame */
-			code = mono_arm_emit_destroy_frame (code, cfg->stack_offset, ((1 << ARMREG_IP0) | (1 << ARMREG_IP1)));
+			code = mono_arm_emit_destroy_frame (code, cfg->stack_offset, free_reg);
 
-			if (cfg->compile_aot) {
+			if (tailcall_membase) {
+				// nothing
+			} else if (cfg->compile_aot) {
 				/* This is not a PLT patch */
 				code = emit_aotconst (cfg, code, ARMREG_IP0, MONO_PATCH_INFO_METHOD_JUMP, call->method);
-				arm_brx (code, ARMREG_IP0);
 			} else {
 				mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method, MONO_R_ARM64_B);
 				arm_b (code, code);
 				cfg->thunk_area += THUNK_SIZE;
 			}
+
+			if (branch_reg >= 0)
+				arm_brx (code, branch_reg);
+
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
@@ -5016,7 +5087,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	/* Destroy frame */
-	code = mono_arm_emit_destroy_frame (code, cfg->stack_offset, ((1 << ARMREG_IP0) | (1 << ARMREG_IP1)));
+	code = mono_arm_emit_destroy_frame (code, cfg->stack_offset, (1 << ARMREG_IP0) | (1 << ARMREG_IP1));
 
 	arm_retx (code, ARMREG_LR);
 

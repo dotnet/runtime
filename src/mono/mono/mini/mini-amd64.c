@@ -1251,23 +1251,39 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return args_size;
 }
 
+static const gboolean debug_tailcall = FALSE;
+
+static gboolean
+is_supported_tailcall_helper (gboolean value, const char *svalue)
+{
+	if (!value && debug_tailcall)
+		g_print ("%s %s\n", __func__, svalue);
+	return value;
+}
+
+#define IS_SUPPORTED_TAILCALL(x) (is_supported_tailcall_helper((x), #x))
+
 gboolean
 mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
 {
-	CallInfo *c1, *c2;
-	gboolean res;
 	MonoType *callee_ret;
 
-	c1 = get_call_info (NULL, caller_sig);
-	c2 = get_call_info (NULL, callee_sig);
-	res = c1->stack_usage >= c2->stack_usage;
-	callee_ret = mini_get_underlying_type (callee_sig->ret);
-	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->ret.storage != ArgValuetypeInReg)
-		/* An address on the callee's stack is passed as the first argument */
-		res = FALSE;
+	CallInfo *caller_info = get_call_info (NULL, caller_sig);
+	CallInfo *callee_info = get_call_info (NULL, callee_sig);
+	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage)
+                    && IS_SUPPORTED_TAILCALL (callee_info->ret.storage == caller_info->ret.storage);
 
-	g_free (c1);
-	g_free (c2);
+	if (!res && !debug_tailcall)
+		goto exit;
+
+	// FIXME: Pass caller's caller's return area to callee.
+	/* An address on the callee's stack is passed as the first argument */
+	callee_ret = mini_get_underlying_type (callee_sig->ret);
+	res &= IS_SUPPORTED_TAILCALL (!(callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && callee_info->ret.storage != ArgValuetypeInReg));
+
+exit:
+	g_free (caller_info);
+	g_free (callee_info);
 
 	return res;
 }
@@ -4626,9 +4642,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_TAILCALL:
 		case OP_TAILCALL_MEMBASE: {
-			MonoCallInst *call = (MonoCallInst*)ins;
+			call = (MonoCallInst*)ins;
 			int i, save_area_offset;
-			gboolean membase = (ins->opcode == OP_TAILCALL_MEMBASE);
+			gboolean tailcall_membase = (ins->opcode == OP_TAILCALL_MEMBASE);
 
 			g_assert (!cfg->method->save_lmf);
 
@@ -4646,7 +4662,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			// FIXME hardcoding RAX here is not ideal.
 
-			if (membase) {
+			if (tailcall_membase) {
 				amd64_mov_reg_membase (code, AMD64_RAX, ins->sreg1, ins->inst_offset, 8);
 			} else {
 				 if (cfg->compile_aot) {
@@ -4699,7 +4715,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			// FIXME This should be jmp rip+32 for AOT direct to same assembly.
 			// FIXME This should be jmp [rip+32] for AOT direct to not-same assembly (through data).
 			// FIXME This should be jmp [rip+32] for JIT direct -- patch data instead of code.
-			// This is only close to ideal for membase, and even then it should
+			// This is only close to ideal for tailcall_membase, and even then it should
 			// have a more dynamic register allocation.
 			x86_imm_emit8 (code, 0x48);
 			amd64_jump_reg (code, AMD64_RAX);
