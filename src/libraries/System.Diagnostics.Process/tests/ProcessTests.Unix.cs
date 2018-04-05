@@ -589,6 +589,39 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        /// <summary>
+        /// Verifies a new Process instance can refer to a process with a recycled pid
+        /// for which there is still an existing Process instance.
+        /// </summary>
+        [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        public void TestProcessRecycledPid()
+        {
+            const int LinuxPidMaxDefault = 32768;
+            var processes = new Dictionary<int, Process>(LinuxPidMaxDefault);
+            bool foundRecycled = false;
+            for (int i = 0; i < int.MaxValue; i++)
+            {
+                var process = CreateProcessLong();
+                process.Start();
+
+                foundRecycled = processes.ContainsKey(process.Id);
+
+                process.Kill();
+                process.WaitForExit();
+
+                if (foundRecycled)
+                {
+                    break;
+                }
+                else
+                {
+                    processes.Add(process.Id, process);
+                }
+            }
+
+            Assert.True(foundRecycled);
+        }
+
         private static IDictionary GetWaitStateDictionary(bool childDictionary)
         {
             Assembly assembly = typeof(Process).Assembly;

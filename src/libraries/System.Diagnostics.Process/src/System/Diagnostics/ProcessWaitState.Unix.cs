@@ -114,6 +114,9 @@ namespace System.Diagnostics
                 ProcessWaitState pws;
                 if (isNewChild)
                 {
+                    // When the PID is recycled for a new child, we remove the old child.
+                    s_childProcessWaitStates.Remove(processId);
+
                     pws = new ProcessWaitState(processId, isChild: true);
                     s_childProcessWaitStates.Add(processId, pws);
                     pws._outstandingRefCount++; // For Holder
@@ -142,22 +145,25 @@ namespace System.Diagnostics
         /// Decrements the ref count on the wait state object, and if it's the last one,
         /// removes it from the table.
         /// </summary>
-        internal bool ReleaseRef()
+        internal void ReleaseRef()
         {
             ProcessWaitState pws;
             Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
-            bool removed = false;
             lock (waitStates)
             {
                 bool foundState = waitStates.TryGetValue(_processId, out pws);
                 Debug.Assert(foundState);
                 if (foundState)
                 {
-                    --pws._outstandingRefCount;
-                    if (pws._outstandingRefCount == 0)
+                    --_outstandingRefCount;
+                    if (_outstandingRefCount == 0)
                     {
-                        waitStates.Remove(_processId);
-                        removed = true;
+                        // The dictionary may contain a different ProcessWaitState if the pid was recycled.
+                        if (pws == this)
+                        {
+                            waitStates.Remove(_processId);
+                        }
+                        pws = this;
                     }
                     else
                     {
@@ -166,7 +172,6 @@ namespace System.Diagnostics
                 }
             }
             pws?.Dispose();
-            return removed;
         }
 
         /// <summary>
