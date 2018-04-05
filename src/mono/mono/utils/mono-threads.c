@@ -867,9 +867,6 @@ mono_thread_info_begin_suspend (MonoThreadInfo *info)
 	case AsyncSuspendAlreadySuspended:
 	case AsyncSuspendBlocking:
 		return TRUE;
-	case AsyncSuspendWait:
-		mono_threads_add_to_pending_operation_set (info);
-		return TRUE;
 	case AsyncSuspendInitSuspend:
 		return begin_async_suspend (info, FALSE);
 	default:
@@ -942,9 +939,6 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 	case AsyncSuspendAlreadySuspended:
 		mono_hazard_pointer_clear (hp, 1); //XXX this is questionable we got to clean the suspend/resume nonsense of critical sections
 		return info;
-	case AsyncSuspendWait:
-		mono_threads_add_to_pending_operation_set (info);
-		break;
 	case AsyncSuspendInitSuspend:
 		if (!begin_async_suspend (info, interrupt_kernel)) {
 			mono_hazard_pointer_clear (hp, 1);

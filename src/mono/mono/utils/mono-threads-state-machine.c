@@ -172,7 +172,6 @@ Returns one of the following values:
 
 - AsyncSuspendInitSuspend: Thread suspend requested, async suspend needs to be done.
 - AsyncSuspendAlreadySuspended: Thread already suspended, nothing to do.
-- AsyncSuspendWait: Self suspend in progress, asked it to notify us. Caller must add target to the notification set.
 - AsyncSuspendBlocking: Thread in blocking state
 */
 MonoRequestAsyncSuspendResult
