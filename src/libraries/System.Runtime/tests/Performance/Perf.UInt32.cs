@@ -28,7 +28,6 @@ namespace System.Tests
         [MemberData(nameof(UInt32Values))]
         public void ToString(uint value)
         {
-            Span<char> destination = new char[value.ToString().Length];
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
