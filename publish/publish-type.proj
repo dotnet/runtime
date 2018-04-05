@@ -48,18 +48,16 @@
     <!-- TODO: We should also think about pulling down the checksums or recomputing them -->
     <PropertyGroup>
       <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
-      <!-- Must add a / suffix or else a stable build will end up downloading too much (e.g. everything prefixed with 2.1.0-preview2) -->
-      <DownloadBlobNamePrefix>$(BinariesRelativePath)/</DownloadBlobNamePrefix>
     </PropertyGroup>
 
     <MakeDir Directories="$(DownloadDirectory)" Condition="!Exists('$(DownloadDirectory)')" />
 
-    <Message Text="Downloading files from $(AzureAccountName)/$(ContainerName)/$(DownloadBlobNamePrefix) into $(DownloadDirectory)" />
+    <Message Text="Downloading files from $(AzureAccountName)/$(ContainerName)/$(BinariesRelativePath) into $(DownloadDirectory)" />
 
     <DownloadFromAzure AccountName="$(AzureAccountName)"
                        AccountKey="$(AzureAccessToken)"
                        ContainerName="$(ContainerName)"
-                       BlobNamePrefix="$(DownloadBlobNamePrefix)"
+                       BlobNamePrefix="$(BinariesRelativePath)"
                        DownloadDirectory="$(DownloadDirectory)" />
 
     <ItemGroup>
@@ -72,7 +70,7 @@
 
       <!-- Make the local relative path match what dotnet-install scripts expect -->
       <FilesToPublish>
-        <RelativeBlobPath>assets/$(BinariesRelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+        <RelativeBlobPath>assets/$(BinariesRelativePath)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
         <ManifestArtifactData>ShipInstaller=dotnetcli</ManifestArtifactData>
       </FilesToPublish>
     </ItemGroup>
