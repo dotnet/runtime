@@ -90,7 +90,7 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public async Task TestStartTimeProperty()
         {
-            TimeSpan allowedWindow = TimeSpan.FromSeconds(1);
+            TimeSpan allowedWindow = TimeSpan.FromSeconds(2);
 
             using (Process p = Process.GetCurrentProcess())
             {
@@ -129,7 +129,8 @@ namespace System.Diagnostics.Tests
                     p.Refresh();
                     try
                     {
-                        Assert.Contains(p.Threads.Cast<ProcessThread>(), t => t.StartTime.ToUniversalTime() >= curTime - allowedWindow);
+                        var newest = p.Threads.Cast<ProcessThread>().OrderBy(t => t.StartTime.ToUniversalTime()).Last();
+                        Assert.InRange(newest.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
                     }
                     catch (InvalidOperationException)
                     {
