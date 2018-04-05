@@ -1261,10 +1261,10 @@ BOOL RuntimeVerifyNativeImageVersion(const CORCOMPILE_VERSION_INFO *info, Loggab
     // Check that the EE version numbers are the same.
     //
  
-    if (info->wVersionMajor != VER_MAJORVERSION
-        || info->wVersionMinor != VER_MINORVERSION
-        || info->wVersionBuildNumber != VER_PRODUCTBUILD
-        || info->wVersionPrivateBuildNumber != VER_PRODUCTBUILD_QFE)
+    if (info->wVersionMajor != CLR_MAJOR_VERSION
+        || info->wVersionMinor != CLR_MINOR_VERSION
+        || info->wVersionBuildNumber != CLR_BUILD_VERSION
+        || info->wVersionPrivateBuildNumber != CLR_BUILD_VERSION_QFE)
     {
         RuntimeVerifyLog(LL_ERROR, pLogAsm, W("CLR version recorded in native image doesn't match the current CLR."));
         return FALSE;
