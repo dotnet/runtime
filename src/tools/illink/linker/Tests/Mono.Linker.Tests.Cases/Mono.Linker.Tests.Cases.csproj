@@ -105,6 +105,10 @@
     <None Include="LinkXml\Dependencies\CanPreserveAnExportedType_Forwarder.cs" />
     <Compile Include="LinkXml\CanPreserveExportedTypesUsingRegex.cs" />
     <Compile Include="LinkXml\Dependencies\CanPreserveAnExportedType_Library.cs" />
+    <Compile Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Base.cs" />
+    <Compile Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library1.cs" />
+    <Compile Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library2.cs" />
+    <Compile Include="LinkXml\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod.cs" />
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
@@ -266,6 +270,7 @@
     <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
     <Content Include="LinkXml\CanPreserveAnExportedType.xml" />
     <Content Include="LinkXml\CanPreserveExportedTypesUsingRegex.xml" />
+    <Content Include="LinkXml\Dependencies\EmbeddedLinkXmlPreservesAdditionalAssemblyWithOverriddenMethod\Library1.xml" />
     <Content Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml" />
     <Content Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.xml" />
     <Content Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.xml" />

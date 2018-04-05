@@ -47,7 +47,7 @@ namespace Mono.Linker.Steps {
 
 				try {
 					Context.LogMessage ("Processing resource linker descriptor: {0}", name);
-					Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetResolveStep (name));
+					AddToPipeline (GetResolveStep (name));
 				} catch (XmlException ex) {
 					/* This could happen if some broken XML file is included. */
 					Context.LogMessage ("Error processing {0}: {1}", name, ex);
@@ -64,7 +64,7 @@ namespace Mono.Linker.Steps {
 					try {
 						Context.LogMessage ("Processing embedded resource linker descriptor: {0}", rsc.Name);
 
-						Context.Pipeline.AddStepAfter (typeof (TypeMapStep), GetExternalResolveStep (rsc, asm));
+						AddToPipeline (GetExternalResolveStep (rsc, asm));
 					} catch (XmlException ex) {
 						/* This could happen if some broken XML file is embedded. */
 						Context.LogMessage ("Error processing {0}: {1}", rsc.Name, ex);
@@ -106,6 +106,11 @@ namespace Mono.Linker.Steps {
 					return assembly;
 
 			return null;
+		}
+
+		protected virtual void AddToPipeline (IStep resolveStep)
+		{
+			Context.Pipeline.AddStepAfter (typeof (BlacklistStep), resolveStep);
 		}
 
 		protected virtual IStep GetExternalResolveStep (EmbeddedResource resource, AssemblyDefinition assembly)
