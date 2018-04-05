@@ -763,6 +763,11 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
             return RBM_CALLEE_GCTRASH_WRITEBARRIER;
 #endif
 
+#if defined(_TARGET_X86_)
+        case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            return RBM_INIT_PINVOKE_FRAME_TRASH;
+#endif // defined(_TARGET_X86_)
+
         default:
             return RBM_CALLEE_TRASH_NOGC;
     }
