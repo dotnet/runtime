@@ -48,16 +48,18 @@
     <!-- TODO: We should also think about pulling down the checksums or recomputing them -->
     <PropertyGroup>
       <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
+      <!-- Must add a / suffix or else a stable build will end up downloading too much (e.g. everything prefixed with 2.1.0-preview2) -->
+      <DownloadBlobNamePrefix>$(BinariesRelativePath)/</DownloadBlobNamePrefix>
     </PropertyGroup>
 
     <MakeDir Directories="$(DownloadDirectory)" Condition="!Exists('$(DownloadDirectory)')" />
 
-    <Message Text="Downloading files from $(AzureAccountName)/$(ContainerName)/$(BinariesRelativePath) into $(DownloadDirectory)" />
+    <Message Text="Downloading files from $(AzureAccountName)/$(ContainerName)/$(DownloadBlobNamePrefix) into $(DownloadDirectory)" />
 
     <DownloadFromAzure AccountName="$(AzureAccountName)"
                        AccountKey="$(AzureAccessToken)"
                        ContainerName="$(ContainerName)"
-                       BlobNamePrefix="$(BinariesRelativePath)"
+                       BlobNamePrefix="$(DownloadBlobNamePrefix)"
                        DownloadDirectory="$(DownloadDirectory)" />
 
     <ItemGroup>

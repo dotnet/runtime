@@ -11,6 +11,6 @@
     <BinInspectCommand>$(PackagesDir)microsoft.dotnet.bininspector\1.0.0-alpha-00001\lib\BinInspect.exe</BinInspectCommand>
     <BinInspectResultsXml>$(LogDirectory)SignResults.xml</BinInspectResultsXml>
 
-    <FilterBlobNames>$(BinariesRelativePath)</FilterBlobNames>
+    <FilterBlobNames>$(BinariesRelativePath)/</FilterBlobNames>
   </PropertyGroup>
 </Project>
