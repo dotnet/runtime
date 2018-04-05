@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -246,9 +247,7 @@ namespace System
         private const int DoublePrecision = 15;
         private const int ScaleNAN = unchecked((int)0x80000000);
         private const int ScaleINF = 0x7FFFFFFF;
-        private const int MaxUInt32HexDigits = 8;
         private const int MaxUInt32DecDigits = 10;
-        private const int MaxUInt64DecDigits = 20;
         private const int CharStackBufferSize = 32;
         private const string PosNumberFormat = "#";
 
@@ -972,18 +971,20 @@ namespace System
             if (digits < 1)
                 digits = 1;
 
-            int bufferLength = Math.Max(digits, MaxUInt32DecDigits) + sNegative.Length;
-            int index = bufferLength;
-
-            char* buffer = stackalloc char[bufferLength];
-            char* p = UInt32ToDecChars(buffer + bufferLength, (uint)(-value), digits);
-            for (int i = sNegative.Length - 1; i >= 0; i--)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((uint)(-value))) + sNegative.Length;
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
             {
-                *(--p) = sNegative[i];
-            }
+                char* p = UInt32ToDecChars(buffer + bufferLength, (uint)(-value), digits);
+                Debug.Assert(p == buffer + sNegative.Length);
 
-            Debug.Assert(buffer + bufferLength - p >= 0 && buffer <= p);
-            return new string(p, 0, (int)(buffer + bufferLength - p));
+                for (int i = sNegative.Length - 1; i >= 0; i--)
+                {
+                    *(--p) = sNegative[i];
+                }
+                Debug.Assert(p == buffer);
+            }
+            return result;
         }
 
         private static unsafe bool TryNegativeInt32ToDecStr(int value, int digits, string sNegative, Span<char> destination, out int charsWritten)
@@ -993,18 +994,26 @@ namespace System
             if (digits < 1)
                 digits = 1;
 
-            int bufferLength = Math.Max(digits, MaxUInt32DecDigits) + sNegative.Length;
-            int index = bufferLength;
-
-            char* buffer = stackalloc char[bufferLength];
-            char* p = UInt32ToDecChars(buffer + bufferLength, (uint)(-value), digits);
-            for (int i = sNegative.Length - 1; i >= 0; i--)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((uint)(-value))) + sNegative.Length;
+            if (bufferLength > destination.Length)
             {
-                *(--p) = sNegative[i];
+                charsWritten = 0;
+                return false;
             }
 
-            Debug.Assert(buffer + bufferLength - p >= 0 && buffer <= p);
-            return TryCopyTo(p, (int)(buffer + bufferLength - p), destination, out charsWritten);
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = UInt32ToDecChars(buffer + bufferLength, (uint)(-value), digits);
+                Debug.Assert(p == buffer + sNegative.Length);
+
+                for (int i = sNegative.Length - 1; i >= 0; i--)
+                {
+                    *(--p) = sNegative[i];
+                }
+                Debug.Assert(p == buffer);
+            }
+            return true;
         }
 
         private static unsafe string Int32ToHexStr(int value, char hexBase, int digits)
@@ -1012,11 +1021,14 @@ namespace System
             if (digits < 1)
                 digits = 1;
 
-            int bufferLength = Math.Max(digits, MaxUInt32HexDigits);
-            char* buffer = stackalloc char[bufferLength];
-
-            char* p = Int32ToHexChars(buffer + bufferLength, (uint)value, hexBase, digits);
-            return new string(p, 0, (int)(buffer + bufferLength - p));
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((uint)value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = Int32ToHexChars(buffer + bufferLength, (uint)value, hexBase, digits);
+                Debug.Assert(p == buffer);
+            }
+            return result;
         }
 
         private static unsafe bool TryInt32ToHexStr(int value, char hexBase, int digits, Span<char> destination, out int charsWritten)
@@ -1024,11 +1036,20 @@ namespace System
             if (digits < 1)
                 digits = 1;
 
-            int bufferLength = Math.Max(digits, MaxUInt32HexDigits);
-            char* buffer = stackalloc char[bufferLength];
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((uint)value));
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
 
-            char* p = Int32ToHexChars(buffer + bufferLength, (uint)value, hexBase, digits);
-            return TryCopyTo(p, (int)(buffer + bufferLength - p), destination, out charsWritten);
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = Int32ToHexChars(buffer + bufferLength, (uint)value, hexBase, digits);
+                Debug.Assert(p == buffer);
+            }
+            return true;
         }
 
         private static unsafe char* Int32ToHexChars(char* buffer, uint value, int hexBase, int digits)
@@ -1073,56 +1094,62 @@ namespace System
 
         private static unsafe string UInt32ToDecStr(uint value, int digits)
         {
-            if (digits <= 1)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
             {
-                char* buffer = stackalloc char[MaxUInt32DecDigits];
-
-                char* start = buffer + MaxUInt32DecDigits;
-                char* p = start;
-                do
+                char* p = buffer + bufferLength;
+                if (digits <= 1)
                 {
-                    // TODO https://github.com/dotnet/coreclr/issues/3439
-                    uint div = value / 10;
-                    *(--p) = (char)('0' + value - (div * 10));
-                    value = div;
+                    do
+                    {
+                        // TODO https://github.com/dotnet/coreclr/issues/3439
+                        uint div = value / 10;
+                        *(--p) = (char)('0' + value - (div * 10));
+                        value = div;
+                    }
+                    while (value != 0);
                 }
-                while (value != 0);
-
-                return new string(p, 0, (int)(start - p));
+                else
+                {
+                    p = UInt32ToDecChars(p, value, digits);
+                }
+                Debug.Assert(p == buffer);
             }
-            else
-            {
-                int bufferSize = Math.Max(digits, MaxUInt32DecDigits);
-                char* buffer = stackalloc char[bufferSize];
-                char* p = UInt32ToDecChars(buffer + bufferSize, value, digits);
-                return new string(p, 0, (int)(buffer + bufferSize - p));
-            }
+            return result;
         }
 
         private static unsafe bool TryUInt32ToDecStr(uint value, int digits, Span<char> destination, out int charsWritten)
         {
-            if (digits <= 1)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            if (bufferLength > destination.Length)
             {
-                char* buffer = stackalloc char[MaxUInt32DecDigits];
-                char* start = buffer + MaxUInt32DecDigits;
-                char* p = start;
-                do
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = buffer + bufferLength;
+                if (digits <= 1)
                 {
-                    // TODO https://github.com/dotnet/coreclr/issues/3439
-                    uint div = value / 10;
-                    *(--p) = (char)('0' + value - (div * 10));
-                    value = div;
+                    do
+                    {
+                        // TODO https://github.com/dotnet/coreclr/issues/3439
+                        uint div = value / 10;
+                        *(--p) = (char)('0' + value - (div * 10));
+                        value = div;
+                    }
+                    while (value != 0);
                 }
-                while (value != 0);
-                return TryCopyTo(p, (int)(start - p), destination, out charsWritten);
+                else
+                {
+                    p = UInt32ToDecChars(p, value, digits);
+                }
+                Debug.Assert(p == buffer);
             }
-            else
-            {
-                int bufferSize = Math.Max(digits, MaxUInt32DecDigits);
-                char* buffer = stackalloc char[bufferSize];
-                char* p = UInt32ToDecChars(buffer + bufferSize, value, digits);
-                return TryCopyTo(p, (int)(buffer + bufferSize - p), destination, out charsWritten);
-            }
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1176,24 +1203,26 @@ namespace System
 
             ulong value = (ulong)(-input);
 
-            int bufferLength = Math.Max(digits, MaxUInt64DecDigits) + sNegative.Length;
-            int index = bufferLength;
-
-            char* buffer = stackalloc char[bufferLength];
-            char* p = buffer + bufferLength;
-            while (High32(value) != 0)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value)) + sNegative.Length;
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
             {
-                p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                digits -= 9;
-            }
-            p = UInt32ToDecChars(p, Low32(value), digits);
+                char* p = buffer + bufferLength;
+                while (High32(value) != 0)
+                {
+                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
+                    digits -= 9;
+                }
+                p = UInt32ToDecChars(p, Low32(value), digits);
+                Debug.Assert(p == buffer + sNegative.Length);
 
-            for (int i = sNegative.Length - 1; i >= 0; i--)
-            {
-                *(--p) = sNegative[i];
+                for (int i = sNegative.Length - 1; i >= 0; i--)
+                {
+                    *(--p) = sNegative[i];
+                }
+                Debug.Assert(p == buffer);
             }
-
-            return new string(p, 0, (int)(buffer + bufferLength - p));
+            return result;
         }
 
         private static unsafe bool TryNegativeInt64ToDecStr(long input, int digits, string sNegative, Span<char> destination, out int charsWritten)
@@ -1207,64 +1236,80 @@ namespace System
 
             ulong value = (ulong)(-input);
 
-            int bufferLength = Math.Max(digits, MaxUInt64DecDigits) + sNegative.Length;
-            int index = bufferLength;
-
-            char* buffer = stackalloc char[bufferLength];
-            char* p = buffer + bufferLength;
-            while (High32(value) != 0)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((ulong)(-input))) + sNegative.Length;
+            if (bufferLength > destination.Length)
             {
-                p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                digits -= 9;
-            }
-            p = UInt32ToDecChars(p, Low32(value), digits);
-
-            for (int i = sNegative.Length - 1; i >= 0; i--)
-            {
-                *(--p) = sNegative[i];
+                charsWritten = 0;
+                return false;
             }
 
-            return TryCopyTo(p, (int)(buffer + bufferLength - p), destination, out charsWritten);
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = buffer + bufferLength;
+                while (High32(value) != 0)
+                {
+                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
+                    digits -= 9;
+                }
+                p = UInt32ToDecChars(p, Low32(value), digits);
+                Debug.Assert(p == buffer + sNegative.Length);
+
+                for (int i = sNegative.Length - 1; i >= 0; i--)
+                {
+                    *(--p) = sNegative[i];
+                }
+                Debug.Assert(p == buffer);
+            }
+            return true;
         }
 
         private static unsafe string Int64ToHexStr(long value, char hexBase, int digits)
         {
-            int bufferLength = Math.Max(digits, MaxUInt32HexDigits * 2);
-            char* buffer = stackalloc char[bufferLength];
-            int index = bufferLength;
-
-            char* p;
-            if (High32((ulong)value) != 0)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((ulong)value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
             {
-                p = Int32ToHexChars(buffer + index, Low32((ulong)value), hexBase, 8);
-                p = Int32ToHexChars(p, High32((ulong)value), hexBase, digits - 8);
+                char* p = buffer + bufferLength;
+                if (High32((ulong)value) != 0)
+                {
+                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, 8);
+                    p = Int32ToHexChars(p, High32((ulong)value), hexBase, digits - 8);
+                }
+                else
+                {
+                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, Math.Max(digits, 1));
+                }
+                Debug.Assert(p == buffer);
             }
-            else
-            {
-                p = Int32ToHexChars(buffer + index, Low32((ulong)value), hexBase, Math.Max(digits, 1));
-            }
-
-            return new string(p, 0, (int)(buffer + bufferLength - p));
+            return result;
         }
 
         private static unsafe bool TryInt64ToHexStr(long value, char hexBase, int digits, Span<char> destination, out int charsWritten)
         {
-            int bufferLength = Math.Max(digits, MaxUInt32HexDigits * 2);
-            char* buffer = stackalloc char[bufferLength];
-            int index = bufferLength;
-
-            char* p;
-            if (High32((ulong)value) != 0)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((ulong)value));
+            if (bufferLength > destination.Length)
             {
-                p = Int32ToHexChars(buffer + index, Low32((ulong)value), hexBase, 8);
-                p = Int32ToHexChars(p, High32((ulong)value), hexBase, digits - 8);
-            }
-            else
-            {
-                p = Int32ToHexChars(buffer + index, Low32((ulong)value), hexBase, Math.Max(digits, 1));
+                charsWritten = 0;
+                return false;
             }
 
-            return TryCopyTo(p, (int)(buffer + bufferLength - p), destination, out charsWritten);
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = buffer + bufferLength;
+                if (High32((ulong)value) != 0)
+                {
+                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, 8);
+                    p = Int32ToHexChars(p, High32((ulong)value), hexBase, digits - 8);
+                }
+                else
+                {
+                    p = Int32ToHexChars(p, Low32((ulong)value), hexBase, Math.Max(digits, 1));
+                }
+                Debug.Assert(p == buffer);
+            }
+            return true;
         }
 
         private static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
@@ -1293,17 +1338,20 @@ namespace System
             if (digits < 1)
                 digits = 1;
 
-            int bufferSize = Math.Max(digits, MaxUInt64DecDigits);
-            char* buffer = stackalloc char[bufferSize];
-            char* p = buffer + bufferSize;
-            while (High32(value) != 0)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
             {
-                p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                digits -= 9;
+                char* p = buffer + bufferLength;
+                while (High32(value) != 0)
+                {
+                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
+                    digits -= 9;
+                }
+                p = UInt32ToDecChars(p, Low32(value), digits);
+                Debug.Assert(p == buffer);
             }
-            p = UInt32ToDecChars(p, Low32(value), digits);
-
-            return new string(p, 0, (int)(buffer + bufferSize - p));
+            return result;
         }
 
         private static unsafe bool TryUInt64ToDecStr(ulong value, int digits, Span<char> destination, out int charsWritten)
@@ -1311,17 +1359,26 @@ namespace System
             if (digits < 1)
                 digits = 1;
 
-            int bufferSize = Math.Max(digits, MaxUInt64DecDigits);
-            char* buffer = stackalloc char[bufferSize];
-            char* p = buffer + bufferSize;
-            while (High32(value) != 0)
+            int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
+            if (bufferLength > destination.Length)
             {
-                p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
-                digits -= 9;
+                charsWritten = 0;
+                return false;
             }
-            p = UInt32ToDecChars(p, Low32(value), digits);
 
-            return TryCopyTo(p, (int)(buffer + bufferSize - p), destination, out charsWritten);
+            charsWritten = bufferLength;
+            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                char* p = buffer + bufferLength;
+                while (High32(value) != 0)
+                {
+                    p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
+                    digits -= 9;
+                }
+                p = UInt32ToDecChars(p, Low32(value), digits);
+                Debug.Assert(p == buffer);
+            }
+            return true;
         }
 
         internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
