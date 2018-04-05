@@ -190,14 +190,14 @@
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
-  <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
-    <value>The data to be decrypted exceeds the maximum for this modulus of {0} bytes.</value>
-  </data>
   <data name="Cryptography_PrivateKey_DoesNotMatch" xml:space="preserve">
     <value>The provided key does not match the public key for this certificate.</value>
   </data>
   <data name="Cryptography_PrivateKey_WrongAlgorithm" xml:space="preserve">
     <value>The provided key does not match the public key algorithm for this certificate.</value>
+  </data>
+  <data name="Cryptography_RSA_DecryptWrongSize" xml:space="preserve">
+    <value>The length of the data to decrypt is not valid for the size of this key.</value>
   </data>
   <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
     <value>The provided hash value is not the expected size for the specified hash algorithm.</value>

@@ -275,16 +275,15 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
 
+                int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
+
+                if (data.Length != modulusSizeInBytes)
+                {
+                    throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
+                }
+
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
                 {
-                    int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
-
-                    if (data.Length > modulusSizeInBytes)
-                    {
-                        throw new CryptographicException(
-                            SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
-                    }
-
                     return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
                 }
 
@@ -344,10 +343,9 @@ namespace System.Security.Cryptography
 
                 int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
-                if (data.Length > modulusSizeInBytes)
+                if (data.Length != modulusSizeInBytes)
                 {
-                    throw new CryptographicException(
-                        SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+                    throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
                 }
 
                 if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ||

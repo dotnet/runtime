@@ -467,6 +467,59 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        public void RsaDecryptPkcs1LeadingZero()
+        {
+            // The first search for an encrypted value with a leading 0x00 turned up one with
+            // two leading zeros.  How fortuitous.
+            byte[] encrypted = (
+                "0000B81E93CB9BA2B096DAC80ADC0C053D15CAD79A09D3DC154E3E75E0F59AF0" +
+                "D0816C0946946A56FEAEDB951A49C3854966C01C47A9F54DE2A050C1625869FE" +
+                "02BAD7AA427C42FE79D31267AE8713504CBBBBFA28EED0DF3E9F5BFC12C8A701" +
+                "382E92BC50D7E9E9897AEBDDA8005B7906AE1ABAFFD30CF5A8733CAB7264445A" +
+                "333730EA31F5F9F120B4B59F689BA529E106DA78340678C3BA2CE46427375A84" +
+                "9E86950FC18BD1D6C33508596BAEF0D916F0E29D647C037022753B1E8E44ABCF" +
+                "0079CEFA8972F02D05C4204078BD9ADF98571CE5374AB94BF01918F0EA31A815" +
+                "59F065A4C3FA0DD0E3086530608CA54387F86F25ED77D46C7576376B64BE3C91").HexToByteArray();
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] decrypted = Decrypt(rsa, encrypted, RSAEncryptionPadding.Pkcs1);
+                Assert.Equal(TestData.HelloBytes, decrypted);
+            }
+        }
+
+        [Fact]
+        public void RsaDecryptPkcs1Deficient()
+        {
+            // This value is gibberish, but it happens to be true that if it is preceded
+            // with 0x00 it happens to pass a PKCS1 encryption padding sanity test with the
+            // RSA2048Params key.
+            //
+            // If instead of prepending a 0x00 one appended 0x4B, it would decrypt to "Hello".
+            byte[] encrypted = (
+                "7EF2A69BBCF5B29A19DF6698B8BAB5EC4D9DF1D8CAA27D7D1BF60D560DB7D79D" +
+                "020C85620657F2A32C872EE44DB604FAFFF792A886BEF2E142A2DB0379C5C57D" +
+                "D444D2065A7976A6163B4A0D51AEE421B099A8E8A823A917A6E55A4A8E660715" +
+                "B9AC53CF37392228B2F7042CCBDA14CA88314FD353EA70AA9899E88771B01C8E" +
+                "E0DE35BD342F43809670B056B35A0EB68D370E1489D51AA4780766739887DBC6" +
+                "A716FE05773803C43B5040BF29AB33C4567E8986B3C442A7CEFCF46D61E13E54" +
+                "85468C0FF3FDC804BDDE60E4310CC45F5196DC75F713581D934FB914661B6B69" +
+                "EC3CE2CF469D7CD8727B959B5593F8D38124B0947E7948252BF9A53763877F").HexToByteArray();
+
+            byte[] correctlyPadded = new byte[encrypted.Length + 1];
+            Buffer.BlockCopy(encrypted, 0, correctlyPadded, 1, encrypted.Length);
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] decrypted = Decrypt(rsa, correctlyPadded, RSAEncryptionPadding.Pkcs1);
+                Assert.NotNull(decrypted);
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa.Decrypt(encrypted, RSAEncryptionPadding.Pkcs1));
+            }
+        }
+
+        [Fact]
         public void RsaDecryptPkcs1WrongDataLength()
         {
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))

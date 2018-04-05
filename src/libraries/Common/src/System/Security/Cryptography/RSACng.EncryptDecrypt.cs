@@ -52,10 +52,9 @@ namespace System.Security.Cryptography
 
             int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
-            if (!encrypt && data.Length > modulusSizeInBytes)
+            if (!encrypt && data.Length != modulusSizeInBytes)
             {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
             }
 
             if (encrypt &&
@@ -141,10 +140,9 @@ namespace System.Security.Cryptography
 
             int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
-            if (!encrypt && data.Length > modulusSizeInBytes)
+            if (!encrypt && data.Length != modulusSizeInBytes)
             {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_Padding_DecDataTooBig, modulusSizeInBytes));
+                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
             }
 
             if (encrypt &&
