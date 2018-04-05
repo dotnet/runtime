@@ -18418,7 +18418,7 @@ Compiler::fgWalkResult Compiler::fgMorphLocalField(GenTree* tree, fgWalkData* fg
             // must be enregisterable types.
             // TODO-Cleanup: varTypeCanReg should presumably return true for SIMD types, but
             // there may be places where that would violate existing assumptions.
-            var_types treeType = tree->TypeGet();
+            var_types treeType  = tree->TypeGet();
             var_types fieldType = fldVarDsc->TypeGet();
             assert((varTypeCanReg(treeType) || varTypeIsSIMD(treeType)) &&
                    (varTypeCanReg(fieldType) || varTypeIsSIMD(fieldType)));
