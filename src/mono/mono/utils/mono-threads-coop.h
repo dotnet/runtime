@@ -36,6 +36,9 @@ mono_threads_is_blocking_transition_enabled (void);
 void
 mono_threads_state_poll (void);
 
+gboolean
+mono_threads_is_hybrid_suspension_enabled (void);
+
 static inline void
 mono_threads_safepoint (void)
 {
