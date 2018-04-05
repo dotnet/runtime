@@ -25,37 +25,6 @@ bool g_fReadyToRunCompilation;
 
 static bool s_fNGenNoMetaData;
 
-// Event logging helper
-void Zapper::ReportEventNGEN(WORD wType, DWORD dwEventID, LPCWSTR format, ...)
-{
-    SString s;
-    va_list args;
-    va_start(args, format);
-    s.VPrintf(format, args);
-    va_end(args);
-
-    SString message;
-    message.Printf(W(".NET Runtime Optimization Service (%s) - %s"), VER_FILEVERSION_STR_L, s.GetUnicode());
-
-    // Note: We are using the same event log source as the ngen service. This may become problem 
-    // if we ever want to split the ngen service from the rest of the .NET Framework.
-    ClrReportEvent(W(".NET Runtime Optimization Service"),
-        wType,                  // event type 
-        0,                      // category zero
-        dwEventID,              // event identifier
-        NULL,                   // no user security identifier
-        message.GetUnicode());
-
-    // Output the message to the logger as well.
-    if (wType == EVENTLOG_WARNING_TYPE)
-        Warning(W("%s\n"), s.GetUnicode());
-}
-
-
-/* --------------------------------------------------------------------------- *
- * Private fusion entry points
- * --------------------------------------------------------------------------- */
-
 /* --------------------------------------------------------------------------- *
  * Public entry points for ngen
  * --------------------------------------------------------------------------- */

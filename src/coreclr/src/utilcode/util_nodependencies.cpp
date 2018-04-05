@@ -47,11 +47,11 @@ void InitRunningOnVersionStatus ()
 
 
     dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, CLR_VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, CLR_VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, CLR_VER_MINORVERSION, VER_GREATER_EQUAL);
+    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
+    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 
-    if(VerifyVersionInfo(&sVer, CLR_VER_MAJORVERSION | CLR_VER_PLATFORMID | CLR_VER_MINORVERSION, dwlConditionMask))
+    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
     {
         gRunningOnStatus = RUNNING_ON_WIN8;
         fSupportedPlatform = TRUE;
@@ -68,11 +68,11 @@ void InitRunningOnVersionStatus ()
 
 
     dwlConditionMask = 0;
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, CLR_VER_PLATFORMID, VER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, CLR_VER_MAJORVERSION, VER_GREATER_EQUAL);
-    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, CLR_VER_MINORVERSION, VER_GREATER_EQUAL);
+    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_PLATFORMID, VER_EQUAL);
+    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, VER_GREATER_EQUAL);
+    dwlConditionMask = VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, VER_GREATER_EQUAL);
 
-    if(VerifyVersionInfo(&sVer, CLR_VER_MAJORVERSION | CLR_VER_PLATFORMID | CLR_VER_MINORVERSION, dwlConditionMask))
+    if(VerifyVersionInfo(&sVer, VER_MAJORVERSION | VER_PLATFORMID | VER_MINORVERSION, dwlConditionMask))
     {
         gRunningOnStatus = RUNNING_ON_WIN7;
         fSupportedPlatform = TRUE;
@@ -89,9 +89,6 @@ CHECK_SUPPORTED:
         UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, MB_OK | MB_ICONERROR, TRUE);
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
-
-#else // FEATURE_PAL
-    // UNIXTODO: Do we need version checks for Linux?
 #endif // FEATURE_PAL
 } // InitRunningOnVersionStatus
 

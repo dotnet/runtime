@@ -601,7 +601,7 @@ __out_ecount_z_opt(cchBuffer) LPWSTR pBuffer,
         *pBuffer = W('\0');
     }
 
-#define VERSION_NUMBER_NOSHIM W("v") QUOTE_MACRO_L(VER_MAJORVERSION.VER_MINORVERSION.VER_PRODUCTBUILD)
+#define VERSION_NUMBER_NOSHIM W("v") QUOTE_MACRO_L(CLR_MAJOR_VERSION.CLR_MINOR_VERSION.CLR_BUILD_VERSION)
 
     DWORD length = (DWORD)(wcslen(VERSION_NUMBER_NOSHIM) + 1);
     if (length > cchBuffer)

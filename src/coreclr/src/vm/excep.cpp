@@ -107,37 +107,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 
 #ifndef DACCESS_COMPILE
 
-//----------------------------------------------------------------------------
-//
-// IsExceptionFromManagedCodeCallback - a wrapper for IsExceptionFromManagedCode
-//
-// Arguments:
-//    pExceptionRecord - pointer to exception record
-//
-// Return Value:
-//    TRUE or FALSE
-//
-//----------------------------------------------------------------------------
-BOOL __stdcall IsExceptionFromManagedCodeCallback(EXCEPTION_RECORD * pExceptionRecord)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        SUPPORTS_DAC;
-        PRECONDITION(CheckPointer(pExceptionRecord));
-    } CONTRACTL_END;
-
-    // If we can't enter the EE, done.
-    if (g_fForbidEnterEE)
-    {
-        return FALSE;
-    }
-
-    return IsExceptionFromManagedCode(pExceptionRecord);
-}
-
-
 #define SZ_UNHANDLED_EXCEPTION W("Unhandled Exception:")
 #define SZ_UNHANDLED_EXCEPTION_CHARLEN ((sizeof(SZ_UNHANDLED_EXCEPTION) / sizeof(WCHAR)))
 
