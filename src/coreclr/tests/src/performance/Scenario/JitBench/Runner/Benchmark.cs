@@ -84,7 +84,7 @@ namespace JitBench
                     BenchmarkRunResult result = new BenchmarkRunResult(this, config);
                     StringBuilder stderr = new StringBuilder();
                     StringBuilder stdout = new StringBuilder();
-                    var scenarioConfiguration = new ScenarioTestConfiguration(TimeSpan.FromMinutes(1), startInfo)
+                    var scenarioConfiguration = new ScenarioTestConfiguration(TimeSpan.FromMinutes(20), startInfo)
                     {
                         //XUnitPerformanceHarness writes files to disk starting with {runid}-{ScenarioBenchmarkName}-{TestName}
                         TestName = (Name + "-" + config.Name).Replace(' ', '_'),
@@ -143,6 +143,7 @@ namespace JitBench
                         "dotnet.exe",
                         "MusicStore.dll",
                         "AllReady.dll",
+                        "Word2VecScenario.dll",
                         "ntoskrnl.exe",
                         "System.Private.CoreLib.dll",
                         "Unknown",

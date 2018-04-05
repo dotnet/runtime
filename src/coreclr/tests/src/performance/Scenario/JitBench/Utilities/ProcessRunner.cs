@@ -67,7 +67,7 @@ namespace JitBench
                 _p.StartInfo = psi;
                 _p.EnableRaisingEvents = false;
                 _loggers = new List<IProcessLogger>();
-                _timeout = TimeSpan.FromMinutes(10);
+                _timeout = TimeSpan.FromMinutes(60);
                 _cancelSource = new CancellationTokenSource();
                 _killReason = null;
                 _waitForProcessStartTaskSource = new TaskCompletionSource<Process>();
