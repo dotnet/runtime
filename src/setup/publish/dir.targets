@@ -95,14 +95,14 @@
                                    UploadJsonFilename="%(DebInstallerFile.UploadJsonFilename)"
                                    PackageName="%(DebInstallerFile.PackageName)"
                                    PackageVersion="$(SharedFrameworkNugetVersion)"
-                                   UploadUrl="$(BaseUrl)$(ContainerName)/Runtime/$(SharedFrameworkNugetVersion)/%(DebInstallerFile.Filename)%(DebInstallerFile.Extension)" />
+                                   UploadUrl="$(BaseUrl)$(ContainerName)/$(BinariesRelativePath)%(DebInstallerFile.Filename)%(DebInstallerFile.Extension)" />
   </Target>
 
   <Target Name="CheckIfAllBuildsHavePublished">
     <ListAzureBlobs AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
-                      FilterBlobNames="Runtime/$(SharedFrameworkNugetVersion)/">
+                      FilterBlobNames="$(BinariesRelativePath)">
       <Output TaskParameter="BlobNames" ItemName="_BlobNames" />
     </ListAzureBlobs>
     <ItemGroup>

@@ -16,7 +16,7 @@
     <ListAzureBlobs AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
-                      FilterBlobNames="$(FilterBlobNames)">
+                      FilterBlobNames="$(BinariesRelativePath)">
       <Output TaskParameter="BlobNames" ItemName="_BlobList" />
     </ListAzureBlobs>
   </Target>
@@ -62,7 +62,7 @@
                            AccountKey="$(AzureAccessToken)"
                            ContainerName="$(ContainerName)"
                            BlobNames="@(DownloadArtifact)"
-                           BlobNamePrefix="$(FilterBlobNames)"
+                           BlobNamePrefix="$(BinariesRelativePath)"
                            DownloadDirectory="$(DownloadDirectory)" />
   </Target>
 
