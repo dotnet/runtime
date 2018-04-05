@@ -175,6 +175,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							case nameof (RemovedTypeInAssemblyAttribute):
 								if (linkedType != null)
 									Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
+								GetOriginalTypeFromInAssemblyAttribute (checkAttrInAssembly);
 								break;
 							case nameof (KeptTypeInAssemblyAttribute):
 								if (linkedType == null)
@@ -320,7 +321,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var expectedTypeName = inAssemblyAttribute.ConstructorArguments [1].Value.ToString ();
 			var originalType = assembly.MainModule.GetType (expectedTypeName);
 			if (originalType == null)
-				throw new InvalidOperationException ($"Unable to locate the original type `{expectedTypeName}`");
+				Assert.Fail ($"Invalid test assertion.  Unable to locate the original type `{expectedTypeName}.`");
 			return originalType;
 		}
 
