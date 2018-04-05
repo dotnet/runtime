@@ -178,6 +178,9 @@ namespace JitBench
                 }
                 try
                 {
+                    // On some systems, directories/files created programmatically are created with attributes
+                    // that prevent them from being deleted. Set those attributes to be normal
+                    SetAttributesNormal(path);
                     Directory.Delete(path, true);
                     return;
                 }
@@ -191,6 +194,18 @@ namespace JitBench
                 }
                 // if something has a transient lock on the file waiting may resolve the issue
                 Thread.Sleep((i+1) * 10);
+            }
+        }
+
+        public static void SetAttributesNormal(string path)
+        {
+            foreach (var subDir in Directory.GetDirectories(path))
+            {
+                SetAttributesNormal(subDir);
+            }
+            foreach (var file in Directory.GetFiles(path))
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
             }
         }
 
@@ -210,6 +225,37 @@ namespace JitBench
                 try
                 {
                     Directory.Move(sourceDirName, destDirName);
+                    return;
+                }
+                catch (IOException e) when (i < retries - 1)
+                {
+                    output.WriteLine($"    Attempt #{i + 1} failed: {e.Message}");
+                }
+                catch (UnauthorizedAccessException e) when (i < retries - 1)
+                {
+                    output.WriteLine($"    Attempt #{i + 1} failed: {e.Message}");
+                }
+                // if something has a transient lock on the file waiting may resolve the issue
+                Thread.Sleep((i + 1) * 10);
+            }
+        }
+
+        public static void MoveFile(string sourceFileName, string destFileName, ITestOutputHelper output)
+        {
+            if (output != null)
+            {
+                output.WriteLine("Moving " + sourceFileName + " -> " + destFileName);
+            }
+            int retries = 10;
+            for (int i = 0; i < retries; i++)
+            {
+                if (!File.Exists(sourceFileName) && File.Exists(destFileName))
+                {
+                    return;
+                }
+                try
+                {
+                    File.Move(sourceFileName, destFileName);
                     return;
                 }
                 catch (IOException e) when (i < retries - 1)

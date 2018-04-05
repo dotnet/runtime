@@ -182,9 +182,9 @@ def run_benchmark(benchname, benchdir, env, sandboxDir, benchmarkOutputDir, test
     myEnv = dict(env)
     benchnameWithExt = benchname + '.' + testFileExt
     fullPath = os.path.join(benchdir, benchnameWithExt)
-    shutil.copy2(fullPath, sandboxDir)
 
-    files = glob.iglob(os.path.join(benchdir, "*.txt"))
+    # Copy all files in the benchmark directory to the sandbox
+    files = glob.iglob(os.path.join(benchdir, "*.*"))
     for filename in files:
         if os.path.isfile(filename):
             shutil.copy2(filename, sandboxDir)
