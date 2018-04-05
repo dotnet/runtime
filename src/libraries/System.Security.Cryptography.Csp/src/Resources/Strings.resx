@@ -180,9 +180,6 @@
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
-  <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
-    <value>The data to be decrypted exceeds the maximum for this modulus of {0} bytes.</value>
-  </data>
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
   </data>
@@ -200,6 +197,9 @@
   </data>
   <data name="Cryptography_RC2_EKSKS2" xml:space="preserve">
     <value>EffectiveKeySize must be the same as KeySize in this implementation.</value>
+  </data>
+  <data name="Cryptography_RSA_DecryptWrongSize" xml:space="preserve">
+    <value>The length of the data to decrypt is not valid for the size of this key.</value>
   </data>
   <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
     <value>Attempt to transform beyond end of buffer.</value>

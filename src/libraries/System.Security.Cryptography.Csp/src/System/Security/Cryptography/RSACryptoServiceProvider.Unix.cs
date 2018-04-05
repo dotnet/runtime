@@ -41,9 +41,9 @@ namespace System.Security.Cryptography
             if (rgb == null)
                 throw new ArgumentNullException(nameof(rgb));
 
-            // size check -- must be at most the modulus size
-            if (rgb.Length > (KeySize / 8))
-                throw new CryptographicException(SR.Format(SR.Cryptography_Padding_DecDataTooBig, Convert.ToString(KeySize / 8)));
+            // size check -- must be exactly the modulus size
+            if (rgb.Length != (KeySize / 8))
+                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
 
             return _impl.Decrypt(rgb, fOAEP ? RSAEncryptionPadding.OaepSHA1 : RSAEncryptionPadding.Pkcs1);
         }
@@ -65,8 +65,8 @@ namespace System.Security.Cryptography
         {
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
-            if (data.Length > (KeySize / 8))
-                throw new CryptographicException(SR.Format(SR.Cryptography_Padding_DecDataTooBig, Convert.ToString(KeySize / 8)));
+            if (data.Length != (KeySize / 8))
+                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
             if (padding != RSAEncryptionPadding.Pkcs1 && padding != RSAEncryptionPadding.OaepSHA1)
                 throw PaddingModeNotSupported();
 

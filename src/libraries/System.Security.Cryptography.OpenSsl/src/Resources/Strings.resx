@@ -174,9 +174,6 @@
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
   </data>
-  <data name="Cryptography_Padding_DecDataTooBig" xml:space="preserve">
-    <value>The data to be decrypted exceeds the maximum for this modulus of {0} bytes.</value>
-  </data>
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
   </data>
@@ -191,6 +188,9 @@
   </data>
   <data name="Cryptography_OAEP_Decryption_Failed" xml:space="preserve">
     <value>Error occurred while decoding OAEP padding.</value>
+  </data>
+  <data name="Cryptography_RSA_DecryptWrongSize" xml:space="preserve">
+    <value>The length of the data to decrypt is not valid for the size of this key.</value>
   </data>
   <data name="Cryptography_SignHash_WrongSize" xml:space="preserve">
     <value>The provided hash value is not the expected size for the specified hash algorithm.</value>
