@@ -57,7 +57,7 @@ necessary to build the Mono class libraries.
 		mono genproj.exe
 		
 	One output of genproj is the solutions for the successive profiles, 
-	like net_4_x.sln.
+	like bcl.sln.
 
 	The command
 		./genproj.exe -h 
@@ -76,24 +76,8 @@ necessary to build the Mono class libraries.
 
 * KNOWN ISSUES
 
-	* We are currently not running "sn" to sign the assemblies
-	
 	* We do not have an "install" target, perhaps we should generate
 	this based on something similar to the update-csproj setup
 
 	* Audit: every Makefile for "local" changes, as those are not
         visible to this tool.
-
-* OLD KNOWN ISSUES
-
-	* Many assemblies still fail to compile, due to missing project 
-	references output by genproj, or other issues yet to determine
-	
-	* The first build of a solution may have a large number of 
-	failing compilations, more than subsequent solution Builds
-	
-	* The .NET 2.0 profile assemblies end up targetting the 
-	v4.0 runtime, even when requesting 2.0 in the csproj file
-	(http://social.msdn.microsoft.com/Forums/en-US/msbuild/
-	thread/6c9cd0e1-7fb8-480a-b006-f034b5926e03)
-

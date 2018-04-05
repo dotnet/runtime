@@ -1378,7 +1378,7 @@ public class Driver {
 			Console.Error.WriteLine (sb.ToString ());
 		}
 
-		WriteSolution (four_five_sln_gen, Path.Combine ("..", "..", MakeSolutionName (MsbuildGenerator.profile_4_x)));
+		WriteSolution (four_five_sln_gen, Path.Combine ("..", "..", "bcl.sln"));
 
 		if (makefileDeps){
 			const string classDirPrefix = "./../../";
@@ -1557,11 +1557,6 @@ public class Driver {
 		return path;
 	}
 	
-	static string MakeSolutionName (string profileTag)
-	{
-		return "net" + profileTag + ".sln";
-	}
-
 	static void FillSolution (SlnGenerator solution, string profileString, IEnumerable<MsbuildGenerator> projects, Func<MsbuildGenerator.VsCsproj, bool> additionalFilter = null)
 	{
 		foreach (var generator in projects) {
