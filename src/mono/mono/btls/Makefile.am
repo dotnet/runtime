@@ -44,12 +44,14 @@ NINJA_VERBOSE=$(if ($V),-v,)
 if NINJA
 NINJA_ARGS = -G Ninja
 BUILDFILE = build.ninja
+CMAKE_MAKE_PROGRAM = $(shell which ninja-build || which ninja)
 else
 NINJA_ARGS =
 BUILDFILE = Makefile
+CMAKE_MAKE_PROGRAM = $(shell which gmake || which gnumake || which make)
 endif
 
-CMAKE_ARGS = -D CMAKE_INSTALL_PREFIX:PATH=$(prefix) -D BTLS_ROOT:PATH=$(BTLS_ROOT) \
+CMAKE_ARGS = -D CMAKE_MAKE_PROGRAM=$(CMAKE_MAKE_PROGRAM) -D CMAKE_INSTALL_PREFIX:PATH=$(prefix) -D BTLS_ROOT:PATH=$(BTLS_ROOT) \
 	-D SRC_DIR:PATH=$(abs_top_srcdir)/mono/btls -D BTLS_CFLAGS:STRING="$(BTLS_CFLAGS)" $(NINJA_ARGS)
 
 all-local: build-shared/libmono-btls-shared$(libsuffix)
