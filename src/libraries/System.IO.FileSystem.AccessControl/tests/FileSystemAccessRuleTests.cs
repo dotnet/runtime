@@ -13,10 +13,9 @@ namespace System.IO
         [Fact]
         public void FileSystemAccessRule_Returns_Valid_Object()
         {
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            var accessRule = new FileSystemAccessRule(identity, FileSystemRights.AppendData, AccessControlType.Allow);
+            var accessRule = new FileSystemAccessRule(Helpers.s_WorldSidNTAccount, FileSystemRights.AppendData, AccessControlType.Allow);
             var expectedFileSystemRights = FileSystemRights.AppendData | FileSystemRights.Synchronize;
-            Assert.Equal(identity, accessRule.IdentityReference);
+            Assert.Equal(Helpers.s_WorldSidNTAccount, accessRule.IdentityReference);
             Assert.Equal(expectedFileSystemRights, accessRule.FileSystemRights);
             Assert.Equal(AccessControlType.Allow, accessRule.AccessControlType);
             Assert.Equal(PropagationFlags.None, accessRule.PropagationFlags);
@@ -26,16 +25,14 @@ namespace System.IO
         [Fact]
         public void FileSystemAccessRule_InvalidFileSystemRights()
         {
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("fileSystemRights", () =>
-            new FileSystemAccessRule(identity, (FileSystemRights)(-1), AccessControlType.Allow));
+            new FileSystemAccessRule(Helpers.s_WorldSidNTAccount, (FileSystemRights)(-1), AccessControlType.Allow));
         }
 
         [Fact]
         public void FileSystemAccessRule_AcessControlTypeDeny_Returns_Valid_Object()
         {
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            var accessRule = new FileSystemAccessRule(identity, FileSystemRights.AppendData, AccessControlType.Deny);
+            var accessRule = new FileSystemAccessRule(Helpers.s_WorldSidNTAccount, FileSystemRights.AppendData, AccessControlType.Deny);
             var expectedFileSystemRights = FileSystemRights.AppendData & ~FileSystemRights.Synchronize;
             Assert.Equal(expectedFileSystemRights, accessRule.FileSystemRights);
             Assert.Equal(AccessControlType.Deny, accessRule.AccessControlType);
@@ -44,8 +41,7 @@ namespace System.IO
         [Fact]
         public void FileSystemAccessRule_FileSystemRightsFullControl_Returns_Valid_Object()
         {
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            var accessRule = new FileSystemAccessRule(identity, FileSystemRights.FullControl, AccessControlType.Deny);
+            var accessRule = new FileSystemAccessRule(Helpers.s_WorldSidNTAccount, FileSystemRights.FullControl, AccessControlType.Deny);
             Assert.Equal(FileSystemRights.FullControl, accessRule.FileSystemRights);
             Assert.Equal(AccessControlType.Deny, accessRule.AccessControlType);
         }
@@ -66,8 +62,7 @@ namespace System.IO
         [Fact]
         public void FileSystemAccessRule_InhertianceFlag_PropagationFlag_Returns_Valid_Object()
         {
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            var accessRule = new FileSystemAccessRule(identity, FileSystemRights.AppendData,
+            var accessRule = new FileSystemAccessRule(Helpers.s_WorldSidNTAccount, FileSystemRights.AppendData,
                 InheritanceFlags.ContainerInherit, PropagationFlags.NoPropagateInherit,
                 AccessControlType.Allow);
 

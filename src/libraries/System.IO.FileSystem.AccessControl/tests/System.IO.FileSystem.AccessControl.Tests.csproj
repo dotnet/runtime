@@ -20,6 +20,7 @@
     </Compile>
     <Compile Include="FileSystemAuditRuleTests.cs" />
     <Compile Include="FileSystemSecurityTests.cs" />
+    <Compile Include="Helpers.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
