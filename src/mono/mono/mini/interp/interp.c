@@ -3477,6 +3477,23 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++sp;
 			ip += 2;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSTR_TOKEN) {
+			MonoString *s = NULL;
+			guint32 strtoken = (guint32) rtm->data_items [* (guint16 *)(ip + 1)];
+
+			MonoMethod *method = frame->imethod->method;
+			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				s = mono_method_get_wrapper_data (method, strtoken);
+			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
+				s = mono_string_new_wrapper (mono_method_get_wrapper_data (method, strtoken));
+			} else {
+				g_assert_not_reached ();
+			}
+			sp->data.p = s;
+			++sp;
+			ip += 2;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoClass *newobj_class;
 			MonoMethodSignature *csig;

@@ -2855,19 +2855,20 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			break;
 		}
 		case CEE_LDSTR: {
-			MonoString *s;
 			token = mono_metadata_token_index (read32 (td->ip + 1));
 			td->ip += 5;
-			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
-				s = mono_method_get_wrapper_data (method, token);
-			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				s = mono_string_new_wrapper (mono_method_get_wrapper_data (method, token));
-			} else {
-				s = mono_ldstr_checked (domain, image, token, error);
+			if (method->wrapper_type == MONO_WRAPPER_NONE) {
+				MonoString *s = mono_ldstr_checked (domain, image, token, error);
 				goto_if_nok (error, exit);
+				/* GC won't scan code stream, but reference is held by metadata
+				 * machinery so we are good here */
+				ADD_CODE (td, MINT_LDSTR);
+				ADD_CODE (td, get_data_item_index (td, s));
+			} else {
+				/* defer allocation to execution-time */
+				ADD_CODE (td, MINT_LDSTR_TOKEN);
+				ADD_CODE (td, get_data_item_index (td, (gpointer) token));
 			}
-			ADD_CODE(td, MINT_LDSTR);
-			ADD_CODE(td, get_data_item_index (td, s));
 			PUSH_TYPE(td, STACK_TYPE_O, mono_defaults.string_class);
 			break;
 		}

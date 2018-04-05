@@ -262,6 +262,7 @@ OPDEF(MINT_BLT_UN_R8_S, "blt.un.r8.s", 2, MintOpShortBranch)
 OPDEF(MINT_SWITCH, "switch", 0, MintOpSwitch)
 
 OPDEF(MINT_LDSTR, "ldstr", 2, MintOpMethodToken) /* not really */
+OPDEF(MINT_LDSTR_TOKEN, "ldstr.token", 2, MintOpMethodToken) /* not really */
 
 OPDEF(MINT_CALL, "call", 2, MintOpMethodToken) 
 OPDEF(MINT_VCALL, "vcall", 2, MintOpMethodToken) 
