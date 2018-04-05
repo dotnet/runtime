@@ -321,7 +321,6 @@ class Zapper
     void Print(CorZapLogLevel level, LPCWSTR format, va_list args);
     void PrintErrorMessage(CorZapLogLevel level, Exception *ex);
     void PrintErrorMessage(CorZapLogLevel level, HRESULT hr);
-    void ReportEventNGEN(WORD wType, DWORD dwEventID, LPCWSTR format, ...);
 
     BOOL            CheckAssemblyUpToDate(CORINFO_ASSEMBLY_HANDLE hAssembly, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
     BOOL            TryToInstallFromRepository(CORINFO_ASSEMBLY_HANDLE hAssembly, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
