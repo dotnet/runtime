@@ -75,4 +75,5 @@ tests/src/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-input25000.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input.txt text eol=lf
 tests/src/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input-big.txt text eol=lf
+tests/src/performance/Scenario/JitBench/Resources/word2vecnet.patch text eol=lf
 
