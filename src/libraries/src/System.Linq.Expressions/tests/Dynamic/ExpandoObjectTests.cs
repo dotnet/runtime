@@ -64,7 +64,7 @@ namespace System.Dynamic.Tests
             Assert.Equal(Enumerable.Repeat(new KeyValuePair<string, object>("key", 2), 1), eo);
         }
 
-        [Fact, ActiveIssue(13541)]
+        [Fact]
         public void DictionaryMatchesProperties()
         {
             dynamic eo = new ExpandoObject();
