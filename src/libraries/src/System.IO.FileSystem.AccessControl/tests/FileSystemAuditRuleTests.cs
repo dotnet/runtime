@@ -12,9 +12,8 @@ namespace System.Security.AccessControl
         [Fact]
         public void ObjectInitialization_IdentityReference_FileSystemRights_AuditFlags_Success()
         {
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            var auditRule = new FileSystemAuditRule(identity, FileSystemRights.ReadData, AuditFlags.Failure);
-            Assert.Equal(auditRule.IdentityReference, identity);
+            var auditRule = new FileSystemAuditRule(Helpers.s_WorldSidNTAccount, FileSystemRights.ReadData, AuditFlags.Failure);
+            Assert.Equal(auditRule.IdentityReference, Helpers.s_WorldSidNTAccount);
             Assert.Equal(auditRule.FileSystemRights, FileSystemRights.ReadData);
             Assert.Equal(auditRule.AuditFlags, AuditFlags.Failure);
         }
@@ -41,7 +40,6 @@ namespace System.Security.AccessControl
         public void ObjectInitialization_InvalidFileSystemRights()
         {
             var fileSystemRights = (FileSystemRights)(-1);
-            var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("fileSystemRights", () => new FileSystemAuditRule(@"MYDOMAIN\MyAccount", fileSystemRights, AuditFlags.Failure));
         }
 
