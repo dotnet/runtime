@@ -18426,31 +18426,29 @@ Compiler::fgWalkResult Compiler::fgMorphLocalField(GenTree* tree, fgWalkData* fg
 #endif
                 )
         {
-            // There is an existing sub-field we can use
+            // There is an existing sub-field we can use.
             tree->gtLclFld.SetLclNum(fieldLclIndex);
 
-            // We need to keep the types 'compatible'.  If we can switch back to a GT_LCL_VAR
-            CLANG_FORMAT_COMMENT_ANCHOR;
+            // The field must be an enregisterable type; otherwise it would not be a promoted field.
+            // The tree type may not match, e.g. for return types that have been morphed, but both
+            // must be enregisterable types.
+            // TODO-Cleanup: varTypeCanReg should presumably return true for SIMD types, but
+            // there may be places where that would violate existing assumptions.
+            var_types treeType  = tree->TypeGet();
+            var_types fieldType = fldVarDsc->TypeGet();
+            assert((varTypeCanReg(treeType) || varTypeIsSIMD(treeType)) &&
+                   (varTypeCanReg(fieldType) || varTypeIsSIMD(fieldType)));
 
-#ifdef _TARGET_ARM_
-            assert(varTypeIsIntegralOrI(tree->TypeGet()) || varTypeIsFloating(tree->TypeGet()));
-#else
-            assert(varTypeIsIntegralOrI(tree->TypeGet()));
-#endif
-            if (varTypeCanReg(fldVarDsc->TypeGet()))
-            {
-                // If the type is integer-ish, then we can use it as-is
-                tree->ChangeOper(GT_LCL_VAR);
-                assert(tree->gtLclVarCommon.gtLclNum == fieldLclIndex);
-                tree->gtType = fldVarDsc->TypeGet();
+            tree->ChangeOper(GT_LCL_VAR);
+            assert(tree->gtLclVarCommon.gtLclNum == fieldLclIndex);
+            tree->gtType = fldVarDsc->TypeGet();
 #ifdef DEBUG
-                if (verbose)
-                {
-                    printf("Replacing the GT_LCL_FLD in promoted struct with a local var:\n");
-                    fgWalkPre->printModified = true;
-                }
-#endif // DEBUG
+            if (verbose)
+            {
+                printf("Replacing the GT_LCL_FLD in promoted struct with a local var:\n");
+                fgWalkPre->printModified = true;
             }
+#endif // DEBUG
 
             GenTree* parent = fgWalkPre->parentStack->Index(1);
             if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
