@@ -5632,6 +5632,17 @@ void Compiler::fgValueNumberTree(GenTree* tree, bool evalAsgLhsInd)
     {
         // TODO-CQ: For now hardware intrinsics are not handled by value numbering to be amenable for CSE'ing.
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
+
+        GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+        assert(hwIntrinsicNode != nullptr);
+
+        // For safety/correctness we must mutate the global heap valuenumber
+        //  for any HW intrinsic that performs a memory store operation
+        if (hwIntrinsicNode->OperIsMemoryStore())
+        {
+            fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
+        }
+
         return;
     }
 #endif // FEATURE_HW_INTRINSICS
