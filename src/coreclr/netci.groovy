@@ -968,10 +968,10 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
         }
         else if (architecture == 'armem') {
             if (os == 'Ubuntu') {
-                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20172211042239"
+                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180405193556"
             }
             else if (os == 'Ubuntu16.04') {
-                return "microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548"
+                return "microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180404203310"
             }
             else if (os == 'Tizen') {
                 return "hqueue/dotnetcore:ubuntu1404_cross_prereqs_v4-tizen_rootfs"
@@ -979,7 +979,7 @@ def static getDockerImageName(def architecture, def os, def isBuild) {
         }
         else if (architecture == 'arm') {
             if (os == 'Ubuntu') {
-                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180323032140"
+                return "microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180405193556"
             }
         }
     }

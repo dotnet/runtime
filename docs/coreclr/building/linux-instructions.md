@@ -37,6 +37,8 @@ In order to get clang-3.9, llvm-3.9 and lldb-3.9 on Ubuntu 14.04, we need to add
     ~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
     ~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
     ~$ sudo apt-get update
+
+Note: arm clang has a known issue with CompareExchange (#15074), so for arm you have to use clang-4.0 or higher, the official build uses clang-5.0.
     
 For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
 
