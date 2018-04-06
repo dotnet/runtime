@@ -55,6 +55,9 @@ public:
     static gc_alloc_context * GetAllocContext();
 
     static void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
+
+    static uint8_t* GetLoaderAllocatorObjectForGC(Object* pObject);
+
     // Diagnostics methods.
     static void DiagGCStart(int gen, bool isInduced);
     static void DiagUpdateGenerationBounds();

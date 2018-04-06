@@ -125,6 +125,12 @@ inline void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, vo
     g_theGCToCLR->GcEnumAllocContexts(fn, param);
 }
 
+inline uint8_t *GCToEEInterface::GetLoaderAllocatorObjectForGC(Object* pObject)
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->GetLoaderAllocatorObjectForGC(pObject);
+}
+
 inline void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 {
     assert(g_theGCToCLR != nullptr);

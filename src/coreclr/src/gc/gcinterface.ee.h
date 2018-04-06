@@ -251,6 +251,10 @@ public:
     virtual
     void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param) = 0;
 
+    // Get the Allocator for objects from collectible assemblies
+    virtual
+    uint8_t* GetLoaderAllocatorObjectForGC(Object* pObject) = 0;
+
     // Creates and returns a new thread.
     // Parameters:
     //  threadStart - The function that will serve as the thread stub for the
