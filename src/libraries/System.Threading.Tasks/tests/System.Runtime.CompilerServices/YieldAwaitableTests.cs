@@ -143,8 +143,38 @@ namespace System.Threading.Tasks.Tests
             SynchronizationContext.SetSynchronizationContext(new ValidateCorrectContextSynchronizationContext());
             var ya = Task.Yield().GetAwaiter();
             Assert.Throws<ArgumentNullException>(() => { ya.OnCompleted(null); });
+            SynchronizationContext.SetSynchronizationContext(null);
         }
 
+        [Fact]
+        public static async Task AsyncMethod_Yields_ReturnsToDefaultTaskScheduler()
+        {
+            await Task.Yield();
+            Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+        }
+
+        [Fact]
+        public static async Task AsyncMethod_Yields_ReturnsToCorrectTaskScheduler()
+        {
+            QUWITaskScheduler ts = new QUWITaskScheduler();
+            Assert.NotSame(ts, TaskScheduler.Current);
+            await Task.Factory.StartNew(async delegate
+            {
+                Assert.Same(ts, TaskScheduler.Current);
+                await Task.Yield();
+                Assert.Same(ts, TaskScheduler.Current);
+            }, CancellationToken.None, TaskCreationOptions.None, ts).Unwrap();
+            Assert.NotSame(ts, TaskScheduler.Current);
+        }
+
+        [Fact]
+        public static async Task AsyncMethod_Yields_ReturnsToCorrectSynchronizationContext()
+        {
+            var sc = new ValidateCorrectContextSynchronizationContext ();
+            SynchronizationContext.SetSynchronizationContext(sc);
+            await Task.Yield();
+            Assert.Equal(1, sc.PostCount);
+        }
         #region Helper Methods / Classes
 
         private class ValidateCorrectContextSynchronizationContext : SynchronizationContext
