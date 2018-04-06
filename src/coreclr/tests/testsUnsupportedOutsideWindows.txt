@@ -1,5 +1,6 @@
 baseservices/exceptions/regressions/Dev11/147911/test147911/test147911.sh
 baseservices/exceptions/regressions/V1/SEH/VJ/UnmanagedToManaged/UnmanagedToManaged.sh
+baseservices/exceptions/WindowsEventLog/WindowsEventLog.sh
 baseservices/threading/commitstackonlyasneeded/DefaultStackCommit/DefaultStackCommit.sh
 baseservices/threading/interlocked/compareexchange/compareexchangetneg/compareexchangetneg.sh
 baseservices/threading/monitor/pulse/monitorpulse02/monitorpulse02.sh
