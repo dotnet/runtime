@@ -276,8 +276,12 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STORE_LCL_VAR:
-#if defined(_TARGET_AMD64_) && defined(FEATURE_SIMD)
+            WidenSIMD12IfNecessary(node->AsLclVarCommon());
+            __fallthrough;
+
+        case GT_STORE_LCL_FLD:
         {
+#if defined(_TARGET_AMD64_) && defined(FEATURE_SIMD)
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
             if ((store->TypeGet() == TYP_SIMD8) != (store->gtOp1->TypeGet() == TYP_SIMD8))
             {
@@ -286,12 +290,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 store->gtOp1 = bitcast;
                 BlockRange().InsertBefore(store, bitcast);
             }
-        }
 #endif // _TARGET_AMD64_
-            WidenSIMD12IfNecessary(node->AsLclVarCommon());
-            __fallthrough;
-
-        case GT_STORE_LCL_FLD:
             // TODO-1stClassStructs: Once we remove the requirement that all struct stores
             // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
             // store under a block store if codegen will require it.
@@ -306,6 +305,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
             LowerStoreLoc(node->AsLclVarCommon());
             break;
+        }
 
 #ifdef _TARGET_ARM64_
         case GT_CMPXCHG:
