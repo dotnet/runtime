@@ -1475,6 +1475,78 @@ mono_type_array_get_and_resolve (MonoArrayHandle array, int idx, MonoError *erro
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
+static MonoType *
+add_custom_modifiers_to_type (MonoType *without_mods, MonoArrayHandle req_array, MonoArrayHandle opt_array, MonoImage *image, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER();
+	error_init (error);
+
+	int num_req_mods = 0;
+	if (!MONO_HANDLE_IS_NULL (req_array))
+		num_req_mods = mono_array_handle_length (req_array);
+
+	int num_opt_mods = 0;
+	if (!MONO_HANDLE_IS_NULL (opt_array))
+		num_opt_mods = mono_array_handle_length (opt_array);
+
+	if (!(num_opt_mods || num_req_mods))
+		return without_mods;
+
+	MonoTypeWithModifiers *result = mono_image_g_malloc0 (image, mono_sizeof_type_with_mods (num_req_mods + num_opt_mods));
+	memcpy (result, without_mods, MONO_SIZEOF_TYPE);
+	result->unmodified.has_cmods = 1;
+	MonoCustomModContainer *cmods = mono_type_get_cmods ((MonoType *)result);
+	g_assert (cmods);
+	cmods->count = num_req_mods + num_opt_mods;
+	cmods->image = image;
+
+	g_assert (image_is_dynamic (image));
+	MonoDynamicImage *allocator = (MonoDynamicImage *) image;
+
+	int modifier_index = 0;
+
+	MonoObjectHandle mod_handle = MONO_HANDLE_NEW (MonoObject, NULL);
+	for (int i=0; i < num_req_mods; i++) {
+		cmods->modifiers [modifier_index].required = TRUE;
+		MONO_HANDLE_ARRAY_GETREF (mod_handle, req_array, i);
+		cmods->modifiers [modifier_index].token = mono_image_create_token (allocator, mod_handle, FALSE, TRUE, error);
+		modifier_index++;
+	}
+
+	for (int i=0; i < num_opt_mods; i++) {
+		cmods->modifiers [modifier_index].required = FALSE;
+		MONO_HANDLE_ARRAY_GETREF (mod_handle, opt_array, i);
+		cmods->modifiers [modifier_index].token = mono_image_create_token (allocator, mod_handle, FALSE, TRUE, error);
+		modifier_index++;
+	}
+
+	HANDLE_FUNCTION_RETURN_VAL ((MonoType *) result);
+}
+
+static
+MonoType *
+mono_type_array_get_and_resolve_with_modifiers (MonoArrayHandle types, MonoArrayHandle required_modifiers, MonoArrayHandle optional_modifiers, int idx, MonoImage *image, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER();
+	error_init (error);
+	MonoReflectionTypeHandle type = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+	MonoArrayHandle req_mods_handle = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandle opt_mods_handle = MONO_HANDLE_NEW (MonoArray, NULL);
+
+	if (required_modifiers && !MONO_HANDLE_IS_NULL (required_modifiers))
+		MONO_HANDLE_ARRAY_GETREF (req_mods_handle, required_modifiers, idx);
+
+	if (optional_modifiers && !MONO_HANDLE_IS_NULL (optional_modifiers))
+		MONO_HANDLE_ARRAY_GETREF (opt_mods_handle, optional_modifiers, idx);
+
+	MONO_HANDLE_ARRAY_GETREF (type, types, idx);
+
+	MonoType *result = mono_reflection_type_handle_mono_type (type, error);
+	result = (MonoType *) add_custom_modifiers_to_type (result, req_mods_handle, opt_mods_handle, image, error);
+
+	HANDLE_FUNCTION_RETURN_VAL (result);
+}
+
 
 #ifndef DISABLE_REFLECTION_EMIT
 static gboolean
@@ -1777,7 +1849,7 @@ leave:
  * LOCKING: Assumes the loader lock is held.
  */
 static MonoMethodSignature*
-parameters_to_signature (MonoImage *image, MonoArrayHandle parameters, MonoError *error) {
+parameters_to_signature (MonoImage *image, MonoArrayHandle parameters, MonoArrayHandle required_modifiers, MonoArrayHandle optional_modifiers, MonoError *error) {
 	MonoMethodSignature *sig;
 	int count, i;
 
@@ -1789,7 +1861,7 @@ parameters_to_signature (MonoImage *image, MonoArrayHandle parameters, MonoError
 	sig->param_count = count;
 	sig->sentinelpos = -1; /* FIXME */
 	for (i = 0; i < count; ++i) {
-		sig->params [i] = mono_type_array_get_and_resolve (parameters, i, error);
+		sig->params [i] = mono_type_array_get_and_resolve_with_modifiers (parameters, required_modifiers, optional_modifiers, i, image, error);
 		if (!is_ok (error)) {
 			image_g_free (image, sig);
 			return NULL;
@@ -1806,8 +1878,11 @@ ctor_builder_to_signature (MonoImage *image, MonoReflectionCtorBuilderHandle cto
 	MonoMethodSignature *sig;
 
 	error_init (error);
+	MonoArrayHandle params = MONO_HANDLE_NEW_GET(MonoArray, ctor, parameters);
+	MonoArrayHandle required_modifiers = MONO_HANDLE_NEW_GET(MonoArray, ctor, param_modreq);
+	MonoArrayHandle optional_modifiers = MONO_HANDLE_NEW_GET(MonoArray, ctor, param_modopt);
 
-	sig = parameters_to_signature (image, MONO_HANDLE_NEW_GET (MonoArray, ctor, parameters), error);
+	sig = parameters_to_signature (image, params, required_modifiers, optional_modifiers, error);
 	return_val_if_nok (error, NULL);
 	sig->hasthis = MONO_HANDLE_GETVAL (ctor, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	sig->ret = &mono_defaults.void_class->byval_arg;
@@ -1829,8 +1904,11 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle
 	MonoMethodSignature *sig;
 
 	error_init (error);
+	MonoArrayHandle params = MONO_HANDLE_NEW_GET(MonoArray, method, parameters);
+	MonoArrayHandle required_modifiers = MONO_HANDLE_NEW_GET(MonoArray, method, param_modreq);
+	MonoArrayHandle optional_modifiers = MONO_HANDLE_NEW_GET(MonoArray, method, param_modopt);
 
-	sig = parameters_to_signature (image, MONO_HANDLE_NEW_GET(MonoArray, method, parameters), error);
+	sig = parameters_to_signature (image, params, required_modifiers, optional_modifiers, error);
 	return_val_if_nok (error, NULL);
 	sig->hasthis = MONO_HANDLE_GETVAL (method, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	MonoReflectionTypeHandle rtype = MONO_HANDLE_NEW_GET (MonoReflectionType, method, rtype);
@@ -1855,7 +1933,7 @@ dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError
 
 	error_init (error);
 
-	sig = parameters_to_signature (NULL, MONO_HANDLE_NEW_GET (MonoArray, method, parameters), error);
+	sig = parameters_to_signature (NULL, MONO_HANDLE_NEW_GET (MonoArray, method, parameters), NULL, NULL, error);
 	goto_if_nok (error, leave);
 	sig->hasthis = MONO_HANDLE_GETVAL (method, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	MonoReflectionTypeHandle rtype = MONO_HANDLE_NEW_GET (MonoReflectionType, method, rtype);
