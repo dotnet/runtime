@@ -347,6 +347,19 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     }
 }
 
+
+uint8_t* GCToEEInterface::GetLoaderAllocatorObjectForGC(Object* pObject)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    return pObject->GetMethodTable()->GetLoaderAllocatorObjectForGC();
+}
+
 bool GCToEEInterface::IsPreemptiveGCDisabled()
 {
     WRAPPER_NO_CONTRACT;

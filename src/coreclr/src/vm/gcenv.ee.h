@@ -35,6 +35,7 @@ public:
     Thread* GetThread();
     gc_alloc_context * GetAllocContext();
     void GcEnumAllocContexts(enum_alloc_context_func* fn, void* param);
+    uint8_t* GetLoaderAllocatorObjectForGC(Object* pObject);
 
     // Diagnostics methods.
     void DiagGCStart(int gen, bool isInduced);

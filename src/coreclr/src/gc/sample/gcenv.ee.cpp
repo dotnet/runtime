@@ -218,6 +218,11 @@ void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* pa
     }
 }
 
+uint8_t* GCToEEInterface::GetLoaderAllocatorObjectForGC(Object* pObject)
+{
+    return NULL;
+}
+
 void GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC /*scanProc*/, uintptr_t /*lp1*/, uintptr_t /*lp2*/)
 {
 }
