@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_factory = factory;
 		}
 
-		public LinkedTestCaseResult Run (TestCase testCase)
+		public virtual LinkedTestCaseResult Run (TestCase testCase)
 		{
 			using (var fullTestCaseAssemblyDefinition = AssemblyDefinition.ReadAssembly (testCase.OriginalTestCaseAssemblyPath.ToString ())) {
 				var metadataProvider = _factory.CreateMetadataProvider (testCase, fullTestCaseAssemblyDefinition);
