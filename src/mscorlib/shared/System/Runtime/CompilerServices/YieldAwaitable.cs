@@ -47,6 +47,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>Provides an awaiter that switches into a target environment.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
         public readonly struct YieldAwaiter : ICriticalNotifyCompletion
+#if CORECLR
+            , IStateMachineBoxAwareAwaiter
+#endif
         {
             /// <summary>Gets whether a yield is not required.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
@@ -115,6 +118,41 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
+#if CORECLR
+            void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
+            {
+                Debug.Assert(box != null);
+
+                // If tracing is enabled, delegate the Action-based implementation.
+                if (TplEtwProvider.Log.IsEnabled())
+                {
+                    QueueContinuation(box.MoveNextAction, flowContext: false);
+                    return;
+                }
+
+                // Otherwise, this is the same logic as in QueueContinuation, except using
+                // an IAsyncStateMachineBox instead of an Action, and only for flowContext:false.
+
+                SynchronizationContext syncCtx = SynchronizationContext.Current;
+                if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
+                {
+                    syncCtx.Post(s => ((IAsyncStateMachineBox)s).MoveNext(), box);
+                }
+                else
+                {
+                    TaskScheduler scheduler = TaskScheduler.Current;
+                    if (scheduler == TaskScheduler.Default)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItem(s => ((IAsyncStateMachineBox)s).MoveNext(), box);
+                    }
+                    else
+                    {
+                        Task.Factory.StartNew(s => ((IAsyncStateMachineBox)s).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler);
+                    }
+                }
+            }
+#endif
+
             private static Action OutputCorrelationEtwEvent(Action continuation)
             {
 #if CORERT
@@ -153,7 +191,6 @@ namespace System.Runtime.CompilerServices
             private static readonly WaitCallback s_waitCallbackRunAction = RunAction;
             /// <summary>SendOrPostCallback that invokes the Action supplied as object state.</summary>
             private static readonly SendOrPostCallback s_sendOrPostCallbackRunAction = RunAction;
-
             /// <summary>Runs an Action delegate provided as state.</summary>
             /// <param name="state">The Action delegate to invoke.</param>
             private static void RunAction(object state) { ((Action)state)(); }
