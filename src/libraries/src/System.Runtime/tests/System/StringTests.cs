@@ -1355,6 +1355,7 @@ namespace System.Tests
         [InlineData("!@#$", '#', 0, 4, 2)]
         [InlineData("!@#$", '$', 0, 4, 3)]
         [InlineData("!@#$%^&*", '%', 0, 8, 4)]
+        [InlineData("", 'H', 0, 0, -1)]
         public static void IndexOf_SingleLetter(string s, char target, int startIndex, int count, int expected)
         {
             bool safeForCurrentCulture =
@@ -1417,6 +1418,34 @@ namespace System.Tests
                 Assert.Equal(expected, s.IndexOf(target.ToString(), startIndex, count, StringComparison.CurrentCulture));
 
                 Assert.Equal(expectedFromSpan, span.Slice(startIndex, count).IndexOf(targetSpan, StringComparison.CurrentCulture));
+            }
+        }
+
+        [Fact]
+        public static void IndexOf_Match_SingleLetter()
+        {
+            Assert.Equal(-1, "".IndexOf('a'));
+            Assert.Equal(-1, "".AsSpan().IndexOf('a'));
+
+            for (int length = 1; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = (char)(i + 1);
+                }
+                string str = new string(a);
+                ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
+
+                for (int targetIndex = 0; targetIndex < length; targetIndex++)
+                {
+                    char target = a[targetIndex];
+                    int idx = str.IndexOf(target);
+                    Assert.Equal(targetIndex, idx);
+
+                    idx = span.IndexOf(target);
+                    Assert.Equal(targetIndex, idx);
+                }
             }
         }
 
@@ -2053,6 +2082,7 @@ namespace System.Tests
         [InlineData("Hello", 'l', 0, 1, -1)]
         [InlineData("Hello", 'x', 3, 4, -1)]
         [InlineData("H" + SoftHyphen + "ello", 'H', 2, 3, 0)]
+        [InlineData("", 'H', 0, 0, -1)]
         public static void LastIndexOf_SingleLetter(string s, char value, int startIndex, int count, int expected)
         {
             if (count == s.Length)
@@ -2071,6 +2101,34 @@ namespace System.Tests
             Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.CurrentCulture));
             Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.Ordinal));
             Assert.Equal(expected, s.LastIndexOf(value.ToString(), startIndex, count, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public static void LastIndexOf_Match_SingleLetter()
+        {
+            Assert.Equal(-1, "".LastIndexOf('a'));
+            Assert.Equal(-1, "".AsSpan().LastIndexOf('a'));
+
+            for (int length = 1; length < 32; length++)
+            {
+                char[] a = new char[length];
+                for (int i = 0; i < length; i++)
+                {
+                    a[i] = (char)(i + 1);
+                }
+                string str = new string(a);
+                ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
+
+                for (int targetIndex = 0; targetIndex < length; targetIndex++)
+                {
+                    char target = a[targetIndex];
+                    int idx = str.LastIndexOf(target);
+                    Assert.Equal(targetIndex, idx);
+
+                    idx = span.LastIndexOf(target);
+                    Assert.Equal(targetIndex, idx);
+                }
+            }
         }
 
         [Theory]
