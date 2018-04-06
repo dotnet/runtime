@@ -66,7 +66,7 @@ namespace System.Buffers.Text
             if (maxSrcLength != srcLength - 2)
                 goto DestinationSmallExit;
 
-            if (isFinalBlock != true)
+            if (!isFinalBlock)
                 goto NeedMoreDataExit;
 
             if (sourceIndex == srcLength - 1)
@@ -108,7 +108,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxEncodedToUtf8Length(int length)
         {
-            if (length < 0 || length > MaximumEncodeLength)
+            if ((uint)length > MaximumEncodeLength)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
 
             return (((length + 2) / 3) * 4);
@@ -135,7 +135,7 @@ namespace System.Buffers.Text
             if (buffer.Length < encodedLength)
                 goto FalseExit;
 
-            int leftover = dataLength - dataLength / 3 * 3; // how many bytes after packs of 3
+            int leftover = dataLength - (dataLength / 3) * 3; // how many bytes after packs of 3
 
             int destinationIndex = encodedLength - 4;
             int sourceIndex = dataLength - leftover;
@@ -228,6 +228,6 @@ namespace System.Buffers.Text
 
         private const byte EncodingPad = (byte)'='; // '=', for padding
 
-        private const int MaximumEncodeLength = (int.MaxValue >> 2) * 3; // 1610612733
+        private const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
     }
 }
