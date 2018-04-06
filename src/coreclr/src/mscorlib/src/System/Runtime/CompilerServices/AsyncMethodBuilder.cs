@@ -389,11 +389,11 @@ namespace System.Runtime.CompilerServices
                 ref ConfiguredTaskAwaitable.ConfiguredTaskAwaiter ta = ref Unsafe.As<TAwaiter, ConfiguredTaskAwaitable.ConfiguredTaskAwaiter>(ref awaiter);
                 TaskAwaiter.UnsafeOnCompletedInternal(ta.m_task, box, ta.m_continueOnCapturedContext);
             }
-            else if ((null != (object)default(TAwaiter)) && (awaiter is IValueTaskAwaiter))
+            else if ((null != (object)default(TAwaiter)) && (awaiter is IStateMachineBoxAwareAwaiter))
             {
                 try
                 {
-                    ((IValueTaskAwaiter)awaiter).AwaitUnsafeOnCompleted(box);
+                    ((IStateMachineBoxAwareAwaiter)awaiter).AwaitUnsafeOnCompleted(box);
                 }
                 catch (Exception e)
                 {
