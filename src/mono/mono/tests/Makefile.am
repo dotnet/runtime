@@ -531,6 +531,7 @@ TESTS_CS_SRC=		\
 	nullable_boxing.2.cs	\
 	valuetype-equals.cs	\
 	custom-modifiers.2.cs	\
+	custom-modifiers-inheritance.cs	\
 	bug-382986.cs	\
 	test-inline-call-stack.cs	\
 	bug-324535.cs	\
@@ -1101,6 +1102,7 @@ PROFILE_DISABLED_TESTS += \
 	bug-389886-2.exe	\
 	bug-349190.2.exe	\
 	bug-389886-sre-generic-interface-instances.exe	\
+	custom-modifiers-inheritance.exe	\
 	bug-462592.exe	\
 	bug-575941.exe	\
 	bug-389886-3.exe	\
