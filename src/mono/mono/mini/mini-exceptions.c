@@ -2130,9 +2130,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
 			guint32 handle = mono_gchandle_new (obj, FALSE);
-			gpointer stackptr;
+			MONO_STACKDATA (stackptr);
 
-			mono_threads_enter_gc_safe_region_unbalanced (&stackptr);
+			mono_threads_enter_gc_safe_region_unbalanced_internal (&stackptr);
 			ftnptr_eh_callback (handle);
 			g_error ("Did not expect ftnptr_eh_callback to return.");
 		}

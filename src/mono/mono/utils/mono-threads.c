@@ -434,7 +434,7 @@ mono_threads_signal_thread_handle (MonoThreadHandle* thread_handle);
 static void
 unregister_thread (void *arg)
 {
-	gpointer gc_unsafe_stackdata;
+	MONO_STACKDATA (gc_unsafe_stackdata);
 	MonoThreadInfo *info;
 	int small_id;
 	gboolean result;
