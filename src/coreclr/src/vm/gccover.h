@@ -77,7 +77,7 @@ public:
 // 16-bit illegal instructions which will cause exception and cause 
 // control to go to GcStress codepath
 #define INTERRUPT_INSTR                 0xde00             
-#define INTERRUPT_INSTR_CALL            0xde01             
+#define INTERRUPT_INSTR_CALL            0xde03  // 0xde01 generates SIGTRAP (breakpoint) instead of SIGILL on Unix             
 #define INTERRUPT_INSTR_PROTECT_RET     0xde02      
 
 // 32-bit illegal instructions. It is necessary to replace a 16-bit instruction

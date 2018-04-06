@@ -30,7 +30,9 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
+#ifndef FEATURE_PAL
 #define USE_REDIRECT_FOR_GCSTRESS
+#endif // FEATURE_PAL
 
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
