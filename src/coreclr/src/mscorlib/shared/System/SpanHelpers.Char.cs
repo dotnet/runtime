@@ -93,9 +93,13 @@ namespace System
 #if !netstandard11
                 if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
                 {
+                    // Figure out how many characters to read sequentially until we are vector aligned
+                    // This is equivalent to:
+                    //         unaligned = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / elementsPerByte
+                    //         length = (Vector<ushort>.Count - unaligned) % Vector<ushort>.Count
                     const int elementsPerByte = sizeof(ushort) / sizeof(byte);
                     int unaligned = ((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte;
-                    length = ((Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1));
+                    length = (Vector<ushort>.Count - unaligned) & (Vector<ushort>.Count - 1);
                 }
             SequentialScan:
 #endif
@@ -129,6 +133,9 @@ namespace System
                 // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
                 if (Vector.IsHardwareAccelerated && pCh < pEndCh)
                 {
+                    // Get the highest multiple of Vector<ushort>.Count that is within the search space.
+                    // That will be how many times we iterate in the loop below.
+                    // This is equivalent to: length = Vector<ushort>.Count * ((int)(pEndCh - pCh) / Vector<ushort>.Count)
                     length = (int)((pEndCh - pCh) & ~(Vector<ushort>.Count - 1));
 
                     // Get comparison Vector
@@ -180,8 +187,10 @@ namespace System
 #if !netstandard11
                 if (Vector.IsHardwareAccelerated && length >= Vector<ushort>.Count * 2)
                 {
+                    // Figure out how many characters to read sequentially from the end until we are vector aligned
+                    // This is equivalent to: length = ((int)pCh % Unsafe.SizeOf<Vector<ushort>>()) / elementsPerByte
                     const int elementsPerByte = sizeof(ushort) / sizeof(byte);
-                    length = (((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte);
+                    length = ((int)pCh & (Unsafe.SizeOf<Vector<ushort>>() - 1)) / elementsPerByte;
                 }
             SequentialScan:
 #endif
@@ -213,6 +222,9 @@ namespace System
                 // the JIT to see that the code is unreachable and eliminate it when the platform does not have hardware accelerated.
                 if (Vector.IsHardwareAccelerated && pCh > pEndCh)
                 {
+                    // Get the highest multiple of Vector<ushort>.Count that is within the search space.
+                    // That will be how many times we iterate in the loop below.
+                    // This is equivalent to: length = Vector<ushort>.Count * ((int)(pCh - pEndCh) / Vector<ushort>.Count)
                     length = (int)((pCh - pEndCh) & ~(Vector<ushort>.Count - 1));
 
                     // Get comparison Vector
