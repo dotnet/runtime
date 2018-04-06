@@ -329,6 +329,27 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWIntrinsic:
+        {
+            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+
+            // We can't call fgMutateGcHeap unless the block has recorded a MemoryDef
+            //
+            if (hwIntrinsicNode->OperIsMemoryStore())
+            {
+                // We currently handle this like a Volatile store, so it counts as a definition of GcHeap/ByrefExposed
+                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+            }
+            if (hwIntrinsicNode->OperIsMemoryLoad())
+            {
+                // This instruction loads from memory and we need to record this information
+                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+            }
+            break;
+        }
+#endif
+
         // For now, all calls read/write GcHeap/ByrefExposed, writes in their entirety.  Might tighten this case later.
         case GT_CALL:
         {
