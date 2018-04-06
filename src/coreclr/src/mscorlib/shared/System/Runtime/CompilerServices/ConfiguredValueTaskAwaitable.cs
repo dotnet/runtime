@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
         [StructLayout(LayoutKind.Auto)]
         public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion
 #if CORECLR
-            , IValueTaskAwaiter
+            , IStateMachineBoxAwareAwaiter
 #endif
         {
             /// <summary>The value being awaited.</summary>
@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
             }
 
 #if CORECLR
-            void IValueTaskAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
+            void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
             {
                 if (_value.ObjectIsTask)
                 {
@@ -135,7 +135,7 @@ namespace System.Runtime.CompilerServices
         [StructLayout(LayoutKind.Auto)]
         public readonly struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion
 #if CORECLR
-            , IValueTaskAwaiter
+            , IStateMachineBoxAwareAwaiter
 #endif
         {
             /// <summary>The value being awaited.</summary>
@@ -196,7 +196,7 @@ namespace System.Runtime.CompilerServices
             }
 
 #if CORECLR
-            void IValueTaskAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
+            void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
             {
                 if (_value.ObjectIsTask)
                 {
