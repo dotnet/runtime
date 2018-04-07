@@ -446,6 +446,24 @@
     <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductVersion)</RuntimeDependenciesDebPkgName>
     <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true'">
+    <PackageNameSuffix>$(MajorVersion).$(MinorVersion)</PackageNameSuffix>
+    <InstallerNameSuffix>-upgrade</InstallerNameSuffix>
+    
+    <SharedHostInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm' ">$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerNameSuffix)$(InstallerExtension)</SharedFrameworkInstallerFile>
+
+    <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerNameSuffix)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
+    
+    <HostFxrDebPkgName>$(DotnetHostFxrString)$(PackageNameSuffix)</HostFxrDebPkgName>
+    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
+    <SharedFxDebPkgName>$(DotnetRuntimeString)$(PackageNameSuffix)</SharedFxDebPkgName>
+    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
+    <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(PackageNameSuffix)</RuntimeDependenciesDebPkgName>
+    <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
     <!-- Disable some standard properties for building our projects -->

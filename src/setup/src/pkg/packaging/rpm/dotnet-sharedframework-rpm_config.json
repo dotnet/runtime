@@ -32,7 +32,7 @@
     
   "rpm_dependencies": [{
       "package_name": "%HOSTFXR_RPM_PACKAGE_NAME%",
-      "package_version": ""
+      "package_version": "%HOSTFXR_NUGET_VERSION%"
     }],
    
     "directories" : [
