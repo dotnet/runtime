@@ -164,7 +164,6 @@ typedef struct {
 	GHashTable *llvm_types;
 	LLVMValueRef dbg_md;
 	MonoDebugMethodInfo *minfo;
-	char temp_name [32];
 	/* For every clause, the clauses it is nested in */
 	GSList **nested_in;
 	LLVMValueRef ex_var;
