@@ -246,6 +246,9 @@
       <SharedFrameworkTokenValue Include="%HOSTFXR_DEBIAN_PACKAGE_NAME%">
         <ReplacementString>$(HostFxrDebPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%HOSTFXR_NUGET_VERSION%">
+        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+      </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_DEBIAN_PACKAGE_NAME%">
         <ReplacementString>$(SharedFxDebPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
