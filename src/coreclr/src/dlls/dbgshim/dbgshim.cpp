@@ -1808,6 +1808,8 @@ CLRCreateInstance(
     REFIID riid, 
     LPVOID *ppInterface)
 {
+    PUBLIC_CONTRACT;
+
 #if defined(FEATURE_CORESYSTEM)
 
     if (ppInterface == NULL)
@@ -1822,7 +1824,10 @@ CLRCreateInstance(
     GUID skuId = CLR_ID_CORECLR;
 #endif
     
-    CLRDebuggingImpl *pDebuggingImpl = new CLRDebuggingImpl(skuId);
+    CLRDebuggingImpl *pDebuggingImpl = new (nothrow) CLRDebuggingImpl(skuId);
+    if (NULL == pDebuggingImpl)
+        return E_OUTOFMEMORY;
+
     return pDebuggingImpl->QueryInterface(riid, ppInterface);
 #else
     return E_NOTIMPL;
