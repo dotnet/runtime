@@ -3053,6 +3053,17 @@ findhandle_close (gpointer handle)
 	return TRUE;
 }
 
+static void
+finds_remove (gpointer data)
+{
+	FindHandle* findhandle;
+
+	findhandle = (FindHandle*) data;
+	g_assert (findhandle);
+
+	mono_refcount_dec (findhandle);
+}
+
 gpointer
 mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
 {
@@ -4703,7 +4714,7 @@ mono_w32file_init (void)
 
 	mono_coop_mutex_init (&file_share_mutex);
 
-	finds = g_hash_table_new (g_direct_hash, g_direct_equal);
+	finds = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, finds_remove);
 	mono_coop_mutex_init (&finds_mutex);
 
 	if (g_hasenv ("MONO_STRICT_IO_EMULATION"))
