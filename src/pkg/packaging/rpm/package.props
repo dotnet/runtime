@@ -14,4 +14,21 @@
     <TemplatesDir>$(MSBuildThisFileDirectory)/templates</TemplatesDir>
     <ScriptsDir>$(MSBuildThisFileDirectory)/scripts</ScriptsDir>
   </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true' AND '$(InstallerExtension)' == '.rpm'">
+    <PackageNameSuffix>$(MajorVersion).$(MinorVersion)</PackageNameSuffix>
+    
+    <HostFxrRpmPkgName>dotnet-hostfxr-$(PackageNameSuffix)</HostFxrRpmPkgName>
+    <HostFxrRpmPkgName>$(HostFxrRpmPkgName.ToLower())</HostFxrRpmPkgName>
+    <SharedFxRpmPkgName>dotnet-runtime-$(PackageNameSuffix)</SharedFxRpmPkgName>
+    <SharedFxRpmPkgName>$(SharedFxRpmPkgName.ToLower())</SharedFxRpmPkgName>
+    <RuntimeDependenciesRpmPkgName>$(DotnetRuntimeDependenciesPackageString)$(PackageNameSuffix)</RuntimeDependenciesRpmPkgName>
+    <RuntimeDependenciesRpmPkgName>$(RuntimeDependenciesRpmPkgName.ToLower())</RuntimeDependenciesRpmPkgName>
+    
+    <HostResolverVersion Condition="$(HostResolverVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(HostResolverVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</HostResolverVersion>
+    <HostVersion Condition="$(HostVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(HostVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</HostVersion>
+    <SharedFrameworkNugetVersion Condition="$(SharedFrameworkNugetVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(SharedFrameworkNugetVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</SharedFrameworkNugetVersion>
+    <RuntimeDepsRpmVersion Condition="$(RuntimeDepsRpmVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(RuntimeDepsRpmVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</RuntimeDepsRpmVersion>
+
+  </PropertyGroup>
 </Project>

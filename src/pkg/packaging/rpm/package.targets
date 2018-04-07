@@ -237,6 +237,9 @@
       <SharedFrameworkTokenValue Include="%HOSTFXR_RPM_PACKAGE_NAME%">
         <ReplacementString>$(HostFxrRpmPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%HOSTFXR_NUGET_VERSION%">
+        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+      </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_RPM_PACKAGE_NAME%">
         <ReplacementString>$(SharedFxRpmPkgName)</ReplacementString>
       </SharedFrameworkTokenValue>
