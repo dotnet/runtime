@@ -156,6 +156,39 @@ STDAPI OpenVirtualProcessImpl(
 };
 
 //---------------------------------------------------------------------------------------
+//
+// OpenVirtualProcessImpl2 method called by the dbgshim to get an ICorDebugProcess4 instance
+//
+// Arguments:
+//    clrInstanceId - target pointer identifying which CLR in the Target to debug.
+//    pDataTarget - data target abstraction.
+//    pDacModulePath - the module path of the appropriate DAC dll for this runtime
+//    riid - interface ID to query for.
+//    ppProcessOut - new object for target, interface ID matches riid.
+//    ppFlagsOut - currently only has 1 bit to indicate whether or not this runtime
+//                 instance will send a managed event after attach
+//
+// Return Value:
+//    S_OK on success. Else failure
+//---------------------------------------------------------------------------------------
+STDAPI OpenVirtualProcessImpl2(
+    ULONG64 clrInstanceId,
+    IUnknown * pDataTarget,
+    LPCWSTR pDacModulePath,
+    CLR_DEBUGGING_VERSION * pMaxDebuggerSupportedVersion,
+    REFIID riid,
+    IUnknown ** ppInstance,
+    CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
+{
+    HMODULE hDac = LoadLibraryW(pDacModulePath);
+    if (hDac == NULL)
+    {
+        return HRESULT_FROM_WIN32(GetLastError());
+    }
+    return OpenVirtualProcessImpl(clrInstanceId, pDataTarget, hDac, pMaxDebuggerSupportedVersion, riid, ppInstance, pFlagsOut);
+}
+
+//---------------------------------------------------------------------------------------
 // DEPRECATED - use OpenVirtualProcessImpl
 // OpenVirtualProcess method used by the shim in CLR v4 Beta1
 // We'd like a beta1 shim/VS to still be able to open dumps using a CLR v4 Beta2+ mscordbi.dll, 
