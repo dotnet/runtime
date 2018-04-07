@@ -13,6 +13,7 @@ EXPORTS
 
     // Out-of-proc creation path from the shim - ICLRDebugging
     OpenVirtualProcessImpl
+    OpenVirtualProcessImpl2
 
     // DEPRECATED - use OpenVirtualProcessImpl
     OpenVirtualProcess private 
