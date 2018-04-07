@@ -45,10 +45,30 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Sync packages",
+      "displayName": "Setup vs dev env",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Pipeline.SourcesDirectory)\\setup_vs_tools.cmd",
+        "arguments": "",
+        "modifyEnvironment": "true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Sync symbol packages",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -57,51 +77,69 @@
       },
       "inputs": {
         "filename": "sync.cmd",
-        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix)$(PB_BuildType)/symbolpkg/ -- /p:DownloadFlatFiles=true /p:BlobNameExtension=\".nupkg\" /p:DownloadDirectory=$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_BuildType)\\symbolpkg",
+        "arguments": "-ab -AzureAccount=$(CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_ContainerName) -BlobNamePrefix=$(PB_BlobNamePrefix)$(ConfigurationGroup)/symbolpkg/ -- /p:DownloadFlatFiles=true /p:BlobNameExtension=\".nupkg\" /p:DownloadDirectory=$(AzureContainerSymbolPackageDirectory)symbolpkg",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Extract symbol packages",
+      "displayName": "Symbol Packages -> Blob Feed",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(),  contains(variables.PB_PublishType, 'blob'), eq(variables.ConfigurationGroup, 'Release'))",
       "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "-BuildType $(PB_BuildType) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -Branch $(SourceBranch)",
+        "filename": "msbuild",
+        "arguments": "src\\publish.proj /v:D /t:PublishSymbolPackages /p:__PublishSymbols=true $(FeedPublishArguments) /fileloggerparameters:Verbosity=diag;LogFile=publishsympkg.log",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($BuildType, $SymPkgGlob, $Branch)\nif ($BuildType -ne \"Release\") { exit }\n\n.\\run.cmd build -- `\n/t:UnzipSymbolPackagesForPublish `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/v:D",
-        "failOnStandardError": "true"
+        "failOnStandardError": "false"
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Publish Symbols to Artifact Services",
+      "displayName": "Publish symbols to msdl",
       "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), contains(variables.PB_PublishType, 'msdl'), eq(variables.ConfigurationGroup, 'Release'))",
       "task": {
-        "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
-        "versionSpec": "0.*",
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "symbolServiceURI": "https://microsoft.artifacts.visualstudio.com/DefaultCollection",
-        "requestName": "$(system.teamProject)/$(Build.BuildNumber)/$(Build.BuildId)",
-        "sourcePath": "$(Pipeline.SourcesDirectory)\\bin\\obj\\SymbolsRequest\\ExtractedPackages",
-        "assemblyPath": "",
-        "toLowerCase": "true",
-        "detailedLog": "true",
-        "expirationInDays": "30",
-        "usePat": "false"
+        "filename": "msbuild",
+        "arguments": "src\\publish.proj /v:D /t:PublishAllSymbols $(FeedPublishArguments) /p:SymbolServerPath=$(PB_MsdlSymbolServerPath) /p:SymbolServerPAT=$(PB_MsdlSymbolServerPAT) /p:SymbolExpirationInDays=$(PB_SymbolExpirationInDays)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish symbols to symweb",
+      "timeoutInMinutes": 0,
+      "condition": "and(succeeded(), contains(variables.PB_PublishType, 'symweb'), eq(variables.ConfigurationGroup, 'Release'))",
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "msbuild",
+        "arguments": "src\\publish.proj /v:D /t:PublishAllSymbols $(FeedPublishArguments) /p:SymbolServerPath=$(PB_SymwebSymbolServerPath) /p:SymbolServerPAT=$(PB_SymwebSymbolServerPAT) /p:SymbolExpirationInDays=$(PB_SymbolExpirationInDays)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "failOnStandardError": "false"
       }
     },
     {
@@ -177,8 +215,8 @@
       "value": "false",
       "allowOverride": true
     },
-    "PB_BuildType": {
-      "value": "Release",
+    "ConfigurationGroup": {
+      "value": "$(PB_BuildType)",
       "allowOverride": true
     },
     "CloudDropAccountName": {
@@ -190,12 +228,25 @@
       "allowOverride": true,
       "isSecret": true
     },
-    "OfficialBuildId": {
+    "PB_ContainerName": {
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "Label": {
-      "value": "$(Build.BuildNumber)",
+    "PB_BlobNamePrefix": {
+      "value": "$(PB_PipeBuildIdentifier)/",
+      "allowOverride": true
+    },
+    "AzureBlobFeedAccountName": {
+      "value": "dotnetfeed",
+      "allowOverride": true
+    },
+    "AzureBlobFeedAccessToken": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "AzureBlobFeedContainerName": {
+      "value": "dotnet-core",
       "allowOverride": true
     },
     "Pipeline.SourcesDirectory": {
@@ -215,6 +266,10 @@
       "value": null,
       "isSecret": true
     },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
     "SourceVersion": {
       "value": "master",
       "allowOverride": true
@@ -223,39 +278,48 @@
       "value": "master",
       "allowOverride": true
     },
+    "AzureContainerSymbolPackageDirectory": {
+      "value": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\",
+      "allowOverride": true
+    },
     "AzureContainerSymbolPackageGlob": {
       "value": "symbolpkg\\*.nupkg",
+    },
+    "FeedPublishArguments": {
+      "value": "$(PB_BuildOutputManifestArguments) /p:ExpectedFeedUrl=$(PB_PublishBlobFeedUrl) /p:CloudDropAccessToken=$(PB_PublishBlobFeedKey) /p:CloudDropAccountName=$(AzureBlobFeedAccountName) /p:ContainerName=$(AzureBlobFeedContainerName) /p:OverwriteOnPublish=true /p:PackagesPatternDir=$(AzureContainerSymbolPackageDirectory) /p:__BuildType=$(ConfigurationGroup) /p:OfficialPublish=true /p:PublishFlatContainer=false"
+    },
+    "PB_PublishType": {
+      "value": "",
       "allowOverride": true
     },
-    "PB_AzureContainerSymbolPackageGlob": {
-      "value": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_BuildType)\\$(AzureContainerSymbolPackageGlob)",
+    "PB_PublishBlobFeedUrl": {
+      "value": "",
       "allowOverride": true
     },
-    "PB_DotNetCoreShareDir": {
-      "value": "passed-by-pipebuild",
+    "PB_PublishBlobFeedKey": {
+      "value": "",
       "allowOverride": true
     },
-    "SymbolsProject": {
-      "value": "CLR"
+    "PB_BuildOutputManifestArguments": {
+      "value": "/p:ManifestBuildId=$(OfficialBuildId) /p:ManifestBranch=$(SourceBranch) /p:ManifestCommit=$(SourceVersion)"
     },
-    "SymbolsStatusMail": {
-      "value": "dagood;mawilkie"
+    "PB_MsdlSymbolServerPath": {
+      "value": "https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection"
     },
-    "SymbolsUserName": {
-      "value": "dlab"
+    "PB_MsdlSymbolServerPAT": {
+      "value": null,
+      "isSecret": true
     },
-    "SymbolsRelease": {
-      "value": "rtm"
+    "PB_SymwebSymbolServerPath": {
+      "value": "https://microsoft.artifacts.visualstudio.com/DefaultCollection"
     },
-    "SymbolsProductGroup": {
-      "value": "Visual_Studio"
+    "PB_SymwebSymbolServerPAT": {
+      "value": null,
+      "isSecret": true
     },
-    "SymbolsProductName": {
-      "value": "dotnetcore"
+    "PB_SymbolExpirationInDays": {
+      "value": "30"
     },
-    "SymbolPublishDestinationDir": {
-      "value": "$(PB_DotNetCoreShareDir)\\$(PB_VstsRepositoryName)\\$(Label)\\"
-    }
   },
   "retentionRules": [
     {
