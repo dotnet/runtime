@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
+  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
   <UsingTask TaskName="CreateAzureContainer" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
@@ -131,6 +132,22 @@
                     ContainerName="$(ContainerName)"
                     Items="@(ItemsToPush)"
                     Overwrite="$(OverwriteOnPublish)" />
+  </Target>
+
+  <Target Name="PublishAllSymbols" 
+          DependsOnTargets="SetupPublishSymbols;PublishSymbols" />
+
+  <Target Name="SetupPublishSymbols">
+    <PropertyGroup>
+      <ConvertPortablePdbsToWindowsPdbs Condition="'$(ConvertPortablePdbsToWindowsPdbs)'==''">true</ConvertPortablePdbsToWindowsPdbs>
+      <SymbolVerboseLogging>true</SymbolVerboseLogging>
+    </PropertyGroup>
+    <ItemGroup>
+      <SymbolPackagesToPublish Include="$(SymbolsPackagesPattern)" />
+    </ItemGroup>
+    <Error Condition="'$(SymbolServerPath)'==''" Text="Missing property SymbolServerPath" />
+    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
+    <Message Importance="High" Text="Publishing @(SymbolPackagesToPublish) to $(SymbolServerPath)"/>
   </Target>
 
   <Target Name="Build" DependsOnTargets="PublishPackages;PublishSymbolPackages;PublishTestNativeBinaries"/>
