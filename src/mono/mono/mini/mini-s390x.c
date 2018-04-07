@@ -440,7 +440,7 @@ static void enter_method (MonoMethod *, RegParm *, char *);
 static void leave_method (MonoMethod *, ...);
 static inline void add_general (guint *, size_data *, ArgInfo *);
 static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
-static inline void add_float (guint *, size_data *, ArgInfo *);
+static inline void add_float (guint *, size_data *, ArgInfo *, gboolean);
 static CallInfo * get_call_info (MonoMemPool *, MonoMethodSignature *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 static __inline__ void emit_unwind_regs(MonoCompile *, guint8 *, int, int, long);
@@ -1083,6 +1083,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 				decodeParm(sig->params[i], &(rParm->gr[ainfo->reg-2]), ainfo->size);
 				break;
 			case RegTypeFP :
+			case RegTypeFPR4 :
 				decodeParm(sig->params[i], &(rParm->fp[ainfo->reg]), ainfo->size);
 				break;
 			case RegTypeBase :
@@ -1643,10 +1644,13 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 /*------------------------------------------------------------------*/
 
 static void inline
-add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
+add_float (guint *fr,  size_data *sz, ArgInfo *ainfo, gboolean isDouble)
 {
 	if ((*fr) <= S390_LAST_FPARG_REG) {
-		ainfo->regtype = RegTypeFP;
+		if (isDouble)
+			ainfo->regtype = RegTypeFP;
+		else
+			ainfo->regtype = RegTypeFPR4;
 		ainfo->reg     = *fr;
 		sz->code_size += 4;
 		(*fr) += 2;
@@ -1654,11 +1658,11 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo)
 	else {
 		ainfo->offset   = sz->stack_size;
 		ainfo->reg      = STK_BASE;
-		ainfo->regtype  = RegTypeBase;
 		sz->code_size  += 4;
 		sz->stack_size += sizeof(double);
 		sz->local_size += sizeof(double);
 		sz->offStruct  += sizeof(double);
+		ainfo->regtype  = RegTypeBase;
 	}
 }
 
@@ -1886,12 +1890,12 @@ enum_retvalue:
 			break;
 		case MONO_TYPE_R4:
 			cinfo->args[nParm].size = sizeof(float);
-			add_float (&fr, sz, cinfo->args+nParm);
+			add_float (&fr, sz, cinfo->args+nParm, FALSE);
 			nParm++;
 			break;
 		case MONO_TYPE_R8:
 			cinfo->args[nParm].size = sizeof(double);
-			add_float (&fr, sz, cinfo->args+nParm);
+			add_float (&fr, sz, cinfo->args+nParm, TRUE);
 			nParm++;
 			break;
 		case MONO_TYPE_GENERICINST:
@@ -1918,7 +1922,7 @@ enum_retvalue:
 				    (info->num_fields  == 1) &&
 				    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
 					cinfo->args[nParm].size = sizeof(float);
-					add_float(&fr, sz, cinfo->args+nParm);
+					add_float(&fr, sz, cinfo->args+nParm, FALSE);
 					nParm ++;
 					break;
 				}
@@ -1927,7 +1931,7 @@ enum_retvalue:
 				    (info->num_fields  == 1) &&
 				    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
 					cinfo->args[nParm].size = sizeof(double);
-					add_float(&fr, sz, cinfo->args+nParm);
+					add_float(&fr, sz, cinfo->args+nParm, TRUE);
 					nParm ++;
 					break;
 				}
@@ -2461,23 +2465,22 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 
 		switch (ainfo->regtype) {
-		case RegTypeGeneral:
+		case RegTypeGeneral :
 			add_outarg_reg2 (cfg, call, ainfo->regtype, ainfo->reg, in);
 			break;
-		case RegTypeFP:
+		case RegTypeFP :
+		case RegTypeFPR4 :
 			if (MONO_TYPE_ISSTRUCT (t)) {
 				/* Valuetype passed in one fp register */
 				ainfo->regtype = RegTypeStructByValInFP;
 				/* Fall through */
 			} else {
-				if (ainfo->size == 4)
-					ainfo->regtype = RegTypeFPR4;
 				add_outarg_reg2 (cfg, call, ainfo->regtype, ainfo->reg, in);
 				break;
 			}
-		case RegTypeStructByVal:
-		case RegTypeStructByAddr:
-		case RegTypeStructByAddrOnStack: {
+		case RegTypeStructByVal :
+		case RegTypeStructByAddr :
+		case RegTypeStructByAddrOnStack : {
 			guint32 align;
 			guint32 size;
 
@@ -2538,7 +2541,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			break;
 		}
-		case RegTypeBase:
+		case RegTypeBase :
 			if (!t->byref && t->type == MONO_TYPE_R4) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, 
 							     STK_BASE, ainfo->offset + 4,
@@ -2681,7 +2684,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p,
 	    	fpOffset,
 		baseReg;
 
-	parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
+	parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE - cfg->arch.fpSize;
 	if (cfg->method->save_lmf)
 		parmOffset -= sizeof(MonoLMF);
 	fpOffset   = parmOffset + (5*sizeof(gpointer));
@@ -2738,7 +2741,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 		code = cfg->native_code + offset;
 	}
 
-	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE;
+	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE - cfg->arch.fpSize;
 	if (method->save_lmf)
 		saveOffset -= sizeof(MonoLMF);
 
@@ -3055,12 +3058,12 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		}
 	} else {
 		short *o[1];
-		S390_SET    (code, s390_r13, 0x41e0000000000000llu);
+		S390_SET    (code, s390_r13, 0x4f000000u);
 		s390_ldgr   (code, s390_f14, s390_r13);
 		s390_ler    (code, s390_f15, sreg);
 		s390_cebr   (code, s390_f15, s390_f14);
 		s390_jl     (code, 0); CODEPTR (code, o[0]);
-		S390_SET    (code, s390_r13, 0x41f0000000000000llu);
+		S390_SET    (code, s390_r13, 0x4f800000u);
 		s390_ldgr   (code, s390_f14, s390_r13);
 		s390_sebr   (code, s390_f15, s390_f14);
 		s390_cfebr  (code, dreg, 7, s390_f15);
@@ -4234,14 +4237,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_MOVE_I4_TO_F: 
 			s390_slag (code, s390_r0, ins->sreg1, 0, 32);
 			s390_ldgr (code, ins->dreg, s390_r0);
-			s390_ldebr (code, ins->dreg, ins->dreg);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_FCONV_TO_R4:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
-			s390_ldebr (code, ins->dreg, ins->dreg);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_S390_SETF4RET:
-			s390_ledbr (code, ins->dreg, ins->sreg1);
+			if (!cfg->r4fp)
+				s390_ledbr (code, ins->dreg, ins->sreg1);
 			break;
                 case OP_TLS_GET: {
 			if (s390_is_imm16 (ins->inst_offset)) {
@@ -4271,7 +4277,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_stg (code, ins->sreg1, s390_r13, s390_r1, 0);
 			}
 			break;
-		case OP_TAILCALL : {
+		case OP_TAILCALL :
+		case OP_TAILCALL_MEMBASE : {
 			MonoCallInst *call = (MonoCallInst *) ins;
 			MonoMethod *method = call->method;
 			MonoMethodSignature *sig = mono_method_signature(method);
@@ -4309,10 +4316,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			s390_lg  (code, s390_r14, 0, STK_BASE, S390_RET_ADDR_OFFSET);
-			mono_add_patch_info (cfg, code - cfg->native_code, 
-					     MONO_PATCH_INFO_METHOD_JUMP, 
-					     call->method);
-			s390_jcl (code, S390_CC_UN, 0);
+			if (ins->opcode == OP_TAILCALL_MEMBASE) {
+				if (mono_hwcap_s390x_has_mie2) {
+					s390_bi (code, 0, ins->sreg1, ins->inst_offset);
+				} else {
+					s390_lg (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
+					s390_br (code, s390_r1);
+				}
+			} else {
+				mono_add_patch_info (cfg, code - cfg->native_code, 
+						     MONO_PATCH_INFO_METHOD_JUMP, 
+						     call->method);
+				s390_jcl (code, S390_CC_UN, 0);
+			}
 
 			if (mono_jit_trace_calls != NULL && mono_trace_eval(cfg->method)) 
 				indent_level--;
@@ -4352,7 +4368,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						     MONO_PATCH_INFO_ABS, 
 						     call->fptr);
 			S390_CALL_TEMPLATE (code, s390_r14);
-			if (call->signature->ret->type == MONO_TYPE_R4)
+			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
 		}
 			break;
@@ -4378,7 +4394,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 			s390_lgr  (code, s390_r1, ins->sreg1);
 			s390_basr (code, s390_r14, s390_r1);
-			if (call->signature->ret->type == MONO_TYPE_R4)
+			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
 		}
 			break;
@@ -4396,7 +4412,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
 			s390_basr (code, s390_r14, s390_r1);
-			if (call->signature->ret->type == MONO_TYPE_R4)
+			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
 		}
 			break;
@@ -4790,10 +4806,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_R4CONST: {
 			if (*((float *) ins->inst_p0) == 0) {
-				s390_lzdr (code, ins->dreg);
+				if (cfg->r4fp)
+					s390_lzer (code, ins->dreg);
+				else
+					s390_lzdr (code, ins->dreg);
 			} else {
 				S390_SET  (code, s390_r13, ins->inst_p0);
-				s390_ldeb (code, ins->dreg, 0, s390_r13, 0);
+				if (cfg->r4fp) {
+					S390_LONG (code, ley, le, ins->dreg, 0, s390_r13, 0);
+				} else {
+					s390_ldeb (code, ins->dreg, 0, s390_r13, 0);
+				}
 			}
 		}
 			break;
@@ -4808,15 +4831,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_STORER4_MEMBASE_REG: {
-			s390_ledbr (code, s390_f15, ins->sreg1);
-			S390_LONG (code, stey, ste, s390_f15, 0, 
-				   ins->inst_destbasereg, ins->inst_offset);
+			if (cfg->r4fp) {
+				S390_LONG (code, stey, ste, ins->sreg1, 0, 
+					   ins->inst_destbasereg, ins->inst_offset);
+			} else {
+				s390_ledbr (code, s390_f15, ins->sreg1);
+				S390_LONG (code, stey, ste, s390_f15, 0, 
+					   ins->inst_destbasereg, ins->inst_offset);
+			}
 		}
 			break;
 		case OP_LOADR4_MEMBASE: {
-			S390_LONG (code, ley, le, s390_f15, 0, 
-				   ins->inst_basereg, ins->inst_offset);
-			s390_ldebr (code, ins->dreg, s390_f15);
+			if (cfg->r4fp) {
+				S390_LONG (code, ley, le, ins->dreg, 0, 
+					   ins->inst_basereg, ins->inst_offset);
+			} else {
+				S390_LONG (code, ley, le, s390_f15, 0, 
+					   ins->inst_basereg, ins->inst_offset);
+				s390_ldebr (code, ins->dreg, s390_f15);
+			}
 		}
 			break;
 		case OP_ICONV_TO_R_UN: {
@@ -4849,7 +4882,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCONV_TO_R4:
 		case OP_ICONV_TO_R4: {
 			s390_cegbr (code, ins->dreg, ins->sreg1);
-			s390_ldebr (code, ins->dreg, ins->dreg);
+			if (!cfg->r4fp)
+				s390_ldebr (code, ins->dreg, ins->dreg);
 		}
 			break;
 		case OP_LCONV_TO_R8:
@@ -6124,12 +6158,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int tracing = 0,
             argsClobbered = 0,
 	    lmfOffset,
-	    fpOffset = 0;
+	    fpOffset = 0,
+	    traceSize = 0;
 
 	cfg->code_size   = 512;
 
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		tracing         = 1;
+		tracing   = 1;
+		traceSize = S390_TRACE_STACK_SIZE;
 		cfg->code_size += 256;
 	}
 
@@ -6150,7 +6186,16 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		cfg->used_int_regs |= 1 << s390_r11;
 	}
 
-	alloc_size = cfg->stack_offset + fpOffset;
+	if ((cfg->arch.used_fp_regs & S390_FP_SAVE_MASK) != 0) {
+		for (int i=8; i<16; i++) {
+			if (cfg->arch.used_fp_regs & (1 << i)) 
+				fpOffset += sizeof(double);
+		}
+		fpOffset = S390_ALIGN(fpOffset, 16);
+	}
+	cfg->arch.fpSize = fpOffset;
+
+	alloc_size = cfg->stack_offset + fpOffset + traceSize;
 
 	cfg->stack_usage = cfa_offset = alloc_size;
 	s390_lgr  (code, s390_r11, STK_BASE);
@@ -6167,18 +6212,22 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		s390_agfi (code, STK_BASE, -stackSize);
 	}
 	s390_stg  (code, s390_r11, 0, STK_BASE, 0);
-	if (cfg->arch.used_fp_regs != 0) {
+
+	if (fpOffset > 0) {
+		int stkOffset = 0;
+
+		s390_lgr (code, s390_r1, s390_r11);
+		s390_aghi (code, s390_r1, -fpOffset);
 		for (int i=8; i<16; i++) {
 			if (cfg->arch.used_fp_regs & (1 << i)) {
-				fpOffset += sizeof(double);
-				emit_unwind_regs(cfg, code, 16+i, 16+i, fpOffset);
-				s390_std (code, i, 0, STK_BASE, fpOffset);
+				emit_unwind_regs(cfg, code, 16+i, 16+i, stkOffset+fpOffset); 
+				s390_std (code, i, 0, s390_r1, stkOffset);
+				stkOffset += sizeof(double);
 			}
 		}
-		s390_aghi (code, STK_BASE, -fpOffset);
-		cfg->arch.fpSize = fpOffset;
 	}
-	mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size+fpOffset);
+
+	mono_emit_unwind_op_def_cfa_offset (cfg, code, alloc_size);
 
 	if (cfg->frame_reg != STK_BASE)
 		s390_lgr (code, s390_r11, STK_BASE);
@@ -6232,14 +6281,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				s390_lgr (code, inst->dreg, ainfo->reg);
 			else if (ainfo->regtype == RegTypeFP) {
 				if (inst->dreg != ainfo->reg) {
-					if (ainfo->size == 4) {
-						s390_ledbr (code, inst->dreg, ainfo->reg);
-					} else {
-						s390_ldr   (code, inst->dreg, ainfo->reg);
-					}
+					s390_ldr   (code, inst->dreg, ainfo->reg);
 				}
-			}
-			else if (ainfo->regtype == RegTypeBase) {
+			} else if (ainfo->regtype == RegTypeFPR4) {
+					if (!cfg->r4fp) 
+						s390_ledbr (code, inst->dreg, ainfo->reg);
+			} else if (ainfo->regtype == RegTypeBase) {
 				s390_lgr  (code, s390_r13, STK_BASE);
 				s390_aghi (code, s390_r13, alloc_size);
 				s390_lg   (code, inst->dreg, 0, s390_r13, ainfo->offset);
@@ -6269,12 +6316,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 			} else if (ainfo->regtype == RegTypeBase) {
 			} else if (ainfo->regtype == RegTypeFP) {
-				if (ainfo->size == 8)
-					s390_std (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
-				else if (ainfo->size == 4)
-					s390_ste (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
-				else
-					g_assert_not_reached ();
+				s390_std (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+			} else if (ainfo->regtype == RegTypeFPR4) {
+				s390_ste (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 				int reg;
@@ -6549,18 +6593,17 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (method->save_lmf) 
 		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
-	if (cfg->arch.used_fp_regs != 0) {
-		s390_aghi (code, STK_BASE, cfg->arch.fpSize);
-		fpOffset = sizeof(double);
+	code = backUpStackPtr(cfg, code);
+
+	if (cfg->arch.fpSize != 0) {
+		fpOffset = -cfg->arch.fpSize;
 		for (int i=8; i<16; i++) {
 			if (cfg->arch.used_fp_regs & (1 << i)) {
-				s390_ld (code, i, 0, STK_BASE, fpOffset);
+				s390_ldy (code, i, 0, STK_BASE, fpOffset);
 				fpOffset += sizeof(double);
 			}
 		}
 	}
-
-	code = backUpStackPtr(cfg, code);
 
 	s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	s390_br  (code, s390_r14);
@@ -7535,24 +7578,15 @@ mono_arch_tail_call_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig
 {
 	CallInfo *c1, *c2;
 	gboolean res;
-	int i;
+	MonoType *callee_ret;
 
 	c1 = get_call_info (NULL, caller_sig);
 	c2 = get_call_info (NULL, callee_sig);
 	res = c1->stack_usage >= c2->stack_usage;
-	if (callee_sig->ret && MONO_TYPE_ISSTRUCT (callee_sig->ret))
+	callee_ret = mini_get_underlying_type (callee_sig->ret);
+	if (callee_ret && MONO_TYPE_ISSTRUCT (callee_ret) && c2->struct_ret && c2->ret.size > 8)
 		/* An address on the callee's stack is passed as the first argument */
 		res = FALSE;
-	for (i = 0; i < c2->nargs && res != FALSE; ++i) {
-		if (c2->args [i].regtype == RegTypeStructByAddr)
-			/* An address on the callee's stack is passed as the argument */
-			res = FALSE;
-	}
-
-	/*
-	if (!mono_debug_count ())
-		res = FALSE;
-	*/
 
 	g_free (c1);
 	g_free (c2);

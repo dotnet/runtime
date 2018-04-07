@@ -73,6 +73,8 @@ typedef struct
 #define S390_FIRST_FPARG_REG 		s390_f0
 #define S390_LAST_FPARG_REG 		s390_f6
 
+#define S390_FP_SAVE_MASK		0xf0
+
 /*===============================================*/
 /* Definitions used by mini-codegen.c            */
 /*===============================================*/
