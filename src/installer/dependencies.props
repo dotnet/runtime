@@ -50,7 +50,7 @@
   <!-- Publish symbol build task package -->
   <PropertyGroup>
     <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
-    <PublishSymbolsPackageVersion>1.0.0-beta-62715-04</PublishSymbolsPackageVersion>
+    <PublishSymbolsPackageVersion>1.0.0-beta-62806-01</PublishSymbolsPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
