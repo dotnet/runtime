@@ -17,8 +17,21 @@ MONO_BEGIN_DECLS
  * This value will be incremented whenever breaking changes to the profiler API
  * are made. This macro is intended for use in profiler modules that wish to
  * support older versions of the profiler API.
+ *
+ * Version 2:
+ * - Major overhaul of the profiler API.
+ * Version 3:
+ * - Added mono_profiler_enable_clauses (). This must now be called to enable
+ *   raising exception_clause events.
+ * - The exception argument to exception_clause events can now be NULL for
+ *   finally clauses invoked in the non-exceptional case.
+ * - The type argument to exception_clause events will now correctly indicate
+ *   that the catch portion of the clause is being executed in the case of
+ *   try-filter-catch clauses.
+ * - Removed the iomap_report event.
+ * - Removed the old gc_event event and renamed gc_event2 to gc_event.
  */
-#define MONO_PROFILER_API_VERSION 2
+#define MONO_PROFILER_API_VERSION 3
 
 typedef struct _MonoProfiler MonoProfiler;
 typedef struct _MonoProfilerDesc *MonoProfilerHandle;
@@ -68,6 +81,7 @@ MONO_API mono_bool mono_profiler_set_sample_mode (MonoProfilerHandle handle, Mon
 MONO_API mono_bool mono_profiler_get_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode *mode, uint32_t *freq);
 
 MONO_API mono_bool mono_profiler_enable_allocations (void);
+MONO_API mono_bool mono_profiler_enable_clauses (void);
 
 typedef struct _MonoProfilerCallContext MonoProfilerCallContext;
 

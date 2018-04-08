@@ -711,7 +711,11 @@ mono_find_leave_clauses (MonoCompile *cfg, unsigned char *ip, unsigned char *tar
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, (ip - header->code)) && 
 		    (!MONO_OFFSET_IN_CLAUSE (clause, (target - header->code)))) {
-			res = g_list_append_mempool (cfg->mempool, res, clause);
+			MonoLeaveClause *leave = mono_mempool_alloc0 (cfg->mempool, sizeof (MonoLeaveClause));
+			leave->index = i;
+			leave->clause = clause;
+
+			res = g_list_append_mempool (cfg->mempool, res, leave);
 		}
 	}
 	return res;
@@ -11628,11 +11632,20 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * we already exited.
 				 */
 				for (tmp = handlers; tmp; tmp = tmp->next) {
-					MonoExceptionClause *clause = (MonoExceptionClause *)tmp->data;
+					MonoLeaveClause *leave = (MonoLeaveClause *) tmp->data;
+					MonoExceptionClause *clause = leave->clause;
+
 					if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 						continue;
+
 					MonoInst *abort_exc = (MonoInst *)mono_find_exvar_for_offset (cfg, clause->handler_offset);
 					MonoBasicBlock *dont_throw;
+
+					/*
+					 * Emit instrumentation code before linking the basic blocks below as this
+					 * will alter cfg->cbb.
+					 */
+					mini_profiler_emit_call_finally (cfg, header, ip, leave->index, clause);
 
 					tblock = cfg->cil_offset_to_bb [clause->handler_offset];
 					g_assert (tblock);

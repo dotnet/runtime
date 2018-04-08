@@ -2939,8 +2939,7 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 
 	MONO_GC_BEGIN (generation);
 
-	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_START, generation));
-	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_START, generation, generation == GENERATION_OLD && sgen_concurrent_collection_in_progress));
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_START, generation, generation == GENERATION_OLD && sgen_concurrent_collection_in_progress));
 
 	if (!pseudo_roots_registered) {
 		pseudo_roots_registered = TRUE;
@@ -2962,8 +2961,7 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 {
 	MONO_GC_END (generation);
 
-	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation));
-	MONO_PROFILER_RAISE (gc_event2, (MONO_GC_EVENT_END, generation, generation == GENERATION_OLD && sgen_concurrent_collection_in_progress));
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation, generation == GENERATION_OLD && sgen_concurrent_collection_in_progress));
 }
 
 #ifdef HOST_WASM

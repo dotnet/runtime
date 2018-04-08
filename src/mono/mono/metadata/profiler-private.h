@@ -60,6 +60,8 @@ typedef struct {
 
 	gboolean allocations;
 
+	gboolean clauses;
+
 	gboolean call_contexts;
 	void (*context_enable) (void);
 	gpointer (*context_get_this) (MonoProfilerCallContext *);
@@ -142,6 +144,12 @@ static inline gboolean
 mono_profiler_allocations_enabled (void)
 {
 	return mono_profiler_state.allocations;
+}
+
+static inline gboolean
+mono_profiler_clauses_enabled (void)
+{
+	return mono_profiler_state.clauses;
 }
 
 #define _MONO_PROFILER_EVENT(name, ...) \

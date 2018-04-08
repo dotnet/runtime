@@ -2242,7 +2242,7 @@ mono_codegen (MonoCompile *cfg)
 		if (bb->clause_holes) {
 			GList *tmp;
 			for (tmp = bb->clause_holes; tmp; tmp = tmp->prev)
-				mono_cfg_add_try_hole (cfg, (MonoExceptionClause *)tmp->data, cfg->native_code + bb->native_offset, bb);
+				mono_cfg_add_try_hole (cfg, ((MonoLeaveClause *) tmp->data)->clause, cfg->native_code + bb->native_offset, bb);
 		}
 	}
 

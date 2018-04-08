@@ -2292,16 +2292,16 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 	case FRAME_TYPE_DEBUGGER_INVOKE:
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
 	case FRAME_TYPE_TRAMPOLINE:
+	case FRAME_TYPE_INTERP_TO_MANAGED:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
+	case FRAME_TYPE_INTERP:
 		if (!frame->ji)
 			return FALSE;
-		if (frame->ji->async) {
-			return d->func (NULL, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
-		} else {
-			return d->func (frame->actual_method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
-		}
-		break;
+
+		MonoMethod *method = frame->ji->async ? NULL : frame->actual_method;
+
+		return d->func (method, frame->domain, frame->ji->code_start, frame->native_offset, d->user_data);
 	default:
 		g_assert_not_reached ();
 		return FALSE;

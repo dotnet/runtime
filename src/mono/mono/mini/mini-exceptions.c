@@ -1817,6 +1817,13 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					}
 
 					mono_debugger_agent_begin_exception_filter (mono_ex, ctx, &initial_ctx);
+
+					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
+						jit_tls->orig_ex_ctx_set = TRUE;
+						MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
+						jit_tls->orig_ex_ctx_set = FALSE;
+					}
+
 					if (ji->is_interp) {
 						filtered = mini_get_interp_callbacks ()->run_filter (&frame, (MonoException*)ex_obj, i, ei->data.filter);
 					} else {
@@ -2227,9 +2234,20 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: catch found at clause %d of %s\n", i, mono_method_full_name (method, TRUE));
-					jit_tls->orig_ex_ctx_set = TRUE;
-					MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
-					jit_tls->orig_ex_ctx_set = FALSE;
+
+					/*
+					 * At this point, ei->flags can be either MONO_EXCEPTION_CLAUSE_NONE for a
+					 * a try-catch clause or MONO_EXCEPTION_CLAUSE_FILTER for a try-filter-catch
+					 * clause. Since we specifically want to indicate that we're executing the
+					 * catch portion of this EH clause, pass MONO_EXCEPTION_CLAUSE_NONE explicitly
+					 * instead of ei->flags.
+					 */
+					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
+						jit_tls->orig_ex_ctx_set = TRUE;
+						MONO_PROFILER_RAISE (exception_clause, (method, i, MONO_EXCEPTION_CLAUSE_NONE, ex_obj));
+						jit_tls->orig_ex_ctx_set = FALSE;
+					}
+
 					mini_set_abort_threshold (&frame);
 
 					if (in_interp) {
@@ -2263,16 +2281,23 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FAULT) {
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: fault clause %d of %s\n", i, mono_method_full_name (method, TRUE));
-					jit_tls->orig_ex_ctx_set = TRUE;
-					MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
-					jit_tls->orig_ex_ctx_set = FALSE;
+
+					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
+						jit_tls->orig_ex_ctx_set = TRUE;
+						MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
+						jit_tls->orig_ex_ctx_set = FALSE;
+					}
 				}
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY) {
 					if (mono_trace_is_enabled () && mono_trace_eval (method))
 						g_print ("EXCEPTION: finally clause %d of %s\n", i, mono_method_full_name (method, TRUE));
-					jit_tls->orig_ex_ctx_set = TRUE;
-					MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
-					jit_tls->orig_ex_ctx_set = FALSE;
+
+					if (G_UNLIKELY (mono_profiler_clauses_enabled ())) {
+						jit_tls->orig_ex_ctx_set = TRUE;
+						MONO_PROFILER_RAISE (exception_clause, (method, i, ei->flags, ex_obj));
+						jit_tls->orig_ex_ctx_set = FALSE;
+					}
+
 #ifndef DISABLE_PERFCOUNTERS
 					mono_atomic_inc_i32 (&mono_perfcounters->exceptions_finallys);
 #endif

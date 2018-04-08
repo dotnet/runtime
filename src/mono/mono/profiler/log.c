@@ -4135,7 +4135,7 @@ mono_profiler_init_log (const char *desc)
 	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 
-	mono_profiler_set_gc_event2_callback (handle, gc_event);
+	mono_profiler_set_gc_event_callback (handle, gc_event);
 
 	mono_profiler_set_thread_started_callback (handle, thread_start);
 	mono_profiler_set_thread_exited_callback (handle, thread_end);
@@ -4211,6 +4211,7 @@ mono_profiler_init_log (const char *desc)
 	}
 
 	mono_profiler_enable_allocations ();
+	mono_profiler_enable_clauses ();
 	mono_profiler_enable_sampling (handle);
 
 	/*

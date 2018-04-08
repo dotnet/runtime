@@ -64,3 +64,4 @@ PATCH_INFO(SET_TLS_TRAMP, "set_tls_tramp")
  */
 PATCH_INFO(JIT_ICALL_ADDR_NOCALL, "jit_icall_addr_nocall")
 PATCH_INFO(PROFILER_ALLOCATION_COUNT, "profiler_allocation_count")
+PATCH_INFO(PROFILER_CLAUSE_COUNT, "profiler_clause_count")

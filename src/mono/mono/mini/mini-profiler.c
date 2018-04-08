@@ -105,6 +105,60 @@ mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 	mono_emit_jit_icall (cfg, mono_profiler_raise_method_tail_call, iargs);
 }
 
+void
+mini_profiler_emit_call_finally (MonoCompile *cfg, MonoMethodHeader *header, unsigned char *ip,
+                                 guint32 index, MonoExceptionClause *clause)
+{
+	if (!G_UNLIKELY (mono_profiler_clauses_enabled ()))
+		return;
+
+	MonoBasicBlock *ebb;
+
+	NEW_BBLOCK (cfg, ebb);
+
+	MonoInst *ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT, NULL);
+	MonoInst *count_ins = mini_emit_memory_load (cfg, m_class_get_byval_arg (mono_defaults.uint32_class), ins, 0, 0);
+	EMIT_NEW_BIALU_IMM (cfg, ins, OP_ICOMPARE_IMM, -1, count_ins->dreg, 0);
+	ins->flags |= MONO_INST_LIKELY;
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBEQ, ebb);
+
+	MonoInst *iargs [4];
+
+	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->current_method);
+	EMIT_NEW_ICONST (cfg, iargs [1], index);
+	EMIT_NEW_ICONST (cfg, iargs [2], clause->flags);
+
+	MonoExceptionClause *cclause = NULL;
+
+	// Are we leaving a catch clause?
+	for (guint32 i = 0; i < header->num_clauses; i++) {
+		MonoExceptionClause *hclause = &header->clauses [i];
+		guint32 offset = ip - header->code;
+
+		if (hclause->flags != MONO_EXCEPTION_CLAUSE_NONE && hclause->flags != MONO_EXCEPTION_CLAUSE_FILTER)
+			continue;
+
+		if (!MONO_OFFSET_IN_HANDLER (hclause, offset))
+			continue;
+
+		if (offset + (*ip == CEE_LEAVE ? 5 : 2) <= hclause->handler_offset + hclause->handler_len) {
+			cclause = hclause;
+			break;
+		}
+	}
+
+	// If so, find the exception object and pass it along.
+	if (cclause)
+		EMIT_NEW_TEMPLOAD (cfg, iargs [3], mono_find_exvar_for_offset (cfg, cclause->handler_offset)->inst_c0);
+	else
+		EMIT_NEW_PCONST (cfg, iargs [3], NULL);
+
+	/* void mono_profiler_raise_exception_clause (MonoMethod *method, uint32_t index, MonoExceptionEnum type, MonoObject *exception) */
+	mono_emit_jit_icall (cfg, mono_profiler_raise_exception_clause, iargs);
+
+	MONO_START_BB (cfg, ebb);
+}
+
 #endif
 
 void

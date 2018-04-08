@@ -165,6 +165,11 @@ typedef struct {
 	int dummy;
 } MonoDynCallInfo;
 
+typedef struct {
+	guint32 index;
+	MonoExceptionClause *clause;
+} MonoLeaveClause;
+
 /*
  * Information about a stack frame.
  * FIXME This typedef exists only to avoid tons of code rewriting
@@ -1863,6 +1868,7 @@ void        mini_add_profiler_argument (const char *desc);
 void        mini_profiler_emit_enter (MonoCompile *cfg);
 void        mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret);
 void        mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target);
+void        mini_profiler_emit_call_finally (MonoCompile *cfg, MonoMethodHeader *header, unsigned char *ip, guint32 index, MonoExceptionClause *clause);
 void        mini_profiler_context_enable (void);
 gpointer    mini_profiler_context_get_this (MonoProfilerCallContext *ctx);
 gpointer    mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos);
