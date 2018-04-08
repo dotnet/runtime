@@ -531,7 +531,12 @@ mono_decompose_opcode (MonoCompile *cfg, MonoInst *ins)
 			emulate = TRUE;
 		}
 		break;
-
+	case OP_ICONV_TO_R_UN:
+#ifdef MONO_ARCH_EMULATE_CONV_R8_UN
+		if (!COMPILE_LLVM (cfg))
+			emulate = TRUE;
+#endif
+		break;
 	default:
 		emulate = TRUE;
 		break;
