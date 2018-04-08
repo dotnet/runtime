@@ -72,12 +72,6 @@
       <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
         <ReplacementString>$(SharedHostBrandName)</ReplacementString>
       </SharedHostTokenValue>
-      <SharedHostTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
-        <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
-      </SharedHostTokenValue>
-      <SharedHostTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(RuntimeDepsRpmVersion)</ReplacementString> 
-      </SharedHostTokenValue>
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -239,6 +233,12 @@
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%HOSTFXR_NUGET_VERSION%">
         <ReplacementString>$(HostResolverVersion)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(RuntimeDependenciesRpmPkgName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(RuntimeDepsRpmVersion)</ReplacementString> 
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_RPM_PACKAGE_NAME%">
         <ReplacementString>$(SharedFxRpmPkgName)</ReplacementString>

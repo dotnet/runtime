@@ -29,9 +29,9 @@
     },
 
     "debian_dependencies":{
-        "%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%" : {
-            "package_version": "%RUNTIME_DEPS_VERSION%"
-        } 
+        "libc6":{},
+        "libgcc1":{},
+        "libstdc++6":{}
      },
 
     "package_conflicts" : [

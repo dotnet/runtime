@@ -96,12 +96,6 @@
       <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
         <ReplacementString>$(SharedHostBrandName)</ReplacementString>
       </SharedHostTokenValue>
-     <SharedHostTokenValue Include="%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%">
-        <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
-      </SharedHostTokenValue>
-      <SharedHostTokenValue Include="%RUNTIME_DEPS_VERSION%">
-        <ReplacementString>$(RuntimeDepsDebVersion)</ReplacementString>
-      </SharedHostTokenValue>
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
@@ -260,6 +254,12 @@
       </SharedFrameworkTokenValue>
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
         <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%">
+        <ReplacementString>$(RuntimeDependenciesDebPkgName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(RuntimeDepsDebVersion)</ReplacementString>
       </SharedFrameworkTokenValue>
     </ItemGroup>
 
