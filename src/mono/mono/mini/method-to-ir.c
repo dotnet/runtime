@@ -5730,6 +5730,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins = mono_emit_jit_icall (cfg, mono_get_assembly_object, &assembly_ins);
 			return ins;
 		}
+
+		// While it is not required per
+		//  https://msdn.microsoft.com/en-us/library/system.reflection.assembly.getcallingassembly(v=vs.110).aspx.
+		// have GetCallingAssembly be consistent independently of varying optimization.
+		// This fixes mono/tests/test-inline-call-stack.cs under FullAOT+LLVM.
+		cfg->no_inline |= COMPILE_LLVM (cfg) && strcmp (cmethod->name, "GetCallingAssembly") == 0;
+
 	} else if (in_corlib &&
 			   (strcmp (cmethod_klass_name_space, "System.Reflection") == 0) &&
 			   (strcmp (cmethod_klass_name, "MethodBase") == 0)) {
