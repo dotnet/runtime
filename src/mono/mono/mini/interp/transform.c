@@ -2897,6 +2897,13 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				goto_if_nok (error, exit);
 			}
 
+			if (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT) {
+				char* full_name = mono_type_get_full_name (klass);
+				mono_error_set_member_access (error, "Cannot create an abstract class: %s", full_name);
+				g_free (full_name);
+				goto_if_nok (error, exit);
+			}
+
 			td->sp -= csignature->param_count;
 			if (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass)) {
 				ADD_CODE (td, MINT_NEWOBJ_MAGIC);
