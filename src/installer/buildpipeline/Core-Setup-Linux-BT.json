@@ -256,6 +256,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime packages and Runtime Dep - Ubuntu 14.04 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 14.04 ",
       "timeoutInMinutes": 0,
       "task": {
@@ -285,6 +304,25 @@
       "inputs": {
         "filename": "docker",
         "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.16.04-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Ubuntu 16.04 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.16.04-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -332,6 +370,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Ubuntu 17.10 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.17.10-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Ubuntu 17.10",
       "timeoutInMinutes": 0,
       "task": {
@@ -361,6 +418,25 @@
       "inputs": {
         "filename": "docker",
         "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.18.04-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Ubuntu 18.04 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=ubuntu.18.04-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -408,6 +484,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Debian 8 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=debian.8-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Debian 8",
       "timeoutInMinutes": 0,
       "task": {
@@ -437,6 +532,25 @@
       "inputs": {
         "filename": "docker",
         "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=debian.9-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Debian 9 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepDebPackage) /p:OutputRid=debian.9-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -541,6 +655,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Rhel7 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildPackagingArguments) $(DistroSpecificMSBuildArguments) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Rhel7",
       "timeoutInMinutes": 0,
       "task": {
@@ -570,6 +703,25 @@
       "inputs": {
         "filename": "docker",
         "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - OpenSuse - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=opensuse.42-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -617,6 +769,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Fedora 26 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.26-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Fedora 26",
       "timeoutInMinutes": 0,
       "task": {
@@ -646,6 +817,25 @@
       "inputs": {
         "filename": "docker",
         "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.27-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Fedora 27 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=fedora.27-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -693,6 +883,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Centos 7 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=centos.7-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Centos 7",
       "timeoutInMinutes": 0,
       "task": {
@@ -731,6 +940,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Package Runtime Dep - Oracle Linux 7 - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=oraclelinux.7-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Publish Runtime Dep - Oracle Linux 7",
       "timeoutInMinutes": 0,
       "task": {
@@ -760,6 +988,25 @@
       "inputs": {
         "filename": "docker",
         "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=sles.12-$(PB_TargetArchitecture)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "environment": {},
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package Runtime Dep - SLES - Upgradeable",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "$(CommonDockerCommandToBuildRuntimeDepRPMPackage) /p:OutputRid=sles.12-$(PB_TargetArchitecture) /p:BuildUpgradeableLinuxPackages=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
