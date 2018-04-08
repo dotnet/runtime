@@ -33,7 +33,11 @@
   "rpm_dependencies": [{
       "package_name": "%HOSTFXR_RPM_PACKAGE_NAME%",
       "package_version": "%HOSTFXR_NUGET_VERSION%"
-    }],
+      },
+      {
+       "package_name": "%RUNTIME_DEPS_RPM_PACKAGE_NAME%",
+       "package_version": "%RUNTIME_DEPS_VERSION%"
+      }],
    
     "directories" : [
         "/usr/share/dotnet/shared",

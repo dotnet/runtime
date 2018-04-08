@@ -31,6 +31,9 @@
     "debian_dependencies":{
         "%HOSTFXR_DEBIAN_PACKAGE_NAME%" : {
            "package_version": "%HOSTFXR_NUGET_VERSION%"
-         }
+         },
+         "%RUNTIME_DEPS_DEBIAN_PACKAGE_NAME%" : {
+            "package_version": "%RUNTIME_DEPS_VERSION%"
+        } 
     }
 }

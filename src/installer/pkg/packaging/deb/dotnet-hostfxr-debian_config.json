@@ -31,6 +31,9 @@
     "debian_dependencies":{
         "dotnet-host" : {
             "package_version": "%SHARED_HOST_DEBIAN_VERSION%"
-        }
+        },
+        "libc6":{},
+        "libgcc1":{},
+        "libstdc++6":{}
     }
 }
