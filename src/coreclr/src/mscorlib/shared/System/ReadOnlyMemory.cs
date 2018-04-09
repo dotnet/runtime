@@ -187,6 +187,7 @@ namespace System
                 if (_index < 0)
                 {
                     Debug.Assert(_length >= 0);
+                    Debug.Assert(_object != null);
                     return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
                 }
                 else if (typeof(T) == typeof(char) && _object is string s)
@@ -241,6 +242,7 @@ namespace System
         {
             if (_index < 0)
             {
+                Debug.Assert(_object != null);
                 return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
             }
             else if (typeof(T) == typeof(char) && _object is string s)
