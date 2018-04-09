@@ -33,6 +33,7 @@ namespace GetStackTrace
         }
 
 		/* Test for gshared methods declared in a generic subclass of a nongeneric class */
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public static int test_0_nongeneric_subclass () {
 			return new D ().foo ();
 		}
