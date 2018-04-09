@@ -662,7 +662,7 @@ namespace System.Data.Tests.SqlTypes
         public void SqlDoubleToSqlString()
         {
             SqlDouble TestDouble = new SqlDouble(64E+64);
-            Assert.Equal("6.4E+65", ((SqlString)TestDouble).Value);
+            Assert.Equal(6.4E+65.ToString(), ((SqlString)TestDouble).Value);
         }
 
         [Fact]
@@ -728,14 +728,14 @@ namespace System.Data.Tests.SqlTypes
         public void SqlMoneyToSqlString()
         {
             SqlMoney TestMoney = new SqlMoney(646464.6464);
-            Assert.Equal("646464.6464", ((SqlString)TestMoney).Value);
+            Assert.Equal(646464.6464.ToString(), ((SqlString)TestMoney).Value);
         }
 
         [Fact]
         public void SqlSingleToSqlString()
         {
             SqlSingle TestSingle = new SqlSingle(3E+20);
-            Assert.Equal("3E+20", ((SqlString)TestSingle).Value);
+            Assert.Equal(3E+20.ToString(), ((SqlString)TestSingle).Value);
         }
 
         [Fact]
