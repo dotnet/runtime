@@ -114,11 +114,6 @@ namespace System.Net
                     _sslContext.Dispose();
                     _sslContext = null;
                 }
-
-                _toConnection = null;
-                _fromConnection = null;
-                _writeCallback = null;
-                _readCallback = null;
             }
 
             base.Dispose(disposing);
