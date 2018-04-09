@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks.Sources;
+using System.Threading.Tasks.Tests;
 using Microsoft.Xunit.Performance;
 using Xunit;
 
@@ -31,6 +33,23 @@ namespace System.Threading.Tasks
         public async Task Await_FromCompletedTask()
         {
             ValueTask<int> vt = new ValueTask<int>(Task.FromResult(42));
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (long i = 0; i < iters; i++)
+                    {
+                        await vt;
+                    }
+                }
+            }
+        }
+
+        [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
+        public async Task Await_FromCompletedValueTaskSource()
+        {
+            ValueTask<int> vt = new ValueTask<int>(ManualResetValueTaskSource.Completed<int>(42), 0);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 long iters = Benchmark.InnerIterationCount;
@@ -110,6 +129,40 @@ namespace System.Threading.Tasks
             }
         }
 
+        [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
+        public async Task CreateAndAwait_FromCompletedValueTaskSource()
+        {
+            IValueTaskSource<int> vts = ManualResetValueTaskSource.Completed(42);
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (long i = 0; i < iters; i++)
+                    {
+                        await new ValueTask<int>(vts, 0);
+                    }
+                }
+            }
+        }
+
+        [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
+        public async Task CreateAndAwait_FromCompletedValueTaskSource_ConfigureAwait()
+        {
+            IValueTaskSource<int> vts = ManualResetValueTaskSource.Completed(42);
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (long i = 0; i < iters; i++)
+                    {
+                        await new ValueTask<int>(vts, 0).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
         [Benchmark(InnerIterationCount = 1_000_000), MeasureGCAllocations]
         public async Task CreateAndAwait_FromYieldingAsyncMethod()
         {
@@ -166,6 +219,23 @@ namespace System.Threading.Tasks
         public void Copy_PassAsArgumentAndReturn_FromTask()
         {
             ValueTask<int> vt = new ValueTask<int>(Task.FromResult(42));
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                long iters = Benchmark.InnerIterationCount;
+                using (iteration.StartMeasurement())
+                {
+                    for (long i = 0; i < iters; i++)
+                    {
+                        vt = ReturnValueTask(vt);
+                    }
+                }
+            }
+        }
+
+        [Benchmark(InnerIterationCount = 10_000_000), MeasureGCAllocations]
+        public void Copy_PassAsArgumentAndReturn_FromValueTaskSource()
+        {
+            ValueTask<int> vt = new ValueTask<int>(ManualResetValueTaskSource.Completed(42), 0);
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
                 long iters = Benchmark.InnerIterationCount;
