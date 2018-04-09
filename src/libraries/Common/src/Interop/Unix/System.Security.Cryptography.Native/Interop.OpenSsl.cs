@@ -463,7 +463,7 @@ internal static partial class Interop
                     break;
 
                 case Ssl.SslErrorCode.SSL_ERROR_SSL:
-                    // OpenSSL failure occurred.  The error queue contains more details.
+                    // OpenSSL failure occurred.  The error queue contains more details, when building the exception the queue will be cleared.
                     innerError = Interop.Crypto.CreateOpenSslCryptographicException();
                     break;
 
