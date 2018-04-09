@@ -4637,7 +4637,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Int
 					g_free (wrapper_name);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 					MonoDelegate *del = frame->stack_args [0].data.p;
-					nm = mono_marshal_get_delegate_invoke (method, del);
+					if (del && del->method && del->method->flags & METHOD_ATTRIBUTE_STATIC)
+						nm = mono_marshal_get_delegate_invoke (method, del);
+					else
+						nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {

@@ -565,6 +565,7 @@ TESTS_CS_SRC=		\
 	bug-685908.cs	\
 	sgen-long-vtype.cs	\
 	delegate-invoke.cs	\
+	delegate-prop.cs	\
 	bug-696593.cs	\
 	bug-705140.cs	\
 	bug-1147.cs	\
