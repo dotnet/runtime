@@ -13,7 +13,7 @@ namespace System.Memory.Tests
     {
         public class Array : ReadOnlySequenceTestsChar
         {
-            public Array() : base(ReadOnlySequenceFactoryChar.ArrayFactory) { }
+            public Array() : base(ReadOnlySequenceFactory<char>.ArrayFactory) { }
         }
 
         public class String : ReadOnlySequenceTestsChar
@@ -23,22 +23,27 @@ namespace System.Memory.Tests
 
         public class Memory : ReadOnlySequenceTestsChar
         {
-            public Memory() : base(ReadOnlySequenceFactoryChar.MemoryFactory) { }
+            public Memory() : base(ReadOnlySequenceFactory<char>.MemoryFactory) { }
         }
 
         public class SingleSegment : ReadOnlySequenceTestsChar
         {
-            public SingleSegment() : base(ReadOnlySequenceFactoryChar.SingleSegmentFactory) { }
+            public SingleSegment() : base(ReadOnlySequenceFactory<char>.SingleSegmentFactory) { }
         }
 
         public class SegmentPerChar : ReadOnlySequenceTestsChar
         {
-            public SegmentPerChar() : base(ReadOnlySequenceFactoryChar.SegmentPerCharFactory) { }
+            public SegmentPerChar() : base(ReadOnlySequenceFactory<char>.SegmentPerItemFactory) { }
         }
 
-        internal ReadOnlySequenceFactoryChar Factory { get; }
+        public class SplitInThreeSegments : ReadOnlySequenceTestsChar
+        {
+            public SplitInThreeSegments() : base(ReadOnlySequenceFactory<char>.SplitInThree) { }
+        }
 
-        internal ReadOnlySequenceTestsChar(ReadOnlySequenceFactoryChar factory)
+        internal ReadOnlySequenceFactory<char> Factory { get; }
+
+        internal ReadOnlySequenceTestsChar(ReadOnlySequenceFactory<char> factory)
         {
             Factory = factory;
         }
@@ -74,8 +79,9 @@ namespace System.Memory.Tests
         [Fact]
         public void ToStringIsCorrect()
         {
-            ReadOnlySequence<char> buffer = Factory.CreateWithContent(Enumerable.Range(0, 255).Select(i => (char)i).ToArray());
-            Assert.Equal("System.Buffers.ReadOnlySequence<Char>[255]", buffer.ToString());
+            char[] array = Enumerable.Range(0, 255).Select(i => (char)i).ToArray();
+            ReadOnlySequence<char> buffer = Factory.CreateWithContent(array);
+            Assert.Equal(array, buffer.ToString());
         }
 
         [Theory]
@@ -252,7 +258,7 @@ namespace System.Memory.Tests
         [InlineData("/localhost:5000/PATH/PATH2/ HTTP/1.1", ' ', 27)]
         public void PositionOf_ReturnsPosition(string raw, char searchFor, int expectIndex)
         {
-            ReadOnlySequence<char> buffer = Factory.CreateWithContent(raw);
+            ReadOnlySequence<char> buffer = Factory.CreateWithContent(raw.ToCharArray());
             SequencePosition? result = buffer.PositionOf((char)searchFor);
 
             Assert.NotNull(result);

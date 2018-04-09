@@ -5,12 +5,17 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if !FEATURE_PORTABLE_SPAN
+using Internal.Runtime.CompilerServices;
+#endif // FEATURE_PORTABLE_SPAN
 
 namespace System.Buffers
 {
     /// <summary>
     /// Represents a sequence that can read a sequential series of <typeparam name="T" />.
     /// </summary>
+    [DebuggerTypeProxy(typeof(ReadOnlySequenceDebugView<>))]
+    [DebuggerDisplay("{ToString(),raw}")]
     public readonly partial struct ReadOnlySequence<T>
     {
         private readonly SequencePosition _sequenceStart;
@@ -23,7 +28,7 @@ namespace System.Buffers
         public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(SpanHelpers.PerTypeValues<T>.EmptyArray);
 #else
         public static readonly ReadOnlySequence<T> Empty = new ReadOnlySequence<T>(Array.Empty<T>());
-#endif // FEATURE_PORTABLE_SPAN 
+#endif // FEATURE_PORTABLE_SPAN
 
         /// <summary>
         /// Length of the <see cref="ReadOnlySequence{T}"/>.
@@ -276,7 +281,38 @@ namespace System.Buffers
         }
 
         /// <inheritdoc />
-        public override string ToString() => string.Format("System.Buffers.ReadOnlySequence<{0}>[{1}]", typeof(T).Name, Length);
+        public override string ToString()
+        {
+            if (typeof(T) == typeof(char))
+            {
+                ReadOnlySequence<T> localThis = this;
+                ReadOnlySequence<char> charSequence = Unsafe.As<ReadOnlySequence<T>, ReadOnlySequence<char>>(ref localThis);
+
+                if (SequenceMarshal.TryGetString(charSequence, out string text, out int start, out int length))
+                {
+                    return text.Substring(start, length);
+                }
+
+                if (Length < int.MaxValue)
+                {
+#if !FEATURE_PORTABLE_SPAN
+                    return string.Create((int)Length, charSequence, (span, sequence) =>
+                    {
+                        foreach (ReadOnlyMemory<char> readOnlyMemory in sequence)
+                        {
+                            ReadOnlySpan<char> sourceSpan = readOnlyMemory.Span;
+                            sourceSpan.CopyTo(span);
+                            span = span.Slice(sourceSpan.Length);
+                        }
+                    });
+#else
+                    return new string(charSequence.ToArray());
+#endif
+                }
+            }
+
+            return string.Format("System.Buffers.ReadOnlySequence<{0}>[{1}]", typeof(T).Name, Length);
+        }
 
         /// <summary>
         /// Returns an enumerator over the <see cref="ReadOnlySequence{T}"/>

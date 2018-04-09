@@ -33,6 +33,7 @@
     <Compile Include="System\Buffers\MemoryPool.cs" />
     <Compile Include="System\Buffers\OperationStatus.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence_helpers.cs" />
     <Compile Include="System\Buffers\Binary\Reader.cs" />
