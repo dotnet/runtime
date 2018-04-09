@@ -6393,7 +6393,7 @@ RelativePath=JIT\Methodical\Arrays\lcs\_dbglcs2\_dbglcs2.cmd
 WorkingDir=JIT\Methodical\Arrays\lcs\_dbglcs2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [_il_dbgrefloc_r8.cmd_804]
@@ -13121,7 +13121,7 @@ RelativePath=JIT\Methodical\Arrays\lcs\_speed_dbglcs2\_speed_dbglcs2.cmd
 WorkingDir=JIT\Methodical\Arrays\lcs\_speed_dbglcs2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [TimeSpanCtor4.cmd_1651]
@@ -13377,7 +13377,7 @@ RelativePath=baseservices\compilerservices\dynamicobjectproperties\Dev10_535767\
 WorkingDir=baseservices\compilerservices\dynamicobjectproperties\Dev10_535767
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [b12022.cmd_1683]
@@ -16881,7 +16881,7 @@ RelativePath=JIT\Methodical\Arrays\lcs\_rellcs2\_rellcs2.cmd
 WorkingDir=JIT\Methodical\Arrays\lcs\_rellcs2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [conv_ovf_u8_u4.cmd_2122]
@@ -19225,7 +19225,7 @@ RelativePath=JIT\Methodical\Arrays\lcs\_speed_rellcs2\_speed_rellcs2.cmd
 WorkingDir=JIT\Methodical\Arrays\lcs\_speed_rellcs2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [ConvertToSByte11.cmd_2416]
@@ -22825,7 +22825,7 @@ RelativePath=CoreMangLib\cti\system\array\ArraySort3\ArraySort3.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArraySort3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [cpblkInt32.cmd_2867]
@@ -24009,7 +24009,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [TimeSpanFromTicks.cmd_3015]
@@ -27905,7 +27905,7 @@ RelativePath=JIT\Methodical\refany\_relvirtcall\_relvirtcall.cmd
 WorkingDir=JIT\Methodical\refany\_relvirtcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [Generated1106.cmd_3505]
@@ -32561,7 +32561,7 @@ RelativePath=JIT\Methodical\refany\_speed_relvirtcall\_speed_relvirtcall.cmd
 WorkingDir=JIT\Methodical\refany\_speed_relvirtcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [box-unbox044.cmd_4089]
@@ -35105,7 +35105,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\ExternalException\Ext
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\ExternalException
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;LEGACYJIT_GCSTRESS_FAIL;13203;Pri1
+Categories=EXPECTED_PASS;LEGACYJIT_GCSTRESS_FAIL;13203;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [ConvertToString6.cmd_4407]
@@ -37641,7 +37641,7 @@ RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeT
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeTClass_1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS;Pri1;GCSTRESS_EXCLUDE
 HostStyle=0
 
 [_speed_relldc_mul.cmd_4724]
