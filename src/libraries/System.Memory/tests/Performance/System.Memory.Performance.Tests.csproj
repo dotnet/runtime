@@ -10,6 +10,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.Base64EncodeDecode.cs" />
+    <Compile Include="Perf.ReadOnlySequence.Enumerator.cs" />
+    <Compile Include="Perf.ReadOnlySequence.First.cs" />
+    <Compile Include="Perf.ReadOnlySequence.GetPosition.cs" />
+    <Compile Include="Perf.ReadOnlySequence.Slice.cs" />
+    <Compile Include="Perf.ReadOnlySequence.TryGet.cs" />
     <Compile Include="Perf.Span.BinaryReadAndWrite.cs" />
     <Compile Include="Perf.Span.BinarySearch.cs" />
     <Compile Include="Perf.Span.Clear.cs" />
@@ -25,6 +30,12 @@
     <Compile Include="..\TestHelpers.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\Memory\CustomMemoryForTest.cs">
+      <Link>Common\System\MemoryTests\CustomMemoryForTest.cs</Link>
+    </Compile>
+    <Compile Include="..\ReadOnlyBuffer\BufferSegment.cs">
+      <Link>Common\System\Memory\Tests\BufferSegment.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
