@@ -9,87 +9,101 @@ using System.Text;
 
 namespace System.Memory.Tests
 {
-    public abstract class ReadOnlySequenceFactoryByte
+    public abstract class ReadOnlySequenceFactory<T>
     {
-        public static ReadOnlySequenceFactoryByte ArrayFactory { get; } = new ArrayTestSequenceFactoryByte();
-        public static ReadOnlySequenceFactoryByte MemoryFactory { get; } = new MemoryTestSequenceFactoryByte();
-        public static ReadOnlySequenceFactoryByte SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactoryByte();
-        public static ReadOnlySequenceFactoryByte SegmentPerByteFactory { get; } = new BytePerSegmentTestSequenceFactoryByte();
+        public static ReadOnlySequenceFactory<T> ArrayFactory { get; } = new ArrayTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> MemoryFactory { get; } = new MemoryTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> SingleSegmentFactory { get; } = new SingleSegmentTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> SegmentPerItemFactory { get; } = new BytePerSegmentTestSequenceFactory();
+        public static ReadOnlySequenceFactory<T> SplitInThree { get; } = new SplitInThreeSegmentsTestSequenceFactory();
 
-        public abstract ReadOnlySequence<byte> CreateOfSize(int size);
-        public abstract ReadOnlySequence<byte> CreateWithContent(byte[] data);
+        public abstract ReadOnlySequence<T> CreateOfSize(int size);
+        public abstract ReadOnlySequence<T> CreateWithContent(T[] data);
 
-        public ReadOnlySequence<byte> CreateWithContent(string data)
+        internal class ArrayTestSequenceFactory : ReadOnlySequenceFactory<T>
         {
-            return CreateWithContent(Encoding.ASCII.GetBytes(data));
-        }
-
-        internal class ArrayTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
-        {
-            public override ReadOnlySequence<byte> CreateOfSize(int size)
+            public override ReadOnlySequence<T> CreateOfSize(int size)
             {
-                return new ReadOnlySequence<byte>(new byte[size + 20], 10, size);
+                return new ReadOnlySequence<T>(new T[size + 20], 10, size);
             }
 
-            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
             {
-                var startSegment = new byte[data.Length + 20];
+                var startSegment = new T[data.Length + 20];
                 Array.Copy(data, 0, startSegment, 10, data.Length);
-                return new ReadOnlySequence<byte>(startSegment, 10, data.Length);
+                return new ReadOnlySequence<T>(startSegment, 10, data.Length);
             }
         }
 
-        internal class MemoryTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
+        internal class MemoryTestSequenceFactory : ReadOnlySequenceFactory<T>
         {
-            public override ReadOnlySequence<byte> CreateOfSize(int size)
+            public override ReadOnlySequence<T> CreateOfSize(int size)
             {
-                return CreateWithContent(new byte[size]);
+                return CreateWithContent(new T[size]);
             }
 
-            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
             {
-                var startSegment = new byte[data.Length + 20];
+                var startSegment = new T[data.Length + 20];
                 Array.Copy(data, 0, startSegment, 10, data.Length);
-                return new ReadOnlySequence<byte>(new Memory<byte>(startSegment, 10, data.Length));
+                return new ReadOnlySequence<T>(new Memory<T>(startSegment, 10, data.Length));
             }
         }
 
-        internal class SingleSegmentTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
+        internal class SingleSegmentTestSequenceFactory : ReadOnlySequenceFactory<T>
         {
-            public override ReadOnlySequence<byte> CreateOfSize(int size)
+            public override ReadOnlySequence<T> CreateOfSize(int size)
             {
-                return CreateWithContent(new byte[size]);
+                return CreateWithContent(new T[size]);
             }
 
-            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
             {
                 return CreateSegments(data);
             }
         }
 
-        internal class BytePerSegmentTestSequenceFactoryByte : ReadOnlySequenceFactoryByte
+        internal class BytePerSegmentTestSequenceFactory : ReadOnlySequenceFactory<T>
         {
-            public override ReadOnlySequence<byte> CreateOfSize(int size)
+            public override ReadOnlySequence<T> CreateOfSize(int size)
             {
-                return CreateWithContent(new byte[size]);
+                return CreateWithContent(new T[size]);
             }
 
-            public override ReadOnlySequence<byte> CreateWithContent(byte[] data)
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
             {
-                var segments = new List<byte[]>();
+                var segments = new List<T[]>();
 
-                segments.Add(Array.Empty<byte>());
+                segments.Add(Array.Empty<T>());
                 foreach (var b in data)
                 {
                     segments.Add(new[] { b });
-                    segments.Add(Array.Empty<byte>());
+                    segments.Add(Array.Empty<T>());
                 }
 
                 return CreateSegments(segments.ToArray());
             }
         }
 
-        public static ReadOnlySequence<byte> CreateSegments(params byte[][] inputs)
+        internal class SplitInThreeSegmentsTestSequenceFactory : ReadOnlySequenceFactory<T>
+        {
+            public override ReadOnlySequence<T> CreateOfSize(int size)
+            {
+                return CreateWithContent(new T[size]);
+            }
+
+            public override ReadOnlySequence<T> CreateWithContent(T[] data)
+            {
+                var third = data.Length / 3;
+
+                return CreateSegments(
+                    data.AsSpan(0, third).ToArray(),
+                    data.AsSpan(third, third).ToArray(),
+                    data.AsSpan(2 * third, data.Length - 2 * third).ToArray());
+            }
+        }
+
+        public static ReadOnlySequence<T> CreateSegments(params T[][] inputs)
         {
             if (inputs == null || inputs.Length == 0)
             {
@@ -98,27 +112,26 @@ namespace System.Memory.Tests
 
             int i = 0;
 
-            BufferSegment<byte> last = null;
-            BufferSegment<byte> first = null;
+            BufferSegment<T> last = null;
+            BufferSegment<T> first = null;
 
             do
             {
-                byte[] s = inputs[i];
+                T[] s = inputs[i];
                 int length = s.Length;
                 int dataOffset = length;
-                var chars = new byte[length * 2];
+                var chars = new T[length * 2];
 
                 for (int j = 0; j < length; j++)
                 {
                     chars[dataOffset + j] = s[j];
                 }
 
-                // Create a segment that has offset relative to the OwnedMemory and OwnedMemory itself has offset relative to array
-                Memory<byte> memory = new Memory<byte>(chars).Slice(length, length);
+                Memory<T> memory = new Memory<T>(chars).Slice(length, length);
 
                 if (first == null)
                 {
-                    first = new BufferSegment<byte>(memory);
+                    first = new BufferSegment<T>(memory);
                     last = first;
                 }
                 else
@@ -128,7 +141,7 @@ namespace System.Memory.Tests
                 i++;
             } while (i < inputs.Length);
 
-            return new ReadOnlySequence<byte>(first, 0, last, last.Memory.Length);
+            return new ReadOnlySequence<T>(first, 0, last, last.Memory.Length);
         }
     }
 }
