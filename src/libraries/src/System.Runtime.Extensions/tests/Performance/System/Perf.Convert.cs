@@ -101,8 +101,8 @@ namespace System
         [InlineData("Fri, 27 Feb 2009 03:11:21 GMT")]
         [InlineData("Thursday, February 26, 2009")]
         [InlineData("February 26, 2009")]
-        [InlineData("12/31/1999 11:59:59 PM")]
-        [InlineData("12/31/1999")]
+        [InlineData("12/12/1999 11:59:59 PM")]
+        [InlineData("12/12/1999")]
         public void ToDateTime_String(string value)
         {
             int innerIterationCount = (int)Benchmark.InnerIterationCount;
