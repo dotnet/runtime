@@ -26,11 +26,11 @@ namespace System.Buffers
             }
             else
             {
-                return PositionOfMultiSegement(source, value);
+                return PositionOfMultiSegment(source, value);
             }
         }
 
-        private static SequencePosition? PositionOfMultiSegement<T>(in ReadOnlySequence<T> source, T value) where T : IEquatable<T>
+        private static SequencePosition? PositionOfMultiSegment<T>(in ReadOnlySequence<T> source, T value) where T : IEquatable<T>
         {
             SequencePosition position = source.Start;
             SequencePosition result = position;
@@ -68,11 +68,11 @@ namespace System.Buffers
             }
             else
             {
-                CopyToMultiSegement(source, destination);
+                CopyToMultiSegment(source, destination);
             }
         }
 
-        private static void CopyToMultiSegement<T>(in ReadOnlySequence<T> sequence, Span<T> destination)
+        private static void CopyToMultiSegment<T>(in ReadOnlySequence<T> sequence, Span<T> destination)
         {
             SequencePosition position = sequence.Start;
             while (sequence.TryGet(ref position, out ReadOnlyMemory<T> memory))
