@@ -13,6 +13,7 @@
     <CLRTestPriority>1</CLRTestPriority>
     <CLRTestProjectToRun>CompareExchangeTClass.csproj</CLRTestProjectToRun>
     <CLRTestExecutionArguments>"hello world"</CLRTestExecutionArguments>
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
