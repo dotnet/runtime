@@ -1004,9 +1004,10 @@ class MsbuildGenerator {
 						Console.Error.WriteLine ($"{library}: Could not find a matching project reference for {Path.GetFileName (reference)}");
 						Console.Error.WriteLine ("  --> Adding reference with hintpath instead");
 					}
-					refs.Append ("    <Reference Include=\"" + reference + "\">" + NewLine);
+					var externalDrawing = (reference == Environment.GetEnvironmentVariable ("EXTERNAL_FACADE_DRAWING_REFERENCE"));
+					refs.Append ("    <Reference Include=\"" + (externalDrawing ? "$(EXTERNAL_FACADE_DRAWING_REFERENCE)" : reference) + "\">" + NewLine);
 					refs.Append ("      <SpecificVersion>False</SpecificVersion>" + NewLine);
-					refs.Append ("      <HintPath>" + reference + "</HintPath>" + NewLine);
+					refs.Append ("      <HintPath>" + (externalDrawing ? "$(EXTERNAL_FACADE_DRAWING_REFERENCE)" : reference) + "</HintPath>" + NewLine);
 					refs.Append ("      <Private>False</Private>" + NewLine);
 					refs.Append ("    </Reference>" + NewLine);
 				}
