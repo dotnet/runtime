@@ -13,27 +13,32 @@ namespace System.Memory.Tests
     {
         public class Array : ReadOnlySequenceTestsByte
         {
-            public Array() : base(ReadOnlySequenceFactoryByte.ArrayFactory) { }
+            public Array() : base(ReadOnlySequenceFactory<byte>.ArrayFactory) { }
         }
 
         public class Memory : ReadOnlySequenceTestsByte
         {
-            public Memory() : base(ReadOnlySequenceFactoryByte.MemoryFactory) { }
+            public Memory() : base(ReadOnlySequenceFactory<byte>.MemoryFactory) { }
         }
 
         public class SingleSegment : ReadOnlySequenceTestsByte
         {
-            public SingleSegment() : base(ReadOnlySequenceFactoryByte.SingleSegmentFactory) { }
+            public SingleSegment() : base(ReadOnlySequenceFactory<byte>.SingleSegmentFactory) { }
         }
 
         public class SegmentPerByte : ReadOnlySequenceTestsByte
         {
-            public SegmentPerByte() : base(ReadOnlySequenceFactoryByte.SegmentPerByteFactory) { }
+            public SegmentPerByte() : base(ReadOnlySequenceFactory<byte>.SegmentPerItemFactory) { }
         }
 
-        internal ReadOnlySequenceFactoryByte Factory { get; }
+        public class SplitInThreeSegments : ReadOnlySequenceTestsByte
+        {
+            public SplitInThreeSegments() : base(ReadOnlySequenceFactory<byte>.SplitInThree) { }
+        }
 
-        internal ReadOnlySequenceTestsByte(ReadOnlySequenceFactoryByte factory)
+        internal ReadOnlySequenceFactory<byte> Factory { get; }
+
+        internal ReadOnlySequenceTestsByte(ReadOnlySequenceFactory<byte> factory)
         {
             Factory = factory;
         }
@@ -118,6 +123,7 @@ namespace System.Memory.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => buffer.GetPosition(-1, buffer.Start));
         }
 
+        [Fact]
         public void ReadOnlyBufferSlice_ChecksEnd()
         {
             ReadOnlySequence<byte> buffer = Factory.CreateOfSize(100);
@@ -249,7 +255,7 @@ namespace System.Memory.Tests
         [InlineData("/localhost:5000/PATH/PATH2/ HTTP/1.1", ' ', 27)]
         public void PositionOf_ReturnsPosition(string raw, char searchFor, int expectIndex)
         {
-            ReadOnlySequence<byte> buffer = Factory.CreateWithContent(raw);
+            ReadOnlySequence<byte> buffer = Factory.CreateWithContent(Encoding.ASCII.GetBytes(raw));
             SequencePosition? result = buffer.PositionOf((byte)searchFor);
 
             Assert.NotNull(result);
