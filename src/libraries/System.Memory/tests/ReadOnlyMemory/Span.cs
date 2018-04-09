@@ -106,5 +106,28 @@ namespace System.MemoryTests
             Assert.True(spanObject.SequenceEqual(default));
         }
 
+        [Fact]
+        public static void TornMemory_Array_SpanThrowsIfOutOfBounds()
+        {
+            ReadOnlyMemory<int> memory;
+
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<int>(new int[4], 0, 5);
+            Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
+
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<int>(new int[4], 3, 2);
+            Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
+        }
+
+        [Fact]
+        public static void TornMemory_String_SpanThrowsIfOutOfBounds()
+        {
+            ReadOnlyMemory<char> memory;
+
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<char>("1234", 0, 5);
+            Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
+
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<char>("1234", 3, 2);
+            Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
+        }
     }
 }
