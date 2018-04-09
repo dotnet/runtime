@@ -78,6 +78,59 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // This only applies where OpenSsl is used.
+        public async Task SslStream_SendReceiveOverNetworkStream_AuthenticationException()
+        {
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (TcpClient client = new TcpClient())
+            {
+                listener.Start();
+
+                Task clientConnectTask = client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
+                Task<TcpClient> listenerAcceptTask = listener.AcceptTcpClientAsync();
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientConnectTask, listenerAcceptTask);
+
+                TcpClient server = listenerAcceptTask.Result;
+                using (SslStream clientStream = new SslStream(
+                    client.GetStream(),
+                    false,
+                    new RemoteCertificateValidationCallback(ValidateServerCertificate),
+                    null,
+                    EncryptionPolicy.RequireEncryption))
+                using (SslStream serverStream = new SslStream(
+                    server.GetStream(),
+                    false,
+                    null,
+                    null,
+                    EncryptionPolicy.RequireEncryption))
+                {
+
+                    Task clientAuthenticationTask = clientStream.AuthenticateAsClientAsync(
+                        serverCertificate.GetNameInfo(X509NameType.SimpleName, false),
+                        null,
+                        SslProtocols.Tls11,
+                        false);
+
+                    AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => serverStream.AuthenticateAsServerAsync(
+                        serverCertificate,
+                        false,
+                        SslProtocols.Tls12,
+                        false));
+
+                    Assert.NotNull(e.InnerException);
+                    Assert.True(e.InnerException.Message.Contains("SSL_ERROR_SSL"));
+                    Assert.NotNull(e.InnerException.InnerException);
+                    Assert.True(e.InnerException.InnerException.Message.Contains("protocol"));
+                }
+            }
+
+            listener.Stop();
+        }
+
+        [Fact]
         [OuterLoop] // Test hits external azure server.
         public async Task SslStream_NetworkStream_Renegotiation_Succeeds()
         {

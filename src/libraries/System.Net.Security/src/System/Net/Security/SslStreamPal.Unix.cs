@@ -255,6 +255,11 @@ namespace System.Net.Security
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             }
+            else if (code == Interop.Ssl.SslErrorCode.SSL_ERROR_SSL)
+            {
+                // OpenSSL failure occurred.  The error queue contains more details, when building the exception the queue will be cleared.
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.Crypto.CreateOpenSslCryptographicException());
+            }
             else
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, new Interop.OpenSsl.SslException((int)code));

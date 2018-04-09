@@ -113,15 +113,16 @@ extern "C" SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 extern "C" int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
     // This pops off "old" errors left by other operations
-    // until the first and last error are the same
+    // until the first error is equal to the last one, 
     // this should be looked at again when OpenSsl 1.1 is migrated to
     while (ERR_peek_error() != ERR_peek_last_error())
     {
         ERR_get_error();
     }
-    int32_t errorCode = SSL_get_error(ssl, ret);
-    ERR_clear_error();
-    return errorCode;
+
+    // The error queue should be cleaned outside, if done here there will be no info
+    // for managed exception.
+    return SSL_get_error(ssl, ret);
 }
 
 extern "C" void CryptoNative_SslDestroy(SSL* ssl)
