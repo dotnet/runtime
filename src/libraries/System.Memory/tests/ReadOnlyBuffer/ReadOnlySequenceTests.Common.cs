@@ -429,10 +429,10 @@ namespace System.Memory.Tests
             byte[] firstBytes = Enumerable.Repeat((byte)'a', blockSize - 5).Concat(bytes.Take(5)).ToArray();
             byte[] secondBytes = bytes.Skip(5).Concat(Enumerable.Repeat((byte)'a', blockSize - (bytes.Length - 5))).ToArray();
 
-            BufferSegment<byte> firstSegement = new BufferSegment<byte>(firstBytes);
-            BufferSegment<byte> secondSegement = firstSegement.Append(secondBytes);
+            BufferSegment<byte> firstSegment = new BufferSegment<byte>(firstBytes);
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondBytes);
 
-            ReadOnlySequence<byte> buffer = new ReadOnlySequence<byte>(firstSegement, 0, secondSegement, bytes.Length - 5);
+            ReadOnlySequence<byte> buffer = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, bytes.Length - 5);
             Assert.False(buffer.IsSingleSegment);
             ReadOnlySequence<byte> helloBuffer = buffer.Slice(blockSize - 5);
             Assert.False(helloBuffer.IsSingleSegment);
