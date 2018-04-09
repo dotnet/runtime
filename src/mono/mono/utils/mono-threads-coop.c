@@ -537,10 +537,14 @@ mono_threads_is_blocking_transition_enabled (void)
 gboolean
 mono_threads_is_hybrid_suspension_enabled (void)
 {
+#if defined(USE_HYBRID_SUSPEND)
+	return TRUE;
+#else
 	static int is_hybrid_suspension_enabled = -1;
 	if (G_UNLIKELY (is_hybrid_suspension_enabled == -1))
 		is_hybrid_suspension_enabled = g_hasenv ("MONO_ENABLE_COOP") && g_hasenv ("MONO_ENABLE_HYBRID_SUSPEND");
 	return is_hybrid_suspension_enabled == 1;
+#endif
 }
 
 
