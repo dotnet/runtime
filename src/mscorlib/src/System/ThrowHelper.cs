@@ -479,7 +479,8 @@ namespace System
         comparable,
         source,
         state,
-        comparisonType
+        comparisonType,
+        manager
     }
 
     //
