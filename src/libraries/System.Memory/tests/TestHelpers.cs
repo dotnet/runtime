@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 
 using static System.Buffers.Binary.BinaryPrimitives;
 using System.Text;
+using System.Reflection;
 
 namespace System
 {
@@ -398,6 +399,22 @@ namespace System
         public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => new ReadOnlySpan<T>(array);
         public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> segment) => new ReadOnlySpan<T>(segment.Array, segment.Offset, segment.Count);
         public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this Memory<T> memory) => memory;
+
+        /// <summary>Creates a <see cref="Memory{T}"/> with the specified values in its backing field.</summary>
+        public static Memory<T> DangerousCreateMemory<T>(object obj, int offset, int length)
+        {
+            Memory<T> mem = default;
+            object boxedMemory = mem;
+
+            typeof(Memory<T>).GetField("_object", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(boxedMemory, obj);
+            typeof(Memory<T>).GetField("_index", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(boxedMemory, offset);
+            typeof(Memory<T>).GetField("_length", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(boxedMemory, length);
+
+            return (Memory<T>)boxedMemory;
+        }
+
+        /// <summary>Creates a <see cref="ReadOnlyMemory{T}"/> with the specified values in its backing field.</summary>
+        public static ReadOnlyMemory<T> DangerousCreateReadOnlyMemory<T>(object obj, int offset, int length) =>
+            DangerousCreateMemory<T>(obj, offset, length).AsReadOnlyMemory();
     }
 }
-
