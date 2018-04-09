@@ -2407,7 +2407,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
-			do_debugger_tramp (mono_debugger_agent_user_break, frame);
+			do_debugger_tramp (mini_get_dbg_callbacks ()->user_break, frame);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDNULL) 
 			sp->data.p = NULL;

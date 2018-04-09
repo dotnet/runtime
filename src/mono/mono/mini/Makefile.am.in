@@ -83,12 +83,12 @@ endif
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmini.la $(interp_libs_with_mini) $(sgen_libs)
+sgen_static_libraries = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs)
 endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmonoboehm-2.0.la
-boehm_static_libraries = libmini.la $(interp_libs_with_mini) $(boehm_libs)
+boehm_static_libraries = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(boehm_libs)
 boehm_binaries  = mono-boehm
 endif
 
@@ -448,7 +448,7 @@ common_sources = \
 	mini-gc.h		\
 	mini-gc.c		\
 	debugger-agent.h 	\
-	debugger-agent.c	\
+	debugger-agent-stubs.c	\
 	xdebug.c			\
 	mini-llvm.h			\
 	mini-llvm-cpp.h	\
@@ -629,6 +629,23 @@ if BITCODE
 libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
 endif
 
+libmono_dbg_la_SOURCES = debugger-agent.c
+libmono_dbg_la_CFLAGS = $(mono_CFLAGS)
+if BITCODE
+libmono_dbg_la_LIBADD = libmonosgen-2.0.la
+endif
+
+dbg_libs = libmono-dbg.la
+
+if DISABLE_DEBUGGER_AGENT
+lib_LTLIBRARIES += $(dbg_libs)
+endif
+
+if !DISABLE_DEBUGGER_AGENT
+dbg_libs_with_mini = $(dbg_libs)
+noinst_LTLIBRARIES += $(dbg_libs)
+endif
+
 #
 # This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
 # compile time dependencies on boehm/sgen.
@@ -638,12 +655,12 @@ libmini_la_CFLAGS = $(mono_CFLAGS)
 
 libmonoboehm_2_0_la_SOURCES =
 libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
-libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
+libmonoboehm_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(boehm_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 
 libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
-libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
+libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs_with_mini) $(dbg_libs_with_mini) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit

@@ -88,16 +88,15 @@
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 #endif
 
-
 #ifndef MONO_ARCH_SOFT_DEBUG_SUPPORTED
-#define DISABLE_DEBUGGER_AGENT 1
+#define DISABLE_SDB 1
 #endif
 
 #ifdef DISABLE_SOFT_DEBUG
-#define DISABLE_DEBUGGER_AGENT 1
+#define DISABLE_SDB 1
 #endif
 
-#ifndef DISABLE_DEBUGGER_AGENT
+#ifndef DISABLE_SDB
 
 #include <mono/utils/mono-os-mutex.h>
 
@@ -885,8 +884,8 @@ parse_flag (const char *option, char *flag)
 	}
 }
 
-void
-mono_debugger_agent_parse_options (char *options)
+static void
+debugger_agent_parse_options (char *options)
 {
 	char **args, **ptr;
 	char *host;
@@ -983,8 +982,8 @@ mono_debugger_agent_parse_options (char *options)
 	}
 }
 
-void
-mono_debugger_agent_init (void)
+static void
+debugger_agent_init (void)
 {
 	mono_coop_mutex_init_recursive (&debug_mutex);
 
@@ -2211,8 +2210,8 @@ ids_cleanup (void)
 	}
 }
 
-void
-mono_debugger_agent_free_domain_info (MonoDomain *domain)
+static void
+debugger_agent_free_domain_info (MonoDomain *domain)
 {
 	AgentDomainInfo *info = (AgentDomainInfo *)domain_jit_info (domain)->agent_info;
 	int i, j;
@@ -5190,8 +5189,8 @@ resume_from_signal_handler (void *sigctx, void *func)
 	mono_monoctx_to_sigctx (&ctx, sigctx);
 }
 
-void
-mono_debugger_agent_breakpoint_hit (void *sigctx)
+static void
+debugger_agent_breakpoint_hit (void *sigctx)
 {
 	/*
 	 * We are called from a signal handler, and running code there causes all kinds of
@@ -5227,8 +5226,8 @@ user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 /*
  * Called by System.Diagnostics.Debugger:Break ().
  */
-void
-mono_debugger_agent_user_break (void)
+static void
+debugger_agent_user_break (void)
 {
 	if (agent_config.enabled) {
 		MonoContext ctx;
@@ -5396,12 +5395,12 @@ process_single_step (void)
 }
 
 /*
- * mono_debugger_agent_single_step_event:
+ * debugger_agent_single_step_event:
  *
  *   Called from a signal handler to handle a single step event.
  */
-void
-mono_debugger_agent_single_step_event (void *sigctx)
+static void
+debugger_agent_single_step_event (void *sigctx)
 {
 	/* Resume to process_single_step through the signal context */
 
@@ -5426,8 +5425,8 @@ mono_debugger_agent_single_step_event (void *sigctx)
 	resume_from_signal_handler (sigctx, process_single_step);
 }
 
-void
-mono_debugger_agent_single_step_from_context (MonoContext *ctx)
+static void
+debugger_agent_single_step_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
@@ -5453,8 +5452,8 @@ mono_debugger_agent_single_step_from_context (MonoContext *ctx)
 	memcpy (&tls->restore_state, &orig_restore_state, sizeof (MonoThreadUnwindState));
 }
 
-void
-mono_debugger_agent_breakpoint_from_context (MonoContext *ctx)
+static void
+debugger_agent_breakpoint_from_context (MonoContext *ctx)
 {
 	DebuggerTlsData *tls;
 	MonoThreadUnwindState orig_restore_state;
@@ -6068,8 +6067,8 @@ ss_req_release (SingleStepReq *req)
 /*
  * Called from metadata by the icall for System.Diagnostics.Debugger:Log ().
  */
-void
-mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
+static void
+debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
 {
 	ERROR_DECL (error);
 	int suspend_policy;
@@ -6101,16 +6100,15 @@ mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *mess
 	g_free (ei.message);
 }
 
-gboolean
-mono_debugger_agent_debug_log_is_enabled (void)
+static gboolean
+debugger_agent_debug_log_is_enabled (void)
 {
 	/* Treat this as true even if there is no event request for EVENT_KIND_USER_LOG */
 	return agent_config.enabled;
 }
 
-#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
-void
-mono_debugger_agent_unhandled_exception (MonoException *exc)
+static void
+debugger_agent_unhandled_exception (MonoException *exc)
 {
 	int suspend_policy;
 	GSList *events;
@@ -6128,10 +6126,9 @@ mono_debugger_agent_unhandled_exception (MonoException *exc)
 
 	process_event (EVENT_KIND_EXCEPTION, &ei, 0, NULL, events, suspend_policy);
 }
-#endif
 
-void
-mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
+static void
+debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 									  MonoContext *catch_ctx, StackFrameInfo *catch_frame)
 {
 	int i, j, suspend_policy;
@@ -6252,8 +6249,8 @@ mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx
 		tls->has_catch_frame = FALSE;
 }
 
-void
-mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
+static void
+debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
 {
 	DebuggerTlsData *tls;
 
@@ -6291,8 +6288,8 @@ mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx
 	g_assert (mono_thread_state_init_from_monoctx (&tls->filter_state, orig_ctx));
 }
 
-void
-mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
+static void
+debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
 {
 	DebuggerTlsData *tls;
 
@@ -10737,83 +10734,29 @@ debugger_thread (void *arg)
 	return 0;
 }
 
-#else /* DISABLE_DEBUGGER_AGENT */
-
-void
-mono_debugger_agent_parse_options (char *options)
-{
-	g_error ("This runtime is configured with the debugger agent disabled.");
-}
-
 void
 mono_debugger_agent_init (void)
 {
+	MonoDebuggerCallbacks cbs;
+
+	memset (&cbs, 0, sizeof (MonoDebuggerCallbacks));
+	cbs.version = MONO_DBG_CALLBACKS_VERSION;
+	cbs.parse_options = debugger_agent_parse_options;
+	cbs.init = debugger_agent_init;
+	cbs.breakpoint_hit = debugger_agent_breakpoint_hit;
+	cbs.single_step_event = debugger_agent_single_step_event;
+	cbs.single_step_from_context = debugger_agent_single_step_from_context;
+	cbs.breakpoint_from_context = debugger_agent_breakpoint_from_context;
+	cbs.free_domain_info = debugger_agent_free_domain_info;
+	cbs.unhandled_exception = debugger_agent_unhandled_exception;
+	cbs.handle_exception = debugger_agent_handle_exception;
+	cbs.begin_exception_filter = debugger_agent_begin_exception_filter;
+	cbs.end_exception_filter = debugger_agent_end_exception_filter;
+	cbs.user_break = debugger_agent_user_break;
+	cbs.debug_log = debugger_agent_debug_log;
+	cbs.debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
+
+	mini_install_dbg_callbacks (&cbs);
 }
 
-void
-mono_debugger_agent_breakpoint_hit (void *sigctx)
-{
-}
-
-void
-mono_debugger_agent_single_step_event (void *sigctx)
-{
-}
-
-void
-mono_debugger_agent_free_domain_info (MonoDomain *domain)
-{
-}
-
-void
-mono_debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
-									  MonoContext *catch_ctx, StackFrameInfo *catch_frame)
-{
-}
-
-void
-mono_debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
-{
-}
-
-void
-mono_debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoContext *orig_ctx)
-{
-}
-
-void
-mono_debugger_agent_user_break (void)
-{
-	G_BREAKPOINT ();
-}
-
-void
-mono_debugger_agent_debug_log (int level, MonoString *category, MonoString *message)
-{
-}
-
-gboolean
-mono_debugger_agent_debug_log_is_enabled (void)
-{
-	return FALSE;
-}
-
-void
-mono_debugger_agent_unhandled_exception (MonoException *exc)
-{
-	g_assert_not_reached ();
-}
-
-void
-mono_debugger_agent_single_step_from_context (MonoContext *ctx)
-{
-	g_assert_not_reached ();
-}
-
-void
-mono_debugger_agent_breakpoint_from_context (MonoContext *ctx)
-{
-	g_assert_not_reached ();
-}
-
-#endif
+#endif /* DISABLE_SDB */

@@ -41,6 +41,10 @@ if !DISABLE_INTERPRETER
 mini_libs += $(monodir)/mono/mini/libmono-ee-interp.la
 endif
 
+if !DISABLE_DEBUGGER_AGENT
+mini_libs += $(monodir)/mono/mini/libmono-dbg.la
+endif
+
 if !CROSS_COMPILE
 if !HOST_WIN32
 
