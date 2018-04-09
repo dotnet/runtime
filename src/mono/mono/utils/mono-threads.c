@@ -115,21 +115,52 @@ mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 }
 
 static gboolean
-begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+begin_cooperative_suspend (MonoThreadInfo *info)
 {
-	if (mono_threads_are_safepoints_enabled ()) {
-		/* There's nothing else to do after we async request the thread to suspend */
-		mono_threads_add_to_pending_operation_set (info);
+	/* There's nothing else to do after we async request the thread to suspend */
+	mono_threads_add_to_pending_operation_set (info);
+	return TRUE;
+}
+
+static gboolean
+begin_preemptive_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
+{
+	return mono_threads_suspend_begin_async_suspend (info, interrupt_kernel);
+}
+
+static gboolean
+begin_suspend_for_running_thread (MonoThreadInfo *info, gboolean interrupt_kernel)
+{
+	if (mono_threads_are_safepoints_enabled ())
+		return begin_cooperative_suspend (info);
+	else
+		return begin_preemptive_suspend (info, interrupt_kernel);
+}
+
+static gboolean
+begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kernel, gboolean *did_interrupt)
+{
+	// if a thread can't transition to blocking, we certainly shouldn't be
+	// trying to suspend it like it's blocking.
+	g_assert (mono_threads_is_blocking_transition_enabled ());
+	// with hybrid suspend, preemptively suspend blocking threads,
+	// otherwise blocking already counts as suspended.
+	if (mono_threads_is_hybrid_suspension_enabled ()) {
+		if (did_interrupt) {
+			*did_interrupt = interrupt_kernel;
+		}
+		return begin_preemptive_suspend (info, interrupt_kernel);
+	} else {
+		if (did_interrupt)
+			*did_interrupt = FALSE;
 		return TRUE;
 	}
-
-	return mono_threads_suspend_begin_async_suspend (info, interrupt_kernel);
 }
 
 static gboolean
 check_async_suspend (MonoThreadInfo *info)
 {
-	if (mono_threads_are_safepoints_enabled ()) {
+	if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ()) {
 		/* Async suspend can't async fail on coop */
 		return TRUE;
 	}
@@ -140,7 +171,7 @@ check_async_suspend (MonoThreadInfo *info)
 static void
 resume_async_suspended (MonoThreadInfo *info)
 {
-	if (mono_threads_are_safepoints_enabled ())
+	if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ())
 		g_assert_not_reached ();
 
 	g_assert (mono_threads_suspend_begin_async_resume (info));
@@ -863,17 +894,29 @@ cleanup:
 gboolean
 mono_thread_info_begin_suspend (MonoThreadInfo *info)
 {
-	switch (mono_threads_transition_request_initiate_suspension (info)) {
+	switch (mono_threads_transition_request_suspension (info)) {
 	case ReqSuspendAlreadySuspended:
+		return TRUE;
 	case ReqSuspendAlreadySuspendedBlocking:
+		// This state should not be possible if we're using preemptive
+		// suspend on a blocking thread - there can only be a single
+		// suspend initiator at a time (guarded by
+		// mono_thread_info_suspend_lock), and we expect the victim
+		// thread to finish the two-phase preemptive suspension
+		// procedure (and reach the ReqSuspendAlreadySuspended stage)
+		// before the next suspend initiator can begin.
+		g_assert (mono_threads_is_blocking_transition_enabled () && !mono_threads_is_hybrid_suspension_enabled ());
+
 		return TRUE;
 	case ReqSuspendInitSuspendBlocking:
-		// in full cooperative mode there we just leave BLOCKING threads running until they try to return to RUNNING, so nothing to do.
-		return TRUE;
+		// in full cooperative mode just leave BLOCKING
+		// threads running until they try to return to RUNNING, so
+		// nothing to do, in hybrid coop preempt the thread.
+		return begin_suspend_for_blocking_thread (info, FALSE, NULL);
 	case ReqSuspendInitSuspendRunning:
 		// in full preemptive mode this should be a preemptive suspend
 		// in full and hybrid cooperative modes this should be a coop suspend
-		return begin_async_suspend (info, FALSE);
+		return begin_suspend_for_running_thread (info, FALSE);
 	default:
 		g_assert_not_reached ();
 	}
@@ -940,24 +983,47 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 	if (!info)
 		return NULL;
 
-	switch (mono_threads_transition_request_initiate_suspension (info)) {
+	switch (mono_threads_transition_request_suspension (info)) {
 	case ReqSuspendAlreadySuspended:
 		mono_hazard_pointer_clear (hp, 1); //XXX this is questionable we got to clean the suspend/resume nonsense of critical sections
 		return info;
 	case ReqSuspendInitSuspendRunning:
-		if (!begin_async_suspend (info, interrupt_kernel)) {
+		if (!begin_suspend_for_running_thread (info, interrupt_kernel)) {
 			mono_hazard_pointer_clear (hp, 1);
 			return NULL;
 		}
 		break;
 	case ReqSuspendAlreadySuspendedBlocking:
-	case ReqSuspendInitSuspendBlocking:
-		// for full coop, executing in blocking counts as suspended.
+		// ReqSuspendAlreadySuspendedBlocking should not be possible if
+		// we're using preemptive suspend on a blocking thread - a
+		// suspend initiator holds the mono_thread_info_suspend_lock
+		// (there is a single suspend initiator at a time), and we
+		// expect the victim thread to finish the two-phase preemptive
+		// suspension procedure (and reach the
+		// ReqSuspendAlreadySuspended stage) before the next suspend
+		// initiator can begin.
+		g_assert (mono_threads_is_blocking_transition_enabled () && !mono_threads_is_hybrid_suspension_enabled ());
 
+		// if we tried to preempt the thread already, do nothing.
+		// otherwise (if it's running in blocking mode) try to abort the syscall.
 		if (interrupt_kernel)
 			mono_threads_suspend_abort_syscall (info);
 
 		return info;
+	case ReqSuspendInitSuspendBlocking: {
+		gboolean did_interrupt = FALSE;
+		if (!begin_suspend_for_blocking_thread (info, interrupt_kernel, &did_interrupt)) {
+			mono_hazard_pointer_clear (hp, 1);
+			return NULL;
+		}
+
+		// if we tried to preempt the thread already, do nothing.
+		// otherwise (if it's running in blocking mode) try to abort the syscall.
+		if (interrupt_kernel && !did_interrupt)
+			mono_threads_suspend_abort_syscall (info);
+
+		return info;
+	}
 	default:
 		g_assert_not_reached ();
 	}
@@ -1035,6 +1101,7 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 		break;
 	case KeepSuspended:
 		g_assert (!mono_threads_are_safepoints_enabled ());
+		/* FIXME: what if mono_threads_is_hybrid_suspension_enabled () ? */
 		break;
 	default:
 		g_error ("Invalid suspend_and_run callback return value %d", result);

@@ -312,9 +312,14 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 	case DoneBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
-	case DoneBlockingWait:
 	case DoneBlockingNotifyAndWait:
 		// in full coop NotifyAndWait doesn't notify
+		if (mono_threads_is_hybrid_suspension_enabled ()) {
+			mono_threads_notify_initiator_of_suspend (info);
+		}
+		mono_thread_info_wait_for_resume (info);
+		break;
+	case DoneBlockingWait:
 		THREADS_SUSPEND_DEBUG ("state polling done, notifying of resume\n");
 		mono_thread_info_wait_for_resume (info);
 		break;
@@ -413,9 +418,14 @@ mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, 
 	case AbortBlockingOk:
 		info->thread_saved_state [SELF_SUSPEND_STATE_INDEX].valid = FALSE;
 		break;
-	case AbortBlockingWait:
 	case AbortBlockingNotifyAndWait:
 		// in full coop, notify and wait doesn't need to notify
+		if (mono_threads_is_hybrid_suspension_enabled ()) {
+			mono_threads_notify_initiator_of_suspend (info);
+		}
+		mono_thread_info_wait_for_resume (info);
+		break;
+	case AbortBlockingWait:
 		mono_thread_info_wait_for_resume (info);
 		break;
 	default:

@@ -4993,6 +4993,9 @@ self_interrupt_thread (void *_unused)
 		if (mono_threads_are_safepoints_enabled ()) {
 			/* We can return from an async call in coop, as
 			 * it's simply called when exiting the safepoint */
+			/* If we're using hybrid suspend, we only self
+			 * interrupt if we were running, hence using
+			 * safepoints */
 			return;
 		}
 
