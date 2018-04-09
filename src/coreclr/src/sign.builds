@@ -15,6 +15,11 @@
     <WindowsNativeLocation Include="$(BinDir)*.dll" />
     <WindowsNativeLocation Include="$(BinDir)*.exe" />
   </ItemGroup>
+  <!-- sign the cross targeted files as well -->
+  <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
+    <WindowsNativeLocation Include="$(BinDir)$(CrossTargetComponentFolder)/*.dll" />
+    <WindowsNativeLocation Include="$(BinDir)$(CrossTargetComponentFolder)/*.exe" />
+  </ItemGroup>
 
   <Target Name="GenerateSignForWindowsNative">
     <!--
