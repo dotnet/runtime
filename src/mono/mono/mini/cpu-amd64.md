@@ -1,4 +1,4 @@
-
+# -*- mode:text; -*-
 # x86-class cpu description file
 # this file is read by genmdesc to pruduce a table with all the relevant information
 # about the cpu instructions that may be used by the regsiter allocator, the scheduler
@@ -267,6 +267,7 @@ r4_conv_to_u2: dest:i src1:f len:32
 r4_conv_to_i4: dest:i src1:f len:16
 r4_conv_to_u4: dest:i src1:f len:32
 r4_conv_to_i8: dest:i src1:f len:32
+r4_conv_to_i: dest:i src1:f len:32
 r4_conv_to_r8: dest:f src1:f len:17
 r4_conv_to_r4: dest:f src1:f len:17
 r4_add: dest:f src1:f src2:f clob:1 len:5

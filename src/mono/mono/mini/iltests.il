@@ -2264,6 +2264,7 @@ HAS_VALUE:	ldc.i4.1
 		ret
 	}
 
+/*	   Disabled until they can be fixed to run on amd64
 	.method public static float32 GetFloat32() cil managed noinlining
 	{
 		.maxstack  8
@@ -2271,7 +2272,6 @@ HAS_VALUE:	ldc.i4.1
 		ret
 	}
 
-/*	   Disabled until they can be fixed to run on amd64
 	.method public static default int32 test_0_implicit_float_to_double_conversion () cil managed
 	{
 		.maxstack 16

@@ -3128,6 +3128,10 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	try_llvm = mono_use_llvm || llvm;
 #endif
 
+#ifndef MONO_ARCH_FLOAT32_SUPPORTED
+	opts &= ~MONO_OPT_FLOAT32;
+#endif
+
  restart_compile:
 	if (method_is_gshared) {
 		method_to_compile = method;
