@@ -994,7 +994,7 @@ PROFILE_DISABLED_TESTS= \
 	tailcall-rgctxb.exe
 
 if FULL_AOT_TESTS
-# Tests which rely on TypeLoadExceptions
+# Tests which rely on TypeLoadExceptions or MemberAccessExceptions
 # In full-aot mode, these cause the relevant methods to be not AOTed.
 PROFILE_DISABLED_TESTS += \
 	typeload-unaligned.exe \
@@ -1015,7 +1015,8 @@ PROFILE_DISABLED_TESTS += \
 	resolve_field_bug.2.exe \
 	resolve_type_bug.2.exe \
 	bug-81691.exe \
-	bug-327438.2.exe
+	bug-327438.2.exe \
+	newobj-abstract.exe
 
 # Tests which rely on remoting
 PROFILE_DISABLED_TESTS += \
