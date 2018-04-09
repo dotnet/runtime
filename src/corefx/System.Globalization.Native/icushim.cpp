@@ -254,7 +254,7 @@ extern "C" int32_t GlobalizationNative_LoadICU()
     static_assert((sizeof(#fn) + MaxICUVersionStringLength + 1) <= sizeof(symbolName), "The symbolName is too small for symbol " #fn); \
     sprintf(symbolName, #fn "%s", symbolVersion); \
     fn##_ptr = (decltype(fn)*)dlsym(lib, symbolName); \
-    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\n", symbolName); abort(); }
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %s\n", symbolName, dlerror()); abort(); }
 
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
