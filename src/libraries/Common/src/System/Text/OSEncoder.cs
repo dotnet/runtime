@@ -240,13 +240,5 @@ namespace System.Text
             charsUsed = 0;
             completed = false;
         }
-
-        public Encoding Encoding
-        {
-            get
-            {
-                return _encoding;
-            }
-        }
     }
 }
