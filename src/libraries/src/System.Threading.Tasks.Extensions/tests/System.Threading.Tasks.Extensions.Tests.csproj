@@ -13,8 +13,10 @@
   <ItemGroup>
     <Compile Include="AsyncMethodBuilderAttributeTests.cs" />
     <Compile Include="AsyncValueTaskMethodBuilderTests.cs" />
-    <Compile Include="ManualResetValueTaskSource.cs" />
     <Compile Include="ValueTaskTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
+      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
