@@ -81,11 +81,12 @@
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
     <Error Condition="'$(RelativeBlobPath)' == ''" Text="Missing required property 'RelativeBlobPath'" />
+    <Error Condition="!HasTrailingSlash('$(RelativeBlobPath)')" Text="RelativeBlobPath is expected to have a trailing '/' - '$(RelativeBlobPath)'" />
 
     <ItemGroup>
       <ItemsToPublish Include="$(ItemsToPublish)" />
       <ItemsToPublish>
-        <RelativeBlobPath>$(RelativeBlobPath)/%(Filename)%(Extension)</RelativeBlobPath>
+        <RelativeBlobPath>$(RelativeBlobPath)%(Filename)%(Extension)</RelativeBlobPath>
       </ItemsToPublish>
     </ItemGroup>
 

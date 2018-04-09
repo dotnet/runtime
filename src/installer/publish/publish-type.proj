@@ -70,7 +70,7 @@
 
       <!-- Make the local relative path match what dotnet-install scripts expect -->
       <FilesToPublish>
-        <RelativeBlobPath>assets/$(BinariesRelativePath)/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
+        <RelativeBlobPath>assets/$(BinariesRelativePath)$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\' ,'/'))</RelativeBlobPath>
         <ManifestArtifactData>ShipInstaller=dotnetcli</ManifestArtifactData>
       </FilesToPublish>
     </ItemGroup>
