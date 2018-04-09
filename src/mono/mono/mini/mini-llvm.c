@@ -5388,11 +5388,25 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.sin.f64"), args, 1, dname);
 			break;
 		}
+		case OP_SINF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.sin.f32"), args, 1, dname);
+			break;
+		}
 		case OP_COS: {
 			LLVMValueRef args [1];
 
 			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.cos.f64"), args, 1, dname);
+			break;
+		}
+		case OP_COSF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.cos.f32"), args, 1, dname);
 			break;
 		}
 		case OP_SQRT: {
@@ -5402,11 +5416,40 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.sqrt.f64"), args, 1, dname);
 			break;
 		}
+		case OP_SQRTF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.sqrt.f32"), args, 1, dname);
+			break;
+		}
 		case OP_ABS: {
 			LLVMValueRef args [1];
 
 			args [0] = convert (ctx, lhs, LLVMDoubleType ());
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "fabs"), args, 1, dname);
+			break;
+		}
+		case OP_ABSF: {
+			LLVMValueRef args [1];
+
+#ifdef TARGET_AMD64
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.fabs"), args, 1, dname);
+#else
+			/* llvm.fabs not supported on all platforms */
+			args [0] = convert (ctx, lhs, LLVMDoubleType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "fabs"), args, 1, dname);
+			values [ins->dreg] = convert (ctx, lhs, LLVMFloatType ());
+#endif
+			break;
+		}
+		case OP_RPOW: {
+			LLVMValueRef args [2];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			args [1] = convert (ctx, rhs, LLVMFloatType ());
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.pow.f32"), args, 2, dname);
 			break;
 		}
 
@@ -5417,7 +5460,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_IMIN_UN:
 		case OP_LMIN_UN:
 		case OP_IMAX_UN:
-		case OP_LMAX_UN: {
+		case OP_LMAX_UN:
+		case OP_RMAX: {
 			LLVMValueRef v;
 
 			lhs = convert (ctx, lhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
@@ -5439,6 +5483,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_IMAX_UN:
 			case OP_LMAX_UN:
 				v = LLVMBuildICmp (builder, LLVMIntUGE, lhs, rhs, "");
+				break;
+			case OP_RMAX:
+				v = LLVMBuildFCmp (builder, LLVMRealUGE, lhs, rhs, "");
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7867,6 +7914,11 @@ typedef enum {
 	INTRINS_COS,
 	INTRINS_SQRT,
 	INTRINS_FABS,
+	INTRINS_ABSF,
+	INTRINS_SINF,
+	INTRINS_COSF,
+	INTRINS_SQRTF,
+	INTRINS_POWF,
 	INTRINS_EXPECT_I8,
 	INTRINS_EXPECT_I1,
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -7950,6 +8002,11 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SQRT, "llvm.sqrt.f64"},
 	/* This isn't an intrinsic, instead llvm seems to special case it by name */
 	{INTRINS_FABS, "fabs"},
+	{INTRINS_ABSF, "llvm.fabs"},
+	{INTRINS_SINF, "llvm.sin.f32"},
+	{INTRINS_COSF, "llvm.cos.f32"},
+	{INTRINS_SQRTF, "llvm.sqrt.f32"},
+	{INTRINS_POWF, "llvm.pow.f32"},
 	{INTRINS_EXPECT_I8, "llvm.expect.i8"},
 	{INTRINS_EXPECT_I1, "llvm.expect.i1"},
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -8071,6 +8128,21 @@ add_intrinsic (LLVMModuleRef module, int id)
 		LLVMTypeRef params [] = { LLVMDoubleType () };
 
 		AddFunc (module, name, LLVMDoubleType (), params, 1);
+		break;
+	}
+	case INTRINS_SINF:
+	case INTRINS_COSF:
+	case INTRINS_SQRTF:
+	case INTRINS_ABSF: {
+		LLVMTypeRef params [] = { LLVMFloatType () };
+
+		AddFunc (module, name, LLVMFloatType (), params, 1);
+		break;
+	}
+	case INTRINS_POWF: {
+		LLVMTypeRef params [] = { LLVMFloatType (), LLVMFloatType () };
+
+		AddFunc (module, name, LLVMFloatType (), params, 2);
 		break;
 	}
 	case INTRINS_EXPECT_I8:
