@@ -326,19 +326,28 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     }
                 }
 
-                // Set up triggers
-                if (isPR) {
-                    // We run Tizen Debug and Linux Release as default PR builds
-                    if ((osName == "Tizen" && configurationGroup == "Debug") || (osName == "Linux" && configurationGroup == "Release")) {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build")
-                    }
-                    else {
+                // Disable Tizen except when explicitly requested. See corefx/issues/28901
+                if (osName == "Tizen") {
+                    if (isPR) {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build", "(?i).*test\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
                     }
                 }
-                else {
-                    // Set a push trigger
-                    Utilities.addGithubPushTrigger(newJob)
+                else
+                {
+                    // Set up triggers
+                    if (isPR) {
+                        // We run Tizen Debug and Linux Release as default PR builds
+                        if ((osName == "Tizen" && configurationGroup == "Debug") || (osName == "Linux" && configurationGroup == "Release")) {
+                            Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build")
+                        }
+                        else {
+                            Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build", "(?i).*test\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
+                        }
+                    }
+                    else {
+                        // Set a push trigger
+                        Utilities.addGithubPushTrigger(newJob)
+                    }
                 }
             } // osName
         } // configurationGroup
