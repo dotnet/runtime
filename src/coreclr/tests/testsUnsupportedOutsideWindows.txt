@@ -122,6 +122,7 @@ CoreMangLib/cti/system/decimal/DecimalToInt32/DecimalToInt32.sh
 CoreMangLib/cti/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubTests/DynMethodJumpStubTests.sh
 CoreMangLib/system/collections/generic/hashset/Regression_Dev10_609271/Regression_Dev10_609271.sh
 CoreMangLib/system/collections/generic/hashset/Regression_Dev10_624201/Regression_Dev10_624201.sh
+GC/Coverage/smalloom/smalloom.sh
 Interop/MarshalAPI/GetNativeVariantForObject/GetNativeVariantForObject/GetNativeVariantForObject.sh
 Interop/MarshalAPI/GetObjectForNativeVariant/GetObjectForNativeVariant/GetObjectForNativeVariant.sh
 Interop/MarshalAPI/GetObjectsForNativeVariants/GetObjectsForNativeVariants/GetObjectsForNativeVariants.sh
