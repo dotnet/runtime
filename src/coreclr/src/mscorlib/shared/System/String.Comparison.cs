@@ -317,7 +317,7 @@ namespace System
                         return CompareOrdinalIgnoreCaseHelper(strA, strB);
                     }
 #endif
-                    return CompareInfo.CompareOrdinalIgnoreCase(strA, strB);
+                    return CompareInfo.CompareOrdinalIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
 
                 default:
                     throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
