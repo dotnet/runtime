@@ -598,29 +598,6 @@ STATE_BLOCKING_ASYNC_SUSPENDED: This is an exit state of abort blocking, can't h
 	}
 }
 
-MonoThreadUnwindState*
-mono_thread_info_get_suspend_state (MonoThreadInfo *info)
-{
-	int raw_state, cur_state, suspend_count;
-	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, info);
-	switch (cur_state) {
-	case STATE_ASYNC_SUSPENDED:
-	case STATE_BLOCKING_ASYNC_SUSPENDED:
-		return &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX];
-	case STATE_SELF_SUSPENDED:
-	case STATE_BLOCKING_SELF_SUSPENDED:
-		return &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
-	default:
-/*
-STATE_RUNNING
-STATE_BLOCKING_SUSPEND_REQUESTED
-STATE_ASYNC_SUSPEND_REQUESTED
-STATE_BLOCKING: All those are invalid suspend states.
-*/
-		g_error ("Cannot read suspend state when target %p is in the %s state", mono_thread_info_get_tid (info), state_name (cur_state));
-	}
-}
-
 // State checking code
 /**
  * Return TRUE is the thread is in a runnable state.

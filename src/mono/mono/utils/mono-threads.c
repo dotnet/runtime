@@ -1206,6 +1206,39 @@ mono_thread_info_suspend_unlock (void)
 	mono_os_sem_post (&global_suspend_semaphore);
 }
 
+/* Return the suspend state for the current thread.  Note: the thread must be
+ * already suspended in order for this function to be callable.
+ */
+MonoThreadUnwindState*
+mono_thread_info_get_suspend_state (MonoThreadInfo *info)
+{
+	int cur_state = mono_thread_info_current_state (info);
+	switch (cur_state) {
+	case STATE_ASYNC_SUSPENDED:
+	case STATE_BLOCKING_ASYNC_SUSPENDED:
+		return &info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX];
+	case STATE_SELF_SUSPENDED:
+	case STATE_BLOCKING_SELF_SUSPENDED:
+		return &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
+	case STATE_BLOCKING_SUSPEND_REQUESTED:
+		// This state is only valid for full cooperative suspend.  If
+		// we're preemptively suspending blocking threads, this is not
+		// a valid suspend state.
+		if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ())
+			return &info->thread_saved_state [SELF_SUSPEND_STATE_INDEX];
+		break;
+	default:
+		break;
+	}
+/*
+STATE_RUNNING
+STATE_ASYNC_SUSPEND_REQUESTED
+STATE_BLOCKING: All those are invalid suspend states.
+STATE_BLOCKING_SUSPEND_REQUESTED: Invalid if we're preemptively suspending blocking threads.
+*/
+	g_error ("Cannot read suspend state when target %p is in the %s state", mono_thread_info_get_tid (info), mono_thread_state_name (cur_state));
+}
+
 /*
  * This is a very specific function whose only purpose is to
  * break a given thread from socket syscalls.
