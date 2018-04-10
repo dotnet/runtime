@@ -266,7 +266,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                     "C058767D1FF060A609D7E3D4317079AF0CD0A8A49251AB129157F9894A036487" +
                     "090807060504030201").HexToByteArray();
 
-                writer.WriteBitString(containsSignature.AsReadOnlySpan().Slice(9, 256));
+                writer.WriteBitString(containsSignature.AsSpan().Slice(9, 256));
 
                 // certificate
                 writer.PopSequence();

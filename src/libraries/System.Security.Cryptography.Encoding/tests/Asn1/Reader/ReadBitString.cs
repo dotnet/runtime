@@ -247,7 +247,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.True(didRead, "reader.TryCopyBitStringBytes");
             Assert.Equal(expectedUnusedBitCount, unusedBitCount);
-            Assert.Equal(expectedHex, output.AsReadOnlySpan().Slice(0, bytesWritten).ByteArrayToHex());
+            Assert.Equal(expectedHex, output.AsSpan().Slice(0, bytesWritten).ByteArrayToHex());
         }
 
         private static void TryCopyBitStringBytes_Throws(
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(999, bytesWritten);
 
             Assert.Equal(
-                input.AsReadOnlySpan().Slice(5).ByteArrayToHex(),
+                input.AsSpan().Slice(5).ByteArrayToHex(),
                 output.ByteArrayToHex());
         }
 

@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 out int bytesWritten);
 
             Assert.True(didRead, "reader.TryCopyOctetStringBytes");
-            Assert.Equal(expectedHex, output.AsReadOnlySpan().Slice(0, bytesWritten).ByteArrayToHex());
+            Assert.Equal(expectedHex, output.AsSpan().Slice(0, bytesWritten).ByteArrayToHex());
         }
 
         private static void TryCopyOctetStringBytes_Throws(
@@ -359,7 +359,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(1000, bytesWritten);
 
             Assert.Equal(
-                input.AsReadOnlySpan().Slice(4).ByteArrayToHex(),
+                input.AsSpan().Slice(4).ByteArrayToHex(),
                 output.ByteArrayToHex());
         }
 
