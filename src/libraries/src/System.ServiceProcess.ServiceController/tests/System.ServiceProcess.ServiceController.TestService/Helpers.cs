@@ -4,15 +4,14 @@
 
 namespace System.ServiceProcess.Tests
 {
-    [Flags]
     public enum PipeMessageByteCode
     {
-        Start = 0,
-        Continue = 1,
-        Pause = 2,
-        Stop = 4,
-        OnCustomCommand = 8,
-        ExceptionThrown = 16,
-        Connected = 32
+        Start,
+        Continue,
+        Pause,
+        Stop,
+        OnCustomCommand,
+        ExceptionThrown,
+        Connected
     };
 }
