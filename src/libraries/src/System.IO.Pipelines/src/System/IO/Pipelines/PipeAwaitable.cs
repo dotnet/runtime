@@ -29,6 +29,7 @@ namespace System.IO.Pipelines
             _canceledState = CanceledState.NotCanceled;
             _completion = completed ? s_awaitableIsCompleted : s_awaitableIsNotCompleted;
             _completionState = null;
+            _cancellationTokenRegistration = default;
             _synchronizationContext = null;
             _executionContext = null;
             _useSynchronizationContext = useSynchronizationContext;
@@ -41,7 +42,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CancellationTokenRegistration AttachToken(CancellationToken cancellationToken, Action<object> callback, object state)
         {
-            CancellationTokenRegistration oldRegistration;
+            CancellationTokenRegistration oldRegistration = default;
             if (!cancellationToken.Equals(_cancellationToken))
             {
                 oldRegistration = _cancellationTokenRegistration;

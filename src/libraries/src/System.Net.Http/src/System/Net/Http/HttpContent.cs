@@ -143,7 +143,12 @@ namespace System.Net.Http
 
         internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-            return _bufferedContent != null && _bufferedContent.TryGetBuffer(out buffer);
+            if (_bufferedContent != null)
+            {
+                return _bufferedContent.TryGetBuffer(out buffer);
+            }
+            buffer = default;
+            return false;
         }
 
         protected HttpContent()
