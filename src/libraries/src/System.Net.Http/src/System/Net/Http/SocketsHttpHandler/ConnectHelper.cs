@@ -19,7 +19,7 @@ namespace System.Net.Http
         /// <summary>Pool of event args to use to establish connections.</summary>
         private static readonly ConcurrentQueue<ConnectEventArgs>.Segment s_connectEventArgs =
             new ConcurrentQueue<ConnectEventArgs>.Segment(
-                ConcurrentQueue<ConnectEventArgs>.Segment.RoundUpToPowerOf2(Environment.ProcessorCount));
+                ConcurrentQueue<ConnectEventArgs>.Segment.RoundUpToPowerOf2(Math.Max(2, Environment.ProcessorCount)));
 
         /// <summary>
         /// Helper type used by HttpClientHandler when wrapping SocketsHttpHandler to map its
