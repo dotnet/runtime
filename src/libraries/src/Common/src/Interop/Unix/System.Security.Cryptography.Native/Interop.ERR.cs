@@ -12,6 +12,9 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
+        internal static extern ulong ErrClearError();
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetError")]
         internal static extern ulong ErrGetError();
 

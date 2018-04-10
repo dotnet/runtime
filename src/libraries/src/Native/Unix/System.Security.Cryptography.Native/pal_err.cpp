@@ -5,6 +5,11 @@
 #include "pal_err.h"
 #include "pal_utilities.h"
 
+extern "C" void CryptoNative_ErrClearError()
+{
+    ERR_clear_error();
+}
+
 extern "C" uint64_t CryptoNative_ErrGetError()
 {
     return ERR_get_error();

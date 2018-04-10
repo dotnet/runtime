@@ -6,6 +6,11 @@
 #include "opensslshim.h"
 
 /*
+Shims the ERR_clear_error method.
+*/
+extern "C" void CryptoNative_ErrClearError();
+
+/*
 Shims the ERR_get_error method.
 */
 extern "C" uint64_t CryptoNative_ErrGetError();
