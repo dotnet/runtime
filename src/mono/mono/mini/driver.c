@@ -2602,6 +2602,9 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 		mono_ee_features.force_use_interpreter = TRUE;
 		break;
 
+	case MONO_AOT_MODE_NORMAL:
+		break;
+
 	default:
 		g_error ("Unknown execution-mode %d", mode);
 	}
