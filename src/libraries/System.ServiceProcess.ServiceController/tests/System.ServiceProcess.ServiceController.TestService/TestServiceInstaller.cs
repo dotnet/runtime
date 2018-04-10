@@ -11,8 +11,6 @@ namespace System.ServiceProcess.Tests
 {
     public class TestServiceInstaller
     {
-        public const string LocalServiceName = "NT AUTHORITY\\LocalService";
-
         public TestServiceInstaller()
         {
         }
@@ -37,11 +35,6 @@ namespace System.ServiceProcess.Tests
         {
             string username = Username;
             string password = Password;
-
-            if (string.IsNullOrEmpty(username))
-            {
-                username = LocalServiceName;
-            }
 
             if (ServiceCommandLine == null)
             {
