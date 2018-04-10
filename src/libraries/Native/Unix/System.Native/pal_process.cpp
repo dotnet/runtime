@@ -367,7 +367,11 @@ static int32_t ConvertRLimitResourcesPalToPlatform(RLimitResources value)
 static rlim_t ConvertFromManagedRLimitInfinityToPalIfNecessary(uint64_t value)
 {
     // rlim_t type can vary per platform, so we also treat anything outside its range as infinite.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wtautological-type-limit-compare"
     if (value == UINT64_MAX || value > std::numeric_limits<rlim_t>::max())
+#pragma clang diagnostic pop
         return RLIM_INFINITY;
 
     return static_cast<rlim_t>(value);

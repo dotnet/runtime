@@ -1968,13 +1968,13 @@ int32_t SystemNative_GetBytesAvailable(intptr_t socket, int32_t* available)
 
 static const size_t SocketEventBufferElementSize = sizeof(struct epoll_event) > sizeof(struct SocketEvent) ? sizeof(struct epoll_event) : sizeof(struct SocketEvent);
 
-static enum SocketEvents GetSocketEvents(uint32_t events)
+static int GetSocketEvents(uint32_t events)
 {
     int asyncEvents = (((events & EPOLLIN) != 0) ? SocketEvents_SA_READ : 0) | (((events & EPOLLOUT) != 0) ? SocketEvents_SA_WRITE : 0) |
                       (((events & EPOLLRDHUP) != 0) ? SocketEvents_SA_READCLOSE : 0) |
                       (((events & EPOLLHUP) != 0) ? SocketEvents_SA_CLOSE : 0) | (((events & EPOLLERR) != 0) ? SocketEvents_SA_ERROR : 0);
 
-    return (enum SocketEvents)asyncEvents;
+    return asyncEvents;
 }
 
 static uint32_t GetEPollEvents(enum SocketEvents events)
