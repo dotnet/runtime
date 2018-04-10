@@ -26,7 +26,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Collections.Generic;
-
+using System.Text.RegularExpressions;
 
 
 using Xunit;
@@ -267,7 +267,12 @@ namespace System.Data.Tests
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("'TEST'") != -1);
+
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "TEST" + @"[\p{Pf}\p{Po}]", ex.Message);
+
                 Assert.Null(ex.ParamName);
             }
         }
@@ -1640,7 +1645,11 @@ namespace System.Data.Tests
                 Assert.Equal(typeof(NoNullAllowedException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("'ParentId'") != -1);
+
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "ParentId" + @"[\p{Pf}\p{Po}]", ex.Message);
             }
 
             DataTable dt1 = DataProvider.CreateUniqueConstraint();
