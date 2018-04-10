@@ -753,6 +753,10 @@ namespace System.Net.Http
                     CURLMcode removeResult = Interop.Http.MultiRemoveHandle(_multiHandle, activeRequest.EasyHandle);
                     Debug.Assert(removeResult == CURLMcode.CURLM_OK, "Failed to remove easy handle"); // ignore cleanup errors in release
 
+#if !SYSNETHTTP_NO_OPENSSL
+                    Interop.Crypto.ErrClearError(); // Ensure that no SSL errors were left on the queue by libcurl.
+#endif
+
                     // Release the associated GCHandle so that it's not kept alive forever
                     if (gcHandlePtr != IntPtr.Zero)
                     {
