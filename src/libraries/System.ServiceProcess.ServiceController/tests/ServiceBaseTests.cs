@@ -164,52 +164,33 @@ namespace System.ServiceProcess.Tests
         [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
         public void LogWritten()
         {
-            using (EventLog eventLog = new EventLog("Application"))
-            {
-                ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString() };
-                Assert.False(EventLog.SourceExists(sb.ServiceName));
-                try
-                {
-                    ServiceBase.Run(sb);
-                    eventLog.Source = sb.ServiceName;
-                    Assert.True(EventLog.SourceExists(sb.ServiceName));
-                }
-                finally
-                {
-                    sb.Stop();
-                    EventLog.DeleteEventSource(sb.ServiceName);
-                }
-            }
+            string serviceName = Guid.NewGuid().ToString();
+            // The default username for installing the service is NT AUTHORITY\\LocalService which does not have access to EventLog.
+            // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
+            var testService = new TestServiceProvider(serviceName, userName: null);
+            Assert.True(EventLog.SourceExists(serviceName));
+            testService.DeleteTestServices();
         }
 
         [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
         public void LogWritten_AutoLog_False()
         {
-            using (EventLog eventLog = new EventLog("Application"))
-            {
-                ServiceBase sb = new ServiceBase() { ServiceName = nameof(LogWritten) + Guid.NewGuid().ToString(), AutoLog = false };
-                Assert.False(EventLog.SourceExists(sb.ServiceName));
-                try
-                {
-                    ServiceBase.Run(sb);
-                    Assert.False(EventLog.SourceExists(sb.ServiceName));
-                }
-                finally
-                {
-                    sb.Stop();
-                }
-            }
+            string serviceName = nameof(LogWritten_AutoLog_False) + Guid.NewGuid().ToString();
+            var testService = new TestServiceProvider(serviceName);
+            Assert.False(EventLog.SourceExists(serviceName));
+            testService.DeleteTestServices();
         }
-        
+
         [ConditionalFact(nameof(IsProcessElevated))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework receives the Connected Byte Code after the Exception Thrown Byte Code")]
         public void PropagateExceptionFromOnStart()
         {
             string serviceName = nameof(PropagateExceptionFromOnStart) + Guid.NewGuid().ToString();
-            TestServiceProvider _testService = new TestServiceProvider(serviceName);
-            _testService.Client.Connect(connectionTimeout);
-            Assert.Equal((int)PipeMessageByteCode.Connected, _testService.GetByte());
-            Assert.Equal((int)PipeMessageByteCode.ExceptionThrown, _testService.GetByte());
-            _testService.DeleteTestServices();
+            var testService = new TestServiceProvider(serviceName);
+            testService.Client.Connect(connectionTimeout);
+            Assert.Equal((int)PipeMessageByteCode.Connected, testService.GetByte());
+            Assert.Equal((int)PipeMessageByteCode.ExceptionThrown, testService.GetByte());
+            testService.DeleteTestServices();
         }
 
         private ServiceController ConnectToServer()
