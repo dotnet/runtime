@@ -16,6 +16,7 @@
     <Compile Include="BindingErrors.cs" />
     <Compile Include="EnumUnaryOperationTests.cs" />
     <Compile Include="ExplicitConversionTests.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="ImplicitConversionTests.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
     <Compile Include="DefaultParameterTests.cs" />
@@ -35,6 +36,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="AccessTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
