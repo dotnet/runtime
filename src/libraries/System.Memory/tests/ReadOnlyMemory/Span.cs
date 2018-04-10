@@ -42,6 +42,22 @@ namespace System.MemoryTests
         }
 
         [Fact]
+        public static void SpanFromCtorArrayChar()
+        {
+            char[] a = { '1', '2', '3', '4', '-' };
+            ReadOnlyMemory<char> memory;
+
+            memory = new ReadOnlyMemory<char>(a);
+            memory.Span.Validate('1', '2', '3', '4', '-');
+
+            memory = new ReadOnlyMemory<char>(a, 0, a.Length);
+            memory.Span.Validate('1', '2', '3', '4', '-');
+
+            MemoryManager<char> manager = new CustomMemoryForTest<char>(a);
+            ((ReadOnlyMemory<char>)manager.Memory).Span.Validate('1', '2', '3', '4', '-');
+        }
+
+        [Fact]
         public static void SpanFromCtorArrayObject()
         {
             object o1 = new object();
@@ -57,6 +73,19 @@ namespace System.MemoryTests
 
             MemoryManager<object> manager = new CustomMemoryForTest<object>(a);
             ((ReadOnlyMemory<object>)manager.Memory).Span.ValidateReferenceType(o1, o2);
+        }
+
+        [Fact]
+        public static void SpanFromStringAsMemory()
+        {
+            string a = "1234-";
+            ReadOnlyMemory<char> memory;
+
+            memory = a.AsMemory();
+            memory.Span.Validate('1', '2', '3', '4', '-');
+
+            memory = a.AsMemory(0, a.Length);
+            memory.Span.Validate('1', '2', '3', '4', '-');
         }
 
         [Fact]
