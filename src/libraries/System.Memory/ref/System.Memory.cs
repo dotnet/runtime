@@ -92,6 +92,7 @@ namespace System
     public readonly partial struct Memory<T>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public Memory(System.Buffers.MemoryManager<T> manager, int start, int length) { throw null; }
         public Memory(T[] array) { throw null; }
         public Memory(T[] array, int start, int length) { throw null; }
@@ -120,6 +121,7 @@ namespace System
     public readonly partial struct ReadOnlyMemory<T>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public ReadOnlyMemory(T[] array) { throw null; }
         public ReadOnlyMemory(T[] array, int start, int length) { throw null; }
         public static System.ReadOnlyMemory<T> Empty { get { throw null; } }
@@ -144,6 +146,7 @@ namespace System
     public readonly ref partial struct ReadOnlySpan<T>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null; }
         public ReadOnlySpan(T[] array) { throw null; }
@@ -172,6 +175,7 @@ namespace System
         public ref partial struct Enumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public ref readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -179,6 +183,7 @@ namespace System
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public SequencePosition(object @object, int integer) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public override bool Equals(object obj) { throw null; }
@@ -195,6 +200,7 @@ namespace System
     public readonly ref partial struct Span<T>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
         public unsafe Span(void* pointer, int length) { throw null; }
         public Span(T[] array) { throw null; }
@@ -226,6 +232,7 @@ namespace System
         public ref partial struct Enumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -258,6 +265,7 @@ namespace System.Buffers
     public partial struct MemoryHandle : System.IDisposable
     {
         private object _dummy;
+        private int _dummyPrimitive;
         [System.CLSCompliantAttribute(false)]
         public unsafe MemoryHandle(void* pointer, System.Runtime.InteropServices.GCHandle handle = default(System.Runtime.InteropServices.GCHandle), System.Buffers.IPinnable pinnable = null) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -302,6 +310,7 @@ namespace System.Buffers
     public readonly partial struct ReadOnlySequence<T>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public static readonly System.Buffers.ReadOnlySequence<T> Empty;
         public ReadOnlySequence(System.Buffers.ReadOnlySequenceSegment<T> startSegment, int startIndex, System.Buffers.ReadOnlySequenceSegment<T> endSegment, int endIndex) { throw null; }
         public ReadOnlySequence(System.ReadOnlyMemory<T> memory) { throw null; }
@@ -330,6 +339,7 @@ namespace System.Buffers
         public partial struct Enumerator
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public Enumerator(in System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
             public System.ReadOnlyMemory<T> Current { get { throw null; } }
             public bool MoveNext() { throw null; }
@@ -337,7 +347,7 @@ namespace System.Buffers
     }
     public readonly partial struct StandardFormat : System.IEquatable<System.Buffers.StandardFormat>
     {
-        private readonly int _dummy;
+        private readonly int _dummyPrimitive;
         public const byte MaxPrecision = (byte)99;
         public const byte NoPrecision = (byte)255;
         public StandardFormat(char symbol, byte precision = (byte)255) { throw null; }
