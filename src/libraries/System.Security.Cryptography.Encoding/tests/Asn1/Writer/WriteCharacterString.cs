@@ -372,8 +372,8 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             byte[] encoded = writer.Encode();
 
-            Assert.Equal(tagHex, encoded.AsReadOnlySpan().Slice(0, tagHex.Length / 2).ByteArrayToHex());
-            Assert.Equal("0000", encoded.AsReadOnlySpan().Slice(encoded.Length - 2).ByteArrayToHex());
+            Assert.Equal(tagHex, encoded.AsSpan().Slice(0, tagHex.Length / 2).ByteArrayToHex());
+            Assert.Equal("0000", encoded.AsSpan().Slice(encoded.Length - 2).ByteArrayToHex());
             Assert.Equal(encodedSize, encoded.Length);
         }
 

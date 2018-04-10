@@ -92,7 +92,7 @@
     <Compile Include="ReadOnlyBuffer\SequencePosition.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ReadOnlySpan\AsReadOnlySpan.cs" />
+    <Compile Include="ReadOnlySpan\AsSpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
     <Compile Include="ReadOnlySpan\CompareTo.cs" />
     <Compile Include="ReadOnlySpan\Contains.cs" />
@@ -157,7 +157,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Memory\AsMemory.cs" />
-    <Compile Include="Memory\AsReadOnlyMemory.cs" />
     <Compile Include="Memory\CopyTo.cs" />
     <Compile Include="Memory\CtorArray.cs" />
     <Compile Include="Memory\CtorArrayIntInt.cs" />
