@@ -120,7 +120,9 @@ namespace System
         /// <param name="manager">The memory manager.</param>
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
-        /// <remarks>Returns default when <paramref name="manager"/> is null.</remarks>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown when <paramref name="manager"/> is null.
+        /// </exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
@@ -128,12 +130,7 @@ namespace System
         public Memory(MemoryManager<T> manager, int start, int length)
         {
             if (manager == null)
-            {
-                if (start != 0 || length != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                this = default;
-                return; // returns default
-            }
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.manager);
             if ((uint)start > (uint)manager.Length || (uint)length > (uint)(manager.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
@@ -276,6 +273,7 @@ namespace System
                 if (_index < 0)
                 {
                     Debug.Assert(_length >= 0);
+                    Debug.Assert(_object != null);
                     return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
                 }
                 else if (typeof(T) == typeof(char) && _object is string s)
@@ -335,6 +333,7 @@ namespace System
         {
             if (_index < 0)
             {
+                Debug.Assert(_object != null);
                 return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
             }
             else if (typeof(T) == typeof(char) && _object is string s)
