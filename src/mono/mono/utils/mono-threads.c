@@ -114,21 +114,30 @@ mono_threads_notify_initiator_of_resume (MonoThreadInfo* info)
 	mono_os_sem_post (&suspend_semaphore);
 }
 
-static gboolean
+typedef enum {
+	BeginSuspendFail = 0,
+	BeginSuspendOkPreemptive = 1,
+	BeginSuspendOkCooperative = 2,
+} BeginSuspendResult;
+
+static BeginSuspendResult
 begin_cooperative_suspend (MonoThreadInfo *info)
 {
 	/* There's nothing else to do after we async request the thread to suspend */
 	mono_threads_add_to_pending_operation_set (info);
-	return TRUE;
+	return BeginSuspendOkCooperative;
 }
 
-static gboolean
+static BeginSuspendResult
 begin_preemptive_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
-	return mono_threads_suspend_begin_async_suspend (info, interrupt_kernel);
+	if (mono_threads_suspend_begin_async_suspend (info, interrupt_kernel))
+		return BeginSuspendOkPreemptive;
+	else
+		return BeginSuspendFail;
 }
 
-static gboolean
+static BeginSuspendResult
 begin_suspend_for_running_thread (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	if (mono_threads_are_safepoints_enabled ())
@@ -137,7 +146,7 @@ begin_suspend_for_running_thread (MonoThreadInfo *info, gboolean interrupt_kerne
 		return begin_preemptive_suspend (info, interrupt_kernel);
 }
 
-static gboolean
+static BeginSuspendResult
 begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kernel, gboolean *did_interrupt)
 {
 	// if a thread can't transition to blocking, we certainly shouldn't be
@@ -153,19 +162,29 @@ begin_suspend_for_blocking_thread (MonoThreadInfo *info, gboolean interrupt_kern
 	} else {
 		if (did_interrupt)
 			*did_interrupt = FALSE;
-		return TRUE;
+		return BeginSuspendOkCooperative;
 	}
 }
 
 static gboolean
-check_async_suspend (MonoThreadInfo *info)
+check_async_suspend (MonoThreadInfo *info, BeginSuspendResult result)
 {
 	if (mono_threads_are_safepoints_enabled () && !mono_threads_is_hybrid_suspension_enabled ()) {
 		/* Async suspend can't async fail on coop */
+		g_assert (result == BeginSuspendOkCooperative);
 		return TRUE;
 	}
 
-	return mono_threads_suspend_check_suspend_result (info);
+	switch (result) {
+	case BeginSuspendOkCooperative:
+		return TRUE;
+	case BeginSuspendOkPreemptive:
+		return mono_threads_suspend_check_suspend_result (info);
+	case BeginSuspendFail:
+		return FALSE;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 static void
@@ -912,11 +931,11 @@ mono_thread_info_begin_suspend (MonoThreadInfo *info)
 		// in full cooperative mode just leave BLOCKING
 		// threads running until they try to return to RUNNING, so
 		// nothing to do, in hybrid coop preempt the thread.
-		return begin_suspend_for_blocking_thread (info, FALSE, NULL);
+		return begin_suspend_for_blocking_thread (info, FALSE, NULL) != BeginSuspendFail;
 	case ReqSuspendInitSuspendRunning:
 		// in full preemptive mode this should be a preemptive suspend
 		// in full and hybrid cooperative modes this should be a coop suspend
-		return begin_suspend_for_running_thread (info, FALSE);
+		return begin_suspend_for_running_thread (info, FALSE) != BeginSuspendFail;
 	default:
 		g_assert_not_reached ();
 	}
@@ -983,16 +1002,27 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 	if (!info)
 		return NULL;
 
+	BeginSuspendResult suspend_result = BeginSuspendFail;
 	switch (mono_threads_transition_request_suspension (info)) {
 	case ReqSuspendAlreadySuspended:
 		mono_hazard_pointer_clear (hp, 1); //XXX this is questionable we got to clean the suspend/resume nonsense of critical sections
 		return info;
 	case ReqSuspendInitSuspendRunning:
-		if (!begin_suspend_for_running_thread (info, interrupt_kernel)) {
+		suspend_result = begin_suspend_for_running_thread (info, interrupt_kernel);
+		if (suspend_result == BeginSuspendFail) {
 			mono_hazard_pointer_clear (hp, 1);
 			return NULL;
 		}
-		break;
+		//Wait for the pending suspend to finish
+		mono_threads_wait_pending_operations ();
+
+		if (!check_async_suspend (info, suspend_result)) {
+			mono_thread_info_core_resume (info);
+			mono_threads_wait_pending_operations ();
+			mono_hazard_pointer_clear (hp, 1);
+			return NULL;
+		}
+		return info;
 	case ReqSuspendAlreadySuspendedBlocking:
 		// ReqSuspendAlreadySuspendedBlocking should not be possible if
 		// we're using preemptive suspend on a blocking thread - a
@@ -1012,7 +1042,8 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 		return info;
 	case ReqSuspendInitSuspendBlocking: {
 		gboolean did_interrupt = FALSE;
-		if (!begin_suspend_for_blocking_thread (info, interrupt_kernel, &did_interrupt)) {
+		suspend_result = begin_suspend_for_blocking_thread (info, interrupt_kernel, &did_interrupt);
+		if (suspend_result == BeginSuspendFail) {
 			mono_hazard_pointer_clear (hp, 1);
 			return NULL;
 		}
@@ -1027,17 +1058,7 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 	default:
 		g_assert_not_reached ();
 	}
-
-	//Wait for the pending suspend to finish
-	mono_threads_wait_pending_operations ();
-
-	if (!check_async_suspend (info)) {
-		mono_thread_info_core_resume (info);
-		mono_threads_wait_pending_operations ();
-		mono_hazard_pointer_clear (hp, 1);
-		return NULL;
-	}
-	return info;
+	g_assert_not_reached ();
 }
 
 static MonoThreadInfo*
@@ -1081,7 +1102,7 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 	MonoThreadInfo *info = NULL;
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	THREADS_SUSPEND_DEBUG ("SUSPENDING tid %p\n", (void*)id);
+	THREADS_SUSPEND_DEBUG ("SUSPENDING tid %p (%s)\n", (void*)id, interrupt_kernel ? "int" : "");
 	/*FIXME: unify this with self-suspend*/
 	g_assert (id != mono_native_thread_id_get ());
 
@@ -1090,16 +1111,19 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 	mono_threads_begin_global_suspend ();
 
 	info = suspend_sync_nolock (id, interrupt_kernel);
+	THREADS_SUSPEND_DEBUG ("SUSPENDING tid %p (%s): info %p\n", (void*)id, interrupt_kernel ? "int" : "", info);
 	if (!info)
 		goto done;
 
 	switch (result = callback (info, user_data)) {
 	case MonoResumeThread:
+		THREADS_SUSPEND_DEBUG ("CALLBACK tid %p (%s): MonoResumeThread\n", (void*)id, interrupt_kernel ? "int" : "");
 		mono_hazard_pointer_set (hp, 1, info);
 		mono_thread_info_core_resume (info);
 		mono_threads_wait_pending_operations ();
 		break;
 	case KeepSuspended:
+		THREADS_SUSPEND_DEBUG ("CALLBACK tid %p (%s): KeepSuspended\n", (void*)id, interrupt_kernel ? "int" : "");
 		g_assert (!mono_threads_are_safepoints_enabled ());
 		/* FIXME: what if mono_threads_is_hybrid_suspension_enabled () ? */
 		break;
