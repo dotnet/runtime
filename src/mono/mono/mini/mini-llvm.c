@@ -5435,7 +5435,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 #ifdef TARGET_AMD64
 			args [0] = convert (ctx, lhs, LLVMFloatType ());
-			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.fabs"), args, 1, dname);
+			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, "llvm.fabs.f32"), args, 1, dname);
 #else
 			/* llvm.fabs not supported on all platforms */
 			args [0] = convert (ctx, lhs, LLVMDoubleType ());
@@ -8002,7 +8002,7 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SQRT, "llvm.sqrt.f64"},
 	/* This isn't an intrinsic, instead llvm seems to special case it by name */
 	{INTRINS_FABS, "fabs"},
-	{INTRINS_ABSF, "llvm.fabs"},
+	{INTRINS_ABSF, "llvm.fabs.f32"},
 	{INTRINS_SINF, "llvm.sin.f32"},
 	{INTRINS_COSF, "llvm.cos.f32"},
 	{INTRINS_SQRTF, "llvm.sqrt.f32"},
