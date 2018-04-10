@@ -9,26 +9,26 @@
 #include <assert.h>
 #include <poll.h>
 
-static_assert(PAL_CURLM_CALL_MULTI_PERFORM == CURLM_CALL_MULTI_PERFORM, "");
-static_assert(PAL_CURLM_OK == CURLM_OK, "");
-static_assert(PAL_CURLM_BAD_HANDLE == CURLM_BAD_HANDLE, "");
-static_assert(PAL_CURLM_BAD_EASY_HANDLE == CURLM_BAD_EASY_HANDLE, "");
-static_assert(PAL_CURLM_OUT_OF_MEMORY == CURLM_OUT_OF_MEMORY, "");
-static_assert(PAL_CURLM_INTERNAL_ERROR == CURLM_INTERNAL_ERROR, "");
-static_assert(PAL_CURLM_BAD_SOCKET == CURLM_BAD_SOCKET, "");
-static_assert(PAL_CURLM_UNKNOWN_OPTION == CURLM_UNKNOWN_OPTION, "");
+static_assert((int)PAL_CURLM_CALL_MULTI_PERFORM == (int)CURLM_CALL_MULTI_PERFORM, "");
+static_assert((int)PAL_CURLM_OK == (int)CURLM_OK, "");
+static_assert((int)PAL_CURLM_BAD_HANDLE == (int)CURLM_BAD_HANDLE, "");
+static_assert((int)PAL_CURLM_BAD_EASY_HANDLE == (int)CURLM_BAD_EASY_HANDLE, "");
+static_assert((int)PAL_CURLM_OUT_OF_MEMORY == (int)CURLM_OUT_OF_MEMORY, "");
+static_assert((int)PAL_CURLM_INTERNAL_ERROR == (int)CURLM_INTERNAL_ERROR, "");
+static_assert((int)PAL_CURLM_BAD_SOCKET == (int)CURLM_BAD_SOCKET, "");
+static_assert((int)PAL_CURLM_UNKNOWN_OPTION == (int)CURLM_UNKNOWN_OPTION, "");
 #if HAVE_CURLM_ADDED_ALREADY
-static_assert(PAL_CURLM_ADDED_ALREADY == CURLM_ADDED_ALREADY, "");
+static_assert((int)PAL_CURLM_ADDED_ALREADY == (int)CURLM_ADDED_ALREADY, "");
 #endif
-static_assert(PAL_CURLMOPT_PIPELINING == CURLMOPT_PIPELINING, "");
+static_assert((int)PAL_CURLMOPT_PIPELINING == (int)CURLMOPT_PIPELINING, "");
 #ifdef CURLMOPT_MAX_HOST_CONNECTIONS
-static_assert(PAL_CURLMOPT_MAX_HOST_CONNECTIONS == CURLMOPT_MAX_HOST_CONNECTIONS, "");
+static_assert((int)PAL_CURLMOPT_MAX_HOST_CONNECTIONS == (int)CURLMOPT_MAX_HOST_CONNECTIONS, "");
 #endif
 #if HAVE_CURLPIPE_MULTIPLEX
-static_assert(PAL_CURLPIPE_MULTIPLEX == CURLPIPE_MULTIPLEX, "");
+static_assert((int)PAL_CURLPIPE_MULTIPLEX == (int)CURLPIPE_MULTIPLEX, "");
 #endif
 
-static_assert(PAL_CURLMSG_DONE == CURLMSG_DONE, "");
+static_assert((int)PAL_CURLMSG_DONE == (int)CURLMSG_DONE, "");
 
 extern "C" CURLM* HttpNative_MultiCreate()
 {
