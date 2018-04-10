@@ -59,7 +59,6 @@
     <Compile Include="DerSequenceReaderTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
-    <Compile Include="TestHelpers.cs" />
     <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
       <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
     </Compile>

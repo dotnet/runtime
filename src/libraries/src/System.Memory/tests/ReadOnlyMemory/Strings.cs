@@ -20,7 +20,7 @@ namespace System.MemoryTests
 
         [Theory]
         [MemberData(nameof(StringInputs))]
-        public static void AsReadOnlyMemory_ToArray_Roundtrips(string input)
+        public static void AsMemory_ToArray_Roundtrips(string input)
         {
             ReadOnlyMemory<char> m = input.AsMemory();
             Assert.Equal(input, new string(m.ToArray()));
@@ -28,7 +28,7 @@ namespace System.MemoryTests
 
         [Theory]
         [MemberData(nameof(StringInputs))]
-        public static void AsReadOnlyMemory_Span_Roundtrips(string input)
+        public static void AsMemory_Span_Roundtrips(string input)
         {
             ReadOnlyMemory<char> m = input.AsMemory();
             ReadOnlySpan<char> s = m.Span;
@@ -45,7 +45,7 @@ namespace System.MemoryTests
         [InlineData("0123456789", 9, 1)]
         [InlineData("0123456789", 1, 8)]
         [InlineData("0123456789", 5, 3)]
-        public static void AsReadOnlyMemory_Slice_MatchesSubstring(string input, int offset, int count)
+        public static void AsMemory_Slice_MatchesSubstring(string input, int offset, int count)
         {
             ReadOnlyMemory<char> m = input.AsMemory();
             Assert.Equal(input.Substring(offset, count), new string(m.Slice(offset, count).ToArray()));
@@ -54,7 +54,7 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void AsReadOnlyMemory_NullString_Default()
+        public static void AsMemory_NullString_Default()
         {
             ReadOnlyMemory<char> m = ((string)null).AsMemory();
             m.Validate();
@@ -70,7 +70,7 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void NullAsReadOnlyMemoryNonZeroStartAndLength()
+        public static void NullAsMemoryNonZeroStartAndLength()
         {
             string str = null;
 
@@ -84,7 +84,7 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static void AsReadOnlyMemory_TryGetArray_ReturnsFalse()
+        public static void AsMemory_TryGetArray_ReturnsFalse()
         {
             ReadOnlyMemory<char> m = "0123456789".AsMemory();
             Assert.False(MemoryMarshal.TryGetArray(m, out ArraySegment<char> array));
@@ -94,7 +94,7 @@ namespace System.MemoryTests
         }
 
         [Fact]
-        public static unsafe void AsReadOnlyMemory_Pin_ExpectedPointerValue()
+        public static unsafe void AsMemory_Pin_ExpectedPointerValue()
         {
             string input = "0123456789";
             ReadOnlyMemory<char> m = input.AsMemory();
@@ -111,7 +111,7 @@ namespace System.MemoryTests
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSliceTestData), MemberType = typeof(TestHelpers))]
-        public static unsafe void AsReadOnlyMemory_PointerAndLength(string text, int start, int length)
+        public static unsafe void AsMemory_StartAndLength(string text, int start, int length)
         {
             ReadOnlyMemory<char> m;
             if (start == -1)
@@ -145,20 +145,20 @@ namespace System.MemoryTests
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
-        public static unsafe void AsReadOnlyMemory_2Arg_OutOfRange(string text, int start)
+        public static unsafe void AsMemory_2Arg_OutOfRange(string text, int start)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsMemory(start));
         }
 
         [Theory]
         [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
-        public static unsafe void AsReadOnlyMemory_3Arg_OutOfRange(string text, int start, int length)
+        public static unsafe void AsMemory_3Arg_OutOfRange(string text, int start, int length)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsMemory(start, length));
         }
 
         [Fact]
-        public static void AsReadOnlyMemory_EqualsAndGetHashCode_ExpectedResults()
+        public static void AsMemory_EqualsAndGetHashCode_ExpectedResults()
         {
             ReadOnlyMemory<char> m1 = new string('a', 4).AsMemory();
             ReadOnlyMemory<char> m2 = new string('a', 4).AsMemory();

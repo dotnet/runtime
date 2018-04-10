@@ -28,8 +28,5 @@ namespace System
                 data.Add((T)item[0]);
             return data;
         }
-
-        // @todo: https://github.com/dotnet/corefx/issues/26894 - these emulate MemoryExtension apis that we removed. Clean up the callsites and remove this class.
-        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => new ReadOnlySpan<T>(array);
     }
 }

@@ -30,13 +30,13 @@ namespace System.SpanTests
                     a[i] = s_whiteSpaceCharacters[rand.Next(0, s_whiteSpaceCharacters.Length - 1)];
                 }
                 var span = new Span<char>(a);
-                bool result = span.AsReadOnlySpan().IsWhiteSpace();
+                bool result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
                 Assert.Equal(string.IsNullOrWhiteSpace(new string(a)), result);
 
                 for (int i = 0; i < s_whiteSpaceCharacters.Length - 1; i++)
                 {
                     span.Fill(s_whiteSpaceCharacters[i]);
-                    Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), span.AsReadOnlySpan().IsWhiteSpace());
+                    Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), ((ReadOnlySpan<char>)span).IsWhiteSpace());
                 }
             }
         }
@@ -73,25 +73,25 @@ namespace System.SpanTests
 
                 // first character is not a white-space character
                 a[0] = 'a';
-                bool result = span.AsReadOnlySpan().IsWhiteSpace();
+                bool result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
                 Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
                 a[0] = ' ';
 
                 // last character is not a white-space character
                 a[length - 1] = 'a';
-                result = span.AsReadOnlySpan().IsWhiteSpace();
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
                 Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
                 a[length - 1] = ' ';
 
                 // character in the middle is not a white-space character
                 a[length/2] = 'a';
-                result = span.AsReadOnlySpan().IsWhiteSpace();
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
                 Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
                 a[length/2] = ' ';
 
                 // no character is a white-space character
                 span.Fill('a');
-                result = span.AsReadOnlySpan().IsWhiteSpace();
+                result = ((ReadOnlySpan<char>)span).IsWhiteSpace();
                 Assert.Equal(string.IsNullOrWhiteSpace(new string(span.ToArray())), result);
             }
         }
