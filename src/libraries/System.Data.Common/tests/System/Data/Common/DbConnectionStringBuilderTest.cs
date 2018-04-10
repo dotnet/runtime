@@ -28,6 +28,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using Xunit;
 
@@ -319,7 +320,12 @@ namespace System.Data.Tests.Common
                     Assert.Equal(typeof(ArgumentException), ex.GetType());
                     Assert.Null(ex.InnerException);
                     Assert.NotNull(ex.Message);
-                    Assert.True(ex.Message.IndexOf("'" + keyword + "'") != -1);
+
+                    // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                    // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                    // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                    Assert.Matches(@"[\p{Pi}\p{Po}]" + Regex.Escape(keyword) + @"[\p{Pf}\p{Po}]", ex.Message);
+
                     Assert.Null(ex.ParamName);
                 }
             }
@@ -339,7 +345,12 @@ namespace System.Data.Tests.Common
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("'abc'") != -1);
+
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "abc" + @"[\p{Pf}\p{Po}]", ex.Message);
+
                 Assert.Null(ex.ParamName);
             }
         }
@@ -403,7 +414,12 @@ namespace System.Data.Tests.Common
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
                 Assert.NotNull(ex.Message);
-                Assert.True(ex.Message.IndexOf("'DriverID'") != -1);
+                
+                // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
+                // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
+                // \p{Po} any kind of punctuation character that is not a dash, bracket, quote or connector https://www.compart.com/en/unicode/category/Po
+                Assert.Matches(@"[\p{Pi}\p{Po}]" + "DriverID" + @"[\p{Pf}\p{Po}]", ex.Message);
+
                 Assert.Null(ex.ParamName);
             }
             Assert.False(_builder.ContainsKey("DriverID"));
