@@ -3640,6 +3640,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				case MINT_TYPE_I8:
 					SIMPLE_OP (td, MINT_STELEM_I8);
 					break;
+				case MINT_TYPE_R4:
+					SIMPLE_OP (td, MINT_STELEM_R4);
+					break;
 				case MINT_TYPE_R8:
 					SIMPLE_OP (td, MINT_STELEM_R8);
 					break;

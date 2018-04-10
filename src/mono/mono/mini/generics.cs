@@ -129,6 +129,20 @@ class Tests
 		return ldelem_any (arr);
 	}
 
+	public static int test_1_ldelem_stelem_any_single () {
+		float[] arr = new float [3];
+		stelem_any (arr, 1);
+
+		return (int) ldelem_any (arr);
+	}
+
+	public static int test_1_ldelem_stelem_any_double () {
+		double[] arr = new double [3];
+		stelem_any (arr, 1);
+
+		return (int) ldelem_any (arr);
+	}
+
 	public static T return_ref<T> (ref T t) {
 		return t;
 	}
