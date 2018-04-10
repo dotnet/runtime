@@ -123,7 +123,7 @@ namespace System.Memory.Tests
         public static void ReadOnlyMemory_Byte_TryGetArray()
         {
             ReadOnlyMemory<byte> memory = new byte[1];
-            ArraySegment<byte> result;
+            ArraySegment<byte> result = default;
 
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
@@ -144,7 +144,7 @@ namespace System.Memory.Tests
         public static void ReadOnlyMemory_Char_TryGetArray()
         {
             ReadOnlyMemory<char> memory = new char[1];
-            ArraySegment<char> result;
+            ArraySegment<char> result = default;
 
             foreach (BenchmarkIteration iteration in Benchmark.Iterations)
             {
