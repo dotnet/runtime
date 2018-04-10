@@ -293,6 +293,21 @@ namespace System.Net.Http
                 {
                     _curlHandler.UseDefaultCredentials = value;
                 }
+                else
+                {
+                    if (value)
+                    {
+                        _socketsHttpHandler.Credentials = CredentialCache.DefaultCredentials;
+                    }
+                    else
+                    {
+                        if (_socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials)
+                        {
+                            // Only clear out the Credentials property if it was a DefaultCredentials.
+                            _socketsHttpHandler.Credentials = null;
+                        }
+                    }
+                }
             }
         }
 
