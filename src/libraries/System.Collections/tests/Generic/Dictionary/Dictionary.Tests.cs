@@ -225,6 +225,27 @@ namespace System.Collections.Tests
                 Assert.Equal(array[i++], obj.Key);
         }
 
+        [Fact]
+        public void Remove_NonExistentEntries_DoesNotPreventEnumeration()
+        {
+            const string SubKey = "-sub-key";
+            var dictionary = new Dictionary<string, string>();
+            dictionary.Add("a", "b");
+            dictionary.Add("c", "d");
+            foreach (string key in dictionary.Keys)
+            {
+                if (dictionary.Remove(key + SubKey))
+                    break;
+            }
+
+            dictionary.Add("c" + SubKey, "d");
+            foreach (string key in dictionary.Keys)
+            {
+                if (dictionary.Remove(key + SubKey))
+                    break;
+            }
+        }
+
         [Theory]
         [MemberData(nameof(CopyConstructorInt32Data))]
         public void CopyConstructorInt32(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector)
