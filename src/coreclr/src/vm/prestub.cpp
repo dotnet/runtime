@@ -734,8 +734,10 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 
 #ifdef FEATURE_TIERED_COMPILATION
-    if (g_pConfig->TieredCompilation() && !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
+    if (g_pConfig->TieredCompilation() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
     {
+        // The flag above is only set (in TieredCompilationManager::GetJitFlags()) when this method was eligible for tiered
+        // compilation at the time when it was checked, and a tier 0 JIT was requested for this method
         GetAppDomain()->GetTieredCompilationManager()->OnTier0JitInvoked();
     }
 #endif // FEATURE_TIERED_COMPILATION
