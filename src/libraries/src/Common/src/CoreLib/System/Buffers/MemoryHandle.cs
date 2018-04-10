@@ -39,7 +39,7 @@ namespace System.Buffers
         /// <summary>
         /// Frees the pinned handle and releases IPinnable.
         /// </summary>
-       public void Dispose()
+        public void Dispose()
         {
             if (_handle.IsAllocated)
             {
