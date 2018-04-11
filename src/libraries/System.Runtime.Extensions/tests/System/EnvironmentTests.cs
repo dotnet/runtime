@@ -191,6 +191,79 @@ namespace System.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
+        [Fact]
+        public void FailFast_ExceptionStackTrace_ArgumentException()
+        {
+            var psi = new ProcessStartInfo();
+            psi.RedirectStandardError = true;
+            psi.RedirectStandardOutput = true;
+
+            using (RemoteInvokeHandle handle = RemoteInvoke(
+                () => { Environment.FailFast("message", new ArgumentException("bad arg")); return SuccessExitCode; },
+                new RemoteInvokeOptions { StartInfo = psi }))
+            {
+                Process p = handle.Process;
+                handle.Process = null;
+                p.WaitForExit();
+                string consoleOutput = p.StandardError.ReadToEnd();
+                Assert.Contains("Exception details:", consoleOutput);
+                Assert.Contains("ArgumentException:", consoleOutput);
+                Assert.Contains("bad arg", consoleOutput);
+            }
+        }
+
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
+        [Fact]
+        public void FailFast_ExceptionStackTrace_StackOverflowException()
+        {
+            // Test using another type of exception
+            var psi = new ProcessStartInfo();
+            psi.RedirectStandardError = true;
+            psi.RedirectStandardOutput = true;
+
+            using (RemoteInvokeHandle handle = RemoteInvoke(
+                () => { Environment.FailFast("message", new StackOverflowException("SO exception")); return SuccessExitCode; },
+                new RemoteInvokeOptions { StartInfo = psi }))
+            {
+                Process p = handle.Process;
+                handle.Process = null;
+                p.WaitForExit();
+                string consoleOutput = p.StandardError.ReadToEnd();
+                Assert.Contains("Exception details:", consoleOutput);
+                Assert.Contains("StackOverflowException", consoleOutput);
+                Assert.Contains("SO exception", consoleOutput);
+            }
+        }
+
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // fail fast crashes the process
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have dotnet/coreclr#16622")]
+        [Fact]
+        public void FailFast_ExceptionStackTrace_InnerException()
+        { 
+            // Test if inner exception details are also logged
+            var psi = new ProcessStartInfo();
+            psi.RedirectStandardError = true;
+            psi.RedirectStandardOutput = true;
+
+            using (RemoteInvokeHandle handle = RemoteInvoke(
+                () => { Environment.FailFast("message", new ArgumentException("first exception", new NullReferenceException("inner exception"))); return SuccessExitCode; },
+                new RemoteInvokeOptions { StartInfo = psi }))
+            {
+                Process p = handle.Process;
+                handle.Process = null;
+                p.WaitForExit();
+                string consoleOutput = p.StandardError.ReadToEnd();
+                Assert.Contains("Exception details:", consoleOutput);
+                Assert.Contains("first exception", consoleOutput);
+                Assert.Contains("inner exception", consoleOutput);
+                Assert.Contains("ArgumentException", consoleOutput);
+                Assert.Contains("NullReferenceException", consoleOutput);
+            }
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests OS-specific environment
         public void GetFolderPath_Unix_PersonalIsHomeAndUserProfile()
