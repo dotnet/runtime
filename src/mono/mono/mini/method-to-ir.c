@@ -82,7 +82,10 @@
 #include "mini-runtime.h"
 
 #define BRANCH_COST 10
+/* Used for the JIT */
 #define INLINE_LENGTH_LIMIT 20
+/* Used to LLVM JIT */
+#define LLVM_JIT_INLINE_LENGTH_LIMIT 100
 
 static const gboolean debug_tailcall_break_compile = FALSE; // break in method_to_ir
 static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
@@ -4211,7 +4214,7 @@ mono_emit_load_got_addr (MonoCompile *cfg)
 	MONO_ADD_INS (cfg->bb_exit, dummy_use);
 }
 
-static int inline_limit;
+static int inline_limit, llvm_jit_inline_limit;
 static gboolean inline_limit_inited;
 
 static gboolean
@@ -4219,6 +4222,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 {
 	MonoMethodHeaderSummary header;
 	MonoVTable *vtable;
+	int limit;
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 	MonoMethodSignature *sig = mono_method_signature (method);
 	int i;
@@ -4248,12 +4252,20 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 		char *inlinelimit;
 		if ((inlinelimit = g_getenv ("MONO_INLINELIMIT"))) {
 			inline_limit = atoi (inlinelimit);
+			llvm_jit_inline_limit = inline_limit;
 			g_free (inlinelimit);
-		} else
+		} else {
 			inline_limit = INLINE_LENGTH_LIMIT;
+			llvm_jit_inline_limit = LLVM_JIT_INLINE_LENGTH_LIMIT;
+		}
 		inline_limit_inited = TRUE;
 	}
-	if (header.code_size >= inline_limit && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
+
+	if (COMPILE_LLVM (cfg) && !cfg->compile_aot)
+		limit = llvm_jit_inline_limit;
+	else
+		limit = inline_limit;
+	if (header.code_size >= limit && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
 		return FALSE;
 
 	/*
