@@ -339,12 +339,11 @@
       <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_VERSION%">
         <ReplacementString>$(RuntimeDepsRpmPackageVersion)</ReplacementString> 
       </RuntimeDependenciesTokenValue>
-      <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_REVISION%">
+      <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_REVISION%">
         <ReplacementString>$(RuntimeDepsRpmPackageRelease)</ReplacementString>
-      </SharedFrameworkTokenValue>
+      </RuntimeDependenciesTokenValue>
     </ItemGroup>
-    </ItemGroup>
-
+    
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
                          DestinationFile="$(RpmLayoutDirectory)$(rpmConfigJsonName)"
                          ReplacementItems="@(RuntimeDependenciesTokenValue)" />

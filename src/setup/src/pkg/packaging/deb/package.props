@@ -10,7 +10,7 @@
   <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true' AND '$(InstallerExtension)' == '.deb'">
     
     <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
-    <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostPackageReleaseVersion>
+    <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostPackageRelease>
     
     <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
     <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostResolverPackageRelease>
