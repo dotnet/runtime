@@ -406,8 +406,12 @@ namespace System.Buffers.ArrayPool.Tests
                 int count = 0;
                 listener.RunWithCallback(e =>
                 {
-                    Interlocked.Increment(ref count);
-                    callback(e);
+                    // Don't bother tracking the GC polling event- it isn't deterministic
+                    if (e.EventId != 5)
+                    {
+                        Interlocked.Increment(ref count);
+                        callback(e);
+                    }
                 }, body);
                 return count;
             }
