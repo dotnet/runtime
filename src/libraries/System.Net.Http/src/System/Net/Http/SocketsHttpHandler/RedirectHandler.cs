@@ -27,6 +27,8 @@ namespace System.Net.Http
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request, cancellationToken);
+
             HttpResponseMessage response = await _initialInnerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             uint redirectCount = 0;
@@ -41,7 +43,7 @@ namespace System.Net.Http
                     // then just return the 3xx response.
                     if (NetEventSource.IsEnabled)
                     {
-                        NetEventSource.Info(this, $"Exceeded max number of redirects. Redirect from {request.RequestUri} to {redirectUri} blocked.");
+                        NetEventSource.Error(this, $"Exceeded max number of redirects. Redirect from {request.RequestUri} to {redirectUri} blocked.");
                     }
 
                     break;
@@ -64,6 +66,8 @@ namespace System.Net.Http
                 // Issue the redirected request.
                 response = await _redirectInnerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return response;
         }
@@ -112,7 +116,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Info(this, $"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.");
+                    NetEventSource.Error(this, $"Insecure https to http redirect from '{requestUri}' to '{location}' blocked.");
                 }
 
                 return null;

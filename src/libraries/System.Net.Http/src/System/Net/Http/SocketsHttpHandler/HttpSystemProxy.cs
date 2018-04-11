@@ -39,6 +39,7 @@ namespace System.Net.Http
 
             if (proxyHelper.AutoSettingsUsed)
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Info(proxyHelper, $"AutoSettingsUsed, calling {nameof(Interop.WinHttp.WinHttpOpen)}");
                 sessionHandle = Interop.WinHttp.WinHttpOpen(
                     IntPtr.Zero,
                     Interop.WinHttp.WINHTTP_ACCESS_TYPE_NO_PROXY,
@@ -49,6 +50,7 @@ namespace System.Net.Http
                 if (sessionHandle.IsInvalid)
                 {
                     // Proxy failures are currently ignored by managed handler.
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
                     return false;
                 }
             }
@@ -135,11 +137,11 @@ namespace System.Net.Http
                                             RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                             _bypass.Add(re);
                         }
-                        catch
+                        catch (Exception ex)
                         {
                             if (NetEventSource.IsEnabled)
                             {
-                                NetEventSource.Info(this, "Failed to process " + tmp + " from bypass list.");
+                                NetEventSource.Error(this, $"Failed to process {tmp} from bypass list: {ex}");
                             }
                         }
                     }

@@ -258,10 +258,11 @@ namespace System.Net.Http
                     proxyUri = _proxy.GetProxy(request.RequestUri);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Eat any exception from the IWebProxy and just treat it as no proxy.
                 // This matches the behavior of other handlers.
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Exception from IWebProxy.GetProxy({request.RequestUri}): {ex}");
             }
 
             if (proxyUri != null && proxyUri.Scheme != UriScheme.Http)
@@ -291,6 +292,8 @@ namespace System.Net.Http
         /// <summary>Removes unusable connections from each pool, and removes stale pools entirely.</summary>
         private void RemoveStalePools()
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
             Debug.Assert(_cleaningTimer != null);
 
             // Iterate through each pool in the set of pools.  For each, ask it to clear out
@@ -325,6 +328,8 @@ namespace System.Net.Http
             // than reused.  This should be a rare occurrence, so for now we don't worry about it.  In the
             // future, there are a variety of possible ways to address it, such as allowing connections to
             // be returned to pools they weren't associated with.
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
         internal readonly struct HttpConnectionKey : IEquatable<HttpConnectionKey>
