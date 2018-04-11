@@ -322,25 +322,6 @@ namespace System.Buffers
             return true;
         }
 
-        internal bool TryGetMemoryManager(out MemoryManager<T> manager, out int start, out int length)
-        {
-            GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out start, out int endIndex);
-
-            if (type != SequenceType.MemoryManager)
-            {
-                manager = default;
-                length = 0;
-                return false;
-            }
-
-            Debug.Assert(Start.GetObject() != null);
-            Debug.Assert(Start.GetObject() is MemoryManager<T>);
-
-            manager = Unsafe.As<MemoryManager<T>>(Start.GetObject());
-            length = endIndex - start;
-            return true;
-        }
-
         internal bool TryGetReadOnlyMemory(out ReadOnlyMemory<T> memory)
         {
             GetTypeAndIndices(Start.GetInteger(), End.GetInteger(), out SequenceType type, out int startIndex, out int endIndex);

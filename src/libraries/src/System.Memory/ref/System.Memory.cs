@@ -542,7 +542,6 @@ namespace System.Runtime.InteropServices
     public static partial class SequenceMarshal
     {
         public static bool TryGetArray<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ArraySegment<T> segment) { throw null; }
-        public static bool TryGetMemoryManager<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.MemoryManager<T> manager, out int start, out int length) { throw null; }
         public static bool TryGetReadOnlyMemory<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ReadOnlyMemory<T> memory) { throw null; }
         public static bool TryGetReadOnlySequenceSegment<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.Buffers.ReadOnlySequenceSegment<T> startSegment, out int startIndex, out System.Buffers.ReadOnlySequenceSegment<T> endSegment, out int endIndex) { throw null; }
     }

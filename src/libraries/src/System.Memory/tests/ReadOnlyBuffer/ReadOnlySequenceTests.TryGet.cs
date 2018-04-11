@@ -21,7 +21,6 @@ namespace System.Memory.Tests
             Assert.Equal(3, array.Count);
 
             Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out _, out _, out _, out _));
-            Assert.False(SequenceMarshal.TryGetMemoryManager(buffer, out _, out _, out _));
 
             // Array can be retrieved with TryGetReadOnlyMemory
             Assert.True(SequenceMarshal.TryGetReadOnlyMemory(buffer, out ReadOnlyMemory<byte> newMemory));
@@ -38,7 +37,6 @@ namespace System.Memory.Tests
             Assert.Equal(new byte[] { 3, 4, 5 }, newMemory.ToArray());
 
             Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out ReadOnlySequenceSegment<byte> startSegment, out int startIndex, out ReadOnlySequenceSegment<byte> endSegment, out int endIndex));
-            Assert.False(SequenceMarshal.TryGetMemoryManager(buffer, out _, out _, out _));
 
             // Memory is internally decomposed to its container so it would be accessible via TryGetArray
             Assert.True(SequenceMarshal.TryGetArray(buffer, out ArraySegment<byte> array));
@@ -58,7 +56,6 @@ namespace System.Memory.Tests
             Assert.Equal(text.Substring(2, 3).ToCharArray(), newMemory.ToArray());
 
             Assert.False(SequenceMarshal.TryGetReadOnlySequenceSegment(buffer, out ReadOnlySequenceSegment<char> startSegment, out int startIndex, out ReadOnlySequenceSegment<char> endSegment, out int endIndex));
-            Assert.False(SequenceMarshal.TryGetMemoryManager(buffer, out _, out _, out _));
             Assert.False(SequenceMarshal.TryGetArray(buffer, out _));
         }
 
@@ -77,7 +74,6 @@ namespace System.Memory.Tests
             Assert.Equal(5, endIndex);
 
             Assert.False(SequenceMarshal.TryGetArray(buffer, out _));
-            Assert.False(SequenceMarshal.TryGetMemoryManager(buffer, out _, out _, out _));
 
             // Single block can be retrieved with TryGetReadOnlyMemory
             Assert.True(SequenceMarshal.TryGetReadOnlyMemory(buffer, out ReadOnlyMemory<byte> newMemory));
@@ -100,7 +96,6 @@ namespace System.Memory.Tests
             Assert.Equal(1, endIndex);
 
             Assert.False(SequenceMarshal.TryGetArray(buffer, out _));
-            Assert.False(SequenceMarshal.TryGetMemoryManager(buffer, out _, out _, out _));
 
             // Multi-block can't be retrieved with TryGetReadOnlyMemory
             Assert.False(SequenceMarshal.TryGetReadOnlyMemory(buffer, out _));
