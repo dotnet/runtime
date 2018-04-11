@@ -523,6 +523,7 @@ namespace System.Runtime.InteropServices
         public static System.Memory<T> AsMemory<T>(System.ReadOnlyMemory<T> memory) { throw null; }
         public static System.ReadOnlySpan<TTo> Cast<TFrom, TTo>(System.ReadOnlySpan<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
         public static System.Span<TTo> Cast<TFrom, TTo>(System.Span<TFrom> span) where TFrom : struct where TTo : struct { throw null; }
+        public static System.Memory<T> CreateFromPinnedArray<T>(T[] array, int start, int length) { throw null; }
 #if !FEATURE_PORTABLE_SPAN
         public static System.ReadOnlySpan<T> CreateReadOnlySpan<T>(ref T reference, int length) { throw null; }
         public static System.Span<T> CreateSpan<T>(ref T reference, int length) { throw null; }

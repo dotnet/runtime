@@ -257,13 +257,26 @@ namespace System
             }
             else if (_object is T[] array)
             {
-                GCHandle handle = _length < 0 ? default : GCHandle.Alloc(array, GCHandleType.Pinned);
+                // Array is already pre-pinned
+                if (_length < 0)
+                {
 #if FEATURE_PORTABLE_SPAN
-                void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetReference<T>(array)), _index);
 #else
-                void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
 #endif // FEATURE_PORTABLE_SPAN
-                return new MemoryHandle(pointer, handle);
+                    return new MemoryHandle(pointer);
+                }
+                else
+                {
+                    GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
+#if FEATURE_PORTABLE_SPAN
+                    void* pointer = Unsafe.Add<T>((void*)handle.AddrOfPinnedObject(), _index);
+#else
+                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
+#endif // FEATURE_PORTABLE_SPAN
+                    return new MemoryHandle(pointer, handle);
+                }
             }
             return default;
         }
