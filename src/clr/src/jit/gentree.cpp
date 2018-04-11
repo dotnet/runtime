@@ -18252,7 +18252,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
             GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
 
             if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
-                (argList->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the first arg TYP_I_IMPL?
+                (argList->Rest()->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the second arg TYP_I_IMPL?
             {
                 // This is Avx/Avx2.InsertVector128
                 return true;
@@ -18319,7 +18319,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
             GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
 
             if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
-                (argList->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the first arg TYP_I_IMPL?
+                (argList->Rest()->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the second arg TYP_I_IMPL?
             {
                 // This is Avx/Avx2.InsertVector128
                 return true;
