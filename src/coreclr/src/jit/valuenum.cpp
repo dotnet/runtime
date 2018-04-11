@@ -1098,6 +1098,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         {
             canFold = false;
         }
+        if (typ == TYP_BYREF)
+        {
+            // We don't want to fold expressions that produce TYP_BYREF
+            canFold = false;
+        }
 
         if (canFold)
         {
@@ -1750,12 +1755,6 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
     if (func == VNF_Cast)
     {
         return EvalCastForConstantArgs(typ, func, arg0VN, arg1VN);
-    }
-
-    if (typ == TYP_BYREF)
-    {
-        // We don't want to fold expressions that produce TYP_BYREF
-        return false;
     }
 
     var_types arg0VNtyp = TypeOfVN(arg0VN);
