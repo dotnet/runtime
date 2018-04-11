@@ -68,10 +68,10 @@ namespace System.Buffers
         private ReadOnlySequence(object startSegment, int startIndexAndFlags, object endSegment, int endIndexAndFlags)
         {
             // Used by SliceImpl to create new ReadOnlySequence
-            
+
             // startSegment and endSegment can be null for default ReadOnlySequence only
-            Debug.Assert( (startSegment != null && endSegment != null) || 
-                (startSegment == null && endSegment == null && startIndexAndFlags == 0 && endIndexAndFlags ==  0) );
+            Debug.Assert((startSegment != null && endSegment != null) ||
+                (startSegment == null && endSegment == null && startIndexAndFlags == 0 && endIndexAndFlags == 0));
 
             _sequenceStart = new SequencePosition(startSegment, startIndexAndFlags);
             _sequenceEnd = new SequencePosition(endSegment, endIndexAndFlags);
@@ -361,7 +361,7 @@ namespace System.Buffers
         /// </summary>
         public bool TryGet(ref SequencePosition position, out ReadOnlyMemory<T> memory, bool advance = true)
         {
-            bool result = TryGetBuffer(position, End, out memory, out SequencePosition next);
+            bool result = TryGetBuffer(position, out memory, out SequencePosition next);
             if (advance)
             {
                 position = next;
@@ -384,6 +384,34 @@ namespace System.Buffers
                 end.GetInteger() & ReadOnlySequence.IndexBitMask | (End.GetInteger() & ReadOnlySequence.FlagBitMask)
             );
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private SequenceType GetSequenceType()
+        {
+            // We take high order bits of two indexes and move them
+            // to a first and second position to convert to SequenceType
+
+            // if (start < 0  and end < 0)
+            // start >> 31 = -1, end >> 31 = -1
+            // 2 * (-1) + (-1) = -3, result = (SequenceType)3
+
+            // if (start < 0  and end >= 0)
+            // start >> 31 = -1, end >> 31 = 0
+            // 2 * (-1) + 0 = -2, result = (SequenceType)2
+
+            // if (start >= 0  and end >= 0)
+            // start >> 31 = 0, end >> 31 = 0
+            // 2 * 0 + 0 = 0, result = (SequenceType)0
+
+            // if (start >= 0  and end < 0)
+            // start >> 31 = 0, end >> 31 = -1
+            // 2 * 0 + (-1) = -1, result = (SequenceType)1
+
+            return (SequenceType)(-(2 * (_sequenceStart.GetInteger() >> 31) + (_sequenceEnd.GetInteger() >> 31)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetIndex(in SequencePosition position) => position.GetInteger() & ReadOnlySequence.IndexBitMask;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void GetTypeAndIndices(int start, int end, out SequenceType sequenceType, out int startIndex, out int endIndex)
