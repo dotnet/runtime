@@ -33,9 +33,7 @@ namespace System.Buffers
         /// optimized for very fast access speeds, at the expense of more memory consumption.
         /// The shared pool instance is created lazily on first access.
         /// </remarks>
-        public static ArrayPool<T> Shared { get; } =
-            typeof(T) == typeof(byte) || typeof(T) == typeof(char) ? new TlsOverPerCoreLockedStacksArrayPool<T>() :
-            Create();
+        public static ArrayPool<T> Shared { get; } = new TlsOverPerCoreLockedStacksArrayPool<T>();
 
         /// <summary>
         /// Creates a new <see cref="ArrayPool{T}"/> instance using default configuration options.
