@@ -286,7 +286,8 @@ namespace System.Net.Http
 
         public bool UseDefaultCredentials
         {
-            get => _curlHandler != null ? _curlHandler.UseDefaultCredentials : false;
+            // Either read variable from curlHandler or compare .Credentials as socketsHttpHandler does not have separate prop.
+            get => _curlHandler != null ? _curlHandler.UseDefaultCredentials : _socketsHttpHandler.Credentials == CredentialCache.DefaultCredentials;
             set
             {
                 if (_curlHandler != null)
