@@ -991,6 +991,9 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20204", TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
         public void StartInfo_TextFile_ShellExecute()
         {
+            if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")
+                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/28953)]
+
             string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
