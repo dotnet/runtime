@@ -2515,7 +2515,8 @@ void LinearScan::BuildIndir(GenTreeIndir* indirTree)
             // Because 'source' is contained, we haven't yet determined its special register requirements, if any.
             // As it happens, the Shift or Rotate cases are the only ones with special requirements.
             assert(source->isContained() && source->OperIsRMWMemOp());
-            GenTree* nonMemSource = nullptr;
+            GenTree*      nonMemSource = nullptr;
+            GenTreeIndir* otherIndir   = nullptr;
 
             if (source->OperIsShiftOrRotate())
             {
@@ -2527,6 +2528,7 @@ void LinearScan::BuildIndir(GenTreeIndir* indirTree)
             }
             if (indirTree->AsStoreInd()->IsRMWDstOp1())
             {
+                otherIndir = source->gtGetOp1()->AsIndir();
                 if (source->OperIsBinary())
                 {
                     nonMemSource = source->gtOp.gtOp2;
@@ -2534,7 +2536,19 @@ void LinearScan::BuildIndir(GenTreeIndir* indirTree)
             }
             else if (indirTree->AsStoreInd()->IsRMWDstOp2())
             {
+                otherIndir   = source->gtGetOp2()->AsIndir();
                 nonMemSource = source->gtOp.gtOp1;
+            }
+            if (otherIndir != nullptr)
+            {
+                // Any lclVars in the addressing mode of this indirection are contained.
+                // If they are marked as lastUse, transfer the last use flag to the store indir.
+                GenTree* base    = otherIndir->Base();
+                GenTree* dstBase = indirTree->Base();
+                CheckAndMoveRMWLastUse(base, dstBase);
+                GenTree* index    = otherIndir->Index();
+                GenTree* dstIndex = indirTree->Index();
+                CheckAndMoveRMWLastUse(index, dstIndex);
             }
             if (nonMemSource != nullptr)
             {
