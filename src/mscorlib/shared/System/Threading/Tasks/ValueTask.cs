@@ -529,7 +529,7 @@ namespace System.Threading.Tasks
         public Task<TResult> AsTask()
         {
             object obj = _obj;
-            Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource);
+            Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
             if (obj == null)
             {
