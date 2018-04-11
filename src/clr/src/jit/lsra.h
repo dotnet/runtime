@@ -1683,6 +1683,28 @@ private:
     bool isRMWRegOper(GenTree* tree);
     void BuildMul(GenTree* tree);
     void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
+    // Move the last use bit, if any, from 'fromTree' to 'toTree'; 'fromTree' must be contained.
+    void CheckAndMoveRMWLastUse(GenTree* fromTree, GenTree* toTree)
+    {
+        // If 'fromTree' is not a last-use lclVar, there's nothing to do.
+        if ((fromTree == nullptr) || !fromTree->OperIs(GT_LCL_VAR) || ((fromTree->gtFlags & GTF_VAR_DEATH) == 0))
+        {
+            return;
+        }
+        // If 'fromTree' was a lclVar, it must be contained and 'toTree' must match.
+        if (!fromTree->isContained() || (toTree == nullptr) || !toTree->OperIs(GT_LCL_VAR) ||
+            (toTree->AsLclVarCommon()->gtLclNum != toTree->AsLclVarCommon()->gtLclNum))
+        {
+            assert(!"Unmatched RMW indirections");
+            return;
+        }
+        // This is probably not necessary, but keeps things consistent.
+        fromTree->gtFlags &= ~GTF_VAR_DEATH;
+        if (toTree != nullptr) // Just to be conservative
+        {
+            toTree->gtFlags |= GTF_VAR_DEATH;
+        }
+    }
 #endif // defined(_TARGET_XARCH_)
 
 #ifdef FEATURE_SIMD
