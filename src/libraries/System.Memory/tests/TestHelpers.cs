@@ -143,7 +143,7 @@ namespace System
             // This space intentionally left blank.
         }
 
-        public static void Validate<T>(this Memory<T> memory, params T[] expected) where T : struct, IEquatable<T>
+        public static void Validate<T>(this Memory<T> memory, params T[] expected) where T : IEquatable<T>
         {
             Assert.True(memory.Span.SequenceEqual(expected));
         }
@@ -159,7 +159,7 @@ namespace System
             }
         }
 
-        public static void Validate<T>(this ReadOnlyMemory<T> memory, params T[] expected) where T : struct, IEquatable<T>
+        public static void Validate<T>(this ReadOnlyMemory<T> memory, params T[] expected) where T : IEquatable<T>
         {
             Assert.True(memory.Span.SequenceEqual(expected));
         }
