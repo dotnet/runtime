@@ -127,9 +127,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
   </ItemGroup>
@@ -353,6 +350,7 @@
     <Compile Include="$(BclSourcesRoot)\System\MissingFieldException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Number.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\PinnableBufferCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
@@ -473,7 +471,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\PinnableBufferCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadInterruptedException.cs" />
@@ -631,6 +628,7 @@
     <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" Condition="'$(FeatureCominterop)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\System\PinnableBufferCacheEventSource.cs" />
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />
   </ItemGroup>
   <Import Project="shared\System.Private.CoreLib.Shared.projitems" />
@@ -666,14 +664,10 @@
     <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
     <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
   </PropertyGroup>
-
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
-
   <ItemGroup>
     <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </ItemGroup>
-
   <Import Project="ILLink.targets" />
-
   <Import Project="GenerateCompilerResponseFile.targets" />
 </Project>

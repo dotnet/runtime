@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Runtime.InteropServices;
-using System.Security;
+using Microsoft.Win32;
 
 namespace System
 {
@@ -20,9 +19,41 @@ namespace System
             return GetConfigBoolValue(switchName, out exist);
         }
 
+        internal static bool GetBoolValueWithFallbacks(string switchName, string environmentName, bool defaultValue)
+        {
+            bool value = GetBoolValue(switchName, out bool exists);
+
+            if (exists)
+                return value;
+
+            // Calls to this API can be very early- we want to avoid using higher-level
+            // abstractions where reasonably possible.
+
+            Span<char> buffer = stackalloc char[32];
+
+            int length = Win32Native.GetEnvironmentVariable(environmentName, buffer);
+            switch (length)
+            {
+                case 1:
+                    if (buffer[0] == '0')
+                        return false;
+                    if (buffer[0] == '1')
+                        return true;
+                    break;
+                case 4:
+                    if ("true".AsSpan().EqualsOrdinalIgnoreCase(buffer.Slice(0, 4)))
+                        return true;
+                    break;
+                case 5:
+                    if ("false".AsSpan().EqualsOrdinalIgnoreCase(buffer.Slice(0, 5)))
+                        return false;
+                    break;
+            }
+
+            return defaultValue;
+        }
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern bool GetConfigBoolValue(string configSwitchName, out bool exist);
     }
-}  // namespace System
-
-// file CLRConfig
+}
