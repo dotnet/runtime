@@ -127,6 +127,24 @@ my_isalpha (char c)
 	return FALSE;
 }
 
+static gboolean
+my_isnamestartchar (char c)
+{
+	/* NameStartChar from https://www.w3.org/TR/xml/#sec-common-syn excluding non-ASCII and ':' */
+	if (my_isalpha (c) || c == '_')
+		return TRUE;
+	return FALSE;
+}
+
+static gboolean
+my_isnamechar (char c)
+{
+	/* NameChar from https://www.w3.org/TR/xml/#sec-common-syn excluding non-ASCII and ':' */
+	if (my_isalnum (c) || c == '_' || c == '-' || c == '.')
+		return TRUE;
+	return FALSE;
+}
+
 static const char *
 skip_space (const char *p, const char *end)
 {
@@ -166,8 +184,9 @@ parse_name (const char *p, const char *end, char **value)
 	const char *start = p;
 	int l;
 	
-	for (; p < end && my_isalnum (*p); p++)
-		;
+	if (p < end && my_isnamestartchar (*p))
+		for (; p < end && my_isnamechar (*p); p++)
+			;
 	if (p == end)
 		return end;
 
@@ -309,12 +328,12 @@ g_markup_parse_context_parse (GMarkupParseContext *context,
 				break;
 			}
 			
-			if (!my_isalpha (*p)){
+			if (!my_isnamestartchar (*p)){
 				set_error ("%s", "Expected an element name");
 				goto fail;
 			}
 			
-			for (++p; p < end && (my_isalnum (*p) || (*p == '.')); p++)
+			for (++p; p < end && my_isnamechar (*p); p++)
 				;
 			if (p == end){
 				set_error ("%s", "Expected an element");
