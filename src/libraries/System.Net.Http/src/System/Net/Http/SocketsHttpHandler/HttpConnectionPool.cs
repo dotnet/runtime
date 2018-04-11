@@ -154,6 +154,10 @@ namespace System.Net.Http
             // pretends they're part of the default when running on Win7/2008R2.
             if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
             {
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(poolManager, $"Win7OrWin2K8R2 platform, Changing default TLS protocols to {SecurityProtocol.DefaultSecurityProtocols}");
+                }
                 sslOptions.EnabledSslProtocols = SecurityProtocol.DefaultSecurityProtocols;
             }
 
