@@ -8,9 +8,17 @@
     <debPackaginfConfigPath>$(PackagingRoot)deb/</debPackaginfConfigPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true' AND '$(InstallerExtension)' == '.deb'">
-    <HostResolverVersion Condition="$(HostResolverVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(HostResolverVersion)').Replace('-$(PreReleaseLabel)', '~$(PreReleaseLabel)'))</HostResolverVersion>
-    <HostVersion Condition="$(HostVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(HostVersion)').Replace('-$(PreReleaseLabel)', '~$(PreReleaseLabel)'))</HostVersion>
-    <SharedFrameworkNugetVersion Condition="$(SharedFrameworkNugetVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(SharedFrameworkNugetVersion)').Replace('-$(PreReleaseLabel)', '~$(PreReleaseLabel)'))</SharedFrameworkNugetVersion>
-    <RuntimeDepsDebVersion Condition="$(RuntimeDepsDebVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(RuntimeDepsDebVersion)').Replace('-$(PreReleaseLabel)', '~$(PreReleaseLabel)'))</RuntimeDepsDebVersion>
+    
+    <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
+    <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostPackageReleaseVersion>
+    
+    <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
+    <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</HostResolverPackageRelease>
+    
+    <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
+    <RuntimePackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</RuntimePackageRelease>
+    
+    <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
+    <RuntimeDepsDebPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">~$(VersionSuffix)</RuntimeDepsDebPackageRelease>
   </PropertyGroup>
 </Project>
