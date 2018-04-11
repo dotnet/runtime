@@ -284,7 +284,7 @@ public:
         }
         CONTRACTL_END
 
-        return !MayHaveNativeCode() || IsRemotingInterceptedViaPrestub();
+        return !MayHaveNativeCode() || IsRemotingInterceptedViaPrestub() || IsVersionableWithPrecode();
     }
 
     void InterlockedUpdateFlags2(BYTE bMask, BOOL fSet);
