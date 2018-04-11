@@ -31,7 +31,7 @@
       "alwaysRun": false,
       "displayName": "Setup vs dev env",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "condition": "and(succeeded(), ne(variables['PB_SkipTests'], 'true'))",
       "refName": "Task1",
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
@@ -53,7 +53,7 @@
       "alwaysRun": false,
       "displayName": "Run clean.cmd",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "condition": "and(succeeded(), ne(variables['PB_SkipTests'], 'true'))",
       "refName": "Task2",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -74,7 +74,7 @@
       "alwaysRun": false,
       "displayName": "Run sync.cmd",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "condition": "and(succeeded(),ne(variables['PB_SkipTests'], 'true'))",
       "refName": "Task3",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -95,7 +95,7 @@
       "alwaysRun": false,
       "displayName": "Generate version props file",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "condition": "and(succeeded(), ne(variables['PB_SkipTests'], 'true'))",
       "refName": "Task4",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -116,7 +116,7 @@
       "alwaysRun": false,
       "displayName": "Run build-test.cmd",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "condition": "and(succeeded(), ne(variables['PB_SkipTests'], 'true'))",
       "refName": "Task5",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -137,7 +137,7 @@
       "alwaysRun": false,
       "displayName": "Send job to Helix",
       "timeoutInMinutes": 0,
-      "condition": "ne(variables['PB_SkipTests'], 'true')",
+      "condition": "and(succeeded(), ne(variables['PB_SkipTests'], 'true'))",
       "refName": "Task6",
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
