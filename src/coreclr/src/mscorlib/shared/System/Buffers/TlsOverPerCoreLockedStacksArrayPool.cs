@@ -50,12 +50,12 @@ namespace System.Buffers
 
         private int _callbackCreated;
 
-        private readonly static bool s_TrimBuffers = GetTrimBuffers();
+        private readonly static bool s_trimBuffers = GetTrimBuffers();
 
         /// <summary>
         /// Used to keep track of all thread local buckets for trimming if needed
         /// </summary>
-        private static readonly ConditionalWeakTable<T[][], object> s_AllTlsBuckets = s_TrimBuffers ? new ConditionalWeakTable<T[][], object>() : null;
+        private static readonly ConditionalWeakTable<T[][], object> s_allTlsBuckets = s_trimBuffers ? new ConditionalWeakTable<T[][], object>() : null;
 
         /// <summary>Initialize the pool.</summary>
         public TlsOverPerCoreLockedStacksArrayPool()
@@ -191,9 +191,9 @@ namespace System.Buffers
                 {
                     t_tlsBuckets = tlsBuckets = new T[NumBuckets][];
                     tlsBuckets[bucketIndex] = array;
-                    if (s_TrimBuffers)
+                    if (s_trimBuffers)
                     {
-                        s_AllTlsBuckets.Add(tlsBuckets, null);
+                        s_allTlsBuckets.Add(tlsBuckets, null);
                         if (Interlocked.Exchange(ref _callbackCreated, 1) != 1)
                         {
                             Gen2GcCallback.Register(Gen2GcCallbackFunc, this);
@@ -238,18 +238,29 @@ namespace System.Buffers
             if (pressure == MemoryPressure.High)
             {
                 // Under high pressure, release all thread locals
-                foreach (KeyValuePair<T[][], object> tlsBuckets in s_AllTlsBuckets)
+                if (log.IsEnabled())
                 {
-                    T[][] buckets = tlsBuckets.Key;
-                    for (int i = 0; i < NumBuckets; i++)
+                    foreach (KeyValuePair<T[][], object> tlsBuckets in s_allTlsBuckets)
                     {
-                        T[] buffer = buckets[i];
-                        buckets[i] = null;
-
-                        if (log.IsEnabled() && buffer != null)
+                        T[][] buckets = tlsBuckets.Key;
+                        for (int i = 0; i < buckets.Length; i++)
                         {
-                            log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
+                            T[] buffer = Interlocked.Exchange(ref buckets[i], null);
+                            if (buffer != null)
+                            {
+                                // As we don't want to take a perf hit in the rent path it
+                                // is possible that a buffer could be rented as we "free" it.
+                                log.BufferTrimmed(buffer.GetHashCode(), buffer.Length, Id);
+                            }
                         }
+                    }
+                }
+                else
+                {
+                    foreach (KeyValuePair<T[][], object> tlsBuckets in s_allTlsBuckets)
+                    {
+                        T[][] buckets = tlsBuckets.Key;
+                        Array.Clear(buckets, 0, buckets.Length);
                     }
                 }
             }
@@ -280,8 +291,8 @@ namespace System.Buffers
 
         private static MemoryPressure GetMemoryPressure()
         {
-            const double HighPressureThreshold = .90;                       // Percent of GC memory pressure threshold we consider "high"
-            const double MediumPressureThreshold = .70;                     // Percent of GC memory pressure threshold we consider "medium"
+            const double HighPressureThreshold = .90;       // Percent of GC memory pressure threshold we consider "high"
+            const double MediumPressureThreshold = .70;     // Percent of GC memory pressure threshold we consider "medium"
 
             GC.GetMemoryInfo(out uint threshold, out _, out uint lastLoad, out _, out _);
             if (lastLoad >= threshold * HighPressureThreshold)
@@ -303,7 +314,7 @@ namespace System.Buffers
             // enabling/disabling for now.
             return true;
 #else
-            return CLRConfig.GetBoolValueWithFallbacks("System.Buffers.TrimBuffers", "DOTNET_SYSTEM_BUFFERS_TRIMBUFFERS", defaultValue: true);
+            return CLRConfig.GetBoolValueWithFallbacks("System.Buffers.ArrayPool.TrimShared", "DOTNET_SYSTEM_BUFFERS_ARRAYPOOL_TRIMSHARED", defaultValue: true);
 #endif
         }
 
@@ -384,7 +395,7 @@ namespace System.Buffers
                 Monitor.Enter(this);
                 if (_count < MaxBuffersPerArraySizePerCore)
                 {
-                    if (s_TrimBuffers && _count == 0)
+                    if (s_trimBuffers && _count == 0)
                     {
                         // Stash the time the bottom of the stack was filled
                         _firstStackItemMS = (uint)Environment.TickCount;
@@ -425,10 +436,10 @@ namespace System.Buffers
 
                 if (_count == 0)
                     return;
+                uint trimTicks = pressure == MemoryPressure.High ? StackHighTrimAfterMS : StackTrimAfterMS;
 
                 lock (this)
                 {
-                    uint trimTicks = pressure == MemoryPressure.High ? StackHighTrimAfterMS : StackTrimAfterMS;
                     if (_count > 0 && _firstStackItemMS > tickCount || (tickCount - _firstStackItemMS) > trimTicks)
                     {
                         // We've wrapped the tick count or elapsed enough time since the
