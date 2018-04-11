@@ -71,15 +71,13 @@ namespace JitBench
                     startInfo.WorkingDirectory = WorkingDirPath;
                     startInfo.RedirectStandardError = true;
                     startInfo.RedirectStandardOutput = true;
-                    foreach (KeyValuePair<string, string> kv in config.EnvironmentVariables)
+                    IEnumerable<KeyValuePair<string, string>> extraEnvVars = config.EnvironmentVariables.Concat(EnvironmentVariables).Append(new KeyValuePair<string, string>("DOTNET_MULTILEVEL_LOOKUP", "0"));
+                    foreach (KeyValuePair<string, string> kv in extraEnvVars)
                     {
                         startInfo.Environment[kv.Key] = kv.Value;
                     }
-                    foreach (KeyValuePair<string, string> kv in EnvironmentVariables)
-                    {
-                        startInfo.Environment[kv.Key] = kv.Value;
-                    }
-                    startInfo.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
+                    output.WriteLine("XUnitPerfHarness doesn't log env vars it uses to run processes. To workaround, logging them here:");
+                    output.WriteLine(string.Join(", ", extraEnvVars.Select(kv => kv.Key + "=" + kv.Value)));
 
                     BenchmarkRunResult result = new BenchmarkRunResult(this, config);
                     StringBuilder stderr = new StringBuilder();

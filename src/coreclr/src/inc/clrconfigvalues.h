@@ -654,6 +654,9 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 0, 
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_LEGACY_TieredCompilation, W("EXPERIMENTAL_TieredCompilation"), 0, "Deprecated - Use COMPLUS_TieredCompilation")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1CallCountThreshold, W("TieredCompilation_Tier1CallCountThreshold"), 30, "Number of times a method must be called after which it is promoted to tier 1.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1CallCountingDelayMs, W("TieredCompilation_Tier1CallCountingDelayMs"), 100, "Delay in milliseconds since process startup or the last tier 0 JIT before call counting begins for tier 1 promotion.")
+
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Test_CallCounting, W("TieredCompilation_Test_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any tier1 promotion")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Test_OptimizeTier0, W("TieredCompilation_Test_OptimizeTier0"), 0, "Use optimized codegen (normally used by tier1) in tier0")
 #endif
 
 
