@@ -463,7 +463,14 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 	/* Disable C-y being used as a suspend character on OSX */
 	mono_attr.c_cc [VDSUSP] = 255;
 #endif
-	if (tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr) == -1)
+	gint ret;
+	do {
+		MONO_ENTER_GC_SAFE;
+		ret = tcsetattr (STDIN_FILENO, TCSANOW, &mono_attr);
+		MONO_EXIT_GC_SAFE;
+	} while (ret == -1 && errno == EINTR);
+
+	if (ret == -1)
 		return FALSE;
 
 	uint32_t h;
