@@ -244,5 +244,38 @@ namespace System.Runtime.InteropServices
             Unsafe.WriteUnaligned<T>(ref GetReference(destination), value);
             return true;
         }
+
+        /// <summary>
+        /// Creates a new memory over the portion of the pre-pinned target array beginning
+        /// at 'start' index and ending at 'end' index (exclusive).
+        /// </summary>
+        /// <param name="array">The pre-pinned target array.</param>
+        /// <param name="start">The index at which to begin the memory.</param>
+        /// <param name="length">The number of items in the memory.</param>
+        /// <remarks>This method should only be called on an array that is already pinned and 
+        /// that array should not be unpinned while the returned Memory<typeparamref name="T"/> is still in use.
+        /// Calling this method on an unpinned array could result in memory corruption.</remarks>
+        /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
+        /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Memory<T> CreateFromPinnedArray<T>(T[] array, int start, int length)
+        {
+            if (array == null)
+            {
+                if (start != 0 || length != 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                return default;
+            }
+            if (default(T) == null && array.GetType() != typeof(T[]))
+                ThrowHelper.ThrowArrayTypeMismatchException();
+            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            // Before using _length, check if _length < 0, then 'and' it with RemoveFlagsBitMask
+            return new Memory<T>((object)array, start, length | (1 << 31));
+        }
     }
 }

@@ -171,7 +171,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private Memory(object obj, int start, int length)
+        internal Memory(object obj, int start, int length)
         {
             // No validation performed; caller must provide any necessary validation.
             _object = obj;
