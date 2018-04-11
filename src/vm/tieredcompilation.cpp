@@ -611,7 +611,8 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(NativeCodeVersion nativeCodeV
         return flags;
     }
     
-    if (nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0)
+    if (nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+        !g_pConfig->TieredCompilation_OptimizeTier0())
     {
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
     }
