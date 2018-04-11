@@ -5,18 +5,17 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Threading
 {
     public partial class AbandonedMutexException : System.SystemException
     {
         public AbandonedMutexException() { }
         public AbandonedMutexException(int location, System.Threading.WaitHandle handle) { }
+        protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AbandonedMutexException(string message) { }
         public AbandonedMutexException(string message, System.Exception inner) { }
         public AbandonedMutexException(string message, System.Exception inner, int location, System.Threading.WaitHandle handle) { }
         public AbandonedMutexException(string message, int location, System.Threading.WaitHandle handle) { }
-        protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Threading.Mutex Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
@@ -31,22 +30,23 @@ namespace System.Threading
         public static bool operator !=(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
         public void Undo() { }
     }
+    public partial struct AsyncLocalValueChangedArgs<T>
+    {
+        private T _dummy;
+        private int _dummyPrimitive;
+        public T CurrentValue { get { throw null; } }
+        public T PreviousValue { get { throw null; } }
+        public bool ThreadContextChanged { get { throw null; } }
+    }
     public sealed partial class AsyncLocal<T>
     {
         public AsyncLocal() { }
         public AsyncLocal(System.Action<System.Threading.AsyncLocalValueChangedArgs<T>> valueChangedHandler) { }
         public T Value { get { throw null; } set { } }
     }
-    public partial struct AsyncLocalValueChangedArgs<T>
-    {
-        private T _dummy;
-        public T CurrentValue { get { throw null; } }
-        public T PreviousValue { get { throw null; } }
-        public bool ThreadContextChanged { get { throw null; } }
-    }
     public sealed partial class AutoResetEvent : System.Threading.EventWaitHandle
     {
-        public AutoResetEvent(bool initialState) : base(default(bool), default(System.Threading.EventResetMode)) { }
+        public AutoResetEvent(bool initialState) : base (default(bool), default(System.Threading.EventResetMode)) { }
     }
     public partial class Barrier : System.IDisposable
     {
@@ -72,9 +72,9 @@ namespace System.Threading
     {
         public BarrierPostPhaseException() { }
         public BarrierPostPhaseException(System.Exception innerException) { }
+        protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public BarrierPostPhaseException(string message) { }
         public BarrierPostPhaseException(string message, System.Exception innerException) { }
-        protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public delegate void ContextCallback(object state);
     public partial class CountdownEvent : System.IDisposable
@@ -118,7 +118,7 @@ namespace System.Threading
     }
     public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
     {
-        private ExecutionContext() { }
+        internal ExecutionContext() { }
         public static System.Threading.ExecutionContext Capture() { throw null; }
         public System.Threading.ExecutionContext CreateCopy() { throw null; }
         public void Dispose() { }
@@ -180,7 +180,7 @@ namespace System.Threading
     }
     public partial struct LockCookie
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Threading.LockCookie obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -190,9 +190,9 @@ namespace System.Threading
     public partial class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }
+        protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public LockRecursionException(string message) { }
         public LockRecursionException(string message, System.Exception innerException) { }
-        protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum LockRecursionPolicy
     {
@@ -201,7 +201,7 @@ namespace System.Threading
     }
     public sealed partial class ManualResetEvent : System.Threading.EventWaitHandle
     {
-        public ManualResetEvent(bool initialState) : base(default(bool), default(System.Threading.EventResetMode)) { }
+        public ManualResetEvent(bool initialState) : base (default(bool), default(System.Threading.EventResetMode)) { }
     }
     public partial class ManualResetEventSlim : System.IDisposable
     {
@@ -314,9 +314,9 @@ namespace System.Threading
     public partial class SemaphoreFullException : System.SystemException
     {
         public SemaphoreFullException() { }
+        protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SemaphoreFullException(string message) { }
         public SemaphoreFullException(string message, System.Exception innerException) { }
-        protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class SemaphoreSlim : System.IDisposable
     {
@@ -344,7 +344,7 @@ namespace System.Threading
     public delegate void SendOrPostCallback(object state);
     public partial struct SpinLock
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public SpinLock(bool enableThreadOwnerTracking) { throw null; }
         public bool IsHeld { get { throw null; } }
         public bool IsHeldByCurrentThread { get { throw null; } }
@@ -358,7 +358,7 @@ namespace System.Threading
     }
     public partial struct SpinWait
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public int Count { get { throw null; } }
         public bool NextSpinWillYield { get { throw null; } }
         public void Reset() { }
@@ -389,9 +389,9 @@ namespace System.Threading
     public partial class SynchronizationLockException : System.SystemException
     {
         public SynchronizationLockException() { }
+        protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SynchronizationLockException(string message) { }
         public SynchronizationLockException(string message, System.Exception innerException) { }
-        protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class ThreadLocal<T> : System.IDisposable
     {
@@ -451,8 +451,8 @@ namespace System.Threading
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
+        protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public WaitHandleCannotBeOpenedException(string message) { }
         public WaitHandleCannotBeOpenedException(string message, System.Exception innerException) { }
-        protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
