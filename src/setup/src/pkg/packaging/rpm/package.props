@@ -13,7 +13,10 @@
     <RuntimeDependenciesRpmPkgName>$(RuntimeDependenciesRpmPkgName.ToLower())</RuntimeDependenciesRpmPkgName>
     <TemplatesDir>$(MSBuildThisFileDirectory)/templates</TemplatesDir>
     <ScriptsDir>$(MSBuildThisFileDirectory)/scripts</ScriptsDir>
+
   </PropertyGroup>
+  
+  
   
   <PropertyGroup Condition="'$(BuildUpgradeableLinuxPackages)' == 'true' AND '$(InstallerExtension)' == '.rpm'">
     <PackageNameSuffix>$(MajorVersion).$(MinorVersion)</PackageNameSuffix>
@@ -25,10 +28,23 @@
     <RuntimeDependenciesRpmPkgName>$(DotnetRuntimeDependenciesPackageString)$(PackageNameSuffix)</RuntimeDependenciesRpmPkgName>
     <RuntimeDependenciesRpmPkgName>$(RuntimeDependenciesRpmPkgName.ToLower())</RuntimeDependenciesRpmPkgName>
     
-    <HostResolverVersion Condition="$(HostResolverVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(HostResolverVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</HostResolverVersion>
-    <HostVersion Condition="$(HostVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(HostVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</HostVersion>
-    <SharedFrameworkNugetVersion Condition="$(SharedFrameworkNugetVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(SharedFrameworkNugetVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</SharedFrameworkNugetVersion>
-    <RuntimeDepsRpmVersion Condition="$(RuntimeDepsRpmVersion.Contains('$(PreReleaseLabel)')) AND $(PreReleaseLabel) !=''">$([System.String]::Copy('$(RuntimeDepsRpmVersion)').Replace('-$(PreReleaseLabel)', '-0.1.$(PreReleaseLabel)'))</RuntimeDepsRpmVersion>
+    <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
+    
+    <HostPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostPackageRelease>
+    <HostPackageRelease>$([System.String]::Copy('$(HostPackageRelease)').Replace('-', '_'))</HostPackageRelease>
+    
+    <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
+    
+    <HostResolverPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</HostResolverPackageRelease>
+    <HostResolverPackageRelease>$([System.String]::Copy('$(HostResolverPackageRelease)').Replace('-', '_'))</HostResolverPackageRelease>
+
+    <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
+    <RuntimePackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</RuntimePackageRelease>
+    <RuntimePackageRelease>$([System.String]::Copy('$(RuntimePackageRelease)').Replace('-', '_'))</RuntimePackageRelease>
+
+    <RuntimeDepsRpmPackageVersion>$(ProductionVersion)</RuntimeDepsRpmPackageVersion>
+    <RuntimeDepsRpmPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</RuntimeDepsRpmPackageRelease>
+    <RuntimeDepsRpmPackageRelease>$([System.String]::Copy('$(RuntimeDepsRpmPackageRelease)').Replace('-', '_'))</RuntimeDepsRpmPackageRelease>
 
   </PropertyGroup>
 </Project>
