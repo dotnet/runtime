@@ -55,11 +55,11 @@ namespace System.Net.Http
             unsafe
             {
                 var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA();
-                cppStruct.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>();
+                cppStruct.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_PARA);
                 cppStruct.dwFlags = 0;
 
                 var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA();
-                eppStruct.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>();
+                eppStruct.cbSize = (uint)sizeof(Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA);
                 eppStruct.dwAuthType = Interop.Crypt32.AuthType.AUTHTYPE_SERVER;
                 
                 cppStruct.pvExtraPolicyPara = &eppStruct;

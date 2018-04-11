@@ -316,9 +316,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecurityPackageInfo.cs">
       <Link>Common\Interop\Windows\sspicli\SecurityPackageInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
-      <Link>Common\System\Net\IntPtrHelper.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SSPIAuthType.cs">
       <Link>Common\Interop\Windows\sspicli\SSPIAuthType.cs</Link>
     </Compile>

@@ -35,24 +35,23 @@ namespace Internal.Cryptography.Pal
         {
             exception = null;
 
-            CERT_CHAIN_POLICY_PARA para = new CERT_CHAIN_POLICY_PARA()
+            unsafe
             {
-                cbSize = Marshal.SizeOf<CERT_CHAIN_POLICY_PARA>(),
-                dwFlags = (int)flags,
-            };
+                CERT_CHAIN_POLICY_PARA para = new CERT_CHAIN_POLICY_PARA();
+                para.cbSize = sizeof(CERT_CHAIN_POLICY_PARA);
+                para.dwFlags = (int)flags;
 
-            CERT_CHAIN_POLICY_STATUS status = new CERT_CHAIN_POLICY_STATUS()
-            {
-                cbSize = Marshal.SizeOf<CERT_CHAIN_POLICY_STATUS>(),
-            };
+                CERT_CHAIN_POLICY_STATUS status = new CERT_CHAIN_POLICY_STATUS();
+                status.cbSize = sizeof(CERT_CHAIN_POLICY_STATUS);
 
-            if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))
-            {
-                int errorCode = Marshal.GetLastWin32Error();
-                exception = errorCode.ToCryptographicException();
-                return default(bool?);
+                if (!Interop.crypt32.CertVerifyCertificateChainPolicy(ChainPolicy.CERT_CHAIN_POLICY_BASE, _chain, ref para, ref status))
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    exception = errorCode.ToCryptographicException();
+                    return default(bool?);
+                }
+                return status.dwError == 0;
             }
-            return status.dwError == 0;
         }
 
         public X509ChainElement[] ChainElements
