@@ -78,9 +78,6 @@
     <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
       <Link>Common\System\Net\ExceptionCheck.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
-      <Link>Common\System\Net\IntPtrHelper.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>

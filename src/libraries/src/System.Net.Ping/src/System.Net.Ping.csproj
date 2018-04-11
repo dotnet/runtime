@@ -29,9 +29,6 @@
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
-      <Link>Common\System\Net\IntPtrHelper.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
       <Link>Common\System\Net\IPAddressParserStatics.cs</Link>
     </Compile>

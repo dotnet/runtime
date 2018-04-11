@@ -312,7 +312,7 @@ namespace System.Net.NetworkInformation
                 // Only copy the data if we succeed w/ the ping operation.
                 rtt = reply.RoundTripTime;
                 buffer = new byte[sendSize];
-                Marshal.Copy(IntPtrHelper.Add(dataPtr, 36), buffer, 0, sendSize);
+                Marshal.Copy(dataPtr + 36, buffer, 0, sendSize);
             }
             else
             {
