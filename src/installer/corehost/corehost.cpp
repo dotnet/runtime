@@ -271,7 +271,7 @@ int run(const int argc, const pal::char_t* argv[])
     // Obtain the entrypoints.
     int rc;
     hostfxr_main_startupinfo_fn main_fn_v2 = (hostfxr_main_startupinfo_fn)pal::get_symbol(fxr, "hostfxr_main_startupinfo");
-    if (main_fn_v2)
+    if (main_fn_v2 != nullptr)
     {
         const pal::char_t* host_path_cstr = host_path.c_str();
         const pal::char_t* dotnet_root_cstr = dotnet_root.empty() ? nullptr : dotnet_root.c_str();
@@ -304,7 +304,7 @@ int run(const int argc, const pal::char_t* argv[])
             // For compat, use the v1 interface. This requires additional file I\O to re-parse parameters and
             // for apphost, does not support DOTNET_ROOT or dll with different name for exe.
             hostfxr_main_fn main_fn_v1 = (hostfxr_main_fn)pal::get_symbol(fxr, "hostfxr_main");
-            if (main_fn_v1)
+            if (main_fn_v1 != nullptr)
             {
                 rc = main_fn_v1(argc, argv);
             }

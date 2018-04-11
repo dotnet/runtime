@@ -39,7 +39,7 @@ int load_host_library_common(
     *load_fn = (corehost_load_fn)pal::get_symbol(*h_host, "corehost_load");
     *unload_fn = (corehost_unload_fn)pal::get_symbol(*h_host, "corehost_unload");
 
-    return (*load_fn) && (*unload_fn)
+    return (*load_fn != nullptr) && (*unload_fn != nullptr)
         ? StatusCode::Success
         : StatusCode::CoreHostEntryPointFailure;
 }
@@ -61,7 +61,7 @@ int load_host_library(
     // Obtain entrypoint symbol
     *main_fn = (corehost_main_fn)pal::get_symbol(*h_host, "corehost_main");
 
-    return (*main_fn)
+    return (*main_fn != nullptr)
         ? StatusCode::Success
         : StatusCode::CoreHostEntryPointFailure;
 }
@@ -83,7 +83,7 @@ int load_host_library_with_return(
     // Obtain entrypoint symbol
     *main_fn = (corehost_main_with_output_buffer_fn)pal::get_symbol(*h_host, "corehost_main_with_output_buffer");
 
-    return (*main_fn)
+    return (*main_fn != nullptr)
         ? StatusCode::Success
         : StatusCode::CoreHostEntryPointFailure;
 }
