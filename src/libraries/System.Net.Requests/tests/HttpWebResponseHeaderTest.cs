@@ -95,6 +95,40 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public async Task LastModified_ValidDate_Success()
+        {
+            DateTime expected = TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 4, 10, 3, 4, 5, DateTimeKind.Utc), TimeZoneInfo.Local);
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, "Last-Modified: Tue, 10 Apr 2018 03:04:05 GMT\r\n", "12345");
+
+                using (HttpWebResponse response = (HttpWebResponse)(await getResponse))
+                {
+                    Assert.Equal(expected, response.LastModified);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task LastModified_InvalidDate_Throws()
+        {
+            DateTime expected = TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2018, 4, 10, 3, 4, 5, DateTimeKind.Utc), TimeZoneInfo.Local);
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK, "Last-Modified: invalid date\r\n", "12345");
+
+                using (HttpWebResponse response = (HttpWebResponse)(await getResponse))
+                {
+                    Assert.Throws<ProtocolViolationException>(() => response.LastModified);
+                }
+            });
+        }
+
+        [Fact]
         public async Task HttpWebResponse_Serialize_ExpectedResult()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -125,6 +159,6 @@ namespace System.Net.Tests
                     }
                 }
             });
-        } 
+        }
     }
 }

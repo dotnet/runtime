@@ -150,12 +150,10 @@ namespace System.Net
                 {
                     return DateTime.Now;
                 }
-                DateTime dtOut;
-                HttpDateParse.ParseHttpDate(lastmodHeaderValue, out dtOut);
-                return dtOut;
+
+                return HttpDateParse.StringToDate(lastmodHeaderValue);
             }
         }
-
 
         /// <devdoc>
         ///    <para>

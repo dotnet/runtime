@@ -1450,7 +1450,7 @@ namespace System.Net
                 {
                     return DateTime.MinValue; // MinValue means header is not present
                 }
-                return StringToDate(headerValue);
+                return HttpDateParse.StringToDate(headerValue);
 #if DEBUG
             }
 #endif
@@ -1469,20 +1469,6 @@ namespace System.Net
 #if DEBUG
             }
 #endif
-        }
-
-        // parse String to DateTime format.
-        private static DateTime StringToDate(String S)
-        {
-            DateTime dtOut;
-            if (HttpDateParse.ParseHttpDate(S, out dtOut))
-            {
-                return dtOut;
-            }
-            else
-            {
-                throw new ProtocolViolationException(SR.net_baddate);
-            }
         }
 
         // convert Date to String using RFC 1123 pattern
