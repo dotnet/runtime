@@ -23,10 +23,6 @@ namespace System.Net
     {
         public static bool IsSupported => Interop.HttpApi.s_supported;
 
-        private static readonly Type s_channelBindingStatusType = typeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS);
-        private static readonly int s_requestChannelBindStatusSize =
-            Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS));
-
         // Windows 8 fixed a bug in Http.sys's HttpReceiveClientCertificate method.
         // Without this fix IOCP callbacks were not being called although ERROR_IO_PENDING was
         // returned from HttpReceiveClientCertificate when using the 
@@ -1780,16 +1776,16 @@ namespace System.Net
         private static unsafe int GetTokenOffsetFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
-            IntPtr tokenPointer = Marshal.ReadIntPtr((IntPtr)blob, (int)Marshal.OffsetOf(s_channelBindingStatusType, "ChannelToken"));
+            IntPtr tokenPointer = ((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelToken;
 
             Debug.Assert(tokenPointer != IntPtr.Zero);
-            return (int)((long)tokenPointer - (long)blob);
+            return (int)((byte*)tokenPointer - (byte*)blob);
         }
 
         private static unsafe int GetTokenSizeFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
-            return Marshal.ReadInt32(blob, (int)Marshal.OffsetOf(s_channelBindingStatusType, "ChannelTokenSize"));
+            return (int)((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelTokenSize;
         }
 
         internal ChannelBinding GetChannelBindingFromTls(ulong connectionId)
@@ -1798,7 +1794,7 @@ namespace System.Net
 
             // +128 since a CBT is usually <128 thus we need to call HRCC just once. If the CBT
             // is >128 we will get ERROR_MORE_DATA and call again
-            int size = s_requestChannelBindStatusSize + 128;
+            int size = sizeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS) + 128;
 
             Debug.Assert(size > 0);
 
@@ -1842,7 +1838,7 @@ namespace System.Net
                         int tokenSize = GetTokenSizeFromBlob((IntPtr)blobPtr);
                         Debug.Assert(tokenSize < Int32.MaxValue);
 
-                        size = s_requestChannelBindStatusSize + tokenSize;
+                        size = sizeof(Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS) + tokenSize;
                     }
                     else if (statusCode == Interop.HttpApi.ERROR_INVALID_PARAMETER)
                     {

@@ -69,9 +69,6 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
-      <Link>Common\System\Net\IntPtrHelper.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketProtocolSupportPal.Windows.cs">
       <Link>System\Net\SocketProtocolSupportPal.Windows</Link>
     </Compile>

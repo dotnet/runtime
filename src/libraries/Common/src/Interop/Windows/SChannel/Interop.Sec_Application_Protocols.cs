@@ -13,10 +13,8 @@ internal static partial class Interop
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     internal struct Sec_Application_Protocols
     {
-        private static readonly int ProtocolListOffset = Marshal.SizeOf<Sec_Application_Protocols>();
-        private static readonly int ProtocolListConstSize = ProtocolListOffset - (int)Marshal.OffsetOf<Sec_Application_Protocols>(nameof(ProtocolExtenstionType));
         public uint ProtocolListsSize;
-        public ApplicationProtocolNegotiationExt ProtocolExtenstionType;
+        public ApplicationProtocolNegotiationExt ProtocolExtensionType;
         public short ProtocolListSize;
 
         public static unsafe byte[] ToByteArray(List<SslApplicationProtocol> applicationProtocols)
@@ -38,25 +36,24 @@ internal static partial class Interop
             }
 
             Sec_Application_Protocols protocols = new Sec_Application_Protocols();
-            protocols.ProtocolListsSize = (uint)(ProtocolListConstSize + protocolListSize);
-            protocols.ProtocolExtenstionType = ApplicationProtocolNegotiationExt.ALPN;
+
+            int protocolListConstSize = sizeof(Sec_Application_Protocols) - sizeof(uint) /* offsetof(Sec_Application_Protocols, ProtocolExtensionType) */;
+            protocols.ProtocolListsSize = (uint)(protocolListConstSize + protocolListSize);
+
+            protocols.ProtocolExtensionType = ApplicationProtocolNegotiationExt.ALPN;
             protocols.ProtocolListSize = (short)protocolListSize;
 
-            Span<byte> pBuffer = new byte[protocolListSize];
+            byte[] buffer = new byte[sizeof(Sec_Application_Protocols) + protocolListSize];
             int index = 0;
+
+            MemoryMarshal.Write(buffer.AsSpan(index), ref protocols);
+            index += sizeof(Sec_Application_Protocols);
+
             for (int i = 0; i < applicationProtocols.Count; i++)
             {
-                pBuffer[index++] = (byte)applicationProtocols[i].Protocol.Length;
-                applicationProtocols[i].Protocol.Span.CopyTo(pBuffer.Slice(index));
+                buffer[index++] = (byte)applicationProtocols[i].Protocol.Length;
+                applicationProtocols[i].Protocol.Span.CopyTo(buffer.AsSpan(index));
                 index += applicationProtocols[i].Protocol.Length;
-            }
-
-            byte[] buffer = new byte[ProtocolListOffset + protocolListSize];
-            fixed (byte* bufferPtr = buffer)
-            {
-                Marshal.StructureToPtr(protocols, new IntPtr(bufferPtr), false);
-                byte* pList = bufferPtr + ProtocolListOffset;
-                pBuffer.CopyTo(new Span<byte>(pList, index));
             }
 
             return buffer;

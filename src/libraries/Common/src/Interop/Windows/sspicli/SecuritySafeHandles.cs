@@ -78,15 +78,6 @@ namespace System.Net.Security
         //
         public static unsafe int QueryContextAttributes(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, byte* buffer, SafeHandle refHandle)
         {
-            return QueryContextAttributes_SECURITY(phContext, contextAttribute, buffer, refHandle);
-        }
-
-        private static unsafe int QueryContextAttributes_SECURITY(
-            SafeDeleteContext phContext,
-            Interop.SspiCli.ContextAttribute contextAttribute,
-            byte* buffer,
-            SafeHandle refHandle)
-        {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 
             try
@@ -123,14 +114,6 @@ namespace System.Net.Security
         public static int SetContextAttributes(
             SafeDeleteContext phContext,
             Interop.SspiCli.ContextAttribute contextAttribute, byte[] buffer)
-        {
-            return SetContextAttributes_SECURITY(phContext, contextAttribute, buffer);
-        }
-
-        private static int SetContextAttributes_SECURITY(
-            SafeDeleteContext phContext,
-            Interop.SspiCli.ContextAttribute contextAttribute,
-            byte[] buffer)
         {
             try
             {
@@ -597,7 +580,7 @@ namespace System.Net.Security
                     string punyCode = s_idnMapping.GetAscii(targetName);
                     fixed (char* namePtr = punyCode)
                     {
-                        errorCode = MustRunInitializeSecurityContext_SECURITY(
+                        errorCode = MustRunInitializeSecurityContext(
                                         ref inCredentials,
                                         contextHandle.IsZero ? null : &contextHandle,
                                         (byte*)(((object)targetName == (object)dummyStr) ? null : namePtr),
@@ -657,7 +640,7 @@ namespace System.Net.Security
         // After PInvoke call the method will fix the handleTemplate.handle with the returned value.
         // The caller is responsible for creating a correct SafeFreeContextBuffer_XXX flavor or null can be passed if no handle is returned.
         //
-        private static unsafe int MustRunInitializeSecurityContext_SECURITY(
+        private static unsafe int MustRunInitializeSecurityContext(
             ref SafeFreeCredentials inCredentials,
             void* inContextPtr,
             byte* targetName,
@@ -1266,11 +1249,6 @@ namespace System.Net.Security
         }
 
         public static unsafe int QueryContextChannelBinding(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
-        {
-            return QueryContextChannelBinding_SECURITY(phContext, contextAttribute, buffer, refHandle);
-        }
-
-        private static unsafe int QueryContextChannelBinding_SECURITY(SafeDeleteContext phContext, Interop.SspiCli.ContextAttribute contextAttribute, SecPkgContext_Bindings* buffer, SafeFreeContextBufferChannelBinding refHandle)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
 

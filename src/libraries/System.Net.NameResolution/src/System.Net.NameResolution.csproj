@@ -59,9 +59,6 @@
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
-      <Link>Common\System\Net\IntPtrHelper.cs</Link>
-    </Compile>
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>

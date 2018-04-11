@@ -23,7 +23,7 @@ namespace System.Net
            
             _SecPkgInfoW in sspi.h
          */
-        internal SecurityPackageInfoClass(SafeHandle safeHandle, int index)
+        internal unsafe SecurityPackageInfoClass(SafeHandle safeHandle, int index)
         {
             if (safeHandle.IsInvalid)
             {
@@ -31,25 +31,26 @@ namespace System.Net
                 return;
             }
 
-            IntPtr unmanagedAddress = IntPtrHelper.Add(safeHandle.DangerousGetHandle(), SecurityPackageInfo.Size * index);
+            IntPtr unmanagedAddress = safeHandle.DangerousGetHandle() + (sizeof(SecurityPackageInfo) * index);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"unmanagedAddress: {unmanagedAddress}");
 
-            // TODO (Issue #3114): replace with Marshal.PtrToStructure.
-            Capabilities = Marshal.ReadInt32(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Capabilities"));
-            Version = Marshal.ReadInt16(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Version"));
-            RPCID = Marshal.ReadInt16(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("RPCID"));
-            MaxToken = Marshal.ReadInt32(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("MaxToken"));
+            SecurityPackageInfo* pSecurityPackageInfo = (SecurityPackageInfo*)unmanagedAddress;
+
+            Capabilities = pSecurityPackageInfo->Capabilities;
+            Version = pSecurityPackageInfo->Version;
+            RPCID = pSecurityPackageInfo->RPCID;
+            MaxToken = pSecurityPackageInfo->MaxToken;
 
             IntPtr unmanagedString;
 
-            unmanagedString = Marshal.ReadIntPtr(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Name"));
+            unmanagedString = pSecurityPackageInfo->Name;
             if (unmanagedString != IntPtr.Zero)
             {
                 Name = Marshal.PtrToStringUni(unmanagedString);
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Name: {Name}");
             }
 
-            unmanagedString = Marshal.ReadIntPtr(unmanagedAddress, (int)Marshal.OffsetOf<SecurityPackageInfo>("Comment"));
+            unmanagedString = pSecurityPackageInfo->Comment;
             if (unmanagedString != IntPtr.Zero)
             {
                 Comment = Marshal.PtrToStringUni(unmanagedString);

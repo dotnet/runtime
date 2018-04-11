@@ -114,7 +114,7 @@ namespace System.Net
                 //
                 // now get the next pointer in the array and start over
                 //
-                currentArrayElement = IntPtrHelper.Add(currentArrayElement, IntPtr.Size);
+                currentArrayElement = currentArrayElement + IntPtr.Size;
                 nativePointer = Marshal.ReadIntPtr(currentArrayElement);
             }
 
@@ -147,7 +147,7 @@ namespace System.Net
                 //
                 // now get the next pointer in the array and start over
                 //
-                currentArrayElement = IntPtrHelper.Add(currentArrayElement, IntPtr.Size);
+                currentArrayElement = currentArrayElement + IntPtr.Size;
                 nativePointer = Marshal.ReadIntPtr(currentArrayElement);
             }
 
