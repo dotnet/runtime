@@ -74,6 +74,7 @@
 
   <PropertyGroup>
     <SymbolPackagesDir>$(PackagesDir)symbolpackages/</SymbolPackagesDir>
+    <DotNetAssetRootUrl Condition="'$(DotNetAssetRootUrl)' == ''">https://dotnetfeed.blob.core.windows.net/dotnet-core/assets/</DotNetAssetRootUrl>
   </PropertyGroup>
 
   <Target Name="CalculateCoreCLRSymbolPackageProperties"
@@ -81,9 +82,7 @@
 
     <ItemGroup>
       <_CoreCLRSymbolPackagesToDownload Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Condition="$([System.String]::Copy('%(Identity)').EndsWith('System.Private.CoreLib.dll'))">
-        <!-- If there is an asset root URL set (for orchestrated build), then append symbols to that to grab the coreclr symbol location.  The orchestrated build uses a flat package layout. -->
-        <Url Condition="'$(DotNetAssetRootUrl)'!=''">$(DotNetAssetRootUrl)symbols/%(NuGetPackageId).%(NuGetPackageVersion).symbols.nupkg</Url>
-        <Url Condition="'$(DotNetAssetRootUrl)'==''">https://dotnet.myget.org/F/dotnet-core/symbols/%(NuGetPackageId)/%(NuGetPackageVersion)/</Url>
+        <Url>$(DotNetAssetRootUrl)symbols/%(NuGetPackageId).%(NuGetPackageVersion).symbols.nupkg</Url>
         <DestinationFile>%(NuGetPackageId).%(NuGetPackageVersion).symbols.nupkg.zip</DestinationFile>
         <UnzipDestinationDir>$(SymbolPackagesDir)/%(NuGetPackageId).%(NuGetPackageVersion)</UnzipDestinationDir>
       </_CoreCLRSymbolPackagesToDownload>
