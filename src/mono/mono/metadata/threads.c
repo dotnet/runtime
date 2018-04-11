@@ -2599,7 +2599,9 @@ mono_thread_suspend (MonoInternalThread *thread)
 	}
 	
 	thread->state |= ThreadState_SuspendRequested;
+	MONO_ENTER_GC_SAFE;
 	mono_os_event_reset (thread->suspended);
+	MONO_EXIT_GC_SAFE;
 
 	if (thread == mono_thread_internal_current ()) {
 		/* calls UNLOCK_THREAD (thread) */
@@ -2627,7 +2629,9 @@ mono_thread_resume (MonoInternalThread *thread)
 	if ((thread->state & ThreadState_SuspendRequested) != 0) {
 		// MOSTLY_ASYNC_SAFE_PRINTF ("RESUME (1) thread %p\n", thread_get_tid (thread));
 		thread->state &= ~ThreadState_SuspendRequested;
+		MONO_ENTER_GC_SAFE;
 		mono_os_event_set (thread->suspended);
+		MONO_EXIT_GC_SAFE;
 		return TRUE;
 	}
 
@@ -2642,7 +2646,9 @@ mono_thread_resume (MonoInternalThread *thread)
 
 	// MOSTLY_ASYNC_SAFE_PRINTF ("RESUME (3) thread %p\n", thread_get_tid (thread));
 
+	MONO_ENTER_GC_SAFE;
 	mono_os_event_set (thread->suspended);
+	MONO_EXIT_GC_SAFE;
 
 	if (!thread->self_suspended) {
 		UNLOCK_THREAD (thread);
@@ -3429,8 +3435,10 @@ mono_threads_set_shutting_down (void)
 		 * interrupt the main thread if it is waiting for all
 		 * the other threads.
 		 */
+		MONO_ENTER_GC_SAFE;
 		mono_os_event_set (&background_change_event);
-		
+		MONO_EXIT_GC_SAFE;
+
 		mono_threads_unlock ();
 	}
 }
@@ -3467,7 +3475,9 @@ mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: There are %d threads to join", __func__, mono_g_hash_table_size (threads));
 			mono_g_hash_table_foreach (threads, print_tids, NULL));
 	
+		MONO_ENTER_GC_SAFE;
 		mono_os_event_reset (&background_change_event);
+		MONO_EXIT_GC_SAFE;
 		wait->num=0;
 		/* We must zero all InternalThread pointers to avoid making the GC unhappy. */
 		memset (wait->threads, 0, MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS * SIZEOF_VOID_P);
@@ -3615,7 +3625,9 @@ void mono_thread_suspend_all_other_threads (void)
 				thread->state &= ~ThreadState_AbortRequested;
 			
 			thread->state |= ThreadState_SuspendRequested;
+			MONO_ENTER_GC_SAFE;
 			mono_os_event_reset (thread->suspended);
+			MONO_EXIT_GC_SAFE;
 
 			/* Signal the thread to suspend + calls UNLOCK_THREAD (thread) */
 			async_suspend_internal (thread, TRUE);
@@ -4628,6 +4640,8 @@ static void CALLBACK dummy_apc (ULONG_PTR param)
 static MonoException*
 mono_thread_execute_interruption (void)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoException *exc = NULL;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoThread *sys_thread = mono_thread_current ();
@@ -4912,7 +4926,9 @@ mono_thread_notify_change_state (MonoThreadState old_state, MonoThreadState new_
 		 * be notified, since it has to rebuild the list of threads to
 		 * wait for.
 		 */
+		MONO_ENTER_GC_SAFE;
 		mono_os_event_set (&background_change_event);
+		MONO_EXIT_GC_SAFE;
 	}
 }
 
@@ -4993,6 +5009,9 @@ self_interrupt_thread (void *_unused)
 		if (mono_threads_are_safepoints_enabled ()) {
 			/* We can return from an async call in coop, as
 			 * it's simply called when exiting the safepoint */
+			/* If we're using hybrid suspend, we only self
+			 * interrupt if we were running, hence using
+			 * safepoints */
 			return;
 		}
 

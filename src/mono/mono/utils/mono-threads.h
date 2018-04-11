@@ -125,16 +125,22 @@ and reduce the number of casts drastically.
 
 enum {
 	STATE_STARTING				= 0x00,
-	STATE_RUNNING				= 0x01,
-	STATE_DETACHED				= 0x02,
+	STATE_DETACHED				= 0x01,
 
+	STATE_RUNNING				= 0x02,
 	STATE_ASYNC_SUSPENDED			= 0x03,
 	STATE_SELF_SUSPENDED			= 0x04,
 	STATE_ASYNC_SUSPEND_REQUESTED		= 0x05,
-	STATE_BLOCKING				= 0x06,
-	STATE_BLOCKING_SELF_SUSPENDED		= 0x07,
 
-	STATE_MAX				= 0x07,
+	STATE_BLOCKING				= 0x06,
+	STATE_BLOCKING_ASYNC_SUSPENDED 		= 0x07,
+	/* FIXME: All the transitions from STATE_SELF_SUSPENDED and
+	 * STATE_BLOCKING_SELF_SUSPENDED are the same - they should be the same
+	 * state. */
+	STATE_BLOCKING_SELF_SUSPENDED		= 0x08,
+	STATE_BLOCKING_SUSPEND_REQUESTED	= 0x09,
+
+	STATE_MAX				= 0x09,
 
 	THREAD_STATE_MASK			= 0x00FF,
 	THREAD_SUSPEND_COUNT_MASK	= 0xFF00,
@@ -607,10 +613,11 @@ typedef enum {
 } MonoSelfSupendResult;
 
 typedef enum {
-	AsyncSuspendAlreadySuspended,
-	AsyncSuspendInitSuspend,
-	AsyncSuspendBlocking,
-} MonoRequestAsyncSuspendResult;
+	ReqSuspendAlreadySuspended,
+	ReqSuspendAlreadySuspendedBlocking,
+	ReqSuspendInitSuspendRunning,
+	ReqSuspendInitSuspendBlocking,
+} MonoRequestSuspendResult;
 
 typedef enum {
 	DoBlockingContinue, //in blocking mode, continue
@@ -620,6 +627,7 @@ typedef enum {
 typedef enum {
 	DoneBlockingOk, //exited blocking fine
 	DoneBlockingWait, //thread should end suspended
+	DoneBlockingNotifyAndWait, // thread was preemptively suspended while in blocking, notify suspend initiator and wait for resume
 } MonoDoneBlockingResult;
 
 
@@ -628,12 +636,13 @@ typedef enum {
 	AbortBlockingIgnoreAndPoll, //Ignore and poll
 	AbortBlockingOk, //Abort worked
 	AbortBlockingWait, //Abort worked, but should wait for resume
+	AbortBlockingNotifyAndWait, // thread was preemptively suspended while in blocking, notify suspend initiator and wait for resume
 } MonoAbortBlockingResult;
 
 
 void mono_threads_transition_attach (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
-MonoRequestAsyncSuspendResult mono_threads_transition_request_async_suspension (THREAD_INFO_TYPE *info);
+MonoRequestSuspendResult mono_threads_transition_request_suspension (THREAD_INFO_TYPE *info);
 MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info);
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_finish_async_suspend (THREAD_INFO_TYPE* info);

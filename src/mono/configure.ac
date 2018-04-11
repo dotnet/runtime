@@ -4493,6 +4493,15 @@ fi
 
 AM_CONDITIONAL([ENABLE_COOP], [test x$with_cooperative_gc != xno])
 
+AC_ARG_WITH(hybrid_suspend, [ --with-hybrid-suspend=yes|no     Enable hybrid cooperative stop-the-world garbage collection (sgen only) - cooperative suspend for threads running managed and native code, and preemptive suspend for threads running native and P/Invoke code (defaults to no)], [
+	if test x$with_hybrid_suspend != xno ; then
+		AC_DEFINE(USE_HYBRID_SUSPEND,1,[Enable hybrid cooperative suspend for GC stop-the-world])
+	fi
+	if test x$with_cooperative_gc != xyes ; then
+		AC_MSG_ERROR([Hybrid suspend requires --with-cooperative-gc=yes])
+	fi
+], [with_hybrid_suspend=no])
+
 AC_ARG_ENABLE(checked_build, [  --enable-checked-build=LIST      To enable checked build (expensive asserts), configure with a comma-separated LIST of checked build modules and then include that same list in the environment variable MONO_CHECK_MODE at runtime. Recognized checked build modules: all, gc, metadata, thread, private_types],[
 
 	if test x$enable_checked_build != x ; then
