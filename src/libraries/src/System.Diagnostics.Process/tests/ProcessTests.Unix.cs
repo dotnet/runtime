@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory, InlineData("nano"), InlineData("vi")]
+        [Theory, InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram(string programToOpenWith)
@@ -178,7 +178,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory, InlineData("nano"), InlineData("vi")]
+        [Theory, InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("Opens program")]
         public void ProcessStart_OpenFileOnLinux_UsesSpecifiedProgramUsingArgumentList(string programToOpenWith)
@@ -186,7 +186,7 @@ namespace System.Diagnostics.Tests
             if (IsProgramInstalled(programToOpenWith))
             {
                 string fileToOpen = GetTestFilePath() + ".txt";
-                File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnLinux_UsesSpecifiedProgram)}");
+                File.WriteAllText(fileToOpen, $"{nameof(ProcessStart_OpenFileOnLinux_UsesSpecifiedProgramUsingArgumentList)}");
                 ProcessStartInfo psi = new ProcessStartInfo(programToOpenWith);
                 psi.ArgumentList.Add(fileToOpen);
                 using (var px = Process.Start(psi))
