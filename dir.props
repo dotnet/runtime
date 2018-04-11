@@ -447,12 +447,12 @@
     <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
 
    <HostPackageVersion>$(HostVersion)</HostPackageVersion>
-   <HostPackageRelease>1</HostPackageReleaseVersion>
+   <HostPackageRelease>1</HostPackageRelease>
    <HostResolverPackageVersion>$(HostResolverVersion)</HostResolverPackageVersion>
    <HostResolverPackageRelease>1</HostResolverPackageRelease>
    <RuntimePackageVersion>$(SharedFrameworkNugetVersion)</RuntimePackageVersion>
    <RuntimePackageRelease>1</RuntimePackageRelease>
-   <RuntimeDepsDebPackageVersion>$(RuntimeDepsDebVersion)</RuntimeDepsPackageVersion>
+   <RuntimeDepsDebPackageVersion>$(RuntimeDepsDebVersion)</RuntimeDepsDebPackageVersion>
    <RuntimeDepsDebPackageRelease>1</RuntimeDepsDebPackageRelease>
    <RuntimeDepsRpmPackageVersion>$(RuntimeDepsRpmVersion)</RuntimeDepsRpmPackageVersion>
    <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
