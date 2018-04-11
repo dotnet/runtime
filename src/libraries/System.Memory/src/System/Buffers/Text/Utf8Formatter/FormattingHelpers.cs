@@ -10,7 +10,7 @@ namespace System.Buffers.Text
     // All the helper methods in this class assume that the by-ref is valid and that there is
     // enough space to fit the items that will be written into the underlying memory. The calling
     // code must have already done all the necessary validation.
-    internal static class FormattingHelpers
+    internal static partial class FormattingHelpers
     {
         // A simple lookup table for converting numbers to hex.
         internal const string HexTableLower = "0123456789abcdef";
@@ -270,126 +270,6 @@ namespace System.Buffers.Text
 
             valueWithoutTrailingZeros = value;
             return zeroCount;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountDigits(ulong value)
-        {
-            int digits = 1;
-            uint part;
-            if (value >= 10000000)
-            {
-                if (value >= 100000000000000)
-                {
-                    part = (uint)(value / 100000000000000);
-                    digits += 14;
-                }
-                else
-                {
-                    part = (uint)(value / 10000000);
-                    digits += 7;
-                }
-            }
-            else
-            {
-                part = (uint)value;
-            }
-
-            if (part < 10)
-            {
-                // no-op
-            }
-            else if (part < 100)
-            {
-                digits += 1;
-            }
-            else if (part < 1000)
-            {
-                digits += 2;
-            }
-            else if (part < 10000)
-            {
-                digits += 3;
-            }
-            else if (part < 100000)
-            {
-                digits += 4;
-            }
-            else if (part < 1000000)
-            {
-                digits += 5;
-            }
-            else
-            {
-                Debug.Assert(part < 10000000);
-                digits += 6;
-            }
-
-            return digits;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountDigits(uint value)
-        {
-            int digits = 1;
-            if (value >= 100000)
-            {
-                value = value / 100000;
-                digits += 5;
-            }
-
-            if (value < 10)
-            {
-                // no-op
-            }
-            else if (value < 100)
-            {
-                digits += 1;
-            }
-            else if (value < 1000)
-            {
-                digits += 2;
-            }
-            else if (value < 10000)
-            {
-                digits += 3;
-            }
-            else
-            {
-                Debug.Assert(value < 100000);
-                digits += 4;
-            }
-
-            return digits;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CountHexDigits(ulong value)
-        {
-            // TODO: When x86 intrinsic support comes online, experiment with implementing this using lzcnt.
-            // return 16 - (int)((uint)Lzcnt.LeadingZeroCount(value | 1) >> 3);
-
-            int digits = 1;
-
-            if (value > 0xFFFFFFFF)
-            {
-                digits += 8;
-                value >>= 0x20;
-            }
-            if (value > 0xFFFF)
-            {
-                digits += 4;
-                value >>= 0x10;
-            }
-            if (value > 0xFF)
-            {
-                digits += 2;
-                value >>= 0x8;
-            }
-            if (value > 0xF)
-                digits++;
-
-            return digits;
         }
 
         #endregion Character counting helper methods
