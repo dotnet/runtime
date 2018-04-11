@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="..\dir.targets" />
   <Import Project="$(ToolsDir)PublishContent.targets" />
-  <Import Project="$(ToolsDir)versioning.targets" />
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
   <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
@@ -13,7 +13,7 @@
   <ItemGroup>
     <_PackagesToPublish Include="$(PublishPattern)" />
   </ItemGroup>
-  
+
   <Target Name="CreateContainerName"
           DependsOnTargets="CreateVersionFileDuringBuild"
           Condition="'$(ContainerName)' == ''">
@@ -26,14 +26,30 @@
     <!-- skip uploadToAzure when there are no nupkgs -->
     <CallTarget Targets="UploadToAzure" Condition="'@(_PackagesToPublish)' != ''" />
   </Target>
-  
+
   <PropertyGroup>
     <PackageDownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)AzureTransfer\$(ConfigurationGroup)</PackageDownloadDirectory>
     <FinalPublishPattern>$(PackageDownloadDirectory)\**\*.nupkg</FinalPublishPattern>
     <FinalPublishPrivatePattern>$(PackageDownloadDirectory)\**\*Private*.nupkg</FinalPublishPrivatePattern>
     <FinalSymbolsPackagesPattern>$(PackageDownloadDirectory)\**\*.symbols.nupkg</FinalSymbolsPackagesPattern>
+    <!-- The SignFiles target needs OutDir to be defined -->
+    <OutDir>$(PackageDownloadDirectory)</OutDir>
   </PropertyGroup>
-  
+
+  <Target Name="GetPackagesToSign">
+    <ItemGroup>
+      <FilesToSign Include="$(FinalPublishPattern)" Exclude="$(FinalPublishPrivatePattern);$(FinalSymbolsPackagesPattern)">
+        <Authenticode>NuGet</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" />
+  </Target>
+
+  <Target Name="SignPackages"
+          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
+          DependsOnTargets="GetPackagesToSign;SignFiles">
+  </Target>
+
   <Target Name="PublishToAzureBlobFeed">
     <ItemGroup>
       <ItemsToPush Include="$(FinalPublishPrivatePattern)" Exclude="$(FinalSymbolsPackagesPattern)">
@@ -51,7 +67,7 @@
                     ManifestBranch="$(ManifestBranch)"
                     ManifestCommit="$(ManifestCommit)" />
   </Target>
-  
+
   <Target Name="PublishSymbolsToAzureBlobFeed" Condition="'$(PublishSymbols)' == 'true'" >
     <ItemGroup>
       <ItemsToPush Include="$(FinalSymbolsPackagesPattern)" />
@@ -68,7 +84,7 @@
   </Target>
 
 
-  <Target Name="PublishAllSymbols" 
+  <Target Name="PublishAllSymbols"
           DependsOnTargets="SetupPublishSymbols;PublishSymbols"/>
 
   <Target Name="SetupPublishSymbols">
