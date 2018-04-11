@@ -997,7 +997,7 @@ AC_ARG_WITH(unreal,              [  --with-unreal=yes,no                If you w
 AC_ARG_WITH(wasm,                [  --with-wasm=yes,no                  If you want to build the WebAssembly (defaults to no)], [], [with_wasm=default])
 
 
-AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode,unreal   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,bitcode,unreal   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no   If you want to build the runtime with compiler flags that enable Spectre mitigation (defaults to no)], [], [with_spectre_mitigation=default])
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
@@ -1086,20 +1086,8 @@ elif test x$with_runtime_preset = xall; then
    with_orbis_default=yes
    with_unreal_default=yes
    with_wasm_default=yes
-elif test x$with_runtime_preset = xfullaot; then
-   DISABLE_MCS_DOCS_default=yes
+   with_testing_aot_hybrid_default=yes
    with_testing_aot_full_default=yes
-   TEST_PROFILE=testing_aot_full
-
-   mono_feature_disable_com='yes'
-   mono_feature_disable_remoting='yes'
-   mono_feature_disable_reflection_emit_save='yes'
-   mono_feature_disable_reflection_emit='yes'
-   mono_feature_disable_appdomains='yes'
-
-   AOT_BUILD_FLAGS="--runtime=mobile -O=gsharedvt --aot=full,$INVARIANT_AOT_OPTIONS"
-   AOT_RUN_FLAGS="--runtime=mobile --full-aot"
-   AOT_MODE="full"
 elif test x$with_runtime_preset = xbitcode; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_full_default=yes
@@ -1117,6 +1105,34 @@ elif test x$with_runtime_preset = xbitcode; then
    AOT_BUILD_FLAGS="--runtime=mobile --aot=llvmonly,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --llvmonly"
    AOT_MODE="llvmonly"
+elif test x$with_runtime_preset = xfullaot; then
+   DISABLE_MCS_DOCS_default=yes
+   with_testing_aot_full_default=yes
+   TEST_PROFILE=testing_aot_full
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
+
+   AOT_BUILD_FLAGS="--runtime=mobile -O=gsharedvt --aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--runtime=mobile --full-aot"
+   AOT_MODE="full"
+elif test x$with_runtime_preset = xfullaot_llvm; then
+   DISABLE_MCS_DOCS_default=yes
+   with_testing_aot_full_default=yes
+   TEST_PROFILE=testing_aot_full
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_reflection_emit_save='yes'
+   mono_feature_disable_reflection_emit='yes'
+   mono_feature_disable_appdomains='yes'
+
+   AOT_BUILD_FLAGS="--runtime=mobile -O=gsharedvt --llvm --aot=full,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--runtime=mobile --full-aot"
+   AOT_MODE="full"
 elif test x$with_runtime_preset = xhybridaot; then
    DISABLE_MCS_DOCS_default=yes
    with_testing_aot_hybrid_default=yes
@@ -1124,10 +1140,24 @@ elif test x$with_runtime_preset = xhybridaot; then
 
    AOT_BUILD_FLAGS="--runtime=mobile --aot=hybrid,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --hybrid-aot"
+elif test x$with_runtime_preset = xhybridaot_llvm; then
+   DISABLE_MCS_DOCS_default=yes
+   with_testing_aot_hybrid_default=yes
+   TEST_PROFILE=testing_aot_hybrid
+
+   AOT_BUILD_FLAGS="--runtime=mobile --llvm --aot=hybrid,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--runtime=mobile --hybrid-aot"
 elif test x$with_runtime_preset = xaot; then
    with_profile4_x_default=yes
 
    AOT_BUILD_FLAGS="--aot=$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS=""
+
+   DISABLE_MCS_DOCS_default=yes
+elif test x$with_runtime_preset = xaot_llvm; then
+   with_profile4_x_default=yes
+
+   AOT_BUILD_FLAGS="--llvm --aot=$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS=""
 
    DISABLE_MCS_DOCS_default=yes

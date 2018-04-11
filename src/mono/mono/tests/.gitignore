@@ -22,8 +22,8 @@
 /*.o
 /*.lo
 /*.so
-/*.dylib
-/*.dylib.dSYM
+**.dylib
+**.dylib.dSYM
 /*.netmodule
 /imt_big_iface_test.cs
 /bin
@@ -35,3 +35,4 @@
 /testlist.sorted
 /reflection-load-dir
 /assemblyresolve_deps
+/mono_aot_*

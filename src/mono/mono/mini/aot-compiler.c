@@ -12738,13 +12738,20 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 			else
 				acfg->llvm_sfile = g_strdup (acfg->aot_opts.llvm_outfile);
 		} else {
-			acfg->tmpbasename = (strcmp (acfg->aot_opts.temp_path, "") == 0) ?
-				g_strdup_printf ("%s", "temp") :
-				g_build_filename (acfg->aot_opts.temp_path, "temp", NULL);
+			gchar *temp_path;
+			if (strcmp (acfg->aot_opts.temp_path, "") != 0) {
+				temp_path = g_strdup (acfg->aot_opts.temp_path);
+			} else {
+				temp_path = mkdtemp(g_strdup ("mono_aot_XXXXXX"));
+				g_assertf (temp_path, "mkdtemp failed, error = (%d) %s", errno, g_strerror (errno));
+			}
 				
+			acfg->tmpbasename = g_build_filename (temp_path, "temp", NULL);
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
 			acfg->llvm_sfile = g_strdup_printf ("%s-llvm.s", acfg->tmpbasename);
 			acfg->llvm_ofile = g_strdup_printf ("%s-llvm.o", acfg->tmpbasename);
+
+			g_free (temp_path);
 		}
 	}
 #endif
