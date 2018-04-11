@@ -31,7 +31,7 @@ namespace System.Net.Http
                         // Ignore invalid Set-Cookie header and continue processing.
                         if (NetEventSource.IsEnabled)
                         {
-                            NetEventSource.Info(response, $"Invalid Set-Cookie '{valuesArray[i]}' ignored.");
+                            NetEventSource.Error(response, $"Invalid Set-Cookie '{valuesArray[i]}' ignored.");
                         }
                     }
                 }

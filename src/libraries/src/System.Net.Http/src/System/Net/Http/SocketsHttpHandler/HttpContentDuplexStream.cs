@@ -12,6 +12,7 @@ namespace System.Net.Http
     {
         public HttpContentDuplexStream(HttpConnection connection) : base(connection)
         {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
         }
 
         public sealed override bool CanRead => true;

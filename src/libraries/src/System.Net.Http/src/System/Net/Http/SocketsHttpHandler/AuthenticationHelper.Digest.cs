@@ -50,7 +50,10 @@ namespace System.Net.Http
             if (digestResponse.Parameters.TryGetValue(Algorithm, out algorithm))
             {
                 if (algorithm != Sha256 && algorithm != Md5 && algorithm != Sha256Sess && algorithm != MD5Sess)
+                {
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Algorithm not supported: {algorithm}");
                     return null;
+                }
             }
             else
             {
@@ -61,6 +64,7 @@ namespace System.Net.Http
             string nonce;
             if (!digestResponse.Parameters.TryGetValue(Nonce, out nonce))
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Nonce missing");
                 return null;
             }
 
@@ -71,6 +75,7 @@ namespace System.Net.Http
             string realm;
             if (!digestResponse.Parameters.TryGetValue(Realm, out realm))
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(digestResponse, "Realm missing");
                 return null;
             }
 

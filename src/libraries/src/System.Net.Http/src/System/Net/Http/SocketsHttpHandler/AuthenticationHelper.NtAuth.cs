@@ -44,6 +44,10 @@ namespace System.Net.Http
             if (!isProxyAuth && connection.UsingProxy && !ProxySupportsConnectionAuth(response))
             {
                 // Proxy didn't indicate that it supports connection-based auth, so we can't proceed.
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Error(connection, $"Proxy doesn't support connection-based auth, uri={authUri}");
+                }
                 return response;
             }
 
