@@ -263,10 +263,21 @@ namespace System.Net.Http
                         cookiesFromContainer = null;
                     }
 
-                    for (int i = 1; i < header.Value.Length; i++)
+                    // Some headers such as User-Agent and Server use space as a separator (see: ProductInfoHeaderParser)
+                    if (header.Value.Length > 1)
                     {
-                        await WriteTwoBytesAsync((byte)',', (byte)' ').ConfigureAwait(false);
-                        await WriteStringAsync(header.Value[i]).ConfigureAwait(false);
+                        HttpHeaderParser parser = header.Key.Parser;
+                        string separator = HttpHeaderParser.DefaultSeparator;
+                        if (parser != null && parser.SupportsMultipleValues)
+                        {
+                            separator = parser.Separator;
+                        }
+
+                        for (int i = 1; i < header.Value.Length; i++)
+                        {
+                            await WriteAsciiStringAsync(separator).ConfigureAwait(false);
+                            await WriteStringAsync(header.Value[i]).ConfigureAwait(false);
+                        }
                     }
                 }
 
