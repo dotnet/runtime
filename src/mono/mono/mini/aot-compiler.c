@@ -205,6 +205,7 @@ typedef struct MonoAotOptions {
 	char *temp_path;
 	char *instances_logfile_path;
 	char *logfile;
+	char *llvm_opts;
 	gboolean dump_json;
 	gboolean profile_only;
 } MonoAotOptions;
@@ -7483,6 +7484,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->profile_only = TRUE;
 		} else if (!strcmp (arg, "verbose")) {
 			opts->verbose = TRUE;
+		} else if (str_begins_with (arg, "llvmopts=")){
+			opts->llvm_opts = g_strdup (arg + strlen ("llvmopts="));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly\n");
@@ -8993,6 +8996,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 #else
 		opts = g_strdup ("-targetlibinfo -no-aa -basicaa -notti -instcombine -simplifycfg -inline-cost -inline -sroa -domtree -early-cse -lazy-value-info -correlated-propagation -simplifycfg -instcombine -simplifycfg -reassociate -domtree -loops -loop-simplify -lcssa -loop-rotate -licm -lcssa -loop-unswitch -instcombine -scalar-evolution -loop-simplify -lcssa -indvars -loop-idiom -loop-deletion -loop-unroll -memdep -gvn -memdep -memcpyopt -sccp -instcombine -lazy-value-info -correlated-propagation -domtree -memdep -adce -simplifycfg -instcombine -strip-dead-prototypes -domtree -verify");
 #endif
+	if (acfg->llvm_opts != NULL){
+		g_free (opts);
+		opts = g_strdup (acfg->llvm_opts);
+	}
+
 	command = g_strdup_printf ("\"%sopt\" -f %s -o \"%s\" \"%s\"", acfg->aot_opts.llvm_path, opts, optbc, tempbc);
 	aot_printf (acfg, "Executing opt: %s\n", command);
 	if (execute_system (command) != 0)
